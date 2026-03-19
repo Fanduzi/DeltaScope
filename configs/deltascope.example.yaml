@@ -1,0 +1,18 @@
+rules:
+  ddl.table.comment.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+
+  ddl.table.name.max_length:
+    enabled: true
+    level: blocker
+    params:
+      limit: 64
+
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true

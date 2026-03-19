@@ -13,10 +13,13 @@ DeltaScope uses a DDD-leaning structure. Interfaces drive application use cases,
 | cmd/deltascope | CLI process entrypoint | [README](/Users/fan/GolangProjects/deltascope/cmd/deltascope/README.md) |
 | internal/interfaces/cli | CLI adapter layer | [README](/Users/fan/GolangProjects/deltascope/internal/interfaces/cli/README.md) |
 | internal/application | Use-case orchestration layer | [README](/Users/fan/GolangProjects/deltascope/internal/application/README.md) |
+| internal/application/policy | Application policy loader | [README](/Users/fan/GolangProjects/deltascope/internal/application/policy/README.md) |
 | internal/domain | Core domain types and rules | [README](/Users/fan/GolangProjects/deltascope/internal/domain/README.md) |
 | internal/domain/spec | Normalized statement specifications | [README](/Users/fan/GolangProjects/deltascope/internal/domain/spec/README.md) |
 | internal/domain/rule | Rule findings and severity model | [README](/Users/fan/GolangProjects/deltascope/internal/domain/rule/README.md) |
 | internal/domain/policy | Policy configuration model | [README](/Users/fan/GolangProjects/deltascope/internal/domain/policy/README.md) |
 | internal/domain/report | Audit result aggregation and verdict | [README](/Users/fan/GolangProjects/deltascope/internal/domain/report/README.md) |
 | internal/infrastructure | Infrastructure adapter layer | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/README.md) |
+| internal/infrastructure/config/viper | YAML config adapter | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/config/viper/README.md) |
+| configs | Example configuration files | [README](/Users/fan/GolangProjects/deltascope/configs/README.md) |
 | pkg/deltascope | Stable public package surface | [README](/Users/fan/GolangProjects/deltascope/pkg/deltascope/README.md) |
