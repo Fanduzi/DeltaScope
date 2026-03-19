@@ -1,7 +1,7 @@
-// Package rule defines domain findings and rule-facing severity types.
-// input: rule evaluation details and source-location metadata
-// output: normalized findings consumed by reporting and future rule engines
-// pos: domain rule vocabulary shared across audit evaluation
+// Package rule defines domain findings and rule-engine types.
+// input: rule evaluation details, source-location metadata, and statement/global rule implementations
+// output: normalized findings and registry-facing rule contracts
+// pos: domain rule vocabulary and execution contracts shared across audit evaluation
 // note: if this file changes, update this header and module README.md.
 package rule
 
