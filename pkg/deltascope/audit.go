@@ -31,6 +31,15 @@ const (
 	VerdictReject Verdict = "reject"
 )
 
+// Level identifies the public finding severity.
+type Level string
+
+const (
+	LevelBlocker Level = "blocker"
+	LevelWarning Level = "warning"
+	LevelNotice  Level = "notice"
+)
+
 // Request describes one public audit invocation.
 type Request struct {
 	SQL        string
@@ -55,7 +64,7 @@ type Location struct {
 // Finding is the stable public finding shape.
 type Finding struct {
 	RuleID         string         `json:"rule_id"`
-	Level          string         `json:"level"`
+	Level          Level          `json:"level"`
 	Message        string         `json:"message"`
 	StatementIndex int            `json:"statement_index,omitempty"`
 	StatementKind  string         `json:"statement_kind,omitempty"`
@@ -133,7 +142,7 @@ func fromDomainFindings(findings []rule.Finding) []Finding {
 	for _, finding := range findings {
 		item := Finding{
 			RuleID:         finding.RuleID,
-			Level:          string(finding.Level),
+			Level:          Level(finding.Level),
 			Message:        finding.Message,
 			StatementIndex: finding.StatementIndex,
 			StatementKind:  finding.StatementKind,

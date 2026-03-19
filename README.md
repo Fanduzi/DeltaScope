@@ -26,5 +26,8 @@ DeltaScope uses a DDD-leaning structure. Interfaces drive application use cases,
 | internal/infrastructure/parser | Parser adapter namespace | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/parser/README.md) |
 | internal/infrastructure/parser/tidb | TiDB parser adapter | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/parser/tidb/README.md) |
 | internal/infrastructure/config/viper | YAML config adapter | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/config/viper/README.md) |
+| internal/infrastructure/output | Output renderer namespace | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/output/README.md) |
+| internal/infrastructure/output/markdown | Markdown renderer | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/output/markdown/README.md) |
+| internal/infrastructure/output/json | JSON renderer | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/output/json/README.md) |
 | configs | Example configuration files | [README](/Users/fan/GolangProjects/deltascope/configs/README.md) |
 | pkg/deltascope | Stable public package surface | [README](/Users/fan/GolangProjects/deltascope/pkg/deltascope/README.md) |

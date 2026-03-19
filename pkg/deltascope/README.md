@@ -17,10 +17,11 @@ Stable public package surface for library consumers.
 - `Result`
 - `StatementResult`
 - `Finding`
+- `Level`
+  Public finding severity type for `blocker`, `warning`, and `notice`
 - `Summary`
 - `Location`
 - `Dialect`
-- `Level`
 - `Verdict`
 
 ## Dependencies

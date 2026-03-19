@@ -178,6 +178,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep policy loading inside the application service rather than accepting internal policy structs from callers
 - Why: this keeps the public surface narrow and stable while still covering the concrete v1 need for default-policy audits plus file-based overrides.
 
+## Decision 24: renderers consume domain report results, not public package results
+
+- Problem: Task 10 needs Markdown and JSON renderers, but wiring infrastructure to the public `pkg/deltascope` types would invert the intended dependency direction and couple renderers to the library wrapper.
+- Decision:
+  - implement renderers against `internal/domain/report.Result`
+  - keep the public package as a conversion layer above the application service
+  - let CLI and future adapters choose whether to call the internal service directly or the public package, but keep renderer dependencies pointed inward
+- Why: output formatting belongs in infrastructure, but it should still consume the core result contract rather than a higher-level wrapper. This preserves the DDD-leaning dependency direction while keeping the public API free to evolve as a thin facade.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

@@ -8,6 +8,7 @@ Infrastructure adapters for parser, config loading, and output rendering.
 |------|---------------|
 | doc.go | Declares the infrastructure package placeholder |
 | config/viper/loader.go | Loads YAML policy overrides through Viper |
+| output/ | Holds result rendering adapters |
 | parser/ | Holds parser adapter modules |
 
 ## Exports
@@ -16,7 +17,7 @@ Infrastructure adapters for parser, config loading, and output rendering.
 
 ## Dependencies
 - Upstream: `internal/application`
-- Downstream: `internal/infrastructure/config/viper`, `internal/infrastructure/parser`, external libraries and runtimes
+- Downstream: `internal/infrastructure/config/viper`, `internal/infrastructure/output`, `internal/infrastructure/parser`, external libraries and runtimes
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
