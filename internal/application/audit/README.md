@@ -30,7 +30,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 ## Dependencies
 - Upstream: future CLI and public audit entrypoints
-- Downstream: `internal/domain/report`, `internal/domain/rule`, `internal/domain/spec`, `internal/infrastructure/parser/tidb`, `github.com/pingcap/tidb/pkg/parser/ast`
+- Downstream: `internal/application/policy`, `internal/domain/report`, `internal/domain/rule`, `internal/domain/rule/ddl`, `internal/domain/rule/dml`, `internal/domain/spec`, `internal/infrastructure/parser/tidb`, `github.com/pingcap/tidb/pkg/parser/ast`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

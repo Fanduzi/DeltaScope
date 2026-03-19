@@ -20,11 +20,12 @@ Stable public package surface for library consumers.
 - `Summary`
 - `Location`
 - `Dialect`
+- `Level`
 - `Verdict`
 
 ## Dependencies
 - Upstream: external library consumers
-- Downstream: future application use cases
+- Downstream: `internal/application/audit`, `internal/domain/report`, `internal/domain/rule`, `internal/domain/spec`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

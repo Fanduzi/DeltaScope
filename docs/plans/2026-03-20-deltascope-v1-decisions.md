@@ -144,7 +144,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - record that handoff explicitly in this log and reconcile any later reviewer findings before merge
 - Why: the user asked for unattended overnight progress. Waiting idle on reviewer latency would waste the available development window without improving code quality.
 
-## Decision 20: Task 7 acceptance is by completed DDL batch, not by exhausting all planned DDL concerns
+## Decision 20: the public package owns its result contract
+
+- Problem: exposing `internal/domain/*` result types directly from `pkg/deltascope` would couple external consumers to internal domain refactors and make the public API less stable than it appears.
+- Decision:
+  - keep `pkg/deltascope` request/result types separate from the internal domain packages
+  - map internal report and finding types into public equivalents at the package boundary
+- Why: v1 is library-first. A small, stable public contract is more valuable than saving a thin mapping layer.
+
+## Decision 21: omitted public dialect defaults to MySQL
+
+- Problem: most first-pass consumers of the library and future CLI will target MySQL syntax, and forcing an explicit dialect on every inline audit call adds friction without adding much safety.
+- Decision:
+  - treat an empty public dialect as MySQL
+  - still reject unknown non-empty dialect values
+- Why: this keeps the happy path short for common local usage while preserving strict validation when callers do set a dialect explicitly.
+
+## Decision 22: Task 7 acceptance is by completed DDL batch, not by exhausting all planned DDL concerns
 
 - Problem: the original Task 7 prompt listed audit columns, column constraints, index constraints, and alter restrictions in the same batch, but the current extracted DDL model only supports a safe first slice of that space without brittle rule logic.
 - Decision:
@@ -153,7 +169,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - preserve this decision in the log so later reviewers and morning handoff can distinguish intentional batching from silent omission
 - Why: v1 still needs broader DDL coverage, but squeezing every planned concern into one early batch would either overfit the current extractor or lower rule quality. Recording the split makes the tradeoff explicit and keeps overnight development moving.
 
-## Decision 21: v1 public API stays request-driven and config-path based
+## Decision 23: v1 public API stays request-driven and config-path based
 
 - Problem: Task 9 needs a stable public library surface, but exposing internal policy/domain types would leak implementation details into the package that CLI, HTTP API, and MCP should all sit above.
 - Decision:

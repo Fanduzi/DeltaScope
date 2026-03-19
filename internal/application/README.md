@@ -15,7 +15,7 @@ Application services orchestrate use cases between interfaces, domain logic, and
 - Package boundary only; concrete exports live in child application modules
 
 ## Dependencies
-- Upstream: `internal/interfaces/*`, future public package entrypoints
+- Upstream: `internal/interfaces/*`, `pkg/deltascope`
 - Downstream: `internal/application/audit`, `internal/application/policy`, `internal/domain`, `internal/infrastructure`
 
 ## Update Rule
