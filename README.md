@@ -18,6 +18,7 @@ DeltaScope uses a DDD-leaning structure. Interfaces drive application use cases,
 | internal/domain | Core domain types and rules | [README](/Users/fan/GolangProjects/deltascope/internal/domain/README.md) |
 | internal/domain/spec | Normalized statement specifications | [README](/Users/fan/GolangProjects/deltascope/internal/domain/spec/README.md) |
 | internal/domain/rule | Rule findings and severity model | [README](/Users/fan/GolangProjects/deltascope/internal/domain/rule/README.md) |
+| internal/domain/rule/ddl | Tier-1 DDL rule catalog | [README](/Users/fan/GolangProjects/deltascope/internal/domain/rule/ddl/README.md) |
 | internal/domain/policy | Policy configuration model | [README](/Users/fan/GolangProjects/deltascope/internal/domain/policy/README.md) |
 | internal/domain/report | Audit result aggregation and verdict | [README](/Users/fan/GolangProjects/deltascope/internal/domain/report/README.md) |
 | internal/infrastructure | Infrastructure adapter layer | [README](/Users/fan/GolangProjects/deltascope/internal/infrastructure/README.md) |

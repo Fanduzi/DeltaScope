@@ -7,7 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
-| defaults.go | Defines the built-in v1 default rule policy |
+| defaults.go | Defines the built-in v1 default rule policy, including the first DDL and DML rule batch |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
 
 ## Exports

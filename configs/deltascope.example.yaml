@@ -11,6 +11,18 @@ rules:
     params:
       limit: 64
 
+  ddl.table.primary_key.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.table.primary_key.columns.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 1
+
   dml.where.require:
     enabled: true
     level: blocker

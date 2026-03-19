@@ -108,6 +108,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep report-flow integration coverage in `internal/application/audit`, not in domain/rule tests
 - Why: Task 7/8 will add many real rules, and rule ID correctness must be enforced by the engine boundary rather than by discipline alone.
 
+## Decision 16: first DDL rule batch stays focused on create-table structure
+
+- Problem: Task 7 could sprawl into many shallow checks, especially around audit columns and alter restrictions that need richer extracted metadata than v1 currently exposes.
+- Decision:
+  - implement the first DDL batch only for `CREATE TABLE` statements
+  - ship four high-signal rules first: table comment required, table name max length, primary key required, and primary key max column count
+  - keep audit-column and alter restrictions for later batches after the extractor captures enough shape safely
+- Why: this proves the rule architecture with meaningful coverage, stays aligned with `gAudit`'s core value, and avoids writing brittle rules against metadata the domain model does not yet expose.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

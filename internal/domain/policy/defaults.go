@@ -25,6 +25,20 @@ func Default() Policy {
 					"limit": 64,
 				},
 			},
+			"ddl.table.primary_key.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.table.primary_key.columns.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 1,
+				},
+			},
 			"dml.where.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
