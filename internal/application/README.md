@@ -7,12 +7,12 @@ Application services orchestrate use cases between interfaces, domain logic, and
 | File | Responsibility |
 |------|---------------|
 | doc.go | Declares the application package placeholder |
-| audit/ | Holds SQL parsing and later audit orchestration use cases |
+| audit/ | Holds SQL parsing and the main offline audit orchestration use case |
 | policy/load.go | Loads effective audit policy for application use cases |
 
 ## Exports
 
-- No exported API yet
+- Package boundary only; concrete exports live in child application modules
 
 ## Dependencies
 - Upstream: `internal/interfaces/*`, future public package entrypoints

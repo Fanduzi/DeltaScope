@@ -7,10 +7,20 @@ Stable public package surface for library consumers.
 | File | Responsibility |
 |------|---------------|
 | doc.go | Declares the public package placeholder |
+| audit.go | Exposes the stable public audit API and public result/request types |
+| audit_test.go | Verifies the public audit API with defaults, overrides, and multi-statement input |
 
 ## Exports
 
-- No exported API yet
+- `Audit(ctx, request)`
+- `Request`
+- `Result`
+- `StatementResult`
+- `Finding`
+- `Summary`
+- `Location`
+- `Dialect`
+- `Verdict`
 
 ## Dependencies
 - Upstream: external library consumers
