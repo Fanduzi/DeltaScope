@@ -135,22 +135,25 @@ func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 func extractInsert(stmt *ast.InsertStmt) *spec.DML {
 	join := tableRefsJoin(stmt.Table)
 	return &spec.DML{
-		InsertRows:   len(stmt.Lists),
-		IsReplace:    stmt.IsReplace,
-		IsSelectInto: stmt.Select != nil,
-		HasSubquery:  stmt.Select != nil || exprHasSubquery(stmt.WhereExpr()),
-		HasJoin:      joinExists(join),
-		HasJoinOn:    joinHasOn(join),
+		Operation:      spec.DMLOperationInsert,
+		InsertRows:     len(stmt.Lists),
+		IsReplace:      stmt.IsReplace,
+		IsInsertSelect: stmt.Select != nil,
+		HasOnDuplicate: len(stmt.OnDuplicate) > 0,
+		HasSubquery:    nodeHasSubquery(stmt),
+		HasJoin:        joinExists(join),
+		HasJoinOn:      joinHasOn(join),
 	}
 }
 
 func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
 	return &spec.DML{
+		Operation:   spec.DMLOperationUpdate,
 		HasWhere:    stmt.Where != nil,
 		HasLimit:    stmt.Limit != nil,
 		HasOrderBy:  stmt.Order != nil,
-		HasSubquery: exprHasSubquery(stmt.Where),
+		HasSubquery: nodeHasSubquery(stmt),
 		HasJoin:     joinExists(join),
 		HasJoinOn:   joinHasOn(join),
 	}
@@ -159,10 +162,11 @@ func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
 	return &spec.DML{
+		Operation:   spec.DMLOperationDelete,
 		HasWhere:    stmt.Where != nil,
 		HasLimit:    stmt.Limit != nil,
 		HasOrderBy:  stmt.Order != nil,
-		HasSubquery: exprHasSubquery(stmt.Where),
+		HasSubquery: nodeHasSubquery(stmt),
 		HasJoin:     joinExists(join),
 		HasJoinOn:   joinHasOn(join),
 	}
@@ -244,12 +248,12 @@ func joinExists(join *ast.Join) bool {
 	return join.Right != nil
 }
 
-func exprHasSubquery(expr ast.ExprNode) bool {
+func nodeHasSubquery(node ast.Node) bool {
 	found := false
-	if expr == nil {
+	if node == nil {
 		return false
 	}
-	expr.Accept(subqueryVisitor{found: &found})
+	node.Accept(subqueryVisitor{found: &found})
 	return found
 }
 

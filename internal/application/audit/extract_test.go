@@ -77,7 +77,7 @@ func TestExtractMapsAlterTable(t *testing.T) {
 }
 
 func TestExtractMapsInsert(t *testing.T) {
-	parsed, err := Parse("insert into users(id, name) values (1, 'a'), (2, 'b');", spec.DialectMySQL)
+	parsed, err := Parse("insert into users(id, name) values (1, 'a'), (2, 'b') on duplicate key update name = values(name);", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -91,8 +91,14 @@ func TestExtractMapsInsert(t *testing.T) {
 	if stmt.Kind != spec.KindDML || stmt.DML == nil {
 		t.Fatalf("expected dml statement to be populated")
 	}
+	if stmt.DML.Operation != spec.DMLOperationInsert {
+		t.Fatalf("expected insert operation, got %q", stmt.DML.Operation)
+	}
 	if stmt.DML.InsertRows != 2 {
 		t.Fatalf("expected 2 insert rows, got %d", stmt.DML.InsertRows)
+	}
+	if !stmt.DML.HasOnDuplicate {
+		t.Fatalf("expected insert to report has_on_duplicate=true")
 	}
 }
 
@@ -110,6 +116,9 @@ func TestExtractMapsUpdate(t *testing.T) {
 	stmt := statements[0]
 	if stmt.DML == nil {
 		t.Fatalf("expected dml metadata to be populated")
+	}
+	if stmt.DML.Operation != spec.DMLOperationUpdate {
+		t.Fatalf("expected update operation, got %q", stmt.DML.Operation)
 	}
 	if !stmt.DML.HasWhere {
 		t.Fatalf("expected update to have where")
@@ -133,6 +142,9 @@ func TestExtractMapsDelete(t *testing.T) {
 	stmt := statements[0]
 	if stmt.DML == nil {
 		t.Fatalf("expected dml metadata to be populated")
+	}
+	if stmt.DML.Operation != spec.DMLOperationDelete {
+		t.Fatalf("expected delete operation, got %q", stmt.DML.Operation)
 	}
 	if !stmt.DML.HasWhere {
 		t.Fatalf("expected delete to have where")
@@ -165,6 +177,26 @@ func TestExtractDistinguishesJoinWithoutOn(t *testing.T) {
 	}
 	if stmt.DML.HasJoinOn {
 		t.Fatalf("expected join without ON to report has_join_on=false")
+	}
+}
+
+func TestExtractMapsInsertSelect(t *testing.T) {
+	parsed, err := Parse("insert into users(id, name) select id, name from staging_users;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	stmt := statements[0]
+	if stmt.DML == nil {
+		t.Fatalf("expected dml metadata to be populated")
+	}
+	if !stmt.DML.IsInsertSelect {
+		t.Fatalf("expected insert-select metadata to be populated")
 	}
 }
 

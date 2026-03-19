@@ -117,6 +117,33 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep audit-column and alter restrictions for later batches after the extractor captures enough shape safely
 - Why: this proves the rule architecture with meaningful coverage, stays aligned with `gAudit`'s core value, and avoids writing brittle rules against metadata the domain model does not yet expose.
 
+## Decision 17: DML rules need explicit operation semantics
+
+- Problem: the original `spec.DML` shape exposed flags like `HasWhere` and `InsertRows`, but it did not explicitly identify whether a statement was an `INSERT`, `UPDATE`, or `DELETE`.
+- Decision:
+  - add `spec.DMLOperation`
+  - store the operation on every extracted DML statement
+  - use operation-aware applicability checks in DML rules instead of inferring behavior from incidental fields
+- Why: Tier-1 DML rules differ sharply between mutation statements and insert-family statements. Encoding the operation in the domain model is cleaner and safer than relying on heuristics such as `InsertRows > 0`.
+
+## Decision 18: rename insert-select metadata before the public API exists
+
+- Problem: the earlier `spec.DML.IsSelectInto` field name was misleading because it represented `INSERT ... SELECT`, not `SELECT ... INTO`.
+- Decision:
+  - rename the field to `IsInsertSelect`
+  - add `HasOnDuplicate`
+  - keep subquery detection statement-oriented while reserving `IsInsertSelect` for the dedicated insert-select rule
+- Why: this is still an internal domain model, so fixing the naming now avoids leaking a confusing term into the eventual public API and output contracts.
+
+## Decision 19: overnight flow should not block on asynchronous reviewer turnaround
+
+- Problem: the overnight implementation run still follows the subagent-driven review model, but reviewer turnaround is occasionally slower than the coding loop and should not stall independent next tasks for hours.
+- Decision:
+  - keep formal reviewer checkpoints in place
+  - allow the controller to continue into the next independent task after local verification when the previous task has no known blocking defect
+  - record that handoff explicitly in this log and reconcile any later reviewer findings before merge
+- Why: the user asked for unattended overnight progress. Waiting idle on reviewer latency would waste the available development window without improving code quality.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

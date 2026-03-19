@@ -9,7 +9,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement.go | Defines the top-level normalized statement model |
 | statement_test.go | Verifies typed statement metadata behavior |
 | ddl.go | Defines DDL-oriented specification types |
-| dml.go | Defines DML-oriented specification types |
+| dml.go | Defines DML-oriented specification types, including operation metadata for rule applicability |
 
 ## Exports
 
@@ -23,6 +23,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Index`
 - `Alter`
 - `DML`
+- `DMLOperation`
 
 ## Dependencies
 - Upstream: application extraction and domain rule evaluation

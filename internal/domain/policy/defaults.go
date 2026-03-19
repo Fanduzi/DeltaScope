@@ -46,6 +46,62 @@ func Default() Policy {
 					"required": true,
 				},
 			},
+			"dml.limit.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"dml.order_by.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"dml.subquery.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"dml.join.on.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"dml.insert.rows.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 100,
+				},
+			},
+			"dml.replace.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"dml.insert.select.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"dml.insert.on_duplicate.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 		},
 	}
 }

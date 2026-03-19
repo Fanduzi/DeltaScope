@@ -5,15 +5,27 @@
 // note: if this file changes, update this header and module README.md.
 package spec
 
+// DMLOperation identifies the normalized DML statement operation.
+type DMLOperation string
+
+const (
+	DMLOperationUnknown DMLOperation = "unknown"
+	DMLOperationInsert  DMLOperation = "insert"
+	DMLOperationUpdate  DMLOperation = "update"
+	DMLOperationDelete  DMLOperation = "delete"
+)
+
 // DML contains the structural metadata extracted from a DML statement.
 type DML struct {
-	HasWhere     bool `json:"has_where"`
-	HasLimit     bool `json:"has_limit"`
-	HasOrderBy   bool `json:"has_order_by"`
-	HasSubquery  bool `json:"has_subquery"`
-	HasJoin      bool `json:"has_join"`
-	HasJoinOn    bool `json:"has_join_on"`
-	InsertRows   int  `json:"insert_rows,omitempty"`
-	IsReplace    bool `json:"is_replace,omitempty"`
-	IsSelectInto bool `json:"is_select_into,omitempty"`
+	Operation      DMLOperation `json:"operation"`
+	HasWhere       bool         `json:"has_where"`
+	HasLimit       bool         `json:"has_limit"`
+	HasOrderBy     bool         `json:"has_order_by"`
+	HasSubquery    bool         `json:"has_subquery"`
+	HasJoin        bool         `json:"has_join"`
+	HasJoinOn      bool         `json:"has_join_on"`
+	InsertRows     int          `json:"insert_rows,omitempty"`
+	IsReplace      bool         `json:"is_replace,omitempty"`
+	IsInsertSelect bool         `json:"is_insert_select,omitempty"`
+	HasOnDuplicate bool         `json:"has_on_duplicate,omitempty"`
 }
