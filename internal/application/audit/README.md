@@ -8,10 +8,13 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 |------|---------------|
 | parse.go | Builds application-owned parsed statements from infrastructure-backed parser adapters |
 | parse_test.go | Verifies that application parsing hides parser-specific AST details |
+| extract.go | Converts parsed statements into first-pass domain `Statement` values |
+| extract_test.go | Verifies representative DDL and DML extraction behavior |
 
 ## Exports
 
 - `Parse(sql string, dialect spec.Dialect)`
+- `Extract(parsed ParsedSQL)`
 - `ParsedStatement`
 - `ParsedSQL`
 

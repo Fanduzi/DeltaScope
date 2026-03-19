@@ -24,7 +24,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `DML`
 
 ## Dependencies
-- Upstream: parser extraction and domain rule evaluation
+- Upstream: application extraction and domain rule evaluation
 - Downstream: none inside the domain core
 
 ## Update Rule

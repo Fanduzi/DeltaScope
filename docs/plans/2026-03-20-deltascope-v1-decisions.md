@@ -78,6 +78,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep the AST node as an unexported field for upcoming extraction work
 - Why: Task 5 still needs access to raw parser nodes, but the DDD-leaning boundary should not expose infrastructure result types or AST symbols outside the application flow.
 
+## Decision 13: extraction stays in `internal/application/audit`
+
+- Problem: the original Task 5 plan listed `internal/infrastructure/parser/tidb/extractor.go`, but Task 4 had already moved AST-bearing parsed statements behind an application-owned contract.
+- Decision:
+  - implement extraction in `internal/application/audit`
+  - keep infrastructure limited to parsing only
+  - avoid a second extractor layer in `internal/infrastructure/parser/tidb`
+- Why: extraction consumes hidden AST carried by application-owned parsed statements and produces domain `Statement` values. Putting it in infrastructure would duplicate boundary work and weaken the application/domain seam.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
