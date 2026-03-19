@@ -6,7 +6,7 @@ Process entrypoint for the `deltascope` CLI.
 
 | File | Responsibility |
 |------|---------------|
-| main.go | Starts the CLI adapter package |
+| main.go | Starts the Cobra-based CLI adapter package |
 
 ## Exports
 

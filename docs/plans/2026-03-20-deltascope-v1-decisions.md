@@ -195,6 +195,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - map internal rule levels into that type at the package boundary
 - Why: this keeps the library API more explicit and stable without leaking the internal domain package itself.
 
+## Decision 26: `config init` renders YAML from the default policy model
+
+- Problem: Task 11 needs `deltascope config init` to emit a usable YAML template, but the CLI package cannot reliably embed or read `configs/deltascope.example.yaml` by relative filesystem path at runtime.
+- Decision:
+  - generate the template from `internal/domain/policy.Default()`
+  - render the rules in deterministic sorted order
+- Why: this keeps the command self-contained, avoids runtime path assumptions, and guarantees the emitted template stays aligned with the real default rule set.
+
+## Decision 27: audit threshold failures return exit code 1 without extra stderr noise
+
+- Problem: in CLI usage, a non-zero exit caused by findings reaching `--fail-on` is a normal audit outcome, not a tool/runtime failure. Emitting an extra stderr error line would make scripts and agents harder to integrate cleanly.
+- Decision:
+  - keep the rendered audit result on stdout
+  - return exit code `1` when the configured finding threshold is reached
+  - avoid printing an additional stderr error for that case
+- Why: this preserves the agreed exit-code contract while keeping successful audit output machine-friendly for automation.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
