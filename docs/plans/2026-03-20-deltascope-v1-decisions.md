@@ -69,6 +69,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - accept the module `go` version moving to `1.25`
 - Why: this keeps DeltaScope aligned with the current parser module boundary rather than copying older TiDB integration details from `gAudit`.
 
+## Decision 12: application-owned parse result
+
+- Problem: returning the infrastructure parser result directly from `internal/application/audit` let TiDB AST-bearing types leak through the application contract.
+- Decision:
+  - keep raw AST nodes inside the application package only
+  - expose `ParsedSQL` and `ParsedStatement` as application-owned types
+  - keep the AST node as an unexported field for upcoming extraction work
+- Why: Task 5 still needs access to raw parser nodes, but the DDD-leaning boundary should not expose infrastructure result types or AST symbols outside the application flow.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
