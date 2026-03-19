@@ -18,6 +18,7 @@
 - `6a80dac` `feat: add public audit API`
 - `ea84b71` `feat: add audit result renderers`
 - `2440bca` `feat: add deltascope cobra cli`
+- `a8f5cc1` `fix: tighten cli config error handling`
 - `091f428` `docs: finalize v1 usage and verification`
 - `f933f4b` `docs: finalize v1 README and examples`
 
