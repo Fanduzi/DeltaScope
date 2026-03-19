@@ -54,6 +54,21 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
 - Decision: create the Viper instance with `viper.NewWithOptions(viper.KeyDelimiter("::"))` so dotted rule IDs remain literal map keys.
 - Why: the config design is intentionally rule-ID keyed. Preserving dotted IDs is more important than using Viper's default nested key behavior in this loader.
 
+## Decision 10: kind modeling stays in `statement.go`
+
+- Problem: Task 4 originally mentioned `internal/domain/spec/kind.go`, but Task 2 follow-up had already introduced `Kind` and `Dialect` in `statement.go`.
+- Decision: keep `Kind` and `Dialect` in `statement.go` and avoid creating a duplicate `kind.go`.
+- Why: creating a second file for the same types would add churn without improving ownership, and Task 4 only needs to consume the existing domain types for classification.
+
+## Decision 11: parser module and Go version
+
+- Problem: the current latest `github.com/pingcap/tidb/pkg/parser` module requires Go 1.25, and its driver import path uses `pkg/parser/test_driver` instead of the older `pkg/types/parser_driver` path seen in older codebases.
+- Decision:
+  - depend on `github.com/pingcap/tidb/pkg/parser` directly
+  - import `github.com/pingcap/tidb/pkg/parser/test_driver`
+  - accept the module `go` version moving to `1.25`
+- Why: this keeps DeltaScope aligned with the current parser module boundary rather than copying older TiDB integration details from `gAudit`.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
