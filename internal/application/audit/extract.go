@@ -32,7 +32,9 @@ func extractStatement(dialect spec.Dialect, warnings []string, parsed ParsedStat
 		Dialect:       dialect,
 		RawSQL:        parsed.RawSQL,
 		NormalizedSQL: normalizeSQL(parsed.RawSQL),
-		Warnings:      append([]string(nil), warnings...),
+	}
+	if parsed.Kind == spec.KindUnknown {
+		statement.Warnings = append([]string(nil), warnings...)
 	}
 
 	switch node := parsed.node.(type) {
@@ -47,7 +49,7 @@ func extractStatement(dialect spec.Dialect, warnings []string, parsed ParsedStat
 	case *ast.DeleteStmt:
 		statement.DML = extractDelete(node)
 	default:
-		return spec.Statement{}, fmt.Errorf("unsupported parsed statement kind %q", parsed.Kind)
+		statement.Warnings = append(statement.Warnings, fmt.Sprintf("unsupported parsed statement kind %q", parsed.Kind))
 	}
 
 	return statement, nil
@@ -62,9 +64,10 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		Table: &spec.Table{
 			Name: stmt.Table.Name.L,
 		},
-		Columns: make([]spec.Column, 0, len(stmt.Cols)),
-		Indexes: make([]spec.Index, 0, len(stmt.Constraints)),
-		Options: make(map[string]string),
+		Columns:     make([]spec.Column, 0, len(stmt.Cols)),
+		Indexes:     make([]spec.Index, 0, len(stmt.Constraints)),
+		Constraints: make([]spec.Constraint, 0),
+		Options:     make(map[string]string),
 	}
 
 	for _, col := range stmt.Cols {
@@ -76,10 +79,24 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	}
 
 	for _, c := range stmt.Constraints {
-		ddl.Indexes = append(ddl.Indexes, spec.Index{
-			Name:    normalizeConstraintName(c),
-			Columns: extractIndexColumns(c.Keys),
-		})
+		switch c.Tp {
+		case ast.ConstraintPrimaryKey:
+			ddl.PrimaryKey = &spec.Index{
+				Name:    normalizeConstraintName(c),
+				Columns: extractIndexColumns(c.Keys),
+			}
+		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
+			ddl.Indexes = append(ddl.Indexes, spec.Index{
+				Name:    normalizeConstraintName(c),
+				Columns: extractIndexColumns(c.Keys),
+			})
+		default:
+			ddl.Constraints = append(ddl.Constraints, spec.Constraint{
+				Type:    constraintTypeName(c.Tp),
+				Name:    normalizeConstraintName(c),
+				Columns: extractIndexColumns(c.Keys),
+			})
+		}
 	}
 
 	for _, option := range stmt.Options {
@@ -116,32 +133,38 @@ func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 }
 
 func extractInsert(stmt *ast.InsertStmt) *spec.DML {
+	join := tableRefsJoin(stmt.Table)
 	return &spec.DML{
 		InsertRows:   len(stmt.Lists),
 		IsReplace:    stmt.IsReplace,
 		IsSelectInto: stmt.Select != nil,
 		HasSubquery:  stmt.Select != nil || exprHasSubquery(stmt.WhereExpr()),
-		HasJoinOn:    joinHasOn(tableRefsJoin(stmt.Table)),
+		HasJoin:      joinExists(join),
+		HasJoinOn:    joinHasOn(join),
 	}
 }
 
 func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
+	join := tableRefsJoin(stmt.TableRefs)
 	return &spec.DML{
 		HasWhere:    stmt.Where != nil,
 		HasLimit:    stmt.Limit != nil,
 		HasOrderBy:  stmt.Order != nil,
 		HasSubquery: exprHasSubquery(stmt.Where),
-		HasJoinOn:   joinHasOn(tableRefsJoin(stmt.TableRefs)),
+		HasJoin:     joinExists(join),
+		HasJoinOn:   joinHasOn(join),
 	}
 }
 
 func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
+	join := tableRefsJoin(stmt.TableRefs)
 	return &spec.DML{
 		HasWhere:    stmt.Where != nil,
 		HasLimit:    stmt.Limit != nil,
 		HasOrderBy:  stmt.Order != nil,
 		HasSubquery: exprHasSubquery(stmt.Where),
-		HasJoinOn:   joinHasOn(tableRefsJoin(stmt.TableRefs)),
+		HasJoin:     joinExists(join),
+		HasJoinOn:   joinHasOn(join),
 	}
 }
 
@@ -212,6 +235,13 @@ func joinHasOn(join *ast.Join) bool {
 		return true
 	}
 	return false
+}
+
+func joinExists(join *ast.Join) bool {
+	if join == nil {
+		return false
+	}
+	return join.Right != nil
 }
 
 func exprHasSubquery(expr ast.ExprNode) bool {

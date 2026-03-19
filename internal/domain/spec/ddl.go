@@ -7,11 +7,13 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	Table   *Table            `json:"table,omitempty"`
-	Columns []Column          `json:"columns,omitempty"`
-	Indexes []Index           `json:"indexes,omitempty"`
-	Alter   []Alter           `json:"alter,omitempty"`
-	Options map[string]string `json:"options,omitempty"`
+	Table       *Table            `json:"table,omitempty"`
+	Columns     []Column          `json:"columns,omitempty"`
+	PrimaryKey  *Index            `json:"primary_key,omitempty"`
+	Indexes     []Index           `json:"indexes,omitempty"`
+	Constraints []Constraint      `json:"constraints,omitempty"`
+	Alter       []Alter           `json:"alter,omitempty"`
+	Options     map[string]string `json:"options,omitempty"`
 }
 
 // Table describes a table-level object.
@@ -30,6 +32,13 @@ type Column struct {
 // Index describes an index declaration.
 type Index struct {
 	Name    string   `json:"name"`
+	Columns []string `json:"columns,omitempty"`
+}
+
+// Constraint describes a non-index table constraint worth preserving for later rules.
+type Constraint struct {
+	Type    string   `json:"type"`
+	Name    string   `json:"name,omitempty"`
 	Columns []string `json:"columns,omitempty"`
 }
 

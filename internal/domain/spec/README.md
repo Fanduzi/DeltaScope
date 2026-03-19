@@ -19,6 +19,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `DDL`
 - `Table`
 - `Column`
+- `Constraint`
 - `Index`
 - `Alter`
 - `DML`

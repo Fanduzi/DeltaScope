@@ -87,6 +87,16 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - avoid a second extractor layer in `internal/infrastructure/parser/tidb`
 - Why: extraction consumes hidden AST carried by application-owned parsed statements and produces domain `Statement` values. Putting it in infrastructure would duplicate boundary work and weaken the application/domain seam.
 
+## Decision 14: first-pass extraction keeps DDL constraints and DML join shape separate
+
+- Problem: a naive first-pass extractor mislabeled primary keys and other constraints as generic indexes and could not distinguish "no join" from "join without ON".
+- Decision:
+  - model `PrimaryKey` separately from `Indexes`
+  - preserve other non-index constraints in `DDL.Constraints`
+  - add `HasJoin` alongside `HasJoinOn`
+  - allow unknown-but-parseable statements to flow through extraction without hard failure
+- Why: upcoming DDL/DML rules need these distinctions, and the extraction layer should not hard-code policy decisions by rejecting parseable statements too early.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

@@ -42,8 +42,14 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	if len(stmt.DDL.Columns) != 2 {
 		t.Fatalf("expected 2 columns, got %d", len(stmt.DDL.Columns))
 	}
-	if len(stmt.DDL.Indexes) != 2 {
-		t.Fatalf("expected 2 indexes, got %d", len(stmt.DDL.Indexes))
+	if stmt.DDL.PrimaryKey == nil {
+		t.Fatalf("expected primary key metadata to be populated")
+	}
+	if stmt.DDL.PrimaryKey.Name != "primary" {
+		t.Fatalf("expected primary key name primary, got %q", stmt.DDL.PrimaryKey.Name)
+	}
+	if len(stmt.DDL.Indexes) != 1 {
+		t.Fatalf("expected 1 secondary index, got %d", len(stmt.DDL.Indexes))
 	}
 }
 
@@ -108,6 +114,9 @@ func TestExtractMapsUpdate(t *testing.T) {
 	if !stmt.DML.HasWhere {
 		t.Fatalf("expected update to have where")
 	}
+	if stmt.DML.HasJoin {
+		t.Fatalf("expected single-table update to report no join")
+	}
 }
 
 func TestExtractMapsDelete(t *testing.T) {
@@ -130,5 +139,53 @@ func TestExtractMapsDelete(t *testing.T) {
 	}
 	if !stmt.DML.HasLimit {
 		t.Fatalf("expected delete to have limit")
+	}
+	if stmt.DML.HasJoin {
+		t.Fatalf("expected single-table delete to report no join")
+	}
+}
+
+func TestExtractDistinguishesJoinWithoutOn(t *testing.T) {
+	parsed, err := Parse("update users u join accounts a set u.name = 'c' where u.id = a.user_id;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	stmt := statements[0]
+	if stmt.DML == nil {
+		t.Fatalf("expected dml metadata to be populated")
+	}
+	if !stmt.DML.HasJoin {
+		t.Fatalf("expected update join to report has_join=true")
+	}
+	if stmt.DML.HasJoinOn {
+		t.Fatalf("expected join without ON to report has_join_on=false")
+	}
+}
+
+func TestExtractLeavesUnknownStatementsAvailableForLaterLayers(t *testing.T) {
+	parsed, err := Parse("select 1;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("expected unknown-but-parseable statement to survive extraction, got %v", err)
+	}
+
+	if len(statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(statements))
+	}
+	if statements[0].Kind != spec.KindUnknown {
+		t.Fatalf("expected unknown kind, got %q", statements[0].Kind)
+	}
+	if statements[0].DDL != nil || statements[0].DML != nil {
+		t.Fatalf("expected unknown statement to keep empty DDL/DML substructures")
 	}
 }
