@@ -2,6 +2,84 @@
 
 DeltaScope is an offline SQL review engine for MySQL and TiDB. The first release focuses on library and CLI usage for DDL and DML auditing without requiring a live database connection.
 
+## What It Does
+
+- audits DDL and DML for MySQL and TiDB
+- runs fully offline against SQL text plus policy config
+- returns `blocker`, `warning`, and `notice` findings with a final verdict of `reject`, `review`, or `pass`
+- supports both a stable Go package API and the `deltascope` CLI
+
+## Install And Run
+
+```bash
+go test ./...
+go run ./cmd/deltascope version
+```
+
+Audit inline SQL:
+
+```bash
+go run ./cmd/deltascope audit --sql "delete from users"
+```
+
+Audit a file:
+
+```bash
+go run ./cmd/deltascope audit --file ./change.sql
+```
+
+Audit from stdin:
+
+```bash
+cat ./change.sql | go run ./cmd/deltascope audit
+```
+
+Use JSON output for agents and scripts:
+
+```bash
+go run ./cmd/deltascope audit --sql "delete from users" --format json
+```
+
+Control the non-zero threshold:
+
+```bash
+go run ./cmd/deltascope audit --sql "create table users (id bigint, primary key (id))" --fail-on warning
+```
+
+Exit codes:
+
+- `0`: audit finished and did not reach the configured failure threshold
+- `1`: audit finished, but findings reached `--fail-on`
+- `2`: user input error, such as invalid flags or unreadable config/file input
+- `3`: internal/runtime error
+
+## Configuration
+
+Generate a usable template:
+
+```bash
+go run ./cmd/deltascope config init > deltascope.yaml
+```
+
+Use a policy file:
+
+```bash
+go run ./cmd/deltascope audit --config ./deltascope.yaml --sql "update users set name = 'delta'"
+```
+
+The v1 config model is rule-ID keyed YAML. See [deltascope.example.yaml](/Users/fan/GolangProjects/deltascope/configs/deltascope.example.yaml) for the full baseline.
+
+## Library Usage
+
+```go
+result, err := deltascope.Audit(ctx, deltascope.Request{
+    SQL:     "delete from users",
+    Dialect: deltascope.DialectMySQL,
+})
+```
+
+The public API lives in [pkg/deltascope](/Users/fan/GolangProjects/deltascope/pkg/deltascope/README.md).
+
 ## Architecture
 
 DeltaScope uses a DDD-leaning structure. Interfaces drive application use cases, application orchestrates domain behavior, and infrastructure provides parser, config, and output adapters. The core review model is built around normalized statement specifications and rule findings.

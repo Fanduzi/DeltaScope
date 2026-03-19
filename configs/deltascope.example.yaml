@@ -11,19 +11,37 @@ rules:
     params:
       limit: 64
 
-  ddl.table.primary_key.require:
-    enabled: true
-    level: blocker
-    params:
-      required: true
-
   ddl.table.primary_key.columns.max_count:
     enabled: true
     level: warning
     params:
       limit: 1
 
-  dml.where.require:
+  ddl.table.primary_key.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  dml.insert.on_duplicate.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  dml.insert.rows.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 100
+
+  dml.insert.select.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  dml.join.on.require:
     enabled: true
     level: blocker
     params:
@@ -41,38 +59,20 @@ rules:
     params:
       forbid: true
 
-  dml.subquery.forbid:
-    enabled: true
-    level: blocker
-    params:
-      forbid: true
-
-  dml.join.on.require:
-    enabled: true
-    level: blocker
-    params:
-      required: true
-
-  dml.insert.rows.max_count:
-    enabled: true
-    level: warning
-    params:
-      limit: 100
-
   dml.replace.forbid:
     enabled: true
     level: blocker
     params:
       forbid: true
 
-  dml.insert.select.forbid:
+  dml.subquery.forbid:
     enabled: true
     level: blocker
     params:
       forbid: true
 
-  dml.insert.on_duplicate.forbid:
+  dml.where.require:
     enabled: true
     level: blocker
     params:
-      forbid: true
+      required: true

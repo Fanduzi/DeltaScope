@@ -20,7 +20,7 @@ CLI adapter layer for the DeltaScope application.
 
 ## Dependencies
 - Upstream: `cmd/deltascope`
-- Downstream: `internal/application/audit`, `internal/domain/policy`, `internal/domain/spec`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `github.com/spf13/cobra`
+- Downstream: `internal/application/audit`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `github.com/spf13/cobra`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

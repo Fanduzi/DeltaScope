@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	viperconfig "github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper"
 )
 
 func TestAuditCommandSupportsSQLJSONOutput(t *testing.T) {
@@ -102,6 +104,35 @@ func TestAuditCommandHonorsFailOnThreshold(t *testing.T) {
 	}
 }
 
+func TestAuditCommandSupportsConfigOverride(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "policy.yaml")
+	config := "rules:\n  dml.where.require:\n    enabled: false\n    level: blocker\n    params:\n      required: true\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--config", configPath},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 after disabling where rule, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "Verdict: `pass`") {
+		t.Fatalf("expected pass verdict, got %s", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+}
+
 func TestAuditCommandRejectsUnknownFailOnValue(t *testing.T) {
 	stderr := &strings.Builder{}
 
@@ -137,6 +168,19 @@ func TestConfigInitWritesUsableYAML(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "dml.where.require") {
 		t.Fatalf("expected rendered config template, got %s", stdout.String())
+	}
+
+	configPath := filepath.Join(t.TempDir(), "generated.yaml")
+	if err := os.WriteFile(configPath, []byte(stdout.String()), 0o600); err != nil {
+		t.Fatalf("write generated config: %v", err)
+	}
+
+	cfg, err := viperconfig.LoadPolicy(configPath)
+	if err != nil {
+		t.Fatalf("load generated config: %v", err)
+	}
+	if !cfg.Rules["dml.where.require"].Enabled {
+		t.Fatalf("expected generated config to preserve dml.where.require")
 	}
 }
 

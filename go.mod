@@ -7,7 +7,6 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260319162650-7d7a2372f4ec
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.21.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
