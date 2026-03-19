@@ -5,6 +5,8 @@
 // note: if this file changes, update this header and module README.md.
 package rule
 
+import "errors"
+
 // Level describes how severe a finding is.
 type Level string
 
@@ -31,3 +33,12 @@ type Location struct {
 	Line   int `json:"line,omitempty"`
 	Column int `json:"column,omitempty"`
 }
+
+var (
+	// ErrEmptyRuleID indicates a rule was registered without an ID.
+	ErrEmptyRuleID = errors.New("rule ID must not be empty")
+	// ErrDuplicateRuleID indicates a rule ID was registered more than once.
+	ErrDuplicateRuleID = errors.New("duplicate rule ID")
+	// ErrRuleIDMismatch indicates a rule emitted a finding with a conflicting rule ID.
+	ErrRuleIDMismatch = errors.New("finding rule ID does not match registered rule ID")
+)

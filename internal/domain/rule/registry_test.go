@@ -1,6 +1,6 @@
 // Package rule_test verifies rule registration and evaluation behavior.
-// input: synthetic statements, test rules, and report aggregation scenarios
-// output: test coverage for deterministic rule execution and finding collection
+// input: synthetic statements and test rule implementations
+// output: test coverage for deterministic rule execution, ID enforcement, and finding collection
 // pos: domain rule engine test coverage
 // note: if this file changes, update this header and module README.md.
 package rule_test
@@ -8,8 +8,6 @@ package rule_test
 import (
 	"testing"
 
-	"github.com/Fanduzi/DeltaScope/internal/application/audit"
-	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -67,19 +65,23 @@ func TestRegistryEvaluatesStatementRulesDeterministically(t *testing.T) {
 	registry := rule.NewRegistry()
 	evaluated := 0
 
-	registry.RegisterStatement(testStatementRule{
+	if err := registry.RegisterStatement(testStatementRule{
 		id:        "ddl.table.comment.require",
 		kind:      spec.KindDDL,
 		level:     rule.LevelWarning,
 		message:   "table comment missing",
 		evaluated: &evaluated,
-	})
-	registry.RegisterStatement(testStatementRule{
+	}); err != nil {
+		t.Fatalf("register first statement rule: %v", err)
+	}
+	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
 		kind:    spec.KindDML,
 		level:   rule.LevelBlocker,
 		message: "where clause required",
-	})
+	}); err != nil {
+		t.Fatalf("register second statement rule: %v", err)
+	}
 
 	findings, err := registry.EvaluateStatement(spec.Statement{Kind: spec.KindDDL})
 	if err != nil {
@@ -99,11 +101,13 @@ func TestRegistryEvaluatesStatementRulesDeterministically(t *testing.T) {
 
 func TestRegistryCollectsGlobalRuleFindings(t *testing.T) {
 	registry := rule.NewRegistry()
-	registry.RegisterGlobal(testGlobalRule{
+	if err := registry.RegisterGlobal(testGlobalRule{
 		id:      "audit.batch.notice",
 		level:   rule.LevelNotice,
 		message: "batch processed",
-	})
+	}); err != nil {
+		t.Fatalf("register global rule: %v", err)
+	}
 
 	findings, err := registry.EvaluateGlobal([]spec.Statement{
 		{Kind: spec.KindDDL},
@@ -121,41 +125,110 @@ func TestRegistryCollectsGlobalRuleFindings(t *testing.T) {
 	}
 }
 
-func TestEvaluateProducesReportFlowOutput(t *testing.T) {
+func TestRegistryRejectsEmptyRuleID(t *testing.T) {
 	registry := rule.NewRegistry()
-	registry.RegisterStatement(testStatementRule{
+	err := registry.RegisterStatement(testStatementRule{
+		id:      "",
+		kind:    spec.KindDML,
+		level:   rule.LevelBlocker,
+		message: "where clause required",
+	})
+	if err == nil {
+		t.Fatal("expected empty statement rule ID to be rejected")
+	}
+}
+
+func TestRegistryRejectsDuplicateRuleIDs(t *testing.T) {
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(testStatementRule{
+		id:      "dml.where.require",
+		kind:    spec.KindDML,
+		level:   rule.LevelBlocker,
+		message: "where clause required",
+	}); err != nil {
+		t.Fatalf("register first statement rule: %v", err)
+	}
+
+	err := registry.RegisterStatement(testStatementRule{
+		id:      "dml.where.require",
+		kind:    spec.KindDML,
+		level:   rule.LevelBlocker,
+		message: "duplicate",
+	})
+	if err == nil {
+		t.Fatal("expected duplicate statement rule ID to be rejected")
+	}
+}
+
+func TestRegistryStampsEmptyFindingRuleID(t *testing.T) {
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(testStatementRule{
+		id:      "dml.where.require",
+		kind:    spec.KindDML,
+		level:   rule.LevelBlocker,
+		message: "where clause required",
+	}); err != nil {
+		t.Fatalf("register statement rule: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(spec.Statement{Kind: spec.KindDML})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != "dml.where.require" {
+		t.Fatalf("expected rule ID to be stamped from registry, got %+v", findings[0])
+	}
+}
+
+func TestRegistryRejectsMismatchedFindingRuleID(t *testing.T) {
+	registry := rule.NewRegistry()
+	err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
 		kind:    spec.KindDML,
 		level:   rule.LevelBlocker,
 		message: "where clause required",
 	})
-	registry.RegisterGlobal(testGlobalRule{
-		id:      "audit.batch.notice",
-		level:   rule.LevelNotice,
-		message: "batch processed",
-	})
-
-	result, err := audit.EvaluateStatements(registry, []spec.Statement{
-		{
-			Kind:          spec.KindDML,
-			RawSQL:        "delete from users",
-			NormalizedSQL: "delete from users",
-		},
-	})
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("register statement rule: %v", err)
 	}
 
-	if result.Verdict != report.VerdictReject {
-		t.Fatalf("expected reject verdict, got %q", result.Verdict)
+	badRule := testStatementRule{
+		id:      "ddl.table.comment.require",
+		kind:    spec.KindDDL,
+		level:   rule.LevelWarning,
+		message: "table comment missing",
 	}
-	if len(result.Statements) != 1 {
-		t.Fatalf("expected 1 statement result, got %d", len(result.Statements))
+	registry = rule.NewRegistry()
+	if err := registry.RegisterStatement(badMismatchedRule{inner: badRule, findingRuleID: "wrong.id"}); err != nil {
+		t.Fatalf("register mismatched rule: %v", err)
 	}
-	if len(result.Statements[0].Findings) != 1 {
-		t.Fatalf("expected 1 statement finding, got %d", len(result.Statements[0].Findings))
+
+	_, err = registry.EvaluateStatement(spec.Statement{Kind: spec.KindDDL})
+	if err == nil {
+		t.Fatal("expected mismatched finding rule ID to fail evaluation")
 	}
-	if len(result.GlobalFindings) != 1 {
-		t.Fatalf("expected 1 global finding, got %d", len(result.GlobalFindings))
-	}
+}
+
+type badMismatchedRule struct {
+	inner         testStatementRule
+	findingRuleID string
+}
+
+func (r badMismatchedRule) ID() string {
+	return r.inner.ID()
+}
+
+func (r badMismatchedRule) AppliesTo(statement spec.Statement) bool {
+	return r.inner.AppliesTo(statement)
+}
+
+func (r badMismatchedRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	return []rule.Finding{{
+		RuleID:  r.findingRuleID,
+		Level:   r.inner.level,
+		Message: r.inner.message,
+	}}, nil
 }

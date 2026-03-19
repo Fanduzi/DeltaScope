@@ -97,6 +97,17 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - allow unknown-but-parseable statements to flow through extraction without hard failure
 - Why: upcoming DDL/DML rules need these distinctions, and the extraction layer should not hard-code policy decisions by rejecting parseable statements too early.
 
+## Decision 15: registry enforces rule IDs
+
+- Problem: rule IDs are central to config and output, but a naive registry can treat them as advisory and allow duplicate or mismatched identifiers to slip through.
+- Decision:
+  - reject empty rule IDs at registration time
+  - reject duplicate statement/global rule IDs at registration time
+  - stamp empty finding rule IDs from the registered rule ID
+  - reject findings that claim a different rule ID than the registered rule
+  - keep report-flow integration coverage in `internal/application/audit`, not in domain/rule tests
+- Why: Task 7/8 will add many real rules, and rule ID correctness must be enforced by the engine boundary rather than by discipline alone.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

@@ -7,7 +7,8 @@ Rule contracts, registration, and finding types for audit evaluation.
 | File | Responsibility |
 |------|---------------|
 | rule.go | Defines finding severity and finding metadata |
-| registry.go | Registers statement/global rules and evaluates them in deterministic order |
+| registry.go | Registers statement/global rules, enforces rule IDs, and evaluates them deterministically |
+| registry_test.go | Verifies registry behavior, ID enforcement, and deterministic execution |
 
 ## Exports
 
@@ -18,6 +19,8 @@ Rule contracts, registration, and finding types for audit evaluation.
 - `GlobalRule`
 - `Registry`
 - `NewRegistry()`
+- `RegisterStatement(rule StatementRule) error`
+- `RegisterGlobal(rule GlobalRule) error`
 
 ## Dependencies
 - Upstream: `internal/application/audit`, domain report aggregation, and future rule implementations
