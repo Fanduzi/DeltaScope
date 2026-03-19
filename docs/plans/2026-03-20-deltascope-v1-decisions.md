@@ -187,6 +187,14 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - let CLI and future adapters choose whether to call the internal service directly or the public package, but keep renderer dependencies pointed inward
 - Why: output formatting belongs in infrastructure, but it should still consume the core result contract rather than a higher-level wrapper. This preserves the DDD-leaning dependency direction while keeping the public API free to evolve as a thin facade.
 
+## Decision 25: public finding levels are typed, not free-form strings
+
+- Problem: Task 9 originally exposed finding severities as raw strings in `pkg/deltascope`, which weakened the public contract even though the domain already had a closed severity set.
+- Decision:
+  - expose a public `Level` type in `pkg/deltascope`
+  - map internal rule levels into that type at the package boundary
+- Why: this keeps the library API more explicit and stable without leaking the internal domain package itself.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
