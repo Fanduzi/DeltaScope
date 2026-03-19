@@ -44,7 +44,7 @@ func renderExampleConfig() ([]byte, error) {
 
 	var builder strings.Builder
 	builder.WriteString("rules:\n")
-	for _, ruleID := range ruleIDs {
+	for i, ruleID := range ruleIDs {
 		ruleCfg := cfg.Rules[ruleID]
 		builder.WriteString(fmt.Sprintf("  %s:\n", ruleID))
 		builder.WriteString(fmt.Sprintf("    enabled: %t\n", ruleCfg.Enabled))
@@ -59,7 +59,9 @@ func renderExampleConfig() ([]byte, error) {
 		for _, key := range paramKeys {
 			builder.WriteString(fmt.Sprintf("      %s: %v\n", key, ruleCfg.Params[key]))
 		}
-		builder.WriteString("\n")
+		if i < len(ruleIDs)-1 {
+			builder.WriteString("\n")
+		}
 	}
 
 	return []byte(builder.String()), nil

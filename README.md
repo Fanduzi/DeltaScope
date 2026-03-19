@@ -67,7 +67,7 @@ Use a policy file:
 go run ./cmd/deltascope audit --config ./deltascope.yaml --sql "update users set name = 'delta'"
 ```
 
-The v1 config model is rule-ID keyed YAML. See [deltascope.example.yaml](/Users/fan/GolangProjects/deltascope/configs/deltascope.example.yaml) for the full baseline.
+The v1 config model is rule-ID keyed YAML. The checked-in [deltascope.example.yaml](/Users/fan/GolangProjects/deltascope/configs/deltascope.example.yaml) matches `deltascope config init`.
 
 ## Library Usage
 
