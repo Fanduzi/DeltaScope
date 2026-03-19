@@ -33,6 +33,9 @@ func TestVerdictReview(t *testing.T) {
 	if result.Summary.Warnings != 1 {
 		t.Fatalf("expected 1 warning, got %+v", result.Summary)
 	}
+	if len(result.GlobalFindings) != 1 {
+		t.Fatalf("expected 1 global finding, got %+v", result.GlobalFindings)
+	}
 }
 
 func TestVerdictReject(t *testing.T) {
@@ -46,5 +49,8 @@ func TestVerdictReject(t *testing.T) {
 	}
 	if result.Summary.Blockers != 1 || result.Summary.Warnings != 1 {
 		t.Fatalf("expected blocker and warning counts, got %+v", result.Summary)
+	}
+	if len(result.GlobalFindings) != 2 {
+		t.Fatalf("expected 2 global findings, got %+v", result.GlobalFindings)
 	}
 }

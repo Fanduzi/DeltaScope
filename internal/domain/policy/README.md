@@ -7,6 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
+| policy_test.go | Verifies flexible per-rule parameter modeling |
 
 ## Exports
 

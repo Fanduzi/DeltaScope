@@ -7,12 +7,15 @@ Normalized statement specifications used as the stable input for rule evaluation
 | File | Responsibility |
 |------|---------------|
 | statement.go | Defines the top-level normalized statement model |
+| statement_test.go | Verifies typed statement metadata behavior |
 | ddl.go | Defines DDL-oriented specification types |
 | dml.go | Defines DML-oriented specification types |
 
 ## Exports
 
 - `Statement`
+- `Kind`
+- `Dialect`
 - `DDL`
 - `Table`
 - `Column`

@@ -35,17 +35,17 @@ type Summary struct {
 
 // Result is the aggregated audit output.
 type Result struct {
-	Verdict    Verdict           `json:"verdict"`
-	Summary    Summary           `json:"summary"`
-	Statements []StatementResult `json:"statements,omitempty"`
-	Findings   []rule.Finding    `json:"findings,omitempty"`
+	Verdict        Verdict           `json:"verdict"`
+	Summary        Summary           `json:"summary"`
+	Statements     []StatementResult `json:"statements,omitempty"`
+	GlobalFindings []rule.Finding    `json:"global_findings,omitempty"`
 }
 
 // Aggregate builds a final Result from statement and global findings.
 func Aggregate(statements []StatementResult, findings []rule.Finding) Result {
 	result := Result{
-		Statements: statements,
-		Findings:   findings,
+		Statements:     statements,
+		GlobalFindings: findings,
 		Summary: Summary{
 			Statements: len(statements),
 		},
