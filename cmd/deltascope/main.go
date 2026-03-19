@@ -1,6 +1,6 @@
 package main
 
-import "github.com/fan/deltascope/internal/interfaces/cli"
+import "github.com/Fanduzi/DeltaScope/internal/interfaces/cli"
 
 func main() {
 	cli.Run()
