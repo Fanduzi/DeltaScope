@@ -1,3 +1,8 @@
+// Package report verifies audit result aggregation behavior.
+// input: domain report types and synthetic findings for test scenarios
+// output: test coverage for verdict and summary correctness
+// pos: domain verification of reporting behavior
+// note: if this file changes, update this header and module README.md.
 package report
 
 import (

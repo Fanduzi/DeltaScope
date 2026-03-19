@@ -1,3 +1,8 @@
+// Package spec defines normalized statement specifications for rule evaluation.
+// input: DML facts extracted from parser-specific AST adapters
+// output: parser-neutral DML specification components for rules
+// pos: domain DML specification model under the unified Statement spec
+// note: if this file changes, update this header and module README.md.
 package spec
 
 // DML contains the structural metadata extracted from a DML statement.

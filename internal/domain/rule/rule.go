@@ -1,3 +1,8 @@
+// Package rule defines domain findings and rule-facing severity types.
+// input: rule evaluation details and source-location metadata
+// output: normalized findings consumed by reporting and future rule engines
+// pos: domain rule vocabulary shared across audit evaluation
+// note: if this file changes, update this header and module README.md.
 package rule
 
 // Level describes how severe a finding is.

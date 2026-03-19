@@ -1,3 +1,8 @@
+// Package report defines audit results, summaries, and verdict aggregation.
+// input: statement findings and global findings from audit evaluation
+// output: normalized audit results for CLI, APIs, and future integrations
+// pos: domain reporting model and verdict aggregation logic
+// note: if this file changes, update this header and module README.md.
 package report
 
 import "github.com/Fanduzi/DeltaScope/internal/domain/rule"
