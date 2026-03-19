@@ -133,6 +133,25 @@ func TestAuditCommandSupportsConfigOverride(t *testing.T) {
 	}
 }
 
+func TestAuditCommandTreatsMissingConfigAsUserError(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--config", filepath.Join(t.TempDir(), "missing.yaml")},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for unreadable config, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "load policy:") {
+		t.Fatalf("expected config loader error on stderr, got %q", stderr.String())
+	}
+}
+
 func TestAuditCommandRejectsUnknownFailOnValue(t *testing.T) {
 	stderr := &strings.Builder{}
 
@@ -149,6 +168,28 @@ func TestAuditCommandRejectsUnknownFailOnValue(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unsupported fail threshold") {
 		t.Fatalf("expected threshold validation error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandQuietMarkdownOmitsFullReportWrapper(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--quiet"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for blocker findings, got %d", code)
+	}
+	if strings.Contains(stdout.String(), "# DeltaScope Audit Result") {
+		t.Fatalf("expected quiet output to omit markdown wrapper, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "dml.where.require") {
+		t.Fatalf("expected quiet output to keep finding identity, got %q", stdout.String())
 	}
 }
 

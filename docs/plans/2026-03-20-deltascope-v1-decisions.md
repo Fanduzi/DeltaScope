@@ -212,6 +212,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - avoid printing an additional stderr error for that case
 - Why: this preserves the agreed exit-code contract while keeping successful audit output machine-friendly for automation.
 
+## Decision 28: unreadable or invalid CLI config files are user errors
+
+- Problem: the final review found that bad `--config` input was being reported as an internal/runtime failure even though the user supplied the bad path or malformed file.
+- Decision:
+  - classify Viper config lookup and parse failures as CLI user errors
+  - keep those failures on stderr with exit code `2`
+- Why: this matches the documented exit-code contract and keeps automation from misclassifying bad user input as a tool failure.
+
+## Decision 29: `--quiet` switches Markdown output to a flat finding list
+
+- Problem: the first CLI cut defined `--quiet` but left it behaviorally inert, which made the flag misleading.
+- Decision:
+  - keep JSON output unchanged under `--quiet`
+  - make Markdown quiet mode emit a flat per-finding list without the full report wrapper
+  - emit `pass` when the audit has no findings
+- Why: this gives the flag a minimal but meaningful machine-friendly behavior without adding a second full renderer stack.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

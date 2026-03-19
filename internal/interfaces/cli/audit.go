@@ -15,10 +15,12 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	jsonrender "github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type userError struct {
@@ -54,7 +56,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return mapAuditError(exitCode, err)
 			}
 
-			output, err := renderResult(options.Format, result)
+			output, err := renderResult(options.Format, options.Quiet, result)
 			if err != nil {
 				*exitCode = exitInternal
 				return err
@@ -126,15 +128,38 @@ func parseDialect(value string) spec.Dialect {
 	}
 }
 
-func renderResult(format string, result report.Result) ([]byte, error) {
+func renderResult(format string, quiet bool, result report.Result) ([]byte, error) {
 	switch format {
 	case "json":
 		return jsonrender.Render(result)
 	case "markdown":
+		if quiet {
+			return renderQuietResult(result), nil
+		}
 		fallthrough
 	default:
 		return markdown.Render(result)
 	}
+}
+
+func renderQuietResult(result report.Result) []byte {
+	lines := make([]string, 0)
+	for _, statement := range result.Statements {
+		for _, finding := range statement.Findings {
+			lines = append(lines, formatQuietFinding(finding))
+		}
+	}
+	for _, finding := range result.GlobalFindings {
+		lines = append(lines, formatQuietFinding(finding))
+	}
+	if len(lines) == 0 {
+		return []byte("pass")
+	}
+	return []byte(strings.Join(lines, "\n"))
+}
+
+func formatQuietFinding(finding rule.Finding) string {
+	return fmt.Sprintf("[%s] %s: %s", finding.Level, finding.RuleID, finding.Message)
 }
 
 func exitCodeForResult(result report.Result, threshold string) int {
@@ -159,14 +184,20 @@ func exitCodeForResult(result report.Result, threshold string) int {
 
 func mapAuditError(exitCode *int, err error) error {
 	var inputErr userError
+	var fileNotFoundErr viper.ConfigFileNotFoundError
+	var configParseErr viper.ConfigParseError
 	switch {
 	case errors.As(err, &inputErr):
 		*exitCode = exitUser
 	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
 		*exitCode = exitUser
+	case errors.As(err, &fileNotFoundErr), errors.As(err, &configParseErr):
+		*exitCode = exitUser
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		*exitCode = exitInternal
 	case strings.Contains(err.Error(), "parse sql:"):
+		*exitCode = exitUser
+	case strings.Contains(err.Error(), "load policy:"):
 		*exitCode = exitUser
 	default:
 		*exitCode = exitInternal
