@@ -308,6 +308,42 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep `not_null` checking valid for every primary-key column
 - Why: this captures the dominant convention cleanly without inventing misleading semantics for composite keys.
 
+## Decision 39: richer alter modeling keeps one canonical subject name per alter record
+
+- Problem: early rich-alter drafts let `Alter.Name` compete with rename/change payload fields, which would force downstream rules to guess which name is authoritative.
+- Decision:
+  - keep `Alter.Name` as the canonical subject identifier for every normalized alter record
+  - use `AlterColumn.OldName` / `AlterIndex.OldName` only for rename-or-change history
+  - carry target column/index shape in `Definition` instead of duplicating create-table field sets
+- Why: this keeps the domain contract lean, parser-neutral, and predictable for later rule matching.
+
+## Decision 40: multi-column alter specs normalize into one alter record per semantic target
+
+- Problem: TiDB AST can encode one `ALTER TABLE ... ADD (...)` spec that adds multiple columns, but the rule layer expects one `spec.Alter` per semantic action target.
+- Decision:
+  - fan out multi-column add specs during extraction
+  - emit one normalized `spec.Alter` per added column, each with canonical `Name` and `AlterColumn.Definition`
+  - keep non-index `ADD CONSTRAINT` payloads out of `AlterIndex`
+- Why: this avoids silent data loss, keeps the rule surface uniform, and prevents application-layer AST quirks from leaking into the domain contract.
+
+## Decision 41: alter target-type rules must describe allowlists, not compatibility
+
+- Problem: the first semantic alter rule names used `compatible.require`, but the implementation only checked whether the extracted target column type fell into a conservative allowed family set.
+- Decision:
+  - rename those rules to `ddl.alter.modify_column.target_type_family.allowlist` and `ddl.alter.change_column.target_type_family.allowlist`
+  - keep their behavior explicitly target-side and offline-conservative
+  - document that `ddl.alter.change_column.forbid` remains the stricter default gate unless a team intentionally relaxes it
+- Why: honest rule IDs and docs matter more than aspirational naming. The current model does not prove source-to-target compatibility, so the exported surface must not imply that it does.
+
+## Decision 42: alter-added index rules should reuse create-table index governance by projection
+
+- Problem: Milestone 2 needs offline governance for indexes introduced by `ALTER TABLE ... ADD CONSTRAINT`, but copying create-table prefix rule bodies into alter-specific rules would create drift.
+- Decision:
+  - project alter-added index payloads into a temporary parser-neutral `DDL.Indexes` list
+  - reuse the existing create-table index prefix rule constructor and behavior
+  - keep Task 5 scoped to alter-added unique/secondary/fulltext prefix checks only
+- Why: projection keeps logic reuse clean, avoids AST leakage, and narrows the new alter surface to behavior the current domain model can support honestly.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

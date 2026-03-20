@@ -17,8 +17,19 @@ Current DDL coverage includes:
 - column comment, default, not-null, and float/double guidance
 - varchar length limits
 - create-table index count, index width, naming-prefix, and duplicate-index checks
-- action-level `ALTER TABLE` restrictions for drop/rename/change operations
+- richer offline `ALTER TABLE` semantics:
+  - action-level restrictions for drop/rename/change operations
+  - rename-index forbids
+  - conservative target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
+  - alter-added unique/secondary/fulltext index prefix checks
 - create-table option and object-shape rules for comment length, engine/charset allowlists, foreign keys, partitioning, `LIKE`, and `AS SELECT`
+
+Important remaining offline DDL gaps include:
+
+- deeper `ALTER TABLE` semantics such as source-to-target compatibility and object-existence-aware checks
+- broader redundant-index analysis beyond exact duplicates
+- identifier and keyword validation
+- more object/type-specific governance such as richer charset/collation guidance and wider type-family policy
 
 ## Install And Run
 

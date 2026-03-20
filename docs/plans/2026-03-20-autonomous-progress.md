@@ -2,12 +2,13 @@
 
 ## What Was Added After The Original v1 Baseline
 
-The repository moved beyond the original library/CLI v1 baseline and added four major offline DDL batches:
+The repository moved beyond the original library/CLI v1 baseline and added five major offline DDL batches:
 
 1. column and audit-column governance
 2. create-table index governance
 3. action-level alter restrictions
 4. stronger primary-key semantics
+5. richer alter semantics
 
 ## New Checkpoints
 
@@ -15,6 +16,10 @@ The repository moved beyond the original library/CLI v1 baseline and added four 
 - `1e29699` `feat: add alter action restriction rules`
 - `adeb082` `feat: add table option ddl rules`
 - `2802ba8` `feat: add primary key semantic rules`
+- `c155de0` `refactor: tighten alter domain contract`
+- `7d13bff` `fix: normalize alter extraction edge cases`
+- `65bcec9` `refactor: narrow alter type-family rule naming`
+- `3be386d` `feat: audit alter-added index prefixes`
 
 ## Current Offline DDL Coverage
 
@@ -27,22 +32,26 @@ The repository moved beyond the original library/CLI v1 baseline and added four 
 - column comment/default/not-null/float-double rules
 - varchar length limits
 - index count, index width, naming prefixes, and exact duplicate-index detection
-- action-level `ALTER TABLE` restrictions for drop/rename/change operations
+- richer offline `ALTER TABLE` coverage:
+  - action-level restrictions for drop/rename/change operations
+  - rename-index forbids
+  - target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
+  - alter-added unique/secondary/fulltext index prefix checks
 
 ## What Still Looks Like The Next Milestone
 
 The highest-value remaining gaps are:
 
 - richer `ALTER TABLE` semantics
-  - type compatibility
+  - source-to-target compatibility
   - existence checks
-  - rename/index-specific detail
+  - broader add/drop/rename index lifecycle detail
 - identifier and keyword validation
-- deeper redundant-index analysis
+- deeper redundant-index analysis beyond exact duplicates
 - object/type-specific rules not yet modeled
-  - charset recommendation logic
-  - column-type allow/forbid families beyond the current set
+  - charset/collation guidance
+  - wider column-type allow/forbid families
 
 ## Recommended Next Step
 
-Start the next milestone with richer normalized alter modeling. That work will unlock a large remaining DDL surface without forcing online metadata dependencies yet.
+Start the next milestone from the now-richer alter model and push into source-aware alter semantics, then follow with identifier validation and broader redundant-index analysis.
