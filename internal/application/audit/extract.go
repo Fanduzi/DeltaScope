@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
 )
 
 // Extract converts parsed statements into first-pass domain StatementSpec values.
@@ -184,9 +185,10 @@ func extractColumnComment(options []*ast.ColumnOption) string {
 
 func extractColumn(col *ast.ColumnDef) spec.Column {
 	column := spec.Column{
-		Name:   col.Name.Name.L,
-		Type:   strings.ToLower(col.Tp.String()),
-		Length: col.Tp.GetFlen(),
+		Name:     col.Name.Name.L,
+		Type:     strings.ToLower(col.Tp.String()),
+		Length:   col.Tp.GetFlen(),
+		Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag()),
 	}
 
 	for _, option := range col.Options {
@@ -201,6 +203,8 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			}
 		case ast.ColumnOptionNotNull:
 			column.NotNull = true
+		case ast.ColumnOptionAutoIncrement:
+			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
 			column.HasDefault = true
 			column.DefaultValue = normalizedExprText(option.Expr)

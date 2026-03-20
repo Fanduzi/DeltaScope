@@ -12,38 +12,42 @@ import (
 )
 
 const (
-	ruleIDTableCommentRequired        = "ddl.table.comment.require"
-	ruleIDTableNameMaxLength          = "ddl.table.name.max_length"
-	ruleIDPrimaryKeyRequired          = "ddl.table.primary_key.require"
-	ruleIDPrimaryKeyColumnsMaxCount   = "ddl.table.primary_key.columns.max_count"
-	ruleIDTableColumnsMinCount        = "ddl.table.columns.min_count"
-	ruleIDTableAuditColumnsRequire    = "ddl.table.audit_columns.require"
-	ruleIDColumnCommentRequire        = "ddl.column.comment.require"
-	ruleIDColumnNameMaxLength         = "ddl.column.name.max_length"
-	ruleIDColumnVarcharMaxLength      = "ddl.column.varchar.max_length"
-	ruleIDColumnDefaultRequire        = "ddl.column.default.require"
-	ruleIDColumnNotNullRequire        = "ddl.column.not_null.require"
-	ruleIDColumnFloatDoubleForbid     = "ddl.column.float_double.forbid"
-	ruleIDIndexTotalMaxCount          = "ddl.index.total.max_count"
-	ruleIDIndexColumnsMaxCount        = "ddl.index.columns.max_count"
-	ruleIDIndexUniquePrefixRequire    = "ddl.index.unique.prefix.require"
-	ruleIDIndexSecondaryPrefixRequire = "ddl.index.secondary.prefix.require"
-	ruleIDIndexFulltextPrefixRequire  = "ddl.index.fulltext.prefix.require"
-	ruleIDIndexDuplicateForbid        = "ddl.index.duplicate.forbid"
-	ruleIDAlterDropColumnForbid       = "ddl.alter.drop_column.forbid"
-	ruleIDAlterDropPrimaryKeyForbid   = "ddl.alter.drop_primary_key.forbid"
-	ruleIDAlterDropIndexForbid        = "ddl.alter.drop_index.forbid"
-	ruleIDAlterRenameTableForbid      = "ddl.alter.rename_table.forbid"
-	ruleIDAlterRenameColumnForbid     = "ddl.alter.rename_column.forbid"
-	ruleIDAlterChangeColumnForbid     = "ddl.alter.change_column.forbid"
-	ruleIDAlterModifyColumnForbid     = "ddl.alter.modify_column.forbid"
-	ruleIDTableCommentMaxLength       = "ddl.table.comment.max_length"
-	ruleIDTableEngineAllowlist        = "ddl.table.engine.allowlist"
-	ruleIDTableCharsetAllowlist       = "ddl.table.charset.allowlist"
-	ruleIDTableForeignKeyForbid       = "ddl.table.foreign_key.forbid"
-	ruleIDTablePartitionForbid        = "ddl.table.partition.forbid"
-	ruleIDTableCreateLikeForbid       = "ddl.table.create_like.forbid"
-	ruleIDTableCreateAsForbid         = "ddl.table.create_as.forbid"
+	ruleIDTableCommentRequired           = "ddl.table.comment.require"
+	ruleIDTableNameMaxLength             = "ddl.table.name.max_length"
+	ruleIDPrimaryKeyRequired             = "ddl.table.primary_key.require"
+	ruleIDPrimaryKeyColumnsMaxCount      = "ddl.table.primary_key.columns.max_count"
+	ruleIDTableColumnsMinCount           = "ddl.table.columns.min_count"
+	ruleIDTableAuditColumnsRequire       = "ddl.table.audit_columns.require"
+	ruleIDColumnCommentRequire           = "ddl.column.comment.require"
+	ruleIDColumnNameMaxLength            = "ddl.column.name.max_length"
+	ruleIDColumnVarcharMaxLength         = "ddl.column.varchar.max_length"
+	ruleIDColumnDefaultRequire           = "ddl.column.default.require"
+	ruleIDColumnNotNullRequire           = "ddl.column.not_null.require"
+	ruleIDColumnFloatDoubleForbid        = "ddl.column.float_double.forbid"
+	ruleIDIndexTotalMaxCount             = "ddl.index.total.max_count"
+	ruleIDIndexColumnsMaxCount           = "ddl.index.columns.max_count"
+	ruleIDIndexUniquePrefixRequire       = "ddl.index.unique.prefix.require"
+	ruleIDIndexSecondaryPrefixRequire    = "ddl.index.secondary.prefix.require"
+	ruleIDIndexFulltextPrefixRequire     = "ddl.index.fulltext.prefix.require"
+	ruleIDIndexDuplicateForbid           = "ddl.index.duplicate.forbid"
+	ruleIDAlterDropColumnForbid          = "ddl.alter.drop_column.forbid"
+	ruleIDAlterDropPrimaryKeyForbid      = "ddl.alter.drop_primary_key.forbid"
+	ruleIDAlterDropIndexForbid           = "ddl.alter.drop_index.forbid"
+	ruleIDAlterRenameTableForbid         = "ddl.alter.rename_table.forbid"
+	ruleIDAlterRenameColumnForbid        = "ddl.alter.rename_column.forbid"
+	ruleIDAlterChangeColumnForbid        = "ddl.alter.change_column.forbid"
+	ruleIDAlterModifyColumnForbid        = "ddl.alter.modify_column.forbid"
+	ruleIDTableCommentMaxLength          = "ddl.table.comment.max_length"
+	ruleIDTableEngineAllowlist           = "ddl.table.engine.allowlist"
+	ruleIDTableCharsetAllowlist          = "ddl.table.charset.allowlist"
+	ruleIDTableForeignKeyForbid          = "ddl.table.foreign_key.forbid"
+	ruleIDTablePartitionForbid           = "ddl.table.partition.forbid"
+	ruleIDTableCreateLikeForbid          = "ddl.table.create_like.forbid"
+	ruleIDTableCreateAsForbid            = "ddl.table.create_as.forbid"
+	ruleIDPrimaryKeyBigintRequire        = "ddl.table.primary_key.bigint.require"
+	ruleIDPrimaryKeyUnsignedRequire      = "ddl.table.primary_key.unsigned.require"
+	ruleIDPrimaryKeyAutoIncrementRequire = "ddl.table.primary_key.auto_increment.require"
+	ruleIDPrimaryKeyNotNullRequire       = "ddl.table.primary_key.not_null.require"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
@@ -119,4 +123,20 @@ func containsFold(items []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func primaryKeyColumnSpecs(statement spec.Statement) []spec.Column {
+	if statement.DDL == nil || statement.DDL.PrimaryKey == nil {
+		return nil
+	}
+	columns := make([]spec.Column, 0, len(statement.DDL.PrimaryKey.Columns))
+	for _, pkName := range statement.DDL.PrimaryKey.Columns {
+		for _, column := range statement.DDL.Columns {
+			if strings.EqualFold(column.Name, pkName) {
+				columns = append(columns, column)
+				break
+			}
+		}
+	}
+	return columns
 }

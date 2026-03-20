@@ -12,7 +12,7 @@ import (
 )
 
 func TestExtractMapsCreateTable(t *testing.T) {
-	parsed, err := Parse("create table users (id bigint not null default 1 comment 'pk', name varchar(32) default 'guest' comment 'name', body text comment 'body', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id), key idx_name (name), unique key uniq_name (name), fulltext key full_body (body)) comment='user table';", spec.DialectMySQL)
+	parsed, err := Parse("create table users (id bigint unsigned not null auto_increment comment 'pk', name varchar(32) default 'guest' comment 'name', body text comment 'body', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id), key idx_name (name), unique key uniq_name (name), fulltext key full_body (body)) comment='user table';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -41,6 +41,10 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	}
 	if len(stmt.DDL.Columns) != 5 {
 		t.Fatalf("expected 5 columns, got %d", len(stmt.DDL.Columns))
+	}
+	idCol := stmt.DDL.Columns[0]
+	if !idCol.Unsigned || !idCol.AutoIncrement {
+		t.Fatalf("expected id column to be unsigned auto_increment, got %+v", idCol)
 	}
 
 	nameCol := stmt.DDL.Columns[1]

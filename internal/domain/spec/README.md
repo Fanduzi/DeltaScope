@@ -30,7 +30,9 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 - `Column` now carries offline-governance facts needed by column-focused DDL rules:
   - `Length`
+  - `Unsigned`
   - `NotNull`
+  - `AutoIncrement`
   - `HasDefault`
   - `DefaultValue`
   - `DefaultIsNull`

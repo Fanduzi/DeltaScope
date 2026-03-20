@@ -12,6 +12,7 @@ DeltaScope is an offline SQL review engine for MySQL and TiDB. The first release
 Current DDL coverage includes:
 
 - table comment, table name length, and primary-key rules
+- stronger primary-key semantics for bigint, unsigned, auto-increment, and not-null requirements
 - audit timestamp column patterns
 - column comment, default, not-null, and float/double guidance
 - varchar length limits

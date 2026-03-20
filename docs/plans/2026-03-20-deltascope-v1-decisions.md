@@ -299,6 +299,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - defer recommendation-style guidance to a later batch if needed
 - Why: allowlists are simple, explicit, and safe for offline enforcement. They cover the most important governance behavior now without inventing premature policy complexity.
 
+## Decision 38: primary-key semantic rules target the single-column convention first
+
+- Problem: teams often expect more than "has a primary key"; they expect a single bigint unsigned auto-increment primary key. But composite keys complicate those semantics.
+- Decision:
+  - add semantic PK rules for bigint, unsigned, auto-increment, and not-null
+  - apply bigint/unsigned/auto-increment rules only when the normalized primary key has exactly one column
+  - keep `not_null` checking valid for every primary-key column
+- Why: this captures the dominant convention cleanly without inventing misleading semantics for composite keys.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

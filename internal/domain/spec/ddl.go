@@ -31,7 +31,9 @@ type Column struct {
 	Type                      string `json:"type,omitempty"`
 	Length                    int    `json:"length,omitempty"`
 	Comment                   string `json:"comment,omitempty"`
+	Unsigned                  bool   `json:"unsigned,omitempty"`
 	NotNull                   bool   `json:"not_null,omitempty"`
+	AutoIncrement             bool   `json:"auto_increment,omitempty"`
 	HasDefault                bool   `json:"has_default,omitempty"`
 	DefaultValue              string `json:"default_value,omitempty"`
 	DefaultIsNull             bool   `json:"default_is_null,omitempty"`

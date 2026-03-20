@@ -273,6 +273,56 @@ func TestRegisterAddsEnabledTableOptionRulesInDeterministicOrder(t *testing.T) {
 	}
 }
 
+func TestRegisterAddsEnabledPrimaryKeySemanticRulesInDeterministicOrder(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+	cfg.Rules["ddl.table.primary_key.columns.max_count"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"limit": 1,
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Table: &spec.Table{Name: "users", Comment: "user table"},
+			Columns: []spec.Column{
+				{Name: "id", Type: "int", NotNull: false, Unsigned: false, AutoIncrement: false, Comment: "'pk'"},
+				{Name: "created_at", Type: "datetime", NotNull: true, HasDefault: true, DefaultIsCurrentTimestamp: true, Comment: "'created'"},
+				{Name: "updated_at", Type: "datetime", NotNull: true, HasDefault: true, DefaultIsCurrentTimestamp: true, OnUpdateCurrentTimestamp: true, Comment: "'updated'"},
+			},
+			PrimaryKey: &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+			Options:    map[string]string{"engine": "InnoDB", "charset": "utf8mb4"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	wantIDs := []string{
+		"ddl.table.primary_key.bigint.require",
+		"ddl.table.primary_key.unsigned.require",
+		"ddl.table.primary_key.auto_increment.require",
+		"ddl.table.primary_key.not_null.require",
+		"ddl.column.default.require",
+		"ddl.column.not_null.require",
+	}
+	if len(findings) != len(wantIDs) {
+		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))
+	}
+	for i, want := range wantIDs {
+		if findings[i].RuleID != want {
+			t.Fatalf("expected finding %d to use rule %q, got %q", i, want, findings[i].RuleID)
+		}
+	}
+}
+
 func TestRegisterRejectsInvalidDDLRuleConfig(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()

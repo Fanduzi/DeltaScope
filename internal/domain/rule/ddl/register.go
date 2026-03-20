@@ -21,6 +21,22 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableNameMaxLength, construct: newTableNameMaxLengthRule},
 		{ruleID: ruleIDPrimaryKeyRequired, construct: newPrimaryKeyRequiredRule},
 		{ruleID: ruleIDPrimaryKeyColumnsMaxCount, construct: newPrimaryKeyColumnCountRule},
+		{ruleID: ruleIDPrimaryKeyBigintRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyBigintRequire, rule.LevelBlocker, "must use bigint", "change the primary key column type to bigint", func(column spec.Column) bool {
+				return baseType(column) == "bigint"
+			}, cfg)
+		}},
+		{ruleID: ruleIDPrimaryKeyUnsignedRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyUnsignedRequire, rule.LevelBlocker, "must be unsigned", "mark the primary key column as UNSIGNED", func(column spec.Column) bool {
+				return column.Unsigned
+			}, cfg)
+		}},
+		{ruleID: ruleIDPrimaryKeyAutoIncrementRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyAutoIncrementRequire, rule.LevelBlocker, "must use auto_increment", "add AUTO_INCREMENT to the primary key column", func(column spec.Column) bool {
+				return column.AutoIncrement
+			}, cfg)
+		}},
+		{ruleID: ruleIDPrimaryKeyNotNullRequire, construct: newPrimaryKeyNotNullRule},
 		{ruleID: ruleIDTableColumnsMinCount, construct: newTableColumnsMinCountRule},
 		{ruleID: ruleIDTableAuditColumnsRequire, construct: newTableAuditColumnsRequiredRule},
 		{ruleID: ruleIDColumnCommentRequire, construct: newColumnCommentRequiredRule},

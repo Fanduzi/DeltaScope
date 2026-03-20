@@ -183,13 +183,37 @@ rules:
     params:
       forbid: true
 
+  ddl.table.primary_key.auto_increment.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.table.primary_key.bigint.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.table.primary_key.columns.max_count:
     enabled: true
     level: warning
     params:
       limit: 1
 
+  ddl.table.primary_key.not_null.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.table.primary_key.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.table.primary_key.unsigned.require:
     enabled: true
     level: blocker
     params:

@@ -39,6 +39,34 @@ func Default() Policy {
 					"limit": 1,
 				},
 			},
+			"ddl.table.primary_key.bigint.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.table.primary_key.unsigned.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.table.primary_key.auto_increment.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.table.primary_key.not_null.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
 			"ddl.table.columns.min_count": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

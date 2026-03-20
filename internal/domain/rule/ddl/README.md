@@ -10,6 +10,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | config.go | Parses policy params for DDL rule constructors |
 | table_rules.go | Implements table comment and table name rules |
 | primary_key_rules.go | Implements primary-key presence and column-count rules |
+| primary_key_semantic_rules.go | Implements bigint/unsigned/auto-increment/not-null primary-key semantic rules |
 | column_rules.go | Implements table-column count and column-level governance rules |
 | audit_column_rules.go | Implements audit timestamp column rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
@@ -18,6 +19,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | register.go | Registers enabled DDL rules into the shared registry |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
 | primary_key_rules_test.go | Verifies primary-key requirement and shape rules |
+| primary_key_semantic_rules_test.go | Verifies primary-key semantic rules for bigint/unsigned/auto-increment/not-null requirements |
 | column_rules_test.go | Verifies column-count, comment, naming, default, nullability, and type rules |
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | index_rules_test.go | Verifies create-table index governance rules |
@@ -39,6 +41,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.name.max_length`
 - `ddl.table.primary_key.require`
 - `ddl.table.primary_key.columns.max_count`
+- `ddl.table.primary_key.bigint.require`
+- `ddl.table.primary_key.unsigned.require`
+- `ddl.table.primary_key.auto_increment.require`
+- `ddl.table.primary_key.not_null.require`
 - `ddl.table.columns.min_count`
 - `ddl.table.audit_columns.require`
 - `ddl.column.comment.require`
