@@ -97,7 +97,7 @@ func TestExtractMapsCreateTable(t *testing.T) {
 }
 
 func TestExtractMapsAlterTable(t *testing.T) {
-	parsed, err := Parse("alter table users add column age int, drop column old_age;", spec.DialectMySQL)
+	parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -114,8 +114,140 @@ func TestExtractMapsAlterTable(t *testing.T) {
 	if stmt.DDL.Table.Name != "users" {
 		t.Fatalf("expected table name users, got %q", stmt.DDL.Table.Name)
 	}
-	if len(stmt.DDL.Alter) != 2 {
-		t.Fatalf("expected 2 alter actions, got %d", len(stmt.DDL.Alter))
+	if len(stmt.DDL.Alter) != 9 {
+		t.Fatalf("expected 9 alter actions, got %d", len(stmt.DDL.Alter))
+	}
+
+	addColumn := stmt.DDL.Alter[0]
+	if addColumn.Action != "add_columns" {
+		t.Fatalf("expected first alter action add_columns, got %q", addColumn.Action)
+	}
+	if addColumn.Name != "age" {
+		t.Fatalf("expected canonical add column name age, got %q", addColumn.Name)
+	}
+	if addColumn.Column == nil {
+		t.Fatalf("expected add column payload to be populated")
+	}
+	if addColumn.Column.OldName != "" {
+		t.Fatalf("expected add column old name to be empty, got %q", addColumn.Column.OldName)
+	}
+	if addColumn.Column.Definition == nil {
+		t.Fatalf("expected add column definition to be populated")
+	}
+	if addColumn.Column.Definition.Name != "age" {
+		t.Fatalf("expected add column definition name age, got %q", addColumn.Column.Definition.Name)
+	}
+	if addColumn.Column.Definition.Type != "int(11)" {
+		t.Fatalf("expected add column type int(11), got %q", addColumn.Column.Definition.Type)
+	}
+	if !addColumn.Column.Definition.NotNull || !addColumn.Column.Definition.HasDefault || addColumn.Column.Definition.DefaultValue != "0" {
+		t.Fatalf("expected add column defaults/not-null metadata, got %+v", *addColumn.Column.Definition)
+	}
+	if addColumn.Column.Definition.Comment != "'age'" {
+		t.Fatalf("expected add column comment 'age', got %q", addColumn.Column.Definition.Comment)
+	}
+
+	dropColumn := stmt.DDL.Alter[1]
+	if dropColumn.Action != "drop_column" {
+		t.Fatalf("expected second alter action drop_column, got %q", dropColumn.Action)
+	}
+	if dropColumn.Name != "old_age" {
+		t.Fatalf("expected canonical drop column name old_age, got %q", dropColumn.Name)
+	}
+	if dropColumn.Column == nil || dropColumn.Column.OldName != "old_age" {
+		t.Fatalf("expected drop column old_age payload, got %+v", dropColumn.Column)
+	}
+	if dropColumn.Column.Definition != nil {
+		t.Fatalf("expected drop column definition to be empty, got %+v", dropColumn.Column.Definition)
+	}
+
+	changeColumn := stmt.DDL.Alter[2]
+	if changeColumn.Action != "change_column" {
+		t.Fatalf("expected third alter action change_column, got %q", changeColumn.Action)
+	}
+	if changeColumn.Name != "old_name" {
+		t.Fatalf("expected canonical change column name old_name, got %q", changeColumn.Name)
+	}
+	if changeColumn.Column == nil {
+		t.Fatalf("expected change column payload to be populated")
+	}
+	if changeColumn.Column.OldName != "old_name" || changeColumn.Column.Definition == nil || changeColumn.Column.Definition.Name != "new_name" {
+		t.Fatalf("expected change column rename old_name->new_name, got %+v", *changeColumn.Column)
+	}
+	if changeColumn.Column.Definition.Type != "bigint(20) unsigned" || !changeColumn.Column.Definition.Unsigned || !changeColumn.Column.Definition.AutoIncrement || !changeColumn.Column.Definition.NotNull {
+		t.Fatalf("expected change column semantic payload, got %+v", *changeColumn.Column.Definition)
+	}
+
+	renameColumn := stmt.DDL.Alter[3]
+	if renameColumn.Action != "rename_column" {
+		t.Fatalf("expected fourth alter action rename_column, got %q", renameColumn.Action)
+	}
+	if renameColumn.Name != "old_email" {
+		t.Fatalf("expected canonical rename column name old_email, got %q", renameColumn.Name)
+	}
+	if renameColumn.Column == nil || renameColumn.Column.OldName != "old_email" || renameColumn.Column.Definition == nil || renameColumn.Column.Definition.Name != "email" {
+		t.Fatalf("expected rename column payload old_email->email, got %+v", renameColumn.Column)
+	}
+
+	addIndex := stmt.DDL.Alter[4]
+	if addIndex.Action != "add_constraint" {
+		t.Fatalf("expected fifth alter action add_constraint, got %q", addIndex.Action)
+	}
+	if addIndex.Name != "uniq_email" {
+		t.Fatalf("expected canonical add index name uniq_email, got %q", addIndex.Name)
+	}
+	if addIndex.Index == nil {
+		t.Fatalf("expected add index payload to be populated")
+	}
+	if addIndex.Index.OldName != "" {
+		t.Fatalf("expected add index old name to be empty, got %q", addIndex.Index.OldName)
+	}
+	if addIndex.Index.Definition == nil || addIndex.Index.Definition.Kind != spec.IndexKindUnique || addIndex.Index.Definition.Name != "uniq_email" {
+		t.Fatalf("expected unique index uniq_email, got %+v", addIndex.Index.Definition)
+	}
+	if len(addIndex.Index.Definition.Columns) != 1 || addIndex.Index.Definition.Columns[0] != "email" {
+		t.Fatalf("expected add index columns [email], got %+v", addIndex.Index.Definition.Columns)
+	}
+
+	dropIndex := stmt.DDL.Alter[5]
+	if dropIndex.Action != "drop_index" {
+		t.Fatalf("expected sixth alter action drop_index, got %q", dropIndex.Action)
+	}
+	if dropIndex.Name != "idx_old" {
+		t.Fatalf("expected canonical drop index name idx_old, got %q", dropIndex.Name)
+	}
+	if dropIndex.Index == nil || dropIndex.Index.OldName != "idx_old" {
+		t.Fatalf("expected drop index idx_old payload, got %+v", dropIndex.Index)
+	}
+	if dropIndex.Index.Definition != nil {
+		t.Fatalf("expected drop index definition to be empty, got %+v", dropIndex.Index.Definition)
+	}
+
+	renameIndex := stmt.DDL.Alter[6]
+	if renameIndex.Action != "rename_index" {
+		t.Fatalf("expected seventh alter action rename_index, got %q", renameIndex.Action)
+	}
+	if renameIndex.Name != "idx_old" {
+		t.Fatalf("expected canonical rename index name idx_old, got %q", renameIndex.Name)
+	}
+	if renameIndex.Index == nil || renameIndex.Index.OldName != "idx_old" || renameIndex.Index.Definition == nil || renameIndex.Index.Definition.Name != "idx_new" {
+		t.Fatalf("expected rename index idx_old->idx_new payload, got %+v", renameIndex.Index)
+	}
+
+	engineOption := stmt.DDL.Alter[7]
+	if engineOption.Action != "table_option" {
+		t.Fatalf("expected eighth alter action table_option, got %q", engineOption.Action)
+	}
+	if engineOption.Options["engine"] != "InnoDB" {
+		t.Fatalf("expected engine option InnoDB, got %+v", engineOption.Options)
+	}
+
+	commentOption := stmt.DDL.Alter[8]
+	if commentOption.Action != "table_option" {
+		t.Fatalf("expected ninth alter action table_option, got %q", commentOption.Action)
+	}
+	if commentOption.Options["comment"] != "user table" {
+		t.Fatalf("expected comment option user table, got %+v", commentOption.Options)
 	}
 }
 

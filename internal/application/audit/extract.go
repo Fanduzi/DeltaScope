@@ -101,15 +101,10 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		}
 	}
 
-	for _, option := range stmt.Options {
-		switch option.Tp {
-		case ast.TableOptionComment:
-			ddl.Table.Comment = option.StrValue
-			ddl.Options["comment"] = option.StrValue
-		case ast.TableOptionEngine:
-			ddl.Options["engine"] = option.StrValue
-		case ast.TableOptionCharset:
-			ddl.Options["charset"] = option.StrValue
+	for key, value := range extractTableOptions(stmt.Options) {
+		ddl.Options[key] = value
+		if key == "comment" {
+			ddl.Table.Comment = value
 		}
 	}
 
@@ -125,13 +120,29 @@ func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 	}
 
 	for _, s := range stmt.Specs {
-		ddl.Alter = append(ddl.Alter, spec.Alter{
-			Action: alterActionName(s.Tp),
-			Name:   extractAlterName(s),
-		})
+		ddl.Alter = append(ddl.Alter, extractAlterSpec(s))
 	}
 
 	return ddl
+}
+
+func extractAlterSpec(specification *ast.AlterTableSpec) spec.Alter {
+	alter := spec.Alter{
+		Action: alterActionName(specification.Tp),
+		Name:   extractAlterName(specification),
+	}
+
+	if column := extractAlterColumn(specification); column != nil {
+		alter.Column = column
+	}
+	if index := extractAlterIndex(specification); index != nil {
+		alter.Index = index
+	}
+	if options := extractTableOptions(specification.Options); len(options) > 0 {
+		alter.Options = options
+	}
+
+	return alter
 }
 
 func extractInsert(stmt *ast.InsertStmt) *spec.DML {
@@ -174,15 +185,6 @@ func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	}
 }
 
-func extractColumnComment(options []*ast.ColumnOption) string {
-	for _, option := range options {
-		if option.Tp == ast.ColumnOptionComment && option.Expr != nil {
-			return option.Expr.Text()
-		}
-	}
-	return ""
-}
-
 func extractColumn(col *ast.ColumnDef) spec.Column {
 	column := spec.Column{
 		Name:     col.Name.Name.L,
@@ -199,7 +201,7 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 		switch option.Tp {
 		case ast.ColumnOptionComment:
 			if option.Expr != nil {
-				column.Comment = option.Expr.Text()
+				column.Comment = normalizedExprText(option.Expr)
 			}
 		case ast.ColumnOptionNotNull:
 			column.NotNull = true
@@ -216,6 +218,109 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 	}
 
 	return column
+}
+
+func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
+	switch specification.Tp {
+	case ast.AlterTableAddColumns, ast.AlterTableModifyColumn, ast.AlterTableChangeColumn:
+		if len(specification.NewColumns) == 0 || specification.NewColumns[0] == nil {
+			return nil
+		}
+		column := alterColumnFromColumnDef(specification.NewColumns[0])
+		if specification.Tp == ast.AlterTableChangeColumn && specification.OldColumnName != nil {
+			column.OldName = specification.OldColumnName.Name.L
+		}
+		return column
+	case ast.AlterTableDropColumn:
+		if specification.OldColumnName == nil {
+			return nil
+		}
+		return &spec.AlterColumn{
+			OldName: specification.OldColumnName.Name.L,
+		}
+	case ast.AlterTableRenameColumn:
+		if specification.OldColumnName == nil || specification.NewColumnName == nil {
+			return nil
+		}
+		return &spec.AlterColumn{
+			OldName: specification.OldColumnName.Name.L,
+			Definition: &spec.Column{
+				Name: specification.NewColumnName.Name.L,
+			},
+		}
+	default:
+		return nil
+	}
+}
+
+func alterColumnFromColumnDef(col *ast.ColumnDef) *spec.AlterColumn {
+	extracted := extractColumn(col)
+	return &spec.AlterColumn{
+		Definition: &extracted,
+	}
+}
+
+func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
+	switch specification.Tp {
+	case ast.AlterTableAddConstraint:
+		if specification.Constraint == nil {
+			return nil
+		}
+		return &spec.AlterIndex{
+			Definition: &spec.Index{
+				Kind:    indexKindForConstraint(specification.Constraint.Tp),
+				Name:    normalizeConstraintName(specification.Constraint),
+				Columns: extractIndexColumns(specification.Constraint.Keys),
+			},
+		}
+	case ast.AlterTableDropIndex:
+		name := extractAlterName(specification)
+		if name == "" {
+			return nil
+		}
+		return &spec.AlterIndex{OldName: name}
+	case ast.AlterTableRenameIndex:
+		if specification.FromKey.L == "" && specification.ToKey.L == "" {
+			return nil
+		}
+		return &spec.AlterIndex{
+			OldName: specification.FromKey.L,
+			Definition: &spec.Index{
+				Name: specification.ToKey.L,
+			},
+		}
+	case ast.AlterTableDropPrimaryKey:
+		return &spec.AlterIndex{
+			OldName: "primary",
+		}
+	default:
+		return nil
+	}
+}
+
+func extractTableOptions(options []*ast.TableOption) map[string]string {
+	if len(options) == 0 {
+		return nil
+	}
+
+	extracted := make(map[string]string)
+	for _, option := range options {
+		if option == nil {
+			continue
+		}
+		switch option.Tp {
+		case ast.TableOptionComment:
+			extracted["comment"] = option.StrValue
+		case ast.TableOptionEngine:
+			extracted["engine"] = option.StrValue
+		case ast.TableOptionCharset:
+			extracted["charset"] = option.StrValue
+		}
+	}
+	if len(extracted) == 0 {
+		return nil
+	}
+	return extracted
 }
 
 func normalizedExprText(expr ast.ExprNode) string {
@@ -278,14 +383,20 @@ func normalizeConstraintName(c *ast.Constraint) string {
 
 func extractAlterName(specification *ast.AlterTableSpec) string {
 	switch {
-	case len(specification.NewColumns) > 0 && specification.NewColumns[0] != nil:
-		return specification.NewColumns[0].Name.Name.L
 	case specification.OldColumnName != nil:
 		return specification.OldColumnName.Name.L
 	case specification.NewColumnName != nil:
 		return specification.NewColumnName.Name.L
+	case len(specification.NewColumns) > 0 && specification.NewColumns[0] != nil:
+		return specification.NewColumns[0].Name.Name.L
 	case specification.Constraint != nil:
 		return normalizeConstraintName(specification.Constraint)
+	case specification.Tp == ast.AlterTableDropPrimaryKey:
+		return "primary"
+	case specification.FromKey.L != "":
+		return specification.FromKey.L
+	case specification.ToKey.L != "":
+		return specification.ToKey.L
 	case specification.IndexName.L != "":
 		return specification.IndexName.L
 	case specification.Name != "":
@@ -370,6 +481,8 @@ func alterActionName(tp ast.AlterTableType) string {
 		return "drop_index"
 	case ast.AlterTableAddConstraint:
 		return "add_constraint"
+	case ast.AlterTableRenameIndex:
+		return "rename_index"
 	case ast.AlterTableOption:
 		return "table_option"
 	default:
