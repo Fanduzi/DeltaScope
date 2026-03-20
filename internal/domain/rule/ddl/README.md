@@ -6,8 +6,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs and create-table applicability checks |
-| config.go | Parses policy params for DDL rule constructors |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, rename, option, and compatibility helpers |
+| common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
+| config.go | Parses policy params for DDL rule constructors, including normalized string-list helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
 | primary_key_rules.go | Implements primary-key presence and column-count rules |
 | primary_key_semantic_rules.go | Implements bigint/unsigned/auto-increment/not-null primary-key semantic rules |
@@ -66,6 +67,12 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.rename_column.forbid`
 - `ddl.alter.change_column.forbid`
 - `ddl.alter.modify_column.forbid`
+- `ddl.alter.rename_index.forbid`
+- `ddl.alter.modify_column.compatible.require`
+- `ddl.alter.change_column.compatible.require`
+- `ddl.alter.add_index.unique.prefix.require`
+- `ddl.alter.add_index.secondary.prefix.require`
+- `ddl.alter.add_index.fulltext.prefix.require`
 - `ddl.table.comment.max_length`
 - `ddl.table.engine.allowlist`
 - `ddl.table.charset.allowlist`
@@ -73,6 +80,17 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.partition.forbid`
 - `ddl.table.create_like.forbid`
 - `ddl.table.create_as.forbid`
+
+## Alter Helper Surface
+
+Shared alter helpers in `common.go` now cover the richer parser-neutral alter stream:
+
+- applicability checks for selected alter actions
+- locating matching alter records by action
+- extracting target column and index definitions
+- extracting old/new names for rename-style alters
+- reading normalized table-option values
+- classifying column target types into coarse compatibility buckets for future semantic rules
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

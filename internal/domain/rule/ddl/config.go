@@ -7,6 +7,7 @@ package ddl
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -99,4 +100,39 @@ func stringSliceParam(ruleID string, cfg policy.RulePolicy, key string, fallback
 	default:
 		return nil, fmt.Errorf("rule %s param %q must be a string list, got %T", ruleID, key, value)
 	}
+}
+
+func normalizedStringSliceParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) ([]string, error) {
+	items, err := stringSliceParam(ruleID, cfg, key, fallback)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		value := strings.ToLower(strings.TrimSpace(item))
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		normalized = append(normalized, value)
+	}
+	return normalized, nil
+}
+
+func normalizedStringSetParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) (map[string]struct{}, error) {
+	items, err := normalizedStringSliceParam(ruleID, cfg, key, fallback)
+	if err != nil {
+		return nil, err
+	}
+
+	set := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		set[item] = struct{}{}
+	}
+	return set, nil
 }
