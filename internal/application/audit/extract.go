@@ -120,10 +120,28 @@ func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 	}
 
 	for _, s := range stmt.Specs {
-		ddl.Alter = append(ddl.Alter, extractAlterSpec(s))
+		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s)...)
 	}
 
 	return ddl
+}
+
+func extractAlterSpecs(specification *ast.AlterTableSpec) []spec.Alter {
+	if specification.Tp == ast.AlterTableAddColumns && len(specification.NewColumns) > 0 {
+		alters := make([]spec.Alter, 0, len(specification.NewColumns))
+		for _, column := range specification.NewColumns {
+			if column == nil {
+				continue
+			}
+			alters = append(alters, spec.Alter{
+				Action: alterActionName(specification.Tp),
+				Name:   column.Name.Name.L,
+				Column: alterColumnFromColumnDef(column),
+			})
+		}
+		return alters
+	}
+	return []spec.Alter{extractAlterSpec(specification)}
 }
 
 func extractAlterSpec(specification *ast.AlterTableSpec) spec.Alter {
@@ -263,7 +281,7 @@ func alterColumnFromColumnDef(col *ast.ColumnDef) *spec.AlterColumn {
 func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 	switch specification.Tp {
 	case ast.AlterTableAddConstraint:
-		if specification.Constraint == nil {
+		if specification.Constraint == nil || !constraintProducesIndex(specification.Constraint.Tp) {
 			return nil
 		}
 		return &spec.AlterIndex{
@@ -295,6 +313,15 @@ func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 		}
 	default:
 		return nil
+	}
+}
+
+func constraintProducesIndex(tp ast.ConstraintType) bool {
+	switch tp {
+	case ast.ConstraintPrimaryKey, ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
+		return true
+	default:
+		return false
 	}
 }
 

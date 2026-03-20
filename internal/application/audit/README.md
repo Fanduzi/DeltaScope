@@ -8,8 +8,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 |------|---------------|
 | parse.go | Builds application-owned parsed statements from infrastructure-backed parser adapters |
 | parse_test.go | Verifies that application parsing hides parser-specific AST details |
-| extract.go | Converts parsed statements into first-pass domain `Statement` values with separate DDL constraint handling, typed index metadata, create-table shape flags, richer alter-table column/index/rename/option payloads, and DML operation facts for offline governance |
-| extract_test.go | Verifies representative DDL and DML extraction behavior, including create-like/create-as/partition flags plus enriched create-table facts and richer alter-table detail |
+| extract.go | Converts parsed statements into first-pass domain `Statement` values with separate DDL constraint handling, typed index metadata, create-table shape flags, richer alter-table column/index/rename/option payloads, multi-column add normalization, and DML operation facts for offline governance |
+| extract_test.go | Verifies representative DDL and DML extraction behavior, including create-like/create-as/partition flags plus enriched create-table facts and richer alter-table detail, including multi-column add expansion and non-index constraint handling |
 | evaluate.go | Applies registered rules and aggregates statement/global findings into report output |
 | evaluate_test.go | Verifies application-owned report-flow integration over the rule registry |
 | service.go | Orchestrates the full offline audit flow across policy loading, parsing, extraction, rule registration, and evaluation |
