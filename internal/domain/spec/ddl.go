@@ -67,12 +67,27 @@ type Constraint struct {
 	Columns []string `json:"columns,omitempty"`
 }
 
+// AlterColumnChange describes statement-local column-change intent.
+// These flags are parser-neutral hints about what the ALTER statement touches;
+// they do not claim live-schema source truth on their own.
+type AlterColumnChange struct {
+	Renames              bool `json:"renames,omitempty"`
+	TouchesType          bool `json:"touches_type,omitempty"`
+	TouchesNullability   bool `json:"touches_nullability,omitempty"`
+	TouchesDefault       bool `json:"touches_default,omitempty"`
+	TouchesUnsigned      bool `json:"touches_unsigned,omitempty"`
+	TouchesAutoIncrement bool `json:"touches_auto_increment,omitempty"`
+}
+
 // AlterColumn describes a column-focused alter payload.
 // OldName is only populated when the action targets an existing column name.
 // Definition carries the target column shape after the action when available.
+// Change carries parser-neutral statement-local relation facts for upcoming
+// source-aware alter rules.
 type AlterColumn struct {
-	OldName    string  `json:"old_name,omitempty"`
-	Definition *Column `json:"definition,omitempty"`
+	OldName    string             `json:"old_name,omitempty"`
+	Definition *Column            `json:"definition,omitempty"`
+	Change     *AlterColumnChange `json:"change,omitempty"`
 }
 
 // AlterIndex describes an index-focused alter payload.

@@ -22,6 +22,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Constraint`
 - `Index`
 - `IndexKind`
+- `AlterColumnChange`
 - `AlterColumn`
 - `AlterIndex`
 - `Alter`
@@ -49,7 +50,10 @@ Normalized statement specifications used as the stable input for rule evaluation
     - existing-object actions use the pre-change name
     - pure-add actions use the created object name
     - table-option actions leave it empty
-  - `Column` carries `OldName` plus an optional target `Definition` reused from `Column`
+  - `Column` carries:
+    - `OldName` for the existing source-side identifier when the statement names one
+    - an optional target `Definition` reused from `Column`
+    - an optional `Change` block with statement-local relation facts such as rename intent plus whether the statement touches type, nullability, default, unsigned, or auto-increment semantics
   - `Index` carries `OldName` plus an optional target `Definition` reused from `Index`
   - `Options` is intentionally a flat normalized subset of table options, not a full option AST or ordering-preserving model
 
