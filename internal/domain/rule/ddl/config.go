@@ -65,6 +65,17 @@ func intParam(ruleID string, cfg policy.RulePolicy, key string, fallback int) (i
 	}
 }
 
+func boundedIntParam(ruleID string, cfg policy.RulePolicy, key string, fallback, min int) (int, error) {
+	value, err := intParam(ruleID, cfg, key, fallback)
+	if err != nil {
+		return 0, err
+	}
+	if value < min {
+		return 0, fmt.Errorf("rule %s param %q must be >= %d, got %d", ruleID, key, min, value)
+	}
+	return value, nil
+}
+
 func stringParam(ruleID string, cfg policy.RulePolicy, key string, fallback string) (string, error) {
 	value, ok := cfg.Params[key]
 	if !ok {

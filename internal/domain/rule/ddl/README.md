@@ -6,9 +6,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, rename, option, and coarse type-family helpers |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
-| config.go | Parses policy params for DDL rule constructors, including normalized string-list helpers for upcoming alter semantics |
+| config.go | Parses policy params for DDL rule constructors, including normalized string-list and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
 | primary_key_rules.go | Implements primary-key presence and column-count rules |
 | primary_key_semantic_rules.go | Implements bigint/unsigned/auto-increment/not-null primary-key semantic rules |
@@ -72,6 +72,14 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.rename_index.forbid`
 - `ddl.alter.modify_column.target_type_family.allowlist`
 - `ddl.alter.change_column.target_type_family.allowlist`
+- `ddl.alter.modify_column.explicit_nullability_change.forbid`
+- `ddl.alter.change_column.explicit_nullability_change.forbid`
+- `ddl.alter.modify_column.explicit_default_change.forbid`
+- `ddl.alter.change_column.explicit_default_change.forbid`
+- `ddl.alter.modify_column.explicit_auto_increment_change.forbid`
+- `ddl.alter.change_column.explicit_auto_increment_change.forbid`
+- `ddl.alter.add_index.columns.max_count`
+- `ddl.alter.add_index.duplicate.forbid`
 - `ddl.alter.add_index.unique.prefix.require`
 - `ddl.alter.add_index.secondary.prefix.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
@@ -90,9 +98,13 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 - applicability checks for selected alter actions
 - locating matching alter records by action
 - extracting target column and index definitions
+- extracting explicit statement-local column change facts
+- checking whether nullability/default/auto-increment changes are explicitly requested
 - extracting old/new names for rename-style alters
+- detecting column renames from parser-neutral names only
 - reading normalized table-option values
-- classifying column target types into coarse type families that later semantic rules can build on, not a complete compatibility decision on its own
+- classifying target column types into coarse families without claiming source-to-target compatibility
+- projecting alter-added indexes into parser-neutral index lists for shared add-index governance
 
 ## Semantic Alter Surface
 
@@ -115,6 +127,12 @@ The `target_type_family.allowlist` rules are intentionally conservative in offli
 The alter-added index prefix rules reuse the existing create-table prefix rule body by projecting `ADD CONSTRAINT` index payloads into a temporary parser-neutral index list before evaluation.
 
 Those alter-added index prefix rules are part of the normal `Register(...)` path and therefore active in the shipped default product surface.
+
+The next source-aware alter batch is intentionally prepared with honest names:
+
+- `explicit_*_change.forbid` rule IDs only claim statement-local explicit change detection
+- `target_type_family.allowlist` IDs still describe target-side allowlists, not source-to-target compatibility
+- alter-add-index helper seams project parser-neutral index payloads without inventing live schema state
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

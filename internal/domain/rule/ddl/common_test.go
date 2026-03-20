@@ -15,7 +15,15 @@ func TestRegisterAlterRuleIDsStayStable(t *testing.T) {
 	got := []string{
 		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
 		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
+		ruleIDAlterModifyColumnExplicitNullabilityChangeForbid,
+		ruleIDAlterChangeColumnExplicitNullabilityChangeForbid,
+		ruleIDAlterModifyColumnExplicitDefaultChangeForbid,
+		ruleIDAlterChangeColumnExplicitDefaultChangeForbid,
+		ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid,
+		ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid,
 		ruleIDAlterRenameIndexForbid,
+		ruleIDAlterAddIndexColumnsMaxCount,
+		ruleIDAlterAddIndexDuplicateForbid,
 		ruleIDAlterAddIndexUniquePrefixRequire,
 		ruleIDAlterAddIndexSecondaryPrefixRequire,
 		ruleIDAlterAddIndexFulltextPrefixRequire,
@@ -23,7 +31,15 @@ func TestRegisterAlterRuleIDsStayStable(t *testing.T) {
 	want := []string{
 		"ddl.alter.modify_column.target_type_family.allowlist",
 		"ddl.alter.change_column.target_type_family.allowlist",
+		"ddl.alter.modify_column.explicit_nullability_change.forbid",
+		"ddl.alter.change_column.explicit_nullability_change.forbid",
+		"ddl.alter.modify_column.explicit_default_change.forbid",
+		"ddl.alter.change_column.explicit_default_change.forbid",
+		"ddl.alter.modify_column.explicit_auto_increment_change.forbid",
+		"ddl.alter.change_column.explicit_auto_increment_change.forbid",
 		"ddl.alter.rename_index.forbid",
+		"ddl.alter.add_index.columns.max_count",
+		"ddl.alter.add_index.duplicate.forbid",
 		"ddl.alter.add_index.unique.prefix.require",
 		"ddl.alter.add_index.secondary.prefix.require",
 		"ddl.alter.add_index.fulltext.prefix.require",
@@ -47,6 +63,10 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 					Type:     "bigint(20) unsigned",
 					Unsigned: true,
 				},
+				Change: &spec.AlterColumnChange{
+					TouchesNullability: true,
+					TouchesDefault:     true,
+				},
 			},
 		},
 		spec.Alter{
@@ -56,6 +76,22 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 				OldName: "old_email",
 				Definition: &spec.Column{
 					Name: "email",
+				},
+			},
+		},
+		spec.Alter{
+			Action: "change_column",
+			Name:   "legacy_id",
+			Column: &spec.AlterColumn{
+				OldName: "legacy_id",
+				Definition: &spec.Column{
+					Name:          "id",
+					Type:          "bigint(20)",
+					AutoIncrement: true,
+				},
+				Change: &spec.AlterColumnChange{
+					TouchesNullability:   true,
+					TouchesAutoIncrement: true,
 				},
 			},
 		},
@@ -119,6 +155,30 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 	if got := columnTypeFamily(*column); got != "integer" {
 		t.Fatalf("expected bigint column type family integer, got %q", got)
 	}
+	change, ok := alterColumnChange(modifyColumn[0])
+	if !ok || !change.TouchesNullability || !change.TouchesDefault {
+		t.Fatalf("expected explicit modify-column change facts, got ok=%t change=%+v", ok, change)
+	}
+	if !alterTouchesExplicitNullability(modifyColumn[0]) || !alterTouchesExplicitDefault(modifyColumn[0]) {
+		t.Fatalf("expected explicit nullability/default helpers to be true for modify column")
+	}
+	if alterTouchesExplicitAutoIncrement(modifyColumn[0]) {
+		t.Fatalf("expected explicit auto_increment helper to stay false for modify column")
+	}
+	if family, ok := alterTargetColumnTypeFamily(modifyColumn[0]); !ok || family != "integer" {
+		t.Fatalf("expected target type family integer, got ok=%t family=%q", ok, family)
+	}
+
+	changeColumn := matchingAlterActions(statement, "change_column")
+	if len(changeColumn) != 1 {
+		t.Fatalf("expected 1 change_column alter, got %d", len(changeColumn))
+	}
+	if !alterRenamesColumn(changeColumn[0]) {
+		t.Fatalf("expected change_column helper to detect rename from legacy_id to id")
+	}
+	if !alterTouchesExplicitAutoIncrement(changeColumn[0]) {
+		t.Fatalf("expected explicit auto_increment helper to be true for change column")
+	}
 
 	addIndex := matchingAlterActions(statement, "add_constraint")
 	if len(addIndex) != 1 {
@@ -127,6 +187,14 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 	index, ok := alterIndexDefinition(addIndex[0])
 	if !ok || index.Name != "uniq_email" || index.Kind != spec.IndexKindUnique {
 		t.Fatalf("expected unique index definition, got ok=%t index=%+v", ok, index)
+	}
+	projectedIndexes := alterAddedIndexesByKind(statement, spec.IndexKindUnique)
+	if len(projectedIndexes) != 1 || projectedIndexes[0].Name != "uniq_email" {
+		t.Fatalf("expected projected unique add-index slice, got %+v", projectedIndexes)
+	}
+	projectedStatement := projectedAlterIndexesStatement(statement, projectedIndexes)
+	if len(projectedStatement.DDL.Indexes) != 1 || projectedStatement.DDL.Indexes[0].Name != "uniq_email" {
+		t.Fatalf("expected projected alter-index statement to carry uniq_email, got %+v", projectedStatement.DDL.Indexes)
 	}
 
 	options := matchingAlterActions(statement, "table_option")
