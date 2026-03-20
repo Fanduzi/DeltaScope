@@ -16,6 +16,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules.go | Implements audit timestamp column rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
+| alter_semantic_rules.go | Implements rename-index forbids and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
@@ -25,6 +26,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | index_rules_test.go | Verifies create-table index governance rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
+| alter_semantic_rules_test.go | Verifies semantic alter rename-index and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
 
@@ -91,6 +93,20 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 - extracting old/new names for rename-style alters
 - reading normalized table-option values
 - classifying column target types into coarse type families that later semantic rules can build on, not a complete compatibility decision on its own
+
+## Semantic Alter Surface
+
+The first semantic alter batch currently covers:
+
+- `ddl.alter.rename_index.forbid`
+- `ddl.alter.modify_column.compatible.require`
+- `ddl.alter.change_column.compatible.require`
+
+The `compatible.require` rules are intentionally conservative in offline mode:
+
+- they inspect only the extracted target column definition
+- they use coarse target type-family allowlists
+- they do not claim to prove end-to-end source-to-target compatibility without live schema context
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

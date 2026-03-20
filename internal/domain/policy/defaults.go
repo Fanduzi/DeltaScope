@@ -204,6 +204,13 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.alter.rename_index.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"ddl.alter.change_column.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -216,6 +223,22 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"forbid": false,
+				},
+			},
+			"ddl.alter.modify_column.compatible.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required":              true,
+					"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
+				},
+			},
+			"ddl.alter.change_column.compatible.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required":              true,
+					"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
 				},
 			},
 			"ddl.table.comment.max_length": {

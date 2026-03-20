@@ -1,4 +1,11 @@
 rules:
+  ddl.alter.change_column.compatible.require:
+    enabled: true
+    level: blocker
+    params:
+      allowed_type_families: [integer decimal string binary time]
+      required: true
+
   ddl.alter.change_column.forbid:
     enabled: true
     level: blocker
@@ -23,6 +30,13 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.modify_column.compatible.require:
+    enabled: true
+    level: blocker
+    params:
+      allowed_type_families: [integer decimal string binary time]
+      required: true
+
   ddl.alter.modify_column.forbid:
     enabled: true
     level: warning
@@ -30,6 +44,12 @@ rules:
       forbid: false
 
   ddl.alter.rename_column.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.rename_index.forbid:
     enabled: true
     level: blocker
     params:

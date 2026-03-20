@@ -72,11 +72,20 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterRenameColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterRenameColumnForbid, "rename_column", "rename column", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDAlterRenameIndexForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterRenameRule(ruleIDAlterRenameIndexForbid, "rename_index", "rename index", rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDAlterChangeColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterChangeColumnForbid, "change_column", "change column", rule.LevelBlocker, cfg)
 		}},
 		{ruleID: ruleIDAlterModifyColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterModifyColumnForbid, "modify_column", "modify column", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterModifyColumnCompatibleRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterTargetTypeFamilyRule(ruleIDAlterModifyColumnCompatibleRequire, "modify_column", "modify column", rule.LevelBlocker, defaultConservativeAlterTypeFamilies, cfg)
+		}},
+		{ruleID: ruleIDAlterChangeColumnCompatibleRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterTargetTypeFamilyRule(ruleIDAlterChangeColumnCompatibleRequire, "change_column", "change column", rule.LevelBlocker, defaultConservativeAlterTypeFamilies, cfg)
 		}},
 		{ruleID: ruleIDTableCommentMaxLength, construct: newTableCommentMaxLengthRule},
 		{ruleID: ruleIDTableEngineAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
