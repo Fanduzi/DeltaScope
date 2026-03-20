@@ -70,8 +70,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.change_column.forbid`
 - `ddl.alter.modify_column.forbid`
 - `ddl.alter.rename_index.forbid`
-- `ddl.alter.modify_column.compatible.require`
-- `ddl.alter.change_column.compatible.require`
+- `ddl.alter.modify_column.target_type_family.allowlist`
+- `ddl.alter.change_column.target_type_family.allowlist`
 - `ddl.alter.add_index.unique.prefix.require`
 - `ddl.alter.add_index.secondary.prefix.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
@@ -99,14 +99,15 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 The first semantic alter batch currently covers:
 
 - `ddl.alter.rename_index.forbid`
-- `ddl.alter.modify_column.compatible.require`
-- `ddl.alter.change_column.compatible.require`
+- `ddl.alter.modify_column.target_type_family.allowlist`
+- `ddl.alter.change_column.target_type_family.allowlist`
 
-The `compatible.require` rules are intentionally conservative in offline mode:
+The `target_type_family.allowlist` rules are intentionally conservative in offline mode:
 
 - they inspect only the extracted target column definition
 - they use coarse target type-family allowlists
 - they do not claim to prove end-to-end source-to-target compatibility without live schema context
+- under the default policy, `ddl.alter.change_column.forbid` stays stricter, so the change-column allowlist acts as a follow-on guard only after that coarse forbid is intentionally relaxed
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

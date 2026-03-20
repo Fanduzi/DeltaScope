@@ -16,6 +16,11 @@ Policy model for rule configuration and future audit settings.
 - `Policy`
 - `Default()`
 
+## Notes
+
+- The default alter policy keeps `ddl.alter.change_column.forbid` enabled as the stricter coarse guard.
+- `ddl.alter.change_column.target_type_family.allowlist` remains enabled as a follow-on semantic guard for teams that intentionally relax the coarse forbid later.
+
 ## Dependencies
 - Upstream: application policy loading and future config adapters
 - Downstream: `internal/domain/rule`

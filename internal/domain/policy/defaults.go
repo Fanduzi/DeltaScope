@@ -225,7 +225,7 @@ func Default() Policy {
 					"forbid": false,
 				},
 			},
-			"ddl.alter.modify_column.compatible.require": {
+			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
@@ -233,7 +233,7 @@ func Default() Policy {
 					"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
 				},
 			},
-			"ddl.alter.change_column.compatible.require": {
+			"ddl.alter.change_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{

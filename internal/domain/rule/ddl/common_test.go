@@ -13,16 +13,16 @@ import (
 
 func TestRegisterAlterRuleIDsStayStable(t *testing.T) {
 	got := []string{
-		ruleIDAlterModifyColumnCompatibleRequire,
-		ruleIDAlterChangeColumnCompatibleRequire,
+		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
+		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
 		ruleIDAlterRenameIndexForbid,
 		ruleIDAlterAddIndexUniquePrefixRequire,
 		ruleIDAlterAddIndexSecondaryPrefixRequire,
 		ruleIDAlterAddIndexFulltextPrefixRequire,
 	}
 	want := []string{
-		"ddl.alter.modify_column.compatible.require",
-		"ddl.alter.change_column.compatible.require",
+		"ddl.alter.modify_column.target_type_family.allowlist",
+		"ddl.alter.change_column.target_type_family.allowlist",
 		"ddl.alter.rename_index.forbid",
 		"ddl.alter.add_index.unique.prefix.require",
 		"ddl.alter.add_index.secondary.prefix.require",

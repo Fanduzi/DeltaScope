@@ -13,9 +13,9 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-func TestAlterTargetTypeFamilyRuleBlocksDisallowedFamilies(t *testing.T) {
+func TestAlterTargetTypeFamilyAllowlistRuleBlocksDisallowedFamilies(t *testing.T) {
 	statementRule, err := newAlterTargetTypeFamilyRule(
-		ruleIDAlterModifyColumnCompatibleRequire,
+		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
 		"modify_column",
 		"modify column",
 		rule.LevelBlocker,
@@ -51,17 +51,17 @@ func TestAlterTargetTypeFamilyRuleBlocksDisallowedFamilies(t *testing.T) {
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %d", len(findings))
 	}
-	if findings[0].RuleID != ruleIDAlterModifyColumnCompatibleRequire {
-		t.Fatalf("expected rule id %q, got %q", ruleIDAlterModifyColumnCompatibleRequire, findings[0].RuleID)
+	if findings[0].RuleID != ruleIDAlterModifyColumnTargetTypeFamilyAllowlist {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterModifyColumnTargetTypeFamilyAllowlist, findings[0].RuleID)
 	}
 	if got := findings[0].Metadata["type_family"]; got != "text" {
 		t.Fatalf("expected type_family metadata text, got %#v", got)
 	}
 }
 
-func TestAlterTargetTypeFamilyRuleAllowsConfiguredFamilies(t *testing.T) {
+func TestAlterTargetTypeFamilyAllowlistRuleAllowsConfiguredFamilies(t *testing.T) {
 	statementRule, err := newAlterTargetTypeFamilyRule(
-		ruleIDAlterChangeColumnCompatibleRequire,
+		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
 		"change_column",
 		"change column",
 		rule.LevelBlocker,
@@ -162,7 +162,7 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 			"forbid": true,
 		},
 	}
-	cfg.Rules[ruleIDAlterModifyColumnCompatibleRequire] = policy.RulePolicy{
+	cfg.Rules[ruleIDAlterModifyColumnTargetTypeFamilyAllowlist] = policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
 		Params: map[string]any{
@@ -170,7 +170,7 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 			"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
 		},
 	}
-	cfg.Rules[ruleIDAlterChangeColumnCompatibleRequire] = policy.RulePolicy{
+	cfg.Rules[ruleIDAlterChangeColumnTargetTypeFamilyAllowlist] = policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
 		Params: map[string]any{
@@ -222,8 +222,8 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 
 	wantIDs := []string{
 		ruleIDAlterRenameIndexForbid,
-		ruleIDAlterModifyColumnCompatibleRequire,
-		ruleIDAlterChangeColumnCompatibleRequire,
+		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
+		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
 	}
 	if len(findings) != len(wantIDs) {
 		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))
