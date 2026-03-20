@@ -37,9 +37,11 @@
   - Task 2: application extraction of explicit statement-local change facts
 - completed implementation for:
   - Task 3: source-aware alter rule IDs and helper substrate
+  - Task 4: explicit alter-column change rules plus policy/config wiring
 - current emphasis:
   - keep change facts honest and statement-local
   - do not label target type/unsigned shape as “explicitly touched” unless the statement truly proves it
+  - keep `target_type_family.allowlist` target-side only and avoid faking source-schema compatibility
 
 ## Key Commits
 
@@ -58,6 +60,7 @@
 - `739553d` `refactor: remove redundant alter rename flag`
 - `6403f26` `refactor: narrow explicit alter change facts`
 - `5f9b47c` `refactor: prepare source-aware alter rules`
+- `2900bfe` `feat: add explicit alter column rules`
 
 ## Verification Run
 
@@ -76,6 +79,7 @@
 - there was one CLI race where a concurrent worker rewrote `internal/interfaces/cli` during validation; I reconciled the files and re-ran tests plus manual smoke checks afterward
 - Milestone 3 immediately exposed another honesty boundary: `MODIFY/CHANGE COLUMN` syntax includes a full target definition, but that does not prove the statement explicitly touched type or unsigned semantics
 - I corrected that by narrowing `AlterColumn.Change` to explicit nullability/default/auto-increment touches only; target shape remains on `Definition`
+- Milestone 3 Task 4 intentionally skipped an unsigned-transition rule because the current offline model still cannot describe that transition honestly
 
 ## Remaining Gaps
 

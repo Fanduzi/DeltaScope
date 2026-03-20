@@ -24,6 +24,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `739553d` `refactor: remove redundant alter rename flag`
 - `6403f26` `refactor: narrow explicit alter change facts`
 - `5f9b47c` `refactor: prepare source-aware alter rules`
+- `2900bfe` `feat: add explicit alter column rules`
 
 ## Current Offline DDL Coverage
 
@@ -58,4 +59,4 @@ The highest-value remaining gaps are:
 
 ## Recommended Next Step
 
-Milestone 2 is complete and Milestone 3 is now underway. The immediate next work is to finish the source-aware alter rule batch on top of the newly narrowed explicit change facts, then follow with identifier validation and broader redundant-index analysis.
+Milestone 2 is complete and Milestone 3 is now underway. The immediate next work is to review and extend the new explicit alter-column rule batch, then finish alter-index lifecycle checks before moving on to identifier validation and broader redundant-index analysis.
