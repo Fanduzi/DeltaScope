@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: application-owned parsed SQL statements and hidden TiDB AST nodes
-// output: first-pass StatementSpec values for later rule evaluation
+// output: first-pass StatementSpec values plus source-aware alter change facts for later rule evaluation
 // pos: application extraction step between parsing and rule execution
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -245,6 +245,9 @@ func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
 			return nil
 		}
 		column := alterColumnFromColumnDef(specification.NewColumns[0])
+		if specification.Tp == ast.AlterTableModifyColumn || specification.Tp == ast.AlterTableChangeColumn {
+			column.Change = alterColumnChangeFacts(specification.NewColumns[0])
+		}
 		if specification.Tp == ast.AlterTableChangeColumn && specification.OldColumnName != nil {
 			column.OldName = specification.OldColumnName.Name.L
 		}
@@ -276,6 +279,42 @@ func alterColumnFromColumnDef(col *ast.ColumnDef) *spec.AlterColumn {
 	return &spec.AlterColumn{
 		Definition: &extracted,
 	}
+}
+
+func alterColumnChangeFacts(col *ast.ColumnDef) *spec.AlterColumnChange {
+	if col == nil {
+		return nil
+	}
+
+	change := &spec.AlterColumnChange{
+		TouchesType:     true,
+		TouchesUnsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag()),
+	}
+
+	for _, option := range col.Options {
+		if option == nil {
+			continue
+		}
+
+		switch option.Tp {
+		case ast.ColumnOptionNull, ast.ColumnOptionNotNull:
+			change.TouchesNullability = true
+		case ast.ColumnOptionDefaultValue:
+			change.TouchesDefault = true
+		case ast.ColumnOptionAutoIncrement:
+			change.TouchesAutoIncrement = true
+		}
+	}
+
+	if !change.TouchesType &&
+		!change.TouchesNullability &&
+		!change.TouchesDefault &&
+		!change.TouchesUnsigned &&
+		!change.TouchesAutoIncrement {
+		return nil
+	}
+
+	return change
 }
 
 func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {

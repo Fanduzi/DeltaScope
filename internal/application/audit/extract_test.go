@@ -98,7 +98,7 @@ func TestExtractMapsCreateTable(t *testing.T) {
 
 func TestExtractMapsAlterTable(t *testing.T) {
 	t.Run("maps representative alter shapes", func(t *testing.T) {
-		parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)
+		parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, modify column age bigint null default 1 comment 'age2', change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
 		}
@@ -115,8 +115,8 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		if stmt.DDL.Table.Name != "users" {
 			t.Fatalf("expected table name users, got %q", stmt.DDL.Table.Name)
 		}
-		if len(stmt.DDL.Alter) != 9 {
-			t.Fatalf("expected 9 alter actions, got %d", len(stmt.DDL.Alter))
+		if len(stmt.DDL.Alter) != 10 {
+			t.Fatalf("expected 10 alter actions, got %d", len(stmt.DDL.Alter))
 		}
 
 		addColumn := stmt.DDL.Alter[0]
@@ -162,9 +162,29 @@ func TestExtractMapsAlterTable(t *testing.T) {
 			t.Fatalf("expected drop column definition to be empty, got %+v", dropColumn.Column.Definition)
 		}
 
-		changeColumn := stmt.DDL.Alter[2]
+		modifyColumn := stmt.DDL.Alter[2]
+		if modifyColumn.Action != "modify_column" {
+			t.Fatalf("expected third alter action modify_column, got %q", modifyColumn.Action)
+		}
+		if modifyColumn.Name != "age" {
+			t.Fatalf("expected canonical modify column name age, got %q", modifyColumn.Name)
+		}
+		if modifyColumn.Column == nil || modifyColumn.Column.Definition == nil {
+			t.Fatalf("expected modify column payload to be populated")
+		}
+		if modifyColumn.Column.Change == nil {
+			t.Fatalf("expected modify column change facts to be populated")
+		}
+		if !modifyColumn.Column.Change.TouchesType || !modifyColumn.Column.Change.TouchesNullability || !modifyColumn.Column.Change.TouchesDefault {
+			t.Fatalf("expected modify column to mark type/nullability/default touches, got %+v", *modifyColumn.Column.Change)
+		}
+		if modifyColumn.Column.Change.TouchesUnsigned || modifyColumn.Column.Change.TouchesAutoIncrement {
+			t.Fatalf("expected modify column not to mark unsigned/auto_increment touches, got %+v", *modifyColumn.Column.Change)
+		}
+
+		changeColumn := stmt.DDL.Alter[3]
 		if changeColumn.Action != "change_column" {
-			t.Fatalf("expected third alter action change_column, got %q", changeColumn.Action)
+			t.Fatalf("expected fourth alter action change_column, got %q", changeColumn.Action)
 		}
 		if changeColumn.Name != "old_name" {
 			t.Fatalf("expected canonical change column name old_name, got %q", changeColumn.Name)
@@ -178,10 +198,19 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		if changeColumn.Column.Definition.Type != "bigint(20) unsigned" || !changeColumn.Column.Definition.Unsigned || !changeColumn.Column.Definition.AutoIncrement || !changeColumn.Column.Definition.NotNull {
 			t.Fatalf("expected change column semantic payload, got %+v", *changeColumn.Column.Definition)
 		}
+		if changeColumn.Column.Change == nil {
+			t.Fatalf("expected change column change facts to be populated")
+		}
+		if !changeColumn.Column.Change.TouchesType || !changeColumn.Column.Change.TouchesNullability || !changeColumn.Column.Change.TouchesUnsigned || !changeColumn.Column.Change.TouchesAutoIncrement {
+			t.Fatalf("expected change column to mark type/nullability/unsigned/auto_increment touches, got %+v", *changeColumn.Column.Change)
+		}
+		if changeColumn.Column.Change.TouchesDefault {
+			t.Fatalf("expected change column without explicit default to avoid default touch, got %+v", *changeColumn.Column.Change)
+		}
 
-		renameColumn := stmt.DDL.Alter[3]
+		renameColumn := stmt.DDL.Alter[4]
 		if renameColumn.Action != "rename_column" {
-			t.Fatalf("expected fourth alter action rename_column, got %q", renameColumn.Action)
+			t.Fatalf("expected fifth alter action rename_column, got %q", renameColumn.Action)
 		}
 		if renameColumn.Name != "old_email" {
 			t.Fatalf("expected canonical rename column name old_email, got %q", renameColumn.Name)
@@ -189,10 +218,13 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		if renameColumn.Column == nil || renameColumn.Column.OldName != "old_email" || renameColumn.Column.Definition == nil || renameColumn.Column.Definition.Name != "email" {
 			t.Fatalf("expected rename column payload old_email->email, got %+v", renameColumn.Column)
 		}
+		if renameColumn.Column.Change != nil {
+			t.Fatalf("expected pure rename column to avoid separate change facts, got %+v", renameColumn.Column.Change)
+		}
 
-		addIndex := stmt.DDL.Alter[4]
+		addIndex := stmt.DDL.Alter[5]
 		if addIndex.Action != "add_constraint" {
-			t.Fatalf("expected fifth alter action add_constraint, got %q", addIndex.Action)
+			t.Fatalf("expected sixth alter action add_constraint, got %q", addIndex.Action)
 		}
 		if addIndex.Name != "uniq_email" {
 			t.Fatalf("expected canonical add index name uniq_email, got %q", addIndex.Name)
@@ -210,9 +242,9 @@ func TestExtractMapsAlterTable(t *testing.T) {
 			t.Fatalf("expected add index columns [email], got %+v", addIndex.Index.Definition.Columns)
 		}
 
-		dropIndex := stmt.DDL.Alter[5]
+		dropIndex := stmt.DDL.Alter[6]
 		if dropIndex.Action != "drop_index" {
-			t.Fatalf("expected sixth alter action drop_index, got %q", dropIndex.Action)
+			t.Fatalf("expected seventh alter action drop_index, got %q", dropIndex.Action)
 		}
 		if dropIndex.Name != "idx_old" {
 			t.Fatalf("expected canonical drop index name idx_old, got %q", dropIndex.Name)
@@ -224,9 +256,9 @@ func TestExtractMapsAlterTable(t *testing.T) {
 			t.Fatalf("expected drop index definition to be empty, got %+v", dropIndex.Index.Definition)
 		}
 
-		renameIndex := stmt.DDL.Alter[6]
+		renameIndex := stmt.DDL.Alter[7]
 		if renameIndex.Action != "rename_index" {
-			t.Fatalf("expected seventh alter action rename_index, got %q", renameIndex.Action)
+			t.Fatalf("expected eighth alter action rename_index, got %q", renameIndex.Action)
 		}
 		if renameIndex.Name != "idx_old" {
 			t.Fatalf("expected canonical rename index name idx_old, got %q", renameIndex.Name)
@@ -235,17 +267,17 @@ func TestExtractMapsAlterTable(t *testing.T) {
 			t.Fatalf("expected rename index idx_old->idx_new payload, got %+v", renameIndex.Index)
 		}
 
-		engineOption := stmt.DDL.Alter[7]
+		engineOption := stmt.DDL.Alter[8]
 		if engineOption.Action != "table_option" {
-			t.Fatalf("expected eighth alter action table_option, got %q", engineOption.Action)
+			t.Fatalf("expected ninth alter action table_option, got %q", engineOption.Action)
 		}
 		if engineOption.Options["engine"] != "InnoDB" {
 			t.Fatalf("expected engine option InnoDB, got %+v", engineOption.Options)
 		}
 
-		commentOption := stmt.DDL.Alter[8]
+		commentOption := stmt.DDL.Alter[9]
 		if commentOption.Action != "table_option" {
-			t.Fatalf("expected ninth alter action table_option, got %q", commentOption.Action)
+			t.Fatalf("expected tenth alter action table_option, got %q", commentOption.Action)
 		}
 		if commentOption.Options["comment"] != "user table" {
 			t.Fatalf("expected comment option user table, got %+v", commentOption.Options)
