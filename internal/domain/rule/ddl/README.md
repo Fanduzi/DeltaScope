@@ -18,7 +18,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | alter_semantic_rules.go | Implements rename-index forbids, alter-added index prefix rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
-| register.go | Registers enabled DDL rules into the shared registry |
+| register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index prefix rules |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
 | primary_key_rules_test.go | Verifies primary-key requirement and shape rules |
 | primary_key_semantic_rules_test.go | Verifies primary-key semantic rules for bigint/unsigned/auto-increment/not-null requirements |
@@ -113,6 +113,8 @@ The `target_type_family.allowlist` rules are intentionally conservative in offli
 - under the default policy, `ddl.alter.change_column.forbid` stays stricter, so the change-column allowlist acts as a follow-on guard only after that coarse forbid is intentionally relaxed
 
 The alter-added index prefix rules reuse the existing create-table prefix rule body by projecting `ADD CONSTRAINT` index payloads into a temporary parser-neutral index list before evaluation.
+
+Those alter-added index prefix rules are part of the normal `Register(...)` path and therefore active in the shipped default product surface.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

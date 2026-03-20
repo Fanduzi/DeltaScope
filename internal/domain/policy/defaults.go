@@ -211,6 +211,30 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.alter.add_index.unique.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   "uniq_",
+				},
+			},
+			"ddl.alter.add_index.secondary.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   "idx_",
+				},
+			},
+			"ddl.alter.add_index.fulltext.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   "full_",
+				},
+			},
 			"ddl.alter.change_column.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

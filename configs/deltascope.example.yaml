@@ -1,4 +1,25 @@
 rules:
+  ddl.alter.add_index.fulltext.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: full_
+      required: true
+
+  ddl.alter.add_index.secondary.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: idx_
+      required: true
+
+  ddl.alter.add_index.unique.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: uniq_
+      required: true
+
   ddl.alter.change_column.forbid:
     enabled: true
     level: blocker

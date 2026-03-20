@@ -356,3 +356,65 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 		}
 	}
 }
+
+func TestRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(alterStatement(
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "user_email",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "user_email",
+					Kind:    spec.IndexKindUnique,
+					Columns: []string{"email"},
+				},
+			},
+		},
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "name_lookup",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "name_lookup",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"name"},
+				},
+			},
+		},
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "search_body",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "search_body",
+					Kind:    spec.IndexKindFulltext,
+					Columns: []string{"body"},
+				},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	wantIDs := []string{
+		ruleIDAlterAddIndexUniquePrefixRequire,
+		ruleIDAlterAddIndexSecondaryPrefixRequire,
+		ruleIDAlterAddIndexFulltextPrefixRequire,
+	}
+	if len(findings) != len(wantIDs) {
+		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))
+	}
+	for i, want := range wantIDs {
+		if findings[i].RuleID != want {
+			t.Fatalf("expected finding %d to use rule %q, got %q", i, want, findings[i].RuleID)
+		}
+	}
+}

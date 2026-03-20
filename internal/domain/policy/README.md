@@ -7,7 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
-| defaults.go | Defines the built-in rule policy, including expanded DDL batches for columns, primary-key semantics, indexes, alter restrictions, first semantic alter rules, table options/object shape, and the Tier-1 DML rule set |
+| defaults.go | Defines the built-in rule policy, including expanded DDL batches for columns, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules, table options/object shape, and the Tier-1 DML rule set |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
 
 ## Exports
@@ -20,6 +20,7 @@ Policy model for rule configuration and future audit settings.
 
 - The default alter policy keeps `ddl.alter.change_column.forbid` enabled as the stricter coarse guard.
 - `ddl.alter.change_column.target_type_family.allowlist` remains enabled as a follow-on semantic guard for teams that intentionally relax the coarse forbid later.
+- The default policy also enables shipped alter-added index prefix checks for unique, secondary, and fulltext indexes.
 
 ## Dependencies
 - Upstream: application policy loading and future config adapters
