@@ -39,6 +39,108 @@ func Default() Policy {
 					"limit": 1,
 				},
 			},
+			"ddl.table.columns.min_count": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"limit": 1,
+				},
+			},
+			"ddl.table.audit_columns.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.column.comment.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.column.name.max_length": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"limit": 64,
+				},
+			},
+			"ddl.column.varchar.max_length": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"limit": 16383,
+				},
+			},
+			"ddl.column.default.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.column.not_null.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required":        true,
+					"allow_time_null": true,
+				},
+			},
+			"ddl.column.float_double.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.index.total.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 12,
+				},
+			},
+			"ddl.index.columns.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 8,
+				},
+			},
+			"ddl.index.unique.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   "uniq_",
+				},
+			},
+			"ddl.index.secondary.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   "idx_",
+				},
+			},
+			"ddl.index.fulltext.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   "full_",
+				},
+			},
+			"ddl.index.duplicate.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"dml.where.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

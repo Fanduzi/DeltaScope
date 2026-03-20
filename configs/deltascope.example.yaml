@@ -1,4 +1,92 @@
 rules:
+  ddl.column.comment.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+
+  ddl.column.default.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+
+  ddl.column.float_double.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
+  ddl.column.name.max_length:
+    enabled: true
+    level: blocker
+    params:
+      limit: 64
+
+  ddl.column.not_null.require:
+    enabled: true
+    level: warning
+    params:
+      allow_time_null: true
+      required: true
+
+  ddl.column.varchar.max_length:
+    enabled: true
+    level: blocker
+    params:
+      limit: 16383
+
+  ddl.index.columns.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 8
+
+  ddl.index.duplicate.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
+  ddl.index.fulltext.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: full_
+      required: true
+
+  ddl.index.secondary.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: idx_
+      required: true
+
+  ddl.index.total.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 12
+
+  ddl.index.unique.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: uniq_
+      required: true
+
+  ddl.table.audit_columns.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+
+  ddl.table.columns.min_count:
+    enabled: true
+    level: blocker
+    params:
+      limit: 1
+
   ddl.table.comment.require:
     enabled: true
     level: warning

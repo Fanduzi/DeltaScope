@@ -63,3 +63,16 @@ func intParam(ruleID string, cfg policy.RulePolicy, key string, fallback int) (i
 		return 0, fmt.Errorf("rule %s param %q must be integer, got %T", ruleID, key, value)
 	}
 }
+
+func stringParam(ruleID string, cfg policy.RulePolicy, key string, fallback string) (string, error) {
+	value, ok := cfg.Params[key]
+	if !ok {
+		return fallback, nil
+	}
+
+	typed, ok := value.(string)
+	if !ok {
+		return "", fmt.Errorf("rule %s param %q must be string, got %T", ruleID, key, value)
+	}
+	return typed, nil
+}

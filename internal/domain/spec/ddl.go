@@ -24,15 +24,35 @@ type Table struct {
 
 // Column describes a table column.
 type Column struct {
-	Name    string `json:"name"`
-	Type    string `json:"type,omitempty"`
-	Comment string `json:"comment,omitempty"`
+	Name                      string `json:"name"`
+	Type                      string `json:"type,omitempty"`
+	Length                    int    `json:"length,omitempty"`
+	Comment                   string `json:"comment,omitempty"`
+	NotNull                   bool   `json:"not_null,omitempty"`
+	HasDefault                bool   `json:"has_default,omitempty"`
+	DefaultValue              string `json:"default_value,omitempty"`
+	DefaultIsNull             bool   `json:"default_is_null,omitempty"`
+	DefaultIsCurrentTimestamp bool   `json:"default_is_current_timestamp,omitempty"`
+	OnUpdateCurrentTimestamp  bool   `json:"on_update_current_timestamp,omitempty"`
 }
+
+// IndexKind identifies the semantic class of an index declaration.
+type IndexKind string
+
+// Supported index kinds.
+const (
+	IndexKindUnknown   IndexKind = "unknown"
+	IndexKindPrimary   IndexKind = "primary"
+	IndexKindSecondary IndexKind = "secondary"
+	IndexKindUnique    IndexKind = "unique"
+	IndexKindFulltext  IndexKind = "fulltext"
+)
 
 // Index describes an index declaration.
 type Index struct {
-	Name    string   `json:"name"`
-	Columns []string `json:"columns,omitempty"`
+	Name    string    `json:"name"`
+	Kind    IndexKind `json:"kind,omitempty"`
+	Columns []string  `json:"columns,omitempty"`
 }
 
 // Constraint describes a non-index table constraint worth preserving for later rules.

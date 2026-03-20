@@ -12,7 +12,7 @@ import (
 )
 
 func TestExtractMapsCreateTable(t *testing.T) {
-	parsed, err := Parse("create table users (id bigint comment 'pk', name varchar(32) comment 'name', primary key (id), key idx_name (name)) comment='user table';", spec.DialectMySQL)
+	parsed, err := Parse("create table users (id bigint not null default 1 comment 'pk', name varchar(32) default 'guest' comment 'name', body text comment 'body', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id), key idx_name (name), unique key uniq_name (name), fulltext key full_body (body)) comment='user table';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -39,8 +39,35 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	if stmt.DDL.Table.Name != "users" {
 		t.Fatalf("expected table name users, got %q", stmt.DDL.Table.Name)
 	}
-	if len(stmt.DDL.Columns) != 2 {
-		t.Fatalf("expected 2 columns, got %d", len(stmt.DDL.Columns))
+	if len(stmt.DDL.Columns) != 5 {
+		t.Fatalf("expected 5 columns, got %d", len(stmt.DDL.Columns))
+	}
+
+	nameCol := stmt.DDL.Columns[1]
+	if nameCol.Type != "varchar(32)" {
+		t.Fatalf("expected normalized varchar type, got %q", nameCol.Type)
+	}
+	if nameCol.Length != 32 {
+		t.Fatalf("expected varchar length 32, got %d", nameCol.Length)
+	}
+	if !nameCol.HasDefault || nameCol.DefaultValue != "'guest'" {
+		t.Fatalf("expected default value 'guest', got has_default=%t default=%q", nameCol.HasDefault, nameCol.DefaultValue)
+	}
+
+	createdAt := stmt.DDL.Columns[3]
+	if !createdAt.NotNull {
+		t.Fatalf("expected created_at to be not null")
+	}
+	if !createdAt.DefaultIsCurrentTimestamp {
+		t.Fatalf("expected created_at to use current_timestamp default")
+	}
+	if createdAt.OnUpdateCurrentTimestamp {
+		t.Fatalf("expected created_at not to carry on update current_timestamp")
+	}
+
+	updatedAt := stmt.DDL.Columns[4]
+	if !updatedAt.DefaultIsCurrentTimestamp || !updatedAt.OnUpdateCurrentTimestamp {
+		t.Fatalf("expected updated_at audit timestamp metadata, got %+v", updatedAt)
 	}
 	if stmt.DDL.PrimaryKey == nil {
 		t.Fatalf("expected primary key metadata to be populated")
@@ -48,8 +75,20 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	if stmt.DDL.PrimaryKey.Name != "primary" {
 		t.Fatalf("expected primary key name primary, got %q", stmt.DDL.PrimaryKey.Name)
 	}
-	if len(stmt.DDL.Indexes) != 1 {
-		t.Fatalf("expected 1 secondary index, got %d", len(stmt.DDL.Indexes))
+	if stmt.DDL.PrimaryKey.Kind != spec.IndexKindPrimary {
+		t.Fatalf("expected primary key kind %q, got %q", spec.IndexKindPrimary, stmt.DDL.PrimaryKey.Kind)
+	}
+	if len(stmt.DDL.Indexes) != 3 {
+		t.Fatalf("expected 3 secondary indexes, got %d", len(stmt.DDL.Indexes))
+	}
+	if stmt.DDL.Indexes[0].Kind != spec.IndexKindSecondary {
+		t.Fatalf("expected first index kind %q, got %q", spec.IndexKindSecondary, stmt.DDL.Indexes[0].Kind)
+	}
+	if stmt.DDL.Indexes[1].Kind != spec.IndexKindUnique {
+		t.Fatalf("expected second index kind %q, got %q", spec.IndexKindUnique, stmt.DDL.Indexes[1].Kind)
+	}
+	if stmt.DDL.Indexes[2].Kind != spec.IndexKindFulltext {
+		t.Fatalf("expected third index kind %q, got %q", spec.IndexKindFulltext, stmt.DDL.Indexes[2].Kind)
 	}
 }
 

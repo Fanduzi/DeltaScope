@@ -9,6 +9,14 @@ DeltaScope is an offline SQL review engine for MySQL and TiDB. The first release
 - returns `blocker`, `warning`, and `notice` findings with a final verdict of `reject`, `review`, or `pass`
 - supports both a stable Go package API and the `deltascope` CLI
 
+Current DDL coverage includes:
+
+- table comment, table name length, and primary-key rules
+- audit timestamp column patterns
+- column comment, default, not-null, and float/double guidance
+- varchar length limits
+- create-table index count, index width, naming-prefix, and duplicate-index checks
+
 ## Install And Run
 
 ```bash

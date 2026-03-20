@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
@@ -22,24 +23,80 @@ func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
 			"limit": 5,
 		},
 	}
+	cfg.Rules["ddl.column.name.max_length"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params: map[string]any{
+			"limit": 8,
+		},
+	}
+	cfg.Rules["ddl.column.varchar.max_length"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params: map[string]any{
+			"limit": 64,
+		},
+	}
+	cfg.Rules["ddl.index.total.max_count"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"limit": 3,
+		},
+	}
 
 	if err := Register(registry, cfg); err != nil {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(createTableStatement("orders_archive", "", nil))
+	findings, err := registry.EvaluateStatement(spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Table: &spec.Table{Name: "orders_archive"},
+			Columns: []spec.Column{
+				{Name: "display_name", Type: "varchar(255)", Length: 255},
+				{Name: "ratio", Type: "float"},
+				{Name: "body", Type: "text"},
+			},
+			Indexes: []spec.Index{
+				{Name: "badsecondary", Kind: spec.IndexKindSecondary, Columns: []string{"display_name", "ratio", "created_at", "updated_at", "tenant_id", "region_id", "source_id", "org_id", "category_id"}},
+				{Name: "badunique", Kind: spec.IndexKindUnique, Columns: []string{"display_name"}},
+				{Name: "badfull", Kind: spec.IndexKindFulltext, Columns: []string{"body"}},
+				{Name: "idx_dup_one", Kind: spec.IndexKindSecondary, Columns: []string{"ratio"}},
+				{Name: "idx_dup_two", Kind: spec.IndexKindSecondary, Columns: []string{"ratio"}},
+			},
+		},
+	})
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
 
-	if len(findings) != 3 {
-		t.Fatalf("expected 3 findings, got %d", len(findings))
+	if len(findings) != 21 {
+		t.Fatalf("expected 21 findings, got %d", len(findings))
 	}
 
 	wantIDs := []string{
 		"ddl.table.comment.require",
 		"ddl.table.name.max_length",
 		"ddl.table.primary_key.require",
+		"ddl.table.audit_columns.require",
+		"ddl.table.audit_columns.require",
+		"ddl.column.comment.require",
+		"ddl.column.comment.require",
+		"ddl.column.comment.require",
+		"ddl.column.name.max_length",
+		"ddl.column.varchar.max_length",
+		"ddl.column.default.require",
+		"ddl.column.default.require",
+		"ddl.column.not_null.require",
+		"ddl.column.not_null.require",
+		"ddl.column.float_double.forbid",
+		"ddl.index.total.max_count",
+		"ddl.index.columns.max_count",
+		"ddl.index.unique.prefix.require",
+		"ddl.index.secondary.prefix.require",
+		"ddl.index.fulltext.prefix.require",
+		"ddl.index.duplicate.forbid",
 	}
 	for i, want := range wantIDs {
 		if findings[i].RuleID != want {
@@ -63,7 +120,13 @@ func TestRegisterSkipsDisabledDDLRules(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(createTableStatement("users", "", []string{"id"}))
+	findings, err := registry.EvaluateStatement(createTableWithColumns("users", spec.Column{
+		Name:       "id",
+		Type:       "bigint",
+		Comment:    "'pk'",
+		NotNull:    true,
+		HasDefault: true,
+	}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

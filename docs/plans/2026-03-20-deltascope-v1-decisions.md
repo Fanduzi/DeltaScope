@@ -229,6 +229,42 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - emit `pass` when the audit has no findings
 - Why: this gives the flag a minimal but meaningful machine-friendly behavior without adding a second full renderer stack.
 
+## Decision 30: second DDL expansion starts with column governance, not alter restrictions
+
+- Problem: the next DDL milestone needs to close more of the gap with `gAudit`, but the current extracted model still lacks safe, detailed alter/index metadata for a strong second batch.
+- Decision:
+  - prioritize column-governance rules first
+  - expand the DDL column spec with offline facts such as length, nullability, defaults, and current-timestamp semantics
+  - defer alter restrictions and deeper index rules to a later batch after the extracted model is richer
+- Why: column rules add high-value offline coverage immediately and can be implemented safely against the existing create-table shape without inventing brittle metadata.
+
+## Decision 31: audit-column detection stays pattern-based and name-agnostic
+
+- Problem: `gAudit`-style audit requirements care about created/updated timestamp behavior, but hard-coding exact column names would make the rule less portable across schemas.
+- Decision:
+  - treat audit columns as semantic patterns, not fixed names
+  - require one time-like column with `DEFAULT CURRENT_TIMESTAMP`
+  - require one time-like column with both `DEFAULT CURRENT_TIMESTAMP` and `ON UPDATE CURRENT_TIMESTAMP`
+- Why: this preserves the governance intent while keeping the rule useful for teams that use different audit-column names.
+
+## Decision 32: create-table index rules need typed index metadata
+
+- Problem: the next DDL gap after column governance is index policy, but the domain model originally preserved only index names and columns.
+- Decision:
+  - add `spec.IndexKind`
+  - classify extracted indexes as `primary`, `secondary`, `unique`, or `fulltext`
+  - keep rules consuming only domain `Index` values, not AST constraint types
+- Why: prefix and duplicate-index checks need stable semantic classification, and this is the smallest model expansion that unlocks them cleanly.
+
+## Decision 33: exact duplicate-index detection is a safe first step, not full redundancy analysis
+
+- Problem: `gAudit` has broader redundant-index concerns, but complete redundancy analysis needs expression, prefix-length, and left-prefix semantics that DeltaScope does not extract yet.
+- Decision:
+  - implement only exact duplicate detection for now
+  - compare index kind plus ordered indexed columns
+  - defer broader redundant-index analysis to a later batch
+- Why: exact duplicates are high-signal and safe to detect offline, while broader redundancy logic would be easy to overclaim with the current model.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

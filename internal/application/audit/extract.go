@@ -71,11 +71,7 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	}
 
 	for _, col := range stmt.Cols {
-		ddl.Columns = append(ddl.Columns, spec.Column{
-			Name:    col.Name.Name.L,
-			Type:    col.Tp.String(),
-			Comment: extractColumnComment(col.Options),
-		})
+		ddl.Columns = append(ddl.Columns, extractColumn(col))
 	}
 
 	for _, c := range stmt.Constraints {
@@ -83,11 +79,13 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		case ast.ConstraintPrimaryKey:
 			ddl.PrimaryKey = &spec.Index{
 				Name:    normalizeConstraintName(c),
+				Kind:    spec.IndexKindPrimary,
 				Columns: extractIndexColumns(c.Keys),
 			}
 		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 			ddl.Indexes = append(ddl.Indexes, spec.Index{
 				Name:    normalizeConstraintName(c),
+				Kind:    indexKindForConstraint(c.Tp),
 				Columns: extractIndexColumns(c.Keys),
 			})
 		default:
@@ -181,6 +179,63 @@ func extractColumnComment(options []*ast.ColumnOption) string {
 	return ""
 }
 
+func extractColumn(col *ast.ColumnDef) spec.Column {
+	column := spec.Column{
+		Name:   col.Name.Name.L,
+		Type:   strings.ToLower(col.Tp.String()),
+		Length: col.Tp.GetFlen(),
+	}
+
+	for _, option := range col.Options {
+		if option == nil {
+			continue
+		}
+
+		switch option.Tp {
+		case ast.ColumnOptionComment:
+			if option.Expr != nil {
+				column.Comment = option.Expr.Text()
+			}
+		case ast.ColumnOptionNotNull:
+			column.NotNull = true
+		case ast.ColumnOptionDefaultValue:
+			column.HasDefault = true
+			column.DefaultValue = normalizedExprText(option.Expr)
+			column.DefaultIsNull = strings.EqualFold(column.DefaultValue, "null")
+			column.DefaultIsCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
+		case ast.ColumnOptionOnUpdate:
+			column.OnUpdateCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
+		}
+	}
+
+	return column
+}
+
+func normalizedExprText(expr ast.ExprNode) string {
+	if expr == nil {
+		return ""
+	}
+	if valueExpr, ok := expr.(ast.ValueExpr); ok {
+		switch value := valueExpr.GetValue().(type) {
+		case string:
+			return fmt.Sprintf("'%s'", value)
+		default:
+			return fmt.Sprint(value)
+		}
+	}
+	return strings.TrimSpace(expr.Text())
+}
+
+func exprIsCurrentTimestamp(expr ast.ExprNode) bool {
+	if expr == nil {
+		return false
+	}
+	if funcCall, ok := expr.(*ast.FuncCallExpr); ok {
+		return funcCall.FnName.L == ast.CurrentTimestamp
+	}
+	return strings.EqualFold(normalizedExprText(expr), "current_timestamp")
+}
+
 func extractIndexColumns(parts []*ast.IndexPartSpecification) []string {
 	columns := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -190,6 +245,21 @@ func extractIndexColumns(parts []*ast.IndexPartSpecification) []string {
 		columns = append(columns, part.Column.Name.L)
 	}
 	return columns
+}
+
+func indexKindForConstraint(tp ast.ConstraintType) spec.IndexKind {
+	switch tp {
+	case ast.ConstraintPrimaryKey:
+		return spec.IndexKindPrimary
+	case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
+		return spec.IndexKindUnique
+	case ast.ConstraintFulltext:
+		return spec.IndexKindFulltext
+	case ast.ConstraintKey, ast.ConstraintIndex:
+		return spec.IndexKindSecondary
+	default:
+		return spec.IndexKindUnknown
+	}
 }
 
 func normalizeConstraintName(c *ast.Constraint) string {
