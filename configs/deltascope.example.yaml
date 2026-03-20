@@ -123,11 +123,23 @@ rules:
     params:
       required: true
 
+  ddl.table.charset.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      values: [utf8 utf8mb4]
+
   ddl.table.columns.min_count:
     enabled: true
     level: blocker
     params:
       limit: 1
+
+  ddl.table.comment.max_length:
+    enabled: true
+    level: warning
+    params:
+      limit: 128
 
   ddl.table.comment.require:
     enabled: true
@@ -135,11 +147,41 @@ rules:
     params:
       required: true
 
+  ddl.table.create_as.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.table.create_like.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.table.engine.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      values: [InnoDB]
+
+  ddl.table.foreign_key.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.table.name.max_length:
     enabled: true
     level: blocker
     params:
       limit: 64
+
+  ddl.table.partition.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
 
   ddl.table.primary_key.columns.max_count:
     enabled: true

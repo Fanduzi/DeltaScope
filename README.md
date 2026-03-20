@@ -17,6 +17,7 @@ Current DDL coverage includes:
 - varchar length limits
 - create-table index count, index width, naming-prefix, and duplicate-index checks
 - action-level `ALTER TABLE` restrictions for drop/rename/change operations
+- create-table option and object-shape rules for comment length, engine/charset allowlists, foreign keys, partitioning, `LIKE`, and `AS SELECT`
 
 ## Install And Run
 

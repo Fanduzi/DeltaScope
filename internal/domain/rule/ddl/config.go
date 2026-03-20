@@ -76,3 +76,27 @@ func stringParam(ruleID string, cfg policy.RulePolicy, key string, fallback stri
 	}
 	return typed, nil
 }
+
+func stringSliceParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) ([]string, error) {
+	value, ok := cfg.Params[key]
+	if !ok {
+		return append([]string(nil), fallback...), nil
+	}
+
+	switch typed := value.(type) {
+	case []string:
+		return append([]string(nil), typed...), nil
+	case []any:
+		out := make([]string, 0, len(typed))
+		for _, item := range typed {
+			text, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("rule %s param %q must contain only strings, got %T", ruleID, key, item)
+			}
+			out = append(out, text)
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("rule %s param %q must be a string list, got %T", ruleID, key, value)
+	}
+}

@@ -64,10 +64,13 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		Table: &spec.Table{
 			Name: stmt.Table.Name.L,
 		},
-		Columns:     make([]spec.Column, 0, len(stmt.Cols)),
-		Indexes:     make([]spec.Index, 0, len(stmt.Constraints)),
-		Constraints: make([]spec.Constraint, 0),
-		Options:     make(map[string]string),
+		Columns:       make([]spec.Column, 0, len(stmt.Cols)),
+		Indexes:       make([]spec.Index, 0, len(stmt.Constraints)),
+		Constraints:   make([]spec.Constraint, 0),
+		Options:       make(map[string]string),
+		HasReferTable: stmt.ReferTable != nil,
+		HasSelect:     stmt.Select != nil,
+		HasPartition:  stmt.Partition != nil,
 	}
 
 	for _, col := range stmt.Cols {
@@ -380,6 +383,8 @@ func constraintTypeName(tp ast.ConstraintType) string {
 		return "index"
 	case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 		return "unique"
+	case ast.ConstraintForeignKey:
+		return "foreign_key"
 	default:
 		return fmt.Sprintf("constraint_%d", tp)
 	}

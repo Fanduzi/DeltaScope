@@ -37,6 +37,13 @@ const (
 	ruleIDAlterRenameColumnForbid     = "ddl.alter.rename_column.forbid"
 	ruleIDAlterChangeColumnForbid     = "ddl.alter.change_column.forbid"
 	ruleIDAlterModifyColumnForbid     = "ddl.alter.modify_column.forbid"
+	ruleIDTableCommentMaxLength       = "ddl.table.comment.max_length"
+	ruleIDTableEngineAllowlist        = "ddl.table.engine.allowlist"
+	ruleIDTableCharsetAllowlist       = "ddl.table.charset.allowlist"
+	ruleIDTableForeignKeyForbid       = "ddl.table.foreign_key.forbid"
+	ruleIDTablePartitionForbid        = "ddl.table.partition.forbid"
+	ruleIDTableCreateLikeForbid       = "ddl.table.create_like.forbid"
+	ruleIDTableCreateAsForbid         = "ddl.table.create_as.forbid"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
@@ -103,4 +110,13 @@ func indexKindLabel(kind spec.IndexKind) string {
 	default:
 		return "index"
 	}
+}
+
+func containsFold(items []string, target string) bool {
+	for _, item := range items {
+		if strings.EqualFold(strings.TrimSpace(item), strings.TrimSpace(target)) {
+			return true
+		}
+	}
+	return false
 }

@@ -7,13 +7,16 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	Table       *Table            `json:"table,omitempty"`
-	Columns     []Column          `json:"columns,omitempty"`
-	PrimaryKey  *Index            `json:"primary_key,omitempty"`
-	Indexes     []Index           `json:"indexes,omitempty"`
-	Constraints []Constraint      `json:"constraints,omitempty"`
-	Alter       []Alter           `json:"alter,omitempty"`
-	Options     map[string]string `json:"options,omitempty"`
+	Table         *Table            `json:"table,omitempty"`
+	Columns       []Column          `json:"columns,omitempty"`
+	PrimaryKey    *Index            `json:"primary_key,omitempty"`
+	Indexes       []Index           `json:"indexes,omitempty"`
+	Constraints   []Constraint      `json:"constraints,omitempty"`
+	Alter         []Alter           `json:"alter,omitempty"`
+	Options       map[string]string `json:"options,omitempty"`
+	HasReferTable bool              `json:"has_refer_table,omitempty"`
+	HasSelect     bool              `json:"has_select,omitempty"`
+	HasPartition  bool              `json:"has_partition,omitempty"`
 }
 
 // Table describes a table-level object.

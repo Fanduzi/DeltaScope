@@ -190,6 +190,55 @@ func Default() Policy {
 					"forbid": false,
 				},
 			},
+			"ddl.table.comment.max_length": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 128,
+				},
+			},
+			"ddl.table.engine.allowlist": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"values": []string{"InnoDB"},
+				},
+			},
+			"ddl.table.charset.allowlist": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"values": []string{"utf8", "utf8mb4"},
+				},
+			},
+			"ddl.table.foreign_key.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.table.partition.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.table.create_like.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.table.create_as.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"dml.where.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

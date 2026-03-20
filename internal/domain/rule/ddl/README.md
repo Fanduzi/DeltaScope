@@ -1,6 +1,6 @@
 # Domain DDL Rule Module
 
-Expanded DDL rule catalog for create-table governance plus action-level alter restrictions.
+Expanded DDL rule catalog for create-table governance, table options/object shape, and action-level alter restrictions.
 
 ## Files
 
@@ -14,6 +14,7 @@ Expanded DDL rule catalog for create-table governance plus action-level alter re
 | audit_column_rules.go | Implements audit timestamp column rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
+| table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
 | primary_key_rules_test.go | Verifies primary-key requirement and shape rules |
@@ -21,6 +22,7 @@ Expanded DDL rule catalog for create-table governance plus action-level alter re
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | index_rules_test.go | Verifies create-table index governance rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
+| table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
 
 ## Exports
@@ -58,6 +60,13 @@ Expanded DDL rule catalog for create-table governance plus action-level alter re
 - `ddl.alter.rename_column.forbid`
 - `ddl.alter.change_column.forbid`
 - `ddl.alter.modify_column.forbid`
+- `ddl.table.comment.max_length`
+- `ddl.table.engine.allowlist`
+- `ddl.table.charset.allowlist`
+- `ddl.table.foreign_key.forbid`
+- `ddl.table.partition.forbid`
+- `ddl.table.create_like.forbid`
+- `ddl.table.create_as.forbid`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

@@ -62,6 +62,23 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterModifyColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterModifyColumnForbid, "modify_column", "modify column", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDTableCommentMaxLength, construct: newTableCommentMaxLengthRule},
+		{ruleID: ruleIDTableEngineAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableCharsetAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableForeignKeyForbid, construct: newTableForeignKeyForbidRule},
+		{ruleID: ruleIDTablePartitionForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableBooleanShapeRule(ruleIDTablePartitionForbid, "partitioning", rule.LevelBlocker, func(ddl *spec.DDL) bool { return ddl.HasPartition }, cfg)
+		}},
+		{ruleID: ruleIDTableCreateLikeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableBooleanShapeRule(ruleIDTableCreateLikeForbid, "like", rule.LevelBlocker, func(ddl *spec.DDL) bool { return ddl.HasReferTable }, cfg)
+		}},
+		{ruleID: ruleIDTableCreateAsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableBooleanShapeRule(ruleIDTableCreateAsForbid, "as select", rule.LevelBlocker, func(ddl *spec.DDL) bool { return ddl.HasSelect }, cfg)
+		}},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

@@ -1,0 +1,191 @@
+// Package ddl defines Tier-1 DDL rules.
+// input: create-table Statement specs with table options, constraints, and shape flags plus per-rule policy values
+// output: findings for table options and object-shape restrictions
+// pos: DDL rule implementations for create-table option governance
+// note: if this file changes, update this header and module README.md.
+package ddl
+
+import (
+	"fmt"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+type tableCommentMaxLengthRule struct {
+	limit int
+	level rule.Level
+}
+
+func newTableCommentMaxLengthRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	limit, err := intParam(ruleIDTableCommentMaxLength, cfg, "limit", 128)
+	if err != nil {
+		return nil, err
+	}
+	if limit < 1 {
+		return nil, fmt.Errorf("rule %s param %q must be >= 1, got %d", ruleIDTableCommentMaxLength, "limit", limit)
+	}
+	return tableCommentMaxLengthRule{limit: limit, level: configuredLevel(cfg, rule.LevelWarning)}, nil
+}
+
+func (r tableCommentMaxLengthRule) ID() string { return ruleIDTableCommentMaxLength }
+
+func (r tableCommentMaxLengthRule) AppliesTo(statement spec.Statement) bool {
+	return appliesToCreateTable(statement)
+}
+
+func (r tableCommentMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	actual := len(statement.DDL.Table.Comment)
+	if actual == 0 || actual <= r.limit {
+		return nil, nil
+	}
+	return []rule.Finding{{
+		Level:      r.level,
+		Message:    fmt.Sprintf("table comment must not exceed %d characters", r.limit),
+		Suggestion: fmt.Sprintf("shorten the table comment to %d characters or fewer", r.limit),
+		Metadata: map[string]any{
+			"table":  statement.DDL.Table.Name,
+			"limit":  r.limit,
+			"actual": actual,
+		},
+	}}, nil
+}
+
+type tableOptionAllowlistRule struct {
+	ruleID    string
+	optionKey string
+	label     string
+	allowed   []string
+	level     rule.Level
+}
+
+func newTableOptionAllowlistRule(ruleID, optionKey, label string, fallback []string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	allowed, err := stringSliceParam(ruleID, cfg, "values", fallback)
+	if err != nil {
+		return nil, err
+	}
+	return tableOptionAllowlistRule{
+		ruleID:    ruleID,
+		optionKey: optionKey,
+		label:     label,
+		allowed:   allowed,
+		level:     configuredLevel(cfg, fallbackLevel),
+	}, nil
+}
+
+func (r tableOptionAllowlistRule) ID() string { return r.ruleID }
+
+func (r tableOptionAllowlistRule) AppliesTo(statement spec.Statement) bool {
+	return appliesToCreateTable(statement)
+}
+
+func (r tableOptionAllowlistRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	actual := statement.DDL.Options[r.optionKey]
+	if actual != "" && containsFold(r.allowed, actual) {
+		return nil, nil
+	}
+	return []rule.Finding{{
+		Level:      r.level,
+		Message:    fmt.Sprintf("table %s must be one of %v", r.label, r.allowed),
+		Suggestion: fmt.Sprintf("set an explicit %s from the allowed list", r.label),
+		Metadata: map[string]any{
+			"table":   statement.DDL.Table.Name,
+			"option":  r.optionKey,
+			"actual":  actual,
+			"allowed": append([]string(nil), r.allowed...),
+		},
+	}}, nil
+}
+
+type tableBooleanShapeRule struct {
+	ruleID    string
+	label     string
+	level     rule.Level
+	forbid    bool
+	predicate func(*spec.DDL) bool
+}
+
+func newTableBooleanShapeRule(ruleID, label string, fallbackLevel rule.Level, predicate func(*spec.DDL) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	forbid, err := boolParam(ruleID, cfg, "forbid", true)
+	if err != nil {
+		return nil, err
+	}
+	return tableBooleanShapeRule{
+		ruleID:    ruleID,
+		label:     label,
+		level:     configuredLevel(cfg, fallbackLevel),
+		forbid:    forbid,
+		predicate: predicate,
+	}, nil
+}
+
+func (r tableBooleanShapeRule) ID() string { return r.ruleID }
+
+func (r tableBooleanShapeRule) AppliesTo(statement spec.Statement) bool {
+	return r.forbid && appliesToCreateTable(statement)
+}
+
+func (r tableBooleanShapeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) || !r.predicate(statement.DDL) {
+		return nil, nil
+	}
+	return []rule.Finding{{
+		Level:      r.level,
+		Message:    fmt.Sprintf("create table %s is forbidden", r.label),
+		Suggestion: fmt.Sprintf("avoid %s in this statement or relax the policy intentionally", r.label),
+		Metadata: map[string]any{
+			"table": statement.DDL.Table.Name,
+			"rule":  r.ruleID,
+		},
+	}}, nil
+}
+
+type tableForeignKeyForbidRule struct {
+	forbid bool
+	level  rule.Level
+}
+
+func newTableForeignKeyForbidRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	forbid, err := boolParam(ruleIDTableForeignKeyForbid, cfg, "forbid", true)
+	if err != nil {
+		return nil, err
+	}
+	return tableForeignKeyForbidRule{forbid: forbid, level: configuredLevel(cfg, rule.LevelBlocker)}, nil
+}
+
+func (r tableForeignKeyForbidRule) ID() string { return ruleIDTableForeignKeyForbid }
+
+func (r tableForeignKeyForbidRule) AppliesTo(statement spec.Statement) bool {
+	return r.forbid && appliesToCreateTable(statement)
+}
+
+func (r tableForeignKeyForbidRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, constraint := range statement.DDL.Constraints {
+		if constraint.Type != "foreign_key" {
+			continue
+		}
+		findings = append(findings, rule.Finding{
+			Level:      r.level,
+			Message:    fmt.Sprintf("foreign key constraint %q is forbidden", constraint.Name),
+			Suggestion: "remove the foreign key constraint or disable the policy intentionally",
+			Metadata: map[string]any{
+				"table":      statement.DDL.Table.Name,
+				"constraint": constraint.Name,
+				"columns":    append([]string(nil), constraint.Columns...),
+			},
+		})
+	}
+	return findings, nil
+}

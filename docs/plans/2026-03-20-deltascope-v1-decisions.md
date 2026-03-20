@@ -282,6 +282,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - default-allow `drop_column`, `drop_index`, and `modify_column` while still making them policy-addressable
 - Why: this keeps the default policy strict on risky structural rewrites without turning all alter workflows into immediate blockers.
 
+## Decision 36: create-table option rules justify a few shape booleans in `spec.DDL`
+
+- Problem: several `gAudit` table-level rules depend on whether a create-table statement uses `LIKE`, `AS SELECT`, or partitioning, but the domain model originally had no way to express those shapes.
+- Decision:
+  - add `HasReferTable`, `HasSelect`, and `HasPartition` to `spec.DDL`
+  - keep them specific to create-table shape rather than introducing a larger object-kind hierarchy
+- Why: these booleans unlock several high-value offline rules with minimal model growth and keep parser details out of the rule layer.
+
+## Decision 37: table engine/charset rules stay allowlist-based in v1
+
+- Problem: `gAudit` carries richer charset recommendation semantics, but DeltaScope's current offline model only preserves the explicit option values, not recommendation metadata.
+- Decision:
+  - implement engine and charset rules as strict allowlists
+  - require explicit values to be present and belong to the configured list
+  - defer recommendation-style guidance to a later batch if needed
+- Why: allowlists are simple, explicit, and safe for offline enforcement. They cover the most important governance behavior now without inventing premature policy complexity.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

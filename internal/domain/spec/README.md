@@ -8,7 +8,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 |------|---------------|
 | statement.go | Defines the top-level normalized statement model |
 | statement_test.go | Verifies typed statement metadata behavior |
-| ddl.go | Defines DDL-oriented specification types, including richer column facts such as length, nullability, and default/current-timestamp metadata for offline DDL rules |
+| ddl.go | Defines DDL-oriented specification types, including richer column facts, typed index metadata, and create-table shape flags for offline DDL rules |
 | dml.go | Defines DML-oriented specification types, including operation metadata for rule applicability |
 
 ## Exports
@@ -21,6 +21,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Column`
 - `Constraint`
 - `Index`
+- `IndexKind`
 - `Alter`
 - `DML`
 - `DMLOperation`
@@ -35,6 +36,10 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `DefaultIsNull`
   - `DefaultIsCurrentTimestamp`
   - `OnUpdateCurrentTimestamp`
+- `DDL` also carries create-table shape flags for:
+  - `CREATE TABLE ... LIKE`
+  - `CREATE TABLE ... AS SELECT`
+  - partitioned tables
 
 ## Dependencies
 - Upstream: application extraction and domain rule evaluation

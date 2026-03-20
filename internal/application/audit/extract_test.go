@@ -260,3 +260,48 @@ func TestExtractLeavesUnknownStatementsAvailableForLaterLayers(t *testing.T) {
 		t.Fatalf("expected unknown statement to keep empty DDL/DML substructures")
 	}
 }
+
+func TestExtractMapsCreateTableLike(t *testing.T) {
+	parsed, err := Parse("create table users_copy like users;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !statements[0].DDL.HasReferTable {
+		t.Fatalf("expected create table like to set has_refer_table=true")
+	}
+}
+
+func TestExtractMapsCreateTableAsSelect(t *testing.T) {
+	parsed, err := Parse("create table users_copy as select * from users;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !statements[0].DDL.HasSelect {
+		t.Fatalf("expected create table as select to set has_select=true")
+	}
+}
+
+func TestExtractMapsCreateTablePartition(t *testing.T) {
+	parsed, err := Parse("create table users (id bigint primary key) partition by hash(id) partitions 4;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !statements[0].DDL.HasPartition {
+		t.Fatalf("expected partitioned create table to set has_partition=true")
+	}
+}

@@ -1,0 +1,183 @@
+// Package ddl verifies create-table option and shape rule behavior.
+// input: synthetic create-table statements with options, constraints, and shape flags plus rule-specific policy overrides
+// output: focused coverage for table comment, engine/charset, and object-shape findings
+// pos: domain DDL rule test coverage for create-table option governance
+// note: if this file changes, update this header and module README.md.
+package ddl
+
+import (
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+func TestTableCommentMaxLengthRuleFindsLongComments(t *testing.T) {
+	statementRule, err := newTableCommentMaxLengthRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"limit": 5},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Table.Comment = "too long"
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTableEngineAllowlistRuleFindsDisallowedEngine(t *testing.T) {
+	statementRule, err := newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []any{"InnoDB"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Options["engine"] = "MyISAM"
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTableCharsetAllowlistRuleFindsMissingCharset(t *testing.T) {
+	statementRule, err := newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []any{"utf8mb4"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(nil))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTableForeignKeyForbidRuleFindsForeignKeys(t *testing.T) {
+	statementRule, err := newTableForeignKeyForbidRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Constraints = append(ddl.Constraints, spec.Constraint{
+			Type:    "foreign_key",
+			Name:    "fk_users_org",
+			Columns: []string{"org_id"},
+		})
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTableCreateLikeForbidRuleFindsLikeStatements(t *testing.T) {
+	statementRule, err := newTableBooleanShapeRule(ruleIDTableCreateLikeForbid, "like", rule.LevelBlocker, func(ddl *spec.DDL) bool {
+		return ddl.HasReferTable
+	}, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.HasReferTable = true
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTableCreateAsForbidRuleFindsAsSelectStatements(t *testing.T) {
+	statementRule, err := newTableBooleanShapeRule(ruleIDTableCreateAsForbid, "as select", rule.LevelBlocker, func(ddl *spec.DDL) bool {
+		return ddl.HasSelect
+	}, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.HasSelect = true
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTablePartitionForbidRuleFindsPartitionedTables(t *testing.T) {
+	statementRule, err := newTableBooleanShapeRule(ruleIDTablePartitionForbid, "partitioning", rule.LevelBlocker, func(ddl *spec.DDL) bool {
+		return ddl.HasPartition
+	}, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.HasPartition = true
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func tableOptionStatement(mutate func(*spec.DDL)) spec.Statement {
+	ddl := &spec.DDL{
+		Table:   &spec.Table{Name: "users", Comment: "user table"},
+		Options: map[string]string{},
+	}
+	if mutate != nil {
+		mutate(ddl)
+	}
+	return spec.Statement{
+		Kind: spec.KindDDL,
+		DDL:  ddl,
+	}
+}
