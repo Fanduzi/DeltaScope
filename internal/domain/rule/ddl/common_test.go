@@ -116,8 +116,8 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 	if !ok || column.Name != "age" {
 		t.Fatalf("expected modify column definition for age, got ok=%t column=%+v", ok, column)
 	}
-	if got := columnCompatibilityClass(*column); got != "integer" {
-		t.Fatalf("expected bigint column compatibility class integer, got %q", got)
+	if got := columnTypeFamily(*column); got != "integer" {
+		t.Fatalf("expected bigint column type family integer, got %q", got)
 	}
 
 	addIndex := matchingAlterActions(statement, "add_constraint")

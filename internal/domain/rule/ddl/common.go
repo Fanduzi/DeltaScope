@@ -202,7 +202,7 @@ func alterOptionValue(alter spec.Alter, key string) (string, bool) {
 	return "", false
 }
 
-func columnCompatibilityClass(column spec.Column) string {
+func columnTypeFamily(column spec.Column) string {
 	switch baseType(column) {
 	case "tinyint", "smallint", "mediumint", "int", "integer", "bigint":
 		return "integer"

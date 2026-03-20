@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, rename, option, and compatibility helpers |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, rename, option, and coarse type-family helpers |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -90,7 +90,7 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 - extracting target column and index definitions
 - extracting old/new names for rename-style alters
 - reading normalized table-option values
-- classifying column target types into coarse compatibility buckets for future semantic rules
+- classifying column target types into coarse type families that later semantic rules can build on, not a complete compatibility decision on its own
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
