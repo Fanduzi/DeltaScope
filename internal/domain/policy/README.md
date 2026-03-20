@@ -7,7 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
-| defaults.go | Defines the built-in rule policy, including the expanded DDL column batch, create-table index batch, and the Tier-1 DML rule set |
+| defaults.go | Defines the built-in rule policy, including the expanded DDL column batch, create-table index batch, alter-action restriction batch, and the Tier-1 DML rule set |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
 
 ## Exports

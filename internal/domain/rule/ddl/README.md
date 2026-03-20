@@ -1,6 +1,6 @@
 # Domain DDL Rule Module
 
-Expanded create-table DDL rule catalog for table, column, audit-column, and index checks.
+Expanded DDL rule catalog for create-table governance plus action-level alter restrictions.
 
 ## Files
 
@@ -13,12 +13,14 @@ Expanded create-table DDL rule catalog for table, column, audit-column, and inde
 | column_rules.go | Implements table-column count and column-level governance rules |
 | audit_column_rules.go | Implements audit timestamp column rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
+| alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | register.go | Registers enabled DDL rules into the shared registry |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
 | primary_key_rules_test.go | Verifies primary-key requirement and shape rules |
 | column_rules_test.go | Verifies column-count, comment, naming, default, nullability, and type rules |
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | index_rules_test.go | Verifies create-table index governance rules |
+| alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
 
 ## Exports
@@ -49,6 +51,13 @@ Expanded create-table DDL rule catalog for table, column, audit-column, and inde
 - `ddl.index.secondary.prefix.require`
 - `ddl.index.fulltext.prefix.require`
 - `ddl.index.duplicate.forbid`
+- `ddl.alter.drop_column.forbid`
+- `ddl.alter.drop_primary_key.forbid`
+- `ddl.alter.drop_index.forbid`
+- `ddl.alter.rename_table.forbid`
+- `ddl.alter.rename_column.forbid`
+- `ddl.alter.change_column.forbid`
+- `ddl.alter.modify_column.forbid`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

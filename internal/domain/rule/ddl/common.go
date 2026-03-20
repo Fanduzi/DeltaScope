@@ -30,6 +30,13 @@ const (
 	ruleIDIndexSecondaryPrefixRequire = "ddl.index.secondary.prefix.require"
 	ruleIDIndexFulltextPrefixRequire  = "ddl.index.fulltext.prefix.require"
 	ruleIDIndexDuplicateForbid        = "ddl.index.duplicate.forbid"
+	ruleIDAlterDropColumnForbid       = "ddl.alter.drop_column.forbid"
+	ruleIDAlterDropPrimaryKeyForbid   = "ddl.alter.drop_primary_key.forbid"
+	ruleIDAlterDropIndexForbid        = "ddl.alter.drop_index.forbid"
+	ruleIDAlterRenameTableForbid      = "ddl.alter.rename_table.forbid"
+	ruleIDAlterRenameColumnForbid     = "ddl.alter.rename_column.forbid"
+	ruleIDAlterChangeColumnForbid     = "ddl.alter.change_column.forbid"
+	ruleIDAlterModifyColumnForbid     = "ddl.alter.modify_column.forbid"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
@@ -45,6 +52,13 @@ func appliesToCreateTableColumns(statement spec.Statement) bool {
 
 func appliesToCreateTableIndexes(statement spec.Statement) bool {
 	return appliesToCreateTable(statement) && statement.DDL != nil
+}
+
+func appliesToAlterTable(statement spec.Statement) bool {
+	return statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Table != nil &&
+		len(statement.DDL.Alter) > 0
 }
 
 func baseType(column spec.Column) string {

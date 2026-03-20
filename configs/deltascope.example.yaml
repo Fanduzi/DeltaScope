@@ -1,4 +1,46 @@
 rules:
+  ddl.alter.change_column.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.drop_column.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: false
+
+  ddl.alter.drop_index.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: false
+
+  ddl.alter.drop_primary_key.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.modify_column.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: false
+
+  ddl.alter.rename_column.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.rename_table.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.column.comment.require:
     enabled: true
     level: warning

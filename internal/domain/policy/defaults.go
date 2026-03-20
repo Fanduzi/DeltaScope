@@ -141,6 +141,55 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.alter.drop_column.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": false,
+				},
+			},
+			"ddl.alter.drop_primary_key.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.drop_index.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": false,
+				},
+			},
+			"ddl.alter.rename_table.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.rename_column.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.change_column.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.modify_column.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": false,
+				},
+			},
 			"dml.where.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

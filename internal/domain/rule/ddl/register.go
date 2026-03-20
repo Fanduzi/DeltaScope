@@ -41,6 +41,27 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newIndexPrefixRequiredRule(ruleIDIndexFulltextPrefixRequire, spec.IndexKindFulltext, "full_", rule.LevelWarning, cfg)
 		}},
 		{ruleID: ruleIDIndexDuplicateForbid, construct: newDuplicateIndexForbiddenRule},
+		{ruleID: ruleIDAlterDropColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropColumnForbid, "drop_column", "drop column", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterDropPrimaryKeyForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropPrimaryKeyForbid, "drop_primary_key", "drop primary key", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterDropIndexForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropIndexForbid, "drop_index", "drop index", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterRenameTableForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterRenameTableForbid, "rename_table", "rename table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterRenameColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterRenameColumnForbid, "rename_column", "rename column", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterChangeColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterChangeColumnForbid, "change_column", "change column", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterModifyColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterModifyColumnForbid, "modify_column", "modify column", rule.LevelWarning, cfg)
+		}},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

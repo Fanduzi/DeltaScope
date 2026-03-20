@@ -16,6 +16,7 @@ Current DDL coverage includes:
 - column comment, default, not-null, and float/double guidance
 - varchar length limits
 - create-table index count, index width, naming-prefix, and duplicate-index checks
+- action-level `ALTER TABLE` restrictions for drop/rename/change operations
 
 ## Install And Run
 

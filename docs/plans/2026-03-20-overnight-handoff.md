@@ -8,6 +8,7 @@
   - audit-column requirements
   - column comment/default/not-null/type rules
   - create-table index count, prefix, and duplicate-index rules
+  - action-level alter restrictions for drop/rename/change operations
 - added Markdown and JSON renderers
 - built the Cobra CLI with:
   - `audit`
@@ -44,11 +45,11 @@
 
 ## Remaining Gaps
 
-- current DDL coverage is still not a `gAudit` superset; the biggest remaining gaps are alter restrictions, deeper redundant-index analysis, and object/table-option rules such as charset/engine/partition controls
+- current DDL coverage is still not a `gAudit` superset; the biggest remaining gaps are richer alter semantics (type compatibility, existence checks), deeper redundant-index analysis, and object/table-option rules such as charset/engine/partition controls
 - v1 intentionally remains offline-only; live database metadata checks are still deferred
 - HTTP API and MCP server are still future phases, not part of tonight's completion
 
 ## Next Active Work
 
-- the next safe DDL milestone is richer `ALTER TABLE` modeling so drop/rename/type-change restrictions can move into parser-neutral domain rules
+- the next safe DDL milestone is richer `ALTER TABLE` modeling so type-compatibility and object-existence checks can move into parser-neutral domain rules
 - deeper index redundancy and table-option governance remain after that

@@ -265,6 +265,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - defer broader redundant-index analysis to a later batch
 - Why: exact duplicates are high-signal and safe to detect offline, while broader redundancy logic would be easy to overclaim with the current model.
 
+## Decision 34: alter restrictions land before richer alter modeling
+
+- Problem: `gAudit` covers several alter-related governance switches, but DeltaScope's current alter model only exposes normalized actions plus a single related name.
+- Decision:
+  - ship action-level alter forbid rules now
+  - keep them coarse and policy-driven
+  - defer richer type/existence analysis until the alter model grows beyond `Action + Name`
+- Why: this captures meaningful offline governance immediately without pretending the current model can safely answer deeper alter questions.
+
+## Decision 35: modify-column stays allowed by default, but rename/change do not
+
+- Problem: blocking every alter action by default would make DeltaScope too noisy for common iterative schema work, but leaving rename-style operations open would miss several high-risk patterns that `gAudit` already guards.
+- Decision:
+  - default-forbid `drop_primary_key`, `rename_table`, `rename_column`, and `change_column`
+  - default-allow `drop_column`, `drop_index`, and `modify_column` while still making them policy-addressable
+- Why: this keeps the default policy strict on risky structural rewrites without turning all alter workflows into immediate blockers.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

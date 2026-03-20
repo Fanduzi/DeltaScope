@@ -138,6 +138,67 @@ func TestRegisterSkipsDisabledDDLRules(t *testing.T) {
 	}
 }
 
+func TestRegisterAddsEnabledAlterRulesInDeterministicOrder(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+	cfg.Rules["ddl.alter.drop_column.forbid"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	}
+	cfg.Rules["ddl.alter.drop_index.forbid"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	}
+	cfg.Rules["ddl.alter.modify_column.forbid"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(alterStatement(
+		spec.Alter{Action: "drop_column", Name: "legacy_name"},
+		spec.Alter{Action: "drop_primary_key", Name: "primary"},
+		spec.Alter{Action: "drop_index", Name: "idx_legacy"},
+		spec.Alter{Action: "rename_table", Name: "users_archive"},
+		spec.Alter{Action: "rename_column", Name: "old_email"},
+		spec.Alter{Action: "change_column", Name: "old_phone"},
+		spec.Alter{Action: "modify_column", Name: "status"},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	wantIDs := []string{
+		"ddl.alter.drop_column.forbid",
+		"ddl.alter.drop_primary_key.forbid",
+		"ddl.alter.drop_index.forbid",
+		"ddl.alter.rename_table.forbid",
+		"ddl.alter.rename_column.forbid",
+		"ddl.alter.change_column.forbid",
+		"ddl.alter.modify_column.forbid",
+	}
+	if len(findings) != len(wantIDs) {
+		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))
+	}
+	for i, want := range wantIDs {
+		if findings[i].RuleID != want {
+			t.Fatalf("expected finding %d to use rule %q, got %q", i, want, findings[i].RuleID)
+		}
+	}
+}
+
 func TestRegisterRejectsInvalidDDLRuleConfig(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
