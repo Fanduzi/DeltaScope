@@ -265,6 +265,48 @@ func Default() Policy {
 					"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
 				},
 			},
+			"ddl.alter.modify_column.explicit_nullability_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.change_column.explicit_nullability_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.modify_column.explicit_default_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.change_column.explicit_default_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.modify_column.explicit_auto_increment_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.change_column.explicit_auto_increment_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"ddl.table.comment.max_length": {
 				Enabled: true,
 				Level:   rule.LevelWarning,

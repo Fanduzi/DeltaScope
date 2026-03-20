@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: parser-neutral alter-table Statement specs with richer rename, add-index, and target-type detail
-// output: findings for semantic alter rename, alter-added index prefix, and conservative target-type-family checks
+// input: parser-neutral alter-table Statement specs with richer rename, add-index, target-type, and explicit-change detail
+// output: findings for semantic alter rename, explicit-change, alter-added index prefix, and conservative target-type-family checks
 // pos: DDL semantic alter rule implementations layered above action-level forbids
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -79,6 +79,76 @@ type alterTargetTypeFamilyRule struct {
 	level           rule.Level
 	required        bool
 	allowedFamilies map[string]struct{}
+}
+
+type forbiddenExplicitAlterColumnChangeRule struct {
+	ruleID     string
+	action     string
+	label      string
+	changeKind string
+	level      rule.Level
+	forbid     bool
+	predicate  func(spec.Alter) bool
+}
+
+func newForbiddenExplicitAlterColumnChangeRule(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	forbid, err := boolParam(ruleID, cfg, "forbid", true)
+	if err != nil {
+		return nil, err
+	}
+
+	return forbiddenExplicitAlterColumnChangeRule{
+		ruleID:     ruleID,
+		action:     action,
+		label:      label,
+		changeKind: changeKind,
+		level:      configuredLevel(cfg, fallbackLevel),
+		forbid:     forbid,
+		predicate:  predicate,
+	}, nil
+}
+
+func (r forbiddenExplicitAlterColumnChangeRule) ID() string { return r.ruleID }
+
+func (r forbiddenExplicitAlterColumnChangeRule) AppliesTo(statement spec.Statement) bool {
+	return r.forbid && appliesToAlterActions(statement, r.action)
+}
+
+func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, r.action) {
+		if !r.predicate(alter) {
+			continue
+		}
+
+		targetName := alter.Name
+		if column, ok := alterColumnDefinition(alter); ok && column.Name != "" {
+			targetName = column.Name
+		}
+
+		findings = append(findings, rule.Finding{
+			RuleID:  r.ruleID,
+			Level:   r.level,
+			Message: fmt.Sprintf("ALTER TABLE %s explicitly changes %s for %q, which this policy forbids", r.label, humanizeExplicitChangeKind(r.changeKind), targetName),
+			Suggestion: fmt.Sprintf(
+				"keep %s unchanged for %q or relax the policy intentionally after review",
+				humanizeExplicitChangeKind(r.changeKind),
+				targetName,
+			),
+			Metadata: map[string]any{
+				"table":       statement.DDL.Table.Name,
+				"action":      alter.Action,
+				"name":        alter.Name,
+				"column_name": targetName,
+				"change_kind": r.changeKind,
+			},
+		})
+	}
+	return findings, nil
 }
 
 func newAlterTargetTypeFamilyRule(ruleID, action, label string, fallbackLevel rule.Level, fallbackFamilies []string, cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -217,4 +287,17 @@ func projectedAlterAddedIndexStatement(statement spec.Statement, indexes []spec.
 		Indexes: indexes,
 	}
 	return projected
+}
+
+func humanizeExplicitChangeKind(changeKind string) string {
+	switch changeKind {
+	case "explicit_nullability_change":
+		return "nullability"
+	case "explicit_default_change":
+		return "default value"
+	case "explicit_auto_increment_change":
+		return "auto_increment"
+	default:
+		return changeKind
+	}
 }

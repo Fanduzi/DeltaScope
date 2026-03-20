@@ -96,6 +96,24 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterChangeColumnTargetTypeFamilyAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterTargetTypeFamilyRule(ruleIDAlterChangeColumnTargetTypeFamilyAllowlist, "change_column", "change column", rule.LevelBlocker, defaultConservativeAlterTypeFamilies, cfg)
 		}},
+		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+		}},
+		{ruleID: ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, "change_column", "change column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+		}},
+		{ruleID: ruleIDAlterModifyColumnExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitDefaultChangeForbid, "modify_column", "modify column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+		}},
+		{ruleID: ruleIDAlterChangeColumnExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitDefaultChangeForbid, "change_column", "change column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+		}},
+		{ruleID: ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, "modify_column", "modify column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)
+		}},
+		{ruleID: ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid, "change_column", "change column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)
+		}},
 		{ruleID: ruleIDTableCommentMaxLength, construct: newTableCommentMaxLengthRule},
 		{ruleID: ruleIDTableEngineAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, cfg)

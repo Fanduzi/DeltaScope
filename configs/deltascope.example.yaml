@@ -20,6 +20,24 @@ rules:
       prefix: uniq_
       required: true
 
+  ddl.alter.change_column.explicit_auto_increment_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.change_column.explicit_default_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.change_column.explicit_nullability_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.alter.change_column.forbid:
     enabled: true
     level: blocker
@@ -46,6 +64,24 @@ rules:
       forbid: false
 
   ddl.alter.drop_primary_key.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.modify_column.explicit_auto_increment_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.modify_column.explicit_default_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.modify_column.explicit_nullability_change.forbid:
     enabled: true
     level: blocker
     params:

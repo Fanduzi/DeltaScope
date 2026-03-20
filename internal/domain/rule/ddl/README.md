@@ -16,7 +16,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules.go | Implements audit timestamp column rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
-| alter_semantic_rules.go | Implements rename-index forbids, alter-added index prefix rules, and conservative alter target-type-family rules |
+| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index prefix rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index prefix rules |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
@@ -26,7 +26,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | index_rules_test.go | Verifies create-table index governance rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
-| alter_semantic_rules_test.go | Verifies semantic alter rename-index, alter-added index prefix, and conservative target-type-family rules plus registration order |
+| alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index prefix, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
 
@@ -111,6 +111,12 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 The first semantic alter batch currently covers:
 
 - `ddl.alter.rename_index.forbid`
+- `ddl.alter.modify_column.explicit_nullability_change.forbid`
+- `ddl.alter.change_column.explicit_nullability_change.forbid`
+- `ddl.alter.modify_column.explicit_default_change.forbid`
+- `ddl.alter.change_column.explicit_default_change.forbid`
+- `ddl.alter.modify_column.explicit_auto_increment_change.forbid`
+- `ddl.alter.change_column.explicit_auto_increment_change.forbid`
 - `ddl.alter.add_index.unique.prefix.require`
 - `ddl.alter.add_index.secondary.prefix.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
@@ -123,6 +129,12 @@ The `target_type_family.allowlist` rules are intentionally conservative in offli
 - they use coarse target type-family allowlists
 - they do not claim to prove end-to-end source-to-target compatibility without live schema context
 - under the default policy, `ddl.alter.change_column.forbid` stays stricter, so the change-column allowlist acts as a follow-on guard only after that coarse forbid is intentionally relaxed
+
+The explicit `*_change.forbid` rules are narrower:
+
+- they only fire when the statement-local extractor marked a nullability/default/auto_increment change explicitly
+- they do not claim to prove wider type or unsigned transitions
+- the `change_column` variants also sit behind the stricter default `ddl.alter.change_column.forbid` gate unless a team intentionally relaxes it
 
 The alter-added index prefix rules reuse the existing create-table prefix rule body by projecting `ADD CONSTRAINT` index payloads into a temporary parser-neutral index list before evaluation.
 

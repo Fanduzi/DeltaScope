@@ -101,6 +101,141 @@ func TestAlterTargetTypeFamilyAllowlistRuleAllowsConfiguredFamilies(t *testing.T
 	}
 }
 
+func TestAlterColumnTransitionRuleBlocksConfiguredChanges(t *testing.T) {
+	tests := []struct {
+		name       string
+		ruleID     string
+		action     string
+		label      string
+		predicate  func(spec.Alter) bool
+		changeKind string
+		alter      spec.Alter
+	}{
+		{
+			name:       "modify nullability",
+			ruleID:     ruleIDAlterModifyColumnExplicitNullabilityChangeForbid,
+			action:     "modify_column",
+			label:      "modify column",
+			predicate:  alterTouchesExplicitNullability,
+			changeKind: "explicit_nullability_change",
+			alter: spec.Alter{
+				Action: "modify_column",
+				Name:   "age",
+				Column: &spec.AlterColumn{
+					Definition: &spec.Column{Name: "age", Type: "bigint(20)"},
+					Change:     &spec.AlterColumnChange{TouchesNullability: true},
+				},
+			},
+		},
+		{
+			name:       "change default",
+			ruleID:     ruleIDAlterChangeColumnExplicitDefaultChangeForbid,
+			action:     "change_column",
+			label:      "change column",
+			predicate:  alterTouchesExplicitDefault,
+			changeKind: "explicit_default_change",
+			alter: spec.Alter{
+				Action: "change_column",
+				Name:   "legacy_name",
+				Column: &spec.AlterColumn{
+					OldName:    "legacy_name",
+					Definition: &spec.Column{Name: "name", Type: "varchar(32)"},
+					Change:     &spec.AlterColumnChange{TouchesDefault: true},
+				},
+			},
+		},
+		{
+			name:       "change auto_increment",
+			ruleID:     ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid,
+			action:     "change_column",
+			label:      "change column",
+			predicate:  alterTouchesExplicitAutoIncrement,
+			changeKind: "explicit_auto_increment_change",
+			alter: spec.Alter{
+				Action: "change_column",
+				Name:   "legacy_id",
+				Column: &spec.AlterColumn{
+					OldName:    "legacy_id",
+					Definition: &spec.Column{Name: "id", Type: "bigint(20)", AutoIncrement: true},
+					Change:     &spec.AlterColumnChange{TouchesAutoIncrement: true},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+				tt.ruleID,
+				tt.action,
+				tt.label,
+				tt.changeKind,
+				rule.LevelBlocker,
+				tt.predicate,
+				policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelBlocker,
+					Params: map[string]any{
+						"forbid": true,
+					},
+				},
+			)
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(alterStatement(tt.alter))
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].RuleID != tt.ruleID {
+				t.Fatalf("expected rule id %q, got %q", tt.ruleID, findings[0].RuleID)
+			}
+		})
+	}
+}
+
+func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterModifyColumnExplicitDefaultChangeForbid,
+		"modify_column",
+		"modify column",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"forbid": true,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "modify_column",
+			Name:   "age",
+			Column: &spec.AlterColumn{
+				Definition: &spec.Column{Name: "age", Type: "bigint(20)"},
+				Change:     &spec.AlterColumnChange{TouchesNullability: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings, got %d", len(findings))
+	}
+}
+
 func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 	statementRule, err := newForbiddenAlterRenameRule(
 		ruleIDAlterRenameIndexForbid,
@@ -147,13 +282,13 @@ func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 
 func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
 	tests := []struct {
-		name         string
-		ruleID       string
-		kind         spec.IndexKind
-		fallback     string
-		indexName    string
-		wantRuleID   string
-		wantPrefix   string
+		name       string
+		ruleID     string
+		kind       spec.IndexKind
+		fallback   string
+		indexName  string
+		wantRuleID string
+		wantPrefix string
 	}{
 		{
 			name:       "unique",
@@ -267,7 +402,7 @@ func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
 	}
 }
 
-func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T) {
+func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules[ruleIDAlterChangeColumnForbid] = policy.RulePolicy{
@@ -300,6 +435,13 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 			"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
 		},
 	}
+	cfg.Rules[ruleIDAlterModifyColumnExplicitNullabilityChangeForbid] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	}
 
 	if err := Register(registry, cfg); err != nil {
 		t.Fatalf("register: %v", err)
@@ -324,6 +466,9 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 					Name: "payload",
 					Type: "json",
 				},
+				Change: &spec.AlterColumnChange{
+					TouchesNullability: true,
+				},
 			},
 		},
 		spec.Alter{
@@ -346,6 +491,7 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 		ruleIDAlterRenameIndexForbid,
 		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
 		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
+		ruleIDAlterModifyColumnExplicitNullabilityChangeForbid,
 	}
 	if len(findings) != len(wantIDs) {
 		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))
@@ -357,7 +503,7 @@ func TestRegisterAddsEnabledAlterSemanticRulesInDeterministicOrder(t *testing.T)
 	}
 }
 
-func TestRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing.T) {
+func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
