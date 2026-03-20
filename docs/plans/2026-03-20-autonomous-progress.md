@@ -54,4 +54,5 @@ The highest-value remaining gaps are:
 
 ## Recommended Next Step
 
+Milestone 2 itself is complete: the remaining gaps below are the handoff into the next DDL milestone, not unfinished work inside this one.
 Start the next milestone from the now-richer alter model and push into source-aware alter semantics, then follow with identifier validation and broader redundant-index analysis.

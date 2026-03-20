@@ -67,6 +67,7 @@
 
 ## Next Active Work
 
+- Milestone 2 is closed: its goal was richer parser-neutral alter modeling plus the first semantic alter rule batch, and the remaining gaps below are explicitly deferred to the next DDL milestone.
 - the next safe DDL milestone is to deepen alter semantics again now that the richer parser-neutral alter model exists
 - likely next work:
   - source-to-target type compatibility policy
