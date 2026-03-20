@@ -45,9 +45,13 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `CREATE TABLE ... AS SELECT`
   - partitioned tables
 - `Alter` now has room for richer normalized payloads:
-  - `Column` for column-oriented alter semantics
-  - `Index` for index-oriented alter semantics
-  - `Options` for table-option changes
+  - `Name` is the canonical subject identifier:
+    - existing-object actions use the pre-change name
+    - pure-add actions use the created object name
+    - table-option actions leave it empty
+  - `Column` carries `OldName` plus an optional target `Definition` reused from `Column`
+  - `Index` carries `OldName` plus an optional target `Definition` reused from `Index`
+  - `Options` is intentionally a flat normalized subset of table options, not a full option AST or ordering-preserving model
 
 ## Dependencies
 - Upstream: application extraction and domain rule evaluation

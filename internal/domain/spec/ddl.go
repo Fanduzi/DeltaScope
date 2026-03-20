@@ -67,33 +67,26 @@ type Constraint struct {
 	Columns []string `json:"columns,omitempty"`
 }
 
-// AlterColumn describes a normalized column-focused alter payload.
+// AlterColumn describes a column-focused alter payload.
+// OldName is only populated when the action targets an existing column name.
+// Definition carries the target column shape after the action when available.
 type AlterColumn struct {
-	OldName                   string `json:"old_name,omitempty"`
-	NewName                   string `json:"new_name,omitempty"`
-	Type                      string `json:"type,omitempty"`
-	Length                    int    `json:"length,omitempty"`
-	Unsigned                  bool   `json:"unsigned,omitempty"`
-	NotNull                   bool   `json:"not_null,omitempty"`
-	AutoIncrement             bool   `json:"auto_increment,omitempty"`
-	HasDefault                bool   `json:"has_default,omitempty"`
-	DefaultValue              string `json:"default_value,omitempty"`
-	DefaultIsNull             bool   `json:"default_is_null,omitempty"`
-	DefaultIsCurrentTimestamp bool   `json:"default_is_current_timestamp,omitempty"`
-	OnUpdateCurrentTimestamp  bool   `json:"on_update_current_timestamp,omitempty"`
-	Comment                   string `json:"comment,omitempty"`
+	OldName    string  `json:"old_name,omitempty"`
+	Definition *Column `json:"definition,omitempty"`
 }
 
-// AlterIndex describes a normalized index-focused alter payload.
+// AlterIndex describes an index-focused alter payload.
+// OldName is only populated when the action targets an existing index name.
+// Definition carries the target index shape after the action when available.
 type AlterIndex struct {
-	Kind    IndexKind `json:"kind,omitempty"`
-	Name    string    `json:"name,omitempty"`
-	OldName string    `json:"old_name,omitempty"`
-	NewName string    `json:"new_name,omitempty"`
-	Columns []string  `json:"columns,omitempty"`
+	OldName    string `json:"old_name,omitempty"`
+	Definition *Index `json:"definition,omitempty"`
 }
 
 // Alter describes a normalized alter action.
+// Name is the canonical subject identifier for downstream matching:
+// existing-object actions use the pre-change name, pure additions use the
+// created object's name, and table-option actions leave it empty.
 type Alter struct {
 	Action  string            `json:"action"`
 	Name    string            `json:"name,omitempty"`
