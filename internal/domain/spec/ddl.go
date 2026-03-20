@@ -71,7 +71,6 @@ type Constraint struct {
 // These flags are parser-neutral hints about what the ALTER statement touches;
 // they do not claim live-schema source truth on their own.
 type AlterColumnChange struct {
-	Renames              bool `json:"renames,omitempty"`
 	TouchesType          bool `json:"touches_type,omitempty"`
 	TouchesNullability   bool `json:"touches_nullability,omitempty"`
 	TouchesDefault       bool `json:"touches_default,omitempty"`
