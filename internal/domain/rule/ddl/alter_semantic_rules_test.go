@@ -1,6 +1,6 @@
 // Package ddl verifies semantic alter rule behavior.
-// input: synthetic alter-table statements with rename and target-type semantic payloads plus policy overrides
-// output: focused coverage for semantic alter rename and target-type-family governance
+// input: synthetic alter-table statements with rename, add-index, and target-type semantic payloads plus policy overrides
+// output: focused coverage for semantic alter rename, alter-added index prefix, and target-type-family governance
 // pos: domain DDL semantic alter rule test coverage
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -142,6 +142,128 @@ func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 	}
 	if got := findings[0].Metadata["new_name"]; got != "idx_new" {
 		t.Fatalf("expected new_name metadata idx_new, got %#v", got)
+	}
+}
+
+func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
+	tests := []struct {
+		name         string
+		ruleID       string
+		kind         spec.IndexKind
+		fallback     string
+		indexName    string
+		wantRuleID   string
+		wantPrefix   string
+	}{
+		{
+			name:       "unique",
+			ruleID:     ruleIDAlterAddIndexUniquePrefixRequire,
+			kind:       spec.IndexKindUnique,
+			fallback:   "uniq_",
+			indexName:  "user_email",
+			wantRuleID: ruleIDAlterAddIndexUniquePrefixRequire,
+			wantPrefix: "uniq_",
+		},
+		{
+			name:       "secondary",
+			ruleID:     ruleIDAlterAddIndexSecondaryPrefixRequire,
+			kind:       spec.IndexKindSecondary,
+			fallback:   "idx_",
+			indexName:  "name_lookup",
+			wantRuleID: ruleIDAlterAddIndexSecondaryPrefixRequire,
+			wantPrefix: "idx_",
+		},
+		{
+			name:       "fulltext",
+			ruleID:     ruleIDAlterAddIndexFulltextPrefixRequire,
+			kind:       spec.IndexKindFulltext,
+			fallback:   "full_",
+			indexName:  "search_body",
+			wantRuleID: ruleIDAlterAddIndexFulltextPrefixRequire,
+			wantPrefix: "full_",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newAlterAddedIndexPrefixRule(tt.ruleID, tt.kind, tt.fallback, rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+					"prefix":   tt.fallback,
+				},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(alterStatement(
+				spec.Alter{
+					Action: "add_constraint",
+					Name:   tt.indexName,
+					Index: &spec.AlterIndex{
+						Definition: &spec.Index{
+							Name:    tt.indexName,
+							Kind:    tt.kind,
+							Columns: []string{"payload"},
+						},
+					},
+				},
+			))
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].RuleID != tt.wantRuleID {
+				t.Fatalf("expected rule id %q, got %q", tt.wantRuleID, findings[0].RuleID)
+			}
+			if got := findings[0].Metadata["prefix"]; got != tt.wantPrefix {
+				t.Fatalf("expected prefix metadata %q, got %#v", tt.wantPrefix, got)
+			}
+		})
+	}
+}
+
+func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
+	statementRule, err := newAlterAddedIndexPrefixRule(
+		ruleIDAlterAddIndexSecondaryPrefixRequire,
+		spec.IndexKindSecondary,
+		"idx_",
+		rule.LevelWarning,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params: map[string]any{
+				"required": true,
+				"prefix":   "idx_",
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "rename_index",
+			Name:   "legacy_idx",
+			Index: &spec.AlterIndex{
+				OldName: "legacy_idx",
+				Definition: &spec.Index{
+					Name: "idx_legacy_idx",
+					Kind: spec.IndexKindSecondary,
+				},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings, got %d", len(findings))
 	}
 }
 
