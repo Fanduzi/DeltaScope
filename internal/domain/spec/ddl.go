@@ -67,8 +67,37 @@ type Constraint struct {
 	Columns []string `json:"columns,omitempty"`
 }
 
+// AlterColumn describes a normalized column-focused alter payload.
+type AlterColumn struct {
+	OldName                   string `json:"old_name,omitempty"`
+	NewName                   string `json:"new_name,omitempty"`
+	Type                      string `json:"type,omitempty"`
+	Length                    int    `json:"length,omitempty"`
+	Unsigned                  bool   `json:"unsigned,omitempty"`
+	NotNull                   bool   `json:"not_null,omitempty"`
+	AutoIncrement             bool   `json:"auto_increment,omitempty"`
+	HasDefault                bool   `json:"has_default,omitempty"`
+	DefaultValue              string `json:"default_value,omitempty"`
+	DefaultIsNull             bool   `json:"default_is_null,omitempty"`
+	DefaultIsCurrentTimestamp bool   `json:"default_is_current_timestamp,omitempty"`
+	OnUpdateCurrentTimestamp  bool   `json:"on_update_current_timestamp,omitempty"`
+	Comment                   string `json:"comment,omitempty"`
+}
+
+// AlterIndex describes a normalized index-focused alter payload.
+type AlterIndex struct {
+	Kind    IndexKind `json:"kind,omitempty"`
+	Name    string    `json:"name,omitempty"`
+	OldName string    `json:"old_name,omitempty"`
+	NewName string    `json:"new_name,omitempty"`
+	Columns []string  `json:"columns,omitempty"`
+}
+
 // Alter describes a normalized alter action.
 type Alter struct {
-	Action string `json:"action"`
-	Name   string `json:"name,omitempty"`
+	Action  string            `json:"action"`
+	Name    string            `json:"name,omitempty"`
+	Column  *AlterColumn      `json:"column,omitempty"`
+	Index   *AlterIndex       `json:"index,omitempty"`
+	Options map[string]string `json:"options,omitempty"`
 }

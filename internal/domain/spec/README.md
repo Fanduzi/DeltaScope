@@ -22,6 +22,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Constraint`
 - `Index`
 - `IndexKind`
+- `AlterColumn`
+- `AlterIndex`
 - `Alter`
 - `DML`
 - `DMLOperation`
@@ -42,6 +44,10 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `CREATE TABLE ... LIKE`
   - `CREATE TABLE ... AS SELECT`
   - partitioned tables
+- `Alter` now has room for richer normalized payloads:
+  - `Column` for column-oriented alter semantics
+  - `Index` for index-oriented alter semantics
+  - `Options` for table-option changes
 
 ## Dependencies
 - Upstream: application extraction and domain rule evaluation
