@@ -175,11 +175,11 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		if modifyColumn.Column.Change == nil {
 			t.Fatalf("expected modify column change facts to be populated")
 		}
-		if !modifyColumn.Column.Change.TouchesType || !modifyColumn.Column.Change.TouchesNullability || !modifyColumn.Column.Change.TouchesDefault {
-			t.Fatalf("expected modify column to mark type/nullability/default touches, got %+v", *modifyColumn.Column.Change)
+		if !modifyColumn.Column.Change.TouchesNullability || !modifyColumn.Column.Change.TouchesDefault {
+			t.Fatalf("expected modify column to mark nullability/default touches, got %+v", *modifyColumn.Column.Change)
 		}
-		if modifyColumn.Column.Change.TouchesUnsigned || modifyColumn.Column.Change.TouchesAutoIncrement {
-			t.Fatalf("expected modify column not to mark unsigned/auto_increment touches, got %+v", *modifyColumn.Column.Change)
+		if modifyColumn.Column.Change.TouchesAutoIncrement {
+			t.Fatalf("expected modify column not to mark auto_increment touch, got %+v", *modifyColumn.Column.Change)
 		}
 
 		changeColumn := stmt.DDL.Alter[3]
@@ -201,8 +201,8 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		if changeColumn.Column.Change == nil {
 			t.Fatalf("expected change column change facts to be populated")
 		}
-		if !changeColumn.Column.Change.TouchesType || !changeColumn.Column.Change.TouchesNullability || !changeColumn.Column.Change.TouchesUnsigned || !changeColumn.Column.Change.TouchesAutoIncrement {
-			t.Fatalf("expected change column to mark type/nullability/unsigned/auto_increment touches, got %+v", *changeColumn.Column.Change)
+		if !changeColumn.Column.Change.TouchesNullability || !changeColumn.Column.Change.TouchesAutoIncrement {
+			t.Fatalf("expected change column to mark nullability/auto_increment touches, got %+v", *changeColumn.Column.Change)
 		}
 		if changeColumn.Column.Change.TouchesDefault {
 			t.Fatalf("expected change column without explicit default to avoid default touch, got %+v", *changeColumn.Column.Change)

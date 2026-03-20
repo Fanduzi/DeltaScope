@@ -54,7 +54,8 @@ Normalized statement specifications used as the stable input for rule evaluation
     - `OldName` for the existing source-side identifier when the statement names one
     - an optional target `Definition` reused from `Column`
     - rename intent is inferred from `OldName` plus `Definition.Name`, not a separate boolean
-    - an optional `Change` block with statement-local relation facts for type, nullability, default, unsigned, or auto-increment semantics
+    - an optional `Change` block with statement-local relation facts only for semantics the statement explicitly spells out, such as nullability, default, and auto-increment
+    - target type and unsigned shape still live on `Definition`, but are not separately labeled as touched change facts
   - `Index` carries `OldName` plus an optional target `Definition` reused from `Index`
   - `Options` is intentionally a flat normalized subset of table options, not a full option AST or ordering-preserving model
 

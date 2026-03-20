@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: application-owned parsed SQL statements and hidden TiDB AST nodes
-// output: first-pass StatementSpec values plus source-aware alter change facts for later rule evaluation
+// output: first-pass StatementSpec values plus honest statement-local alter change facts for later rule evaluation
 // pos: application extraction step between parsing and rule execution
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -287,8 +287,6 @@ func alterColumnChangeFacts(col *ast.ColumnDef) *spec.AlterColumnChange {
 	}
 
 	change := &spec.AlterColumnChange{
-		TouchesType:     true,
-		TouchesUnsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag()),
 	}
 
 	for _, option := range col.Options {
@@ -306,10 +304,8 @@ func alterColumnChangeFacts(col *ast.ColumnDef) *spec.AlterColumnChange {
 		}
 	}
 
-	if !change.TouchesType &&
-		!change.TouchesNullability &&
+	if !change.TouchesNullability &&
 		!change.TouchesDefault &&
-		!change.TouchesUnsigned &&
 		!change.TouchesAutoIncrement {
 		return nil
 	}
