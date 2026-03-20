@@ -24,6 +24,22 @@
   - `version`
 - expanded the root `README.md` into a usable v1 guide
 - aligned `configs/deltascope.example.yaml` with `deltascope config init`
+- planned the next three milestones with committed design, implementation, and task-prompt docs:
+  - `Source-Aware Alter Checks`
+  - `Complete Create-Table Superset`
+  - `HTTP API Service`
+
+## In Progress
+
+- started `Milestone 3: Source-Aware Alter Checks`
+- completed and reviewed:
+  - Task 1: richer parser-neutral alter change-fact model
+  - Task 2: application extraction of explicit statement-local change facts
+- completed implementation for:
+  - Task 3: source-aware alter rule IDs and helper substrate
+- current emphasis:
+  - keep change facts honest and statement-local
+  - do not label target type/unsigned shape as “explicitly touched” unless the statement truly proves it
 
 ## Key Commits
 
@@ -38,6 +54,10 @@
 - `7d13bff` `fix: normalize alter extraction edge cases`
 - `65bcec9` `refactor: narrow alter type-family rule naming`
 - `3be386d` `feat: audit alter-added index prefixes`
+- `0dd633b` `docs: add milestone 3-5 planning docs`
+- `739553d` `refactor: remove redundant alter rename flag`
+- `6403f26` `refactor: narrow explicit alter change facts`
+- `5f9b47c` `refactor: prepare source-aware alter rules`
 
 ## Verification Run
 
@@ -54,6 +74,8 @@
 - authoritative decision history is in [2026-03-20-deltascope-v1-decisions.md](/Users/fan/GolangProjects/deltascope/docs/plans/2026-03-20-deltascope-v1-decisions.md)
 - reviewer subagents were slower and less reliable than the implementation loop, so some overnight progress continued after local verification instead of waiting idle
 - there was one CLI race where a concurrent worker rewrote `internal/interfaces/cli` during validation; I reconciled the files and re-ran tests plus manual smoke checks afterward
+- Milestone 3 immediately exposed another honesty boundary: `MODIFY/CHANGE COLUMN` syntax includes a full target definition, but that does not prove the statement explicitly touched type or unsigned semantics
+- I corrected that by narrowing `AlterColumn.Change` to explicit nullability/default/auto-increment touches only; target shape remains on `Definition`
 
 ## Remaining Gaps
 
@@ -68,7 +90,7 @@
 ## Next Active Work
 
 - Milestone 2 is closed: its goal was richer parser-neutral alter modeling plus the first semantic alter rule batch, and the remaining gaps below are explicitly deferred to the next DDL milestone.
-- the next safe DDL milestone is to deepen alter semantics again now that the richer parser-neutral alter model exists
+- Milestone 3 is now active: deepen alter semantics again now that the richer parser-neutral alter model exists
 - likely next work:
   - source-to-target type compatibility policy
   - broader alter-added/drop/rename index lifecycle rules

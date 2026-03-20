@@ -344,6 +344,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep Task 5 scoped to alter-added unique/secondary/fulltext prefix checks only
 - Why: projection keeps logic reuse clean, avoids AST leakage, and narrows the new alter surface to behavior the current domain model can support honestly.
 
+## Decision 43: source-aware alter facts must only encode what the statement explicitly proves
+
+- Problem: early Milestone 3 drafts tried to mark `TouchesType` and `TouchesUnsigned` on every `MODIFY COLUMN` / `CHANGE COLUMN`, but those syntaxes always carry a full target definition even when the actual intended change may only be nullability or default-related.
+- Decision:
+  - keep `AlterColumn.Change` for explicit statement-local touches only
+  - remove overclaiming flags that would pretend the statement proved more than it actually does
+  - preserve target type and unsigned shape on `AlterColumn.Definition`, but do not label them as explicit touched facts
+- Why: downstream rules must be able to trust the semantics of every flag. When the model cannot honestly prove a change relation, it should expose target shape only and leave the comparison decision to a later, more explicit layer.
+
+## Decision 44: rename intent is inferred from names, not a second change flag
+
+- Problem: an early Milestone 3 Task 1 draft added a `Renames` flag under `AlterColumnChange`, even though rename intent was already derivable from `OldName` plus `Definition.Name`.
+- Decision:
+  - remove the duplicate rename flag
+  - keep rename inference as a derived fact from the existing name fields
+- Why: one source of truth is enough. Duplicating rename intent inside the domain model would force later rules to choose which representation to trust.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

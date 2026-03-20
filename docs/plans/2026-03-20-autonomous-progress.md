@@ -20,6 +20,10 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `7d13bff` `fix: normalize alter extraction edge cases`
 - `65bcec9` `refactor: narrow alter type-family rule naming`
 - `3be386d` `feat: audit alter-added index prefixes`
+- `0dd633b` `docs: add milestone 3-5 planning docs`
+- `739553d` `refactor: remove redundant alter rename flag`
+- `6403f26` `refactor: narrow explicit alter change facts`
+- `5f9b47c` `refactor: prepare source-aware alter rules`
 
 ## Current Offline DDL Coverage
 
@@ -54,5 +58,4 @@ The highest-value remaining gaps are:
 
 ## Recommended Next Step
 
-Milestone 2 itself is complete: the remaining gaps below are the handoff into the next DDL milestone, not unfinished work inside this one.
-Start the next milestone from the now-richer alter model and push into source-aware alter semantics, then follow with identifier validation and broader redundant-index analysis.
+Milestone 2 is complete and Milestone 3 is now underway. The immediate next work is to finish the source-aware alter rule batch on top of the newly narrowed explicit change facts, then follow with identifier validation and broader redundant-index analysis.
