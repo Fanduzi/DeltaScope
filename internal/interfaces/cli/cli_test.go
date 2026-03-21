@@ -508,6 +508,27 @@ func TestRulesSearchMatchesByKeyword(t *testing.T) {
 	}
 }
 
+func TestCapabilitiesPrintsStableSummary(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"capabilities"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	output := stdout.String()
+	for _, expected := range []string{"dialects:", "mysql", "tidb", "modes:", "offline", "metadata-aware", "surfaces:", "cli", "http"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected capabilities output to contain %q, got %q", expected, output)
+		}
+	}
+}
+
 func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version
