@@ -16,9 +16,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules.go | Implements audit timestamp column rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
-| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index prefix rules, and conservative alter target-type-family rules |
+| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
-| register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index prefix rules |
+| register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
 | primary_key_rules_test.go | Verifies primary-key requirement and shape rules |
 | primary_key_semantic_rules_test.go | Verifies primary-key semantic rules for bigint/unsigned/auto-increment/not-null requirements |
@@ -26,7 +26,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | index_rules_test.go | Verifies create-table index governance rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
-| alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index prefix, and conservative target-type-family rules plus registration order |
+| alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
 
@@ -105,6 +105,7 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 - reading normalized table-option values
 - classifying target column types into coarse families without claiming source-to-target compatibility
 - projecting alter-added indexes into parser-neutral index lists for shared add-index governance
+- projecting all alter-added indexes into parser-neutral index lists for shared lifecycle governance
 
 ## Semantic Alter Surface
 
@@ -120,6 +121,8 @@ The first semantic alter batch currently covers:
 - `ddl.alter.add_index.unique.prefix.require`
 - `ddl.alter.add_index.secondary.prefix.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
+- `ddl.alter.add_index.columns.max_count`
+- `ddl.alter.add_index.duplicate.forbid`
 - `ddl.alter.modify_column.target_type_family.allowlist`
 - `ddl.alter.change_column.target_type_family.allowlist`
 
@@ -136,9 +139,15 @@ The explicit `*_change.forbid` rules are narrower:
 - they do not claim to prove wider type or unsigned transitions
 - the `change_column` variants also sit behind the stricter default `ddl.alter.change_column.forbid` gate unless a team intentionally relaxes it
 
-The alter-added index prefix rules reuse the existing create-table prefix rule body by projecting `ADD CONSTRAINT` index payloads into a temporary parser-neutral index list before evaluation.
+The alter-added index lifecycle rules reuse the existing create-table index rule bodies by projecting `ADD CONSTRAINT` index payloads into temporary parser-neutral index lists before evaluation.
 
-Those alter-added index prefix rules are part of the normal `Register(...)` path and therefore active in the shipped default product surface.
+Within this batch:
+
+- prefix checks reuse the existing create-table prefix rule body
+- add-index width checks reuse the existing create-table index-column-count rule body
+- add-index duplicate checks reuse the existing create-table duplicate-index rule body
+
+Those alter-added index lifecycle rules are part of the normal `Register(...)` path when their policies are enabled.
 
 The next source-aware alter batch is intentionally prepared with honest names:
 

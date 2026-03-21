@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: parser-neutral alter-table Statement specs with richer rename, add-index, target-type, and explicit-change detail
-// output: findings for semantic alter rename, explicit-change, alter-added index prefix, and conservative target-type-family checks
+// output: findings for semantic alter rename, explicit-change, alter-added index lifecycle, and conservative target-type-family checks
 // pos: DDL semantic alter rule implementations layered above action-level forbids
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -231,6 +231,12 @@ type alterAddedIndexPrefixRule struct {
 	kind  spec.IndexKind
 }
 
+type alterAddedIndexRule struct {
+	ruleID  string
+	inner   rule.StatementRule
+	indexes func(spec.Statement) []spec.Index
+}
+
 func newAlterAddedIndexPrefixRule(ruleID string, kind spec.IndexKind, fallbackPrefix string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
 	inner, err := newIndexPrefixRequiredRule(ruleID, kind, fallbackPrefix, fallbackLevel, cfg)
 	if err != nil {
@@ -245,7 +251,7 @@ func newAlterAddedIndexPrefixRule(ruleID string, kind spec.IndexKind, fallbackPr
 func (r alterAddedIndexPrefixRule) ID() string { return r.inner.ID() }
 
 func (r alterAddedIndexPrefixRule) AppliesTo(statement spec.Statement) bool {
-	return len(alterAddedIndexes(statement, r.kind)) > 0
+	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
 }
 
 func (r alterAddedIndexPrefixRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -253,18 +259,82 @@ func (r alterAddedIndexPrefixRule) Evaluate(statement spec.Statement) ([]rule.Fi
 		return nil, nil
 	}
 
-	projected := projectedAlterAddedIndexStatement(statement, alterAddedIndexes(statement, r.kind))
-	findings, err := r.inner.Evaluate(projected)
+	findings, err := evaluateProjectedAlterIndexRule(
+		r.inner,
+		r.ID(),
+		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
+	)
 	if err != nil {
 		return nil, err
-	}
-	for i := range findings {
-		findings[i].RuleID = r.ID()
 	}
 	return findings, nil
 }
 
-func alterAddedIndexes(statement spec.Statement, kind spec.IndexKind) []spec.Index {
+func newAlterAddedIndexColumnsMaxCountRule(fallbackLimit int, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newIndexColumnsMaxCountRule(policy.RulePolicy{
+		Enabled: cfg.Enabled,
+		Level:   configuredLevel(cfg, fallbackLevel),
+		Params:  cfg.Params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return alterAddedIndexRule{
+		ruleID:  ruleIDAlterAddIndexColumnsMaxCount,
+		inner:   inner,
+		indexes: allAlterAddedIndexes,
+	}, nil
+}
+
+func newAlterAddedDuplicateIndexForbiddenRule(fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newDuplicateIndexForbiddenRule(policy.RulePolicy{
+		Enabled: cfg.Enabled,
+		Level:   configuredLevel(cfg, fallbackLevel),
+		Params:  cfg.Params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return alterAddedIndexRule{
+		ruleID:  ruleIDAlterAddIndexDuplicateForbid,
+		inner:   inner,
+		indexes: allAlterAddedIndexes,
+	}, nil
+}
+
+func (r alterAddedIndexRule) ID() string { return r.ruleID }
+
+func (r alterAddedIndexRule) AppliesTo(statement spec.Statement) bool {
+	return len(r.indexes(statement)) > 0
+}
+
+func (r alterAddedIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	findings, err := evaluateProjectedAlterIndexRule(
+		r.inner,
+		r.ruleID,
+		projectedAlterIndexesStatement(statement, r.indexes(statement)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return findings, nil
+}
+
+func evaluateProjectedAlterIndexRule(inner rule.StatementRule, ruleID string, projected spec.Statement) ([]rule.Finding, error) {
+	findings, err := inner.Evaluate(projected)
+	if err != nil {
+		return nil, err
+	}
+	for i := range findings {
+		findings[i].RuleID = ruleID
+	}
+	return findings, nil
+}
+
+func allAlterAddedIndexes(statement spec.Statement) []spec.Index {
 	if !appliesToAlterActions(statement, "add_constraint") {
 		return nil
 	}
@@ -272,21 +342,12 @@ func alterAddedIndexes(statement spec.Statement, kind spec.IndexKind) []spec.Ind
 	indexes := make([]spec.Index, 0)
 	for _, alter := range matchingAlterActions(statement, "add_constraint") {
 		index, ok := alterIndexDefinition(alter)
-		if !ok || index.Kind != kind {
+		if !ok {
 			continue
 		}
 		indexes = append(indexes, *index)
 	}
 	return indexes
-}
-
-func projectedAlterAddedIndexStatement(statement spec.Statement, indexes []spec.Index) spec.Statement {
-	projected := statement
-	projected.DDL = &spec.DDL{
-		Table:   statement.DDL.Table,
-		Indexes: indexes,
-	}
-	return projected
 }
 
 func humanizeExplicitChangeKind(changeKind string) string {

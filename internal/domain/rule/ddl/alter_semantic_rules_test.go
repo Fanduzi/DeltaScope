@@ -1,7 +1,7 @@
 // Package ddl verifies semantic alter rule behavior.
-// input: synthetic alter-table statements with rename, add-index, and target-type semantic payloads plus policy overrides
-// output: focused coverage for semantic alter rename, alter-added index prefix, and target-type-family governance
-// pos: domain DDL semantic alter rule test coverage
+// input: synthetic alter-table statements with rename, add-index, target-type, and explicit-change semantic payloads plus policy overrides
+// output: focused coverage for semantic alter rename, alter-added index governance, and target-type-family rules
+// pos: domain DDL semantic alter rule and registration-path test coverage
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -402,6 +402,92 @@ func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
 	}
 }
 
+func TestAlterAddedIndexColumnsMaxCountRuleBlocksWideAlterAddedIndexes(t *testing.T) {
+	statementRule, err := newAlterAddedIndexColumnsMaxCountRule(2, rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"limit": 2,
+		},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "idx_wide_payload",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "idx_wide_payload",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"a", "b", "c"},
+				},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterAddIndexColumnsMaxCount {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterAddIndexColumnsMaxCount, findings[0].RuleID)
+	}
+	if got := findings[0].Metadata["actual"]; got != 3 {
+		t.Fatalf("expected actual metadata 3, got %#v", got)
+	}
+}
+
+func TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes(t *testing.T) {
+	statementRule, err := newAlterAddedDuplicateIndexForbiddenRule(rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "idx_email",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "idx_email",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"email"},
+				},
+			},
+		},
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "idx_email_lookup",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "idx_email_lookup",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"email"},
+				},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterAddIndexDuplicateForbid {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterAddIndexDuplicateForbid, findings[0].RuleID)
+	}
+}
+
 func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
@@ -554,6 +640,71 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 		ruleIDAlterAddIndexUniquePrefixRequire,
 		ruleIDAlterAddIndexSecondaryPrefixRequire,
 		ruleIDAlterAddIndexFulltextPrefixRequire,
+	}
+	if len(findings) != len(wantIDs) {
+		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))
+	}
+	for i, want := range wantIDs {
+		if findings[i].RuleID != want {
+			t.Fatalf("expected finding %d to use rule %q, got %q", i, want, findings[i].RuleID)
+		}
+	}
+}
+
+func TestAlterRegisterAddsAlterAddedIndexLifecycleRulesWhenEnabled(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+	cfg.Rules[ruleIDAlterAddIndexColumnsMaxCount] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"limit": 1,
+		},
+	}
+	cfg.Rules[ruleIDAlterAddIndexDuplicateForbid] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(alterStatement(
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "idx_email",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "idx_email",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"email", "tenant_id"},
+				},
+			},
+		},
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "idx_email_dup",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "idx_email_dup",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"email", "tenant_id"},
+				},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	wantIDs := []string{
+		ruleIDAlterAddIndexColumnsMaxCount,
+		ruleIDAlterAddIndexColumnsMaxCount,
+		ruleIDAlterAddIndexDuplicateForbid,
 	}
 	if len(findings) != len(wantIDs) {
 		t.Fatalf("expected %d findings, got %d", len(wantIDs), len(findings))

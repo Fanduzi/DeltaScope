@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: domain policy values and a shared rule registry
-// output: deterministic registration of the first DDL rule batch
+// output: deterministic registration of shipped create-table and alter-table DDL rule batches
 // pos: DDL rule assembly entrypoint for application wiring
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -74,6 +74,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		}},
 		{ruleID: ruleIDAlterRenameIndexForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterRenameRule(ruleIDAlterRenameIndexForbid, "rename_index", "rename index", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexDuplicateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedDuplicateIndexForbiddenRule(rule.LevelWarning, cfg)
 		}},
 		{ruleID: ruleIDAlterAddIndexUniquePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexPrefixRule(ruleIDAlterAddIndexUniquePrefixRequire, spec.IndexKindUnique, "uniq_", rule.LevelWarning, cfg)
