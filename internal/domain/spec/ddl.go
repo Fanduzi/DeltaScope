@@ -30,6 +30,8 @@ type Column struct {
 	Name                      string `json:"name"`
 	Type                      string `json:"type,omitempty"`
 	Length                    int    `json:"length,omitempty"`
+	Charset                   string `json:"charset,omitempty"`
+	Collation                 string `json:"collation,omitempty"`
 	Comment                   string `json:"comment,omitempty"`
 	Unsigned                  bool   `json:"unsigned,omitempty"`
 	NotNull                   bool   `json:"not_null,omitempty"`

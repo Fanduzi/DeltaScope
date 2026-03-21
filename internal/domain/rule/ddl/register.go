@@ -6,6 +6,8 @@
 package ddl
 
 import (
+	"strings"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -63,6 +65,34 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDColumnDefaultRequire, construct: newColumnDefaultRequiredRule},
 		{ruleID: ruleIDColumnNotNullRequire, construct: newColumnNotNullRequiredRule},
 		{ruleID: ruleIDColumnFloatDoubleForbid, construct: newColumnFloatDoubleForbiddenRule},
+		{ruleID: ruleIDColumnBlobTextForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnTypeForbiddenRule(ruleIDColumnBlobTextForbid, "blob/text", rule.LevelWarning, "switch to varchar or relax the blob/text policy intentionally", func(column spec.Column) bool {
+				return isBlobTextLike(column) && !strings.EqualFold(baseType(column), "json")
+			}, cfg)
+		}},
+		{ruleID: ruleIDColumnJSONForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnTypeForbiddenRule(ruleIDColumnJSONForbid, "json", rule.LevelWarning, "store structured data in relational columns or relax the json policy intentionally", func(column spec.Column) bool {
+				return strings.EqualFold(baseType(column), "json")
+			}, cfg)
+		}},
+		{ruleID: ruleIDColumnBitForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnTypeForbiddenRule(ruleIDColumnBitForbid, "bit", rule.LevelWarning, "use integer or boolean-friendly types instead of bit", func(column spec.Column) bool {
+				return strings.EqualFold(baseType(column), "bit")
+			}, cfg)
+		}},
+		{ruleID: ruleIDColumnTimestampForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnTypeForbiddenRule(ruleIDColumnTimestampForbid, "timestamp", rule.LevelWarning, "prefer datetime unless the team intentionally allows timestamp columns", func(column spec.Column) bool {
+				return strings.EqualFold(baseType(column), "timestamp")
+			}, cfg)
+		}},
+		{ruleID: ruleIDColumnCharMaxLength, construct: newColumnCharMaxLengthRule},
+		{ruleID: ruleIDColumnCharsetAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnValueAllowlistRule(ruleIDColumnCharsetAllowlist, "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDColumnCollationAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnValueAllowlistRule(ruleIDColumnCollationAllowlist, "collation", []string{"utf8_general_ci", "utf8mb4_general_ci", "utf8mb4_bin"}, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDColumnCharsetCollationMatchRequire, construct: newColumnCharsetCollationMatchRule},
 		{ruleID: ruleIDIndexTotalMaxCount, construct: newIndexTotalMaxCountRule},
 		{ruleID: ruleIDIndexColumnsMaxCount, construct: newIndexColumnsMaxCountRule},
 		{ruleID: ruleIDIndexUniquePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {

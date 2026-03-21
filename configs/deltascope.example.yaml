@@ -118,6 +118,42 @@ rules:
     params:
       forbid: true
 
+  ddl.column.bit.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: false
+
+  ddl.column.blob_text.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: false
+
+  ddl.column.char.max_length:
+    enabled: true
+    level: warning
+    params:
+      limit: 64
+
+  ddl.column.charset.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      values: [utf8 utf8mb4]
+
+  ddl.column.charset_collation.match.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.column.collation.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      values: [utf8_general_ci utf8mb4_general_ci utf8mb4_bin]
+
   ddl.column.comment.require:
     enabled: true
     level: warning
@@ -136,11 +172,30 @@ rules:
     params:
       forbid: true
 
+  ddl.column.json.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: false
+
+  ddl.column.name.keyword.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.column.name.max_length:
     enabled: true
     level: blocker
     params:
       limit: 64
+
+  ddl.column.name.pattern.require:
+    enabled: true
+    level: blocker
+    params:
+      pattern: ^[A-Za-z0-9_]+$
+      required: true
 
   ddl.column.not_null.require:
     enabled: true
@@ -148,6 +203,12 @@ rules:
     params:
       allow_time_null: true
       required: true
+
+  ddl.column.timestamp.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
 
   ddl.column.varchar.max_length:
     enabled: true
@@ -172,6 +233,19 @@ rules:
     level: warning
     params:
       prefix: full_
+      required: true
+
+  ddl.index.name.keyword.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.index.name.pattern.require:
+    enabled: true
+    level: blocker
+    params:
+      pattern: ^[A-Za-z0-9_]+$
       required: true
 
   ddl.index.secondary.prefix.require:
@@ -248,11 +322,24 @@ rules:
     params:
       forbid: true
 
+  ddl.table.name.keyword.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.table.name.max_length:
     enabled: true
     level: blocker
     params:
       limit: 64
+
+  ddl.table.name.pattern.require:
+    enabled: true
+    level: blocker
+    params:
+      pattern: ^[A-Za-z0-9_]+$
+      required: true
 
   ddl.table.partition.forbid:
     enabled: true

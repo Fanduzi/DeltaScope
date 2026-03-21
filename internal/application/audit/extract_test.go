@@ -131,6 +131,32 @@ func TestExtractPreservesBacktickedKeywordsAndUnnamedIndexes(t *testing.T) {
 	}
 }
 
+func TestExtractMapsColumnCharsetAndCollationFacts(t *testing.T) {
+	parsed, err := Parse("create table users (name varchar(32) character set utf8mb4 collate utf8mb4_bin comment 'name', alias char(16) character set utf8 comment 'alias', payload json comment 'payload') comment='users';", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	stmt := statements[0]
+	if len(stmt.DDL.Columns) != 3 {
+		t.Fatalf("expected 3 columns, got %d", len(stmt.DDL.Columns))
+	}
+	if stmt.DDL.Columns[0].Charset != "utf8mb4" || stmt.DDL.Columns[0].Collation != "utf8mb4_bin" {
+		t.Fatalf("expected name column charset/collation to be extracted, got %+v", stmt.DDL.Columns[0])
+	}
+	if stmt.DDL.Columns[1].Charset != "utf8" || stmt.DDL.Columns[1].Collation != "" {
+		t.Fatalf("expected alias column explicit charset only, got %+v", stmt.DDL.Columns[1])
+	}
+	if stmt.DDL.Columns[2].Charset != "" || stmt.DDL.Columns[2].Collation != "" {
+		t.Fatalf("expected json column not to carry create-table charset metadata, got %+v", stmt.DDL.Columns[2])
+	}
+}
+
 func TestExtractMapsAlterTable(t *testing.T) {
 	t.Run("maps representative alter shapes", func(t *testing.T) {
 		parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, modify column age bigint null default 1 comment 'age2', change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)

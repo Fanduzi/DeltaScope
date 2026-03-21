@@ -16,6 +16,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules.go | Implements audit timestamp column rules |
 | identifier_rules.go | Implements create-table identifier-pattern and reserved-keyword rules |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
+| type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
@@ -27,6 +28,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
 | identifier_rules_test.go | Verifies create-table identifier-pattern and reserved-keyword rules |
 | index_rules_test.go | Verifies create-table index governance rules |
+| type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
@@ -61,6 +63,14 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.column.name.keyword.forbid`
 - `ddl.index.name.keyword.forbid`
 - `ddl.column.varchar.max_length`
+- `ddl.column.blob_text.forbid`
+- `ddl.column.json.forbid`
+- `ddl.column.bit.forbid`
+- `ddl.column.timestamp.forbid`
+- `ddl.column.char.max_length`
+- `ddl.column.charset.allowlist`
+- `ddl.column.collation.allowlist`
+- `ddl.column.charset_collation.match.require`
 - `ddl.column.default.require`
 - `ddl.column.not_null.require`
 - `ddl.column.float_double.forbid`
@@ -102,17 +112,6 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 ## Milestone 4 Planned Create-Table Surface
 
 Milestone 4 is the remaining create-table breadth push. The following rule IDs are pinned now so later tasks can implement them without churn. These IDs are planned surface, not shipped behavior yet.
-
-### Wider Type-Family and Charset/Collation Governance
-
-- `ddl.column.blob_text.forbid`
-- `ddl.column.json.forbid`
-- `ddl.column.bit.forbid`
-- `ddl.column.timestamp.forbid`
-- `ddl.column.char.max_length`
-- `ddl.column.charset.allowlist`
-- `ddl.column.collation.allowlist`
-- `ddl.column.charset_collation.match.require`
 
 ### Deeper Redundant-Index Governance
 

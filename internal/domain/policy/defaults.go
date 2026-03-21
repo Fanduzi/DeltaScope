@@ -95,6 +95,51 @@ func Default() Policy {
 					"limit": 64,
 				},
 			},
+			"ddl.table.name.pattern.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+					"pattern":  "^[A-Za-z0-9_]+$",
+				},
+			},
+			"ddl.column.name.pattern.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+					"pattern":  "^[A-Za-z0-9_]+$",
+				},
+			},
+			"ddl.index.name.pattern.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+					"pattern":  "^[A-Za-z0-9_]+$",
+				},
+			},
+			"ddl.table.name.keyword.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.column.name.keyword.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.index.name.keyword.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"ddl.column.varchar.max_length": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -122,6 +167,62 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"forbid": true,
+				},
+			},
+			"ddl.column.blob_text.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": false,
+				},
+			},
+			"ddl.column.json.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": false,
+				},
+			},
+			"ddl.column.bit.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": false,
+				},
+			},
+			"ddl.column.timestamp.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.column.char.max_length": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 64,
+				},
+			},
+			"ddl.column.charset.allowlist": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"values": []string{"utf8", "utf8mb4"},
+				},
+			},
+			"ddl.column.collation.allowlist": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"values": []string{"utf8_general_ci", "utf8mb4_general_ci", "utf8mb4_bin"},
+				},
+			},
+			"ddl.column.charset_collation.match.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
 				},
 			},
 			"ddl.index.total.max_count": {

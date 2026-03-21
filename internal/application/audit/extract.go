@@ -12,6 +12,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 )
 
 // Extract converts parsed statements into first-pass domain StatementSpec values.
@@ -210,6 +211,10 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 		Length:   col.Tp.GetFlen(),
 		Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag()),
 	}
+	if tidbtypes.HasCharset(col.Tp) {
+		column.Charset = strings.ToLower(col.Tp.GetCharset())
+		column.Collation = strings.ToLower(col.Tp.GetCollate())
+	}
 
 	for _, option := range col.Options {
 		if option == nil {
@@ -217,6 +222,8 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 		}
 
 		switch option.Tp {
+		case ast.ColumnOptionCollate:
+			column.Collation = strings.ToLower(option.StrValue)
 		case ast.ColumnOptionComment:
 			if option.Expr != nil {
 				column.Comment = normalizedExprText(option.Expr)
@@ -286,8 +293,7 @@ func alterColumnChangeFacts(col *ast.ColumnDef) *spec.AlterColumnChange {
 		return nil
 	}
 
-	change := &spec.AlterColumnChange{
-	}
+	change := &spec.AlterColumnChange{}
 
 	for _, option := range col.Options {
 		if option == nil {

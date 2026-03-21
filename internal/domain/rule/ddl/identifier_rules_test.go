@@ -42,7 +42,7 @@ func TestIdentifierPatternRuleFindsIllegalColumnName(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statementWithNamedObjects("users", []spec.Column{{Name: "display-name", Type: "varchar(32)", Comment: "'display'"}} , nil))
+	findings, err := statementRule.Evaluate(statementWithNamedObjects("users", []spec.Column{{Name: "display-name", Type: "varchar(32)", Comment: "'display'"}}, nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
