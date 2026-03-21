@@ -462,6 +462,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - document that file updates take effect on the next request without a watcher-specific in-memory cache
 - Why: this preserves one policy-loading path, avoids another long-running config subsystem, and still delivers immediate config reload behavior for a small service.
 
+## Decision 55: the capability matrix is the acceptance source of truth for Audit Completion
+
+- Problem: the next milestone is about audit completeness, which is too easy to judge by intuition instead of by a stable checklist.
+- Decision:
+  - maintain a dedicated audit capability matrix document
+  - mark each important capability as covered, enhanced, gap, or deferred
+  - drive follow-up rule work from matrix gaps instead of ad-hoc intuition
+- Why: this keeps the milestone measurable and makes future claims about audit completeness auditable.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
