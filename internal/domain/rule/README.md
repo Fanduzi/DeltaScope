@@ -9,6 +9,7 @@ Rule contracts, registration, and finding types for audit evaluation.
 | rule.go | Defines finding severity and finding metadata |
 | registry.go | Registers statement/global rules, enforces rule IDs, and evaluates them deterministically |
 | registry_test.go | Verifies registry behavior, ID enforcement, and deterministic execution |
+| catalog/README.md | Documents the explanation-oriented shipped-rule catalog module |
 | ddl/README.md | Documents the Tier-1 DDL rule catalog module |
 | dml/README.md | Documents the Tier-1 DML rule catalog module |
 
