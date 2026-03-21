@@ -1,5 +1,5 @@
 // Package deltascope exposes the public library surface for consumers.
-// input: public audit requests carrying SQL text, dialect, and optional config path
+// input: public audit requests carrying SQL text, dialect, optional config path, and optional metadata providers
 // output: stable audit results for embedding DeltaScope in tools and agents
 // pos: public audit API above the internal application service
 // note: if this file changes, update this header and module README.md.
@@ -40,11 +40,40 @@ const (
 	LevelNotice  Level = "notice"
 )
 
+// Metadata mirrors the optional domain metadata facts exposed on statements.
+type Metadata = spec.Metadata
+
+// InstanceFacts mirror metadata-aware instance facts for public providers.
+type InstanceFacts = spec.InstanceFacts
+
+// TableSnapshot mirrors metadata-aware target table snapshots for public providers.
+type TableSnapshot = spec.TableSnapshot
+
+// Table mirrors the domain table shape used inside metadata snapshots.
+type Table = spec.Table
+
+// Column mirrors the domain column shape used inside metadata snapshots.
+type Column = spec.Column
+
+// Index mirrors the domain index shape used inside metadata snapshots.
+type Index = spec.Index
+
+// Constraint mirrors the domain constraint shape used inside metadata snapshots.
+type Constraint = spec.Constraint
+
+// MetadataProvider supplies optional metadata-aware facts for one public audit request.
+type MetadataProvider interface {
+	LoadInstanceFacts(ctx context.Context, dialect Dialect, schema string) (*InstanceFacts, error)
+	LoadTableSnapshot(ctx context.Context, dialect Dialect, schema string, table string) (*TableSnapshot, error)
+}
+
 // Request describes one public audit invocation.
 type Request struct {
-	SQL        string
-	Dialect    Dialect
-	ConfigPath string
+	SQL              string
+	Dialect          Dialect
+	ConfigPath       string
+	Schema           string
+	MetadataProvider MetadataProvider
 }
 
 // Summary captures high-level public audit counts.
@@ -90,13 +119,19 @@ type Result struct {
 	GlobalFindings []Finding         `json:"global_findings,omitempty"`
 }
 
-// Audit executes the stable public offline audit flow.
+// Audit executes the stable public audit flow.
 func Audit(ctx context.Context, request Request) (Result, error) {
-	result, err := appaudit.AuditSQL(ctx, appaudit.Request{
-		SQL:        request.SQL,
-		Dialect:    toDomainDialect(request.Dialect),
-		ConfigPath: request.ConfigPath,
-	})
+	appRequest := appaudit.Request{
+		SQL:              request.SQL,
+		Dialect:          toDomainDialect(request.Dialect),
+		ConfigPath:       request.ConfigPath,
+		Schema:           request.Schema,
+	}
+	if request.MetadataProvider != nil {
+		appRequest.MetadataProvider = publicMetadataProvider{provider: request.MetadataProvider}
+	}
+
+	result, err := appaudit.AuditSQL(ctx, appRequest)
 	if err != nil {
 		return Result{}, err
 	}
@@ -158,4 +193,22 @@ func fromDomainFindings(findings []rule.Finding) []Finding {
 		public = append(public, item)
 	}
 	return public
+}
+
+type publicMetadataProvider struct {
+	provider MetadataProvider
+}
+
+func (p publicMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	if p.provider == nil {
+		return nil, nil
+	}
+	return p.provider.LoadInstanceFacts(ctx, Dialect(dialect), schema)
+}
+
+func (p publicMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+	if p.provider == nil {
+		return nil, nil
+	}
+	return p.provider.LoadTableSnapshot(ctx, Dialect(dialect), schema, table)
 }

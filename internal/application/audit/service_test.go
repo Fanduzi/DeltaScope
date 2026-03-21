@@ -105,6 +105,40 @@ func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {
 	}
 }
 
+func TestAuditSQLUsesTopLevelMetadataRequestFields(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		instance: &spec.InstanceFacts{
+			Version:                "8.0.36",
+			DefaultCharset:         "utf8mb4",
+			InnoDBDefaultRowFormat: "dynamic",
+		},
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter table users add column email varchar(255)",
+		Dialect:          spec.DialectMySQL,
+		Schema:           "app",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql with top-level metadata fields: %v", err)
+	}
+
+	if provider.instanceCalls != 1 {
+		t.Fatalf("expected one instance-facts call, got %d", provider.instanceCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", result.Statements)
+	}
+}
+
 func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.T) {
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{

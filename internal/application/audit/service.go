@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: audit requests carrying SQL text, dialect, and optional policy override paths
-// output: end-to-end audit results assembled from policy loading, parsing, extraction, and rule evaluation
-// pos: application service entrypoint for the core SQL audit use case
+// input: audit requests carrying SQL text, dialect, optional policy override paths, and optional metadata providers
+// output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, and rule evaluation
+// pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -29,10 +29,12 @@ var (
 
 // Request describes one application-level audit invocation.
 type Request struct {
-	SQL        string
-	Dialect    spec.Dialect
-	ConfigPath string
-	Metadata   *MetadataRequest
+	SQL              string
+	Dialect          spec.Dialect
+	ConfigPath       string
+	Schema           string
+	MetadataProvider MetadataProvider
+	Metadata         *MetadataRequest
 }
 
 // Service coordinates the full audit use case.
@@ -48,7 +50,7 @@ func AuditSQL(ctx context.Context, request Request) (report.Result, error) {
 	return NewService().Audit(ctx, request)
 }
 
-// Audit executes the full offline SQL audit flow.
+// Audit executes the full SQL audit flow.
 func (s Service) Audit(ctx context.Context, request Request) (report.Result, error) {
 	if err := ctx.Err(); err != nil {
 		return report.Result{}, err
@@ -84,7 +86,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, request.Metadata, statements)
+	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, metadataRequestFor(request), statements)
 	if err != nil {
 		return report.Result{}, err
 	}
@@ -98,6 +100,16 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 
 	return EvaluateStatements(registry, statements)
+}
+
+func metadataRequestFor(request Request) *MetadataRequest {
+	if strings.TrimSpace(request.Schema) != "" || request.MetadataProvider != nil {
+		return &MetadataRequest{
+			Schema:   request.Schema,
+			Provider: request.MetadataProvider,
+		}
+	}
+	return request.Metadata
 }
 
 func buildRegistry(cfg domainpolicy.Policy) (*rule.Registry, error) {

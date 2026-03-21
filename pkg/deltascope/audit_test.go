@@ -12,6 +12,30 @@ import (
 	"testing"
 )
 
+type fakeMetadataProvider struct {
+	instanceCalls int
+	tableCalls    []string
+	instance      *InstanceFacts
+	snapshot      *TableSnapshot
+	err           error
+}
+
+func (f *fakeMetadataProvider) LoadInstanceFacts(_ context.Context, _ Dialect, _ string) (*InstanceFacts, error) {
+	f.instanceCalls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.instance, nil
+}
+
+func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ Dialect, _ string, table string) (*TableSnapshot, error) {
+	f.tableCalls = append(f.tableCalls, table)
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.snapshot, nil
+}
+
 func TestAuditUsesDefaultPolicy(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL: "update users set name = 'delta';",
@@ -101,5 +125,39 @@ func TestAuditRejectsUnsupportedDialect(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected unsupported dialect error")
+	}
+}
+
+func TestAuditSupportsTopLevelMetadataRequestFields(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		instance: &InstanceFacts{
+			Version:                "8.0.36",
+			DefaultCharset:         "utf8mb4",
+			InnoDBDefaultRowFormat: "dynamic",
+		},
+		snapshot: &TableSnapshot{
+			Exists: true,
+			Table:  &Table{Name: "users"},
+		},
+	}
+
+	result, err := Audit(context.Background(), Request{
+		SQL:              "alter table users add column email varchar(255);",
+		Dialect:          DialectMySQL,
+		Schema:           "app",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit with metadata fields: %v", err)
+	}
+
+	if provider.instanceCalls != 1 {
+		t.Fatalf("expected one instance-facts call, got %d", provider.instanceCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one table-snapshot call, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 || result.Statements[0].Findings == nil {
+		t.Fatalf("expected statement result, got %#v", result.Statements)
 	}
 }
