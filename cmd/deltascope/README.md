@@ -16,7 +16,8 @@ Process entrypoint for the `deltascope` CLI.
 
 - `deltascope --version` prints only the semantic version for scripts.
 - `deltascope version` prints the ASCII logo plus the semantic version for humans.
-- The command surface currently includes `audit`, `config init`, and `version`.
+- The command surface now includes `audit`, `rules list/show/search`, `config init/lint/show-default`, `capabilities`, and `version`.
+- `deltascope audit` supports both offline and metadata-aware runs with MySQL-style connection flags.
 
 ## Dependencies
 - Upstream: shell users, future package build tooling

@@ -26,6 +26,14 @@ type metadataClient interface {
 
 var newMetadataClient = openMetadataClient
 
+type auditRunContext struct {
+	Mode          string `json:"mode,omitempty"`
+	Dialect       string `json:"dialect,omitempty"`
+	DialectSource string `json:"dialect_source,omitempty"`
+	Schema        string `json:"schema,omitempty"`
+	SchemaSource  string `json:"schema_source,omitempty"`
+}
+
 func openMetadataClient(options auditConnectionOptions) (metadataClient, error) {
 	db, err := mysqlmeta.OpenDB(mysqlmeta.ConnectionConfig{
 		Host:     options.Host,
@@ -68,10 +76,10 @@ func (c mysqlMetadataClient) Close() error {
 	return c.db.Close()
 }
 
-func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) (metadataClient, spec.Dialect, string, error) {
+func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) (metadataClient, spec.Dialect, string, *auditRunContext, error) {
 	client, err := newMetadataClient(options)
 	if err != nil {
-		return nil, "", "", newUserError(fmt.Sprintf("open metadata connection: %v", err))
+		return nil, "", "", nil, newUserError(fmt.Sprintf("open metadata connection: %v", err))
 	}
 
 	closeOnError := true
@@ -83,54 +91,60 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 
 	detectedDialect, err := client.DetectDialect(ctx)
 	if err != nil {
-		return nil, "", "", newUserError(fmt.Sprintf("detect dialect: %v", err))
+		return nil, "", "", nil, newUserError(fmt.Sprintf("detect dialect: %v", err))
 	}
 	if explicitDialect && requestedDialect != detectedDialect {
-		return nil, "", "", newUserError(fmt.Sprintf("detected dialect %q does not match --dialect %q", detectedDialect, requestedDialect))
+		return nil, "", "", nil, newUserError(fmt.Sprintf("detected dialect %q does not match --dialect %q", detectedDialect, requestedDialect))
 	}
 
-	schema, err := resolveAuditSchema(ctx, client, sqlText, detectedDialect, options.Schema)
+	schema, schemaSource, err := resolveAuditSchema(ctx, client, sqlText, detectedDialect, options.Schema)
 	if err != nil {
-		return nil, "", "", err
+		return nil, "", "", nil, err
 	}
 
 	closeOnError = false
-	return client, detectedDialect, schema, nil
+	return client, detectedDialect, schema, &auditRunContext{
+		Mode:          "metadata-aware",
+		Dialect:       string(detectedDialect),
+		DialectSource: "detected",
+		Schema:        schema,
+		SchemaSource:  schemaSource,
+	}, nil
 }
 
-func resolveAuditSchema(ctx context.Context, client metadataClient, sqlText string, dialect spec.Dialect, explicitSchema string) (string, error) {
+func resolveAuditSchema(ctx context.Context, client metadataClient, sqlText string, dialect spec.Dialect, explicitSchema string) (string, string, error) {
 	if strings.TrimSpace(explicitSchema) != "" {
-		return strings.TrimSpace(explicitSchema), nil
+		return strings.TrimSpace(explicitSchema), "flag", nil
 	}
 
 	targets, err := collectTargetTables(sqlText, dialect)
 	if err != nil {
-		return "", newUserError(fmt.Sprintf("resolve schema targets: %v", err))
+		return "", "", newUserError(fmt.Sprintf("resolve schema targets: %v", err))
 	}
 	if len(targets) == 0 {
-		return "", nil
+		return "", "", nil
 	}
 
 	resolvedSchemas := make(map[string]struct{})
 	for _, target := range targets {
 		schemas, err := client.FindSchemasForTable(ctx, target.Name)
 		if err != nil {
-			return "", newUserError(fmt.Sprintf("resolve schema for table %q: %v", target.Name, err))
+			return "", "", newUserError(fmt.Sprintf("resolve schema for table %q: %v", target.Name, err))
 		}
 		switch len(schemas) {
 		case 0:
 			if target.RequiresExisting {
-				return "", newUserError(fmt.Sprintf("could not infer schema for table %q; pass --schema", target.Name))
+				return "", "", newUserError(fmt.Sprintf("could not infer schema for table %q; pass --schema", target.Name))
 			}
 		case 1:
 			resolvedSchemas[schemas[0]] = struct{}{}
 		default:
-			return "", newUserError(fmt.Sprintf("schema inference for table %q is ambiguous; pass --schema", target.Name))
+			return "", "", newUserError(fmt.Sprintf("schema inference for table %q is ambiguous; pass --schema", target.Name))
 		}
 	}
 
 	if len(resolvedSchemas) == 0 {
-		return "", nil
+		return "", "", nil
 	}
 	if len(resolvedSchemas) > 1 {
 		schemas := make([]string, 0, len(resolvedSchemas))
@@ -138,12 +152,12 @@ func resolveAuditSchema(ctx context.Context, client metadataClient, sqlText stri
 			schemas = append(schemas, schema)
 		}
 		sort.Strings(schemas)
-		return "", newUserError(fmt.Sprintf("resolved multiple schemas (%s); pass --schema", strings.Join(schemas, ", ")))
+		return "", "", newUserError(fmt.Sprintf("resolved multiple schemas (%s); pass --schema", strings.Join(schemas, ", ")))
 	}
 	for schema := range resolvedSchemas {
-		return schema, nil
+		return schema, "inferred", nil
 	}
-	return "", nil
+	return "", "", nil
 }
 
 type schemaTarget struct {

@@ -54,6 +54,23 @@ cat ./change.sql | go run ./cmd/deltascope audit
 go run ./cmd/deltascope audit --sql "alter table users drop column age" --format json
 ```
 
+使用 MySQL 风格连接参数执行 metadata 增强审核：
+
+```bash
+go run ./cmd/deltascope audit \
+  --sql "alter table users add column email varchar(255)" \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
+```
+
+查看内置规则目录和产品能力：
+
+```bash
+go run ./cmd/deltascope rules list --kind dml --level blocker
+go run ./cmd/deltascope rules show dml.where.require
+go run ./cmd/deltascope rules search metadata
+go run ./cmd/deltascope capabilities
+```
+
 控制非零退出阈值：
 
 ```bash
@@ -81,6 +98,13 @@ go run ./cmd/deltascope config init > deltascope.yaml
 go run ./cmd/deltascope audit --config ./deltascope.yaml --sql "update users set name = 'delta'"
 ```
 
+校验配置并查看内置默认值：
+
+```bash
+go run ./cmd/deltascope config lint --file ./deltascope.yaml
+go run ./cmd/deltascope config show-default
+```
+
 仓库内的 [示例配置](configs/deltascope.example.yaml) 与 `deltascope config init` 输出保持一致。
 
 ## Metadata 增强模式
@@ -95,6 +119,14 @@ DeltaScope 不要求必须连库。只有在配置 metadata provider 时，审�
 - create/alter/drop/truncate 的存在性检查
 - source-aware 的 `ALTER COLUMN` 兼容性判断
 - destructive table lifecycle 的 adaptive-hash 提示
+
+在 CLI 中，只要传入任意 MySQL 风格连接参数，就会进入 metadata 增强模式。此时 DeltaScope 会：
+
+- 从实例自动识别 MySQL 或 TiDB
+- 优先使用显式 `--schema`
+- 否则在目标表唯一命中时自动推断 schema
+- 当 schema 推断有歧义，或语句确实需要一个现有对象但无法推断时，直接报错而不是假装有 metadata
+- 保持 `--quiet` 适合 shell 管道，同时在 JSON 输出里加入 `context` 字段，方便 agent 消费
 
 ## HTTP 服务
 
@@ -150,6 +182,7 @@ DeltaScope 使用偏 DDD 的分层结构。接口层处理传输协议，应用�
 | `internal/domain` | 核心领域对象与规则 | [README](internal/domain/README.md) |
 | `internal/domain/spec` | 归一化 statement 模型 | [README](internal/domain/spec/README.md) |
 | `internal/domain/rule` | rule/finding/severity 模型 | [README](internal/domain/rule/README.md) |
+| `internal/domain/rule/catalog` | 面向解释和发现的内置规则目录 | [README](internal/domain/rule/catalog/README.md) |
 | `internal/domain/rule/ddl` | DDL 规则目录 | [README](internal/domain/rule/ddl/README.md) |
 | `internal/domain/rule/dml` | DML 规则目录 | [README](internal/domain/rule/dml/README.md) |
 | `internal/domain/policy` | 策略配置模型 | [README](internal/domain/policy/README.md) |

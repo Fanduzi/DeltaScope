@@ -56,6 +56,23 @@ Use JSON output for agents, scripts, or CI:
 go run ./cmd/deltascope audit --sql "alter table users drop column age" --format json
 ```
 
+Use metadata-aware audit with MySQL-style connection flags:
+
+```bash
+go run ./cmd/deltascope audit \
+  --sql "alter table users add column email varchar(255)" \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
+```
+
+Inspect shipped rules and product capabilities:
+
+```bash
+go run ./cmd/deltascope rules list --kind dml --level blocker
+go run ./cmd/deltascope rules show dml.where.require
+go run ./cmd/deltascope rules search metadata
+go run ./cmd/deltascope capabilities
+```
+
 Control the non-zero threshold:
 
 ```bash
@@ -83,6 +100,13 @@ Run with a config file:
 go run ./cmd/deltascope audit --config ./deltascope.yaml --sql "update users set name = 'delta'"
 ```
 
+Lint and inspect config defaults:
+
+```bash
+go run ./cmd/deltascope config lint --file ./deltascope.yaml
+go run ./cmd/deltascope config show-default
+```
+
 The checked-in [example config](configs/deltascope.example.yaml) matches `deltascope config init`.
 
 ## Metadata-Aware Mode
@@ -97,6 +121,14 @@ That extra context currently powers:
 - create/alter/drop/truncate existence checks
 - source-aware `ALTER COLUMN` compatibility checks
 - adaptive-hash cautions for destructive table lifecycle operations
+
+From the CLI, metadata-aware mode starts when any MySQL-style connection flag is supplied. DeltaScope then:
+
+- auto-detects MySQL vs TiDB from the live instance
+- uses `--schema` when given
+- otherwise infers schema when the target table resolves uniquely
+- fails honestly when schema inference is ambiguous or impossible for statements that need a real existing object
+- keeps `--quiet` stable for shell pipelines and includes a `context` object in JSON output for agents
 
 ## HTTP Service
 
@@ -154,6 +186,7 @@ DeltaScope uses a DDD-leaning structure. Interfaces drive transport concerns, ap
 | `internal/domain` | Core domain types and rules | [README](internal/domain/README.md) |
 | `internal/domain/spec` | Normalized statement specifications | [README](internal/domain/spec/README.md) |
 | `internal/domain/rule` | Rule findings and severity model | [README](internal/domain/rule/README.md) |
+| `internal/domain/rule/catalog` | Explanation-oriented shipped rule catalog | [README](internal/domain/rule/catalog/README.md) |
 | `internal/domain/rule/ddl` | DDL rule catalog | [README](internal/domain/rule/ddl/README.md) |
 | `internal/domain/rule/dml` | DML rule catalog | [README](internal/domain/rule/dml/README.md) |
 | `internal/domain/policy` | Policy configuration model | [README](internal/domain/policy/README.md) |

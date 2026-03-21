@@ -529,6 +529,65 @@ func TestCapabilitiesPrintsStableSummary(t *testing.T) {
 	}
 }
 
+func TestAuditHelpIncludesOfflineAndMetadataAwareExamples(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--help"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	output := stdout.String()
+	for _, expected := range []string{"Offline example", "Metadata-aware example", "--host", "--ask-password", "--schema"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected help output to contain %q, got %q", expected, output)
+		}
+	}
+}
+
+func TestMetadataAwareJSONIncludesAuditContext(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	contextValue, ok := decoded["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", decoded["context"])
+	}
+	if contextValue["mode"] != "metadata-aware" || contextValue["schema"] != "app" || contextValue["dialect"] != "mysql" {
+		t.Fatalf("expected metadata-aware context, got %#v", contextValue)
+	}
+}
+
 func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version

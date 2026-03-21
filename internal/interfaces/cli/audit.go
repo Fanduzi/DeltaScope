@@ -8,6 +8,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -18,7 +19,6 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
-	jsonrender "github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,6 +42,12 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "audit",
 		Short: "Audit SQL from flags, files, or stdin",
+		Long: "Audit SQL in offline mode or enrich the same audit engine with live metadata.\n" +
+			"When connection flags are present, DeltaScope auto-detects the dialect, infers schema when possible, and keeps the offline path unchanged when no connection details are supplied.",
+		Example: "Offline example:\n" +
+			"  deltascope audit --sql \"delete from users\" --dialect mysql\n\n" +
+			"Metadata-aware example:\n" +
+			"  deltascope audit --sql \"alter table users add column email varchar(255)\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath)
 			if err != nil {
@@ -58,8 +64,13 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 			dialect := parseDialect(options.Dialect)
 			var metadataProvider appaudit.MetadataProvider
 			var schema string
+			runContext := &auditRunContext{
+				Mode:          "offline",
+				Dialect:       string(dialect),
+				DialectSource: dialectSource(cmd.Flags().Changed("dialect")),
+			}
 			if connection.Enabled() {
-				client, resolvedDialect, resolvedSchema, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
+				client, resolvedDialect, resolvedSchema, metadataContext, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
 				if err != nil {
 					*exitCode = exitUser
 					return err
@@ -68,6 +79,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				dialect = resolvedDialect
 				schema = resolvedSchema
 				metadataProvider = client
+				runContext = metadataContext
 			}
 
 			result, err := appaudit.AuditSQL(cmd.Context(), appaudit.Request{
@@ -81,7 +93,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return mapAuditError(exitCode, err)
 			}
 
-			output, err := renderResult(options.Format, options.Quiet, result)
+			output, err := renderResult(options.Format, options.Quiet, result, runContext)
 			if err != nil {
 				*exitCode = exitInternal
 				return err
@@ -205,18 +217,59 @@ func parseDialect(value string) spec.Dialect {
 	}
 }
 
-func renderResult(format string, quiet bool, result report.Result) ([]byte, error) {
+func dialectSource(explicit bool) string {
+	if explicit {
+		return "flag"
+	}
+	return "default"
+}
+
+func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext) ([]byte, error) {
 	switch format {
 	case "json":
-		return jsonrender.Render(result)
+		return renderJSONResult(result, runContext)
 	case "markdown":
 		if quiet {
 			return renderQuietResult(result), nil
 		}
-		fallthrough
+		return renderMarkdownResult(result, runContext)
 	default:
-		return markdown.Render(result)
+		if quiet {
+			return renderQuietResult(result), nil
+		}
+		return renderMarkdownResult(result, runContext)
 	}
+}
+
+func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]byte, error) {
+	body, err := markdown.Render(result)
+	if err != nil {
+		return nil, err
+	}
+	if runContext == nil || runContext.Mode != "metadata-aware" {
+		return body, nil
+	}
+	var b strings.Builder
+	b.WriteString("## Audit Context\n")
+	fmt.Fprintf(&b, "- Mode: `%s`\n", runContext.Mode)
+	fmt.Fprintf(&b, "- Dialect: `%s` (%s)\n", runContext.Dialect, runContext.DialectSource)
+	if runContext.Schema != "" {
+		fmt.Fprintf(&b, "- Schema: `%s` (%s)\n", runContext.Schema, runContext.SchemaSource)
+	}
+	b.WriteString("\n")
+	b.Write(body)
+	return []byte(b.String()), nil
+}
+
+func renderJSONResult(result report.Result, runContext *auditRunContext) ([]byte, error) {
+	payload := struct {
+		report.Result
+		Context *auditRunContext `json:"context,omitempty"`
+	}{
+		Result:  result,
+		Context: runContext,
+	}
+	return json.Marshal(payload)
 }
 
 func renderQuietResult(result report.Result) []byte {
