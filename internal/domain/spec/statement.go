@@ -35,13 +35,14 @@ func (d Dialect) String() string {
 
 // Statement is the normalized domain input for rule evaluation.
 type Statement struct {
-	Kind          Kind     `json:"kind"`
-	Dialect       Dialect  `json:"dialect"`
-	RawSQL        string   `json:"raw_sql"`
-	NormalizedSQL string   `json:"normalized_sql,omitempty"`
-	Warnings      []string `json:"warnings,omitempty"`
-	Line          int      `json:"line,omitempty"`
-	Column        int      `json:"column,omitempty"`
-	DDL           *DDL     `json:"ddl,omitempty"`
-	DML           *DML     `json:"dml,omitempty"`
+	Kind          Kind      `json:"kind"`
+	Dialect       Dialect   `json:"dialect"`
+	RawSQL        string    `json:"raw_sql"`
+	NormalizedSQL string    `json:"normalized_sql,omitempty"`
+	Warnings      []string  `json:"warnings,omitempty"`
+	Line          int       `json:"line,omitempty"`
+	Column        int       `json:"column,omitempty"`
+	Metadata      *Metadata `json:"metadata,omitempty"`
+	DDL           *DDL      `json:"ddl,omitempty"`
+	DML           *DML      `json:"dml,omitempty"`
 }

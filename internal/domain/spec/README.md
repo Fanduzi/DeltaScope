@@ -8,6 +8,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 |------|---------------|
 | statement.go | Defines the top-level normalized statement model |
 | statement_test.go | Verifies typed statement metadata behavior |
+| metadata.go | Defines optional instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including richer column facts, typed index metadata, and create-table shape flags for offline DDL rules |
 | dml.go | Defines DML-oriented specification types, including operation metadata for rule applicability |
 
@@ -16,6 +17,9 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Statement`
 - `Kind`
 - `Dialect`
+- `Metadata`
+- `InstanceFacts`
+- `TableSnapshot`
 - `DDL`
 - `Table`
 - `Column`
@@ -30,6 +34,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `DMLOperation`
 
 ## Notes
+
+- `Statement` may now carry optional metadata-aware context through `Metadata`:
+  - `Instance` for normalized server-level facts such as version and InnoDB defaults
+  - `TargetTable` for the current metadata-backed shape of the table being audited
+- `TableSnapshot` includes convenience lookups for case-insensitive column/index existence checks so future rules do not need to duplicate iteration logic.
 
 - `Column` now carries offline-governance facts needed by column-focused DDL rules:
   - `Length`
