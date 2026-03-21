@@ -345,7 +345,6 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"forbid":            true,
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.add_index.redundant_unique_overlap.forbid": {
@@ -353,7 +352,6 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"forbid":            true,
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.add_index.unique.prefix.require": {
@@ -429,7 +427,6 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"required":          true,
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.modify_column.explicit_nullability_change.forbid": {
@@ -493,7 +490,6 @@ func Default() Policy {
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
 					"required":          true,
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.charset.allowlist": {
@@ -516,7 +512,6 @@ func Default() Policy {
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
 					"required":          true,
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.auto_increment.init_value.require": {
@@ -572,21 +567,18 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.drop.adaptive_hash.warn": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.drop.rows.max_count": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"requires_metadata": true,
 					"limit":             100,
 				},
 			},
@@ -601,21 +593,18 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.truncate.adaptive_hash.warn": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.truncate.rows.max_count": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"requires_metadata": true,
 					"limit":             100,
 				},
 			},
@@ -646,77 +635,66 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.table.exists.alter.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.add_column.exists.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.drop_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.modify_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.change_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.rename_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.add_index.exists.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.drop_index.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.rename_index.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.drop_primary_key.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"requires_metadata": true,
 				},
 			},
 			"dml.where.require": {

@@ -280,7 +280,7 @@ The first metadata-backed DDL rule batch covers:
 
 These rules are intentionally metadata-gated:
 
-- the shipped default policy marks them with `requires_metadata: true`
+- the shipped default policy keeps them enabled, but offline audits still skip them when no live table snapshot is attached
 - offline audits skip them when no live table snapshot is attached
 - `policy.Enabled` still controls whether the rule is registered at all
 - in metadata-aware mode they consume the normalized `TargetTable` snapshot carried on `spec.Statement.Metadata`

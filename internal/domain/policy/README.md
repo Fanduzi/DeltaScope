@@ -30,7 +30,7 @@ Policy model for rule configuration and future audit settings.
 - The default create-table option policy now requires `ROW_FORMAT=DYNAMIC` when row format is specified and requires explicit `AUTO_INCREMENT` seeds to stay at `1`.
 - The default metadata-aware create-table sizing policy now also enables rough `row_size` and `index key length` guards; they only run when instance facts are attached and intentionally stay conservative.
 - The default metadata-backed DDL policy enables existence checks for create/alter table plus add/drop/rename column/index and drop-primary-key operations.
-- Those existence rules advertise `requires_metadata: true` in the shipped policy/template so operators can see that offline runs will skip them when no live table snapshot is attached.
+- Those existence rules stay enabled in the shipped policy/template, but they still no-op offline when no live table snapshot is attached.
 - The default lifecycle policy now also blocks `create view`, `drop table`, and `truncate table`, and ships adaptive-hash cautions plus metadata-backed existence checks for drop/truncate operations.
 - The default lifecycle policy also ships row-count cautions for `drop table` and `truncate table`, using metadata-backed `table_rows` snapshots with a default threshold of `100`.
 - The default global DDL policy enables MySQL merge-alter guidance and ships the TiDB variant in a relaxed state until a team chooses to require merged alters there as well.

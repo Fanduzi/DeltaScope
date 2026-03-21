@@ -16,14 +16,14 @@ import (
 func TestTableExistenceRules(t *testing.T) {
 	createRule, err := newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"requires_metadata": true},
+		Params:  map[string]any{},
 	})
 	if err != nil {
 		t.Fatalf("new create existence rule: %v", err)
 	}
 	alterRule, err := newTableExistenceRule(ruleIDTableExistsAlterRequire, true, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"requires_metadata": true},
+		Params:  map[string]any{},
 	})
 	if err != nil {
 		t.Fatalf("new alter existence rule: %v", err)
@@ -64,16 +64,16 @@ func TestTableExistenceRules(t *testing.T) {
 }
 
 func TestAlterColumnExistenceRules(t *testing.T) {
-	addRule, err := newAlterObjectExistenceRule(ruleIDAlterAddColumnExistsForbid, []string{"add_column"}, "column", true, rule.LevelBlocker, policy.RulePolicy{
+	addRule, err := newAlterObjectExistenceRule(ruleIDAlterAddColumnExistsForbid, []string{"add_columns"}, "column", true, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"requires_metadata": true},
+		Params:  map[string]any{},
 	}, alterObjectName, snapshotHasColumn)
 	if err != nil {
 		t.Fatalf("new add-column existence rule: %v", err)
 	}
 	dropRule, err := newAlterObjectExistenceRule(ruleIDAlterDropColumnExistsRequire, []string{"drop_column"}, "column", false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"requires_metadata": true},
+		Params:  map[string]any{},
 	}, alterObjectName, snapshotHasColumn)
 	if err != nil {
 		t.Fatalf("new drop-column existence rule: %v", err)
@@ -84,7 +84,7 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 		DDL: &spec.DDL{
 			Table: &spec.Table{Name: "users"},
 			Alter: []spec.Alter{
-				{Action: "add_column", Name: "email"},
+				{Action: "add_columns", Name: "email"},
 				{Action: "drop_column", Name: "missing_col"},
 			},
 		},
@@ -119,14 +119,14 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 	indexRule, err := newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"requires_metadata": true},
+		Params:  map[string]any{},
 	}, alterObjectName, snapshotHasIndex)
 	if err != nil {
 		t.Fatalf("new drop-index existence rule: %v", err)
 	}
 	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"requires_metadata": true},
+		Params:  map[string]any{},
 	})
 	if err != nil {
 		t.Fatalf("new primary-key existence rule: %v", err)

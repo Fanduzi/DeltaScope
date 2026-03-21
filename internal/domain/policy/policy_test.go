@@ -30,7 +30,7 @@ func TestRulePolicyParams(t *testing.T) {
 	}
 }
 
-func TestDefaultMetadataExistenceRulesAdvertiseMetadataRequirement(t *testing.T) {
+func TestDefaultMetadataExistenceRulesStayEnabled(t *testing.T) {
 	p := Default()
 
 	for _, ruleID := range []string{
@@ -53,8 +53,8 @@ func TestDefaultMetadataExistenceRulesAdvertiseMetadataRequirement(t *testing.T)
 		if _, hasLegacyRequired := ruleCfg.Params["required"]; hasLegacyRequired {
 			t.Fatalf("expected %s to avoid legacy required param, got %#v", ruleID, ruleCfg.Params)
 		}
-		if got := ruleCfg.Params["requires_metadata"]; got != true {
-			t.Fatalf("expected %s to advertise requires_metadata=true, got %#v", ruleID, ruleCfg.Params)
+		if !ruleCfg.Enabled {
+			t.Fatalf("expected %s to stay enabled in the default policy", ruleID)
 		}
 	}
 }
