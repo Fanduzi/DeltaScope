@@ -41,6 +41,24 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableAuditColumnsRequire, construct: newTableAuditColumnsRequiredRule},
 		{ruleID: ruleIDColumnCommentRequire, construct: newColumnCommentRequiredRule},
 		{ruleID: ruleIDColumnNameMaxLength, construct: newColumnNameMaxLengthRule},
+		{ruleID: ruleIDTableNamePatternRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIdentifierPatternRule(ruleIDTableNamePatternRequire, "table", rule.LevelBlocker, cfg, selectTableName)
+		}},
+		{ruleID: ruleIDColumnNamePatternRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIdentifierPatternRule(ruleIDColumnNamePatternRequire, "column", rule.LevelBlocker, cfg, selectColumnNames)
+		}},
+		{ruleID: ruleIDIndexNamePatternRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIdentifierPatternRule(ruleIDIndexNamePatternRequire, "index", rule.LevelBlocker, cfg, selectIndexNames)
+		}},
+		{ruleID: ruleIDTableNameKeywordForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIdentifierKeywordRule(ruleIDTableNameKeywordForbid, "table", rule.LevelBlocker, cfg, selectTableName)
+		}},
+		{ruleID: ruleIDColumnNameKeywordForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIdentifierKeywordRule(ruleIDColumnNameKeywordForbid, "column", rule.LevelBlocker, cfg, selectColumnNames)
+		}},
+		{ruleID: ruleIDIndexNameKeywordForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIdentifierKeywordRule(ruleIDIndexNameKeywordForbid, "index", rule.LevelBlocker, cfg, selectIndexNames)
+		}},
 		{ruleID: ruleIDColumnVarcharMaxLength, construct: newColumnVarcharMaxLengthRule},
 		{ruleID: ruleIDColumnDefaultRequire, construct: newColumnDefaultRequiredRule},
 		{ruleID: ruleIDColumnNotNullRequire, construct: newColumnNotNullRequiredRule},

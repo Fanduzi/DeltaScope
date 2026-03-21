@@ -440,7 +440,10 @@ func normalizeConstraintName(c *ast.Constraint) string {
 	if c.Name != "" {
 		return strings.ToLower(c.Name)
 	}
-	return constraintTypeName(c.Tp)
+	if c.Tp == ast.ConstraintPrimaryKey {
+		return "primary"
+	}
+	return ""
 }
 
 func extractAlterName(specification *ast.AlterTableSpec) string {

@@ -96,6 +96,41 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	}
 }
 
+func TestExtractPreservesBacktickedKeywordsAndUnnamedIndexes(t *testing.T) {
+	parsed, err := Parse("create table `select` (`from` bigint unsigned not null auto_increment comment 'pk', `group` varchar(32) comment 'group', primary key (`from`), key (`group`), key `order` (`group`)) comment='keyword table';", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	stmt := statements[0]
+	if stmt.DDL == nil || stmt.DDL.Table == nil {
+		t.Fatalf("expected ddl table metadata")
+	}
+	if stmt.DDL.Table.Name != "select" {
+		t.Fatalf("expected backticked keyword table name to normalize to select, got %q", stmt.DDL.Table.Name)
+	}
+	if len(stmt.DDL.Columns) != 2 {
+		t.Fatalf("expected 2 columns, got %d", len(stmt.DDL.Columns))
+	}
+	if stmt.DDL.Columns[0].Name != "from" || stmt.DDL.Columns[1].Name != "group" {
+		t.Fatalf("expected keyword column names to be preserved, got %+v", stmt.DDL.Columns)
+	}
+	if len(stmt.DDL.Indexes) != 2 {
+		t.Fatalf("expected 2 non-primary indexes, got %d", len(stmt.DDL.Indexes))
+	}
+	if stmt.DDL.Indexes[0].Name != "" {
+		t.Fatalf("expected unnamed secondary index to stay unnamed, got %q", stmt.DDL.Indexes[0].Name)
+	}
+	if stmt.DDL.Indexes[1].Name != "order" {
+		t.Fatalf("expected named keyword index order, got %q", stmt.DDL.Indexes[1].Name)
+	}
+}
+
 func TestExtractMapsAlterTable(t *testing.T) {
 	t.Run("maps representative alter shapes", func(t *testing.T) {
 		parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, modify column age bigint null default 1 comment 'age2', change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)
