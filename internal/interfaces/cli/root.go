@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: Cobra command construction inputs, process-like stdin/stdout/stderr dependencies, and shared CLI option state
-// output: root command wiring for audit, config init, and version subcommands
+// output: root command wiring for audit, rules, config, capabilities, and version subcommands
 // pos: CLI command assembly and shared option definitions
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -78,6 +78,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 	rootCmd.Flags().BoolVar(&options.ShowVersion, "version", false, "print the DeltaScope build version")
 
 	rootCmd.AddCommand(newAuditCmd(options, exitCode))
+	rootCmd.AddCommand(newRulesCmd(exitCode))
 	rootCmd.AddCommand(newConfigInitCmd(exitCode))
 	rootCmd.AddCommand(newVersionCmd())
 

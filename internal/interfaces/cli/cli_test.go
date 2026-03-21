@@ -361,6 +361,87 @@ func TestConfigInitWritesUsableYAML(t *testing.T) {
 	}
 }
 
+func TestRulesListPrintsShippedRules(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"rules", "list"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "dml.where.require") {
+		t.Fatalf("expected shipped rule in list output, got %q", stdout.String())
+	}
+}
+
+func TestRulesListSupportsKindLevelAndEnabledFilters(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"rules", "list", "--kind", "dml", "--level", "blocker", "--enabled-only"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "dml.where.require") {
+		t.Fatalf("expected blocker dml rule in filtered output, got %q", output)
+	}
+	if strings.Contains(output, "ddl.table.comment.require") {
+		t.Fatalf("expected ddl rule to be filtered out, got %q", output)
+	}
+}
+
+func TestRulesShowPrintsExamplesConfigAndRemediation(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"rules", "show", "dml.where.require"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "Trigger Example") || !strings.Contains(output, "Config Example") || !strings.Contains(output, "Remediation") {
+		t.Fatalf("expected detailed rule sections, got %q", output)
+	}
+}
+
+func TestRulesSearchMatchesByKeyword(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"rules", "search", "where"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "dml.where.require") {
+		t.Fatalf("expected where rule in search output, got %q", stdout.String())
+	}
+}
+
 func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version
