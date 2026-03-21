@@ -111,7 +111,7 @@ git add internal/domain/rule/ddl/common.go internal/domain/rule/ddl/config.go in
 git commit -m "refactor: prepare source-aware alter rules"
 ```
 
-### Task 4: Implement source-aware column alter rules
+### Task 4: Implement source-aware explicit column alter rules
 
 **Files:**
 - Modify: `internal/domain/rule/ddl/alter_semantic_rules.go`
@@ -124,9 +124,9 @@ git commit -m "refactor: prepare source-aware alter rules"
 **Step 1: Write failing rule tests**
 
 Cover:
-- clearly incompatible source-to-target changes
-- safe same-family narrow cases
-- nullability/default/unsigned transitions
+- target-side type-family allowlists
+- explicit nullability/default/auto-increment changes
+- blocked vs allowed explicit-change cases
 
 **Step 2: Run the targeted DDL tests**
 
@@ -135,7 +135,7 @@ Expected: FAIL.
 
 **Step 3: Implement the minimal rules**
 
-Keep the offline semantics conservative and explicit.
+Keep the offline semantics conservative and explicit. Do not invent an unsigned-transition rule unless the model can honestly prove that transition from statement-local facts.
 
 **Step 4: Align defaults and config template**
 
@@ -150,7 +150,7 @@ Expected: PASS.
 
 ```bash
 git add internal/domain/rule/ddl/alter_semantic_rules.go internal/domain/rule/ddl/alter_semantic_rules_test.go internal/domain/rule/ddl/register.go internal/domain/policy/defaults.go internal/domain/policy/README.md configs/deltascope.example.yaml
-git commit -m "feat: add source-aware alter column rules"
+git commit -m "feat: add explicit alter column rules"
 ```
 
 ### Task 5: Extend alter-index lifecycle governance

@@ -126,12 +126,12 @@ Prepare the DDL rule layer for source-aware alter policies.
 
 ### Goal
 
-Implement source-aware column alter rules.
+Implement source-aware explicit column alter rules.
 
 ### Scope
 
-- source-to-target compatibility policy
-- nullability/default/unsigned transition checks
+- target-side type-family allowlists
+- explicit nullability/default/auto_increment change checks
 - defaults and config template updates
 
 ### Files
@@ -147,7 +147,7 @@ Implement source-aware column alter rules.
 
 - rule IDs stay honest about what is actually judged
 - defaults and example config align with `config init`
-- focused tests cover blocked vs allowed transitions
+- focused tests cover blocked vs allowed explicit-change cases
 
 ### Required Validation
 
