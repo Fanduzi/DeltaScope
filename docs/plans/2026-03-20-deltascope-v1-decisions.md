@@ -414,8 +414,9 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
 - Decision:
   - keep identifier legality rules under `*.name.pattern.require`
   - keep reserved-word governance under `*.name.keyword.forbid`
-  - keep type-family restrictions literal, for example `ddl.column.blob.forbid` and `ddl.column.timestamp.forbid`
-  - keep create-table-only object-shape additions literal, for example `ddl.table.row_format.allowlist`
+  - keep type-family restrictions literal, for example `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, and `ddl.column.timestamp.forbid`
+  - keep charset/collation rules literal about whether they are allowlists or pair-coherence checks, for example `ddl.column.charset.allowlist` and `ddl.column.charset_collation.match.require`
+  - keep create-table-only object-shape additions literal, for example `ddl.table.row_format.allowlist` and `ddl.table.auto_increment.init_value.require`
   - keep deeper redundant-index rules explicit about the heuristic they apply, for example `ddl.index.redundant_left_prefix.forbid`
 - Why: the existing rule surface already uses family-first names such as `*.allowlist`, `*.forbid`, and `*.max_length`. Extending that style is clearer than introducing more abstract policy names now.
 

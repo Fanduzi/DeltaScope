@@ -106,13 +106,14 @@ Milestone 4 is the remaining create-table breadth push. The following rule IDs a
 
 ### Wider Type-Family and Charset/Collation Governance
 
-- `ddl.column.blob.forbid`
+- `ddl.column.blob_text.forbid`
 - `ddl.column.json.forbid`
 - `ddl.column.bit.forbid`
 - `ddl.column.timestamp.forbid`
 - `ddl.column.char.max_length`
 - `ddl.column.charset.allowlist`
 - `ddl.column.collation.allowlist`
+- `ddl.column.charset_collation.match.require`
 
 ### Deeper Redundant-Index Governance
 
@@ -122,12 +123,21 @@ Milestone 4 is the remaining create-table breadth push. The following rule IDs a
 ### Remaining Create-Table Object Shape
 
 - `ddl.table.row_format.allowlist`
+- `ddl.table.auto_increment.init_value.require`
 
 Milestone 4 is intentionally still create-table scoped:
 
 - no live metadata dependencies
 - no new parser-owned domain leakage
 - no claims of source-to-target alter compatibility
+
+Within that create-table scope, Milestone 4 is the line where DeltaScope aims to exceed `gAudit` specifically on `CREATE TABLE` breadth by closing the remaining offline-safe gaps around:
+
+- identifier syntax and reserved-keyword governance
+- blob/json/bit/timestamp and char-length type-family policy
+- column charset/collation allowlists plus charset-collation coherence
+- deeper redundant-index detection beyond exact duplicates
+- row-format and auto-increment-init table-option checks
 
 ## Alter Helper Surface
 
