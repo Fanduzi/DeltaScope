@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: Cobra command construction inputs and process-like stdin/stdout/stderr dependencies
+// input: Cobra command construction inputs, process-like stdin/stdout/stderr dependencies, and shared CLI option state
 // output: root command wiring for audit, config init, and version subcommands
 // pos: CLI command assembly and shared option definitions
 // note: if this file changes, update this header and module README.md.
@@ -12,11 +12,18 @@ import (
 )
 
 type cliOptions struct {
-	ConfigPath string
-	Dialect    string
-	Format     string
-	FailOn     string
-	Quiet      bool
+	ConfigPath  string
+	Dialect     string
+	Format      string
+	FailOn      string
+	Quiet       bool
+	Host        string
+	Port        int
+	User        string
+	Password    string
+	AskPassword bool
+	Schema      string
+	Socket      string
 	ShowVersion bool
 }
 
@@ -25,6 +32,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 		Dialect: "mysql",
 		Format:  "markdown",
 		FailOn:  "blocker",
+		Port:    3306,
 	}
 
 	rootCmd := &cobra.Command{

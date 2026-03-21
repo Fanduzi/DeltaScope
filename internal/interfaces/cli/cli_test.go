@@ -1,6 +1,6 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: command-line args, stdin/file SQL sources, and config-init/version requests
-// output: end-to-end CLI behavior coverage for exit codes and rendered output
+// input: command-line args, stdin/file SQL sources, password-prompt doubles, and config-init/version requests
+// output: end-to-end CLI behavior coverage for exit codes, rendered output, and connection-flag validation
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -8,6 +8,8 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -190,6 +192,117 @@ func TestAuditCommandQuietMarkdownOmitsFullReportWrapper(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "dml.where.require") {
 		t.Fatalf("expected quiet output to keep finding identity, got %q", stdout.String())
+	}
+}
+
+func TestAuditCommandAcceptsMySQLStyleConnectionFlagsWithoutChangingOfflineBehavior(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "-h", "127.0.0.1", "-P", "3307", "-u", "root", "-p", "secret", "-D", "app"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "# DeltaScope Audit Result") {
+		t.Fatalf("expected standard offline report output, got %q", stdout.String())
+	}
+}
+
+func TestAuditCommandRejectsAskPasswordWithPassword(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "-u", "root", "-p", "secret", "--ask-password"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "mutually exclusive") {
+		t.Fatalf("expected mutual exclusion error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsSocketWithHostOrPort(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--socket", "/tmp/mysql.sock", "--host", "127.0.0.1"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "socket") || !strings.Contains(stderr.String(), "host/port") {
+		t.Fatalf("expected socket conflict error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandPromptsForPasswordWhenAskPasswordIsSet(t *testing.T) {
+	previous := passwordPrompt
+	called := 0
+	passwordPrompt = func(_ io.Reader, out io.Writer) (string, error) {
+		called++
+		_, _ = out.Write([]byte("Password: "))
+		return "secret", nil
+	}
+	t.Cleanup(func() { passwordPrompt = previous })
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "-u", "root", "--ask-password"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	if called != 1 {
+		t.Fatalf("expected password prompt to be called once, got %d", called)
+	}
+	if !strings.Contains(stderr.String(), "Password:") {
+		t.Fatalf("expected password prompt text on stderr, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandReturnsUserErrorWhenPasswordPromptFails(t *testing.T) {
+	previous := passwordPrompt
+	passwordPrompt = func(_ io.Reader, _ io.Writer) (string, error) {
+		return "", errors.New("prompt failed")
+	}
+	t.Cleanup(func() { passwordPrompt = previous })
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--ask-password"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "prompt password") {
+		t.Fatalf("expected prompt failure on stderr, got %q", stderr.String())
 	}
 }
 
