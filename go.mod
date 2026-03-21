@@ -3,6 +3,7 @@ module github.com/Fanduzi/DeltaScope
 go 1.25
 
 require (
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260319162650-7d7a2372f4ec
 	github.com/spf13/cobra v1.9.1

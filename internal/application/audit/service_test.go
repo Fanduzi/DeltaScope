@@ -15,6 +15,30 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+type fakeMetadataProvider struct {
+	instanceCalls int
+	tableCalls    []string
+	instance      *spec.InstanceFacts
+	snapshot      *spec.TableSnapshot
+	err           error
+}
+
+func (f *fakeMetadataProvider) LoadInstanceFacts(_ context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
+	f.instanceCalls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.instance, nil
+}
+
+func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, table string) (*spec.TableSnapshot, error) {
+	f.tableCalls = append(f.tableCalls, table)
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.snapshot, nil
+}
+
 func TestAuditSQLUsesDefaultPolicy(t *testing.T) {
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "delete from users",
@@ -78,5 +102,67 @@ func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {
 	}
 	if result.Summary.Statements != 2 {
 		t.Fatalf("expected summary statements=2, got %d", result.Summary.Statements)
+	}
+}
+
+func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		instance: &spec.InstanceFacts{
+			Version:                "8.0.36",
+			DefaultCharset:         "utf8mb4",
+			InnoDBDefaultRowFormat: "dynamic",
+		},
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "id", Type: "bigint"},
+			},
+		},
+	}
+
+	statements := []spec.Statement{
+		{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectMySQL,
+			DDL: &spec.DDL{
+				Table: &spec.Table{Name: "users"},
+			},
+		},
+	}
+
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, &MetadataRequest{
+		Schema:   "app",
+		Provider: provider,
+	}, statements)
+	if err != nil {
+		t.Fatalf("enrich statements: %v", err)
+	}
+
+	if provider.instanceCalls != 1 {
+		t.Fatalf("expected one instance-facts call, got %d", provider.instanceCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table call for users, got %#v", provider.tableCalls)
+	}
+	if enriched[0].Metadata == nil || enriched[0].Metadata.Instance == nil {
+		t.Fatalf("expected instance metadata to be attached")
+	}
+	if enriched[0].Metadata.TargetTable == nil || !enriched[0].Metadata.TargetTable.Exists {
+		t.Fatalf("expected table snapshot metadata to be attached")
+	}
+}
+
+func TestEnrichStatementsWithMetadataKeepsOfflinePathWhenProviderIsAbsent(t *testing.T) {
+	statements := []spec.Statement{
+		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Table: &spec.Table{Name: "users"}}},
+	}
+
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, nil, statements)
+	if err != nil {
+		t.Fatalf("enrich statements without provider: %v", err)
+	}
+	if enriched[0].Metadata != nil {
+		t.Fatalf("expected offline path to keep metadata nil, got %#v", enriched[0].Metadata)
 	}
 }

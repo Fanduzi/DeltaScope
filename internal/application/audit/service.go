@@ -32,6 +32,7 @@ type Request struct {
 	SQL        string
 	Dialect    spec.Dialect
 	ConfigPath string
+	Metadata   *MetadataRequest
 }
 
 // Service coordinates the full audit use case.
@@ -76,6 +77,14 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 
 	statements, err := Extract(parsed)
+	if err != nil {
+		return report.Result{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return report.Result{}, err
+	}
+
+	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, request.Metadata, statements)
 	if err != nil {
 		return report.Result{}, err
 	}

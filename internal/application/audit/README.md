@@ -12,8 +12,9 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | extract_test.go | Verifies representative DDL and DML extraction behavior, including create-like/create-as/partition flags plus enriched create-table facts, preserved backticked-keyword and unnamed-index names, extracted column charset/collation facts, normalized row-format and auto-increment-init options, and richer alter-table detail including explicit statement-local change facts, multi-column add expansion, and non-index constraint handling |
 | evaluate.go | Applies registered rules and aggregates statement/global findings into report output |
 | evaluate_test.go | Verifies application-owned report-flow integration over the rule registry |
-| service.go | Orchestrates the full offline audit flow across policy loading, parsing, extraction, rule registration, and evaluation |
-| service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, and multi-statement SQL |
+| service.go | Orchestrates the full audit flow across policy loading, parsing, extraction, optional metadata enrichment, rule registration, and evaluation |
+| service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, multi-statement SQL, and metadata enrichment behavior |
+| metadata.go | Defines the optional metadata-provider interface and attaches instance/table facts to statements before evaluation |
 
 ## Exports
 
@@ -22,6 +23,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 - `EvaluateStatements(registry, statements)`
 - `AuditSQL(ctx, request)`
 - `Request`
+- `MetadataRequest`
+- `MetadataProvider`
 - `Service`
 - `NewService()`
 - `Service.Audit(ctx, request)`
