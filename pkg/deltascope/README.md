@@ -35,6 +35,10 @@ Stable public package surface for library consumers.
 - `DefaultVersion`
 - `Logo`
 
+## Notes
+
+- `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.
+
 ## Dependencies
 - Upstream: external library consumers
 - Downstream: `context`, `internal/application/audit`, `internal/domain/report`, `internal/domain/rule`, `internal/domain/spec`

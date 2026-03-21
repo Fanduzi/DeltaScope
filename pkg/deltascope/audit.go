@@ -122,10 +122,10 @@ type Result struct {
 // Audit executes the stable public audit flow.
 func Audit(ctx context.Context, request Request) (Result, error) {
 	appRequest := appaudit.Request{
-		SQL:              request.SQL,
-		Dialect:          toDomainDialect(request.Dialect),
-		ConfigPath:       request.ConfigPath,
-		Schema:           request.Schema,
+		SQL:        request.SQL,
+		Dialect:    toDomainDialect(request.Dialect),
+		ConfigPath: request.ConfigPath,
+		Schema:     request.Schema,
 	}
 	if request.MetadataProvider != nil {
 		appRequest.MetadataProvider = publicMetadataProvider{provider: request.MetadataProvider}

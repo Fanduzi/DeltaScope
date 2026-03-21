@@ -13,6 +13,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 7. create-table superset completion
 8. HTTP API service delivery
 9. audit completion and metadata-aware coverage closure
+10. CLI completion and product-surface closure
 
 ## New Checkpoints
 
@@ -43,6 +44,15 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `86eefe3` `feat: add metadata-backed ddl existence rules`
 - `54d418f` `feat: add source-aware alter compatibility rules`
 - `9812b92` `feat: close metadata and lifecycle audit gaps`
+- `4848698` `docs: add cli completion plan artifacts`
+- `c47e330` `feat: add metadata-aware audit request plumbing`
+- `d80168d` `feat: add audit connection flag parsing`
+- `240a48d` `feat: wire metadata-aware cli audit`
+- `a4ecab1` `feat: add shipped rule catalog metadata`
+- `92a0e2d` `feat: add cli rule catalog commands`
+- `d1569e3` `feat: add cli config lint commands`
+- `5d843fc` `feat: add cli capabilities command`
+- `0fe28d8` `feat: close cli help and output gaps`
 
 ## Current Offline DDL Coverage
 
@@ -77,10 +87,15 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
   - alter-added redundant-index lifecycle checks
   - metadata-backed rough row-size and index-key-length guards
   - release-surface docs in English and Chinese plus changelog/security pages
+- CLI-completion coverage:
+  - metadata-aware CLI audit with MySQL-style connection flags, `--ask-password`, dialect auto-detection, and schema inference
+  - explanation-oriented shipped rule catalog plus `rules list/show/search`
+  - `config lint`, `config show-default`, and `capabilities`
+  - help/examples, metadata-aware JSON context, and CLI docs in English and Chinese
 
 ## What Still Looks Like The Next Milestone
 
-Milestone 6 is now complete. The next milestone should be chosen from product expansion, not baseline audit completion:
+Milestone 6 and the follow-on CLI Completion milestone are now complete. The next milestone should be chosen from product expansion, not baseline audit completion:
 
 - deeper online/runtime risk modeling
 - MCP server / agent adapter work

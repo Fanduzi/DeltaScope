@@ -514,6 +514,24 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - drive follow-up rule work from matrix gaps instead of ad-hoc intuition
 - Why: this keeps the milestone measurable and makes future claims about audit completeness auditable.
 
+## Decision 56: metadata-aware access stays on `deltascope audit`, not a second online command
+
+- Problem: CLI completion needed live metadata access, but splitting that into a second top-level online command would fork help, examples, errors, and long-term adapter behavior.
+- Decision:
+  - keep one `deltascope audit` command
+  - enter metadata-aware mode only when connection flags are supplied
+  - auto-detect dialect online, infer schema when safe, and fail honestly on ambiguity
+- Why: this keeps one coherent audit UX and matches the single-engine architecture used by the application layer.
+
+## Decision 57: shipped rule catalog entries are generated from default-policy rule IDs plus explanation templates
+
+- Problem: the CLI needed `rules list/show/search`, but hand-maintaining a second manually enumerated shipped-rule list would drift from the real default policy surface quickly.
+- Decision:
+  - derive the catalog entry set from `policy.Default().Rules`
+  - attach explanation-oriented metadata such as summaries, examples, config snippets, and remediation hints through catalog templates
+  - keep rule execution and rule explanation linked only by `rule_id`
+- Why: this keeps the catalog complete for the shipped surface while avoiding a second fragile source of truth for which rules actually ship.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

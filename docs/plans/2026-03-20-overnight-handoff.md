@@ -53,6 +53,11 @@
   - alter-added redundant-index lifecycle checks reusing create-table redundancy logic against snapshot + added indexes
   - metadata-backed rough row-size and index-key-length checks
   - release-surface docs including `README.md`, `README_ZH.md`, `CHANGELOG.md`, and `SECURITY.md`
+- completed the `CLI Completion` milestone with:
+  - metadata-aware `deltascope audit` using MySQL-style TCP/socket flags, `--ask-password`, dialect auto-detection, schema inference, and honest ambiguity/fallback errors
+  - a shipped rule catalog metadata layer plus `rules list`, `rules show`, and `rules search`
+  - `config lint`, `config show-default`, and `capabilities`
+  - CLI help/examples, metadata-aware JSON context, quiet-output stability, and updated English/Chinese docs
 
 ## In Progress
 
@@ -97,6 +102,15 @@
 - `86eefe3` `feat: add metadata-backed ddl existence rules`
 - `54d418f` `feat: add source-aware alter compatibility rules`
 - `9812b92` `feat: close metadata and lifecycle audit gaps`
+- `4848698` `docs: add cli completion plan artifacts`
+- `c47e330` `feat: add metadata-aware audit request plumbing`
+- `d80168d` `feat: add audit connection flag parsing`
+- `240a48d` `feat: wire metadata-aware cli audit`
+- `a4ecab1` `feat: add shipped rule catalog metadata`
+- `92a0e2d` `feat: add cli rule catalog commands`
+- `d1569e3` `feat: add cli config lint commands`
+- `5d843fc` `feat: add cli capabilities command`
+- `0fe28d8` `feat: close cli help and output gaps`
 
 ## Verification Run
 
@@ -104,6 +118,12 @@
 - `go run ./cmd/deltascope audit --sql "delete from t"`
 - `go run ./cmd/deltascope audit --sql "delete from t" --format json`
 - `go run ./cmd/deltascope config init`
+- `go run ./cmd/deltascope config lint --file ./configs/deltascope.example.yaml`
+- `go run ./cmd/deltascope config show-default`
+- `go run ./cmd/deltascope rules list --kind dml --level blocker`
+- `go run ./cmd/deltascope rules show dml.where.require`
+- `go run ./cmd/deltascope rules search metadata`
+- `go run ./cmd/deltascope capabilities`
 - `go run ./cmd/deltascope version`
 - `diff -u configs/deltascope.example.yaml <(go run ./cmd/deltascope config init)`
 - `/Users/fan/.codex/skills/check-three-level-doc/scripts/check_three_level_doc.sh`
@@ -122,10 +142,13 @@
 - Milestone 5 intentionally keeps the HTTP service thin and stateless; it reuses the public audit API and reloads config on each request instead of growing a separate in-memory policy manager.
 - `Audit Completion` intentionally keeps metadata-aware rules on the same audit path instead of introducing a second "online mode" engine.
 - `Audit Completion` also treats sizing checks as rough, metadata-backed guards rather than pretending to compute execution-safe storage outcomes exactly.
+- `CLI Completion` intentionally keeps metadata-aware access on the existing `audit` command instead of creating a separate online-only command tree.
+- `CLI Completion` also derives the shipped rule catalog from default-policy rule IDs so `rules` commands stay aligned with the actually shipped surface.
 
 ## Remaining Gaps
 
 - `Audit Completion` closed the blocking capability-matrix gaps.
+- `CLI Completion` closed the major CLI surface gaps for audit, rules, config inspection, and capability discovery.
 - remaining work is no longer "baseline missing coverage"; it is follow-on product depth:
   - richer runtime-risk estimation beyond rough metadata-backed sizing and row-count cautions
   - broader online safety checks and policy ergonomics

@@ -20,5 +20,9 @@ Explanation-oriented metadata for shipped DeltaScope rules.
 - Upstream: `internal/interfaces/cli` and future documentation tooling
 - Downstream: `internal/domain/policy`, `internal/domain/rule`
 
+## Notes
+
+- Entries are generated from shipped default-policy rule IDs and explanation templates, so catalog coverage stays aligned with the actually shipped rule surface.
+
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
