@@ -16,7 +16,7 @@ import (
 
 func newConfigInitCmd(exitCode *int) *cobra.Command {
 	return &cobra.Command{
-		Use:   "config init",
+		Use:   "init",
 		Short: "Print a usable YAML policy template",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			output, err := renderExampleConfig()

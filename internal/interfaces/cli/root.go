@@ -79,7 +79,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 
 	rootCmd.AddCommand(newAuditCmd(options, exitCode))
 	rootCmd.AddCommand(newRulesCmd(exitCode))
-	rootCmd.AddCommand(newConfigInitCmd(exitCode))
+	rootCmd.AddCommand(newConfigCmd(exitCode))
 	rootCmd.AddCommand(newVersionCmd())
 
 	return rootCmd

@@ -361,6 +361,72 @@ func TestConfigInitWritesUsableYAML(t *testing.T) {
 	}
 }
 
+func TestConfigLintAcceptsValidConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "policy.yaml")
+	content := "rules:\n  dml.where.require:\n    enabled: true\n    level: blocker\n    params:\n      required: true\n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"config", "lint", "--file", path},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "Config OK") {
+		t.Fatalf("expected success output, got %q", stdout.String())
+	}
+}
+
+func TestConfigLintRejectsUnknownRuleAndInvalidValues(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "policy.yaml")
+	content := "rules:\n  made.up.rule:\n    enabled: true\n    level: fatal\n    params:\n      required: not-a-bool\n"
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"config", "lint", "--file", path},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "unknown rule") {
+		t.Fatalf("expected unknown rule lint failure, got %q", stderr.String())
+	}
+}
+
+func TestConfigShowDefaultPrintsBuiltInConfig(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"config", "show-default"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "dml.where.require") {
+		t.Fatalf("expected default config output, got %q", stdout.String())
+	}
+}
+
 func TestRulesListPrintsShippedRules(t *testing.T) {
 	stdout := &strings.Builder{}
 
