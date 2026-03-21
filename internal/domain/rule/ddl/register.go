@@ -105,6 +105,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newIndexPrefixRequiredRule(ruleIDIndexFulltextPrefixRequire, spec.IndexKindFulltext, "full_", rule.LevelWarning, cfg)
 		}},
 		{ruleID: ruleIDIndexDuplicateForbid, construct: newDuplicateIndexForbiddenRule},
+		{ruleID: ruleIDIndexRedundantLeftPrefixForbid, construct: newRedundantLeftPrefixIndexRule},
+		{ruleID: ruleIDIndexRedundantUniqueOverlapForbid, construct: newRedundantUniqueOverlapIndexRule},
 		{ruleID: ruleIDAlterDropColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterDropColumnForbid, "drop_column", "drop column", rule.LevelWarning, cfg)
 		}},

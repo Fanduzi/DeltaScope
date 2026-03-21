@@ -25,6 +25,7 @@ Policy model for rule configuration and future audit settings.
 - The default create-table policy now enables identifier pattern and reserved-keyword checks for table, column, and secondary-index names.
 - The default create-table type-family policy keeps `timestamp` forbidden, keeps `char` length capped, and enforces charset/collation allowlists plus pair-coherence checks.
 - Blob/text, json, and bit forbids are shipped in the default template but remain relaxed by default via `forbid: false` until a team intentionally tightens them.
+- The default create-table index policy now also enables left-prefix and unique-overlap redundant-index findings on top of exact duplicate detection.
 
 ## Dependencies
 - Upstream: application policy loading and future config adapters

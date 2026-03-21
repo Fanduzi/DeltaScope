@@ -80,6 +80,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.index.secondary.prefix.require`
 - `ddl.index.fulltext.prefix.require`
 - `ddl.index.duplicate.forbid`
+- `ddl.index.redundant_left_prefix.forbid`
+- `ddl.index.redundant_unique_overlap.forbid`
 - `ddl.alter.drop_column.forbid`
 - `ddl.alter.drop_primary_key.forbid`
 - `ddl.alter.drop_index.forbid`
@@ -112,11 +114,6 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 ## Milestone 4 Planned Create-Table Surface
 
 Milestone 4 is the remaining create-table breadth push. The following rule IDs are pinned now so later tasks can implement them without churn. These IDs are planned surface, not shipped behavior yet.
-
-### Deeper Redundant-Index Governance
-
-- `ddl.index.redundant_left_prefix.forbid`
-- `ddl.index.redundant_unique_overlap.forbid`
 
 ### Remaining Create-Table Object Shape
 

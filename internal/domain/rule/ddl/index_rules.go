@@ -221,3 +221,132 @@ func (r duplicateIndexForbiddenRule) Evaluate(statement spec.Statement) ([]rule.
 func duplicateSignature(index spec.Index) string {
 	return fmt.Sprintf("%s:%s", index.Kind, strings.Join(index.Columns, ","))
 }
+
+type redundantLeftPrefixIndexRule struct {
+	forbid bool
+	level  rule.Level
+}
+
+func newRedundantLeftPrefixIndexRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	forbid, err := boolParam(ruleIDIndexRedundantLeftPrefixForbid, cfg, "forbid", true)
+	if err != nil {
+		return nil, err
+	}
+	return redundantLeftPrefixIndexRule{forbid: forbid, level: configuredLevel(cfg, rule.LevelWarning)}, nil
+}
+
+func (r redundantLeftPrefixIndexRule) ID() string { return ruleIDIndexRedundantLeftPrefixForbid }
+
+func (r redundantLeftPrefixIndexRule) AppliesTo(statement spec.Statement) bool {
+	return r.forbid && appliesToCreateTableIndexes(statement)
+}
+
+func (r redundantLeftPrefixIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for i := range statement.DDL.Indexes {
+		shorter := statement.DDL.Indexes[i]
+		if shorter.Kind != spec.IndexKindSecondary || len(shorter.Columns) == 0 {
+			continue
+		}
+		for j := range statement.DDL.Indexes {
+			if i == j {
+				continue
+			}
+			longer := statement.DDL.Indexes[j]
+			if longer.Kind != spec.IndexKindSecondary || len(longer.Columns) <= len(shorter.Columns) {
+				continue
+			}
+			if !isLeftPrefix(shorter.Columns, longer.Columns) {
+				continue
+			}
+			findings = append(findings, rule.Finding{
+				Level:      r.level,
+				Message:    fmt.Sprintf("secondary index %q is redundant because %q already covers its left-prefix columns", shorter.Name, longer.Name),
+				Suggestion: "drop the shorter left-prefix index or keep it only with a documented justification",
+				Metadata: map[string]any{
+					"table":      statement.DDL.Table.Name,
+					"index":      shorter.Name,
+					"redundant":  longer.Name,
+					"columns":    append([]string(nil), shorter.Columns...),
+					"covering":   append([]string(nil), longer.Columns...),
+					"heuristic":  "left_prefix",
+					"index_kind": shorter.Kind,
+				},
+			})
+			break
+		}
+	}
+	return findings, nil
+}
+
+type redundantUniqueOverlapIndexRule struct {
+	forbid bool
+	level  rule.Level
+}
+
+func newRedundantUniqueOverlapIndexRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	forbid, err := boolParam(ruleIDIndexRedundantUniqueOverlapForbid, cfg, "forbid", true)
+	if err != nil {
+		return nil, err
+	}
+	return redundantUniqueOverlapIndexRule{forbid: forbid, level: configuredLevel(cfg, rule.LevelWarning)}, nil
+}
+
+func (r redundantUniqueOverlapIndexRule) ID() string { return ruleIDIndexRedundantUniqueOverlapForbid }
+
+func (r redundantUniqueOverlapIndexRule) AppliesTo(statement spec.Statement) bool {
+	return r.forbid && appliesToCreateTableIndexes(statement)
+}
+
+func (r redundantUniqueOverlapIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	uniqueBySignature := make(map[string]string)
+	for _, index := range statement.DDL.Indexes {
+		if index.Kind != spec.IndexKindUnique {
+			continue
+		}
+		uniqueBySignature[strings.Join(index.Columns, ",")] = index.Name
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, index := range statement.DDL.Indexes {
+		if index.Kind != spec.IndexKindSecondary {
+			continue
+		}
+		if uniqueName, ok := uniqueBySignature[strings.Join(index.Columns, ",")]; ok {
+			findings = append(findings, rule.Finding{
+				Level:      r.level,
+				Message:    fmt.Sprintf("secondary index %q is redundant because unique index %q uses the same columns", index.Name, uniqueName),
+				Suggestion: "drop the secondary index or keep it only with a documented justification",
+				Metadata: map[string]any{
+					"table":      statement.DDL.Table.Name,
+					"index":      index.Name,
+					"redundant":  uniqueName,
+					"columns":    append([]string(nil), index.Columns...),
+					"heuristic":  "unique_overlap",
+					"index_kind": index.Kind,
+				},
+			})
+		}
+	}
+	return findings, nil
+}
+
+func isLeftPrefix(shorter, longer []string) bool {
+	if len(shorter) == 0 || len(shorter) >= len(longer) {
+		return false
+	}
+	for idx := range shorter {
+		if !strings.EqualFold(shorter[idx], longer[idx]) {
+			return false
+		}
+	}
+	return true
+}

@@ -151,6 +151,60 @@ func TestDuplicateIndexRuleFindsExactDuplicateIndexes(t *testing.T) {
 	}
 }
 
+func TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex(t *testing.T) {
+	statement := statementWithIndexes(
+		spec.Index{Name: "idx_name", Kind: spec.IndexKindSecondary, Columns: []string{"name"}},
+		spec.Index{Name: "idx_name_status", Kind: spec.IndexKindSecondary, Columns: []string{"name", "status"}},
+	)
+
+	statementRule, err := newRedundantLeftPrefixIndexRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["redundant"] != "idx_name_status" {
+		t.Fatalf("expected covering index metadata to point at idx_name_status, got %+v", findings[0].Metadata)
+	}
+}
+
+func TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique(t *testing.T) {
+	statement := statementWithIndexes(
+		spec.Index{Name: "idx_email", Kind: spec.IndexKindSecondary, Columns: []string{"email"}},
+		spec.Index{Name: "uniq_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}},
+	)
+
+	statementRule, err := newRedundantUniqueOverlapIndexRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["redundant"] != "uniq_email" {
+		t.Fatalf("expected unique overlap metadata to point at uniq_email, got %+v", findings[0].Metadata)
+	}
+}
+
 func statementWithIndexes(indexes ...spec.Index) spec.Statement {
 	return spec.Statement{
 		Kind: spec.KindDDL,

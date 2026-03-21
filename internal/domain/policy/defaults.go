@@ -270,6 +270,20 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.index.redundant_left_prefix.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.index.redundant_unique_overlap.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"ddl.alter.drop_column.forbid": {
 				Enabled: true,
 				Level:   rule.LevelWarning,

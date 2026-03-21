@@ -248,6 +248,18 @@ rules:
       pattern: ^[A-Za-z0-9_]+$
       required: true
 
+  ddl.index.redundant_left_prefix.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
+  ddl.index.redundant_unique_overlap.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
   ddl.index.secondary.prefix.require:
     enabled: true
     level: warning
