@@ -7,6 +7,7 @@ package ddl
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -56,11 +57,12 @@ func (r tableCommentMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Fi
 }
 
 type tableOptionAllowlistRule struct {
-	ruleID    string
-	optionKey string
-	label     string
-	allowed   []string
-	level     rule.Level
+	ruleID          string
+	optionKey       string
+	label           string
+	allowed         []string
+	level           rule.Level
+	requireExplicit bool
 }
 
 func newTableOptionAllowlistRule(ruleID, optionKey, label string, fallback []string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -68,12 +70,17 @@ func newTableOptionAllowlistRule(ruleID, optionKey, label string, fallback []str
 	if err != nil {
 		return nil, err
 	}
+	requireExplicit, err := boolParam(ruleID, cfg, "require_explicit", true)
+	if err != nil {
+		return nil, err
+	}
 	return tableOptionAllowlistRule{
-		ruleID:    ruleID,
-		optionKey: optionKey,
-		label:     label,
-		allowed:   allowed,
-		level:     configuredLevel(cfg, fallbackLevel),
+		ruleID:          ruleID,
+		optionKey:       optionKey,
+		label:           label,
+		allowed:         allowed,
+		level:           configuredLevel(cfg, fallbackLevel),
+		requireExplicit: requireExplicit,
 	}, nil
 }
 
@@ -88,6 +95,9 @@ func (r tableOptionAllowlistRule) Evaluate(statement spec.Statement) ([]rule.Fin
 		return nil, nil
 	}
 	actual := statement.DDL.Options[r.optionKey]
+	if actual == "" && !r.requireExplicit {
+		return nil, nil
+	}
 	if actual != "" && containsFold(r.allowed, actual) {
 		return nil, nil
 	}
@@ -150,6 +160,53 @@ func (r tableBooleanShapeRule) Evaluate(statement spec.Statement) ([]rule.Findin
 type tableForeignKeyForbidRule struct {
 	forbid bool
 	level  rule.Level
+}
+
+type tableAutoIncrementInitValueRule struct {
+	requiredValue int
+	level         rule.Level
+}
+
+func newTableAutoIncrementInitValueRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	requiredValue, err := boundedIntParam(ruleIDTableAutoIncrementInitValueRequire, cfg, "value", 1, 1)
+	if err != nil {
+		return nil, err
+	}
+	return tableAutoIncrementInitValueRule{requiredValue: requiredValue, level: configuredLevel(cfg, rule.LevelBlocker)}, nil
+}
+
+func (r tableAutoIncrementInitValueRule) ID() string { return ruleIDTableAutoIncrementInitValueRequire }
+
+func (r tableAutoIncrementInitValueRule) AppliesTo(statement spec.Statement) bool {
+	return appliesToCreateTable(statement)
+}
+
+func (r tableAutoIncrementInitValueRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	actualText := statement.DDL.Options["auto_increment"]
+	if actualText == "" {
+		return nil, nil
+	}
+	actual, err := strconv.Atoi(actualText)
+	if err != nil {
+		return nil, fmt.Errorf("table option %q must parse as integer, got %q", "auto_increment", actualText)
+	}
+	if actual == r.requiredValue {
+		return nil, nil
+	}
+	return []rule.Finding{{
+		Level:      r.level,
+		Message:    fmt.Sprintf("table auto_increment init value must be %d", r.requiredValue),
+		Suggestion: fmt.Sprintf("set AUTO_INCREMENT=%d or omit the explicit init value", r.requiredValue),
+		Metadata: map[string]any{
+			"table":          statement.DDL.Table.Name,
+			"required_value": r.requiredValue,
+			"actual_value":   actual,
+		},
+	}}, nil
 }
 
 func newTableForeignKeyForbidRule(cfg policy.RulePolicy) (rule.StatementRule, error) {

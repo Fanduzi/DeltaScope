@@ -157,6 +157,29 @@ func TestExtractMapsColumnCharsetAndCollationFacts(t *testing.T) {
 	}
 }
 
+func TestExtractMapsCreateTableRowFormatAndAutoIncrementOptions(t *testing.T) {
+	parsed, err := Parse("create table users (id bigint unsigned not null auto_increment comment 'id', primary key (id)) row_format=dynamic auto_increment=42 comment='users';", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	stmt := statements[0]
+	if stmt.DDL == nil {
+		t.Fatalf("expected ddl metadata")
+	}
+	if stmt.DDL.Options["row_format"] != "DYNAMIC" {
+		t.Fatalf("expected row_format DYNAMIC, got %+v", stmt.DDL.Options)
+	}
+	if stmt.DDL.Options["auto_increment"] != "42" {
+		t.Fatalf("expected auto_increment init 42, got %+v", stmt.DDL.Options)
+	}
+}
+
 func TestExtractMapsAlterTable(t *testing.T) {
 	t.Run("maps representative alter shapes", func(t *testing.T) {
 		parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, modify column age bigint null default 1 comment 'age2', change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)

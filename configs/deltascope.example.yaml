@@ -286,6 +286,12 @@ rules:
     params:
       required: true
 
+  ddl.table.auto_increment.init_value.require:
+    enabled: true
+    level: blocker
+    params:
+      value: 1
+
   ddl.table.charset.allowlist:
     enabled: true
     level: blocker
@@ -394,6 +400,13 @@ rules:
     level: blocker
     params:
       required: true
+
+  ddl.table.row_format.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      require_explicit: false
+      values: [DYNAMIC]
 
   dml.insert.on_duplicate.forbid:
     enabled: true

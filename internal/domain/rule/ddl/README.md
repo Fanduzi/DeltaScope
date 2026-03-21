@@ -106,6 +106,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.comment.max_length`
 - `ddl.table.engine.allowlist`
 - `ddl.table.charset.allowlist`
+- `ddl.table.row_format.allowlist`
+- `ddl.table.auto_increment.init_value.require`
 - `ddl.table.foreign_key.forbid`
 - `ddl.table.partition.forbid`
 - `ddl.table.create_like.forbid`
@@ -114,11 +116,6 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 ## Milestone 4 Planned Create-Table Surface
 
 Milestone 4 is the remaining create-table breadth push. The following rule IDs are pinned now so later tasks can implement them without churn. These IDs are planned surface, not shipped behavior yet.
-
-### Remaining Create-Table Object Shape
-
-- `ddl.table.row_format.allowlist`
-- `ddl.table.auto_increment.init_value.require`
 
 Milestone 4 is intentionally still create-table scoped:
 

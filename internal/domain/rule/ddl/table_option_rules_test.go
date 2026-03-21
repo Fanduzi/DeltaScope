@@ -74,6 +74,48 @@ func TestTableCharsetAllowlistRuleFindsMissingCharset(t *testing.T) {
 	}
 }
 
+func TestTableRowFormatAllowlistRuleFindsDisallowedRowFormat(t *testing.T) {
+	statementRule, err := newTableOptionAllowlistRule(ruleIDTableRowFormatAllowlist, "row_format", "row format", []string{"DYNAMIC"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []any{"DYNAMIC"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Options["row_format"] = "COMPACT"
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
+func TestTableAutoIncrementInitValueRuleFindsNonDefaultSeed(t *testing.T) {
+	statementRule, err := newTableAutoIncrementInitValueRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"value": 1},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Options["auto_increment"] = "42"
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+}
+
 func TestTableForeignKeyForbidRuleFindsForeignKeys(t *testing.T) {
 	statementRule, err := newTableForeignKeyForbidRule(policy.RulePolicy{
 		Enabled: true,

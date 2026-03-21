@@ -7,6 +7,7 @@ package audit
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -383,12 +384,55 @@ func extractTableOptions(options []*ast.TableOption) map[string]string {
 			extracted["engine"] = option.StrValue
 		case ast.TableOptionCharset:
 			extracted["charset"] = option.StrValue
+		case ast.TableOptionRowFormat:
+			if value := rowFormatName(option.UintValue); value != "" {
+				extracted["row_format"] = value
+			}
+		case ast.TableOptionAutoIncrement:
+			extracted["auto_increment"] = strconv.FormatUint(option.UintValue, 10)
 		}
 	}
 	if len(extracted) == 0 {
 		return nil
 	}
 	return extracted
+}
+
+func rowFormatName(value uint64) string {
+	switch value {
+	case ast.RowFormatDefault:
+		return "DEFAULT"
+	case ast.RowFormatDynamic:
+		return "DYNAMIC"
+	case ast.RowFormatFixed:
+		return "FIXED"
+	case ast.RowFormatCompressed:
+		return "COMPRESSED"
+	case ast.RowFormatRedundant:
+		return "REDUNDANT"
+	case ast.RowFormatCompact:
+		return "COMPACT"
+	case ast.TokuDBRowFormatDefault:
+		return "TOKUDB_DEFAULT"
+	case ast.TokuDBRowFormatFast:
+		return "TOKUDB_FAST"
+	case ast.TokuDBRowFormatSmall:
+		return "TOKUDB_SMALL"
+	case ast.TokuDBRowFormatZlib:
+		return "TOKUDB_ZLIB"
+	case ast.TokuDBRowFormatQuickLZ:
+		return "TOKUDB_QUICKLZ"
+	case ast.TokuDBRowFormatLzma:
+		return "TOKUDB_LZMA"
+	case ast.TokuDBRowFormatSnappy:
+		return "TOKUDB_SNAPPY"
+	case ast.TokuDBRowFormatUncompressed:
+		return "TOKUDB_UNCOMPRESSED"
+	case ast.TokuDBRowFormatZstd:
+		return "TOKUDB_ZSTD"
+	default:
+		return ""
+	}
 }
 
 func normalizedExprText(expr ast.ExprNode) string {

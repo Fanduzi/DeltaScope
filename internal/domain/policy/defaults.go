@@ -443,6 +443,21 @@ func Default() Policy {
 					"values": []string{"utf8", "utf8mb4"},
 				},
 			},
+			"ddl.table.row_format.allowlist": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"values":           []string{"DYNAMIC"},
+					"require_explicit": false,
+				},
+			},
+			"ddl.table.auto_increment.init_value.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"value": 1,
+				},
+			},
 			"ddl.table.foreign_key.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
