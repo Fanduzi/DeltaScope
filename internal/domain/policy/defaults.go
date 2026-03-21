@@ -500,81 +500,130 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.view.create.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.table.drop.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.table.drop.exists.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"requires_metadata": true,
+				},
+			},
+			"ddl.table.drop.adaptive_hash.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"requires_metadata": true,
+				},
+			},
+			"ddl.table.truncate.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.table.truncate.exists.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"requires_metadata": true,
+				},
+			},
+			"ddl.table.truncate.adaptive_hash.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"requires_metadata": true,
+				},
+			},
 			"ddl.table.exists.create.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.table.exists.alter.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.add_column.exists.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.drop_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.modify_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.change_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.rename_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.add_index.exists.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.drop_index.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.rename_index.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.alter.drop_primary_key.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required": true,
+					"requires_metadata": true,
 				},
 			},
 			"dml.where.require": {

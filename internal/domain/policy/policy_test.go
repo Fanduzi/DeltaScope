@@ -29,3 +29,32 @@ func TestRulePolicyParams(t *testing.T) {
 		t.Fatalf("expected enabled to be true, got %v", got)
 	}
 }
+
+func TestDefaultMetadataExistenceRulesAdvertiseMetadataRequirement(t *testing.T) {
+	p := Default()
+
+	for _, ruleID := range []string{
+		"ddl.table.exists.create.forbid",
+		"ddl.table.exists.alter.require",
+		"ddl.alter.add_column.exists.forbid",
+		"ddl.alter.drop_column.exists.require",
+		"ddl.alter.modify_column.exists.require",
+		"ddl.alter.change_column.exists.require",
+		"ddl.alter.rename_column.exists.require",
+		"ddl.alter.add_index.exists.forbid",
+		"ddl.alter.drop_index.exists.require",
+		"ddl.alter.rename_index.exists.require",
+		"ddl.alter.drop_primary_key.exists.require",
+	} {
+		ruleCfg, ok := p.Rules[ruleID]
+		if !ok {
+			t.Fatalf("missing default rule config for %s", ruleID)
+		}
+		if _, hasLegacyRequired := ruleCfg.Params["required"]; hasLegacyRequired {
+			t.Fatalf("expected %s to avoid legacy required param, got %#v", ruleID, ruleCfg.Params)
+		}
+		if got := ruleCfg.Params["requires_metadata"]; got != true {
+			t.Fatalf("expected %s to advertise requires_metadata=true, got %#v", ruleID, ruleCfg.Params)
+		}
+	}
+}

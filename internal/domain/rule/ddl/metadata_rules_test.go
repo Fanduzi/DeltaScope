@@ -16,14 +16,14 @@ import (
 func TestTableExistenceRules(t *testing.T) {
 	createRule, err := newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"required": true},
+		Params:  map[string]any{"requires_metadata": true},
 	})
 	if err != nil {
 		t.Fatalf("new create existence rule: %v", err)
 	}
 	alterRule, err := newTableExistenceRule(ruleIDTableExistsAlterRequire, true, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"required": true},
+		Params:  map[string]any{"requires_metadata": true},
 	})
 	if err != nil {
 		t.Fatalf("new alter existence rule: %v", err)
@@ -66,14 +66,14 @@ func TestTableExistenceRules(t *testing.T) {
 func TestAlterColumnExistenceRules(t *testing.T) {
 	addRule, err := newAlterObjectExistenceRule(ruleIDAlterAddColumnExistsForbid, []string{"add_column"}, "column", true, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"required": true},
+		Params:  map[string]any{"requires_metadata": true},
 	}, alterObjectName, snapshotHasColumn)
 	if err != nil {
 		t.Fatalf("new add-column existence rule: %v", err)
 	}
 	dropRule, err := newAlterObjectExistenceRule(ruleIDAlterDropColumnExistsRequire, []string{"drop_column"}, "column", false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"required": true},
+		Params:  map[string]any{"requires_metadata": true},
 	}, alterObjectName, snapshotHasColumn)
 	if err != nil {
 		t.Fatalf("new drop-column existence rule: %v", err)
@@ -119,14 +119,14 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 	indexRule, err := newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"required": true},
+		Params:  map[string]any{"requires_metadata": true},
 	}, alterObjectName, snapshotHasIndex)
 	if err != nil {
 		t.Fatalf("new drop-index existence rule: %v", err)
 	}
 	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
-		Params:  map[string]any{"required": true},
+		Params:  map[string]any{"requires_metadata": true},
 	})
 	if err != nil {
 		t.Fatalf("new primary-key existence rule: %v", err)
@@ -164,5 +164,40 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 	}
 	if len(pkFindings) != 1 {
 		t.Fatalf("expected one primary-key existence finding, got %d", len(pkFindings))
+	}
+}
+
+func TestMetadataExistenceRulesIgnoreLegacyRequiredParamAndSkipWithoutMetadata(t *testing.T) {
+	createRule, err := newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{"required": false},
+	})
+	if err != nil {
+		t.Fatalf("new create existence rule: %v", err)
+	}
+
+	findings, err := createRule.Evaluate(spec.Statement{
+		Kind: spec.KindDDL,
+		DDL:  &spec.DDL{Table: &spec.Table{Name: "users"}},
+	})
+	if err != nil {
+		t.Fatalf("evaluate offline create rule: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected offline metadata-backed rule to no-op without metadata, got %d findings", len(findings))
+	}
+
+	findings, err = createRule.Evaluate(spec.Statement{
+		Kind: spec.KindDDL,
+		DDL:  &spec.DDL{Table: &spec.Table{Name: "users"}},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate create rule with metadata: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected metadata-backed create rule to stay active even when legacy required=false is present, got %d findings", len(findings))
 	}
 }

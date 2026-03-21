@@ -7,6 +7,7 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
+	Operation     DDLOperation      `json:"operation,omitempty"`
 	Table         *Table            `json:"table,omitempty"`
 	Columns       []Column          `json:"columns,omitempty"`
 	PrimaryKey    *Index            `json:"primary_key,omitempty"`
@@ -18,6 +19,20 @@ type DDL struct {
 	HasSelect     bool              `json:"has_select,omitempty"`
 	HasPartition  bool              `json:"has_partition,omitempty"`
 }
+
+// DDLOperation identifies the normalized DDL operation represented by a statement.
+type DDLOperation string
+
+// Supported DDL operations.
+const (
+	DDLOperationUnknown       DDLOperation = "unknown"
+	DDLOperationCreateTable   DDLOperation = "create_table"
+	DDLOperationCreateView    DDLOperation = "create_view"
+	DDLOperationAlterTable    DDLOperation = "alter_table"
+	DDLOperationDropTable     DDLOperation = "drop_table"
+	DDLOperationDropView      DDLOperation = "drop_view"
+	DDLOperationTruncateTable DDLOperation = "truncate_table"
+)
 
 // Table describes a table-level object.
 type Table struct {

@@ -19,6 +19,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
+| object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
 | alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
@@ -33,6 +34,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
+| object_lifecycle_rules_test.go | Verifies create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | alter_compatibility_rules_test.go | Verifies source-aware compatibility checks for change/modify column operations |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
@@ -118,6 +120,13 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.partition.forbid`
 - `ddl.table.create_like.forbid`
 - `ddl.table.create_as.forbid`
+- `ddl.view.create.forbid`
+- `ddl.table.drop.forbid`
+- `ddl.table.drop.exists.require`
+- `ddl.table.drop.adaptive_hash.warn`
+- `ddl.table.truncate.forbid`
+- `ddl.table.truncate.exists.require`
+- `ddl.table.truncate.adaptive_hash.warn`
 - `ddl.table.exists.create.forbid`
 - `ddl.table.exists.alter.require`
 - `ddl.alter.add_column.exists.forbid`
@@ -239,12 +248,32 @@ The first metadata-backed DDL rule batch covers:
 - drop/modify/change/rename column target must exist
 - add-index target already exists
 - drop/rename index target must exist
-- drop-primary-key target must currently exist
+- drop primary key target must exist
 
-These rules are intentionally conditional on metadata being present:
+These rules are intentionally metadata-gated:
 
-- in offline-only mode they stay silent
+- the shipped default policy marks them with `requires_metadata: true`
+- offline audits skip them when no live table snapshot is attached
+- `policy.Enabled` still controls whether the rule is registered at all
 - in metadata-aware mode they consume the normalized `TargetTable` snapshot carried on `spec.Statement.Metadata`
+
+## Object Lifecycle Surface
+
+The lifecycle rule batch now also covers:
+
+- `ddl.view.create.forbid`
+- `ddl.table.drop.forbid`
+- `ddl.table.drop.exists.require`
+- `ddl.table.drop.adaptive_hash.warn`
+- `ddl.table.truncate.forbid`
+- `ddl.table.truncate.exists.require`
+- `ddl.table.truncate.adaptive_hash.warn`
+
+Within this batch:
+
+- create-view, drop-table, and truncate-table statements are distinguished through `spec.DDL.Operation`
+- drop/truncate existence checks remain metadata-gated and only fire when a live `TargetTable` snapshot is attached
+- adaptive-hash cautions remain metadata-gated and only fire when instance facts report `innodb_adaptive_hash_index=ON`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

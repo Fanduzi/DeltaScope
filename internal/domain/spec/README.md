@@ -9,7 +9,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement.go | Defines the top-level normalized statement model |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
-| ddl.go | Defines DDL-oriented specification types, including richer column facts, typed index metadata, and create-table shape flags for offline DDL rules |
+| ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
 | dml.go | Defines DML-oriented specification types, including operation metadata for rule applicability |
 
 ## Exports
@@ -21,6 +21,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `InstanceFacts`
 - `TableSnapshot`
 - `DDL`
+- `DDLOperation`
 - `Table`
 - `Column`
 - `Constraint`
@@ -56,6 +57,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `CREATE TABLE ... LIKE`
   - `CREATE TABLE ... AS SELECT`
   - partitioned tables
+- `DDL.Operation` now distinguishes `create_table`, `create_view`, `alter_table`, `drop_table`, `drop_view`, and `truncate_table` so lifecycle rules do not rely on structural guesswork.
 - `Alter` now has room for richer normalized payloads:
   - `Name` is the canonical subject identifier:
     - existing-object actions use the pre-change name

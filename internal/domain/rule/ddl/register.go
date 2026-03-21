@@ -197,6 +197,27 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableCreateAsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableBooleanShapeRule(ruleIDTableCreateAsForbid, "as select", rule.LevelBlocker, func(ddl *spec.DDL) bool { return ddl.HasSelect }, cfg)
 		}},
+		{ruleID: ruleIDViewCreateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenDDLOperationRule(ruleIDViewCreateForbid, spec.DDLOperationCreateView, "create view", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenDDLOperationRule(ruleIDTableDropForbid, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableDropExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOperationExistenceRule(ruleIDTableDropExistsRequire, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableDropAdaptiveHashWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAdaptiveHashLifecycleRule(ruleIDTableDropAdaptiveHashWarn, spec.DDLOperationDropTable, "drop table", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDTableTruncateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenDDLOperationRule(ruleIDTableTruncateForbid, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableTruncateExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOperationExistenceRule(ruleIDTableTruncateExistsRequire, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableTruncateAdaptiveHashWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAdaptiveHashLifecycleRule(ruleIDTableTruncateAdaptiveHashWarn, spec.DDLOperationTruncateTable, "truncate table", rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDTableExistsCreateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, cfg)
 		}},

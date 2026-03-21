@@ -43,8 +43,14 @@ func extractStatement(dialect spec.Dialect, warnings []string, parsed ParsedStat
 	switch node := parsed.node.(type) {
 	case *ast.CreateTableStmt:
 		statement.DDL = extractCreateTable(node)
+	case *ast.CreateViewStmt:
+		statement.DDL = extractCreateView(node)
 	case *ast.AlterTableStmt:
 		statement.DDL = extractAlterTable(node)
+	case *ast.DropTableStmt:
+		statement.DDL = extractDropTable(node)
+	case *ast.TruncateTableStmt:
+		statement.DDL = extractTruncateTable(node)
 	case *ast.InsertStmt:
 		statement.DML = extractInsert(node)
 	case *ast.UpdateStmt:
@@ -64,6 +70,7 @@ func normalizeSQL(sql string) string {
 
 func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	ddl := &spec.DDL{
+		Operation: spec.DDLOperationCreateTable,
 		Table: &spec.Table{
 			Name: stmt.Table.Name.L,
 		},
@@ -113,8 +120,19 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	return ddl
 }
 
+func extractCreateView(stmt *ast.CreateViewStmt) *spec.DDL {
+	return &spec.DDL{
+		Operation: spec.DDLOperationCreateView,
+		Table: &spec.Table{
+			Name: stmt.ViewName.Name.L,
+		},
+		HasSelect: stmt.Select != nil,
+	}
+}
+
 func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 	ddl := &spec.DDL{
+		Operation: spec.DDLOperationAlterTable,
 		Table: &spec.Table{
 			Name: stmt.Table.Name.L,
 		},
@@ -125,6 +143,37 @@ func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s)...)
 	}
 
+	return ddl
+}
+
+func extractDropTable(stmt *ast.DropTableStmt) *spec.DDL {
+	operation := spec.DDLOperationDropTable
+	if stmt.IsView {
+		operation = spec.DDLOperationDropView
+	}
+	ddl := &spec.DDL{
+		Operation: operation,
+		Options:   map[string]string{},
+	}
+	if stmt.IfExists {
+		ddl.Options["if_exists"] = "true"
+	}
+	if len(stmt.Tables) > 0 && stmt.Tables[0] != nil {
+		ddl.Table = &spec.Table{Name: stmt.Tables[0].Name.L}
+	}
+	if len(stmt.Tables) > 1 {
+		ddl.Options["multiple_targets"] = strconv.Itoa(len(stmt.Tables))
+	}
+	return ddl
+}
+
+func extractTruncateTable(stmt *ast.TruncateTableStmt) *spec.DDL {
+	ddl := &spec.DDL{
+		Operation: spec.DDLOperationTruncateTable,
+	}
+	if stmt.Table != nil {
+		ddl.Table = &spec.Table{Name: stmt.Table.Name.L}
+	}
 	return ddl
 }
 

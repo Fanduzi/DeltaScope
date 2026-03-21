@@ -172,12 +172,86 @@ func TestExtractMapsCreateTableRowFormatAndAutoIncrementOptions(t *testing.T) {
 	if stmt.DDL == nil {
 		t.Fatalf("expected ddl metadata")
 	}
+	if stmt.DDL.Operation != spec.DDLOperationCreateTable {
+		t.Fatalf("expected operation %q, got %q", spec.DDLOperationCreateTable, stmt.DDL.Operation)
+	}
 	if stmt.DDL.Options["row_format"] != "DYNAMIC" {
 		t.Fatalf("expected row_format DYNAMIC, got %+v", stmt.DDL.Options)
 	}
 	if stmt.DDL.Options["auto_increment"] != "42" {
 		t.Fatalf("expected auto_increment init 42, got %+v", stmt.DDL.Options)
 	}
+}
+
+func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
+	t.Run("maps create view", func(t *testing.T) {
+		parsed, err := Parse("create view active_users as select id from users;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DDL == nil || stmt.DDL.Table == nil {
+			t.Fatalf("expected ddl view metadata")
+		}
+		if stmt.DDL.Operation != spec.DDLOperationCreateView {
+			t.Fatalf("expected operation %q, got %q", spec.DDLOperationCreateView, stmt.DDL.Operation)
+		}
+		if stmt.DDL.Table.Name != "active_users" {
+			t.Fatalf("expected view name active_users, got %q", stmt.DDL.Table.Name)
+		}
+		if !stmt.DDL.HasSelect {
+			t.Fatalf("expected create view to preserve select shape")
+		}
+	})
+
+	t.Run("maps drop table", func(t *testing.T) {
+		parsed, err := Parse("drop table if exists users;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DDL == nil || stmt.DDL.Table == nil {
+			t.Fatalf("expected ddl drop-table metadata")
+		}
+		if stmt.DDL.Operation != spec.DDLOperationDropTable {
+			t.Fatalf("expected operation %q, got %q", spec.DDLOperationDropTable, stmt.DDL.Operation)
+		}
+		if stmt.DDL.Table.Name != "users" {
+			t.Fatalf("expected table name users, got %q", stmt.DDL.Table.Name)
+		}
+	})
+
+	t.Run("maps truncate table", func(t *testing.T) {
+		parsed, err := Parse("truncate table users;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DDL == nil || stmt.DDL.Table == nil {
+			t.Fatalf("expected ddl truncate metadata")
+		}
+		if stmt.DDL.Operation != spec.DDLOperationTruncateTable {
+			t.Fatalf("expected operation %q, got %q", spec.DDLOperationTruncateTable, stmt.DDL.Operation)
+		}
+		if stmt.DDL.Table.Name != "users" {
+			t.Fatalf("expected truncate target users, got %q", stmt.DDL.Table.Name)
+		}
+	})
 }
 
 func TestExtractMapsAlterTable(t *testing.T) {

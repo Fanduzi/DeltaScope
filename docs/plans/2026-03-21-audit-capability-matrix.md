@@ -61,8 +61,8 @@ fulltext index prefix                               covered     ddl.index.fullte
 duplicate index forbid                              covered     ddl.index.duplicate.forbid
 redundant left-prefix index forbid                  covered     ddl.index.redundant_left_prefix.forbid
 redundant unique-overlap index forbid               covered     ddl.index.redundant_unique_overlap.forbid
-row-size / index-size checks with instance facts    gap         needs metadata-backed instance facts and honest sizing rules
-create view governance                              gap         legacy baseline had explicit view switch; DeltaScope has no create-view rule yet
+row-size / index-size checks with instance facts    gap         instance facts now load, but honest sizing rules are still missing
+create view governance                              covered     ddl.view.create.forbid
 ddl disabled-table lists                            gap         legacy baseline had DB/table blocklists; DeltaScope has no object-scope denylist yet
 ```
 
@@ -84,11 +84,11 @@ explicit nullability/default/autoinc change checks  covered     shipped for chan
 alter-added index prefix checks                     covered     unique/secondary/fulltext add-index checks shipped
 alter-added duplicate index checks                  enhanced    create-table duplicate logic reused in alter path
 alter-added redundant index checks                  gap         no deeper redundant-index lifecycle checks for added indexes yet
-source-to-target type compatibility                 gap         target-family only; no source-to-target compatibility engine yet
-column existence checks                             gap         needs table snapshot + metadata-aware mode
-index existence checks                              gap         needs table snapshot + metadata-aware mode
-primary-key existence/state checks                  gap         needs table snapshot + metadata-aware mode
-rename/change/modify against current schema state   gap         needs metadata-aware table snapshot
+source-to-target type compatibility                 covered     metadata-backed compatibility guards now cover family changes, narrowing, signedness, nullability, and auto_increment removal
+column existence checks                             covered     metadata-backed column existence rules shipped for add/drop/modify/change/rename
+index existence checks                              covered     metadata-backed index existence rules shipped for add/drop/rename
+primary-key existence/state checks                  covered     metadata-backed drop-primary-key existence rule shipped
+rename/change/modify against current schema state   covered     current table snapshot now drives existence and compatibility checks
 merge alter governance                              gap         legacy baseline had MySQL/TiDB merge-alter switches
 table option compatibility vs current schema        gap         no metadata-backed alter option compatibility yet
 ```
@@ -98,12 +98,12 @@ table option compatibility vs current schema        gap         no metadata-back
 ```text
 Capability                                          Status      Notes
 -----------------------------------------------------------------------------------------------
-drop table governance                               gap         legacy baseline had enable switch and row-limit risk handling
-truncate table governance                           gap         legacy baseline had enable switch and row-limit risk handling
+drop table governance                               covered     ddl.table.drop.forbid plus metadata-backed existence and adaptive-hash cautions
+truncate table governance                           covered     ddl.table.truncate.forbid plus metadata-backed existence and adaptive-hash cautions
 drop/truncate row-count risk                        gap         requires online metadata and row-count-aware checks
-drop/truncate adaptive-hash warning                 gap         requires version + innodb_adaptive_hash_index instance facts
-table exists / not exists checks                    gap         requires metadata provider
-show-create based current schema recovery           gap         requires metadata provider and snapshot model
+drop/truncate adaptive-hash warning                 covered     metadata-backed cautions use innodb_adaptive_hash_index instance fact
+table exists / not exists checks                    covered     create/alter/drop/truncate object existence rules now consume metadata snapshots
+show-create based current schema recovery           enhanced    information_schema-backed snapshot model shipped instead of show-create text parsing
 ```
 
 ## DML
@@ -129,16 +129,16 @@ dml disabled-table lists                             gap         legacy baseline
 ```text
 Capability                                          Status      Notes
 -----------------------------------------------------------------------------------------------
-instance version fact                                gap         needed for alter sizing, compatibility, and engine-specific behavior
-instance default charset fact                        gap         needed for parser/context-sensitive checks
-instance innodb_large_prefix fact                    gap         needed for honest index-length checks
-instance innodb_default_row_format fact              gap         needed for row-format-aware checks
-instance innodb_adaptive_hash_index fact             gap         needed for drop/truncate risk checks
-target table snapshot                                gap         needed for existence and compatibility rules
-column snapshot                                      gap         needed for alter compatibility and object existence
-index snapshot                                       gap         needed for alter lifecycle rules
-primary-key snapshot                                 gap         needed for primary-key state checks
-optional metadata-aware audit mode                   gap         this is the central enabling capability for the milestone
+instance version fact                                covered     metadata provider loads instance version into normalized InstanceFacts
+instance default charset fact                        covered     metadata provider loads character_set_database into normalized InstanceFacts
+instance innodb_large_prefix fact                    covered     metadata provider loads innodb_large_prefix into normalized InstanceFacts
+instance innodb_default_row_format fact              covered     metadata provider loads innodb_default_row_format into normalized InstanceFacts
+instance innodb_adaptive_hash_index fact             covered     metadata provider loads innodb_adaptive_hash_index into normalized InstanceFacts
+target table snapshot                                covered     metadata provider attaches normalized target-table snapshots before evaluation
+column snapshot                                      covered     snapshots include normalized column definitions for existence and compatibility rules
+index snapshot                                       covered     snapshots include normalized index definitions for lifecycle rules
+primary-key snapshot                                 covered     snapshots preserve current primary-key shape
+optional metadata-aware audit mode                   covered     application audit flow supports optional metadata enrichment without breaking offline mode
 ```
 
 ## Public Product Surface
@@ -160,10 +160,10 @@ formal capability matrix                             covered     this document i
 
 The current blocking gaps for `Audit Completion` are:
 
-- metadata-aware audit mode
-- instance facts loading
-- table snapshot / object existence facts
-- deeper alter source-to-target compatibility
-- drop/truncate and object-lifecycle online checks
+- row-size / index-size checks with instance facts
+- alter-added redundant-index lifecycle checks
+- merge alter governance
+- metadata-backed alter option compatibility vs current schema
+- drop/truncate row-count risk
 - disabled-table governance
 - public release-surface docs

@@ -93,13 +93,27 @@ const (
 	ruleIDAlterDropPrimaryKeyExistsRequire                   = "ddl.alter.drop_primary_key.exists.require"
 	ruleIDAlterModifyColumnCompatibilityRequire              = "ddl.alter.modify_column.compatibility.require"
 	ruleIDAlterChangeColumnCompatibilityRequire              = "ddl.alter.change_column.compatibility.require"
+	ruleIDViewCreateForbid                                   = "ddl.view.create.forbid"
+	ruleIDTableDropForbid                                    = "ddl.table.drop.forbid"
+	ruleIDTableDropExistsRequire                             = "ddl.table.drop.exists.require"
+	ruleIDTableDropAdaptiveHashWarn                          = "ddl.table.drop.adaptive_hash.warn"
+	ruleIDTableTruncateForbid                                = "ddl.table.truncate.forbid"
+	ruleIDTableTruncateExistsRequire                         = "ddl.table.truncate.exists.require"
+	ruleIDTableTruncateAdaptiveHashWarn                      = "ddl.table.truncate.adaptive_hash.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
-	return statement.Kind == spec.KindDDL &&
-		statement.DDL != nil &&
-		statement.DDL.Table != nil &&
-		len(statement.DDL.Alter) == 0
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil {
+		return false
+	}
+	switch statement.DDL.Operation {
+	case "", spec.DDLOperationUnknown:
+		return len(statement.DDL.Alter) == 0
+	case spec.DDLOperationCreateTable:
+		return true
+	default:
+		return false
+	}
 }
 
 func appliesToCreateTableColumns(statement spec.Statement) bool {
@@ -111,10 +125,38 @@ func appliesToCreateTableIndexes(statement spec.Statement) bool {
 }
 
 func appliesToAlterTable(statement spec.Statement) bool {
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil || len(statement.DDL.Alter) == 0 {
+		return false
+	}
+	switch statement.DDL.Operation {
+	case "", spec.DDLOperationUnknown:
+		return true
+	case spec.DDLOperationAlterTable:
+		return true
+	default:
+		return false
+	}
+}
+
+func appliesToCreateView(statement spec.Statement) bool {
 	return statement.Kind == spec.KindDDL &&
 		statement.DDL != nil &&
 		statement.DDL.Table != nil &&
-		len(statement.DDL.Alter) > 0
+		statement.DDL.Operation == spec.DDLOperationCreateView
+}
+
+func appliesToDropTable(statement spec.Statement) bool {
+	return statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Table != nil &&
+		statement.DDL.Operation == spec.DDLOperationDropTable
+}
+
+func appliesToTruncateTable(statement spec.Statement) bool {
+	return statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Table != nil &&
+		statement.DDL.Operation == spec.DDLOperationTruncateTable
 }
 
 func appliesToAlterActions(statement spec.Statement, actions ...string) bool {

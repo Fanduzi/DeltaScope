@@ -7,7 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
-| defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules, metadata-backed existence rules, table options/object shape, and the Tier-1 DML rule set |
+| defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules, metadata-backed existence rules, object-lifecycle rules for view/drop/truncate, table options/object shape, and the Tier-1 DML rule set |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
 
 ## Exports
@@ -28,7 +28,9 @@ Policy model for rule configuration and future audit settings.
 - Blob/text, json, and bit forbids are shipped in the default template but remain relaxed by default via `forbid: false` until a team intentionally tightens them.
 - The default create-table index policy now also enables left-prefix and unique-overlap redundant-index findings on top of exact duplicate detection.
 - The default create-table option policy now requires `ROW_FORMAT=DYNAMIC` when row format is specified and requires explicit `AUTO_INCREMENT` seeds to stay at `1`.
-- The default metadata-backed DDL policy enables existence checks for create/alter table plus add/drop/rename column/index and drop-primary-key operations, but those rules only fire when statement metadata includes a live table snapshot.
+- The default metadata-backed DDL policy enables existence checks for create/alter table plus add/drop/rename column/index and drop-primary-key operations.
+- Those existence rules advertise `requires_metadata: true` in the shipped policy/template so operators can see that offline runs will skip them when no live table snapshot is attached.
+- The default lifecycle policy now also blocks `create view`, `drop table`, and `truncate table`, and ships adaptive-hash cautions plus metadata-backed existence checks for drop/truncate operations.
 
 ## Dependencies
 - Upstream: application policy loading and future config adapters

@@ -20,13 +20,6 @@ type tableExistenceRule struct {
 }
 
 func newTableExistenceRule(ruleID string, requireExist bool, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
-	required, err := boolParam(ruleID, cfg, "required", true)
-	if err != nil {
-		return nil, err
-	}
-	if !required {
-		return tableExistenceRule{ruleID: ruleID}, nil
-	}
 	return tableExistenceRule{
 		ruleID:       ruleID,
 		requireExist: requireExist,
@@ -82,23 +75,16 @@ func (r tableExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, 
 }
 
 type alterObjectExistenceRule struct {
-	ruleID        string
-	actions       []string
-	objectLabel   string
+	ruleID         string
+	actions        []string
+	objectLabel    string
 	forbidIfExists bool
-	selectName    func(spec.Alter) string
-	checkExists   func(*spec.TableSnapshot, string) bool
-	level         rule.Level
+	selectName     func(spec.Alter) string
+	checkExists    func(*spec.TableSnapshot, string) bool
+	level          rule.Level
 }
 
 func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel string, forbidIfExists bool, fallbackLevel rule.Level, cfg policy.RulePolicy, selectName func(spec.Alter) string, checkExists func(*spec.TableSnapshot, string) bool) (rule.StatementRule, error) {
-	required, err := boolParam(ruleID, cfg, "required", true)
-	if err != nil {
-		return nil, err
-	}
-	if !required {
-		return alterObjectExistenceRule{ruleID: ruleID}, nil
-	}
 	return alterObjectExistenceRule{
 		ruleID:         ruleID,
 		actions:        actions,
@@ -169,13 +155,6 @@ type alterPrimaryKeyExistenceRule struct {
 }
 
 func newAlterPrimaryKeyExistenceRule(ruleID string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
-	required, err := boolParam(ruleID, cfg, "required", true)
-	if err != nil {
-		return nil, err
-	}
-	if !required {
-		return alterPrimaryKeyExistenceRule{ruleID: ruleID}, nil
-	}
 	return alterPrimaryKeyExistenceRule{
 		ruleID: ruleID,
 		level:  configuredLevel(cfg, fallbackLevel),
