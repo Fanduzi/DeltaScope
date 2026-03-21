@@ -420,6 +420,31 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep deeper redundant-index rules explicit about the heuristic they apply, for example `ddl.index.redundant_left_prefix.forbid`
 - Why: the existing rule surface already uses family-first names such as `*.allowlist`, `*.forbid`, and `*.max_length`. Extending that style is clearer than introducing more abstract policy names now.
 
+## Decision 50: unnamed secondary indexes must stay unnamed through extraction
+
+- Problem: MySQL/TiDB allow `KEY (col)` syntax without an explicit secondary-index name, but an early extractor normalized unnamed indexes to synthetic names such as `key`, which hid a real governance concern.
+- Decision:
+  - keep unnamed non-primary indexes as empty names in the extracted domain model
+  - reserve `"primary"` only for the primary-key synthetic identifier
+- Why: identifier and keyword governance should evaluate what the statement actually declared, not a synthetic placeholder invented by extraction.
+
+## Decision 51: column collation must be extracted from column options, not only field-type metadata
+
+- Problem: TiDB parser preserves explicit column `COLLATE` clauses as `ColumnOptionCollate`, while `FieldType.GetCollate()` stayed empty in the relevant `CREATE TABLE` shapes.
+- Decision:
+  - keep using `FieldType` for explicit column charset extraction
+  - additionally read `ColumnOptionCollate` during extraction for explicit column collation
+- Why: without this split extraction path, DeltaScope would silently miss explicit collation overrides and any downstream charset/collation governance would be incomplete.
+
+## Decision 52: row-format allowlist rules only apply when row format is explicitly set
+
+- Problem: using the generic table-option allowlist behavior for `ROW_FORMAT` made every create-table statement without an explicit row-format clause look invalid, which is stricter than the intended offline check.
+- Decision:
+  - add `require_explicit` support to table-option allowlist rules
+  - keep engine and charset rules requiring explicit values by default
+  - configure `ddl.table.row_format.allowlist` with `require_explicit: false`
+- Why: `ROW_FORMAT` governance is about restricting explicit row-format choices, not forcing every statement to spell out a row format when the engine default is acceptable.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

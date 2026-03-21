@@ -14,9 +14,11 @@ Current DDL coverage includes:
 - table comment, table name length, and primary-key rules
 - stronger primary-key semantics for bigint, unsigned, auto-increment, and not-null requirements
 - audit timestamp column patterns
-- column comment, default, not-null, and float/double guidance
-- varchar length limits
-- create-table index count, index width, naming-prefix, and duplicate-index checks
+- create-table identifier pattern and reserved-keyword checks for table, column, and index names
+- column comment, default, not-null, float/double guidance, varchar limits, char-length limits, and type-family governance for blob/text, json, bit, and timestamp
+- column charset/collation allowlists plus charset-collation coherence checks
+- create-table index count, index width, naming-prefix, exact-duplicate, left-prefix redundant, and unique-overlap redundant-index checks
+- create-table option and object-shape rules for comment length, engine/charset allowlists, row format, auto-increment init value, foreign keys, partitioning, `LIKE`, and `AS SELECT`
 - richer offline `ALTER TABLE` semantics:
   - action-level restrictions for drop/rename/change operations
   - rename-index forbids
@@ -24,14 +26,14 @@ Current DDL coverage includes:
   - conservative target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
   - alter-added unique/secondary/fulltext index prefix checks
   - alter-added index width and exact-duplicate checks when those policies are enabled
-- create-table option and object-shape rules for comment length, engine/charset allowlists, foreign keys, partitioning, `LIKE`, and `AS SELECT`
+
+The create-table rule surface now crosses the planned offline superset line relative to `gAudit`'s `CREATE TABLE` checks.
 
 Important remaining offline DDL gaps include:
 
 - true source-to-target `ALTER TABLE` compatibility judgment and object-existence-aware checks
-- broader redundant-index analysis beyond exact duplicates
-- identifier and keyword validation
-- more create-table superset work such as richer charset/collation guidance, wider type-family policy, and broader identifier governance
+- broader `ALTER TABLE` lifecycle depth such as richer add/drop/rename index semantics and deeper change compatibility
+- online metadata-aware checks for object existence and row-count-sensitive risk
 
 ## Install And Run
 

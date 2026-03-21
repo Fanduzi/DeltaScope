@@ -22,6 +22,12 @@
   - source-aware extraction that keeps target shape and explicit change facts separate
   - explicit alter-column change forbid rules for `MODIFY COLUMN` and `CHANGE COLUMN`
   - alter-added index lifecycle wrappers for width and exact-duplicate checks
+- completed the `Complete Create-Table Superset` milestone with:
+  - create-table identifier pattern and reserved-keyword governance
+  - broader create-table type-family rules for blob/text, json, bit, timestamp, and oversized `char`
+  - column charset/collation allowlists plus charset-collation coherence checks
+  - deeper create-table redundant-index analysis for left-prefix and unique-overlap cases
+  - create-table row-format and auto-increment-init table-option checks
 - added Markdown and JSON renderers
 - built the Cobra CLI with:
   - `audit`
@@ -37,11 +43,12 @@
 ## In Progress
 
 - `Milestone 3: Source-Aware Alter Checks` is complete
-- next active work should start `Milestone 4`
-- the current emphasis shifts from alter-fact plumbing to the next offline DDL gaps:
-  - true source-to-target compatibility judgment
-  - broader create-table superset work
-  - identifier/keyword validation and deeper redundancy analysis
+- `Milestone 4: Complete Create-Table Superset` is complete
+- next active work should start `Milestone 5: HTTP API Service`
+- the current emphasis shifts from create-table breadth to service delivery and the remaining deeper DDL gaps:
+  - true source-to-target alter compatibility judgment
+  - richer alter add/drop/rename lifecycle semantics
+  - online metadata-aware checks deferred beyond offline v1
 
 ## Key Commits
 
@@ -62,6 +69,11 @@
 - `5f9b47c` `refactor: prepare source-aware alter rules`
 - `2900bfe` `feat: add explicit alter column rules`
 - `cf2705d` `feat: extend alter index lifecycle checks`
+- `17825cb` `docs: pin create-table superset rule surface`
+- `b953bda` `feat: add create-table identifier governance`
+- `eb413bd` `feat: add create-table type-family governance`
+- `6af0652` `feat: deepen create-table redundant index checks`
+- `a647fb6` `feat: close create-table object-shape gaps`
 
 ## Verification Run
 
@@ -82,22 +94,24 @@
 - I corrected that by narrowing `AlterColumn.Change` to explicit nullability/default/auto-increment touches only; target shape remains on `Definition`
 - Milestone 3 Task 4 intentionally skipped an unsigned-transition rule because the current offline model still cannot describe that transition honestly
 - Milestone 3 Task 5 extended alter-added index lifecycle checks only through projected create-table rule reuse; it still does not claim live existence or full rename/drop lifecycle semantics
+- Milestone 4 intentionally treats `blob_text/json/bit` forbids as shipped-but-relaxed defaults: the rules are present in the default template, but teams must flip `forbid: true` if they want enforcement.
+- Milestone 4's `ROW_FORMAT` allowlist only evaluates explicit row-format clauses; it does not force every create-table statement to spell out a row format.
 
 ## Remaining Gaps
 
-- current DDL coverage is still not a `gAudit` superset; the biggest remaining offline gaps are:
-  - deeper alter semantics such as true source-to-target compatibility and object-existence-aware checks
-  - broader redundant-index analysis beyond exact duplicates
-  - identifier and keyword validation
-  - richer object/type-specific rules such as charset/collation guidance and wider type-family governance
+- create-table coverage now crosses the planned offline superset line relative to `gAudit`; the biggest remaining DDL gaps are now concentrated elsewhere:
+  - deeper alter semantics such as true source-to-target compatibility and richer add/drop/rename lifecycle checks
+  - object-existence-aware and row-count-sensitive checks that need online metadata
+  - future service adapters: HTTP API and MCP server
 - v1 intentionally remains offline-only; live database metadata checks are still deferred
-- HTTP API and MCP server are still future phases, not part of tonight's completion
+- HTTP API and MCP server are still future phases, not part of the offline library/CLI baseline
 
 ## Next Active Work
 
 - Milestone 3 is closed: its goal was honest source-aware alter facts plus the first explicit source-aware alter rule batch.
-- Milestone 4 should now become active.
-- likely next work in Milestone 4:
-  - true source-to-target type compatibility policy
-  - broader create-table superset work and identifier validation
-  - deeper redundant-index analysis beyond exact duplicates
+- Milestone 4 is closed: its goal was to push create-table offline breadth past the planned `gAudit` superset line.
+- Milestone 5 should now become active.
+- likely next work in Milestone 5:
+  - add a thin HTTP interface adapter over the existing offline audit engine
+  - keep the same policy/config semantics and result contract
+  - document request/response/error shapes clearly for future MCP reuse

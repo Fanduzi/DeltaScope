@@ -10,6 +10,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 4. stronger primary-key semantics
 5. richer alter semantics
 6. source-aware alter checks
+7. create-table superset completion
 
 ## New Checkpoints
 
@@ -27,18 +28,27 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `5f9b47c` `refactor: prepare source-aware alter rules`
 - `2900bfe` `feat: add explicit alter column rules`
 - `cf2705d` `feat: extend alter index lifecycle checks`
+- `17825cb` `docs: pin create-table superset rule surface`
+- `b953bda` `feat: add create-table identifier governance`
+- `eb413bd` `feat: add create-table type-family governance`
+- `6af0652` `feat: deepen create-table redundant index checks`
+- `a647fb6` `feat: close create-table object-shape gaps`
 
 ## Current Offline DDL Coverage
 
 - table comment presence and max length
 - table name length
+- create-table identifier pattern and reserved-keyword governance
 - engine and charset allowlists
+- create-table row-format and auto-increment-init governance
 - foreign-key, partition, `CREATE TABLE ... LIKE`, and `CREATE TABLE ... AS SELECT` restrictions
 - primary-key presence, max column count, bigint/unsigned/auto-increment/not-null semantics
 - audit timestamp column patterns
 - column comment/default/not-null/float-double rules
-- varchar length limits
-- index count, index width, naming prefixes, and exact duplicate-index detection
+- varchar and char length limits
+- blob/text, json, bit, and timestamp type-family governance
+- column charset/collation allowlists plus charset-collation coherence checks
+- index count, index width, naming prefixes, exact duplicate-index detection, left-prefix redundancy, and unique-overlap redundancy
 - richer offline `ALTER TABLE` coverage:
   - action-level restrictions for drop/rename/change operations
   - rename-index forbids
@@ -49,18 +59,16 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 
 ## What Still Looks Like The Next Milestone
 
-Milestone 3 is now complete. The highest-value remaining gaps are:
+Milestone 4 is now complete. The highest-value remaining gaps are:
 
 - richer `ALTER TABLE` semantics
   - true source-to-target compatibility
   - object-existence-aware checks
   - broader add/drop/rename index lifecycle detail
-- identifier and keyword validation
-- deeper redundant-index analysis beyond exact duplicates
-- object/type-specific rules not yet modeled
-  - charset/collation guidance
-  - wider column-type allow/forbid families
+- delivery adapters on top of the existing offline engine
+  - HTTP API service
+  - later MCP server reuse
 
 ## Recommended Next Step
 
-Milestone 4 should now become the active workstream. The immediate next work is to add true source-to-target compatibility judgment where the offline model can support it, then continue toward the broader create-table superset gaps: identifier validation, deeper redundant-index analysis, and richer object/type governance.
+Milestone 5 should now become the active workstream. The immediate next work is to add the thin HTTP API service on top of the existing library/application flow while keeping the result contract and policy semantics aligned with the CLI.
