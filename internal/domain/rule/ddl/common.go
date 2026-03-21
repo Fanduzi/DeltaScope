@@ -80,6 +80,17 @@ const (
 	ruleIDPrimaryKeyUnsignedRequire                          = "ddl.table.primary_key.unsigned.require"
 	ruleIDPrimaryKeyAutoIncrementRequire                     = "ddl.table.primary_key.auto_increment.require"
 	ruleIDPrimaryKeyNotNullRequire                           = "ddl.table.primary_key.not_null.require"
+	ruleIDTableExistsCreateForbid                            = "ddl.table.exists.create.forbid"
+	ruleIDTableExistsAlterRequire                            = "ddl.table.exists.alter.require"
+	ruleIDAlterAddColumnExistsForbid                         = "ddl.alter.add_column.exists.forbid"
+	ruleIDAlterDropColumnExistsRequire                       = "ddl.alter.drop_column.exists.require"
+	ruleIDAlterModifyColumnExistsRequire                     = "ddl.alter.modify_column.exists.require"
+	ruleIDAlterChangeColumnExistsRequire                     = "ddl.alter.change_column.exists.require"
+	ruleIDAlterRenameColumnExistsRequire                     = "ddl.alter.rename_column.exists.require"
+	ruleIDAlterAddIndexExistsForbid                          = "ddl.alter.add_index.exists.forbid"
+	ruleIDAlterDropIndexExistsRequire                        = "ddl.alter.drop_index.exists.require"
+	ruleIDAlterRenameIndexExistsRequire                      = "ddl.alter.rename_index.exists.require"
+	ruleIDAlterDropPrimaryKeyExistsRequire                   = "ddl.alter.drop_primary_key.exists.require"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
@@ -233,6 +244,13 @@ func alterOptionValue(alter spec.Alter, key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func targetTableSnapshot(statement spec.Statement) (*spec.TableSnapshot, bool) {
+	if statement.Metadata == nil || statement.Metadata.TargetTable == nil {
+		return nil, false
+	}
+	return statement.Metadata.TargetTable, true
 }
 
 func alterTouchesExplicitNullability(alter spec.Alter) bool {

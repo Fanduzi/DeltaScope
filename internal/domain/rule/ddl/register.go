@@ -191,6 +191,39 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableCreateAsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableBooleanShapeRule(ruleIDTableCreateAsForbid, "as select", rule.LevelBlocker, func(ddl *spec.DDL) bool { return ddl.HasSelect }, cfg)
 		}},
+		{ruleID: ruleIDTableExistsCreateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableExistsAlterRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableExistenceRule(ruleIDTableExistsAlterRequire, true, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterAddColumnExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterAddColumnExistsForbid, []string{"add_column"}, "column", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterDropColumnExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterDropColumnExistsRequire, []string{"drop_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterModifyColumnExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterModifyColumnExistsRequire, []string{"modify_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterChangeColumnExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterChangeColumnExistsRequire, []string{"change_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterRenameColumnExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterRenameColumnExistsRequire, []string{"rename_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterAddIndexExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_index"}, "index", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+		}},
+		{ruleID: ruleIDAlterDropIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+		}},
+		{ruleID: ruleIDAlterRenameIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+		}},
+		{ruleID: ruleIDAlterDropPrimaryKeyExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, cfg)
+		}},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

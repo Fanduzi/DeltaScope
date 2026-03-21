@@ -18,6 +18,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
+| metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
@@ -30,6 +31,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | index_rules_test.go | Verifies create-table index governance rules |
 | type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
+| metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
@@ -112,6 +114,17 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.partition.forbid`
 - `ddl.table.create_like.forbid`
 - `ddl.table.create_as.forbid`
+- `ddl.table.exists.create.forbid`
+- `ddl.table.exists.alter.require`
+- `ddl.alter.add_column.exists.forbid`
+- `ddl.alter.drop_column.exists.require`
+- `ddl.alter.modify_column.exists.require`
+- `ddl.alter.change_column.exists.require`
+- `ddl.alter.rename_column.exists.require`
+- `ddl.alter.add_index.exists.forbid`
+- `ddl.alter.drop_index.exists.require`
+- `ddl.alter.rename_index.exists.require`
+- `ddl.alter.drop_primary_key.exists.require`
 
 ## Milestone 4 Planned Create-Table Surface
 
@@ -194,6 +207,23 @@ The next source-aware alter batch is intentionally prepared with honest names:
 - `explicit_*_change.forbid` rule IDs only claim statement-local explicit change detection
 - `target_type_family.allowlist` IDs still describe target-side allowlists, not source-to-target compatibility
 - alter-add-index helper seams project parser-neutral index payloads without inventing live schema state
+
+## Metadata-Backed Existence Surface
+
+The first metadata-backed DDL rule batch covers:
+
+- create-table target table already exists
+- alter-table target table must exist
+- add-column target already exists
+- drop/modify/change/rename column target must exist
+- add-index target already exists
+- drop/rename index target must exist
+- drop-primary-key target must currently exist
+
+These rules are intentionally conditional on metadata being present:
+
+- in offline-only mode they stay silent
+- in metadata-aware mode they consume the normalized `TargetTable` snapshot carried on `spec.Statement.Metadata`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

@@ -1,4 +1,16 @@
 rules:
+  ddl.alter.add_column.exists.forbid:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.alter.add_index.exists.forbid:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.alter.add_index.fulltext.prefix.require:
     enabled: true
     level: warning
@@ -18,6 +30,12 @@ rules:
     level: warning
     params:
       prefix: uniq_
+      required: true
+
+  ddl.alter.change_column.exists.require:
+    enabled: true
+    level: blocker
+    params:
       required: true
 
   ddl.alter.change_column.explicit_auto_increment_change.forbid:
@@ -51,11 +69,23 @@ rules:
       allowed_type_families: [integer decimal string binary time]
       required: true
 
+  ddl.alter.drop_column.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.alter.drop_column.forbid:
     enabled: true
     level: warning
     params:
       forbid: false
+
+  ddl.alter.drop_index.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 
   ddl.alter.drop_index.forbid:
     enabled: true
@@ -63,11 +93,23 @@ rules:
     params:
       forbid: false
 
+  ddl.alter.drop_primary_key.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.alter.drop_primary_key.forbid:
     enabled: true
     level: blocker
     params:
       forbid: true
+
+  ddl.alter.modify_column.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 
   ddl.alter.modify_column.explicit_auto_increment_change.forbid:
     enabled: true
@@ -100,11 +142,23 @@ rules:
       allowed_type_families: [integer decimal string binary time]
       required: true
 
+  ddl.alter.rename_column.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.alter.rename_column.forbid:
     enabled: true
     level: blocker
     params:
       forbid: true
+
+  ddl.alter.rename_index.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 
   ddl.alter.rename_index.forbid:
     enabled: true
@@ -333,6 +387,18 @@ rules:
     level: blocker
     params:
       values: [InnoDB]
+
+  ddl.table.exists.alter.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.table.exists.create.forbid:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 
   ddl.table.foreign_key.forbid:
     enabled: true
