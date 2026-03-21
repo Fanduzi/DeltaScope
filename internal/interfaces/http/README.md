@@ -12,7 +12,7 @@ Thin HTTP adapter for exposing the offline DeltaScope audit engine as a JSON ser
 
 ## Exports
 
-- `NewHandler(configPath, version)`
+- `NewHandler(configPath, version) (http.Handler, error)`
 - `NewServer(addr, configPath, version)`
 
 ## Notes

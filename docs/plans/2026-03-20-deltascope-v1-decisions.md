@@ -445,6 +445,23 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - configure `ddl.table.row_format.allowlist` with `require_explicit: false`
 - Why: `ROW_FORMAT` governance is about restricting explicit row-format choices, not forcing every statement to spell out a row format when the engine default is acceptable.
 
+## Decision 53: the HTTP adapter should reuse the public audit contract directly
+
+- Problem: the service milestone needs JSON request/response handling, but mapping HTTP responses from deeper internal types would create a second external contract beside `pkg/deltascope`.
+- Decision:
+  - build the HTTP adapter on top of `pkg/deltascope.Audit`
+  - return the public `pkg/deltascope.Result` JSON shape directly from `POST /v1/audit`
+- Why: the library contract is already the intended stable external surface. Reusing it keeps CLI, library, and HTTP output aligned and reduces adapter-specific drift.
+
+## Decision 54: service config hot-reload is implemented as reload-on-request
+
+- Problem: Milestone 5 needs config-backed long-running service behavior, but the existing audit flow already reloads policy from disk for every invocation when a config path is supplied.
+- Decision:
+  - validate the configured policy path once at server startup
+  - keep each HTTP audit request calling the same config-loading path used by the CLI/library
+  - document that file updates take effect on the next request without a watcher-specific in-memory cache
+- Why: this preserves one policy-loading path, avoids another long-running config subsystem, and still delivers immediate config reload behavior for a small service.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

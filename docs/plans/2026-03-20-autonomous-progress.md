@@ -11,6 +11,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 5. richer alter semantics
 6. source-aware alter checks
 7. create-table superset completion
+8. HTTP API service delivery
 
 ## New Checkpoints
 
@@ -33,6 +34,8 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `eb413bd` `feat: add create-table type-family governance`
 - `6af0652` `feat: deepen create-table redundant index checks`
 - `a647fb6` `feat: close create-table object-shape gaps`
+- `7460ddd` `docs: define http api contracts`
+- `0abd3bf` `feat: add http api service adapter`
 
 ## Current Offline DDL Coverage
 
@@ -56,19 +59,22 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
   - target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
   - alter-added unique/secondary/fulltext index prefix checks
   - alter-added index width and exact-duplicate checks when explicitly enabled
+- HTTP API service coverage:
+  - `GET /healthz`
+  - `GET /version`
+  - `POST /v1/audit` returning the stable public JSON result contract
 
 ## What Still Looks Like The Next Milestone
 
-Milestone 4 is now complete. The highest-value remaining gaps are:
+Milestone 5 is now complete. The highest-value remaining gaps are:
 
 - richer `ALTER TABLE` semantics
   - true source-to-target compatibility
   - object-existence-aware checks
   - broader add/drop/rename index lifecycle detail
-- delivery adapters on top of the existing offline engine
-  - HTTP API service
-  - later MCP server reuse
+- the next adapter on top of the existing offline engine
+  - MCP server reuse
 
 ## Recommended Next Step
 
-Milestone 5 should now become the active workstream. The immediate next work is to add the thin HTTP API service on top of the existing library/application flow while keeping the result contract and policy semantics aligned with the CLI.
+The next workstream should decide whether to deepen alter semantics first or move directly into the MCP adapter. Either way, the HTTP and future MCP layers should keep sharing the same public audit/result contract.

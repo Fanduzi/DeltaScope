@@ -28,6 +28,11 @@
   - column charset/collation allowlists plus charset-collation coherence checks
   - deeper create-table redundant-index analysis for left-prefix and unique-overlap cases
   - create-table row-format and auto-increment-init table-option checks
+- completed the `HTTP API Service` milestone with:
+  - `GET /healthz`
+  - `GET /version`
+  - `POST /v1/audit` returning the stable public JSON audit result shape
+  - a thin `cmd/deltascope-server` entrypoint over the same offline audit core
 - added Markdown and JSON renderers
 - built the Cobra CLI with:
   - `audit`
@@ -44,8 +49,9 @@
 
 - `Milestone 3: Source-Aware Alter Checks` is complete
 - `Milestone 4: Complete Create-Table Superset` is complete
-- next active work should start `Milestone 5: HTTP API Service`
-- the current emphasis shifts from create-table breadth to service delivery and the remaining deeper DDL gaps:
+- `Milestone 5: HTTP API Service` is complete
+- next active work should start the future MCP/server-integration phase
+- the current emphasis shifts from service delivery to the remaining deeper DDL gaps and next adapters:
   - true source-to-target alter compatibility judgment
   - richer alter add/drop/rename lifecycle semantics
   - online metadata-aware checks deferred beyond offline v1
@@ -74,6 +80,8 @@
 - `eb413bd` `feat: add create-table type-family governance`
 - `6af0652` `feat: deepen create-table redundant index checks`
 - `a647fb6` `feat: close create-table object-shape gaps`
+- `7460ddd` `docs: define http api contracts`
+- `0abd3bf` `feat: add http api service adapter`
 
 ## Verification Run
 
@@ -96,22 +104,23 @@
 - Milestone 3 Task 5 extended alter-added index lifecycle checks only through projected create-table rule reuse; it still does not claim live existence or full rename/drop lifecycle semantics
 - Milestone 4 intentionally treats `blob_text/json/bit` forbids as shipped-but-relaxed defaults: the rules are present in the default template, but teams must flip `forbid: true` if they want enforcement.
 - Milestone 4's `ROW_FORMAT` allowlist only evaluates explicit row-format clauses; it does not force every create-table statement to spell out a row format.
+- Milestone 5 intentionally keeps the HTTP service thin and stateless; it reuses the public audit API and reloads config on each request instead of growing a separate in-memory policy manager.
 
 ## Remaining Gaps
 
 - create-table coverage now crosses the planned offline superset line relative to `gAudit`; the biggest remaining DDL gaps are now concentrated elsewhere:
   - deeper alter semantics such as true source-to-target compatibility and richer add/drop/rename lifecycle checks
   - object-existence-aware and row-count-sensitive checks that need online metadata
-  - future service adapters: HTTP API and MCP server
+  - future service adapters: MCP server and agent-oriented server workflows
 - v1 intentionally remains offline-only; live database metadata checks are still deferred
-- HTTP API and MCP server are still future phases, not part of the offline library/CLI baseline
+- MCP server is still a future phase, not part of the current baseline
 
 ## Next Active Work
 
 - Milestone 3 is closed: its goal was honest source-aware alter facts plus the first explicit source-aware alter rule batch.
 - Milestone 4 is closed: its goal was to push create-table offline breadth past the planned `gAudit` superset line.
-- Milestone 5 should now become active.
-- likely next work in Milestone 5:
-  - add a thin HTTP interface adapter over the existing offline audit engine
-  - keep the same policy/config semantics and result contract
-  - document request/response/error shapes clearly for future MCP reuse
+- Milestone 5 is closed: its goal was to expose the same offline audit engine over a thin JSON HTTP service.
+- likely next work after Milestone 5:
+  - add the MCP server adapter
+  - decide whether to deepen alter semantics before or alongside MCP work
+  - keep the HTTP and future MCP layers sharing the same public audit/result contract

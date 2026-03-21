@@ -7,7 +7,7 @@ DeltaScope is an offline SQL review engine for MySQL and TiDB. The first release
 - audits DDL and DML for MySQL and TiDB
 - runs fully offline against SQL text plus policy config
 - returns `blocker`, `warning`, and `notice` findings with a final verdict of `reject`, `review`, or `pass`
-- supports both a stable Go package API and the `deltascope` CLI
+- supports a stable Go package API, the `deltascope` CLI, and a thin JSON HTTP service
 
 Current DDL coverage includes:
 
@@ -40,6 +40,7 @@ Important remaining offline DDL gaps include:
 ```bash
 go test ./...
 go run ./cmd/deltascope version
+go run ./cmd/deltascope-server -version
 ```
 
 Audit inline SQL:
@@ -95,6 +96,29 @@ go run ./cmd/deltascope audit --config ./deltascope.yaml --sql "update users set
 
 The v1 config model is rule-ID keyed YAML. The checked-in [deltascope.example.yaml](/Users/fan/GolangProjects/deltascope/configs/deltascope.example.yaml) matches `deltascope config init`.
 
+## HTTP Service
+
+Run the JSON service:
+
+```bash
+go run ./cmd/deltascope-server --listen 127.0.0.1:8083 --config ./deltascope.yaml
+```
+
+Health and version:
+
+```bash
+curl http://127.0.0.1:8083/healthz
+curl http://127.0.0.1:8083/version
+```
+
+Audit SQL over HTTP:
+
+```bash
+curl -X POST http://127.0.0.1:8083/v1/audit \
+  -H 'Content-Type: application/json' \
+  -d '{"sql":"delete from users","dialect":"mysql"}'
+```
+
 ## Library Usage
 
 ```go
@@ -115,7 +139,10 @@ DeltaScope uses a DDD-leaning structure. Interfaces drive application use cases,
 | Module | Description | Doc |
 |--------|-------------|-----|
 | cmd/deltascope | CLI process entrypoint | [README](/Users/fan/GolangProjects/deltascope/cmd/deltascope/README.md) |
+| cmd/deltascope-server | HTTP service entrypoint | [README](/Users/fan/GolangProjects/deltascope/cmd/deltascope-server/README.md) |
+| internal/interfaces | Transport adapter namespace | [README](/Users/fan/GolangProjects/deltascope/internal/interfaces/README.md) |
 | internal/interfaces/cli | CLI adapter layer | [README](/Users/fan/GolangProjects/deltascope/internal/interfaces/cli/README.md) |
+| internal/interfaces/http | HTTP adapter layer | [README](/Users/fan/GolangProjects/deltascope/internal/interfaces/http/README.md) |
 | internal/application | Use-case orchestration layer | [README](/Users/fan/GolangProjects/deltascope/internal/application/README.md) |
 | internal/application/audit | Application parse/audit orchestration | [README](/Users/fan/GolangProjects/deltascope/internal/application/audit/README.md) |
 | internal/application/policy | Application policy loader | [README](/Users/fan/GolangProjects/deltascope/internal/application/policy/README.md) |
