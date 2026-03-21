@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -90,6 +90,44 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.partition.forbid`
 - `ddl.table.create_like.forbid`
 - `ddl.table.create_as.forbid`
+
+## Milestone 4 Planned Create-Table Surface
+
+Milestone 4 is the remaining create-table breadth push. The following rule IDs are pinned now so later tasks can implement them without churn. These IDs are planned surface, not shipped behavior yet.
+
+### Identifier and Keyword Governance
+
+- `ddl.table.name.pattern.require`
+- `ddl.column.name.pattern.require`
+- `ddl.index.name.pattern.require`
+- `ddl.table.name.keyword.forbid`
+- `ddl.column.name.keyword.forbid`
+- `ddl.index.name.keyword.forbid`
+
+### Wider Type-Family and Charset/Collation Governance
+
+- `ddl.column.blob.forbid`
+- `ddl.column.json.forbid`
+- `ddl.column.bit.forbid`
+- `ddl.column.timestamp.forbid`
+- `ddl.column.char.max_length`
+- `ddl.column.charset.allowlist`
+- `ddl.column.collation.allowlist`
+
+### Deeper Redundant-Index Governance
+
+- `ddl.index.redundant_left_prefix.forbid`
+- `ddl.index.redundant_unique_overlap.forbid`
+
+### Remaining Create-Table Object Shape
+
+- `ddl.table.row_format.allowlist`
+
+Milestone 4 is intentionally still create-table scoped:
+
+- no live metadata dependencies
+- no new parser-owned domain leakage
+- no claims of source-to-target alter compatibility
 
 ## Alter Helper Surface
 

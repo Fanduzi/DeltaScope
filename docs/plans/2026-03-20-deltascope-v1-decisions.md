@@ -395,6 +395,30 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep rename inference as a derived fact from the existing name fields
 - Why: one source of truth is enough. Duplicating rename intent inside the domain model would force later rules to choose which representation to trust.
 
+## Decision 48: Milestone 4 pins breadth-first create-table rule IDs before behavior
+
+- Problem: the remaining create-table work is breadth-oriented, and later tasks need stable rule IDs before implementation starts so config, docs, and tests do not churn mid-milestone.
+- Decision:
+  - pin Milestone 4 rule IDs up front for four create-table families:
+    - identifier and keyword governance
+    - wider type-family plus charset/collation governance
+    - deeper redundant-index analysis
+    - remaining create-table object-shape coverage
+  - keep these IDs in `internal/domain/rule/ddl/common.go` even before their rule bodies exist
+  - document them explicitly as planned Milestone 4 surface, not already-shipped behavior
+- Why: create-table is now mostly a coverage-completion problem, so naming stability matters more than squeezing out one more pre-implementation abstraction.
+
+## Decision 49: remaining create-table naming stays literal and family-first
+
+- Problem: Milestone 4 will add many breadth rules quickly, and vague names would make it harder to tell whether a rule is a hard forbid, a pattern requirement, an allowlist, or a redundancy heuristic.
+- Decision:
+  - keep identifier legality rules under `*.name.pattern.require`
+  - keep reserved-word governance under `*.name.keyword.forbid`
+  - keep type-family restrictions literal, for example `ddl.column.blob.forbid` and `ddl.column.timestamp.forbid`
+  - keep create-table-only object-shape additions literal, for example `ddl.table.row_format.allowlist`
+  - keep deeper redundant-index rules explicit about the heuristic they apply, for example `ddl.index.redundant_left_prefix.forbid`
+- Why: the existing rule surface already uses family-first names such as `*.allowlist`, `*.forbid`, and `*.max_length`. Extending that style is clearer than introducing more abstract policy names now.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.
