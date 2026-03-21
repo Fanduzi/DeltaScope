@@ -91,6 +91,8 @@ const (
 	ruleIDAlterDropIndexExistsRequire                        = "ddl.alter.drop_index.exists.require"
 	ruleIDAlterRenameIndexExistsRequire                      = "ddl.alter.rename_index.exists.require"
 	ruleIDAlterDropPrimaryKeyExistsRequire                   = "ddl.alter.drop_primary_key.exists.require"
+	ruleIDAlterModifyColumnCompatibilityRequire              = "ddl.alter.modify_column.compatibility.require"
+	ruleIDAlterChangeColumnCompatibilityRequire              = "ddl.alter.change_column.compatibility.require"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
@@ -328,5 +330,22 @@ func columnTypeFamily(column spec.Column) string {
 		return "time"
 	default:
 		return "other"
+	}
+}
+
+func integerTypeRank(column spec.Column) int {
+	switch baseType(column) {
+	case "tinyint":
+		return 1
+	case "smallint":
+		return 2
+	case "mediumint":
+		return 3
+	case "int", "integer":
+		return 4
+	case "bigint":
+		return 5
+	default:
+		return 0
 	}
 }

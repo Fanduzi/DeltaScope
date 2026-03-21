@@ -380,6 +380,20 @@ func Default() Policy {
 					"allowed_type_families": []string{"integer", "decimal", "string", "binary", "time"},
 				},
 			},
+			"ddl.alter.modify_column.compatibility.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.alter.change_column.compatibility.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
 			"ddl.alter.modify_column.explicit_nullability_change.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

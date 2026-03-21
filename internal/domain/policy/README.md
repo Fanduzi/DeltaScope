@@ -20,6 +20,7 @@ Policy model for rule configuration and future audit settings.
 
 - The default alter policy keeps `ddl.alter.change_column.forbid` enabled as the stricter coarse guard.
 - `ddl.alter.change_column.target_type_family.allowlist` remains enabled as a follow-on semantic guard for teams that intentionally relax the coarse forbid later.
+- The default metadata-aware alter policy now also enables source-aware compatibility checks for `modify column` and `change column`; those rules only fire when the statement carries a live table snapshot.
 - The default alter policy also enables explicit nullability/default/auto_increment change forbids; the `change_column` variants act as follow-on guards when the coarse `ddl.alter.change_column.forbid` gate is intentionally relaxed.
 - The default policy also enables shipped alter-added index prefix checks for unique, secondary, and fulltext indexes.
 - The default create-table policy now enables identifier pattern and reserved-keyword checks for table, column, and secondary-index names.

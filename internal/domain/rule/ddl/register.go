@@ -152,6 +152,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterChangeColumnTargetTypeFamilyAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterTargetTypeFamilyRule(ruleIDAlterChangeColumnTargetTypeFamilyAllowlist, "change_column", "change column", rule.LevelBlocker, defaultConservativeAlterTypeFamilies, cfg)
 		}},
+		{ruleID: ruleIDAlterModifyColumnCompatibilityRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterColumnCompatibilityRule(ruleIDAlterModifyColumnCompatibilityRequire, "modify_column", "modify column", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterChangeColumnCompatibilityRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterColumnCompatibilityRule(ruleIDAlterChangeColumnCompatibilityRequire, "change_column", "change column", rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},

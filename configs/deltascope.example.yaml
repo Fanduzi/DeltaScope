@@ -32,6 +32,12 @@ rules:
       prefix: uniq_
       required: true
 
+  ddl.alter.change_column.compatibility.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.alter.change_column.exists.require:
     enabled: true
     level: blocker
@@ -104,6 +110,12 @@ rules:
     level: blocker
     params:
       forbid: true
+
+  ddl.alter.modify_column.compatibility.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 
   ddl.alter.modify_column.exists.require:
     enabled: true

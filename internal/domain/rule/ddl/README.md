@@ -19,6 +19,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
+| alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
 | alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
@@ -32,6 +33,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
+| alter_compatibility_rules_test.go | Verifies source-aware compatibility checks for change/modify column operations |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
@@ -94,6 +96,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.rename_index.forbid`
 - `ddl.alter.modify_column.target_type_family.allowlist`
 - `ddl.alter.change_column.target_type_family.allowlist`
+- `ddl.alter.modify_column.compatibility.require`
+- `ddl.alter.change_column.compatibility.require`
 - `ddl.alter.modify_column.explicit_nullability_change.forbid`
 - `ddl.alter.change_column.explicit_nullability_change.forbid`
 - `ddl.alter.modify_column.explicit_default_change.forbid`
@@ -207,6 +211,23 @@ The next source-aware alter batch is intentionally prepared with honest names:
 - `explicit_*_change.forbid` rule IDs only claim statement-local explicit change detection
 - `target_type_family.allowlist` IDs still describe target-side allowlists, not source-to-target compatibility
 - alter-add-index helper seams project parser-neutral index payloads without inventing live schema state
+
+## Source-Aware Compatibility Surface
+
+The first source-aware alter compatibility batch now covers:
+
+- same-family change/modify operations that shrink string length
+- integer-width narrowing
+- signedness changes
+- nullable to not-null tightening
+- auto-increment removal
+- family changes between source and target column definitions
+
+These compatibility rules are intentionally limited:
+
+- they require a live `TargetTable` snapshot
+- they compare only current source shape and requested target shape
+- they do not claim row-level data validation or full runtime safety
 
 ## Metadata-Backed Existence Surface
 
