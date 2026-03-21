@@ -148,8 +148,28 @@ func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.
 	if enriched[0].Metadata == nil || enriched[0].Metadata.Instance == nil {
 		t.Fatalf("expected instance metadata to be attached")
 	}
+	if enriched[0].Metadata.Schema != "app" {
+		t.Fatalf("expected schema context app, got %#v", enriched[0].Metadata)
+	}
 	if enriched[0].Metadata.TargetTable == nil || !enriched[0].Metadata.TargetTable.Exists {
 		t.Fatalf("expected table snapshot metadata to be attached")
+	}
+}
+
+func TestEnrichStatementsWithMetadataPreservesSchemaContextWithoutProvider(t *testing.T) {
+	statements := []spec.Statement{
+		{Kind: spec.KindDML, Dialect: spec.DialectMySQL, DML: &spec.DML{Operation: spec.DMLOperationDelete, Tables: []spec.Table{{Name: "users"}}}},
+	}
+
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, &MetadataRequest{Schema: "app"}, statements)
+	if err != nil {
+		t.Fatalf("enrich statements with schema only: %v", err)
+	}
+	if enriched[0].Metadata == nil || enriched[0].Metadata.Schema != "app" {
+		t.Fatalf("expected schema context without provider, got %#v", enriched[0].Metadata)
+	}
+	if enriched[0].Metadata.Instance != nil || enriched[0].Metadata.TargetTable != nil {
+		t.Fatalf("expected schema-only metadata, got %#v", enriched[0].Metadata)
 	}
 }
 

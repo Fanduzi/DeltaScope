@@ -44,17 +44,26 @@
   - `Source-Aware Alter Checks`
   - `Complete Create-Table Superset`
   - `HTTP API Service`
+- completed the `Audit Completion` milestone with:
+  - an explicit audit capability matrix used as the acceptance baseline
+  - optional metadata-aware audit facts split into instance facts and target-table snapshots
+  - metadata-backed existence rules for create/alter/drop/truncate, column/index/primary-key lifecycle checks, adaptive-hash cautions, and row-count cautions
+  - source-aware alter compatibility for change/modify column plus metadata-backed table-option compatibility
+  - object-scope DDL/DML denylist governance using `schemas`, `tables`, and `qualified_tables`
+  - alter-added redundant-index lifecycle checks reusing create-table redundancy logic against snapshot + added indexes
+  - metadata-backed rough row-size and index-key-length checks
+  - release-surface docs including `README.md`, `README_ZH.md`, `CHANGELOG.md`, and `SECURITY.md`
 
 ## In Progress
 
 - `Milestone 3: Source-Aware Alter Checks` is complete
 - `Milestone 4: Complete Create-Table Superset` is complete
 - `Milestone 5: HTTP API Service` is complete
-- next active work should start the future MCP/server-integration phase
-- the current emphasis shifts from service delivery to the remaining deeper DDL gaps and next adapters:
-  - true source-to-target alter compatibility judgment
-  - richer alter add/drop/rename lifecycle semantics
-  - online metadata-aware checks deferred beyond offline v1
+- `Milestone 6: Audit Completion` is complete
+- the next active work should move beyond parity/coverage and choose the next product direction:
+  - deeper online risk estimation
+  - MCP server / agent adapter work
+  - service hardening such as auth, middleware, and operational polish
 
 ## Key Commits
 
@@ -82,6 +91,12 @@
 - `a647fb6` `feat: close create-table object-shape gaps`
 - `7460ddd` `docs: define http api contracts`
 - `0abd3bf` `feat: add http api service adapter`
+- `ce56373` `docs: add audit capability matrix baseline`
+- `da0c768` `feat: add metadata-aware domain specs`
+- `7c6ee34` `feat: add metadata-aware audit providers`
+- `86eefe3` `feat: add metadata-backed ddl existence rules`
+- `54d418f` `feat: add source-aware alter compatibility rules`
+- `9812b92` `feat: close metadata and lifecycle audit gaps`
 
 ## Verification Run
 
@@ -105,22 +120,22 @@
 - Milestone 4 intentionally treats `blob_text/json/bit` forbids as shipped-but-relaxed defaults: the rules are present in the default template, but teams must flip `forbid: true` if they want enforcement.
 - Milestone 4's `ROW_FORMAT` allowlist only evaluates explicit row-format clauses; it does not force every create-table statement to spell out a row format.
 - Milestone 5 intentionally keeps the HTTP service thin and stateless; it reuses the public audit API and reloads config on each request instead of growing a separate in-memory policy manager.
+- `Audit Completion` intentionally keeps metadata-aware rules on the same audit path instead of introducing a second "online mode" engine.
+- `Audit Completion` also treats sizing checks as rough, metadata-backed guards rather than pretending to compute execution-safe storage outcomes exactly.
 
 ## Remaining Gaps
 
-- create-table coverage now crosses the planned offline superset line relative to `gAudit`; the biggest remaining DDL gaps are now concentrated elsewhere:
-  - deeper alter semantics such as true source-to-target compatibility and richer add/drop/rename lifecycle checks
-  - object-existence-aware and row-count-sensitive checks that need online metadata
-  - future service adapters: MCP server and agent-oriented server workflows
-- v1 intentionally remains offline-only; live database metadata checks are still deferred
-- MCP server is still a future phase, not part of the current baseline
+- `Audit Completion` closed the blocking capability-matrix gaps.
+- remaining work is no longer "baseline missing coverage"; it is follow-on product depth:
+  - richer runtime-risk estimation beyond rough metadata-backed sizing and row-count cautions
+  - broader online safety checks and policy ergonomics
+  - future adapters such as MCP server and agent-oriented server workflows
 
 ## Next Active Work
 
 - Milestone 3 is closed: its goal was honest source-aware alter facts plus the first explicit source-aware alter rule batch.
 - Milestone 4 is closed: its goal was to push create-table offline breadth past the planned `gAudit` superset line.
 - Milestone 5 is closed: its goal was to expose the same offline audit engine over a thin JSON HTTP service.
-- likely next work after Milestone 5:
-  - add the MCP server adapter
-  - decide whether to deepen alter semantics before or alongside MCP work
-  - keep the HTTP and future MCP layers sharing the same public audit/result contract
+- likely next work after Milestone 6:
+  - decide whether to prioritize MCP adapter work or deeper online audit/risk modeling
+  - keep CLI, HTTP, and future adapters sharing the same public audit/result contract

@@ -326,6 +326,36 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.alter.add_index.columns.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"limit": 8,
+				},
+			},
+			"ddl.alter.add_index.duplicate.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.add_index.redundant_left_prefix.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid":            true,
+					"requires_metadata": true,
+				},
+			},
+			"ddl.alter.add_index.redundant_unique_overlap.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid":            true,
+					"requires_metadata": true,
+				},
+			},
 			"ddl.alter.add_index.unique.prefix.require": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -394,6 +424,14 @@ func Default() Policy {
 					"required": true,
 				},
 			},
+			"ddl.alter.table_option.compatibility.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required":          true,
+					"requires_metadata": true,
+				},
+			},
 			"ddl.alter.modify_column.explicit_nullability_change.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -450,6 +488,14 @@ func Default() Policy {
 					"values": []string{"InnoDB"},
 				},
 			},
+			"ddl.table.row_size.max_bytes.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required":          true,
+					"requires_metadata": true,
+				},
+			},
 			"ddl.table.charset.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -463,6 +509,14 @@ func Default() Policy {
 				Params: map[string]any{
 					"values":           []string{"DYNAMIC"},
 					"require_explicit": false,
+				},
+			},
+			"ddl.index.key_length.max_bytes.require": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"required":          true,
+					"requires_metadata": true,
 				},
 			},
 			"ddl.table.auto_increment.init_value.require": {
@@ -528,6 +582,14 @@ func Default() Policy {
 					"requires_metadata": true,
 				},
 			},
+			"ddl.table.drop.rows.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"requires_metadata": true,
+					"limit":             100,
+				},
+			},
 			"ddl.table.truncate.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -547,6 +609,37 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"requires_metadata": true,
+				},
+			},
+			"ddl.table.truncate.rows.max_count": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"requires_metadata": true,
+					"limit":             100,
+				},
+			},
+			"ddl.table.denylist.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"schemas":          []string{},
+					"tables":           []string{},
+					"qualified_tables": []string{},
+				},
+			},
+			"ddl.alter.merge.mysql.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
+			"ddl.alter.merge.tidb.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": false,
 				},
 			},
 			"ddl.table.exists.create.forbid": {
@@ -687,6 +780,15 @@ func Default() Policy {
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
 					"forbid": true,
+				},
+			},
+			"dml.table.denylist.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"schemas":          []string{},
+					"tables":           []string{},
+					"qualified_tables": []string{},
 				},
 			},
 		},

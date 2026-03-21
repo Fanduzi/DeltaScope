@@ -254,6 +254,65 @@ func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
 	})
 }
 
+func TestExtractMapsDMLTargetTables(t *testing.T) {
+	t.Run("insert tracks the destination table", func(t *testing.T) {
+		parsed, err := Parse("insert into users (id) values (1);", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata")
+		}
+		if len(stmt.DML.Tables) != 1 || stmt.DML.Tables[0].Name != "users" {
+			t.Fatalf("expected insert target users, got %+v", stmt.DML.Tables)
+		}
+	})
+
+	t.Run("update tracks joined mutation tables once", func(t *testing.T) {
+		parsed, err := Parse("update users u join accounts a on a.user_id = u.id set u.active = 1;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata")
+		}
+		if len(stmt.DML.Tables) != 2 || stmt.DML.Tables[0].Name != "users" || stmt.DML.Tables[1].Name != "accounts" {
+			t.Fatalf("expected update targets users/accounts, got %+v", stmt.DML.Tables)
+		}
+	})
+
+	t.Run("delete tracks joined mutation tables once", func(t *testing.T) {
+		parsed, err := Parse("delete users from users join accounts on accounts.user_id = users.id where accounts.closed = 1;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata")
+		}
+		if len(stmt.DML.Tables) != 2 || stmt.DML.Tables[0].Name != "users" || stmt.DML.Tables[1].Name != "accounts" {
+			t.Fatalf("expected delete targets users/accounts, got %+v", stmt.DML.Tables)
+		}
+	})
+}
+
 func TestExtractMapsAlterTable(t *testing.T) {
 	t.Run("maps representative alter shapes", func(t *testing.T) {
 		parsed, err := Parse("alter table users add column age int not null default 0 comment 'age', drop column old_age, modify column age bigint null default 1 comment 'age2', change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)

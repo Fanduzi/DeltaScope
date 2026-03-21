@@ -8,9 +8,9 @@ Normalized statement specifications used as the stable input for rule evaluation
 |------|---------------|
 | statement.go | Defines the top-level normalized statement model |
 | statement_test.go | Verifies typed statement metadata behavior |
-| metadata.go | Defines optional instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
+| metadata.go | Defines optional schema context, instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
-| dml.go | Defines DML-oriented specification types, including operation metadata for rule applicability |
+| dml.go | Defines DML-oriented specification types, including operation metadata and extracted target tables for rule applicability |
 
 ## Exports
 
@@ -37,9 +37,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 ## Notes
 
 - `Statement` may now carry optional metadata-aware context through `Metadata`:
+  - `Schema` for request-level schema context even when no provider is attached
   - `Instance` for normalized server-level facts such as version and InnoDB defaults
   - `TargetTable` for the current metadata-backed shape of the table being audited
 - `TableSnapshot` includes convenience lookups for case-insensitive column/index existence checks so future rules do not need to duplicate iteration logic.
+- `DML.Tables` preserves the parser-neutral set of mutation target tables so denylist and future metadata-aware DML rules do not need to rediscover them from AST nodes.
 
 - `Column` now carries offline-governance facts needed by column-focused DDL rules:
   - `Length`

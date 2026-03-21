@@ -258,6 +258,49 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
 
 ## Decision 33: exact duplicate-index detection is a safe first step, not full redundancy analysis
 
+## Decision 34: metadata-aware audit stays on one engine path
+
+- Problem: deeper audit coverage now needs live instance facts and table snapshots, but introducing a separate "online mode" pipeline would split rule behavior and make CLI/HTTP harder to reason about.
+- Decision:
+  - keep one audit engine
+  - let metadata-aware mode enrich `spec.Statement.Metadata` with schema, instance facts, and target-table snapshots
+  - let rules opt in to those facts when present and skip honestly when they are absent
+- Why: this preserves the offline-first contract while still enabling stronger checks without forking the architecture.
+
+## Decision 35: object-scope governance uses explicit denylist params
+
+- Problem: the acceptance matrix still had DB/table blocklist gaps for both DDL and DML.
+- Decision:
+  - add `ddl.table.denylist.forbid` and `dml.table.denylist.forbid`
+  - support `schemas`, `tables`, and `qualified_tables` params
+  - keep the shipped defaults empty so the rules are available but inert until configured
+- Why: this closes the protected-table governance gap without inventing a second policy subsystem.
+
+## Decision 36: metadata-backed alter option compatibility should be explicit and narrow
+
+- Problem: alter-column compatibility existed, but `ALTER TABLE ...` option changes still had no metadata-backed comparison against the current schema.
+- Decision:
+  - add `ddl.alter.table_option.compatibility.require`
+  - compare explicit `engine`, `charset`, `collation`, `row_format`, and `auto_increment` option changes against the current snapshot only
+- Why: this covers a real audit gap while staying honest about what the snapshot can actually prove.
+
+## Decision 37: alter-added redundancy should reuse create-table logic
+
+- Problem: added indexes in `ALTER TABLE` already had width/duplicate checks, but deeper left-prefix and unique-overlap redundancy still lagged behind create-table.
+- Decision:
+  - reuse the existing create-table redundant-index rules
+  - project `snapshot.Indexes + alter-added indexes` into one temporary lifecycle view before evaluation
+- Why: this keeps redundancy semantics consistent across create-table and alter-table without writing a second algorithm.
+
+## Decision 38: sizing checks are rough preflight guards, not exact storage simulators
+
+- Problem: the remaining matrix gap required row-size and index-size checks using instance facts, but exact engine/runtime simulation would be disproportionate and fragile.
+- Decision:
+  - add metadata-backed rough guards for row size and index key length
+  - require instance facts for charset/default-row-format/large-prefix context
+  - document them as conservative preflight checks rather than exact execution predictions
+- Why: this closes the baseline coverage gap honestly and gives users actionable signals without pretending to solve full storage-engine analysis.
+
 - Problem: broader redundant-index analysis is valuable, but the current offline model can only judge exact duplicate signatures safely without inventing optimizer or live-schema semantics.
 - Decision:
   - ship exact duplicate-index detection first for create-table rules

@@ -20,6 +20,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
+| merge_alter_rules.go | Implements global merge-alter governance across statement batches |
+| denylist_rules.go | Implements DDL table denylist checks against protected schemas or tables |
+| size_rules.go | Implements metadata-backed rough row-size and index-key-length checks for create-table statements |
 | alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
 | alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
@@ -35,7 +38,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules_test.go | Verifies create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
+| merge_alter_rules_test.go | Verifies global merge-alter governance rules |
 | alter_compatibility_rules_test.go | Verifies source-aware compatibility checks for change/modify column operations |
+| size_rules_test.go | Verifies metadata-backed row-size and index-key-length checks |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
@@ -85,6 +90,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.index.unique.prefix.require`
 - `ddl.index.secondary.prefix.require`
 - `ddl.index.fulltext.prefix.require`
+- `ddl.index.key_length.max_bytes.require`
 - `ddl.index.duplicate.forbid`
 - `ddl.index.redundant_left_prefix.forbid`
 - `ddl.index.redundant_unique_overlap.forbid`
@@ -100,6 +106,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.change_column.target_type_family.allowlist`
 - `ddl.alter.modify_column.compatibility.require`
 - `ddl.alter.change_column.compatibility.require`
+- `ddl.alter.table_option.compatibility.require`
 - `ddl.alter.modify_column.explicit_nullability_change.forbid`
 - `ddl.alter.change_column.explicit_nullability_change.forbid`
 - `ddl.alter.modify_column.explicit_default_change.forbid`
@@ -108,11 +115,14 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.change_column.explicit_auto_increment_change.forbid`
 - `ddl.alter.add_index.columns.max_count`
 - `ddl.alter.add_index.duplicate.forbid`
+- `ddl.alter.add_index.redundant_left_prefix.forbid`
+- `ddl.alter.add_index.redundant_unique_overlap.forbid`
 - `ddl.alter.add_index.unique.prefix.require`
 - `ddl.alter.add_index.secondary.prefix.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
 - `ddl.table.comment.max_length`
 - `ddl.table.engine.allowlist`
+- `ddl.table.row_size.max_bytes.require`
 - `ddl.table.charset.allowlist`
 - `ddl.table.row_format.allowlist`
 - `ddl.table.auto_increment.init_value.require`
@@ -124,9 +134,14 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.drop.forbid`
 - `ddl.table.drop.exists.require`
 - `ddl.table.drop.adaptive_hash.warn`
+- `ddl.table.drop.rows.max_count`
 - `ddl.table.truncate.forbid`
 - `ddl.table.truncate.exists.require`
 - `ddl.table.truncate.adaptive_hash.warn`
+- `ddl.table.truncate.rows.max_count`
+- `ddl.alter.merge.mysql.require`
+- `ddl.alter.merge.tidb.require`
+- `ddl.table.denylist.forbid`
 - `ddl.table.exists.create.forbid`
 - `ddl.table.exists.alter.require`
 - `ddl.alter.add_column.exists.forbid`
@@ -189,8 +204,19 @@ The first semantic alter batch currently covers:
 - `ddl.alter.add_index.fulltext.prefix.require`
 - `ddl.alter.add_index.columns.max_count`
 - `ddl.alter.add_index.duplicate.forbid`
+- `ddl.alter.add_index.redundant_left_prefix.forbid`
+- `ddl.alter.add_index.redundant_unique_overlap.forbid`
 - `ddl.alter.modify_column.target_type_family.allowlist`
 - `ddl.alter.change_column.target_type_family.allowlist`
+
+## Object-Scope Denylist Surface
+
+The DDL denylist rule is intentionally simple and policy-driven:
+
+- `ddl.table.denylist.forbid`
+- matches by `schemas`, `tables`, or `qualified_tables`
+- consumes request schema context from `statement.Metadata.Schema`
+- stays inert by default because the shipped policy keeps those lists empty
 
 The `target_type_family.allowlist` rules are intentionally conservative in offline mode:
 
@@ -212,6 +238,7 @@ Within this batch:
 - prefix checks reuse the existing create-table prefix rule body
 - add-index width checks reuse the existing create-table index-column-count rule body
 - add-index duplicate checks reuse the existing create-table duplicate-index rule body
+- add-index redundant-index checks now also reuse the existing create-table left-prefix and unique-overlap rule bodies by projecting current snapshot indexes plus newly added indexes into one lifecycle view
 
 Those alter-added index lifecycle rules are part of the normal `Register(...)` path when their policies are enabled.
 
@@ -231,6 +258,7 @@ The first source-aware alter compatibility batch now covers:
 - nullable to not-null tightening
 - auto-increment removal
 - family changes between source and target column definitions
+- `ALTER TABLE ...` option changes for `engine`, `charset`, `collation`, `row_format`, and `auto_increment` against the current snapshot
 
 These compatibility rules are intentionally limited:
 
@@ -257,6 +285,16 @@ These rules are intentionally metadata-gated:
 - `policy.Enabled` still controls whether the rule is registered at all
 - in metadata-aware mode they consume the normalized `TargetTable` snapshot carried on `spec.Statement.Metadata`
 
+## Metadata-Backed Sizing Surface
+
+The current sizing rules are intentionally rough but honest:
+
+- `ddl.table.row_size.max_bytes.require`
+- `ddl.index.key_length.max_bytes.require`
+- they require instance facts for default charset, default row format, and large-prefix behavior
+- they estimate maximum row and key length from parser-neutral column definitions
+- they are designed as conservative preflight guards, not as execution-plan or storage-engine simulators
+
 ## Object Lifecycle Surface
 
 The lifecycle rule batch now also covers:
@@ -274,6 +312,20 @@ Within this batch:
 - create-view, drop-table, and truncate-table statements are distinguished through `spec.DDL.Operation`
 - drop/truncate existence checks remain metadata-gated and only fire when a live `TargetTable` snapshot is attached
 - adaptive-hash cautions remain metadata-gated and only fire when instance facts report `innodb_adaptive_hash_index=ON`
+- row-count cautions remain metadata-gated and only fire when the snapshot carries `table_rows`
+
+## Merge Alter Surface
+
+The global merge-alter rule batch now covers:
+
+- `ddl.alter.merge.mysql.require`
+- `ddl.alter.merge.tidb.require`
+
+These rules evaluate full statement batches instead of individual statements:
+
+- repeated `ALTER TABLE` statements on the same table are grouped per dialect
+- MySQL merge enforcement is enabled by default
+- TiDB merge enforcement is shipped but relaxed by default
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

@@ -236,6 +236,76 @@ func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
 	}
 }
 
+func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
+	statement := alterStatement(
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "idx_email_created",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "idx_email_created",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"email", "created_at"},
+				},
+			},
+		},
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "uniq_email_status",
+			Index: &spec.AlterIndex{
+				Definition: &spec.Index{
+					Name:    "uniq_email_status",
+					Kind:    spec.IndexKindUnique,
+					Columns: []string{"email", "status"},
+				},
+			},
+		},
+	)
+	statement.Metadata = &spec.Metadata{
+		TargetTable: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Indexes: []spec.Index{
+				{Name: "idx_email", Kind: spec.IndexKindSecondary, Columns: []string{"email"}},
+				{Name: "uniq_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}},
+			},
+		},
+	}
+
+	leftPrefixRule, err := newAlterAddedRedundantLeftPrefixRule(rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new left-prefix rule: %v", err)
+	}
+	uniqueOverlapRule, err := newAlterAddedRedundantUniqueOverlapRule(rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new unique-overlap rule: %v", err)
+	}
+
+	leftFindings, err := leftPrefixRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate left-prefix rule: %v", err)
+	}
+	if len(leftFindings) != 1 || leftFindings[0].RuleID != ruleIDAlterAddIndexRedundantLeftPrefixForbid {
+		t.Fatalf("expected left-prefix lifecycle finding, got %+v", leftFindings)
+	}
+
+	uniqueFindings, err := uniqueOverlapRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate unique-overlap rule: %v", err)
+	}
+	if len(uniqueFindings) != 1 || uniqueFindings[0].RuleID != ruleIDAlterAddIndexRedundantUniqueOverlapForbid {
+		t.Fatalf("expected unique-overlap lifecycle finding, got %+v", uniqueFindings)
+	}
+}
+
 func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 	statementRule, err := newForbiddenAlterRenameRule(
 		ruleIDAlterRenameIndexForbid,

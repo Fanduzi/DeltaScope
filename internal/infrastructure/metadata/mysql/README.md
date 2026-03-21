@@ -6,7 +6,7 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 
 | File | Responsibility |
 |------|---------------|
-| provider.go | Loads normalized instance facts and target-table snapshots from information schema |
+| provider.go | Loads normalized instance facts and target-table snapshots from information schema, including row-format, collation, auto-increment, and approximate table-row facts |
 | provider_test.go | Verifies provider helper normalization without a live database |
 
 ## Exports

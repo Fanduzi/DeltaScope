@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestRegisterAddsEnabledDMLRulesInDeterministicOrder(t *testing.T) {
@@ -82,5 +83,44 @@ func TestRegisterRejectsInvalidDMLRuleConfig(t *testing.T) {
 
 	if err := Register(registry, cfg); err == nil {
 		t.Fatal("expected invalid config to be rejected")
+	}
+}
+
+func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+	cfg.Rules["dml.table.denylist.forbid"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params: map[string]any{
+			"tables":  []string{"users"},
+			"schemas": []string{"app"},
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(spec.Statement{
+		Kind: spec.KindDML,
+		DML: &spec.DML{
+			Operation: spec.DMLOperationDelete,
+			Tables:    []spec.Table{{Name: "users"}},
+		},
+		Metadata: &spec.Metadata{Schema: "app"},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	found := false
+	for _, finding := range findings {
+		if finding.RuleID == "dml.table.denylist.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected disabled-table finding, got %+v", findings)
 	}
 }

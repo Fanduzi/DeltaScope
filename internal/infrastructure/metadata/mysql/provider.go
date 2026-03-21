@@ -75,7 +75,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	}
 
 	tableRow := p.db.QueryRowContext(ctx, `
-		select engine, table_collation, table_comment, auto_increment, row_format
+		select engine, table_collation, table_comment, auto_increment, row_format, table_rows
 		from information_schema.tables
 		where table_schema = ? and table_name = ?
 	`, schema, table)
@@ -85,7 +85,8 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	var comment sql.NullString
 	var autoIncrement sql.NullInt64
 	var rowFormat sql.NullString
-	if err := tableRow.Scan(&engine, &collation, &comment, &autoIncrement, &rowFormat); err != nil {
+	var tableRows sql.NullInt64
+	if err := tableRow.Scan(&engine, &collation, &comment, &autoIncrement, &rowFormat, &tableRows); err != nil {
 		if err == sql.ErrNoRows {
 			return snapshot, nil
 		}
@@ -103,6 +104,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	}
 	if autoIncrement.Valid {
 		snapshot.Options["auto_increment"] = strconv.FormatInt(autoIncrement.Int64, 10)
+	}
+	if tableRows.Valid {
+		snapshot.Options["table_rows"] = strconv.FormatInt(tableRows.Int64, 10)
 	}
 	if collation.Valid {
 		snapshot.Options["collation"] = collation.String

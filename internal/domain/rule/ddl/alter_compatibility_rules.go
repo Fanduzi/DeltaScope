@@ -7,6 +7,8 @@ package ddl
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -17,6 +19,11 @@ type alterColumnCompatibilityRule struct {
 	ruleID   string
 	action   string
 	label    string
+	required bool
+	level    rule.Level
+}
+
+type alterTableOptionCompatibilityRule struct {
 	required bool
 	level    rule.Level
 }
@@ -35,10 +42,27 @@ func newAlterColumnCompatibilityRule(ruleID, action, label string, fallbackLevel
 	}, nil
 }
 
+func newAlterTableOptionCompatibilityRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	required, err := boolParam(ruleIDAlterTableOptionCompatibilityRequire, cfg, "required", true)
+	if err != nil {
+		return nil, err
+	}
+	return alterTableOptionCompatibilityRule{
+		required: required,
+		level:    configuredLevel(cfg, rule.LevelWarning),
+	}, nil
+}
+
 func (r alterColumnCompatibilityRule) ID() string { return r.ruleID }
+
+func (r alterTableOptionCompatibilityRule) ID() string { return ruleIDAlterTableOptionCompatibilityRequire }
 
 func (r alterColumnCompatibilityRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToAlterActions(statement, r.action)
+}
+
+func (r alterTableOptionCompatibilityRule) AppliesTo(statement spec.Statement) bool {
+	return r.required && appliesToAlterActions(statement, "table_option")
 }
 
 func (r alterColumnCompatibilityRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -58,6 +82,22 @@ func (r alterColumnCompatibilityRule) Evaluate(statement spec.Statement) ([]rule
 			continue
 		}
 		findings = append(findings, compatibilityFindings(r.ruleID, r.level, statement.DDL.Table.Name, alter, *source, *target)...)
+	}
+	return findings, nil
+}
+
+func (r alterTableOptionCompatibilityRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || !snapshot.Exists {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, "table_option") {
+		findings = append(findings, optionCompatibilityFindings(r.level, statement.DDL.Table.Name, snapshot, alter)...)
 	}
 	return findings, nil
 }
@@ -140,4 +180,80 @@ func newCompatibilityFinding(ruleID string, level rule.Level, tableName string, 
 		Suggestion: suggestion,
 		Metadata:   payload,
 	}
+}
+
+func optionCompatibilityFindings(level rule.Level, tableName string, snapshot *spec.TableSnapshot, alter spec.Alter) []rule.Finding {
+	findings := make([]rule.Finding, 0)
+	for _, optionKey := range []string{"engine", "charset", "collation", "row_format", "auto_increment"} {
+		target, ok := alter.Options[optionKey]
+		if !ok || strings.TrimSpace(target) == "" {
+			continue
+		}
+		source := strings.TrimSpace(snapshot.Options[optionKey])
+		if source == "" {
+			continue
+		}
+		if optionKey == "auto_increment" {
+			if finding, ok := autoIncrementCompatibilityFinding(level, tableName, alter, source, target); ok {
+				findings = append(findings, finding)
+			}
+			continue
+		}
+		if strings.EqualFold(source, target) {
+			continue
+		}
+		findings = append(findings, rule.Finding{
+			RuleID:     ruleIDAlterTableOptionCompatibilityRequire,
+			Level:      level,
+			Message:    fmt.Sprintf("table option %q changes from %q to %q", optionKey, source, target),
+			Suggestion: fmt.Sprintf("keep %s aligned with the current table setting or review the compatibility impact explicitly", optionKey),
+			Metadata: map[string]any{
+				"table":         tableName,
+				"action":        alter.Action,
+				"option":        optionKey,
+				"source_value":  source,
+				"target_value":  target,
+			},
+		})
+	}
+	return findings
+}
+
+func autoIncrementCompatibilityFinding(level rule.Level, tableName string, alter spec.Alter, source, target string) (rule.Finding, bool) {
+	sourceValue, sourceErr := strconv.ParseInt(source, 10, 64)
+	targetValue, targetErr := strconv.ParseInt(target, 10, 64)
+	if sourceErr == nil && targetErr == nil {
+		if targetValue >= sourceValue {
+			return rule.Finding{}, false
+		}
+		return rule.Finding{
+			RuleID:     ruleIDAlterTableOptionCompatibilityRequire,
+			Level:      level,
+			Message:    fmt.Sprintf("table auto_increment seed shrinks from %d to %d", sourceValue, targetValue),
+			Suggestion: "keep AUTO_INCREMENT at or above the current seed unless the reset is fully reviewed",
+			Metadata: map[string]any{
+				"table":         tableName,
+				"action":        alter.Action,
+				"option":        "auto_increment",
+				"source_value":  sourceValue,
+				"target_value":  targetValue,
+			},
+		}, true
+	}
+	if strings.EqualFold(source, target) {
+		return rule.Finding{}, false
+	}
+	return rule.Finding{
+		RuleID:     ruleIDAlterTableOptionCompatibilityRequire,
+		Level:      level,
+		Message:    fmt.Sprintf("table option %q changes from %q to %q", "auto_increment", source, target),
+		Suggestion: "keep AUTO_INCREMENT aligned with the current seed or review the reset explicitly",
+		Metadata: map[string]any{
+			"table":         tableName,
+			"action":        alter.Action,
+			"option":        "auto_increment",
+			"source_value":  source,
+			"target_value":  target,
+		},
+	}, true
 }

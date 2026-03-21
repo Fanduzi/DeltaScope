@@ -12,6 +12,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 6. source-aware alter checks
 7. create-table superset completion
 8. HTTP API service delivery
+9. audit completion and metadata-aware coverage closure
 
 ## New Checkpoints
 
@@ -36,6 +37,12 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `a647fb6` `feat: close create-table object-shape gaps`
 - `7460ddd` `docs: define http api contracts`
 - `0abd3bf` `feat: add http api service adapter`
+- `ce56373` `docs: add audit capability matrix baseline`
+- `da0c768` `feat: add metadata-aware domain specs`
+- `7c6ee34` `feat: add metadata-aware audit providers`
+- `86eefe3` `feat: add metadata-backed ddl existence rules`
+- `54d418f` `feat: add source-aware alter compatibility rules`
+- `9812b92` `feat: close metadata and lifecycle audit gaps`
 
 ## Current Offline DDL Coverage
 
@@ -63,18 +70,22 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
   - `GET /healthz`
   - `GET /version`
   - `POST /v1/audit` returning the stable public JSON result contract
+- audit-completion coverage:
+  - capability-matrix-driven acceptance instead of subjective "close enough" checks
+  - optional metadata-aware denylist governance for DDL and DML
+  - metadata-backed table-option compatibility
+  - alter-added redundant-index lifecycle checks
+  - metadata-backed rough row-size and index-key-length guards
+  - release-surface docs in English and Chinese plus changelog/security pages
 
 ## What Still Looks Like The Next Milestone
 
-Milestone 5 is now complete. The highest-value remaining gaps are:
+Milestone 6 is now complete. The next milestone should be chosen from product expansion, not baseline audit completion:
 
-- richer `ALTER TABLE` semantics
-  - true source-to-target compatibility
-  - object-existence-aware checks
-  - broader add/drop/rename index lifecycle detail
-- the next adapter on top of the existing offline engine
-  - MCP server reuse
+- deeper online/runtime risk modeling
+- MCP server / agent adapter work
+- service hardening and operational polish
 
 ## Recommended Next Step
 
-The next workstream should decide whether to deepen alter semantics first or move directly into the MCP adapter. Either way, the HTTP and future MCP layers should keep sharing the same public audit/result contract.
+The next workstream should decide whether to move into agent adapters or deepen online/runtime audit. Either way, the CLI, HTTP, and future adapters should keep sharing the same public audit/result contract.

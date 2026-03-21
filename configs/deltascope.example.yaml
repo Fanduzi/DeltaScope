@@ -5,6 +5,18 @@ rules:
     params:
       requires_metadata: true
 
+  ddl.alter.add_index.columns.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 8
+
+  ddl.alter.add_index.duplicate.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
   ddl.alter.add_index.exists.forbid:
     enabled: true
     level: blocker
@@ -17,6 +29,20 @@ rules:
     params:
       prefix: full_
       required: true
+
+  ddl.alter.add_index.redundant_left_prefix.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+      requires_metadata: true
+
+  ddl.alter.add_index.redundant_unique_overlap.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+      requires_metadata: true
 
   ddl.alter.add_index.secondary.prefix.require:
     enabled: true
@@ -111,6 +137,18 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.merge.mysql.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+
+  ddl.alter.merge.tidb.require:
+    enabled: true
+    level: warning
+    params:
+      required: false
+
   ddl.alter.modify_column.compatibility.require:
     enabled: true
     level: blocker
@@ -183,6 +221,13 @@ rules:
     level: blocker
     params:
       forbid: true
+
+  ddl.alter.table_option.compatibility.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+      requires_metadata: true
 
   ddl.column.bit.forbid:
     enabled: true
@@ -301,6 +346,13 @@ rules:
       prefix: full_
       required: true
 
+  ddl.index.key_length.max_bytes.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+      requires_metadata: true
+
   ddl.index.name.keyword.forbid:
     enabled: true
     level: blocker
@@ -394,6 +446,14 @@ rules:
     params:
       forbid: true
 
+  ddl.table.denylist.forbid:
+    enabled: true
+    level: blocker
+    params:
+      qualified_tables: []
+      schemas: []
+      tables: []
+
   ddl.table.drop.adaptive_hash.warn:
     enabled: true
     level: warning
@@ -411,6 +471,13 @@ rules:
     level: blocker
     params:
       forbid: true
+
+  ddl.table.drop.rows.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 100
+      requires_metadata: true
 
   ddl.table.engine.allowlist:
     enabled: true
@@ -504,6 +571,13 @@ rules:
       require_explicit: false
       values: [DYNAMIC]
 
+  ddl.table.row_size.max_bytes.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+      requires_metadata: true
+
   ddl.table.truncate.adaptive_hash.warn:
     enabled: true
     level: warning
@@ -521,6 +595,13 @@ rules:
     level: blocker
     params:
       forbid: true
+
+  ddl.table.truncate.rows.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 100
+      requires_metadata: true
 
   ddl.view.create.forbid:
     enabled: true
@@ -575,6 +656,14 @@ rules:
     level: blocker
     params:
       forbid: true
+
+  dml.table.denylist.forbid:
+    enabled: true
+    level: blocker
+    params:
+      qualified_tables: []
+      schemas: []
+      tables: []
 
   dml.where.require:
     enabled: true

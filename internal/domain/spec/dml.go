@@ -18,6 +18,7 @@ const (
 // DML contains the structural metadata extracted from a DML statement.
 type DML struct {
 	Operation      DMLOperation `json:"operation"`
+	Tables         []Table      `json:"tables,omitempty"`
 	HasWhere       bool         `json:"has_where"`
 	HasLimit       bool         `json:"has_limit"`
 	HasOrderBy     bool         `json:"has_order_by"`

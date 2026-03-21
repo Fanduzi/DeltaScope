@@ -61,9 +61,9 @@ fulltext index prefix                               covered     ddl.index.fullte
 duplicate index forbid                              covered     ddl.index.duplicate.forbid
 redundant left-prefix index forbid                  covered     ddl.index.redundant_left_prefix.forbid
 redundant unique-overlap index forbid               covered     ddl.index.redundant_unique_overlap.forbid
-row-size / index-size checks with instance facts    gap         instance facts now load, but honest sizing rules are still missing
+row-size / index-size checks with instance facts    covered     ddl.table.row_size.max_bytes.require and ddl.index.key_length.max_bytes.require ship as metadata-backed rough guards
 create view governance                              covered     ddl.view.create.forbid
-ddl disabled-table lists                            gap         legacy baseline had DB/table blocklists; DeltaScope has no object-scope denylist yet
+ddl disabled-table lists                            covered     ddl.table.denylist.forbid now supports schemas, tables, and qualified_tables
 ```
 
 ## DDL: Alter Table
@@ -83,14 +83,14 @@ target type-family allowlist                        covered     conservative alt
 explicit nullability/default/autoinc change checks  covered     shipped for change/modify column
 alter-added index prefix checks                     covered     unique/secondary/fulltext add-index checks shipped
 alter-added duplicate index checks                  enhanced    create-table duplicate logic reused in alter path
-alter-added redundant index checks                  gap         no deeper redundant-index lifecycle checks for added indexes yet
+alter-added redundant index checks                  covered     alter-added lifecycle now reuses left-prefix and unique-overlap rules against snapshot + added indexes
 source-to-target type compatibility                 covered     metadata-backed compatibility guards now cover family changes, narrowing, signedness, nullability, and auto_increment removal
 column existence checks                             covered     metadata-backed column existence rules shipped for add/drop/modify/change/rename
 index existence checks                              covered     metadata-backed index existence rules shipped for add/drop/rename
 primary-key existence/state checks                  covered     metadata-backed drop-primary-key existence rule shipped
 rename/change/modify against current schema state   covered     current table snapshot now drives existence and compatibility checks
-merge alter governance                              gap         legacy baseline had MySQL/TiDB merge-alter switches
-table option compatibility vs current schema        gap         no metadata-backed alter option compatibility yet
+merge alter governance                              covered     global merge-alter rules ship for MySQL and TiDB, with MySQL enabled by default
+table option compatibility vs current schema        covered     ddl.alter.table_option.compatibility.require compares option changes against the current snapshot
 ```
 
 ## DDL: Drop / Truncate / Object Existence
@@ -100,7 +100,7 @@ Capability                                          Status      Notes
 -----------------------------------------------------------------------------------------------
 drop table governance                               covered     ddl.table.drop.forbid plus metadata-backed existence and adaptive-hash cautions
 truncate table governance                           covered     ddl.table.truncate.forbid plus metadata-backed existence and adaptive-hash cautions
-drop/truncate row-count risk                        gap         requires online metadata and row-count-aware checks
+drop/truncate row-count risk                        covered     metadata-backed row-count cautions compare table_rows against a configurable threshold
 drop/truncate adaptive-hash warning                 covered     metadata-backed cautions use innodb_adaptive_hash_index instance fact
 table exists / not exists checks                    covered     create/alter/drop/truncate object existence rules now consume metadata snapshots
 show-create based current schema recovery           enhanced    information_schema-backed snapshot model shipped instead of show-create text parsing
@@ -121,7 +121,7 @@ forbid insert into select                            covered     dml.insert.sele
 forbid on duplicate                                  covered     dml.insert.on_duplicate.forbid
 insert rows max count                                covered     dml.insert.rows.max_count
 affected-row threshold                               gap         needs explain/metadata/runtime estimation path
-dml disabled-table lists                             gap         legacy baseline had DB/table blocklists; DeltaScope has no object-scope denylist yet
+dml disabled-table lists                             covered     dml.table.denylist.forbid now evaluates extracted DML target tables against schemas/tables/qualified_tables
 ```
 
 ## Instance Facts And Metadata
@@ -149,21 +149,13 @@ Capability                                          Status      Notes
 stable Go package API                                covered     pkg/deltascope
 CLI for audit/config/version                         enhanced    now has --version and version-logo split
 HTTP API service                                     covered     health/version/audit endpoints shipped
-English README matured for release                   gap         planned in Task 7
-Chinese README                                       gap         planned in Task 7
-CHANGELOG                                            gap         planned in Task 7
-SECURITY                                             gap         planned in Task 7
+English README matured for release                   covered     root README now carries release-facing overview, shields, quick links, and usage
+Chinese README                                       covered     README_ZH.md mirrors the public product surface in Chinese
+CHANGELOG                                            covered     CHANGELOG.md ships release and unreleased sections
+SECURITY                                             covered     SECURITY.md defines reporting and supported-version guidance
 formal capability matrix                             covered     this document is the baseline artifact
 ```
 
 ## Task Targets
 
-The current blocking gaps for `Audit Completion` are:
-
-- row-size / index-size checks with instance facts
-- alter-added redundant-index lifecycle checks
-- merge alter governance
-- metadata-backed alter option compatibility vs current schema
-- drop/truncate row-count risk
-- disabled-table governance
-- public release-surface docs
+There are no remaining blocking gaps for `Audit Completion`.

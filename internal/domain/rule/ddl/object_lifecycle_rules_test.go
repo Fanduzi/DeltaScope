@@ -126,3 +126,31 @@ func TestLifecycleMetadataRules(t *testing.T) {
 		t.Fatalf("expected one adaptive-hash caution finding, got %d", len(findings))
 	}
 }
+
+func TestLifecycleRowCountRules(t *testing.T) {
+	dropRowsRule, err := newTableRowCountRiskRule(ruleIDTableDropRowsMaxCount, spec.DDLOperationDropTable, "drop table", rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{"limit": 100, "requires_metadata": true},
+	})
+	if err != nil {
+		t.Fatalf("new drop row-count rule: %v", err)
+	}
+
+	findings, err := dropRowsRule.Evaluate(spec.Statement{
+		Kind: spec.KindDDL,
+		DDL:  &spec.DDL{Operation: spec.DDLOperationDropTable, Table: &spec.Table{Name: "users"}},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists:  true,
+				Table:   &spec.Table{Name: "users"},
+				Options: map[string]string{"table_rows": "250"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate drop row-count rule: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected one drop row-count finding, got %d", len(findings))
+	}
+}

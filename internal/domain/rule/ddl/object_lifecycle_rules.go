@@ -7,6 +7,7 @@ package ddl
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -145,6 +146,70 @@ func (r adaptiveHashLifecycleRule) Evaluate(statement spec.Statement) ([]rule.Fi
 			"table":                        statement.DDL.Table.Name,
 			"operation":                    string(statement.DDL.Operation),
 			"innodb_adaptive_hash_enabled": true,
+		},
+	}}, nil
+}
+
+type tableRowCountRiskRule struct {
+	ruleID    string
+	operation spec.DDLOperation
+	label     string
+	limit     int
+	level     rule.Level
+}
+
+func newTableRowCountRiskRule(ruleID string, operation spec.DDLOperation, label string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	limit, err := boundedIntParam(ruleID, cfg, "limit", 100, 1)
+	if err != nil {
+		return nil, err
+	}
+	return tableRowCountRiskRule{
+		ruleID:    ruleID,
+		operation: operation,
+		label:     label,
+		limit:     limit,
+		level:     configuredLevel(cfg, fallbackLevel),
+	}, nil
+}
+
+func (r tableRowCountRiskRule) ID() string { return r.ruleID }
+
+func (r tableRowCountRiskRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Operation == r.operation &&
+		statement.DDL.Table != nil
+}
+
+func (r tableRowCountRiskRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || !snapshot.Exists {
+		return nil, nil
+	}
+	rowCountText := snapshot.Options["table_rows"]
+	if rowCountText == "" {
+		return nil, nil
+	}
+	rowCount, err := strconv.Atoi(rowCountText)
+	if err != nil {
+		return nil, fmt.Errorf("parse table_rows for %s: %w", statement.DDL.Table.Name, err)
+	}
+	if rowCount <= r.limit {
+		return nil, nil
+	}
+	return []rule.Finding{{
+		RuleID:     r.ruleID,
+		Level:      r.level,
+		Message:    fmt.Sprintf("%s on %q exceeds the configured table-row risk threshold", r.label, statement.DDL.Table.Name),
+		Suggestion: fmt.Sprintf("split cleanup work first or only proceed after manual review when row count is above %d", r.limit),
+		Metadata: map[string]any{
+			"table":      statement.DDL.Table.Name,
+			"operation":  string(statement.DDL.Operation),
+			"table_rows": rowCount,
+			"limit":      r.limit,
 		},
 	}}, nil
 }

@@ -9,6 +9,7 @@ import "strings"
 
 // Metadata carries optional non-SQL facts for one statement evaluation.
 type Metadata struct {
+	Schema      string         `json:"schema,omitempty"`
 	Instance    *InstanceFacts `json:"instance,omitempty"`
 	TargetTable *TableSnapshot `json:"target_table,omitempty"`
 }

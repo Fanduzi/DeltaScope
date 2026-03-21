@@ -7,6 +7,7 @@ package dml
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -62,4 +63,62 @@ func intParam(ruleID string, cfg policy.RulePolicy, key string, fallback int) (i
 	default:
 		return 0, fmt.Errorf("rule %s param %q must be integer, got %T", ruleID, key, value)
 	}
+}
+
+func stringSliceParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) ([]string, error) {
+	value, ok := cfg.Params[key]
+	if !ok {
+		return append([]string(nil), fallback...), nil
+	}
+
+	switch typed := value.(type) {
+	case []string:
+		return append([]string(nil), typed...), nil
+	case []any:
+		out := make([]string, 0, len(typed))
+		for _, item := range typed {
+			text, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("rule %s param %q must contain only strings, got %T", ruleID, key, item)
+			}
+			out = append(out, text)
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("rule %s param %q must be a string list, got %T", ruleID, key, value)
+	}
+}
+
+func normalizedStringSliceParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) ([]string, error) {
+	items, err := stringSliceParam(ruleID, cfg, key, fallback)
+	if err != nil {
+		return nil, err
+	}
+
+	normalized := make([]string, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		value := strings.ToLower(strings.TrimSpace(item))
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		normalized = append(normalized, value)
+	}
+	return normalized, nil
+}
+
+func normalizedStringSetParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) (map[string]struct{}, error) {
+	items, err := normalizedStringSliceParam(ruleID, cfg, key, fallback)
+	if err != nil {
+		return nil, err
+	}
+	set := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		set[item] = struct{}{}
+	}
+	return set, nil
 }

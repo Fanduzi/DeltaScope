@@ -216,8 +216,13 @@ func extractAlterSpec(specification *ast.AlterTableSpec) spec.Alter {
 
 func extractInsert(stmt *ast.InsertStmt) *spec.DML {
 	join := tableRefsJoin(stmt.Table)
+	tables := extractMutationTables(join)
+	if len(tables) == 0 && stmt.Table != nil && stmt.Table.TableRefs != nil {
+		tables = extractMutationTables(stmt.Table.TableRefs)
+	}
 	return &spec.DML{
 		Operation:      spec.DMLOperationInsert,
+		Tables:         tables,
 		InsertRows:     len(stmt.Lists),
 		IsReplace:      stmt.IsReplace,
 		IsInsertSelect: stmt.Select != nil,
@@ -232,6 +237,7 @@ func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
 	return &spec.DML{
 		Operation:   spec.DMLOperationUpdate,
+		Tables:      extractMutationTables(join),
 		HasWhere:    stmt.Where != nil,
 		HasLimit:    stmt.Limit != nil,
 		HasOrderBy:  stmt.Order != nil,
@@ -245,6 +251,7 @@ func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
 	return &spec.DML{
 		Operation:   spec.DMLOperationDelete,
+		Tables:      extractMutationTables(join),
 		HasWhere:    stmt.Where != nil,
 		HasLimit:    stmt.Limit != nil,
 		HasOrderBy:  stmt.Order != nil,
@@ -575,6 +582,45 @@ func tableRefsJoin(tableRefs *ast.TableRefsClause) *ast.Join {
 		return nil
 	}
 	return tableRefs.TableRefs
+}
+
+func extractMutationTables(join *ast.Join) []spec.Table {
+	if join == nil {
+		return nil
+	}
+	names := make([]string, 0, 2)
+	collectMutationTableNames(join, &names)
+	tables := make([]spec.Table, 0, len(names))
+	for _, name := range names {
+		tables = append(tables, spec.Table{Name: name})
+	}
+	return tables
+}
+
+func collectMutationTableNames(node ast.ResultSetNode, names *[]string) {
+	switch typed := node.(type) {
+	case nil:
+		return
+	case *ast.Join:
+		collectMutationTableNames(typed.Left, names)
+		collectMutationTableNames(typed.Right, names)
+	case *ast.TableSource:
+		collectMutationTableNames(typed.Source, names)
+	case *ast.TableName:
+		if typed.Name.L == "" || containsStringFold(*names, typed.Name.L) {
+			return
+		}
+		*names = append(*names, typed.Name.L)
+	}
+}
+
+func containsStringFold(items []string, target string) bool {
+	for _, item := range items {
+		if strings.EqualFold(item, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func joinHasOn(join *ast.Join) bool {

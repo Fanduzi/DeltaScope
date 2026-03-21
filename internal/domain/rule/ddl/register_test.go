@@ -273,6 +273,46 @@ func TestRegisterAddsEnabledTableOptionRulesInDeterministicOrder(t *testing.T) {
 	}
 }
 
+func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+	cfg.Rules["ddl.table.denylist.forbid"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params: map[string]any{
+			"tables":           []string{"users"},
+			"qualified_tables": []string{"app.audit_log"},
+			"schemas":          []string{"mysql"},
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "users"},
+		},
+		Metadata: &spec.Metadata{Schema: "app"},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	found := false
+	for _, finding := range findings {
+		if finding.RuleID == "ddl.table.denylist.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected disabled-table finding, got %+v", findings)
+	}
+}
+
 func TestRegisterAddsEnabledPrimaryKeySemanticRulesInDeterministicOrder(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()

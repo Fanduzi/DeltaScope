@@ -25,8 +25,20 @@ type MetadataRequest struct {
 }
 
 func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement) ([]spec.Statement, error) {
-	if request == nil || request.Provider == nil {
+	if request == nil {
 		return statements, nil
+	}
+
+	if request.Provider == nil {
+		if strings.TrimSpace(request.Schema) == "" {
+			return statements, nil
+		}
+		enriched := make([]spec.Statement, len(statements))
+		for i, statement := range statements {
+			enriched[i] = statement
+			enriched[i].Metadata = &spec.Metadata{Schema: request.Schema}
+		}
+		return enriched, nil
 	}
 
 	instanceFacts, err := request.Provider.LoadInstanceFacts(ctx, dialect, request.Schema)
@@ -39,7 +51,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 
 	for i, statement := range statements {
 		enriched[i] = statement
-		metadata := &spec.Metadata{Instance: instanceFacts}
+		metadata := &spec.Metadata{Schema: request.Schema, Instance: instanceFacts}
 
 		tableName := targetTableName(statement)
 		if tableName != "" {
@@ -55,7 +67,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 			metadata.TargetTable = snapshot
 		}
 
-		if metadata.Instance != nil || metadata.TargetTable != nil {
+		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil {
 			enriched[i].Metadata = metadata
 		}
 	}
@@ -66,6 +78,9 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 func targetTableName(statement spec.Statement) string {
 	if statement.DDL != nil && statement.DDL.Table != nil {
 		return strings.TrimSpace(statement.DDL.Table.Name)
+	}
+	if statement.DML != nil && len(statement.DML.Tables) > 0 {
+		return strings.TrimSpace(statement.DML.Tables[0].Name)
 	}
 	return ""
 }

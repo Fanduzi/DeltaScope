@@ -131,6 +131,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterAddIndexDuplicateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedDuplicateIndexForbiddenRule(rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDAlterAddIndexRedundantLeftPrefixForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedRedundantLeftPrefixRule(rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexRedundantUniqueOverlapForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedRedundantUniqueOverlapRule(rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexUniquePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexPrefixRule(ruleIDAlterAddIndexUniquePrefixRequire, spec.IndexKindUnique, "uniq_", rule.LevelWarning, cfg)
 		}},
@@ -158,6 +164,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterChangeColumnCompatibilityRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterColumnCompatibilityRule(ruleIDAlterChangeColumnCompatibilityRequire, "change_column", "change column", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDAlterTableOptionCompatibilityRequire, construct: newAlterTableOptionCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
@@ -180,12 +187,14 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableEngineAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDTableRowSizeMaxBytesRequire, construct: newTableRowSizeRule},
 		{ruleID: ruleIDTableCharsetAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, cfg)
 		}},
 		{ruleID: ruleIDTableRowFormatAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOptionAllowlistRule(ruleIDTableRowFormatAllowlist, "row_format", "row format", []string{"DYNAMIC"}, rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDIndexKeyLengthMaxBytesRequire, construct: newIndexKeyLengthRule},
 		{ruleID: ruleIDTableAutoIncrementInitValueRequire, construct: newTableAutoIncrementInitValueRule},
 		{ruleID: ruleIDTableForeignKeyForbid, construct: newTableForeignKeyForbidRule},
 		{ruleID: ruleIDTablePartitionForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -209,6 +218,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableDropAdaptiveHashWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAdaptiveHashLifecycleRule(ruleIDTableDropAdaptiveHashWarn, spec.DDLOperationDropTable, "drop table", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDTableDropRowsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableRowCountRiskRule(ruleIDTableDropRowsMaxCount, spec.DDLOperationDropTable, "drop table", rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDTableTruncateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenDDLOperationRule(ruleIDTableTruncateForbid, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, cfg)
 		}},
@@ -217,6 +229,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		}},
 		{ruleID: ruleIDTableTruncateAdaptiveHashWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAdaptiveHashLifecycleRule(ruleIDTableTruncateAdaptiveHashWarn, spec.DDLOperationTruncateTable, "truncate table", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDTableTruncateRowsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableRowCountRiskRule(ruleIDTableTruncateRowsMaxCount, spec.DDLOperationTruncateTable, "truncate table", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDTableDenylistForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableDenylistRule(ruleIDTableDenylistForbid, rule.LevelBlocker, cfg)
 		}},
 		{ruleID: ruleIDTableExistsCreateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, cfg)
@@ -262,6 +280,30 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return err
 		}
 		if err := registry.RegisterStatement(statementRule); err != nil {
+			return err
+		}
+	}
+
+	for _, factory := range []struct {
+		ruleID    string
+		construct func(policy.RulePolicy) (rule.GlobalRule, error)
+	}{
+		{ruleID: ruleIDAlterMergeMySQLRequire, construct: func(cfg policy.RulePolicy) (rule.GlobalRule, error) {
+			return newMergeAlterRule(ruleIDAlterMergeMySQLRequire, spec.DialectMySQL, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterMergeTiDBRequire, construct: func(cfg policy.RulePolicy) (rule.GlobalRule, error) {
+			return newMergeAlterRule(ruleIDAlterMergeTiDBRequire, spec.DialectTiDB, rule.LevelWarning, cfg)
+		}},
+	} {
+		ruleCfg, ok := cfg.Rules[factory.ruleID]
+		if !ok || !ruleCfg.Enabled {
+			continue
+		}
+		globalRule, err := factory.construct(ruleCfg)
+		if err != nil {
+			return err
+		}
+		if err := registry.RegisterGlobal(globalRule); err != nil {
 			return err
 		}
 	}

@@ -302,6 +302,38 @@ func newAlterAddedDuplicateIndexForbiddenRule(fallbackLevel rule.Level, cfg poli
 	}, nil
 }
 
+func newAlterAddedRedundantLeftPrefixRule(fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newRedundantLeftPrefixIndexRule(policy.RulePolicy{
+		Enabled: cfg.Enabled,
+		Level:   configuredLevel(cfg, fallbackLevel),
+		Params:  cfg.Params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return alterAddedIndexRule{
+		ruleID:  ruleIDAlterAddIndexRedundantLeftPrefixForbid,
+		inner:   inner,
+		indexes: alterLifecycleIndexes,
+	}, nil
+}
+
+func newAlterAddedRedundantUniqueOverlapRule(fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newRedundantUniqueOverlapIndexRule(policy.RulePolicy{
+		Enabled: cfg.Enabled,
+		Level:   configuredLevel(cfg, fallbackLevel),
+		Params:  cfg.Params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return alterAddedIndexRule{
+		ruleID:  ruleIDAlterAddIndexRedundantUniqueOverlapForbid,
+		inner:   inner,
+		indexes: alterLifecycleIndexes,
+	}, nil
+}
+
 func (r alterAddedIndexRule) ID() string { return r.ruleID }
 
 func (r alterAddedIndexRule) AppliesTo(statement spec.Statement) bool {
@@ -347,6 +379,15 @@ func allAlterAddedIndexes(statement spec.Statement) []spec.Index {
 		}
 		indexes = append(indexes, *index)
 	}
+	return indexes
+}
+
+func alterLifecycleIndexes(statement spec.Statement) []spec.Index {
+	indexes := make([]spec.Index, 0)
+	if snapshot, ok := targetTableSnapshot(statement); ok && snapshot.Exists {
+		indexes = append(indexes, snapshot.Indexes...)
+	}
+	indexes = append(indexes, allAlterAddedIndexes(statement)...)
 	return indexes
 }
 

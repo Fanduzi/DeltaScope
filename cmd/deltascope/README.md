@@ -12,6 +12,12 @@ Process entrypoint for the `deltascope` CLI.
 
 - No exported Go API; this directory builds the executable entrypoint.
 
+## Notes
+
+- `deltascope --version` prints only the semantic version for scripts.
+- `deltascope version` prints the ASCII logo plus the semantic version for humans.
+- The command surface currently includes `audit`, `config init`, and `version`.
+
 ## Dependencies
 - Upstream: shell users, future package build tooling
 - Downstream: `internal/interfaces/cli`

@@ -17,6 +17,7 @@ const (
 	ruleIDReplaceForbid      = "dml.replace.forbid"
 	ruleIDInsertSelectForbid = "dml.insert.select.forbid"
 	ruleIDOnDuplicateForbid  = "dml.insert.on_duplicate.forbid"
+	ruleIDTableDenylistForbid = "dml.table.denylist.forbid"
 )
 
 func appliesToMutation(statement spec.Statement) bool {

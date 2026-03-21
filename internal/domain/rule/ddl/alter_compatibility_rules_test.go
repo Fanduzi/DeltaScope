@@ -125,3 +125,41 @@ func TestAlterColumnCompatibilityRuleSkipsOfflineMode(t *testing.T) {
 		t.Fatalf("expected no findings without metadata, got %d", len(findings))
 	}
 }
+
+func TestAlterTableOptionCompatibilityRuleFlagsMetadataBackedChanges(t *testing.T) {
+	ruleUnderTest, err := newAlterTableOptionCompatibilityRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"required": true, "requires_metadata": true},
+	})
+	if err != nil {
+		t.Fatalf("new option compatibility rule: %v", err)
+	}
+
+	statement := alterStatement(spec.Alter{
+		Action:  "table_option",
+		Options: map[string]string{"engine": "MyISAM", "charset": "utf8", "row_format": "COMPACT", "auto_increment": "42"},
+	})
+	statement.Metadata = &spec.Metadata{
+		Schema: "app",
+		TargetTable: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Options: map[string]string{
+				"engine":         "InnoDB",
+				"charset":        "utf8mb4",
+				"collation":      "utf8mb4_general_ci",
+				"row_format":     "DYNAMIC",
+				"auto_increment": "100",
+			},
+		},
+	}
+
+	findings, err := ruleUnderTest.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate option compatibility rule: %v", err)
+	}
+	if len(findings) != 4 {
+		t.Fatalf("expected 4 option-compatibility findings, got %d", len(findings))
+	}
+}

@@ -8,6 +8,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 |------|---------------|
 | common.go | Shared DML rule IDs and operation predicates |
 | config.go | Parses policy params for DML rule constructors |
+| denylist_rules.go | Implements DML table denylist checks against protected schemas or tables |
 | mutation_rules.go | Implements WHERE, LIMIT, ORDER BY, subquery, and JOIN ... ON rules |
 | insert_rules.go | Implements insert row-count, replace, insert-select, and on-duplicate rules |
 | register.go | Registers enabled DML rules into the shared registry |
@@ -34,6 +35,14 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 - `dml.replace.forbid`
 - `dml.insert.select.forbid`
 - `dml.insert.on_duplicate.forbid`
+- `dml.table.denylist.forbid`
+
+## Object-Scope Denylist Surface
+
+- `dml.table.denylist.forbid`
+- matches by `schemas`, `tables`, or `qualified_tables`
+- evaluates every extracted DML target table from the parser-neutral spec
+- stays inert by default because the shipped policy keeps those lists empty
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

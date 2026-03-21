@@ -16,6 +16,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		ruleID    string
 		construct func(policy.RulePolicy) (rule.StatementRule, error)
 	}{
+		{ruleID: ruleIDTableDenylistForbid, construct: newTableDenylistRule},
 		{ruleID: ruleIDWhereRequire, construct: newWhereRequiredRule},
 		{ruleID: ruleIDLimitForbid, construct: newLimitForbiddenRule},
 		{ruleID: ruleIDOrderByForbid, construct: newOrderByForbiddenRule},
