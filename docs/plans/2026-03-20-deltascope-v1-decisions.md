@@ -258,6 +258,40 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
 
 ## Decision 33: exact duplicate-index detection is a safe first step, not full redundancy analysis
 
+- Problem: broader redundant-index analysis is valuable, but the current offline model can only judge exact duplicate signatures safely without inventing optimizer or live-schema semantics.
+- Decision:
+  - ship exact duplicate-index detection first for create-table rules
+  - reuse that same exact-signature logic for alter-added indexes
+  - keep broader left-prefix/redundancy analysis as a later milestone
+- Why: exact duplicates are high-signal and honest with current parser-neutral facts; broader redundancy needs richer semantics and more careful false-positive control.
+
+## Decision 34: source-aware alter facts must stay explicit, not inferred
+
+- Problem: `MODIFY COLUMN` and `CHANGE COLUMN` include a full target definition, but that does not prove which semantics were explicitly changed by the statement.
+- Decision:
+  - keep `AlterColumn.Change` limited to statement-local explicit touches for nullability, default, and auto-increment
+  - do not label target type or unsigned shape as explicit change facts
+  - let downstream rules inspect target `Definition` separately when they need target-side policy checks
+- Why: this keeps the source-aware alter model honest and prevents downstream policy from overclaiming source-to-target truth that offline extraction does not have.
+
+## Decision 35: target-side alter rules stay target-side
+
+- Problem: early alter rule naming drifted toward "compatibility" language even when the implementation only judged the target type family.
+- Decision:
+  - keep target-type-family rules explicitly named as allowlists
+  - use explicit-change forbid rules only for semantics the statement clearly spells out
+  - postpone true source-to-target compatibility rules until the model can support them honestly
+- Why: stable rule IDs are part of the product surface; they should describe real behavior, not hoped-for future semantics.
+
+## Decision 36: alter-added index lifecycle checks should wrap create-table index rules
+
+- Problem: Milestone 3 needed more alter-index governance, but copying create-table index rule bodies into alter-specific rules would create drift immediately.
+- Decision:
+  - project alter-added index payloads into temporary parser-neutral index lists
+  - reuse existing create-table prefix, width, and exact-duplicate index rule bodies through wrappers
+  - only register the alter-added width/duplicate rules when their policies are explicitly enabled
+- Why: this keeps alter-index governance consistent with create-table behavior, avoids duplicate rule logic, and stays honest about what is or is not in the default shipped policy.
+
 - Problem: `gAudit` has broader redundant-index concerns, but complete redundancy analysis needs expression, prefix-length, and left-prefix semantics that DeltaScope does not extract yet.
 - Decision:
   - implement only exact duplicate detection for now
@@ -265,7 +299,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - defer broader redundant-index analysis to a later batch
 - Why: exact duplicates are high-signal and safe to detect offline, while broader redundancy logic would be easy to overclaim with the current model.
 
-## Decision 34: alter restrictions land before richer alter modeling
+## Decision 37: alter restrictions land before richer alter modeling
 
 - Problem: `gAudit` covers several alter-related governance switches, but DeltaScope's current alter model only exposes normalized actions plus a single related name.
 - Decision:
@@ -274,7 +308,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - defer richer type/existence analysis until the alter model grows beyond `Action + Name`
 - Why: this captures meaningful offline governance immediately without pretending the current model can safely answer deeper alter questions.
 
-## Decision 35: modify-column stays allowed by default, but rename/change do not
+## Decision 38: modify-column stays allowed by default, but rename/change do not
 
 - Problem: blocking every alter action by default would make DeltaScope too noisy for common iterative schema work, but leaving rename-style operations open would miss several high-risk patterns that `gAudit` already guards.
 - Decision:
@@ -282,7 +316,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - default-allow `drop_column`, `drop_index`, and `modify_column` while still making them policy-addressable
 - Why: this keeps the default policy strict on risky structural rewrites without turning all alter workflows into immediate blockers.
 
-## Decision 36: create-table option rules justify a few shape booleans in `spec.DDL`
+## Decision 39: create-table option rules justify a few shape booleans in `spec.DDL`
 
 - Problem: several `gAudit` table-level rules depend on whether a create-table statement uses `LIKE`, `AS SELECT`, or partitioning, but the domain model originally had no way to express those shapes.
 - Decision:
@@ -290,7 +324,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep them specific to create-table shape rather than introducing a larger object-kind hierarchy
 - Why: these booleans unlock several high-value offline rules with minimal model growth and keep parser details out of the rule layer.
 
-## Decision 37: table engine/charset rules stay allowlist-based in v1
+## Decision 40: table engine/charset rules stay allowlist-based in v1
 
 - Problem: `gAudit` carries richer charset recommendation semantics, but DeltaScope's current offline model only preserves the explicit option values, not recommendation metadata.
 - Decision:
@@ -299,7 +333,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - defer recommendation-style guidance to a later batch if needed
 - Why: allowlists are simple, explicit, and safe for offline enforcement. They cover the most important governance behavior now without inventing premature policy complexity.
 
-## Decision 38: primary-key semantic rules target the single-column convention first
+## Decision 41: primary-key semantic rules target the single-column convention first
 
 - Problem: teams often expect more than "has a primary key"; they expect a single bigint unsigned auto-increment primary key. But composite keys complicate those semantics.
 - Decision:
@@ -308,7 +342,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep `not_null` checking valid for every primary-key column
 - Why: this captures the dominant convention cleanly without inventing misleading semantics for composite keys.
 
-## Decision 39: richer alter modeling keeps one canonical subject name per alter record
+## Decision 42: richer alter modeling keeps one canonical subject name per alter record
 
 - Problem: early rich-alter drafts let `Alter.Name` compete with rename/change payload fields, which would force downstream rules to guess which name is authoritative.
 - Decision:
@@ -317,7 +351,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - carry target column/index shape in `Definition` instead of duplicating create-table field sets
 - Why: this keeps the domain contract lean, parser-neutral, and predictable for later rule matching.
 
-## Decision 40: multi-column alter specs normalize into one alter record per semantic target
+## Decision 43: multi-column alter specs normalize into one alter record per semantic target
 
 - Problem: TiDB AST can encode one `ALTER TABLE ... ADD (...)` spec that adds multiple columns, but the rule layer expects one `spec.Alter` per semantic action target.
 - Decision:
@@ -326,7 +360,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep non-index `ADD CONSTRAINT` payloads out of `AlterIndex`
 - Why: this avoids silent data loss, keeps the rule surface uniform, and prevents application-layer AST quirks from leaking into the domain contract.
 
-## Decision 41: alter target-type rules must describe allowlists, not compatibility
+## Decision 44: alter target-type rules must describe allowlists, not compatibility
 
 - Problem: the first semantic alter rule names used `compatible.require`, but the implementation only checked whether the extracted target column type fell into a conservative allowed family set.
 - Decision:
@@ -335,7 +369,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - document that `ddl.alter.change_column.forbid` remains the stricter default gate unless a team intentionally relaxes it
 - Why: honest rule IDs and docs matter more than aspirational naming. The current model does not prove source-to-target compatibility, so the exported surface must not imply that it does.
 
-## Decision 42: alter-added index rules should reuse create-table index governance by projection
+## Decision 45: alter-added index rules should reuse create-table index governance by projection
 
 - Problem: Milestone 2 needs offline governance for indexes introduced by `ALTER TABLE ... ADD CONSTRAINT`, but copying create-table prefix rule bodies into alter-specific rules would create drift.
 - Decision:
@@ -344,7 +378,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep Task 5 scoped to alter-added unique/secondary/fulltext prefix checks only
 - Why: projection keeps logic reuse clean, avoids AST leakage, and narrows the new alter surface to behavior the current domain model can support honestly.
 
-## Decision 43: source-aware alter facts must only encode what the statement explicitly proves
+## Decision 46: source-aware alter facts must only encode what the statement explicitly proves
 
 - Problem: early Milestone 3 drafts tried to mark `TouchesType` and `TouchesUnsigned` on every `MODIFY COLUMN` / `CHANGE COLUMN`, but those syntaxes always carry a full target definition even when the actual intended change may only be nullability or default-related.
 - Decision:
@@ -353,7 +387,7 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - preserve target type and unsigned shape on `AlterColumn.Definition`, but do not label them as explicit touched facts
 - Why: downstream rules must be able to trust the semantics of every flag. When the model cannot honestly prove a change relation, it should expose target shape only and leave the comparison decision to a later, more explicit layer.
 
-## Decision 44: rename intent is inferred from names, not a second change flag
+## Decision 47: rename intent is inferred from names, not a second change flag
 
 - Problem: an early Milestone 3 Task 1 draft added a `Renames` flag under `AlterColumnChange`, even though rename intent was already derivable from `OldName` plus `Definition.Name`.
 - Decision:

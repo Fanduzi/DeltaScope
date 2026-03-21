@@ -17,6 +17,11 @@
   - semantic alter rules for rename-index forbids
   - conservative target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
   - alter-added unique/secondary/fulltext index prefix checks
+- completed the `Source-Aware Alter Checks` milestone with:
+  - statement-local alter change facts for explicit nullability/default/auto-increment touches
+  - source-aware extraction that keeps target shape and explicit change facts separate
+  - explicit alter-column change forbid rules for `MODIFY COLUMN` and `CHANGE COLUMN`
+  - alter-added index lifecycle wrappers for width and exact-duplicate checks
 - added Markdown and JSON renderers
 - built the Cobra CLI with:
   - `audit`
@@ -31,17 +36,12 @@
 
 ## In Progress
 
-- started `Milestone 3: Source-Aware Alter Checks`
-- completed and reviewed:
-  - Task 1: richer parser-neutral alter change-fact model
-  - Task 2: application extraction of explicit statement-local change facts
-- completed implementation for:
-  - Task 3: source-aware alter rule IDs and helper substrate
-  - Task 4: explicit alter-column change rules plus policy/config wiring
-- current emphasis:
-  - keep change facts honest and statement-local
-  - do not label target type/unsigned shape as “explicitly touched” unless the statement truly proves it
-  - keep `target_type_family.allowlist` target-side only and avoid faking source-schema compatibility
+- `Milestone 3: Source-Aware Alter Checks` is complete
+- next active work should start `Milestone 4`
+- the current emphasis shifts from alter-fact plumbing to the next offline DDL gaps:
+  - true source-to-target compatibility judgment
+  - broader create-table superset work
+  - identifier/keyword validation and deeper redundancy analysis
 
 ## Key Commits
 
@@ -61,6 +61,7 @@
 - `6403f26` `refactor: narrow explicit alter change facts`
 - `5f9b47c` `refactor: prepare source-aware alter rules`
 - `2900bfe` `feat: add explicit alter column rules`
+- `cf2705d` `feat: extend alter index lifecycle checks`
 
 ## Verification Run
 
@@ -80,11 +81,12 @@
 - Milestone 3 immediately exposed another honesty boundary: `MODIFY/CHANGE COLUMN` syntax includes a full target definition, but that does not prove the statement explicitly touched type or unsigned semantics
 - I corrected that by narrowing `AlterColumn.Change` to explicit nullability/default/auto-increment touches only; target shape remains on `Definition`
 - Milestone 3 Task 4 intentionally skipped an unsigned-transition rule because the current offline model still cannot describe that transition honestly
+- Milestone 3 Task 5 extended alter-added index lifecycle checks only through projected create-table rule reuse; it still does not claim live existence or full rename/drop lifecycle semantics
 
 ## Remaining Gaps
 
 - current DDL coverage is still not a `gAudit` superset; the biggest remaining offline gaps are:
-  - deeper alter semantics such as source-to-target compatibility, object existence, and broader alter-index lifecycle rules
+  - deeper alter semantics such as true source-to-target compatibility and object-existence-aware checks
   - broader redundant-index analysis beyond exact duplicates
   - identifier and keyword validation
   - richer object/type-specific rules such as charset/collation guidance and wider type-family governance
@@ -93,9 +95,9 @@
 
 ## Next Active Work
 
-- Milestone 2 is closed: its goal was richer parser-neutral alter modeling plus the first semantic alter rule batch, and the remaining gaps below are explicitly deferred to the next DDL milestone.
-- Milestone 3 is now active: deepen alter semantics again now that the richer parser-neutral alter model exists
-- likely next work:
-  - source-to-target type compatibility policy
-  - broader alter-added/drop/rename index lifecycle rules
-  - identifier validation and deeper redundant-index analysis
+- Milestone 3 is closed: its goal was honest source-aware alter facts plus the first explicit source-aware alter rule batch.
+- Milestone 4 should now become active.
+- likely next work in Milestone 4:
+  - true source-to-target type compatibility policy
+  - broader create-table superset work and identifier validation
+  - deeper redundant-index analysis beyond exact duplicates

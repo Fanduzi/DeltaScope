@@ -20,16 +20,18 @@ Current DDL coverage includes:
 - richer offline `ALTER TABLE` semantics:
   - action-level restrictions for drop/rename/change operations
   - rename-index forbids
+  - explicit statement-local nullability/default/auto-increment change forbids for `MODIFY COLUMN` and `CHANGE COLUMN`
   - conservative target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
   - alter-added unique/secondary/fulltext index prefix checks
+  - alter-added index width and exact-duplicate checks when those policies are enabled
 - create-table option and object-shape rules for comment length, engine/charset allowlists, foreign keys, partitioning, `LIKE`, and `AS SELECT`
 
 Important remaining offline DDL gaps include:
 
-- deeper `ALTER TABLE` semantics such as source-to-target compatibility and object-existence-aware checks
+- true source-to-target `ALTER TABLE` compatibility judgment and object-existence-aware checks
 - broader redundant-index analysis beyond exact duplicates
 - identifier and keyword validation
-- more object/type-specific governance such as richer charset/collation guidance and wider type-family policy
+- more create-table superset work such as richer charset/collation guidance, wider type-family policy, and broader identifier governance
 
 ## Install And Run
 

@@ -9,6 +9,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 3. action-level alter restrictions
 4. stronger primary-key semantics
 5. richer alter semantics
+6. source-aware alter checks
 
 ## New Checkpoints
 
@@ -25,6 +26,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `6403f26` `refactor: narrow explicit alter change facts`
 - `5f9b47c` `refactor: prepare source-aware alter rules`
 - `2900bfe` `feat: add explicit alter column rules`
+- `cf2705d` `feat: extend alter index lifecycle checks`
 
 ## Current Offline DDL Coverage
 
@@ -40,16 +42,18 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - richer offline `ALTER TABLE` coverage:
   - action-level restrictions for drop/rename/change operations
   - rename-index forbids
+  - explicit nullability/default/auto-increment change forbids for `MODIFY COLUMN` and `CHANGE COLUMN`
   - target-type-family allowlists for `MODIFY COLUMN` and `CHANGE COLUMN`
   - alter-added unique/secondary/fulltext index prefix checks
+  - alter-added index width and exact-duplicate checks when explicitly enabled
 
 ## What Still Looks Like The Next Milestone
 
-The highest-value remaining gaps are:
+Milestone 3 is now complete. The highest-value remaining gaps are:
 
 - richer `ALTER TABLE` semantics
-  - source-to-target compatibility
-  - existence checks
+  - true source-to-target compatibility
+  - object-existence-aware checks
   - broader add/drop/rename index lifecycle detail
 - identifier and keyword validation
 - deeper redundant-index analysis beyond exact duplicates
@@ -59,4 +63,4 @@ The highest-value remaining gaps are:
 
 ## Recommended Next Step
 
-Milestone 2 is complete and Milestone 3 is now underway. The immediate next work is to review and extend the new explicit alter-column rule batch, then finish alter-index lifecycle checks before moving on to identifier validation and broader redundant-index analysis.
+Milestone 4 should now become the active workstream. The immediate next work is to add true source-to-target compatibility judgment where the offline model can support it, then continue toward the broader create-table superset gaps: identifier validation, deeper redundant-index analysis, and richer object/type governance.
