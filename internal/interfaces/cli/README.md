@@ -9,9 +9,11 @@ CLI adapter layer for the DeltaScope application.
 | cli.go | Bridges process execution into the testable CLI executor |
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
 | audit.go | Implements the `audit` subcommand, SQL input loading, MySQL-style connection flag parsing, password prompting, quiet/normal rendering, and fail-threshold logic |
+| audit_metadata.go | Opens metadata-aware clients, auto-detects dialects, infers schemas, and attaches provider wiring for online audit runs |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
 | version.go | Implements the `version` subcommand with ASCII logo plus build-version output |
 | cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, and basic command output |
+| audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, and create-table partial behavior |
 
 ## Exports
 
@@ -20,7 +22,7 @@ CLI adapter layer for the DeltaScope application.
 
 ## Dependencies
 - Upstream: `cmd/deltascope`
-- Downstream: `bufio`, `internal/application/audit`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `github.com/spf13/cobra`, `golang.org/x/term`
+- Downstream: `bufio`, `database/sql`, `internal/application/audit`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `github.com/spf13/cobra`, `golang.org/x/term`
 
 ## Notes
 - `deltascope --version` prints only the semantic version for scripts.

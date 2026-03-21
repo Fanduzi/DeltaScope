@@ -43,21 +43,39 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 		Use:   "audit",
 		Short: "Audit SQL from flags, files, or stdin",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if _, err := resolveConnectionOptions(cmd, options); err != nil {
-				*exitCode = exitUser
-				return err
-			}
-
 			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath)
 			if err != nil {
 				*exitCode = exitUser
 				return err
 			}
 
+			connection, err := resolveConnectionOptions(cmd, options)
+			if err != nil {
+				*exitCode = exitUser
+				return err
+			}
+
+			dialect := parseDialect(options.Dialect)
+			var metadataProvider appaudit.MetadataProvider
+			var schema string
+			if connection.Enabled() {
+				client, resolvedDialect, resolvedSchema, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
+				if err != nil {
+					*exitCode = exitUser
+					return err
+				}
+				defer client.Close()
+				dialect = resolvedDialect
+				schema = resolvedSchema
+				metadataProvider = client
+			}
+
 			result, err := appaudit.AuditSQL(cmd.Context(), appaudit.Request{
-				SQL:        sql,
-				Dialect:    parseDialect(options.Dialect),
-				ConfigPath: options.ConfigPath,
+				SQL:              sql,
+				Dialect:          dialect,
+				ConfigPath:       options.ConfigPath,
+				Schema:           schema,
+				MetadataProvider: metadataProvider,
 			})
 			if err != nil {
 				return mapAuditError(exitCode, err)
@@ -101,6 +119,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 type auditConnectionOptions struct {
 	Host     string
 	Port     int
+	PortSet  bool
 	User     string
 	Password string
 	Schema   string
@@ -113,6 +132,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 	resolved := auditConnectionOptions{
 		Host:     strings.TrimSpace(options.Host),
 		Port:     options.Port,
+		PortSet:  cmd.Flags().Changed("port"),
 		User:     strings.TrimSpace(options.User),
 		Password: options.Password,
 		Schema:   strings.TrimSpace(options.Schema),
@@ -122,7 +142,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 	if options.AskPassword && strings.TrimSpace(options.Password) != "" {
 		return auditConnectionOptions{}, newUserError("--password and --ask-password are mutually exclusive")
 	}
-	if resolved.Socket != "" && (resolved.Host != "" || cmd.Flags().Changed("port")) {
+	if resolved.Socket != "" && (resolved.Host != "" || resolved.PortSet) {
 		return auditConnectionOptions{}, newUserError("--socket cannot be combined with host/port TCP options")
 	}
 	if options.AskPassword {
@@ -134,6 +154,10 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 	}
 
 	return resolved, nil
+}
+
+func (o auditConnectionOptions) Enabled() bool {
+	return o.Host != "" || o.PortSet || o.User != "" || o.Password != "" || o.Schema != "" || o.Socket != ""
 }
 
 func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string) (string, error) {

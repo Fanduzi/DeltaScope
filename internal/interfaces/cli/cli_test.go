@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	viperconfig "github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper"
 )
 
@@ -196,6 +197,17 @@ func TestAuditCommandQuietMarkdownOmitsFullReportWrapper(t *testing.T) {
 }
 
 func TestAuditCommandAcceptsMySQLStyleConnectionFlagsWithoutChangingOfflineBehavior(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
 	stdout := &strings.Builder{}
 
 	code := Execute(
@@ -253,6 +265,17 @@ func TestAuditCommandRejectsSocketWithHostOrPort(t *testing.T) {
 }
 
 func TestAuditCommandPromptsForPasswordWhenAskPasswordIsSet(t *testing.T) {
+	previousClientFactory := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previousClientFactory })
+
 	previous := passwordPrompt
 	called := 0
 	passwordPrompt = func(_ io.Reader, out io.Writer) (string, error) {

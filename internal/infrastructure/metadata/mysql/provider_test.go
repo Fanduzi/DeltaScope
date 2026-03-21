@@ -1,5 +1,5 @@
 // Package mysqlmeta verifies metadata normalization helpers for the MySQL provider.
-// input: synthetic variable, collation, type, and index classification scenarios
+// input: synthetic variable, version, DSN, collation, type, and index classification scenarios
 // output: stable provider helper behavior without requiring a live database
 // pos: infrastructure metadata adapter test coverage
 // note: if this file changes, update this header and module README.md.
@@ -10,6 +10,46 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+func TestConnectionConfigDSNUsesTCPHostAndPort(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     3307,
+		User:     "root",
+		Password: "secret",
+	}
+
+	if got := config.Address(); got != "127.0.0.1:3307" {
+		t.Fatalf("expected tcp address 127.0.0.1:3307, got %q", got)
+	}
+	if got := config.Network(); got != "tcp" {
+		t.Fatalf("expected tcp network, got %q", got)
+	}
+}
+
+func TestConnectionConfigDSNUsesUnixSocket(t *testing.T) {
+	config := ConnectionConfig{
+		Socket:   "/tmp/mysql.sock",
+		User:     "root",
+		Password: "secret",
+	}
+
+	if got := config.Address(); got != "/tmp/mysql.sock" {
+		t.Fatalf("expected socket address /tmp/mysql.sock, got %q", got)
+	}
+	if got := config.Network(); got != "unix" {
+		t.Fatalf("expected unix network, got %q", got)
+	}
+}
+
+func TestDetectDialectFromVersion(t *testing.T) {
+	if got := detectDialectFromVersion("8.0.36"); got != spec.DialectMySQL {
+		t.Fatalf("expected mysql dialect, got %q", got)
+	}
+	if got := detectDialectFromVersion("8.0.11-TiDB-v8.5.0"); got != spec.DialectTiDB {
+		t.Fatalf("expected tidb dialect, got %q", got)
+	}
+}
 
 func TestNormalizeOnOff(t *testing.T) {
 	if !normalizeOnOff("ON") {

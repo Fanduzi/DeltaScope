@@ -1,0 +1,205 @@
+// Package cli verifies metadata-aware CLI audit wiring.
+// input: audit command args plus fake metadata clients that simulate dialect and schema lookups
+// output: focused coverage for metadata-mode connection setup, schema inference, and dialect validation
+// pos: interface-layer metadata-aware audit test coverage
+// note: if this file changes, update this header and module README.md.
+package cli
+
+import (
+	"context"
+	"strings"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+type fakeMetadataClient struct {
+	options            auditConnectionOptions
+	detectDialect      spec.Dialect
+	detectErr          error
+	schemasByTable     map[string][]string
+	findSchemaErr      error
+	instanceCalls      []string
+	tableSnapshotCalls []struct {
+		Schema string
+		Table  string
+	}
+	closed bool
+}
+
+func (f *fakeMetadataClient) LoadInstanceFacts(_ context.Context, _ spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	f.instanceCalls = append(f.instanceCalls, schema)
+	return &spec.InstanceFacts{Version: "8.0.36", DefaultCharset: "utf8mb4"}, nil
+}
+
+func (f *fakeMetadataClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+	f.tableSnapshotCalls = append(f.tableSnapshotCalls, struct {
+		Schema string
+		Table  string
+	}{Schema: schema, Table: table})
+	return &spec.TableSnapshot{Schema: schema, Exists: true, Table: &spec.Table{Name: table}}, nil
+}
+
+func (f *fakeMetadataClient) DetectDialect(context.Context) (spec.Dialect, error) {
+	return f.detectDialect, f.detectErr
+}
+
+func (f *fakeMetadataClient) FindSchemasForTable(_ context.Context, table string) ([]string, error) {
+	if f.findSchemaErr != nil {
+		return nil, f.findSchemaErr
+	}
+	return f.schemasByTable[strings.ToLower(table)], nil
+}
+
+func (f *fakeMetadataClient) Close() error {
+	f.closed = true
+	return nil
+}
+
+func TestAuditCommandUsesMetadataAwareProviderForTCPConnection(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--port", "3307", "--user", "root"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if client.options.Host != "127.0.0.1" || client.options.Port != 3307 || client.options.User != "root" {
+		t.Fatalf("unexpected connection options: %#v", client.options)
+	}
+	if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "app" {
+		t.Fatalf("expected instance facts to load once for app schema, got %#v", client.instanceCalls)
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "app" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected users snapshot lookup in app schema, got %#v", client.tableSnapshotCalls)
+	}
+	if !client.closed {
+		t.Fatalf("expected metadata client close to be called")
+	}
+}
+
+func TestAuditCommandUsesExplicitSchemaWithoutInference(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectMySQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--schema", "app"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "app" {
+		t.Fatalf("expected explicit schema to flow to instance facts, got %#v", client.instanceCalls)
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "app" {
+		t.Fatalf("expected explicit schema to flow to snapshots, got %#v", client.tableSnapshotCalls)
+	}
+}
+
+func TestAuditCommandFailsWhenSchemaInferenceIsAmbiguous(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app", "archive"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "ambiguous") || !strings.Contains(stderr.String(), "--schema") {
+		t.Fatalf("expected ambiguous schema guidance, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandAllowsCreateTableWhenSchemaCannotBeInferred(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": nil},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create table users (id bigint)", "--host", "127.0.0.1", "--user", "root"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1 for rule findings, got %d", code)
+	}
+	if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "" {
+		t.Fatalf("expected create-table path to continue with empty schema, got %#v", client.instanceCalls)
+	}
+}
+
+func TestAuditCommandRejectsDialectMismatchInMetadataMode(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectTiDB}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--dialect", "mysql"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "detected dialect") {
+		t.Fatalf("expected dialect mismatch error, got %q", stderr.String())
+	}
+}

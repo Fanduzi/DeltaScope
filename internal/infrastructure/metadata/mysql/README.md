@@ -6,17 +6,21 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 
 | File | Responsibility |
 |------|---------------|
-| provider.go | Loads normalized instance facts and target-table snapshots from information schema, including row-format, collation, auto-increment, and approximate table-row facts |
-| provider_test.go | Verifies provider helper normalization without a live database |
+| provider.go | Opens MySQL-compatible metadata connections and loads normalized dialect, schema, instance-fact, and target-table snapshot data from information schema |
+| provider_test.go | Verifies provider connection, dialect, and normalization helpers without a live database |
 
 ## Exports
 
+- `ConnectionConfig`
+- `OpenDB(config)`
 - `Provider`
 - `NewProvider(db *sql.DB)`
+- `Provider.DetectDialect(ctx)`
+- `Provider.FindSchemasForTable(ctx, table)`
 
 ## Dependencies
 - Upstream: `internal/application/audit`
-- Downstream: `database/sql`, `github.com/go-sql-driver/mysql`, `internal/domain/spec`
+- Downstream: `database/sql`, `net`, `github.com/go-sql-driver/mysql`, `internal/domain/spec`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

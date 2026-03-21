@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
-// input: sql.DB access to MySQL/TiDB instances plus schema/table lookup requests
-// output: normalized instance facts and table snapshots for application-level audit enrichment
+// input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
+// output: normalized instance facts, dialect detection, schema discovery, and table snapshots for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -9,14 +9,69 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql"
+	gomysql "github.com/go-sql-driver/mysql"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+// ConnectionConfig describes one MySQL-compatible metadata connection.
+type ConnectionConfig struct {
+	Host     string
+	Port     int
+	Socket   string
+	User     string
+	Password string
+}
+
+// Network reports the driver network name for the connection.
+func (c ConnectionConfig) Network() string {
+	if strings.TrimSpace(c.Socket) != "" {
+		return "unix"
+	}
+	return "tcp"
+}
+
+// Address reports the driver address for the connection.
+func (c ConnectionConfig) Address() string {
+	if strings.TrimSpace(c.Socket) != "" {
+		return strings.TrimSpace(c.Socket)
+	}
+	host := strings.TrimSpace(c.Host)
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := c.Port
+	if port == 0 {
+		port = 3306
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
+}
+
+// DSN formats the config for the MySQL driver.
+func (c ConnectionConfig) DSN() string {
+	cfg := gomysql.NewConfig()
+	cfg.Net = c.Network()
+	cfg.Addr = c.Address()
+	cfg.User = c.User
+	cfg.Passwd = c.Password
+	cfg.Collation = "utf8mb4_general_ci"
+	cfg.Params = map[string]string{"interpolateParams": "true"}
+	return cfg.FormatDSN()
+}
+
+// OpenDB connects to a MySQL-compatible database for metadata reads.
+func OpenDB(config ConnectionConfig) (*sql.DB, error) {
+	db, err := sql.Open("mysql", config.DSN())
+	if err != nil {
+		return nil, fmt.Errorf("open metadata connection: %w", err)
+	}
+	return db, nil
+}
 
 // Provider loads metadata facts through a MySQL-compatible SQL connection.
 type Provider struct {
@@ -26,6 +81,42 @@ type Provider struct {
 // NewProvider builds a metadata provider on top of an existing SQL handle.
 func NewProvider(db *sql.DB) *Provider {
 	return &Provider{db: db}
+}
+
+// DetectDialect reads server version information and classifies the SQL dialect.
+func (p *Provider) DetectDialect(ctx context.Context) (spec.Dialect, error) {
+	var version string
+	if err := p.db.QueryRowContext(ctx, `select version()`).Scan(&version); err != nil {
+		return "", fmt.Errorf("query server version: %w", err)
+	}
+	return detectDialectFromVersion(version), nil
+}
+
+// FindSchemasForTable lists schemas that currently contain the named table.
+func (p *Provider) FindSchemasForTable(ctx context.Context, table string) ([]string, error) {
+	rows, err := p.db.QueryContext(ctx, `
+		select table_schema
+		from information_schema.tables
+		where table_name = ?
+		order by table_schema
+	`, table)
+	if err != nil {
+		return nil, fmt.Errorf("query schemas for table %s: %w", table, err)
+	}
+	defer rows.Close()
+
+	schemas := make([]string, 0)
+	for rows.Next() {
+		var schema string
+		if err := rows.Scan(&schema); err != nil {
+			return nil, fmt.Errorf("scan schema for table %s: %w", table, err)
+		}
+		schemas = append(schemas, schema)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate schemas for table %s: %w", table, err)
+	}
+	return schemas, nil
 }
 
 var _ appaudit.MetadataProvider = (*Provider)(nil)
@@ -269,4 +360,11 @@ func classifyIndex(name string, nonUnique int, indexType string) spec.IndexKind 
 		return spec.IndexKindUnique
 	}
 	return spec.IndexKindSecondary
+}
+
+func detectDialectFromVersion(version string) spec.Dialect {
+	if strings.Contains(strings.ToLower(version), "tidb") {
+		return spec.DialectTiDB
+	}
+	return spec.DialectMySQL
 }
