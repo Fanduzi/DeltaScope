@@ -17,6 +17,7 @@ type cliOptions struct {
 	Format     string
 	FailOn     string
 	Quiet      bool
+	ShowVersion bool
 }
 
 func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writer) *cobra.Command {
@@ -48,6 +49,10 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if options.ShowVersion {
+				_, err := cmd.OutOrStdout().Write([]byte(Version + "\n"))
+				return err
+			}
 			*exitCode = exitUser
 			return newUserError("a subcommand is required")
 		},
@@ -62,6 +67,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 	rootCmd.PersistentFlags().StringVar(&options.Format, "format", options.Format, "output format: markdown or json")
 	rootCmd.PersistentFlags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
 	rootCmd.PersistentFlags().BoolVar(&options.Quiet, "quiet", false, "suppress non-result chatter")
+	rootCmd.Flags().BoolVar(&options.ShowVersion, "version", false, "print the DeltaScope build version")
 
 	rootCmd.AddCommand(newAuditCmd(options, exitCode))
 	rootCmd.AddCommand(newConfigInitCmd(exitCode))

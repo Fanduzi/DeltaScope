@@ -13,10 +13,11 @@ import (
 	"os"
 
 	httpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/http"
+	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 // Version is the build version printed by the HTTP service entrypoint.
-var Version = "dev"
+var Version = publicapi.DefaultVersion
 
 func main() {
 	listen := flag.String("listen", "127.0.0.1:8083", "HTTP listen address")

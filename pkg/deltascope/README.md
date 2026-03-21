@@ -8,6 +8,7 @@ Stable public package surface for library consumers.
 |------|---------------|
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API and public result/request types |
+| version.go | Publishes the default semantic version and canonical ASCII logo |
 | audit_test.go | Verifies the public audit API with defaults, overrides, and multi-statement input |
 
 ## Exports
@@ -23,6 +24,8 @@ Stable public package surface for library consumers.
 - `Location`
 - `Dialect`
 - `Verdict`
+- `DefaultVersion`
+- `Logo`
 
 ## Dependencies
 - Upstream: external library consumers

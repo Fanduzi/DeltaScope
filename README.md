@@ -2,6 +2,8 @@
 
 DeltaScope is an offline SQL review engine for MySQL and TiDB. The first release focuses on library and CLI usage for DDL and DML auditing without requiring a live database connection.
 
+Current release: `v0.5.0`
+
 ## What It Does
 
 - audits DDL and DML for MySQL and TiDB
@@ -39,6 +41,7 @@ Important remaining offline DDL gaps include:
 
 ```bash
 go test ./...
+go run ./cmd/deltascope --version
 go run ./cmd/deltascope version
 go run ./cmd/deltascope-server -version
 ```

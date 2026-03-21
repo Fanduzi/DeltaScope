@@ -5,14 +5,19 @@
 // note: if this file changes, update this header and module README.md.
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+
+	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
+	"github.com/spf13/cobra"
+)
 
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Print the DeltaScope build version",
+		Short: "Print the DeltaScope logo and build version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := cmd.OutOrStdout().Write([]byte(Version + "\n"))
+			_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\n%s\n", publicapi.Logo, Version)
 			return err
 		},
 	}

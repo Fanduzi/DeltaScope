@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 const (
@@ -20,7 +22,7 @@ const (
 )
 
 // Version is the build version printed by the version command.
-var Version = "dev"
+var Version = publicapi.DefaultVersion
 
 // Run executes the CLI against the current process environment and exits.
 func Run() {

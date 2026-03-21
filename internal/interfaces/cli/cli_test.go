@@ -225,7 +225,7 @@ func TestConfigInitWritesUsableYAML(t *testing.T) {
 	}
 }
 
-func TestVersionCommandPrintsVersion(t *testing.T) {
+func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version
 	Version = "test-build"
@@ -242,7 +242,32 @@ func TestVersionCommandPrintsVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
+	if !strings.Contains(stdout.String(), "____") {
+		t.Fatalf("expected logo output, got %q", stdout.String())
+	}
+	if !strings.HasSuffix(strings.TrimSpace(stdout.String()), "test-build") {
+		t.Fatalf("expected version suffix test-build, got %q", stdout.String())
+	}
+}
+
+func TestRootVersionFlagPrintsVersionOnly(t *testing.T) {
+	stdout := &strings.Builder{}
+	previous := Version
+	Version = "test-build"
+	t.Cleanup(func() { Version = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"--version"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
 	if strings.TrimSpace(stdout.String()) != "test-build" {
-		t.Fatalf("expected version output test-build, got %q", stdout.String())
+		t.Fatalf("expected plain version output test-build, got %q", stdout.String())
 	}
 }
