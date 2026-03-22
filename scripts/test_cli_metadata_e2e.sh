@@ -269,7 +269,76 @@ run_mysql_suite() {
 }
 
 run_tidb_suite() {
-  log "TiDB suite is not implemented yet"
+  local stdout_file
+  local stderr_file
+  local exit_code
+
+  log "running TiDB metadata-aware CLI cases"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-infer.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-infer.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from orders where id = 1" --host 127.0.0.1 --port 4400 --user root --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_field_eq "${stdout_file}" "context.mode" "metadata-aware"
+  assert_json_field_eq "${stdout_file}" "context.dialect" "tidb"
+  assert_json_field_eq "${stdout_file}" "context.schema" "app"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-ambiguous.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-ambiguous.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 4400 --user root --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 2
+  assert_stderr_contains "${stderr_file}" "ambiguous"
+  assert_stderr_contains "${stderr_file}" "--schema"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-explicit-schema.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-explicit-schema.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 4400 --user root --schema archive --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_field_eq "${stdout_file}" "context.schema" "archive"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-qualified.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-qualified.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host 127.0.0.1 --port 4400 --user root --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_field_eq "${stdout_file}" "context.schema" "app"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-exists.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-exists.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'" --host 127.0.0.1 --port 4400 --user root --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 1
+  assert_json_rule_present "${stdout_file}" "ddl.table.exists.create.forbid"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-instance-fact.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-instance-fact.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table huge_profiles (id bigint unsigned not null auto_increment comment 'id', c1 varchar(16383) not null default '' comment 'c1', c2 varchar(16383) not null default '' comment 'c2', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='huge profiles'" --host 127.0.0.1 --port 4400 --user root --schema app --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 1
+  assert_json_field_eq "${stdout_file}" "context.schema" "app"
+  assert_json_rule_present "${stdout_file}" "ddl.table.row_size.max_bytes.require"
+  assert_json_rule_absent "${stdout_file}" "ddl.table.exists.create.forbid"
 }
 
 main() {
