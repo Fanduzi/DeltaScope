@@ -6,7 +6,7 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
-Release target: `v0.6.0`
+Release target: `v0.6.1`
 
 ### Added
 
@@ -24,7 +24,7 @@ Release target: `v0.6.0`
 ### Changed
 
 - Release-facing artifact contract now centers on `deltascope_<version>_<os>_<arch>.tar.gz`
-- Default source-build version target now points to `v0.6.0`
+- Default source-build version target now points to `v0.6.1`
 - Metadata-backed existence rules now advertise `requires_metadata: true` instead of the misleading legacy `required` param
 - Capability matrix statuses now reflect shipped metadata-aware and lifecycle coverage
 

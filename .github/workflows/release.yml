@@ -37,6 +37,6 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --clean --release-notes docs/releases/release-notes-v0.6.1.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

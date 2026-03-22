@@ -8,6 +8,7 @@ Administrative material for operating DeltaScope as a releaseable product.
 | --- | --- |
 | [../reference/cli.md](../reference/cli.md) | Confirm the public CLI contract before release notes or support work |
 | [../reference/http-api.md](../reference/http-api.md) | Review the shipped HTTP surface and stable endpoints |
+| [../releases/README.md](../releases/README.md) | Browse versioned release notes for published tags |
 | [../../CHANGELOG.md](../../CHANGELOG.md) | Track release-facing changes and target version notes |
 | [../../SECURITY.md](../../SECURITY.md) | Check supported versions and vulnerability-reporting policy |
 

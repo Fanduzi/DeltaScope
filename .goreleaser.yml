@@ -33,7 +33,7 @@ archives:
       - deltascope-server
     formats:
       - tar.gz
-    name_template: "{{ .ProjectName }}_{{ trimPrefix `v` .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_{{ .RawVersion }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
       - README_ZH.md
@@ -41,7 +41,7 @@ archives:
       - SECURITY.md
 
 checksum:
-  name_template: "deltascope_{{ trimPrefix `v` .Version }}_checksums.txt"
+  name_template: "deltascope_{{ .RawVersion }}_checksums.txt"
 
 changelog:
   disable: true
