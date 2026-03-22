@@ -6,7 +6,7 @@ Security fixes are currently planned for the latest released tag and the active 
 
 ```text
 Version     Supported
-v0.5.x      yes
+v0.6.x      yes
 main        yes
 older tags  no
 ```

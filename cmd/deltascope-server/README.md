@@ -12,7 +12,7 @@ HTTP service entrypoint for exposing the offline DeltaScope audit engine over JS
 
 - This command is intentionally thin and delegates HTTP wiring to `internal/interfaces/http`.
 - The initial service milestone keeps auth, tenancy, and metadata-aware checks out of scope.
-- `-version` prints only the semantic version string and defaults to `v0.5.0` in source builds.
+- `-version` prints only the semantic version string and defaults to `v0.6.0` in source builds.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
