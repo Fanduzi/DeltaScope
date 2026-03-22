@@ -10,162 +10,88 @@
 English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURITY.md)
 </div>
 
-DeltaScope is a SQL audit engine for MySQL and TiDB. It starts as an offline-first library and CLI, then layers optional metadata-aware checks and a thin HTTP service on top of the same core rule engine.
+DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+
+## Install
+
+Release archives are the primary first-contact path.
+
+```bash
+curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.0/deltascope_0.6.0_darwin_arm64.tar.gz
+tar -xzf deltascope_0.6.0_darwin_arm64.tar.gz
+./deltascope --version
+```
+
+More install options live in the release notes and the reference docs. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
+
+## Quick Start
+
+Audit inline SQL:
+
+```bash
+./deltascope audit --sql "delete from users"
+```
+
+Audit a file:
+
+```bash
+./deltascope audit --file ./change.sql
+```
+
+Use JSON output for CI or agents:
+
+```bash
+./deltascope audit \
+  --sql "alter table users drop column age" \
+  --format json \
+  --fail-on warning
+```
+
+Run metadata-aware audit against a live schema:
+
+```bash
+./deltascope audit \
+  --sql "alter table users add column email varchar(255)" \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
+```
+
+## Why DeltaScope
+
+- Reviews DDL and DML with stable `blocker`, `warning`, and `notice` findings.
+- Stays useful offline, which keeps local development, CI, and agent loops lightweight.
+- Reuses the same rule engine for CLI, HTTP, and library access instead of splitting behavior across tools.
+- Adds metadata-aware enrichment only when live schema or instance facts actually matter.
+
+## Key Features
+
+- Create-table governance across identifiers, comments, primary keys, audit columns, charset/collation, indexes, and table options.
+- Alter-table governance for destructive actions, compatibility checks, existence validation, and merge guidance.
+- Object-lifecycle checks for `CREATE VIEW`, `DROP TABLE`, and `TRUNCATE TABLE`.
+- DML protections for `WHERE`, `LIMIT`, `ORDER BY`, subqueries, join conditions, bulk insert patterns, and denylisted objects.
+- Stable product surfaces: `deltascope` CLI, `deltascope-server`, and `pkg/deltascope`.
+
+## Recipes
+
+- [Audit SQL offline](docs/recipe/audit-sql-offline.md)
+- [Audit SQL with metadata](docs/recipe/audit-sql-with-metadata.md)
+- [Review DDL before migration](docs/recipe/review-ddl-before-migration.md)
+- [Guard DML in CI](docs/recipe/guard-dml-in-ci.md)
+- [Use with AI agents](docs/recipe/use-with-ai-agents.md)
 
 ## Documentation
 
 - [Admin docs](docs/admin/README.md)
 - [Concept docs](docs/concept/README.md)
 - [Dev docs](docs/dev/README.md)
-- [Recipes](docs/recipe/README.md)
 - [Reference docs](docs/reference/README.md)
 - [Audit capability matrix](docs/reference/audit-capability-matrix.md)
 
-## Why DeltaScope
-
-- Reviews DDL and DML with stable `blocker`, `warning`, and `notice` findings.
-- Runs fully offline by default, which keeps local development and agent workflows usable.
-- Supports optional metadata-aware enrichment for existence checks, current-schema comparisons, and instance facts.
-- Ships as a Go package, `deltascope` CLI, and `deltascope-server` HTTP service.
-
-## Current Surface
-
-- `CREATE TABLE` governance: identifiers, comments, primary-key semantics, audit columns, type-family policy, charset/collation checks, index width/prefix/redundancy, table-option rules, and metadata-backed rough sizing checks.
-- `ALTER TABLE` governance: action forbids, source-aware compatibility checks, metadata-backed existence rules, alter-added index lifecycle rules, and global merge-alter guidance.
-- Object lifecycle governance: `CREATE VIEW`, `DROP TABLE`, and `TRUNCATE TABLE` policy gates, plus metadata-backed existence, row-count, and adaptive-hash cautions.
-- DML governance: `WHERE`, `LIMIT`, `ORDER BY`, subquery, join-`ON`, insert-row-count, `REPLACE`, `INSERT ... SELECT`, `ON DUPLICATE KEY`, and object-scope denylist rules.
-
-## Quick Start
-
-Run tests and inspect versions:
-
-```bash
-go test ./...
-make test-e2e-cli
-go run ./cmd/deltascope --version
-go run ./cmd/deltascope version
-go run ./cmd/deltascope-server -version
-```
-
-Audit inline SQL:
-
-```bash
-go run ./cmd/deltascope audit --sql "delete from users"
-```
-
-Audit a file or stdin:
-
-```bash
-go run ./cmd/deltascope audit --file ./change.sql
-cat ./change.sql | go run ./cmd/deltascope audit
-```
-
-Use JSON output for agents, scripts, or CI:
-
-```bash
-go run ./cmd/deltascope audit --sql "alter table users drop column age" --format json
-```
-
-Use metadata-aware audit with MySQL-style connection flags:
-
-```bash
-go run ./cmd/deltascope audit \
-  --sql "alter table users add column email varchar(255)" \
-  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
-```
-
-Inspect shipped rules and product capabilities:
-
-```bash
-go run ./cmd/deltascope rules list --kind dml --level blocker
-go run ./cmd/deltascope rules show dml.where.require
-go run ./cmd/deltascope rules search metadata
-go run ./cmd/deltascope capabilities
-```
-
-Control the non-zero threshold:
-
-```bash
-go run ./cmd/deltascope audit --sql "create table users (id bigint, primary key (id))" --fail-on warning
-```
-
-Exit codes:
-
-- `0`: audit finished and did not reach the configured failure threshold
-- `1`: audit finished, but findings reached `--fail-on`
-- `2`: user input error such as bad flags, unreadable config, or malformed request data
-- `3`: internal/runtime failure
-
-## Configuration
-
-Generate the default YAML policy:
-
-```bash
-go run ./cmd/deltascope config init > deltascope.yaml
-```
-
-Run with a config file:
-
-```bash
-go run ./cmd/deltascope audit --config ./deltascope.yaml --sql "update users set name = 'delta'"
-```
-
-Lint and inspect config defaults:
-
-```bash
-go run ./cmd/deltascope config lint --file ./deltascope.yaml
-go run ./cmd/deltascope config show-default
-```
-
-The checked-in [example config](configs/deltascope.example.yaml) matches `deltascope config init`.
-
-## Metadata-Aware Mode
-
-DeltaScope stays usable without database access. When a metadata provider is configured, the same audit flow can attach:
-
-- instance facts such as `version`, `character_set_database`, `innodb_large_prefix`, `innodb_default_row_format`, and `innodb_adaptive_hash_index`
-- target-table snapshots with normalized column, index, and primary-key definitions
-
-That extra context currently powers:
-
-- create/alter/drop/truncate existence checks
-- source-aware `ALTER COLUMN` compatibility checks
-- adaptive-hash cautions for destructive table lifecycle operations
-
-From the CLI, metadata-aware mode starts when any MySQL-style connection flag is supplied. DeltaScope then:
-
-- auto-detects MySQL vs TiDB from the live instance
-- uses `--schema` when given
-- otherwise infers schema when the target table resolves uniquely
-- fails honestly when schema inference is ambiguous or impossible for statements that need a real existing object
-- keeps `--quiet` stable for shell pipelines and includes a `context` object in JSON output for agents
-
-## CLI Metadata E2E
-
-The Docker-backed metadata-aware CLI smoke suite is intentionally separate from `go test ./...` so default local and CI feedback stays fast and container-free.
-
-Prerequisites:
-
-- Docker Engine with `docker compose`
-- Go toolchain
-- Python 3
-
-Targets:
-
-```bash
-make test-e2e-cli
-make test-e2e-cli-mysql
-make test-e2e-cli-tidb
-```
-
-Those targets build the local CLI, start disposable MySQL or TiDB fixtures, seed deterministic schemas, and assert the public JSON/exit-code contract for dialect auto-detect, schema inference, ambiguity handling, qualified-schema SQL, metadata-backed existence checks, and one instance-fact-backed rule path.
-
 ## HTTP Service
 
-Run the service:
+Run the HTTP adapter over the same audit engine:
 
 ```bash
-go run ./cmd/deltascope-server --listen 127.0.0.1:8083 --config ./deltascope.yaml
+./deltascope-server -listen 127.0.0.1:8083
 ```
 
 Endpoints:
@@ -173,14 +99,6 @@ Endpoints:
 - `GET /healthz`
 - `GET /version`
 - `POST /v1/audit`
-
-Example:
-
-```bash
-curl -X POST http://127.0.0.1:8083/v1/audit \
-  -H 'Content-Type: application/json' \
-  -d '{"sql":"delete from users","dialect":"mysql"}'
-```
 
 ## Library Usage
 
@@ -191,15 +109,11 @@ result, err := deltascope.Audit(ctx, deltascope.Request{
 })
 ```
 
-The public API lives in [pkg/deltascope](pkg/deltascope/README.md).
-
-## Roadmap
-
-Current work is focused on follow-on hardening rather than baseline capability gaps:
+The stable public API lives in [pkg/deltascope](pkg/deltascope/README.md).
 
 ## Architecture
 
-DeltaScope uses a DDD-leaning structure. Interfaces drive transport concerns, application orchestrates the audit use case, domain packages own the rule model and findings, and infrastructure packages adapt parser/config/output/metadata dependencies. The core audit path is shared by the library, CLI, and HTTP service.
+DeltaScope keeps one audit path and exposes it through multiple entrypoints. Product-level and implementation-level diagrams live in [docs/concept/architecture.md](docs/concept/architecture.md) and [docs/dev/architecture.md](docs/dev/architecture.md).
 
 ### Modules
 
