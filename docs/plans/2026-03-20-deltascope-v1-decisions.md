@@ -62,11 +62,11 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
 
 ## Decision 11: parser module and Go version
 
-- Problem: the current latest `github.com/pingcap/tidb/pkg/parser` module requires Go 1.25, and its driver import path uses `pkg/parser/test_driver` instead of the older `pkg/types/parser_driver` path seen in older codebases.
+- Problem: the current latest `github.com/pingcap/tidb/pkg/parser` module requires newer Go toolchains, and its driver import path uses `pkg/parser/test_driver` instead of the older `pkg/types/parser_driver` path seen in older codebases.
 - Decision:
   - depend on `github.com/pingcap/tidb/pkg/parser` directly
   - import `github.com/pingcap/tidb/pkg/parser/test_driver`
-  - accept the module `go` version moving to `1.25`
+  - accept the module `go` version moving to `1.26.1`
 - Why: this keeps DeltaScope aligned with the current parser module boundary rather than copying older TiDB integration details from `gAudit`.
 
 ## Decision 12: application-owned parse result

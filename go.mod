@@ -1,6 +1,6 @@
 module github.com/Fanduzi/DeltaScope
 
-go 1.25
+go 1.26.1
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1

@@ -4,7 +4,7 @@
 
 [![Release](https://img.shields.io/github/v/release/Fanduzi/DeltaScope?display_name=tag)](https://github.com/Fanduzi/DeltaScope/releases)
 ![Platform](https://img.shields.io/badge/platform-darwin%20%7C%20linux-blue)
-![Go Version](https://img.shields.io/badge/go-1.25-00ADD8?logo=go)
+![Go Version](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.6.1.md)

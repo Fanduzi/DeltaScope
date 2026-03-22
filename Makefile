@@ -1,6 +1,6 @@
-.PHONY: test build build-cli build-server test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb
+.PHONY: test build build-cli build-server build-linux test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb
 
-BUILD_DIR ?= .build/bin
+BUILD_DIR ?= bin
 
 test:
 	go test ./...
@@ -14,6 +14,11 @@ build-cli:
 build-server:
 	mkdir -p $(BUILD_DIR)
 	go build -o $(BUILD_DIR)/deltascope-server ./cmd/deltascope-server
+
+build-linux:
+	mkdir -p $(BUILD_DIR)
+	GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/deltascope-linux-amd64 ./cmd/deltascope
+	GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/deltascope-server-linux-amd64 ./cmd/deltascope-server
 
 test-e2e-cli: test-e2e-cli-mysql test-e2e-cli-tidb
 

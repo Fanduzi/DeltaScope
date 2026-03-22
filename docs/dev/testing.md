@@ -11,7 +11,8 @@ make build-cli
 make build-server
 ```
 
-`make build` produces `.build/bin/deltascope` and `.build/bin/deltascope-server`.
+`make build` produces `bin/deltascope` and `bin/deltascope-server`.
+`make build-linux` produces `bin/deltascope-linux-amd64` and `bin/deltascope-server-linux-amd64`.
 
 ## CLI Metadata E2E
 
