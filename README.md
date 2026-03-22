@@ -5,9 +5,9 @@
 [![Release](https://img.shields.io/github/v/release/Fanduzi/DeltaScope?display_name=tag)](https://github.com/Fanduzi/DeltaScope/releases)
 ![Platform](https://img.shields.io/badge/platform-darwin%20%7C%20linux-blue)
 ![Go Version](https://img.shields.io/badge/go-1.25-00ADD8?logo=go)
-![License](https://img.shields.io/badge/license-not%20set-lightgrey)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURITY.md)
+English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE)
 </div>
 
 DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
@@ -23,7 +23,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.0/install.sh | \
   DELTASCOPE_VERSION=v0.6.0 sh
 ```
 

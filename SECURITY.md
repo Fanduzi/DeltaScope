@@ -1,5 +1,7 @@
 # Security Policy
 
+DeltaScope is distributed under the Apache License 2.0. See [LICENSE](LICENSE).
+
 ## Supported Versions
 
 Security fixes are currently planned for the latest released tag and the active development branch.

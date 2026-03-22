@@ -5,9 +5,9 @@
 [![Release](https://img.shields.io/github/v/release/Fanduzi/DeltaScope?display_name=tag)](https://github.com/Fanduzi/DeltaScope/releases)
 ![Platform](https://img.shields.io/badge/platform-darwin%20%7C%20linux-blue)
 ![Go Version](https://img.shields.io/badge/go-1.25-00ADD8?logo=go)
-![License](https://img.shields.io/badge/license-not%20set-lightgrey)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-[English](README.md) | 中文 | [Changelog](CHANGELOG.md) | [Security](SECURITY.md)
+[English](README.md) | 中文 | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE)
 </div>
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
@@ -23,7 +23,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.0/install.sh | \
   DELTASCOPE_VERSION=v0.6.0 sh
 ```
 
