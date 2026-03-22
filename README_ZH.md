@@ -14,34 +14,39 @@ DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它
 
 ## 安装
 
-首选入口是 release archive。
+首选安装入口是仓库内的 installer script，它解析的就是 CI 发布时使用的同一套 release archive 合同。
 
 ```bash
-curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.0/deltascope_0.6.0_darwin_arm64.tar.gz
-tar -xzf deltascope_0.6.0_darwin_arm64.tar.gz
-./deltascope --version
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```
 
-更多安装方式见 release 页面和参考文档。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+固定版本安装：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | \
+  DELTASCOPE_VERSION=v0.6.0 sh
+```
+
+发布产物命名为 `deltascope_0.6.0_<os>_<arch>.tar.gz`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ## 快速开始
 
 审核内联 SQL：
 
 ```bash
-./deltascope audit --sql "delete from users"
+deltascope audit --sql "delete from users"
 ```
 
 审核文件：
 
 ```bash
-./deltascope audit --file ./change.sql
+deltascope audit --file ./change.sql
 ```
 
 给 CI 或 agent 使用 JSON 输出：
 
 ```bash
-./deltascope audit \
+deltascope audit \
   --sql "alter table users drop column age" \
   --format json \
   --fail-on warning
@@ -50,7 +55,7 @@ tar -xzf deltascope_0.6.0_darwin_arm64.tar.gz
 对在线实例执行 metadata-aware 审核：
 
 ```bash
-./deltascope audit \
+deltascope audit \
   --sql "alter table users add column email varchar(255)" \
   --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
@@ -86,12 +91,19 @@ tar -xzf deltascope_0.6.0_darwin_arm64.tar.gz
 - [Reference docs](docs/reference/README.md)
 - [Audit capability matrix](docs/reference/audit-capability-matrix.md)
 
+## 开发工作流
+
+- `make test` 执行 `go test ./...`
+- `make build` 在 `.build/bin` 下产出两个本地二进制
+- `make test-e2e-cli` 执行基于 Docker 的 metadata CLI smoke
+- [docs/dev/testing.md](docs/dev/testing.md) 汇总了完整目标集
+
 ## HTTP 服务
 
 HTTP 适配层复用同一条审核主路径：
 
 ```bash
-./deltascope-server -listen 127.0.0.1:8083
+deltascope-server -listen 127.0.0.1:8083
 ```
 
 接口：

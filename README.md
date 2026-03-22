@@ -14,34 +14,39 @@ DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBA
 
 ## Install
 
-Release archives are the primary first-contact path.
+The primary install path is the repository installer script, which resolves the same release archive contract used by CI publishing.
 
 ```bash
-curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.0/deltascope_0.6.0_darwin_arm64.tar.gz
-tar -xzf deltascope_0.6.0_darwin_arm64.tar.gz
-./deltascope --version
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```
 
-More install options live in the release notes and the reference docs. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
+Pin a specific release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | \
+  DELTASCOPE_VERSION=v0.6.0 sh
+```
+
+The published archive format is `deltascope_0.6.0_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ## Quick Start
 
 Audit inline SQL:
 
 ```bash
-./deltascope audit --sql "delete from users"
+deltascope audit --sql "delete from users"
 ```
 
 Audit a file:
 
 ```bash
-./deltascope audit --file ./change.sql
+deltascope audit --file ./change.sql
 ```
 
 Use JSON output for CI or agents:
 
 ```bash
-./deltascope audit \
+deltascope audit \
   --sql "alter table users drop column age" \
   --format json \
   --fail-on warning
@@ -50,7 +55,7 @@ Use JSON output for CI or agents:
 Run metadata-aware audit against a live schema:
 
 ```bash
-./deltascope audit \
+deltascope audit \
   --sql "alter table users add column email varchar(255)" \
   --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
@@ -86,12 +91,19 @@ Run metadata-aware audit against a live schema:
 - [Reference docs](docs/reference/README.md)
 - [Audit capability matrix](docs/reference/audit-capability-matrix.md)
 
+## Developer Workflows
+
+- `make test` runs `go test ./...`
+- `make build` produces both local binaries under `.build/bin`
+- `make test-e2e-cli` runs the Docker-backed metadata CLI smoke suite
+- [docs/dev/testing.md](docs/dev/testing.md) covers the full target set
+
 ## HTTP Service
 
 Run the HTTP adapter over the same audit engine:
 
 ```bash
-./deltascope-server -listen 127.0.0.1:8083
+deltascope-server -listen 127.0.0.1:8083
 ```
 
 Endpoints:
