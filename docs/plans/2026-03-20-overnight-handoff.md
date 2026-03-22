@@ -63,6 +63,14 @@
   - deterministic fixtures proving dialect auto-detect, schema inference, schema ambiguity errors, qualified-schema SQL, metadata-backed existence checks, and instance-fact-backed sizing behavior
   - a shipped `scripts/test_cli_metadata_e2e.sh` harness plus `make test-e2e-cli`, `make test-e2e-cli-mysql`, and `make test-e2e-cli-tidb`
   - README / README_ZH / module-doc closure for local live e2e usage
+- completed the `Release Readiness` milestone with:
+  - a product docs IA under `docs/admin`, `docs/concept`, `docs/dev`, `docs/recipe`, and `docs/reference`
+  - rewritten `README.md` and `README_ZH.md` as product-facing landing pages while keeping the L1 architecture/module map
+  - the audit capability matrix moved from `docs/plans` into `docs/reference/audit-capability-matrix.md`
+  - product-level and implementation-level ASCII architecture docs
+  - one trusted tag-driven GitHub Actions release path via `.github/workflows/release.yml` plus `.goreleaser.yml`
+  - a release-aligned `install.sh` and a small stable `Makefile` operator surface
+  - the default release target version aligned to `v0.6.0`
 
 ## In Progress
 
@@ -122,6 +130,15 @@
 - `8babfbf` `test: add mysql cli metadata e2e coverage`
 - `62271c4` `test: add tidb cli metadata e2e coverage`
 - `7301352` `docs: add cli metadata e2e usage targets`
+- `5a37116` `docs: add product docs structure`
+- `4d7b148` `docs: move capability matrix into reference docs`
+- `7d6c74f` `docs: add concept and architecture references`
+- `57078cd` `docs: add recipes and product references`
+- `eb85956` `docs: rewrite english landing page`
+- `b1e8f0f` `docs: rewrite chinese landing page`
+- `972973f` `build: add release workflow`
+- `c87a2e0` `build: add install script`
+- `2f944e5` `build: expand make targets`
 
 ## Verification Run
 
@@ -139,6 +156,11 @@
 - `diff -u configs/deltascope.example.yaml <(go run ./cmd/deltascope config init)`
 - `make test-e2e-cli-mysql`
 - `make test-e2e-cli-tidb`
+- `make -n test`
+- `make -n build`
+- `make -n test-e2e-cli`
+- `sh -n install.sh`
+- `go run github.com/goreleaser/goreleaser/v2@v2.12.7 check`
 - `/Users/fan/.codex/skills/check-three-level-doc/scripts/check_three_level_doc.sh`
 
 ## Decisions And Problems
@@ -158,16 +180,19 @@
 - `CLI Completion` intentionally keeps metadata-aware access on the existing `audit` command instead of creating a separate online-only command tree.
 - `CLI Completion` also derives the shipped rule catalog from default-policy rule IDs so `rules` commands stay aligned with the actually shipped surface.
 - `CLI Metadata E2E` intentionally keeps real-instance smoke as a Docker-backed shell layer outside `go test ./...` so the default feedback loop stays fast and container-free while the live metadata path still gets repeatable proof.
+- `Release Readiness` intentionally adds one trusted release path only; it does not add package-manager distribution, new audit rules, HTTP enhancements, or an MCP server in the same milestone.
+- the release workflow must exist on `origin/main` before pushing the first `v0.6.0` tag, otherwise the tag will not trigger the release job retroactively.
 
 ## Remaining Gaps
 
 - `Audit Completion` closed the blocking capability-matrix gaps.
 - `CLI Completion` closed the major CLI surface gaps for audit, rules, config inspection, and capability discovery.
 - `CLI Metadata E2E` closed the remaining "metadata-aware CLI not proven on real targets" risk for local MySQL/TiDB smoke.
-- remaining work is no longer "baseline missing coverage"; it is follow-on product depth:
+- `Release Readiness` closed the local docs/install/workflow/operator-surface blockers for a polished `v0.6.0` release candidate.
+- remaining work is now post-release follow-on depth:
+  - remote tag execution and GitHub Release asset verification once the workflow is present on `origin/main`
   - richer runtime-risk estimation beyond rough metadata-backed sizing and row-count cautions
   - broader online safety checks and policy ergonomics
-  - future adapters such as MCP server and agent-oriented server workflows
 
 ## Next Active Work
 
@@ -175,5 +200,6 @@
 - Milestone 4 is closed: its goal was to push create-table offline breadth past the planned `gAudit` superset line.
 - Milestone 5 is closed: its goal was to expose the same offline audit engine over a thin JSON HTTP service.
 - likely next work after Milestone 6:
-  - decide whether to prioritize MCP adapter work or deeper online audit/risk modeling
+  - push or merge the release workflow to the remote default branch, then create the real `v0.6.0` tag and validate published assets
+  - decide whether to prioritize deeper online audit/risk modeling after the first polished public release
   - keep CLI, HTTP, and future adapters sharing the same public audit/result contract

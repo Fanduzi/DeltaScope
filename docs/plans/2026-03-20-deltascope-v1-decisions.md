@@ -538,8 +538,45 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
 - Decision:
   - add a Docker Compose-backed shell e2e layer that exercises only the shipped CLI against real MySQL and TiDB containers
   - keep that layer behind explicit `make test-e2e-cli*` entrypoints instead of folding it into `go test ./...`
-  - use deterministic fixture schemas to prove unique-schema inference, ambiguity failures, qualified-schema SQL, existence checks, and one instance-fact-backed sizing path on both engines
+- use deterministic fixture schemas to prove unique-schema inference, ambiguity failures, qualified-schema SQL, existence checks, and one instance-fact-backed sizing path on both engines
 - Why: this gives the project credible live proof for the metadata-aware CLI surface without slowing the default Go test loop or coupling public behavior checks to internal test doubles.
+
+## Decision 59: release packaging must have one trusted path
+
+- Problem: release readiness was drifting toward "a workflow plus a second manual packaging path", which would make artifact naming and install docs diverge quickly.
+- Decision:
+  - use one tag-driven GitHub Actions workflow under `.github/workflows/release.yml`
+  - use GoReleaser packaging inside that workflow instead of maintaining a second manual archive script
+  - treat workflow output names, checksums, install docs, and installer logic as one artifact contract
+- Why: releasability depends on the whole delivery chain, not just on passing tests locally.
+
+## Decision 60: release docs should be product-facing, not plan-facing
+
+- Problem: the repository had accumulated implementation-plan docs, but the public-facing docs surface still read like an active development notebook instead of a polished product entrypoint.
+- Decision:
+  - reorganize docs into `admin`, `concept`, `dev`, `recipe`, and `reference`
+  - move the audit capability matrix into `docs/reference`
+  - rewrite both root READMEs as landing pages and keep the L1 module map lower in the file
+- Why: release-ready docs should help operators and evaluators find stable product information without reading planning artifacts first.
+
+## Decision 61: installer and README must share the same archive contract
+
+- Problem: install instructions are easy to let drift from the actual published archive names, especially when OS/arch naming is duplicated across workflow, docs, and shell scripts.
+- Decision:
+  - standardize on `deltascope_<version-without-v>_<os>_<arch>.tar.gz`
+  - make `install.sh` resolve exactly that naming pattern
+  - document the same pattern in `README.md`, `README_ZH.md`, and `CHANGELOG.md`
+- Why: users should not have to guess whether docs, installer, and release assets refer to the same artifact family.
+
+## Decision 62: Release Readiness excludes new audit scope and new distribution channels
+
+- Problem: the release-readiness milestone could easily sprawl into new audit rules, HTTP enhancements, MCP work, or package-manager distribution and never finish.
+- Decision:
+  - do not add new audit rules in this milestone
+  - do not expand the HTTP service
+  - do not add an MCP server
+  - do not add Homebrew, apt, yum, or other package-manager distribution paths yet
+- Why: the milestone goal is to make the existing product publishable, not to widen scope again before the first polished release.
 
 ## Open Tracking
 

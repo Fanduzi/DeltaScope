@@ -15,6 +15,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 9. audit completion and metadata-aware coverage closure
 10. CLI completion and product-surface closure
 11. CLI metadata e2e and live-smoke risk closure
+12. release readiness and publish-surface closure
 
 ## New Checkpoints
 
@@ -60,6 +61,15 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `8babfbf` `test: add mysql cli metadata e2e coverage`
 - `62271c4` `test: add tidb cli metadata e2e coverage`
 - `7301352` `docs: add cli metadata e2e usage targets`
+- `5a37116` `docs: add product docs structure`
+- `4d7b148` `docs: move capability matrix into reference docs`
+- `7d6c74f` `docs: add concept and architecture references`
+- `57078cd` `docs: add recipes and product references`
+- `eb85956` `docs: rewrite english landing page`
+- `b1e8f0f` `docs: rewrite chinese landing page`
+- `972973f` `build: add release workflow`
+- `c87a2e0` `build: add install script`
+- `2f944e5` `build: expand make targets`
 
 ## Current Offline DDL Coverage
 
@@ -104,15 +114,23 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
   - dialect auto-detect, schema inference, schema ambiguity, and qualified-schema DML coverage on real targets
   - metadata-backed existence checks plus one instance-fact-backed sizing rule path verified on both engines
   - local `Makefile` targets and docs that keep the suite separate from `go test ./...`
+- release-readiness coverage:
+  - product docs now live under `admin / concept / dev / recipe / reference`
+  - both root READMEs now act as product landing pages instead of development-first entrypoints
+  - the capability matrix is now a stable reference doc
+  - release packaging is centralized in `.github/workflows/release.yml` + `.goreleaser.yml`
+  - `install.sh` and README install instructions share one archive naming contract
+  - `Makefile` now exposes `test`, `build`, `build-cli`, `build-server`, and CLI e2e entrypoints
+  - the repository default version target now points at `v0.6.0`
 
 ## What Still Looks Like The Next Milestone
 
-Milestone 6, CLI Completion, and CLI Metadata E2E are now complete. The next milestone should be chosen from product expansion, not baseline audit completion:
+Milestone 6, CLI Completion, CLI Metadata E2E, and Release Readiness are now complete. The next milestone should be chosen from post-release product expansion, not baseline surface closure:
 
 - deeper online/runtime risk modeling
-- MCP server / agent adapter work
 - service hardening and operational polish
+- real remote-release execution and asset verification after the workflow lands on `origin/main`
 
 ## Recommended Next Step
 
-The next workstream should decide whether to move into agent adapters or deepen online/runtime audit. Either way, the CLI, HTTP, and future adapters should keep sharing the same public audit/result contract.
+The next workstream should first validate the real remote `v0.6.0` release path, then choose whether to deepen online/runtime audit or service hardening. Either way, the CLI, HTTP, and future adapters should keep sharing the same public audit/result contract.
