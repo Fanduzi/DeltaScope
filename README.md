@@ -32,6 +32,7 @@ Run tests and inspect versions:
 
 ```bash
 go test ./...
+make test-e2e-cli
 go run ./cmd/deltascope --version
 go run ./cmd/deltascope version
 go run ./cmd/deltascope-server -version
@@ -129,6 +130,26 @@ From the CLI, metadata-aware mode starts when any MySQL-style connection flag is
 - otherwise infers schema when the target table resolves uniquely
 - fails honestly when schema inference is ambiguous or impossible for statements that need a real existing object
 - keeps `--quiet` stable for shell pipelines and includes a `context` object in JSON output for agents
+
+## CLI Metadata E2E
+
+The Docker-backed metadata-aware CLI smoke suite is intentionally separate from `go test ./...` so default local and CI feedback stays fast and container-free.
+
+Prerequisites:
+
+- Docker Engine with `docker compose`
+- Go toolchain
+- Python 3
+
+Targets:
+
+```bash
+make test-e2e-cli
+make test-e2e-cli-mysql
+make test-e2e-cli-tidb
+```
+
+Those targets build the local CLI, start disposable MySQL or TiDB fixtures, seed deterministic schemas, and assert the public JSON/exit-code contract for dialect auto-detect, schema inference, ambiguity handling, qualified-schema SQL, metadata-backed existence checks, and one instance-fact-backed rule path.
 
 ## HTTP Service
 

@@ -30,6 +30,7 @@ DeltaScope 是一个面向 MySQL 和 TiDB 的 SQL 审核引擎。它以离线优
 
 ```bash
 go test ./...
+make test-e2e-cli
 go run ./cmd/deltascope --version
 go run ./cmd/deltascope version
 go run ./cmd/deltascope-server -version
@@ -127,6 +128,26 @@ DeltaScope 不要求必须连库。只有在配置 metadata provider 时，审�
 - 否则在目标表唯一命中时自动推断 schema
 - 当 schema 推断有歧义，或语句确实需要一个现有对象但无法推断时，直接报错而不是假装有 metadata
 - 保持 `--quiet` 适合 shell 管道，同时在 JSON 输出里加入 `context` 字段，方便 agent 消费
+
+## CLI Metadata E2E
+
+基于 Docker 的 metadata-aware CLI live smoke 被刻意设计成独立于 `go test ./...` 的一层，这样默认本地开发和 CI 反馈仍然保持快速、无容器依赖。
+
+前置条件：
+
+- Docker Engine 和 `docker compose`
+- Go toolchain
+- Python 3
+
+可用目标：
+
+```bash
+make test-e2e-cli
+make test-e2e-cli-mysql
+make test-e2e-cli-tidb
+```
+
+这些目标会构建本地 CLI、启动临时 MySQL 或 TiDB fixture、灌入确定性 schema，并对公共 JSON 输出和退出码做断言，覆盖 dialect 自动识别、schema 自动推断、歧义报错、qualified-schema SQL、metadata-backed existence 检查，以及至少一条依赖 instance facts 的规则路径。
 
 ## HTTP 服务
 
