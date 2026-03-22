@@ -532,6 +532,15 @@ This file records implementation-time decisions, tradeoffs, and issues encounter
   - keep rule execution and rule explanation linked only by `rule_id`
 - Why: this keeps the catalog complete for the shipped surface while avoiding a second fragile source of truth for which rules actually ship.
 
+## Decision 58: metadata-aware CLI live smoke stays in Docker-backed e2e, not `go test ./...`
+
+- Problem: the metadata-aware CLI path was feature-complete, but there was still real risk around live MySQL/TiDB connectivity, dialect auto-detect, schema inference, and metadata-backed findings that unit tests and fake providers could not fully retire.
+- Decision:
+  - add a Docker Compose-backed shell e2e layer that exercises only the shipped CLI against real MySQL and TiDB containers
+  - keep that layer behind explicit `make test-e2e-cli*` entrypoints instead of folding it into `go test ./...`
+  - use deterministic fixture schemas to prove unique-schema inference, ambiguity failures, qualified-schema SQL, existence checks, and one instance-fact-backed sizing path on both engines
+- Why: this gives the project credible live proof for the metadata-aware CLI surface without slowing the default Go test loop or coupling public behavior checks to internal test doubles.
+
 ## Open Tracking
 
 - Future decision: whether policy params should remain `map[string]any` or move to a stronger typed value model once real config loading and rule evaluation start to expose pain points.

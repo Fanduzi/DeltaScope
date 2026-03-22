@@ -14,6 +14,7 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 8. HTTP API service delivery
 9. audit completion and metadata-aware coverage closure
 10. CLI completion and product-surface closure
+11. CLI metadata e2e and live-smoke risk closure
 
 ## New Checkpoints
 
@@ -53,6 +54,12 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
 - `d1569e3` `feat: add cli config lint commands`
 - `5d843fc` `feat: add cli capabilities command`
 - `0fe28d8` `feat: close cli help and output gaps`
+- `2cc1b90` `docs: add cli metadata e2e plan artifacts`
+- `c63f72e` `test: add cli metadata e2e fixtures`
+- `2743e9e` `test: add cli metadata e2e harness`
+- `8babfbf` `test: add mysql cli metadata e2e coverage`
+- `62271c4` `test: add tidb cli metadata e2e coverage`
+- `7301352` `docs: add cli metadata e2e usage targets`
 
 ## Current Offline DDL Coverage
 
@@ -92,10 +99,15 @@ The repository moved beyond the original library/CLI v1 baseline and added five 
   - explanation-oriented shipped rule catalog plus `rules list/show/search`
   - `config lint`, `config show-default`, and `capabilities`
   - help/examples, metadata-aware JSON context, and CLI docs in English and Chinese
+- CLI metadata-e2e coverage:
+  - Docker-backed MySQL and TiDB live smoke through the public CLI only
+  - dialect auto-detect, schema inference, schema ambiguity, and qualified-schema DML coverage on real targets
+  - metadata-backed existence checks plus one instance-fact-backed sizing rule path verified on both engines
+  - local `Makefile` targets and docs that keep the suite separate from `go test ./...`
 
 ## What Still Looks Like The Next Milestone
 
-Milestone 6 and the follow-on CLI Completion milestone are now complete. The next milestone should be chosen from product expansion, not baseline audit completion:
+Milestone 6, CLI Completion, and CLI Metadata E2E are now complete. The next milestone should be chosen from product expansion, not baseline audit completion:
 
 - deeper online/runtime risk modeling
 - MCP server / agent adapter work

@@ -58,6 +58,11 @@
   - a shipped rule catalog metadata layer plus `rules list`, `rules show`, and `rules search`
   - `config lint`, `config show-default`, and `capabilities`
   - CLI help/examples, metadata-aware JSON context, quiet-output stability, and updated English/Chinese docs
+- completed the `CLI Metadata E2E` milestone with:
+  - Docker-backed real-instance smoke coverage for metadata-aware CLI runs against MySQL 8.4 and TiDB v8.5.0
+  - deterministic fixtures proving dialect auto-detect, schema inference, schema ambiguity errors, qualified-schema SQL, metadata-backed existence checks, and instance-fact-backed sizing behavior
+  - a shipped `scripts/test_cli_metadata_e2e.sh` harness plus `make test-e2e-cli`, `make test-e2e-cli-mysql`, and `make test-e2e-cli-tidb`
+  - README / README_ZH / module-doc closure for local live e2e usage
 
 ## In Progress
 
@@ -111,6 +116,12 @@
 - `d1569e3` `feat: add cli config lint commands`
 - `5d843fc` `feat: add cli capabilities command`
 - `0fe28d8` `feat: close cli help and output gaps`
+- `2cc1b90` `docs: add cli metadata e2e plan artifacts`
+- `c63f72e` `test: add cli metadata e2e fixtures`
+- `2743e9e` `test: add cli metadata e2e harness`
+- `8babfbf` `test: add mysql cli metadata e2e coverage`
+- `62271c4` `test: add tidb cli metadata e2e coverage`
+- `7301352` `docs: add cli metadata e2e usage targets`
 
 ## Verification Run
 
@@ -126,6 +137,8 @@
 - `go run ./cmd/deltascope capabilities`
 - `go run ./cmd/deltascope version`
 - `diff -u configs/deltascope.example.yaml <(go run ./cmd/deltascope config init)`
+- `make test-e2e-cli-mysql`
+- `make test-e2e-cli-tidb`
 - `/Users/fan/.codex/skills/check-three-level-doc/scripts/check_three_level_doc.sh`
 
 ## Decisions And Problems
@@ -144,11 +157,13 @@
 - `Audit Completion` also treats sizing checks as rough, metadata-backed guards rather than pretending to compute execution-safe storage outcomes exactly.
 - `CLI Completion` intentionally keeps metadata-aware access on the existing `audit` command instead of creating a separate online-only command tree.
 - `CLI Completion` also derives the shipped rule catalog from default-policy rule IDs so `rules` commands stay aligned with the actually shipped surface.
+- `CLI Metadata E2E` intentionally keeps real-instance smoke as a Docker-backed shell layer outside `go test ./...` so the default feedback loop stays fast and container-free while the live metadata path still gets repeatable proof.
 
 ## Remaining Gaps
 
 - `Audit Completion` closed the blocking capability-matrix gaps.
 - `CLI Completion` closed the major CLI surface gaps for audit, rules, config inspection, and capability discovery.
+- `CLI Metadata E2E` closed the remaining "metadata-aware CLI not proven on real targets" risk for local MySQL/TiDB smoke.
 - remaining work is no longer "baseline missing coverage"; it is follow-on product depth:
   - richer runtime-risk estimation beyond rough metadata-backed sizing and row-count cautions
   - broader online safety checks and policy ergonomics
