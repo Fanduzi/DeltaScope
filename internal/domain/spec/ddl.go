@@ -36,6 +36,7 @@ const (
 
 // Table describes a table-level object.
 type Table struct {
+	Schema  string `json:"schema,omitempty"`
 	Name    string `json:"name"`
 	Comment string `json:"comment,omitempty"`
 }

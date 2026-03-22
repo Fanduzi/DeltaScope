@@ -278,7 +278,7 @@ func TestAuditCommandPromptsForPasswordWhenAskPasswordIsSet(t *testing.T) {
 
 	previous := passwordPrompt
 	called := 0
-	passwordPrompt = func(_ io.Reader, out io.Writer) (string, error) {
+	passwordPrompt = func(out io.Writer) (string, error) {
 		called++
 		_, _ = out.Write([]byte("Password: "))
 		return "secret", nil
@@ -305,9 +305,51 @@ func TestAuditCommandPromptsForPasswordWhenAskPasswordIsSet(t *testing.T) {
 	}
 }
 
+func TestAuditCommandCanReadSQLFromStdinWhilePromptingPasswordSeparately(t *testing.T) {
+	previousClientFactory := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previousClientFactory })
+
+	previous := passwordPrompt
+	called := 0
+	passwordPrompt = func(out io.Writer) (string, error) {
+		called++
+		_, _ = out.Write([]byte("Password: "))
+		return "secret", nil
+	}
+	t.Cleanup(func() { passwordPrompt = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--ask-password", "-u", "root"},
+		strings.NewReader("delete from users"),
+		stdout,
+		stderr,
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	if called != 1 {
+		t.Fatalf("expected password prompt to be called once, got %d", called)
+	}
+	if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "app" {
+		t.Fatalf("expected metadata path to infer app schema, got %#v", client.instanceCalls)
+	}
+}
+
 func TestAuditCommandReturnsUserErrorWhenPasswordPromptFails(t *testing.T) {
 	previous := passwordPrompt
-	passwordPrompt = func(_ io.Reader, _ io.Writer) (string, error) {
+	passwordPrompt = func(_ io.Writer) (string, error) {
 		return "", errors.New("prompt failed")
 	}
 	t.Cleanup(func() { passwordPrompt = previous })

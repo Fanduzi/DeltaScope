@@ -72,7 +72,8 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	ddl := &spec.DDL{
 		Operation: spec.DDLOperationCreateTable,
 		Table: &spec.Table{
-			Name: stmt.Table.Name.L,
+			Schema: stmt.Table.Schema.L,
+			Name:   stmt.Table.Name.L,
 		},
 		Columns:       make([]spec.Column, 0, len(stmt.Cols)),
 		Indexes:       make([]spec.Index, 0, len(stmt.Constraints)),
@@ -124,7 +125,8 @@ func extractCreateView(stmt *ast.CreateViewStmt) *spec.DDL {
 	return &spec.DDL{
 		Operation: spec.DDLOperationCreateView,
 		Table: &spec.Table{
-			Name: stmt.ViewName.Name.L,
+			Schema: stmt.ViewName.Schema.L,
+			Name:   stmt.ViewName.Name.L,
 		},
 		HasSelect: stmt.Select != nil,
 	}
@@ -134,7 +136,8 @@ func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
 	ddl := &spec.DDL{
 		Operation: spec.DDLOperationAlterTable,
 		Table: &spec.Table{
-			Name: stmt.Table.Name.L,
+			Schema: stmt.Table.Schema.L,
+			Name:   stmt.Table.Name.L,
 		},
 		Alter: make([]spec.Alter, 0, len(stmt.Specs)),
 	}
@@ -159,7 +162,7 @@ func extractDropTable(stmt *ast.DropTableStmt) *spec.DDL {
 		ddl.Options["if_exists"] = "true"
 	}
 	if len(stmt.Tables) > 0 && stmt.Tables[0] != nil {
-		ddl.Table = &spec.Table{Name: stmt.Tables[0].Name.L}
+		ddl.Table = &spec.Table{Schema: stmt.Tables[0].Schema.L, Name: stmt.Tables[0].Name.L}
 	}
 	if len(stmt.Tables) > 1 {
 		ddl.Options["multiple_targets"] = strconv.Itoa(len(stmt.Tables))
@@ -172,7 +175,7 @@ func extractTruncateTable(stmt *ast.TruncateTableStmt) *spec.DDL {
 		Operation: spec.DDLOperationTruncateTable,
 	}
 	if stmt.Table != nil {
-		ddl.Table = &spec.Table{Name: stmt.Table.Name.L}
+		ddl.Table = &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}
 	}
 	return ddl
 }
@@ -588,35 +591,31 @@ func extractMutationTables(join *ast.Join) []spec.Table {
 	if join == nil {
 		return nil
 	}
-	names := make([]string, 0, 2)
-	collectMutationTableNames(join, &names)
-	tables := make([]spec.Table, 0, len(names))
-	for _, name := range names {
-		tables = append(tables, spec.Table{Name: name})
-	}
+	tables := make([]spec.Table, 0, 2)
+	collectMutationTables(join, &tables)
 	return tables
 }
 
-func collectMutationTableNames(node ast.ResultSetNode, names *[]string) {
+func collectMutationTables(node ast.ResultSetNode, tables *[]spec.Table) {
 	switch typed := node.(type) {
 	case nil:
 		return
 	case *ast.Join:
-		collectMutationTableNames(typed.Left, names)
-		collectMutationTableNames(typed.Right, names)
+		collectMutationTables(typed.Left, tables)
+		collectMutationTables(typed.Right, tables)
 	case *ast.TableSource:
-		collectMutationTableNames(typed.Source, names)
+		collectMutationTables(typed.Source, tables)
 	case *ast.TableName:
-		if typed.Name.L == "" || containsStringFold(*names, typed.Name.L) {
+		if typed.Name.L == "" || containsTable(*tables, typed.Schema.L, typed.Name.L) {
 			return
 		}
-		*names = append(*names, typed.Name.L)
+		*tables = append(*tables, spec.Table{Schema: typed.Schema.L, Name: typed.Name.L})
 	}
 }
 
-func containsStringFold(items []string, target string) bool {
+func containsTable(items []spec.Table, schema string, name string) bool {
 	for _, item := range items {
-		if strings.EqualFold(item, target) {
+		if strings.EqualFold(item.Schema, schema) && strings.EqualFold(item.Name, name) {
 			return true
 		}
 	}

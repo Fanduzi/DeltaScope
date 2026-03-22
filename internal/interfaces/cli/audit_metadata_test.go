@@ -18,6 +18,7 @@ type fakeMetadataClient struct {
 	detectDialect      spec.Dialect
 	detectErr          error
 	schemasByTable     map[string][]string
+	findSchemaCalls    []string
 	findSchemaErr      error
 	instanceCalls      []string
 	tableSnapshotCalls []struct {
@@ -48,6 +49,7 @@ func (f *fakeMetadataClient) FindSchemasForTable(_ context.Context, table string
 	if f.findSchemaErr != nil {
 		return nil, f.findSchemaErr
 	}
+	f.findSchemaCalls = append(f.findSchemaCalls, strings.ToLower(table))
 	return f.schemasByTable[strings.ToLower(table)], nil
 }
 
@@ -201,5 +203,39 @@ func TestAuditCommandRejectsDialectMismatchInMetadataMode(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "detected dialect") {
 		t.Fatalf("expected dialect mismatch error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandUsesQualifiedSchemaWithoutInference(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app", "archive"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from app.users", "--host", "127.0.0.1", "--user", "root"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if len(client.findSchemaCalls) != 0 {
+		t.Fatalf("expected qualified schema to skip inference lookup, got %#v", client.findSchemaCalls)
+	}
+	if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "app" {
+		t.Fatalf("expected qualified schema to flow to instance facts, got %#v", client.instanceCalls)
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "app" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected qualified schema to flow to snapshot lookup, got %#v", client.tableSnapshotCalls)
 	}
 }

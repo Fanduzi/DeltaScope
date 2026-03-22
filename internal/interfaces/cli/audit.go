@@ -158,7 +158,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 		return auditConnectionOptions{}, newUserError("--socket cannot be combined with host/port TCP options")
 	}
 	if options.AskPassword {
-		password, err := passwordPrompt(cmd.InOrStdin(), cmd.ErrOrStderr())
+		password, err := passwordPrompt(cmd.ErrOrStderr())
 		if err != nil {
 			return auditConnectionOptions{}, newUserError(fmt.Sprintf("prompt password: %v", err))
 		}
@@ -335,13 +335,18 @@ func mapAuditError(exitCode *int, err error) error {
 	return err
 }
 
-func promptPassword(stdin io.Reader, stderr io.Writer) (string, error) {
+func promptPassword(stderr io.Writer) (string, error) {
 	if _, err := io.WriteString(stderr, "Password: "); err != nil {
 		return "", err
 	}
 
-	file, ok := stdin.(*os.File)
-	if ok && term.IsTerminal(int(file.Fd())) {
+	file, err := os.Open("/dev/tty")
+	if err != nil {
+		return "", errors.New("interactive password prompt requires a TTY")
+	}
+	defer file.Close()
+
+	if term.IsTerminal(int(file.Fd())) {
 		bytes, err := term.ReadPassword(int(file.Fd()))
 		if _, writeErr := io.WriteString(stderr, "\n"); writeErr != nil && err == nil {
 			err = writeErr
@@ -352,8 +357,14 @@ func promptPassword(stdin io.Reader, stderr io.Writer) (string, error) {
 		return strings.TrimSpace(string(bytes)), nil
 	}
 
-	line, err := bufio.NewReader(stdin).ReadString('\n')
+	line, err := bufio.NewReader(file).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
+		return "", err
+	}
+	if _, writeErr := io.WriteString(stderr, "\n"); writeErr != nil && err == nil {
+		err = writeErr
+	}
+	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(line), nil

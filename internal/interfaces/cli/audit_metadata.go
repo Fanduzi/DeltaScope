@@ -127,6 +127,10 @@ func resolveAuditSchema(ctx context.Context, client metadataClient, sqlText stri
 
 	resolvedSchemas := make(map[string]struct{})
 	for _, target := range targets {
+		if target.Schema != "" {
+			resolvedSchemas[target.Schema] = struct{}{}
+			continue
+		}
 		schemas, err := client.FindSchemasForTable(ctx, target.Name)
 		if err != nil {
 			return "", "", newUserError(fmt.Sprintf("resolve schema for table %q: %v", target.Name, err))
@@ -161,6 +165,7 @@ func resolveAuditSchema(ctx context.Context, client metadataClient, sqlText stri
 }
 
 type schemaTarget struct {
+	Schema           string
 	Name             string
 	RequiresExisting bool
 }
@@ -178,18 +183,18 @@ func collectTargetTables(sqlText string, dialect spec.Dialect) ([]schemaTarget, 
 	targetsByName := make(map[string]schemaTarget)
 	order := make([]string, 0)
 	for _, statement := range statements {
-		name, requiresExisting := statementTarget(statement)
+		schema, name, requiresExisting := statementTarget(statement)
 		if name == "" {
 			continue
 		}
-		key := strings.ToLower(name)
+		key := strings.ToLower(schema) + "." + strings.ToLower(name)
 		existing, ok := targetsByName[key]
 		if ok {
 			existing.RequiresExisting = existing.RequiresExisting || requiresExisting
 			targetsByName[key] = existing
 			continue
 		}
-		targetsByName[key] = schemaTarget{Name: name, RequiresExisting: requiresExisting}
+		targetsByName[key] = schemaTarget{Schema: schema, Name: name, RequiresExisting: requiresExisting}
 		order = append(order, key)
 	}
 
@@ -200,20 +205,22 @@ func collectTargetTables(sqlText string, dialect spec.Dialect) ([]schemaTarget, 
 	return targets, nil
 }
 
-func statementTarget(statement spec.Statement) (string, bool) {
+func statementTarget(statement spec.Statement) (string, string, bool) {
 	if statement.DDL != nil && statement.DDL.Table != nil {
+		schema := strings.TrimSpace(statement.DDL.Table.Schema)
 		name := strings.TrimSpace(statement.DDL.Table.Name)
 		if name == "" {
-			return "", false
+			return "", "", false
 		}
-		return name, statement.DDL.Operation != spec.DDLOperationCreateTable
+		return schema, name, statement.DDL.Operation != spec.DDLOperationCreateTable
 	}
 	if statement.DML != nil && len(statement.DML.Tables) > 0 {
+		schema := strings.TrimSpace(statement.DML.Tables[0].Schema)
 		name := strings.TrimSpace(statement.DML.Tables[0].Name)
 		if name == "" {
-			return "", false
+			return "", "", false
 		}
-		return name, true
+		return schema, name, true
 	}
-	return "", false
+	return "", "", false
 }
