@@ -12,6 +12,15 @@ English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURI
 
 DeltaScope is a SQL audit engine for MySQL and TiDB. It starts as an offline-first library and CLI, then layers optional metadata-aware checks and a thin HTTP service on top of the same core rule engine.
 
+## Documentation
+
+- [Admin docs](docs/admin/README.md)
+- [Concept docs](docs/concept/README.md)
+- [Dev docs](docs/dev/README.md)
+- [Recipes](docs/recipe/README.md)
+- [Reference docs](docs/reference/README.md)
+- [Audit capability matrix](docs/reference/audit-capability-matrix.md)
+
 ## Why DeltaScope
 
 - Reviews DDL and DML with stable `blocker`, `warning`, and `notice` findings.

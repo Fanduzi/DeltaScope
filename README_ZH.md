@@ -12,6 +12,15 @@
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的 SQL 审核引擎。它以离线优先的 library 和 CLI 起步，在同一套核心规则引擎上再叠加可选的元信息增强能力和轻量 HTTP 服务。
 
+## 文档导航
+
+- [Admin docs](docs/admin/README.md)
+- [Concept docs](docs/concept/README.md)
+- [Dev docs](docs/dev/README.md)
+- [Recipes](docs/recipe/README.md)
+- [Reference docs](docs/reference/README.md)
+- [Audit capability matrix](docs/reference/audit-capability-matrix.md)
+
 ## 为什么是 DeltaScope
 
 - 使用稳定的 `blocker`、`warning`、`notice` finding 模型审核 DDL 和 DML。
