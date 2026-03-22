@@ -34,6 +34,8 @@ cleanup() {
   if [[ -n "${TMP_DIR}" && -d "${TMP_DIR}" ]]; then
     rm -rf "${TMP_DIR}"
   fi
+  TMP_DIR=""
+  CLI_BIN=""
 }
 
 require_cmd() {
@@ -346,21 +348,24 @@ main() {
   require_cmd python3
   require_cmd go
   trap cleanup EXIT
-  build_cli
 
   case "${mode}" in
     mysql)
+      build_cli
       start_mysql_stack
       run_mysql_suite
       ;;
     tidb)
+      build_cli
       start_tidb_stack
       run_tidb_suite
       ;;
     all)
+      build_cli
       start_mysql_stack
       run_mysql_suite
       cleanup
+      build_cli
       start_tidb_stack
       run_tidb_suite
       ;;
