@@ -25,6 +25,26 @@ deltascope version
 - `--quiet`: suppress non-result chatter
 - `--version`: print only the semantic version
 
+## Metadata-Aware Audit Flags
+
+`deltascope audit` also accepts MySQL-style connection flags when you want live metadata enrichment:
+
+- `--host`
+- `--port`
+- `--user`
+- `--password`
+- `--ask-password`
+- `--schema`
+- `--socket`
+
+When any connection flag is supplied, DeltaScope switches from offline mode into metadata-aware mode.
+
+## Output Notes
+
+- default output is Markdown for humans
+- `--format json` is the stable machine-facing contract
+- metadata-aware JSON includes a `context` object with resolved mode, dialect, and schema
+
 ## Exit Codes
 
 - `0`: audit completed below the failure threshold

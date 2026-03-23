@@ -31,10 +31,42 @@ The published archive format is `deltascope_0.6.1_<os>_<arch>.tar.gz`. Developme
 
 ## Quick Start
 
-Audit inline SQL:
+Audit a risky DML statement:
 
 ```bash
 deltascope audit --sql "delete from users"
+```
+
+Example output:
+
+```text
+Verdict: reject
+Statements: 1
+Blockers: 1
+Warnings: 0
+Notices: 0
+
+Statement 1: DELETE
+- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+```
+
+Audit a `CREATE TABLE` statement:
+
+```bash
+deltascope audit --sql "create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'"
+```
+
+Example output:
+
+```text
+Verdict: review
+Statements: 1
+Blockers: 0
+Warnings: 1
+Notices: 0
+
+Statement 1: CREATE TABLE
+- [warning] ddl.column.comment.require: column `id` must have a comment
 ```
 
 Audit a file:
@@ -50,6 +82,32 @@ deltascope audit \
   --sql "alter table users drop column age" \
   --format json \
   --fail-on warning
+```
+
+Example JSON shape:
+
+```json
+{
+  "verdict": "review",
+  "summary": {
+    "blockers": 0,
+    "warnings": 1,
+    "notices": 0
+  },
+  "statements": [
+    {
+      "index": 1,
+      "kind": "ALTER TABLE",
+      "findings": [
+        {
+          "rule_id": "ddl.alter.drop_column.forbid",
+          "level": "warning",
+          "message": "dropping columns should be reviewed carefully"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 Run metadata-aware audit against a live schema:
@@ -94,7 +152,8 @@ deltascope audit \
 ## Developer Workflows
 
 - `make test` runs `go test ./...`
-- `make build` produces both local binaries under `.build/bin`
+- `make build` produces both local binaries under `bin/`
+- `make build-linux` produces Linux amd64 binaries under `bin/`
 - `make test-e2e-cli` runs the Docker-backed metadata CLI smoke suite
 - [docs/dev/testing.md](docs/dev/testing.md) covers the full target set
 

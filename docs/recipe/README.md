@@ -2,6 +2,12 @@
 
 Task-oriented examples for common DeltaScope workflows.
 
+These docs are intended to be copied into real terminal sessions. Each recipe should show:
+
+- what problem it solves
+- the exact command to run
+- the kind of output or verdict to expect
+
 ## Recipes
 
 | Recipe | Purpose |

@@ -31,10 +31,42 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.1/install.s
 
 ## 快速开始
 
-审核内联 SQL：
+审核高风险 DML：
 
 ```bash
 deltascope audit --sql "delete from users"
+```
+
+示例输出：
+
+```text
+Verdict: reject
+Statements: 1
+Blockers: 1
+Warnings: 0
+Notices: 0
+
+Statement 1: DELETE
+- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+```
+
+审核 `CREATE TABLE`：
+
+```bash
+deltascope audit --sql "create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'"
+```
+
+示例输出：
+
+```text
+Verdict: review
+Statements: 1
+Blockers: 0
+Warnings: 1
+Notices: 0
+
+Statement 1: CREATE TABLE
+- [warning] ddl.column.comment.require: column `id` must have a comment
 ```
 
 审核文件：
@@ -50,6 +82,32 @@ deltascope audit \
   --sql "alter table users drop column age" \
   --format json \
   --fail-on warning
+```
+
+JSON 结构示例：
+
+```json
+{
+  "verdict": "review",
+  "summary": {
+    "blockers": 0,
+    "warnings": 1,
+    "notices": 0
+  },
+  "statements": [
+    {
+      "index": 1,
+      "kind": "ALTER TABLE",
+      "findings": [
+        {
+          "rule_id": "ddl.alter.drop_column.forbid",
+          "level": "warning",
+          "message": "dropping columns should be reviewed carefully"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 对在线实例执行 metadata-aware 审核：
@@ -94,7 +152,8 @@ deltascope audit \
 ## 开发工作流
 
 - `make test` 执行 `go test ./...`
-- `make build` 在 `.build/bin` 下产出两个本地二进制
+- `make build` 在 `bin/` 下产出两个本地二进制
+- `make build-linux` 在 `bin/` 下产出 Linux amd64 二进制
 - `make test-e2e-cli` 执行基于 Docker 的 metadata CLI smoke
 - [docs/dev/testing.md](docs/dev/testing.md) 汇总了完整目标集
 

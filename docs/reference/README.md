@@ -2,6 +2,8 @@
 
 Stable lookup material for public DeltaScope contracts.
 
+Use this section when you need exact command, config, API, or capability details instead of tutorial-style walkthroughs.
+
 ## References
 
 | Reference | Purpose |
