@@ -1,16 +1,16 @@
-# Inspect Rules and Config
+# 查看规则与配置
 
-Use the built-in discovery commands to understand what DeltaScope will enforce before running a large audit. These commands require no database connection and work entirely from the compiled rule registry and your policy file.
+在运行大批量审计前，使用内置的发现命令了解 DeltaScope 将执行哪些规则。这些命令无需数据库连接，完全基于编译好的规则注册表和策略文件运行。
 
-## Discovering Rules
+## 发现规则
 
-### List all rules
+### 列出所有规则
 
 ```bash
 deltascope rules list
 ```
 
-Output example (truncated — your build may include more rules):
+输出示例（节选——实际构建版本可能包含更多规则）：
 
 ```
 RULE ID                                    KIND  LEVEL    METADATA
@@ -32,31 +32,31 @@ ddl.table.rows.max_count.require           ddl   blocker  true
 ...
 ```
 
-The `METADATA` column indicates whether the rule requires a live database connection (`true`) or runs offline (`false`).
+`METADATA` 列表示该规则是否需要实时数据库连接（`true`）或可离线运行（`false`）。
 
-### Filter by kind or level
+### 按类型或级别过滤
 
 ```bash
-# Only DML rules
+# 仅显示 DML 规则
 deltascope rules list --kind dml
 
-# Only DDL rules at blocker level
+# 仅显示 DDL 中 blocker 级别的规则
 deltascope rules list --kind ddl --level blocker
 
-# All warning-level rules (any kind)
+# 所有 warning 级别的规则（不限类型）
 deltascope rules list --level warning
 
-# All metadata-requiring rules
+# 所有需要元数据的规则
 deltascope rules list --metadata
 ```
 
-### Show rule details
+### 查看规则详情
 
 ```bash
 deltascope rules show dml.where.require
 ```
 
-Output:
+输出：
 
 ```
 Rule ID:     dml.where.require
@@ -68,13 +68,13 @@ Params:
   required (bool, default: true)
 ```
 
-Another example — a DDL rule with a numeric parameter:
+另一个带数值参数的 DDL 规则示例：
 
 ```bash
 deltascope rules show ddl.table.name.max_length
 ```
 
-Output:
+输出：
 
 ```
 Rule ID:     ddl.table.name.max_length
@@ -86,13 +86,13 @@ Params:
   max_length (int, default: 64)
 ```
 
-And a metadata-backed rule:
+需要元数据的规则示例：
 
 ```bash
 deltascope rules show ddl.table.row_size.max_bytes.require
 ```
 
-Output:
+输出：
 
 ```
 Rule ID:     ddl.table.row_size.max_bytes.require
@@ -104,20 +104,20 @@ Params:
   max_bytes (int, default: 65535)
 ```
 
-### Search rules by keyword
+### 按关键词搜索规则
 
 ```bash
-# Find all rules mentioning "metadata"
+# 查找所有提及 "metadata" 的规则
 deltascope rules search metadata
 
-# Find rules related to table prefixes
+# 查找与表前缀相关的规则
 deltascope rules search prefix
 
-# Find rules related to DROP
+# 查找与 DROP 相关的规则
 deltascope rules search drop
 ```
 
-Output example (`deltascope rules search drop`):
+输出示例（`deltascope rules search drop`）：
 
 ```
 RULE ID                          KIND  LEVEL    METADATA
@@ -125,69 +125,69 @@ ddl.alter.drop_column.forbid     ddl   blocker  false
 ddl.object.drop_table.forbid     ddl   blocker  false
 ```
 
-## Managing Config
+## 管理配置
 
-### Generate default config
+### 生成默认配置
 
-Emit the full default policy as a YAML file you can check into your repository:
+将完整的默认策略导出为 YAML 文件并提交到代码仓库：
 
 ```bash
 deltascope config init > deltascope.yaml
 ```
 
-This produces a YAML file with every rule listed, its default `enabled` state, `level`, and any `params`. Use it as the starting point for your team's policy.
+生成的 YAML 文件包含每条规则的默认 `enabled` 状态、`level` 以及所有 `params`。以此作为团队策略定制的起点。
 
-### Validate a config file
+### 校验配置文件
 
-Before deploying a modified config, lint it to catch typos in rule IDs or invalid parameter values:
+修改配置后，在部署前进行校验，捕获规则 ID 拼写错误或无效参数值：
 
 ```bash
 deltascope config lint --file ./deltascope.yaml
 ```
 
-Success output:
+成功输出：
 
 ```
 Config file ./deltascope.yaml is valid.
 ```
 
-Failure output — unknown rule ID (with a did-you-mean suggestion):
+失败输出——规则 ID 未知（附带 did-you-mean 建议）：
 
 ```
 Error: unknown rule ID "ddl.table.comments.require" in ./deltascope.yaml (did you mean "ddl.table.comment.require"?)
 ```
 
-Failure output — invalid parameter type:
+失败输出——参数类型无效：
 
 ```
 Error: rule "dml.insert.rows.max_count": param "limit" expects int, got string "five hundred"
 ```
 
-Failure output — invalid level value:
+失败输出——级别值无效：
 
 ```
 Error: rule "ddl.column.comment.require": unknown level "critical" (expected: blocker, warning, notice)
 ```
 
-### Print built-in defaults
+### 查看内置默认值
 
-Inspect the compiled-in defaults without generating a file:
+不生成文件，直接查看编译内置的默认配置：
 
 ```bash
 deltascope config show-default
 ```
 
-This prints the same YAML that `config init` would write, but to stdout only — useful for diffing against your checked-in config:
+与 `config init` 输出内容相同，但仅打印到标准输出——可用于与已提交配置文件进行对比：
 
 ```bash
 diff <(deltascope config show-default) ./deltascope.yaml
 ```
 
-## Common Config Tasks
+## 常见配置任务
 
-### Disable a rule
+### 禁用某条规则
 
-Set `enabled: false` to turn a rule off completely:
+将 `enabled` 设置为 `false` 完全关闭该规则：
 
 ```yaml
 rules:
@@ -195,29 +195,29 @@ rules:
     enabled: false
 ```
 
-### Lower a rule's severity
+### 降低规则严重级别
 
-Change `level` to downgrade a finding from `warning` to `notice` (or any valid level):
+修改 `level` 将发现从 `warning` 降级为 `notice`（或其他合法级别）：
 
 ```yaml
 rules:
   ddl.table.comment.require:
     enabled: true
-    level: notice    # default is warning — lowered for this team
+    level: notice    # 默认为 warning——为本团队降级
 ```
 
-### Upgrade a rule's severity
+### 提升规则严重级别
 
 ```yaml
 rules:
   ddl.column.comment.require:
     enabled: true
-    level: blocker   # default is warning — escalated for this team
+    level: blocker   # 默认为 warning——为本团队升级
 ```
 
-### Adjust a rule's parameter
+### 调整规则参数
 
-Override a numeric or boolean parameter to suit your environment:
+覆盖数值或布尔参数以适应您的环境：
 
 ```yaml
 rules:
@@ -225,21 +225,21 @@ rules:
     enabled: true
     level: warning
     params:
-      limit: 500    # default is 100 — relaxed for bulk-import workflows
+      limit: 500    # 默认为 100——为批量导入工作流放宽限制
 
   ddl.table.name.max_length:
     enabled: true
     level: blocker
     params:
-      max_length: 32    # stricter than the default 64
+      max_length: 32    # 比默认的 64 更严格
 ```
 
-### Full example config snippet
+### 完整配置示例片段
 
 ```yaml
 # deltascope.yaml
 rules:
-  # DML rules
+  # DML 规则
   dml.where.require:
     enabled: true
     level: blocker
@@ -254,17 +254,17 @@ rules:
     params:
       limit: 500
 
-  # DDL rules
+  # DDL 规则
   ddl.table.comment.require:
     enabled: true
-    level: notice           # downgraded — team is still adopting comments
+    level: notice           # 降级——团队正在逐步推广注释规范
 
   ddl.column.comment.require:
     enabled: true
     level: warning
 
   ddl.alter.drop_column.forbid:
-    enabled: false          # disabled — ops team handles column drops manually
+    enabled: false          # 禁用——运维团队手动处理列删除
 
   ddl.table.name.max_length:
     enabled: true
@@ -273,7 +273,7 @@ rules:
       max_length: 48
 ```
 
-After editing, always validate before use:
+编辑完成后，在使用前务必校验：
 
 ```bash
 deltascope config lint --file ./deltascope.yaml

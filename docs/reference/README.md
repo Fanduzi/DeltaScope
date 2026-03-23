@@ -13,3 +13,4 @@ Use this section when you need exact command, config, API, or capability details
 | [config.md](config.md) | Config file lifecycle and operator-facing commands |
 | [rules.md](rules.md) | Shipped rule discovery commands and rule-family anchors |
 | [http-api.md](http-api.md) | HTTP service endpoints and request/response behavior |
+| [library.md](library.md) | Go library API reference for pkg/deltascope |

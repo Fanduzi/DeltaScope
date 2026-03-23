@@ -1,10 +1,10 @@
-# Review DDL Before Migration
+# 在迁移前审查 DDL
 
-Gate migration SQL before rollout by running DeltaScope as a pre-merge or pre-apply check. This catches policy violations — missing comments, bad column defaults, risky drops — before the migration tool ever touches the database.
+在发布前通过 DeltaScope 对迁移 SQL 进行预合并或预执行检查，作为门控手段。这可以在迁移工具接触数据库之前，捕获策略违规——缺失注释、不良列默认值、危险的 DROP 操作等问题。
 
-## Basic Usage
+## 基本用法
 
-Suppose your migration file contains:
+假设迁移文件内容如下：
 
 ```sql
 CREATE TABLE users (
@@ -18,7 +18,7 @@ CREATE TABLE users (
 deltascope audit --config ./deltascope.yaml --file ./migrations/20260322.sql
 ```
 
-Expected output:
+预期输出：
 
 ```text
 Verdict: review
@@ -30,11 +30,11 @@ Statement 1: CREATE TABLE
             Suggestion: Add a COMMENT clause to column `id`
 ```
 
-## Multi-Statement Migration Files
+## 多语句迁移文件
 
-Real migration files often contain several statements. DeltaScope audits all of them and reports findings per statement.
+实际迁移文件通常包含多条语句。DeltaScope 审计所有语句并按语句逐条报告发现。
 
-Example migration file (`./migrations/20260323.sql`):
+示例迁移文件（`./migrations/20260323.sql`）：
 
 ```sql
 CREATE TABLE products (
@@ -113,31 +113,29 @@ deltascope audit --file ./migrations/20260323.sql --format json --fail-on blocke
 }
 ```
 
-Exit code `1` — the `blocker` threshold is crossed (warnings alone would give exit `0` with `--fail-on blocker`).
+退出码 `1`——超过了 `blocker` 阈值（本例中所有发现均为 `warning`，使用 `--fail-on blocker` 实际退出码为 `0`；若需对 warning 也阻断，请使用 `--fail-on warning`）。
 
-Wait — in this example all findings are `warning`. With `--fail-on blocker` the exit code would actually be `0` (no blockers). Use `--fail-on warning` to block on warnings too.
+## 集成模式
 
-## Integration Patterns
+### 与 golang-migrate 集成
 
-### With golang-migrate
-
-Audit the `.up.sql` file before running `migrate up`. If DeltaScope rejects the file, the migration is never applied:
+在执行 `migrate up` 前先审计 `.up.sql` 文件。若 DeltaScope 拒绝该文件，迁移不会被应用：
 
 ```bash
 MIGRATION_FILE="./migrations/000001_create_users.up.sql"
 
-# Step 1: Audit
+# 第一步：审计
 deltascope audit \
   --file "$MIGRATION_FILE" \
   --config ./deltascope.yaml \
   --fail-on blocker \
 || { echo "DeltaScope rejected $MIGRATION_FILE — migration aborted."; exit 1; }
 
-# Step 2: Apply only if audit passed
+# 第二步：审计通过后再执行迁移
 migrate -database "$DATABASE_URL" -path ./migrations up
 ```
 
-For CI, wrap this in a script so the pipeline fails clearly:
+在 CI 中，将此逻辑封装为脚本以便流水线清晰报错：
 
 ```bash
 #!/usr/bin/env bash
@@ -152,9 +150,9 @@ echo "All migrations passed audit. Running migrate up..."
 migrate -database "$DATABASE_URL" -path ./migrations up
 ```
 
-### With flyway
+### 与 flyway 集成
 
-Audit all versioned migration scripts in order before letting Flyway apply them:
+按顺序审计所有版本化迁移脚本，通过后再让 Flyway 执行：
 
 ```bash
 #!/usr/bin/env bash
@@ -169,7 +167,7 @@ echo "All migrations passed audit. Running flyway migrate..."
 flyway migrate
 ```
 
-In CI (GitHub Actions):
+在 CI（GitHub Actions）中：
 
 ```yaml
 - name: Audit Flyway migrations
@@ -187,9 +185,9 @@ In CI (GitHub Actions):
     FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
 ```
 
-## Metadata-Aware Variant
+## 元数据感知变体
 
-Add connection flags when migration safety depends on current schema state — for example, to detect columns that already exist or tables that do not yet exist.
+当迁移安全性依赖当前 Schema 状态时（例如检测已存在的列或不存在的表），添加连接参数启用元数据感知模式：
 
 ```bash
 deltascope audit \
@@ -204,13 +202,13 @@ deltascope audit \
   --fail-on blocker
 ```
 
-This is especially useful for:
+此模式特别适用于以下场景：
 
-- `ALTER TABLE` compatibility checks (column already exists, index already exists)
-- Table existence checks before `DROP` or `TRUNCATE`
-- Table-option comparisons against the current schema state
+- `ALTER TABLE` 兼容性检查（列已存在、索引已存在）
+- 执行 `DROP` 或 `TRUNCATE` 前的表存在性检查
+- 与当前 Schema 状态的表选项对比
 
-The JSON output includes a `context` field confirming metadata-aware mode:
+JSON 输出包含 `context` 字段，确认元数据感知模式已激活：
 
 ```json
 {
@@ -230,9 +228,9 @@ The JSON output includes a `context` field confirming metadata-aware mode:
 }
 ```
 
-## JSON Output for CI
+## 为 CI 解析 JSON 输出
 
-Parse the `verdict` field to drive CI logic without relying on exit codes alone. This is useful when you want to extract and display specific findings in the CI log:
+解析 `verdict` 字段来驱动 CI 逻辑，而不单纯依赖退出码。这在需要将具体发现展示到 CI 日志时特别有用：
 
 ```bash
 RESULT=$(deltascope audit --file ./migrations/latest.sql --format json)
@@ -260,11 +258,11 @@ fi
 echo "Audit result: $VERDICT"
 ```
 
-## Recommended CI Pattern
+## 推荐 CI 模式
 
-- [ ] Keep a checked-in policy file (`deltascope.yaml`) so every developer and CI run uses the same rules.
-- [ ] Run the audit step **before** the migration step — never after.
-- [ ] Use `--fail-on blocker` as the default gate. Tighten to `--fail-on warning` for stricter teams.
-- [ ] Use `--format json` in CI so findings appear as structured data in logs.
-- [ ] Keep at least one migration fixture in the repository so developers can reproduce the same audit locally.
-- [ ] For multi-file migration directories, loop over files in migration order (alphabetical or version-sorted) to catch merge-alter findings correctly.
+- [ ] 在代码仓库中维护一个策略文件（`deltascope.yaml`），确保每位开发者和每次 CI 运行使用相同的规则。
+- [ ] 审计步骤必须在迁移步骤**之前**运行——而不是之后。
+- [ ] 以 `--fail-on blocker` 作为默认门控。对要求更严格的团队，可收紧至 `--fail-on warning`。
+- [ ] 在 CI 中使用 `--format json`，使发现以结构化数据形式出现在日志中。
+- [ ] 在代码仓库中保留至少一个迁移示例文件，以便开发者在本地重现相同的审计结果。
+- [ ] 对多文件迁移目录，按迁移顺序（字母序或版本排序）遍历文件，以便 merge-alter 规则能正确检测。

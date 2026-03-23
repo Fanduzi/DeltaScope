@@ -1,14 +1,14 @@
-# Audit SQL Offline
+# 离线审计 SQL
 
-Use this path when you want repeatable SQL review with no database dependency. No connection flags are needed — DeltaScope runs entirely from the SQL text and your policy config.
+当您希望进行可重复的 SQL 审查且不依赖数据库连接时，请使用此模式。无需任何连接参数——DeltaScope 完全基于 SQL 文本和策略配置文件运行。
 
-## Quick Start
+## 快速开始
 
 ```bash
 deltascope audit --sql "DELETE FROM users"
 ```
 
-Expected output (markdown, default):
+预期输出（默认 markdown 格式）：
 
 ```text
 Verdict: reject
@@ -20,17 +20,17 @@ Statement 1: DELETE
             Suggestion: Add a WHERE clause to restrict the rows affected
 ```
 
-The exit code is `1` because the verdict is `reject` and the default `--fail-on` threshold is `blocker`.
+由于结论为 `reject` 且默认 `--fail-on` 阈值为 `blocker`，退出码为 `1`。
 
-## JSON Output
+## JSON 输出
 
-Add `--format json` to get the machine-readable form. This is the stable contract for CI pipelines and AI agent integrations.
+添加 `--format json` 可获得机器可读格式。这是面向 CI 流水线和 AI 智能体集成的稳定契约。
 
 ```bash
 deltascope audit --sql "DELETE FROM users" --format json
 ```
 
-Complete JSON output:
+完整 JSON 输出：
 
 ```json
 {
@@ -64,9 +64,9 @@ Complete JSON output:
 }
 ```
 
-## Multi-Statement Input
+## 多语句输入
 
-DeltaScope accepts a SQL text containing multiple statements separated by semicolons. Findings are reported per statement.
+DeltaScope 接受包含多条以分号分隔语句的 SQL 文本，并按语句逐条报告审查结果。
 
 ```bash
 deltascope audit --sql "
@@ -79,7 +79,7 @@ DELETE FROM orders;
 " --format json
 ```
 
-Complete JSON output:
+完整 JSON 输出：
 
 ```json
 {
@@ -140,15 +140,15 @@ Complete JSON output:
 }
 ```
 
-## File Input
+## 文件输入
 
-Read SQL from a file using `--file`. This is the most common usage for migration files.
+使用 `--file` 从文件读取 SQL。这是迁移文件最常见的使用方式。
 
 ```bash
 deltascope audit --file ./migrations/20260322.sql
 ```
 
-With a custom config and JSON output:
+指定自定义配置并输出 JSON：
 
 ```bash
 deltascope audit \
@@ -158,15 +158,15 @@ deltascope audit \
   --fail-on blocker
 ```
 
-## Stdin Input
+## 标准输入（stdin）
 
-DeltaScope reads from stdin when no `--sql` or `--file` flag is supplied. This works naturally with shell pipes and heredocs.
+当未提供 `--sql` 或 `--file` 参数时，DeltaScope 从标准输入读取。这与 shell 管道和 heredoc 配合使用非常自然。
 
 ```bash
-# Pipe from cat
+# 通过 cat 管道传入
 cat ./migrations/20260322.sql | deltascope audit
 
-# Pipe from a subshell
+# 通过子 shell 管道传入
 echo "DELETE FROM users" | deltascope audit --format json
 
 # Heredoc
@@ -175,11 +175,11 @@ DELETE FROM orders WHERE created_at < '2020-01-01';
 EOF
 ```
 
-## Verdict Examples
+## 结论示例
 
-### reject — blocker finding
+### reject — 存在 blocker 级别发现
 
-Any blocker-level finding produces a `reject` verdict.
+任何 blocker 级别的发现都会产生 `reject` 结论。
 
 ```bash
 deltascope audit --sql "DELETE FROM users" --format json
@@ -209,11 +209,11 @@ deltascope audit --sql "DELETE FROM users" --format json
 }
 ```
 
-Exit code: `1` (default `--fail-on blocker`).
+退出码：`1`（默认 `--fail-on blocker`）。
 
-### review — warning only
+### review — 仅有 warning 级别发现
 
-Warnings produce a `review` verdict when there are no blockers.
+在没有 blocker 的情况下，warning 级别的发现产生 `review` 结论。
 
 ```bash
 deltascope audit --sql "CREATE TABLE t (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created', updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated', PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='t';" --format json
@@ -243,11 +243,11 @@ deltascope audit --sql "CREATE TABLE t (id BIGINT UNSIGNED NOT NULL AUTO_INCREME
 }
 ```
 
-Exit code: `0` (default `--fail-on blocker`; no blockers present).
+退出码：`0`（默认 `--fail-on blocker`；不存在 blocker 级别发现）。
 
-### pass — no findings
+### pass — 无任何发现
 
-A fully compliant statement produces a `pass` verdict with an empty findings array.
+完全合规的语句产生 `pass` 结论，findings 数组为空。
 
 ```bash
 deltascope audit --sql "
@@ -280,24 +280,24 @@ CREATE TABLE orders (
 }
 ```
 
-Exit code: `0`.
+退出码：`0`。
 
-## JSON Output Schema
+## JSON 输出字段说明
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `verdict` | `"pass"` \| `"review"` \| `"reject"` | Overall outcome. `reject` = any blocker; `review` = warnings/notices only; `pass` = no findings. |
-| `summary.statements` | integer | Total number of SQL statements parsed. |
-| `summary.blockers` | integer | Count of blocker-level findings across all statements. |
-| `summary.warnings` | integer | Count of warning-level findings. |
-| `summary.notices` | integer | Count of notice-level findings. |
-| `statements[].index` | integer | 1-based position of this statement in the input. |
-| `statements[].kind` | string | Statement type: `CREATE TABLE`, `ALTER TABLE`, `DELETE`, `UPDATE`, etc. |
-| `statements[].raw_sql` | string | Original SQL text of this statement. |
-| `statements[].findings[]` | array | Rule violations for this statement. May be empty. |
-| `statements[].findings[].rule_id` | string | Stable rule identifier (e.g. `dml.where.require`). |
-| `statements[].findings[].level` | `"blocker"` \| `"warning"` \| `"notice"` | Severity of this finding. |
-| `statements[].findings[].message` | string | Human-readable description of the violation. |
-| `statements[].findings[].suggestion` | string | Actionable fix guidance (present when available). |
-| `statements[].findings[].location` | object | `{line, column}` position in the raw SQL. |
-| `global_findings` | array | Cross-statement findings (e.g. merge-alter rule). Always present; may be empty. |
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `verdict` | `"pass"` \| `"review"` \| `"reject"` | 整体结论。`reject` = 存在任何 blocker；`review` = 仅有 warning/notice；`pass` = 无任何发现。 |
+| `summary.statements` | integer | 解析到的 SQL 语句总数。 |
+| `summary.blockers` | integer | 所有语句中 blocker 级别发现的数量。 |
+| `summary.warnings` | integer | warning 级别发现的数量。 |
+| `summary.notices` | integer | notice 级别发现的数量。 |
+| `statements[].index` | integer | 该语句在输入中的位置（从 1 开始）。 |
+| `statements[].kind` | string | 语句类型：`CREATE TABLE`、`ALTER TABLE`、`DELETE`、`UPDATE` 等。 |
+| `statements[].raw_sql` | string | 该语句的原始 SQL 文本。 |
+| `statements[].findings[]` | array | 该语句的规则违规项，可为空数组。 |
+| `statements[].findings[].rule_id` | string | 稳定的规则标识符（如 `dml.where.require`）。 |
+| `statements[].findings[].level` | `"blocker"` \| `"warning"` \| `"notice"` | 该发现的严重级别。 |
+| `statements[].findings[].message` | string | 违规问题的可读描述。 |
+| `statements[].findings[].suggestion` | string | 可操作的修复建议（如适用）。 |
+| `statements[].findings[].location` | object | 在原始 SQL 中的位置 `{line, column}`。 |
+| `global_findings` | array | 跨语句的发现（如 merge-alter 规则）。始终存在，可为空数组。 |

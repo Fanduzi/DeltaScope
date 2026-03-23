@@ -1,159 +1,213 @@
-# DeltaScope Audit Capability Matrix
+# Audit Capability Matrix
 
-Stable capability baseline for the release-facing DeltaScope product surface.
+This matrix lists every rule shipped with DeltaScope, its rule ID, whether it runs in offline mode, whether it requires live metadata, and its default finding level. Use this reference to understand what DeltaScope will and will not flag for a given SQL statement and audit configuration.
 
-## Status Meanings
+**Offline** rules fire on SQL text alone — no database connection required. **Metadata-aware** rules additionally consume live schema or instance facts when a metadata provider is configured; without metadata they are silently skipped.
 
-- `covered`: implemented and aligned with the current product contract
-- `enhanced`: implemented with stronger or cleaner behavior than the legacy baseline
-- `gap`: still missing or not yet deep enough
-- `deferred`: intentionally left out of this milestone
+---
 
 ## DDL: Create Table
 
-```text
-Capability                                          Status      Notes
------------------------------------------------------------------------------------------------
-table name length                                   covered     ddl.table.name.max_length
-table name pattern                                  covered     ddl.table.name.pattern.require
-table name reserved-keyword forbid                  covered     ddl.table.name.keyword.forbid
-table comment required                              covered     ddl.table.comment.require
-table comment length                                covered     ddl.table.comment.max_length
-table engine allowlist                              covered     ddl.table.engine.allowlist
-table charset allowlist                             covered     ddl.table.charset.allowlist
-table row_format allowlist                          covered     ddl.table.row_format.allowlist
-table auto_increment init value                     covered     ddl.table.auto_increment.init_value.require
-table must have at least one column                 covered     ddl.table.columns.min_count
-table must have primary key                         covered     ddl.table.primary_key.require
-primary key max column count                        covered     ddl.table.primary_key.columns.max_count
-primary key must be bigint                          covered     ddl.table.primary_key.bigint.require
-primary key must be unsigned                        covered     ddl.table.primary_key.unsigned.require
-primary key must be auto_increment                  covered     ddl.table.primary_key.auto_increment.require
-primary key must be not null                        covered     ddl.table.primary_key.not_null.require
-audit timestamp columns required                    covered     ddl.table.audit_columns.require
-forbid create table as select                       covered     ddl.table.create_as.forbid
-forbid create table like                            covered     ddl.table.create_like.forbid
-forbid foreign key                                  covered     ddl.table.foreign_key.forbid
-forbid partition table                              covered     ddl.table.partition.forbid
-column name length                                  covered     ddl.column.name.max_length
-column name pattern                                 covered     ddl.column.name.pattern.require
-column name reserved-keyword forbid                 covered     ddl.column.name.keyword.forbid
-column comment required                             covered     ddl.column.comment.require
-column default required                             covered     ddl.column.default.require
-column not null required                            covered     ddl.column.not_null.require
-varchar max length                                  covered     ddl.column.varchar.max_length
-char max length guidance                            covered     ddl.column.char.max_length
-float/double forbid                                 covered     ddl.column.float_double.forbid
-blob/text type governance                           covered     ddl.column.blob_text.forbid
-json type governance                                covered     ddl.column.json.forbid
-bit type governance                                 covered     ddl.column.bit.forbid
-timestamp type governance                           covered     ddl.column.timestamp.forbid
-column charset allowlist                            covered     ddl.column.charset.allowlist
-column collation allowlist                          covered     ddl.column.collation.allowlist
-column charset/collation match                      covered     ddl.column.charset_collation.match.require
-index max count                                     covered     ddl.index.total.max_count
-index max columns                                   covered     ddl.index.columns.max_count
-unique index prefix                                 covered     ddl.index.unique.prefix.require
-secondary index prefix                              covered     ddl.index.secondary.prefix.require
-fulltext index prefix                               covered     ddl.index.fulltext.prefix.require
-duplicate index forbid                              covered     ddl.index.duplicate.forbid
-redundant left-prefix index forbid                  covered     ddl.index.redundant_left_prefix.forbid
-redundant unique-overlap index forbid               covered     ddl.index.redundant_unique_overlap.forbid
-row-size / index-size checks with instance facts    covered     ddl.table.row_size.max_bytes.require and ddl.index.key_length.max_bytes.require ship as metadata-backed rough guards
-create view governance                              covered     ddl.view.create.forbid
-ddl disabled-table lists                            covered     ddl.table.denylist.forbid now supports schemas, tables, and qualified_tables
-```
+### Table-Level Checks
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.table.name.max_length` | Table name exceeds the maximum allowed length | ✓ | ✗ | warning |
+| `ddl.table.name.pattern.require` | Table name does not match the required naming pattern | ✓ | ✗ | warning |
+| `ddl.table.name.keyword.forbid` | Table name is a reserved SQL keyword | ✓ | ✗ | blocker |
+| `ddl.table.comment.require` | Table is missing a COMMENT clause | ✓ | ✗ | warning |
+| `ddl.table.comment.max_length` | Table comment exceeds the maximum allowed length | ✓ | ✗ | warning |
+| `ddl.table.engine.allowlist` | Storage engine is not on the permitted list | ✓ | ✗ | blocker |
+| `ddl.table.charset.allowlist` | Table character set is not on the permitted list | ✓ | ✗ | blocker |
+| `ddl.table.row_format.allowlist` | ROW_FORMAT value is not on the permitted list | ✓ | ✗ | warning |
+| `ddl.table.auto_increment.init_value.require` | AUTO_INCREMENT initial value does not meet the required minimum | ✓ | ✗ | warning |
+| `ddl.table.columns.min_count` | Table has fewer columns than the required minimum | ✓ | ✗ | blocker |
+| `ddl.table.primary_key.require` | Table has no PRIMARY KEY defined | ✓ | ✗ | blocker |
+| `ddl.table.primary_key.columns.max_count` | Primary key spans more columns than the allowed maximum | ✓ | ✗ | warning |
+| `ddl.table.primary_key.bigint.require` | Primary key column is not BIGINT | ✓ | ✗ | warning |
+| `ddl.table.primary_key.unsigned.require` | Primary key column is not UNSIGNED | ✓ | ✗ | warning |
+| `ddl.table.primary_key.auto_increment.require` | Primary key column is not AUTO_INCREMENT | ✓ | ✗ | warning |
+| `ddl.table.primary_key.not_null.require` | Primary key column is nullable | ✓ | ✗ | blocker |
+| `ddl.table.audit_columns.require` | Required audit timestamp columns (e.g. `created_at`, `updated_at`) are missing | ✓ | ✗ | warning |
+| `ddl.table.create_as.forbid` | CREATE TABLE … AS SELECT is not permitted | ✓ | ✗ | blocker |
+| `ddl.table.create_like.forbid` | CREATE TABLE … LIKE is not permitted | ✓ | ✗ | blocker |
+| `ddl.table.foreign_key.forbid` | Foreign key constraints are not permitted | ✓ | ✗ | blocker |
+| `ddl.table.partition.forbid` | Partitioned tables are not permitted | ✓ | ✗ | blocker |
+| `ddl.table.row_size.max_bytes.require` | Estimated row size exceeds the InnoDB row-size limit given the instance's row format | ✗ | ✓ | warning |
+| `ddl.table.denylist.forbid` | Table name matches a schema- or table-level denylist entry | ✓ | ✗ | blocker |
+
+### Column-Level Checks
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.column.name.max_length` | Column name exceeds the maximum allowed length | ✓ | ✗ | warning |
+| `ddl.column.name.pattern.require` | Column name does not match the required naming pattern | ✓ | ✗ | warning |
+| `ddl.column.name.keyword.forbid` | Column name is a reserved SQL keyword | ✓ | ✗ | blocker |
+| `ddl.column.comment.require` | Column is missing a COMMENT clause | ✓ | ✗ | warning |
+| `ddl.column.default.require` | Column has no DEFAULT value defined | ✓ | ✗ | warning |
+| `ddl.column.not_null.require` | Column is nullable (missing NOT NULL) | ✓ | ✗ | warning |
+| `ddl.column.varchar.max_length` | VARCHAR length exceeds the permitted maximum | ✓ | ✗ | warning |
+| `ddl.column.char.max_length` | CHAR length exceeds the recommended maximum | ✓ | ✗ | notice |
+| `ddl.column.float_double.forbid` | FLOAT or DOUBLE type is not permitted; use DECIMAL instead | ✓ | ✗ | blocker |
+| `ddl.column.blob_text.forbid` | BLOB or TEXT type is not permitted | ✓ | ✗ | blocker |
+| `ddl.column.json.forbid` | JSON type is not permitted | ✓ | ✗ | blocker |
+| `ddl.column.bit.forbid` | BIT type is not permitted | ✓ | ✗ | blocker |
+| `ddl.column.timestamp.forbid` | TIMESTAMP type is not permitted; use DATETIME instead | ✓ | ✗ | warning |
+| `ddl.column.charset.allowlist` | Column character set is not on the permitted list | ✓ | ✗ | blocker |
+| `ddl.column.collation.allowlist` | Column collation is not on the permitted list | ✓ | ✗ | blocker |
+| `ddl.column.charset_collation.match.require` | Column character set and collation are incompatible | ✓ | ✗ | blocker |
+
+### Index-Level Checks
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.index.total.max_count` | Table has more indexes than the allowed maximum | ✓ | ✗ | warning |
+| `ddl.index.columns.max_count` | An index spans more columns than the allowed maximum | ✓ | ✗ | warning |
+| `ddl.index.unique.prefix.require` | Unique index name does not start with the required prefix | ✓ | ✗ | warning |
+| `ddl.index.secondary.prefix.require` | Secondary (non-unique) index name does not start with the required prefix | ✓ | ✗ | warning |
+| `ddl.index.fulltext.prefix.require` | Fulltext index name does not start with the required prefix | ✓ | ✗ | warning |
+| `ddl.index.duplicate.forbid` | Two or more indexes cover the exact same set of columns | ✓ | ✗ | warning |
+| `ddl.index.redundant_left_prefix.forbid` | An index is a left-prefix subset of another index, making it redundant | ✓ | ✗ | warning |
+| `ddl.index.redundant_unique_overlap.forbid` | A non-unique index is made redundant by an overlapping unique index | ✓ | ✗ | warning |
+| `ddl.index.key_length.max_bytes.require` | Index key length exceeds the InnoDB limit given the instance's `innodb_large_prefix` setting | ✗ | ✓ | warning |
+
+### Other Create Table Checks
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.view.create.forbid` | CREATE VIEW is not permitted | ✓ | ✗ | blocker |
+
+---
 
 ## DDL: Alter Table
 
-```text
-Capability                                          Status      Notes
------------------------------------------------------------------------------------------------
-forbid drop column                                  covered     ddl.alter.drop_column.forbid
-forbid drop index                                   covered     ddl.alter.drop_index.forbid
-forbid drop primary key                             covered     ddl.alter.drop_primary_key.forbid
-forbid rename table                                 covered     ddl.alter.rename_table.forbid
-forbid rename column                                covered     ddl.alter.rename_column.forbid
-forbid rename index                                 covered     ddl.alter.rename_index.forbid
-forbid generic change column                        covered     ddl.alter.change_column.forbid
-forbid generic modify column                        covered     ddl.alter.modify_column.forbid
-target type-family allowlist                        covered     conservative alter target-family guards already shipped
-explicit nullability/default/autoinc change checks  covered     shipped for change/modify column
-alter-added index prefix checks                     covered     unique/secondary/fulltext add-index checks shipped
-alter-added duplicate index checks                  enhanced    create-table duplicate logic reused in alter path
-alter-added redundant index checks                  covered     alter-added lifecycle now reuses left-prefix and unique-overlap rules against snapshot + added indexes
-source-to-target type compatibility                 covered     metadata-backed compatibility guards now cover family changes, narrowing, signedness, nullability, and auto_increment removal
-column existence checks                             covered     metadata-backed column existence rules shipped for add/drop/modify/change/rename
-index existence checks                              covered     metadata-backed index existence rules shipped for add/drop/rename
-primary-key existence/state checks                  covered     metadata-backed drop-primary-key existence rule shipped
-rename/change/modify against current schema state   covered     current table snapshot now drives existence and compatibility checks
-merge alter governance                              covered     global merge-alter rules ship for MySQL and TiDB, with MySQL enabled by default
-table option compatibility vs current schema        covered     ddl.alter.table_option.compatibility.require compares option changes against the current snapshot
-```
+### Structural Checks
 
-## DDL: Drop / Truncate / Object Existence
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.alter.drop_column.forbid` | ALTER TABLE … DROP COLUMN is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.drop_index.forbid` | ALTER TABLE … DROP INDEX is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.drop_primary_key.forbid` | ALTER TABLE … DROP PRIMARY KEY is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.rename_table.forbid` | Renaming the table via ALTER TABLE is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.rename_column.forbid` | ALTER TABLE … RENAME COLUMN is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.rename_index.forbid` | ALTER TABLE … RENAME INDEX is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.change_column.forbid` | ALTER TABLE … CHANGE COLUMN is not permitted | ✓ | ✗ | blocker |
+| `ddl.alter.modify_column.forbid` | ALTER TABLE … MODIFY COLUMN is not permitted | ✓ | ✗ | blocker |
 
-```text
-Capability                                          Status      Notes
------------------------------------------------------------------------------------------------
-drop table governance                               covered     ddl.table.drop.forbid plus metadata-backed existence and adaptive-hash cautions
-truncate table governance                           covered     ddl.table.truncate.forbid plus metadata-backed existence and adaptive-hash cautions
-drop/truncate row-count risk                        covered     metadata-backed row-count cautions compare table_rows against a configurable threshold
-drop/truncate adaptive-hash warning                 covered     metadata-backed cautions use innodb_adaptive_hash_index instance fact
-table exists / not exists checks                    covered     create/alter/drop/truncate object existence rules now consume metadata snapshots
-show-create based current schema recovery           enhanced    information_schema-backed snapshot model shipped instead of show-create text parsing
-```
+### Type Compatibility Checks
+
+These rules fire when a CHANGE COLUMN or MODIFY COLUMN operation is not globally forbidden and a metadata snapshot of the current column type is available.
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.alter.table_option.compatibility.require` | A table option change (e.g. charset) is incompatible with the current table state | ✗ | ✓ | blocker |
+
+### Index Checks on Alter
+
+Alter-path index checks reuse the same logic as CREATE TABLE.
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.index.duplicate.forbid` | Newly added index duplicates an existing or simultaneously added index | ✓ / ✓ | ✓ | warning |
+| `ddl.index.redundant_left_prefix.forbid` | Newly added index is a left-prefix subset of an existing or simultaneously added index | ✓ / ✓ | ✓ | warning |
+| `ddl.index.redundant_unique_overlap.forbid` | Newly added index is made redundant by an overlapping unique index | ✓ / ✓ | ✓ | warning |
+
+### Existence Checks (Metadata-Aware Only)
+
+These rules require a live table snapshot and are skipped in offline mode.
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.alter.column.add.exists` | Column being added already exists in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.column.drop.exists` | Column being dropped does not exist in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.column.modify.exists` | Column being modified does not exist in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.column.change.exists` | Column being changed does not exist in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.column.rename.exists` | Column being renamed does not exist in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.index.add.exists` | Index being added already exists in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.index.drop.exists` | Index being dropped does not exist in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.index.rename.exists` | Index being renamed does not exist in the current schema | ✗ | ✓ | blocker |
+| `ddl.alter.primary_key.drop.exists` | Primary key being dropped does not exist on the table | ✗ | ✓ | blocker |
+
+### Global: Merge-Alter
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.alter.merge.mysql` | Multiple ALTER TABLE statements against the same table should be merged into one (MySQL) | ✓ | ✗ | warning |
+| `ddl.alter.merge.tidb` | Multiple ALTER TABLE statements against the same table should be merged into one (TiDB) | ✓ | ✗ | notice |
+
+---
+
+## DDL: Object Lifecycle
+
+### Drop Table
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.table.drop.forbid` | DROP TABLE is not permitted | ✓ | ✗ | blocker |
+| `ddl.table.drop.exists` | Table being dropped does not exist in the current schema | ✗ | ✓ | warning |
+| `ddl.table.drop.row_count` | Table has more rows than the configured safety threshold | ✗ | ✓ | warning |
+| `ddl.table.drop.adaptive_hash` | Table has `innodb_adaptive_hash_index` enabled; dropping it may cause latency spikes | ✗ | ✓ | notice |
+
+### Truncate Table
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.table.truncate.forbid` | TRUNCATE TABLE is not permitted | ✓ | ✗ | blocker |
+| `ddl.table.truncate.exists` | Table being truncated does not exist in the current schema | ✗ | ✓ | warning |
+| `ddl.table.truncate.row_count` | Table has more rows than the configured safety threshold | ✗ | ✓ | warning |
+| `ddl.table.truncate.adaptive_hash` | Table has `innodb_adaptive_hash_index` enabled; truncating it may cause latency spikes | ✗ | ✓ | notice |
+
+---
 
 ## DML
 
-```text
-Capability                                          Status      Notes
------------------------------------------------------------------------------------------------
-require where for update/delete                      covered     dml.where.require
-forbid subquery                                      covered     dml.subquery.forbid
-forbid order by                                      covered     dml.order_by.forbid
-forbid limit                                         covered     dml.limit.forbid
-require join on                                      covered     dml.join.on.require
-forbid replace                                       covered     dml.replace.forbid
-forbid insert into select                            covered     dml.insert.select.forbid
-forbid on duplicate                                  covered     dml.insert.on_duplicate.forbid
-insert rows max count                                covered     dml.insert.rows.max_count
-affected-row threshold                               gap         needs explain/metadata/runtime estimation path
-dml disabled-table lists                             covered     dml.table.denylist.forbid now evaluates extracted DML target tables against schemas/tables/qualified_tables
-```
+### WHERE / Safety Guards
 
-## Instance Facts And Metadata
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `dml.where.require` | UPDATE or DELETE statement is missing a WHERE clause | ✓ | ✗ | blocker |
+| `dml.subquery.forbid` | Statement contains a subquery | ✓ | ✗ | warning |
+| `dml.order_by.forbid` | Statement contains an ORDER BY clause | ✓ | ✗ | warning |
+| `dml.limit.forbid` | Statement contains a LIMIT clause | ✓ | ✗ | warning |
+| `dml.join.on.require` | JOIN does not have an ON condition | ✓ | ✗ | blocker |
+| `dml.replace.forbid` | REPLACE INTO statement is not permitted | ✓ | ✗ | blocker |
 
-```text
-Capability                                          Status      Notes
------------------------------------------------------------------------------------------------
-instance version fact                                covered     metadata provider loads instance version into normalized InstanceFacts
-instance default charset fact                        covered     metadata provider loads character_set_database into normalized InstanceFacts
-instance innodb_large_prefix fact                    covered     metadata provider loads innodb_large_prefix into normalized InstanceFacts
-instance innodb_default_row_format fact              covered     metadata provider loads innodb_default_row_format into normalized InstanceFacts
-instance innodb_adaptive_hash_index fact             covered     metadata provider loads innodb_adaptive_hash_index into normalized InstanceFacts
-target table snapshot                                covered     metadata provider attaches normalized target-table snapshots before evaluation
-column snapshot                                      covered     snapshots include normalized column definitions for existence and compatibility rules
-index snapshot                                       covered     snapshots include normalized index definitions for lifecycle rules
-primary-key snapshot                                 covered     snapshots preserve current primary-key shape
-optional metadata-aware audit mode                   covered     application audit flow supports optional metadata enrichment without breaking offline mode
-```
+### INSERT Restrictions
 
-## Public Product Surface
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `dml.insert.select.forbid` | INSERT … SELECT is not permitted | ✓ | ✗ | blocker |
+| `dml.insert.on_duplicate.forbid` | INSERT … ON DUPLICATE KEY UPDATE is not permitted | ✓ | ✗ | blocker |
+| `dml.insert.rows.max_count` | INSERT statement inserts more rows than the permitted maximum | ✓ | ✗ | warning |
 
-```text
-Capability                                          Status      Notes
------------------------------------------------------------------------------------------------
-stable Go package API                                covered     pkg/deltascope
-CLI for audit/config/version                         enhanced    now has --version and version-logo split
-HTTP API service                                     covered     health/version/audit endpoints shipped
-English README matured for release                   covered     root README now carries release-facing overview, shields, quick links, and usage
-Chinese README                                       covered     README_ZH.md mirrors the public product surface in Chinese
-CHANGELOG                                            covered     CHANGELOG.md ships release and unreleased sections
-SECURITY                                             covered     SECURITY.md defines reporting and supported-version guidance
-formal capability matrix                             covered     this document is the baseline artifact
-```
+### Table Denylists
 
-## Current Target
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `dml.table.denylist.forbid` | DML targets a table on the configured schema- or table-level denylist | ✓ | ✗ | blocker |
 
-This matrix now lives in reference docs because it is part of the public release contract, not a transient planning note.
+---
+
+## Metadata-Aware Capabilities
+
+When a metadata provider is configured, DeltaScope loads live facts from the target database before evaluation. These facts unlock the metadata-gated rules listed above. Without a provider, all metadata-aware rules are silently skipped and the audit remains safe to run offline.
+
+### Instance Facts
+
+| Fact | What It Enables |
+|------|-----------------|
+| `version` | Version-conditioned rule behavior (e.g. dialect-specific syntax guards) |
+| `character_set_database` | Default charset resolution for tables that omit an explicit charset |
+| `innodb_large_prefix` | Index key length limit calculation (`ddl.index.key_length.max_bytes.require`) |
+| `innodb_default_row_format` | Row size estimation for tables using the instance default row format |
+| `innodb_adaptive_hash_index` | Adaptive hash cautions on DROP and TRUNCATE |
+
+### Table Snapshot
+
+| Snapshot Field | What It Enables |
+|----------------|-----------------|
+| Column definitions | Column existence checks on ADD/DROP/MODIFY/CHANGE/RENAME; type-compatibility guards |
+| Index definitions | Index existence checks on ADD/DROP/RENAME; redundancy checks against existing indexes |
+| Primary key shape | Primary key existence check before DROP PRIMARY KEY |
+| Table options (engine, charset, row format) | Table option compatibility check on ALTER TABLE |
+| `table_rows` | Row count safety threshold on DROP TABLE and TRUNCATE TABLE |

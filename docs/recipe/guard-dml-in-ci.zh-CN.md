@@ -1,19 +1,19 @@
-# Guard DML in CI
+# 在 CI 中拦截风险 DML
 
-Use DeltaScope as a CI gate to catch risky DML before it reaches production. When findings cross the configured `--fail-on` threshold, DeltaScope exits with code `1` and the pipeline step fails.
+将 DeltaScope 用作 CI 门控，在风险 DML 到达生产环境前捕获问题。当审查发现超过配置的 `--fail-on` 阈值时，DeltaScope 以退出码 `1` 退出，流水线步骤随即失败。
 
-## How It Works
+## 工作原理
 
-1. DeltaScope audits the SQL against the configured policy.
-2. If any finding is at or above the `--fail-on` severity, the process exits `1`.
-3. The CI pipeline treats exit `1` as a failed step and blocks the merge or deployment.
-4. Exit `0` means findings stayed below the threshold — the step passes.
-5. Exit `2` means bad input or config — treat this as a pipeline configuration error, not an audit finding.
-6. Exit `3` means an internal error in DeltaScope itself.
+1. DeltaScope 依据配置的策略审计 SQL。
+2. 如果任何发现的严重级别达到或超过 `--fail-on` 阈值，进程以退出码 `1` 退出。
+3. CI 流水线将退出码 `1` 视为步骤失败，阻止合并或部署。
+4. 退出码 `0` 表示所有发现均低于阈值——步骤通过。
+5. 退出码 `2` 表示输入或配置有误——视为流水线配置问题，而非审计发现。
+6. 退出码 `3` 表示 DeltaScope 内部错误。
 
-## Local Test
+## 本地测试
 
-Test your DML locally before committing. This mirrors exactly what CI will do:
+提交前在本地测试 DML，与 CI 完全一致：
 
 ```bash
 deltascope audit \
@@ -24,7 +24,7 @@ deltascope audit \
 echo "Exit code: $?"
 ```
 
-Expected output (JSON):
+预期输出（JSON）：
 
 ```json
 {
@@ -56,7 +56,7 @@ Exit code: 1
 
 ## GitHub Actions
 
-A complete workflow that installs DeltaScope and audits SQL migration files on every pull request:
+以下是一个完整的工作流，在每次 Pull Request 时安装 DeltaScope 并审计 SQL 迁移文件：
 
 ```yaml
 name: Audit SQL
@@ -82,7 +82,7 @@ jobs:
             --fail-on blocker
 ```
 
-To fail on warnings as well (stricter gate):
+更严格的门控（同时拦截 warning）：
 
 ```yaml
       - name: Audit SQL migrations (strict)
@@ -93,7 +93,7 @@ To fail on warnings as well (stricter gate):
             --fail-on warning
 ```
 
-To audit all SQL files changed in the PR:
+仅审计 PR 中变更的 SQL 文件：
 
 ```yaml
       - name: Audit changed SQL files
@@ -127,20 +127,20 @@ audit-sql:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 ```
 
-## --fail-on Strategy
+## --fail-on 策略说明
 
-| Setting | Exit 1 when | Recommended for |
-|---------|-------------|-----------------|
-| `--fail-on blocker` | Any blocker-level finding | Most teams — only hard policy violations block the pipeline |
-| `--fail-on warning` | Any warning or blocker finding | Strict teams — any concern blocks |
-| `--fail-on notice` | Any finding at any level | Maximum gate — zero tolerance for deviations |
-| `--fail-on none` | Never | Audit-only mode — log findings but never fail the pipeline |
+| 设置 | 退出码 1 的触发条件 | 适用场景 |
+|------|-------------------|---------|
+| `--fail-on blocker` | 存在任何 blocker 级别发现 | 大多数团队——仅硬性策略违规才阻断流水线 |
+| `--fail-on warning` | 存在任何 warning 或 blocker 级别发现 | 严格团队——任何警告都阻断 |
+| `--fail-on notice` | 存在任何级别的发现 | 最高门控——对任何偏差零容忍 |
+| `--fail-on none` | 永不触发 | 仅审计模式——记录发现但不阻断流水线 |
 
-Start with `--fail-on blocker` and tighten over time as the team builds confidence in the rule set.
+建议从 `--fail-on blocker` 开始，随着团队对规则集建立信心后逐步收紧。
 
-## Auditing Multiple Files
+## 审计多个文件
 
-Loop over multiple SQL files and exit on the first failure:
+遍历多个 SQL 文件，遇到第一个失败时立即退出：
 
 ```bash
 for f in ./sql/migrations/*.sql; do
@@ -154,7 +154,7 @@ done
 echo "All files passed."
 ```
 
-To collect all findings before failing (audit all, then fail):
+审计所有文件后再统一报告失败（收集全部发现）：
 
 ```bash
 FAILED=0
@@ -165,11 +165,11 @@ done
 exit $FAILED
 ```
 
-## Interpreting Exit Codes
+## 退出码说明
 
-| Exit code | Meaning | Action |
-|-----------|---------|--------|
-| `0` | All findings are below the `--fail-on` threshold (or no findings at all) | Pipeline passes — proceed |
-| `1` | One or more findings crossed the `--fail-on` threshold | Audit gate triggered — block merge or deployment |
-| `2` | Bad input or config (invalid SQL file path, unknown flag, malformed config) | Fix the pipeline configuration |
-| `3` | Internal error in DeltaScope | File a bug report; do not treat as an audit finding |
+| 退出码 | 含义 | 处理方式 |
+|--------|------|---------|
+| `0` | 所有发现均低于 `--fail-on` 阈值（或无任何发现） | 流水线通过——继续执行 |
+| `1` | 一个或多个发现超过 `--fail-on` 阈值 | 审计门控触发——阻止合并或部署 |
+| `2` | 输入或配置有误（SQL 文件路径无效、参数未知、配置格式错误） | 修复流水线配置 |
+| `3` | DeltaScope 内部错误 | 提交 Bug 报告；不要视为审计发现 |
