@@ -135,20 +135,21 @@ deltascope audit \
 
 ## Recipes
 
-- [Audit SQL offline](docs/recipe/audit-sql-offline.md)
-- [Audit SQL with metadata](docs/recipe/audit-sql-with-metadata.md)
-- [Review DDL before migration](docs/recipe/review-ddl-before-migration.md)
-- [Guard DML in CI](docs/recipe/guard-dml-in-ci.md)
-- [Use with AI agents](docs/recipe/use-with-ai-agents.md)
-- [Troubleshoot metadata-aware audit](docs/recipe/troubleshoot-metadata-aware-audit.md)
+- [离线审核 SQL](docs/recipe/audit-sql-offline.zh-CN.md)
+- [连接数据库审核 SQL](docs/recipe/audit-sql-with-metadata.zh-CN.md)
+- [迁移前审核 DDL](docs/recipe/review-ddl-before-migration.zh-CN.md)
+- [在 CI 中拦截 DML](docs/recipe/guard-dml-in-ci.zh-CN.md)
+- [与 AI Agent 集成](docs/recipe/use-with-ai-agents.zh-CN.md)
+- [查看规则与配置](docs/recipe/inspect-rules-and-config.zh-CN.md)
+- [排查 metadata-aware 审核问题](docs/recipe/troubleshoot-metadata-aware-audit.zh-CN.md)
 
 ## 文档导航
 
-- [Admin docs](docs/admin/README.md)
-- [Concept docs](docs/concept/README.md)
-- [Dev docs](docs/dev/README.md)
-- [Reference docs](docs/reference/README.md)
-- [Audit capability matrix](docs/reference/audit-capability-matrix.md)
+- [管理文档](docs/admin/README.md)
+- [概念文档](docs/concept/README.md)
+- [开发文档](docs/dev/README.md)
+- [参考文档](docs/reference/README.md)
+- [审核能力矩阵](docs/reference/audit-capability-matrix.zh-CN.md)
 
 ## 开发工作流
 

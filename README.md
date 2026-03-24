@@ -140,6 +140,7 @@ deltascope audit \
 - [Review DDL before migration](docs/recipe/review-ddl-before-migration.md)
 - [Guard DML in CI](docs/recipe/guard-dml-in-ci.md)
 - [Use with AI agents](docs/recipe/use-with-ai-agents.md)
+- [Inspect rules and config](docs/recipe/inspect-rules-and-config.md)
 - [Troubleshoot metadata-aware audit](docs/recipe/troubleshoot-metadata-aware-audit.md)
 
 ## Documentation
