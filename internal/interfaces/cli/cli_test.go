@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	viperconfig "github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper"
 )
@@ -193,6 +195,63 @@ func TestAuditCommandQuietMarkdownOmitsFullReportWrapper(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "dml.where.require") {
 		t.Fatalf("expected quiet output to keep finding identity, got %q", stdout.String())
+	}
+}
+
+func TestRenderMarkdownResultIncludesFindingAndAggregateExplanationDetails(t *testing.T) {
+	output, err := renderMarkdownResult(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Explanation: &report.Explanation{
+			Summary: "Audit produced 1 finding",
+			Reasons: []string{"where clause required"},
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Explanation: &report.Explanation{
+				Summary: "Statement 1 has 1 finding",
+				Reasons: []string{"where clause required"},
+			},
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause required",
+				Explanation: &rule.FindingExplanation{
+					Why:        "The shipped policy requires a predicate.",
+					Risk:       "Without a predicate the statement can affect every row.",
+					Suggestion: "Add a WHERE clause that narrows the target rows.",
+					Metadata: &rule.ExplanationMetadata{
+						Status: "limited",
+						Note:   "metadata unavailable",
+					},
+				},
+			}},
+		}},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render markdown: %v", err)
+	}
+
+	rendered := string(output)
+	for _, want := range []string{
+		"## Result Explanation",
+		"Audit produced 1 finding",
+		"- where clause required",
+		"### Explanation",
+		"Statement 1 has 1 finding",
+		"Why: The shipped policy requires a predicate.",
+		"Risk: Without a predicate the statement can affect every row.",
+		"Suggestion: Add a WHERE clause that narrows the target rows.",
+		"Metadata status: `limited`",
+		"Metadata note: metadata unavailable",
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Fatalf("expected markdown output to contain %q\noutput:\n%s", want, rendered)
+		}
 	}
 }
 
@@ -627,6 +686,122 @@ func TestMetadataAwareJSONIncludesAuditContext(t *testing.T) {
 	}
 	if contextValue["mode"] != "metadata-aware" || contextValue["schema"] != "app" || contextValue["dialect"] != "mysql" {
 		t.Fatalf("expected metadata-aware context, got %#v", contextValue)
+	}
+}
+
+func TestRenderJSONResultIncludesFindingExplanationFields(t *testing.T) {
+	output, err := renderJSONResult(report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause required",
+				Explanation: &rule.FindingExplanation{
+					Why:        "The shipped policy requires a predicate.",
+					Risk:       "Without a predicate the statement can affect every row.",
+					Suggestion: "Add a WHERE clause that narrows the target rows.",
+					Metadata: &rule.ExplanationMetadata{
+						Status: "limited",
+						Note:   "metadata unavailable",
+					},
+				},
+			}},
+		}},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal rendered json: %v\noutput=%s", err, string(output))
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) != 1 {
+		t.Fatalf("expected one finding, got %#v", statement["findings"])
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected finding object, got %#v", findings[0])
+	}
+	explanation, ok := finding["explanation"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected explanation object, got %#v", finding["explanation"])
+	}
+	if explanation["why"] != "The shipped policy requires a predicate." || explanation["risk"] != "Without a predicate the statement can affect every row." || explanation["suggestion"] != "Add a WHERE clause that narrows the target rows." {
+		t.Fatalf("expected why/risk/suggestion explanation fields, got %#v", explanation)
+	}
+	metadata, ok := explanation["metadata"].(map[string]any)
+	if !ok || metadata["status"] != "limited" || metadata["note"] != "metadata unavailable" {
+		t.Fatalf("expected explanation metadata fields, got %#v", explanation["metadata"])
+	}
+}
+
+func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
+	output, err := renderJSONResult(report.Result{
+		Explanation: &report.Explanation{
+			Summary: "Audit produced 1 finding",
+			Reasons: []string{"where clause required"},
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Explanation: &report.Explanation{
+				Summary: "Statement 1 has 1 finding",
+				Reasons: []string{"where clause required"},
+			},
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause required",
+			}},
+		}},
+	}, &auditRunContext{Mode: "offline", Dialect: "mysql", DialectSource: "default"})
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal rendered json: %v\noutput=%s", err, string(output))
+	}
+	contextValue, ok := decoded["context"].(map[string]any)
+	if !ok || contextValue["mode"] != "offline" {
+		t.Fatalf("expected context object, got %#v", decoded["context"])
+	}
+	resultExplanation, ok := decoded["explanation"].(map[string]any)
+	if !ok || resultExplanation["summary"] != "Audit produced 1 finding" {
+		t.Fatalf("expected result explanation object, got %#v", decoded["explanation"])
+	}
+	resultReasons, ok := resultExplanation["reasons"].([]any)
+	if !ok || len(resultReasons) != 1 || resultReasons[0] != "where clause required" {
+		t.Fatalf("expected result explanation reasons, got %#v", resultExplanation["reasons"])
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	statementExplanation, ok := statement["explanation"].(map[string]any)
+	if !ok || statementExplanation["summary"] != "Statement 1 has 1 finding" {
+		t.Fatalf("expected statement explanation object, got %#v", statement["explanation"])
+	}
+	statementReasons, ok := statementExplanation["reasons"].([]any)
+	if !ok || len(statementReasons) != 1 || statementReasons[0] != "where clause required" {
+		t.Fatalf("expected statement explanation reasons, got %#v", statementExplanation["reasons"])
 	}
 }
 

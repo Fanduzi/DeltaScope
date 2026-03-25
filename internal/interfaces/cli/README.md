@@ -15,7 +15,7 @@ CLI adapter layer for the DeltaScope application.
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
 | capabilities.go | Implements the `capabilities` summary command for human/agent CLI discovery |
 | version.go | Implements the `version` subcommand with ASCII logo plus build-version output |
-| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, and basic command output |
+| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, audit context output, and explanation rendering in Markdown/JSON results |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, and create-table partial behavior |
 
 ## Exports
