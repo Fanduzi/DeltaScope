@@ -28,15 +28,29 @@ jobs:
       - name: Run unit tests
         run: go test ./...
 
-      - name: Resolve release note path
+      - name: Resolve release note paths
         run: |
           TAG="${GITHUB_REF_NAME}"
-          NOTES_FILE="docs/releases/release-notes-${TAG}.md"
-          if [ ! -f "$NOTES_FILE" ]; then
-            echo "missing release notes file: $NOTES_FILE" >&2
+          EN_NOTES_FILE="docs/releases/release-notes-${TAG}.md"
+          ZH_NOTES_FILE="docs/releases/release-notes-${TAG}.zh-CN.md"
+          COMBINED_NOTES_FILE="${RUNNER_TEMP}/release-notes-${TAG}-bilingual.md"
+
+          if [ ! -f "$EN_NOTES_FILE" ]; then
+            echo "missing English release notes file: $EN_NOTES_FILE" >&2
             exit 1
           fi
-          echo "RELEASE_NOTES_FILE=$NOTES_FILE" >> "$GITHUB_ENV"
+          if [ ! -f "$ZH_NOTES_FILE" ]; then
+            echo "missing Chinese release notes file: $ZH_NOTES_FILE" >&2
+            exit 1
+          fi
+
+          cat "$EN_NOTES_FILE" > "$COMBINED_NOTES_FILE"
+          printf '\n---\n\n' >> "$COMBINED_NOTES_FILE"
+          cat "$ZH_NOTES_FILE" >> "$COMBINED_NOTES_FILE"
+
+          echo "RELEASE_NOTES_FILE=$EN_NOTES_FILE" >> "$GITHUB_ENV"
+          echo "RELEASE_NOTES_ZH_FILE=$ZH_NOTES_FILE" >> "$GITHUB_ENV"
+          echo "COMBINED_RELEASE_NOTES_FILE=$COMBINED_NOTES_FILE" >> "$GITHUB_ENV"
 
       - name: Run GoReleaser check
         uses: goreleaser/goreleaser-action@v6
@@ -57,4 +71,4 @@ jobs:
       - name: Sync GitHub release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${GITHUB_REF_NAME}" --notes-file "${RELEASE_NOTES_FILE}"
+        run: gh release edit "${GITHUB_REF_NAME}" --notes-file "${COMBINED_RELEASE_NOTES_FILE}"
