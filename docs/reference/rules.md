@@ -29,8 +29,8 @@ The overall verdict for an audit batch is determined by the worst finding across
 | Findings in batch | Verdict |
 |-------------------|---------|
 | Any `blocker` finding | `reject` |
-| No blockers; at least one `warning` or `notice` | `review` |
-| No findings at all | `pass` |
+| No blockers; at least one `warning` | `review` |
+| No blockers and no warnings (including notice-only or no findings) | `pass` |
 
 The `--fail-on` flag controls which verdict threshold causes the CLI to exit with code `1`. See the
 [CLI Reference](cli.md) for details.
@@ -61,13 +61,13 @@ deltascope rules list --enabled-only
 
 Example output:
 
-```
-RULE ID                                   KIND  LEVEL    METADATA
-dml.where.require                         dml   blocker  false
-dml.limit.forbid                          dml   warning  false
-ddl.table.comment.require                 ddl   warning  false
-ddl.table.row_size.max_bytes.require      ddl   blocker  true
-...
+```md
+# DeltaScope Rules
+
+- `ddl.table.comment.require` [warning] (ddl) Require DDL table comment require
+- `ddl.table.row_size.max_bytes.require` [blocker] (ddl) Require DDL table row size max bytes require
+- `dml.limit.forbid` [warning] (dml) Forbid DML limit forbid
+- `dml.where.require` [blocker] (dml) Require DML where require
 ```
 
 ### deltascope rules show
@@ -80,14 +80,41 @@ deltascope rules show dml.where.require
 
 Example output:
 
+```md
+# dml.where.require
+
+Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+
+- Default Enabled: `true`
+- Default Level: `blocker`
+- Statement Kinds: `dml`
+- Metadata Aware: `false`
+
+## Default Params
+- `required`: `true`
+
+## Trigger Example
+```sql
+DELETE FROM users;
 ```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+
+## Valid Example
+```sql
+DELETE FROM users WHERE id = 1;
+```
+
+## Config Example
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+```
+
+## Remediation
+Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
 ```
 
 ### deltascope rules search
@@ -132,7 +159,7 @@ These rules evaluate properties of the `CREATE TABLE` statement as a whole.
 | `ddl.table.create_like.forbid` | CREATE TABLE … LIKE is forbidden | blocker | No |
 | `ddl.table.create_as.forbid` | CREATE TABLE … AS SELECT is forbidden | blocker | No |
 | `ddl.table.row_size.max_bytes.require` | Estimated row size must not exceed InnoDB limits | blocker | **Yes** |
-| `ddl.table.denylist.forbid` | DDL on schema/table entries in the denylist is forbidden | blocker | No |
+| `ddl.table.denylist.forbid` | DDL on schema/table entries in the denylist is forbidden | blocker | **Yes** |
 
 ### Column-Level Rules (16 rules)
 
@@ -297,7 +324,7 @@ These rules evaluate DML statements: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and
 | `dml.replace.forbid` | REPLACE INTO is forbidden | blocker | No |
 | `dml.insert.select.forbid` | INSERT INTO … SELECT is forbidden | blocker | No |
 | `dml.insert.on_duplicate.forbid` | INSERT … ON DUPLICATE KEY UPDATE is forbidden | blocker | No |
-| `dml.table.denylist.forbid` | DML on schema/table entries in the denylist is forbidden | blocker | No |
+| `dml.table.denylist.forbid` | DML on schema/table entries in the denylist is forbidden | blocker | **Yes** |
 
 ---
 
@@ -344,6 +371,8 @@ are supplied to `deltascope audit`.
 | `ddl.table.truncate.exists.require` |
 | `ddl.table.truncate.adaptive_hash.warn` |
 | `ddl.table.truncate.rows.max_count` |
+| `ddl.table.denylist.forbid` |
+| `dml.table.denylist.forbid` |
 
 ---
 
@@ -353,4 +382,4 @@ are supplied to `deltascope audit`.
 - **Conceptual overview of rule evaluation** — [../concept/core-concepts.md](../concept/core-concepts.md)
 - **Metadata-aware mode** — [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md)
 - **CLI usage** — [cli.md](cli.md)
-- **Capability matrix** — [audit-capability-matrix.md](../audit-capability-matrix.md)
+- **Capability matrix** — [audit-capability-matrix.md](audit-capability-matrix.md)

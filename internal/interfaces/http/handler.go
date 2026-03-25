@@ -31,6 +31,8 @@ type serviceError struct {
 	Message string `json:"message"`
 }
 
+const maxAuditRequestBodyBytes = 1 << 20
+
 // NewHandler returns the JSON HTTP adapter for DeltaScope.
 func NewHandler(configPath, version string) (http.Handler, error) {
 	if configPath != "" {
@@ -55,6 +57,8 @@ func NewHandler(configPath, version string) (http.Handler, error) {
 
 func handleAudit(w http.ResponseWriter, r *http.Request, configPath string) {
 	defer r.Body.Close()
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxAuditRequestBodyBytes)
 
 	var request auditRequest
 	decoder := json.NewDecoder(r.Body)

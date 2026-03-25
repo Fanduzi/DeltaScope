@@ -17,6 +17,8 @@ Rule contracts, registration, and finding types for audit evaluation.
 
 - `Level`
 - `Finding`
+- `FindingExplanation`
+- `ExplanationMetadata`
 - `Location`
 - `StatementRule`
 - `GlobalRule`

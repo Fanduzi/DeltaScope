@@ -14,6 +14,22 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 )
 
+// MetadataKind identifies the metadata category a rule explanation depends on.
+type MetadataKind string
+
+const (
+	MetadataKindSchema      MetadataKind = "schema"
+	MetadataKindTargetTable MetadataKind = "target_table"
+	MetadataKindInstance    MetadataKind = "instance"
+)
+
+// MetadataNotes describes how metadata affects one catalog entry.
+type MetadataNotes struct {
+	Kinds    []MetadataKind
+	Required string
+	Missing  string
+}
+
 // Entry describes one shipped rule in the CLI-facing catalog.
 type Entry struct {
 	RuleID          string
@@ -28,6 +44,11 @@ type Entry struct {
 	ValidExample    string
 	ConfigExample   string
 	RemediationHint string
+	Why             string
+	Risk            string
+	Suggestion      string
+	ConfigHints     []string
+	MetadataNotes   *MetadataNotes
 	SearchText      string
 }
 
@@ -35,8 +56,10 @@ var entries = buildEntries()
 
 // All returns all shipped catalog entries in stable order.
 func All() []Entry {
-	out := make([]Entry, len(entries))
-	copy(out, entries)
+	out := make([]Entry, 0, len(entries))
+	for _, entry := range entries {
+		out = append(out, cloneEntry(entry))
+	}
 	return out
 }
 
@@ -44,7 +67,7 @@ func All() []Entry {
 func Lookup(ruleID string) (Entry, bool) {
 	for _, entry := range entries {
 		if entry.RuleID == ruleID {
-			return entry, true
+			return cloneEntry(entry), true
 		}
 	}
 	return Entry{}, false
@@ -60,7 +83,7 @@ func Search(query string) []Entry {
 	results := make([]Entry, 0)
 	for _, entry := range entries {
 		if strings.Contains(strings.ToLower(entry.SearchText), needle) {
-			results = append(results, entry)
+			results = append(results, cloneEntry(entry))
 		}
 	}
 	return results
@@ -90,6 +113,11 @@ func buildEntries() []Entry {
 			ValidExample:    validExampleForRule(ruleID),
 			ConfigExample:   configExampleForRule(ruleID, policy),
 			RemediationHint: remediationForRule(ruleID),
+			Why:             whyForRule(ruleID),
+			Risk:            riskForRule(ruleID),
+			Suggestion:      suggestionForRule(ruleID),
+			ConfigHints:     configHintsForRule(ruleID, policy),
+			MetadataNotes:   metadataNotesForRule(ruleID),
 		}
 		entry.SearchText = strings.Join([]string{
 			entry.RuleID,
@@ -102,15 +130,39 @@ func buildEntries() []Entry {
 	return items
 }
 
+func cloneEntry(in Entry) Entry {
+	out := in
+	out.StatementKinds = append([]string(nil), in.StatementKinds...)
+	out.DefaultParams = cloneParams(in.DefaultParams)
+	out.ConfigHints = append([]string(nil), in.ConfigHints...)
+	if in.MetadataNotes != nil {
+		out.MetadataNotes = &MetadataNotes{
+			Kinds:    append([]MetadataKind(nil), in.MetadataNotes.Kinds...),
+			Required: in.MetadataNotes.Required,
+			Missing:  in.MetadataNotes.Missing,
+		}
+	}
+	return out
+}
+
 func cloneParams(in map[string]any) map[string]any {
 	if len(in) == 0 {
 		return map[string]any{}
 	}
 	out := make(map[string]any, len(in))
 	for key, value := range in {
-		out[key] = value
+		out[key] = cloneParamValue(value)
 	}
 	return out
+}
+
+func cloneParamValue(value any) any {
+	switch typed := value.(type) {
+	case []string:
+		return append([]string(nil), typed...)
+	default:
+		return value
+	}
 }
 
 func summaryForRule(ruleID string) string {
@@ -229,6 +281,84 @@ func remediationForRule(ruleID string) string {
 	}
 }
 
+func whyForRule(ruleID string) string {
+	switch {
+	case strings.HasSuffix(ruleID, ".require"):
+		return "The statement is missing a clause, option, or object that the shipped policy requires."
+	case strings.HasSuffix(ruleID, ".forbid"):
+		return "The statement uses a construct that the shipped policy explicitly forbids."
+	case strings.Contains(ruleID, ".allowlist"):
+		return "The statement uses a value outside the shipped allowlist for this rule."
+	case strings.Contains(ruleID, ".max_"):
+		return "The statement exceeds a shipped size or count threshold for this rule."
+	case strings.HasSuffix(ruleID, ".warn"):
+		return "The statement reached a caution rule that highlights an operational trade-off."
+	default:
+		return "The statement matched the shipped governance rule for this pattern."
+	}
+}
+
+func riskForRule(ruleID string) string {
+	switch {
+	case strings.HasPrefix(ruleID, "dml."):
+		return "Ignoring this rule can allow high-impact data changes to proceed with less safety review."
+	case metadataAwareRuleIDs[ruleID]:
+		return "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals."
+	default:
+		return "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely."
+	}
+}
+
+func suggestionForRule(ruleID string) string {
+	return remediationForRule(ruleID)
+}
+
+func configHintsForRule(ruleID string, policy domainpolicy.RulePolicy) []string {
+	hints := []string{
+		fmt.Sprintf("rules.%s.enabled", ruleID),
+		fmt.Sprintf("rules.%s.level", ruleID),
+	}
+	if len(policy.Params) == 0 {
+		return hints
+	}
+	keys := make([]string, 0, len(policy.Params))
+	for key := range policy.Params {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		hints = append(hints, fmt.Sprintf("rules.%s.params.%s", ruleID, key))
+	}
+	return hints
+}
+
+func metadataNotesForRule(ruleID string) *MetadataNotes {
+	kinds, ok := metadataKindsForRule(ruleID)
+	if !ok {
+		return nil
+	}
+	return &MetadataNotes{
+		Kinds:    kinds,
+		Required: "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.",
+		Missing:  "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit.",
+	}
+}
+
+func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
+	switch ruleID {
+	case "dml.table.denylist.forbid", "ddl.table.denylist.forbid":
+		return []MetadataKind{MetadataKindSchema}, true
+	case "ddl.table.drop.adaptive_hash.warn", "ddl.table.truncate.adaptive_hash.warn":
+		return []MetadataKind{MetadataKindInstance}, true
+	case "ddl.table.drop.rows.max_count", "ddl.table.truncate.rows.max_count", "ddl.table.row_size.max_bytes.require":
+		return []MetadataKind{MetadataKindTargetTable}, true
+	}
+	if metadataAwareRuleIDs[ruleID] {
+		return []MetadataKind{MetadataKindTargetTable}, true
+	}
+	return nil, false
+}
+
 func humanize(ruleID string, verb string) string {
 	replacer := strings.NewReplacer(".", " ", "_", " ")
 	text := replacer.Replace(ruleID)
@@ -242,7 +372,11 @@ func formatYAMLScalar(value any) string {
 	case string:
 		return typed
 	case []string:
-		return fmt.Sprintf("[%s]", strings.Join(typed, ", "))
+		quoted := make([]string, 0, len(typed))
+		for _, item := range typed {
+			quoted = append(quoted, fmt.Sprintf("%q", item))
+		}
+		return fmt.Sprintf("[%s]", strings.Join(quoted, ", "))
 	default:
 		return fmt.Sprintf("%v", typed)
 	}

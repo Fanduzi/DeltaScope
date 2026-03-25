@@ -11,14 +11,42 @@ deltascope audit --sql "DELETE FROM users"
 Expected output (markdown, default):
 
 ```text
-Verdict: reject
-Statements: 1
-Blockers:   1
+# DeltaScope Audit Result
 
-Statement 1: DELETE
-  [blocker] dml.where.require: DELETE statement is missing a WHERE clause
-            Suggestion: Add a WHERE clause to restrict the rows affected
+Verdict: `reject`
+
+- Statements: 1
+- Blockers: 1
+- Warnings: 0
+- Notices: 0
+
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+## Statement 1
+
+- Kind: `dml`
+- SQL: `delete from users`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+### Findings
+
+- [blocker] `dml.where.require`: UPDATE and DELETE statements must include a WHERE clause
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+  Suggestion: add a WHERE clause that narrows the affected rows
+  Statement kind: `dml`
+  Metadata:
+  - `operation`: `delete`
 ```
+
+
 
 The exit code is `1` because the verdict is `reject` and the default `--fail-on` threshold is `blocker`.
 
@@ -41,17 +69,40 @@ Complete JSON output:
     "warnings": 0,
     "notices": 0
   },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
-      "raw_sql": "DELETE FROM users",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "metadata": {
+            "operation": "delete"
+          },
+          "statement_kind": "dml",
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          },
           "location": {
             "line": 1,
             "column": 1
@@ -60,7 +111,11 @@ Complete JSON output:
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -87,20 +142,45 @@ Complete JSON output:
   "summary": {
     "statements": 2,
     "blockers": 1,
-    "warnings": 1,
+    "warnings": 2,
     "notices": 0
+  },
+  "explanation": {
+    "summary": "Audit produced 3 finding(s) across 2 statement(s)",
+    "reasons": [
+      "column `id` must have a comment",
+      "column `name` must have a comment",
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "CREATE TABLE",
+      "index": 0,
+      "kind": "ddl",
       "raw_sql": "CREATE TABLE t (\n  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,\n  name VARCHAR(255) NOT NULL,\n  PRIMARY KEY (id)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='t'",
+      "explanation": {
+        "summary": "Statement 1 has 2 finding(s)",
+        "reasons": [
+          "column `id` must have a comment",
+          "column `name` must have a comment"
+        ]
+      },
       "findings": [
         {
           "rule_id": "ddl.column.comment.require",
           "level": "warning",
           "message": "column `id` must have a comment",
           "suggestion": "Add a COMMENT clause to column `id`",
+          "metadata": {
+            "column": "id"
+          },
+          "statement_kind": "ddl",
+          "explanation": {
+            "summary": "Require DDL column comment require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can lead to schema changes that do not meet governance or review expectations.",
+            "suggestion": "Add a COMMENT clause to column `id`"
+          },
           "location": {
             "line": 2,
             "column": 3
@@ -111,6 +191,16 @@ Complete JSON output:
           "level": "warning",
           "message": "column `name` must have a comment",
           "suggestion": "Add a COMMENT clause to column `name`",
+          "metadata": {
+            "column": "name"
+          },
+          "statement_kind": "ddl",
+          "explanation": {
+            "summary": "Require DDL column comment require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can lead to schema changes that do not meet governance or review expectations.",
+            "suggestion": "Add a COMMENT clause to column `name`"
+          },
           "location": {
             "line": 3,
             "column": 3
@@ -119,15 +209,32 @@ Complete JSON output:
       ]
     },
     {
-      "index": 2,
-      "kind": "DELETE",
+      "index": 1,
+      "kind": "dml",
       "raw_sql": "DELETE FROM orders",
+      "explanation": {
+        "summary": "Statement 2 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "metadata": {
+            "operation": "delete"
+          },
+          "statement_index": 1,
+          "statement_kind": "dml",
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          },
           "location": {
             "line": 1,
             "column": 1
@@ -136,7 +243,11 @@ Complete JSON output:
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -189,23 +300,36 @@ deltascope audit --sql "DELETE FROM users" --format json
 {
   "verdict": "reject",
   "summary": { "statements": 1, "blockers": 1, "warnings": 0, "notices": 0 },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": ["UPDATE and DELETE statements must include a WHERE clause"]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
+      "index": 0,
+      "kind": "dml",
       "raw_sql": "DELETE FROM users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": ["UPDATE and DELETE statements must include a WHERE clause"]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "statement_kind": "dml",
           "location": { "line": 1, "column": 1 }
         }
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -223,23 +347,45 @@ deltascope audit --sql "CREATE TABLE t (id BIGINT UNSIGNED NOT NULL AUTO_INCREME
 {
   "verdict": "review",
   "summary": { "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": ["column `id` must have a comment"]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "CREATE TABLE",
+      "index": 0,
+      "kind": "ddl",
       "raw_sql": "CREATE TABLE t (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created', updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated', PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='t'",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": ["column `id` must have a comment"]
+      },
       "findings": [
         {
           "rule_id": "ddl.column.comment.require",
           "level": "warning",
           "message": "column `id` must have a comment",
           "suggestion": "Add a COMMENT clause to column `id`",
+          "metadata": {
+            "column": "id"
+          },
+          "statement_kind": "ddl",
+          "explanation": {
+            "summary": "Require DDL column comment require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can lead to schema changes that do not meet governance or review expectations.",
+            "suggestion": "Add a COMMENT clause to column `id`"
+          },
           "location": { "line": 1, "column": 10 }
         }
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -247,7 +393,7 @@ Exit code: `0` (default `--fail-on blocker`; no blockers present).
 
 ### pass — no findings
 
-A fully compliant statement produces a `pass` verdict with an empty findings array.
+A fully compliant statement produces a `pass` verdict with no findings. When `findings` is empty, the field is omitted from the JSON output.
 
 ```bash
 deltascope audit --sql "
@@ -264,19 +410,19 @@ CREATE TABLE orders (
 " --format json
 ```
 
+Excerpt from the JSON output:
+
 ```json
 {
   "verdict": "pass",
   "summary": { "statements": 1, "blockers": 0, "warnings": 0, "notices": 0 },
   "statements": [
     {
-      "index": 1,
-      "kind": "CREATE TABLE",
-      "raw_sql": "CREATE TABLE orders (\n  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',\n  ...\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='order records'",
-      "findings": []
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE orders (\n  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',\n  ...\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='order records'"
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 
@@ -286,18 +432,25 @@ Exit code: `0`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `verdict` | `"pass"` \| `"review"` \| `"reject"` | Overall outcome. `reject` = any blocker; `review` = warnings/notices only; `pass` = no findings. |
+| `verdict` | `"pass"` \| `"review"` \| `"reject"` | Overall outcome. `reject` = any blocker; `review` = one or more warnings and no blockers; `pass` = no blockers and no warnings (including notice-only or no findings). |
 | `summary.statements` | integer | Total number of SQL statements parsed. |
 | `summary.blockers` | integer | Count of blocker-level findings across all statements. |
 | `summary.warnings` | integer | Count of warning-level findings. |
 | `summary.notices` | integer | Count of notice-level findings. |
-| `statements[].index` | integer | 1-based position of this statement in the input. |
-| `statements[].kind` | string | Statement type: `CREATE TABLE`, `ALTER TABLE`, `DELETE`, `UPDATE`, etc. |
+| `explanation` | object | Top-level aggregate explanation containing `summary` and `reasons`; emitted when the audit produces findings. |
+| `context` | object | CLI-only audit context describing mode, dialect, and how defaults were resolved. |
+| `statements[].index` | integer | 0-based position of this statement in the input. |
+| `statements[].kind` | string | Normalized statement kind, currently `ddl` or `dml`. |
 | `statements[].raw_sql` | string | Original SQL text of this statement. |
-| `statements[].findings[]` | array | Rule violations for this statement. May be empty. |
+| `statements[].normalized_sql` | string | Whitespace-normalized SQL for this statement; emitted when available. |
+| `statements[].explanation` | object | Statement-level aggregate explanation containing `summary` and `reasons`; emitted when that statement produces findings. |
+| `statements[].findings[]` | array | Rule violations for this statement when findings are present. When a statement has no findings, the `findings` field is omitted. |
 | `statements[].findings[].rule_id` | string | Stable rule identifier (e.g. `dml.where.require`). |
 | `statements[].findings[].level` | `"blocker"` \| `"warning"` \| `"notice"` | Severity of this finding. |
 | `statements[].findings[].message` | string | Human-readable description of the violation. |
+| `statements[].findings[].statement_index` | integer | 0-based statement index attached to the finding when available. |
 | `statements[].findings[].suggestion` | string | Actionable fix guidance (present when available). |
+| `statements[].findings[].statement_kind` | string | Statement kind that produced this finding; emitted when available. |
+| `statements[].findings[].explanation` | object | Structured finding explanation containing fields such as `summary`, `why`, `risk`, and `suggestion`; emitted when available. |
 | `statements[].findings[].location` | object | `{line, column}` position in the raw SQL. |
-| `global_findings` | array | Cross-statement findings (e.g. merge-alter rule). Always present; may be empty. |
+| `global_findings` | array | Cross-statement findings (e.g. merge-alter rule). Emitted when present; omitted when empty. |

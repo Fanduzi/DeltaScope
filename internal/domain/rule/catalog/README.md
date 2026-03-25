@@ -11,10 +11,16 @@ Explanation-oriented metadata for shipped DeltaScope rules.
 
 ## Exports
 
+- `MetadataKind`
+- `MetadataNotes`
 - `Entry`
 - `All()`
 - `Lookup(ruleID)`
 - `Search(query)`
+
+## Notes
+
+- Catalog entries now expose explanation-oriented metadata such as `Why`, `Risk`, `Suggestion`, `ConfigHints`, and optional `MetadataNotes` for metadata-aware rules.
 
 ## Dependencies
 - Upstream: `internal/interfaces/cli` and future documentation tooling

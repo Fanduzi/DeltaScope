@@ -7,7 +7,7 @@
 ![Go Version](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.6.1.md)
+English | [中文](README_ZH.md) | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.6.2.md)
 </div>
 
 DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
@@ -23,11 +23,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.1/install.sh | \
-  DELTASCOPE_VERSION=v0.6.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.2/install.sh | \
+  DELTASCOPE_VERSION=v0.6.2 sh
 ```
 
-The published archive format is `deltascope_0.6.1_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
+The published archive format is `deltascope_0.6.2_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ## Quick Start
 
@@ -40,14 +40,39 @@ deltascope audit --sql "delete from users"
 Example output:
 
 ```text
-Verdict: reject
-Statements: 1
-Blockers: 1
-Warnings: 0
-Notices: 0
+# DeltaScope Audit Result
 
-Statement 1: DELETE
-- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+Verdict: `reject`
+
+- Statements: 1
+- Blockers: 1
+- Warnings: 0
+- Notices: 0
+
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+## Statement 1
+
+- Kind: `dml`
+- SQL: `delete from users`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+### Findings
+
+- [blocker] `dml.where.require`: UPDATE and DELETE statements must include a WHERE clause
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+  Suggestion: add a WHERE clause that narrows the affected rows
+  Statement kind: `dml`
+  Metadata:
+  - `operation`: `delete`
 ```
 
 Audit a `CREATE TABLE` statement:
@@ -59,14 +84,39 @@ deltascope audit --sql "create table users (id bigint unsigned not null auto_inc
 Example output:
 
 ```text
-Verdict: review
-Statements: 1
-Blockers: 0
-Warnings: 1
-Notices: 0
+# DeltaScope Audit Result
 
-Statement 1: CREATE TABLE
-- [warning] ddl.column.comment.require: column `id` must have a comment
+Verdict: `review`
+
+- Statements: 1
+- Blockers: 0
+- Warnings: 1
+- Notices: 0
+
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- column `id` must have a comment
+
+## Statement 1
+
+- Kind: `ddl`
+- SQL: `create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- column `id` must have a comment
+
+### Findings
+
+- [warning] `ddl.column.comment.require`: column `id` must have a comment
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can lead to schema changes that do not meet governance or review expectations.
+  Suggestion: Add a COMMENT clause to column `id`
+  Statement kind: `ddl`
+  Metadata:
+  - `column`: `id`
 ```
 
 Audit a file:
@@ -79,34 +129,65 @@ Use JSON output for CI or agents:
 
 ```bash
 deltascope audit \
-  --sql "alter table users drop column age" \
+  --sql "delete from users" \
   --format json \
   --fail-on warning
 ```
 
-Example JSON shape:
+Example CLI JSON shape (`context` is CLI-only and is not part of the HTTP API or `pkg/deltascope.Result`):
 
 ```json
 {
-  "verdict": "review",
+  "verdict": "reject",
   "summary": {
-    "blockers": 0,
-    "warnings": 1,
+    "statements": 1,
+    "blockers": 1,
+    "warnings": 0,
     "notices": 0
+  },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "ALTER TABLE",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
-          "rule_id": "ddl.alter.drop_column.forbid",
-          "level": "warning",
-          "message": "dropping columns should be reviewed carefully"
+          "rule_id": "dml.where.require",
+          "level": "blocker",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "statement_kind": "dml",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "metadata": {
+            "operation": "delete"
+          },
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          }
         }
       ]
     }
-  ]
+  ],
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 

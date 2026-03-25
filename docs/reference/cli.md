@@ -16,7 +16,7 @@ These flags apply to all subcommands.
 | `--dialect` | string | `mysql` | SQL dialect: `mysql` or `tidb`. Controls parser mode and dialect-specific rules. In metadata-aware mode, dialect is auto-detected from the live instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
 | `--format` | string | `markdown` | Output format: `markdown` (human-readable) or `json` (stable machine-readable contract). |
 | `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
-| `--quiet` | bool | false | Suppress non-result output. Each finding is printed as a single line. |
+| `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
 | `--version` | bool | false | Print only the semantic version string and exit. |
 
 ---
@@ -97,20 +97,42 @@ deltascope audit \
 
 #### Markdown Output (default)
 
-Human-readable output, suitable for review in terminals and pull request comments.
+Human-readable output, suitable for review in terminals and pull request comments. Statement headings are 1-based in markdown, even though the JSON `index` field is 0-based.
 
 ```
-## Audit Result
+# DeltaScope Audit Result
 
-Verdict: reject
-Statements: 1 | Blockers: 1 | Warnings: 0 | Notices: 0
+Verdict: `reject`
 
-### Statement 1: DELETE
-**Raw SQL:** `DELETE FROM users`
+- Statements: 1
+- Blockers: 1
+- Warnings: 0
+- Notices: 0
 
-| Rule ID | Level | Message |
-|---------|-------|---------|
-| dml.where.require | blocker | DELETE statement is missing a WHERE clause |
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+## Statement 1
+
+- Kind: `dml`
+- SQL: `delete from users`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+### Findings
+
+- [blocker] `dml.where.require`: UPDATE and DELETE statements must include a WHERE clause
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+  Suggestion: add a WHERE clause that narrows the affected rows
+  Statement kind: `dml`
+  Metadata:
+  - `operation`: `delete`
 ```
 
 #### JSON Output
@@ -122,6 +144,8 @@ integrations.
 deltascope audit --format json --sql "DELETE FROM users"
 ```
 
+CLI JSON always includes a top-level `context` object. In offline mode it reports the configured dialect source; in metadata-aware mode it also reports resolved schema details.
+
 ```json
 {
   "verdict": "reject",
@@ -131,23 +155,46 @@ deltascope audit --format json --sql "DELETE FROM users"
     "warnings": 0,
     "notices": 0
   },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
-      "raw_sql": "DELETE FROM users",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
-          "location": { "line": 1, "column": 1 }
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "statement_kind": "dml",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          }
         }
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -161,7 +208,6 @@ describing how dialect and schema were resolved.
   "verdict": "pass",
   "summary": { "statements": 1, "blockers": 0, "warnings": 0, "notices": 0 },
   "statements": [...],
-  "global_findings": [],
   "context": {
     "mode": "metadata-aware",
     "dialect": "mysql",
@@ -172,15 +218,15 @@ describing how dialect and schema were resolved.
 }
 ```
 
-`dialect_source` values: `"detected"` (from live instance) or `"explicit"` (from `--dialect` flag).
+`dialect_source` values: `"default"` (offline default), `"flag"` (from `--dialect`), or `"detected"` (from a live instance in metadata-aware mode).
 `schema_source` values: `"flag"` (from `--schema`), `"inferred"` (unique match), or `"qualified"` (SQL-level qualifier).
 
 #### Quiet Mode
 
-`--quiet` suppresses all output except findings. Each finding is printed as a single line:
+`--quiet` changes markdown output only. With markdown output, DeltaScope suppresses the normal report body and prints each finding as a single line. With `--format json`, the JSON contract is unchanged.
 
 ```
-dml.where.require [blocker] DELETE statement is missing a WHERE clause
+[blocker] dml.where.require: UPDATE and DELETE statements must include a WHERE clause
 ```
 
 This is useful for scripted processing or minimalist CI log output.
@@ -217,18 +263,16 @@ deltascope rules list --enabled-only
 
 Example output:
 
-```
-RULE ID                                   KIND  LEVEL    METADATA
-dml.where.require                         dml   blocker  false
-dml.limit.forbid                          dml   warning  false
-ddl.table.comment.require                 ddl   warning  false
-ddl.table.row_size.max_bytes.require      ddl   blocker  true
-...
+```md
+- `ddl.table.comment.require` [warning] (ddl) Require DDL table comment require
+- `ddl.table.row_size.max_bytes.require` [blocker] (ddl) Require DDL table row size max bytes require
+- `dml.limit.forbid` [warning] (dml) Forbid DML limit forbid
+- `dml.where.require` [blocker] (dml) Require DML where require
 ```
 
 ### rules show
 
-Display full detail for a single rule, including its parameters and defaults.
+Display full detail for a single rule, including its defaults, examples, and remediation guidance.
 
 ```bash
 deltascope rules show dml.where.require
@@ -236,14 +280,41 @@ deltascope rules show dml.where.require
 
 Example output:
 
+```md
+# dml.where.require
+
+Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+
+- Default Enabled: `true`
+- Default Level: `blocker`
+- Statement Kinds: `dml`
+- Metadata Aware: `false`
+
+## Default Params
+- `required`: `true`
+
+## Trigger Example
+```sql
+DELETE FROM users;
 ```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+
+## Valid Example
+```sql
+DELETE FROM users WHERE id = 42;
+```
+
+## Config Example
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+```
+
+## Remediation
+Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
 ```
 
 ### rules search
@@ -285,7 +356,7 @@ deltascope config lint --file ./deltascope.yaml
 Success output:
 
 ```
-Config file ./deltascope.yaml is valid.
+Config OK
 ```
 
 Failure output (example):

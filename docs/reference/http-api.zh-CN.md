@@ -57,7 +57,7 @@ curl http://127.0.0.1:8083/version
 **响应（200）：**
 
 ```json
-{"version": "v0.6.1"}
+{"version": "v0.6.2"}
 ```
 
 ---
@@ -74,10 +74,12 @@ curl http://127.0.0.1:8083/version
 | `dialect` | string | 否 | `mysql` 或 `tidb`，省略时默认为 `mysql` |
 
 > **注意：** 服务器启用了 `DisallowUnknownFields`。传入上述列表之外的额外字段将返回 `400 invalid_json` 错误。
+>
+> **请求体大小限制：** `POST /v1/audit` 最多接受 1 MiB 的请求体。超过该大小时，HTTP 适配层会在 JSON 解码前直接拒绝，并返回 `400 invalid_json`。
 
 #### 成功响应（200）
 
-所有合法审计请求均返回 `200`，无论 SQL 是否通过审计。审计结果通过响应体中的 `verdict` 字段体现。
+所有合法审计请求均返回 `200`，无论 SQL 是否通过审计。审计结果通过响应体中的 `verdict` 字段体现。语句级 finding 会包含 `statement_kind`；当 finding 来自索引大于 `0` 的语句时，还会包含 `statement_index`。当前审计响应中的 finding 都会带有 `explanation`：内置 catalog 规则通常提供更丰富的结构化字段，而未收录规则会回退为最小解释，只会把 finding `message` 填入 `summary`，把 finding `suggestion` 填入 `suggestion`。
 
 **拒绝示例——存在审计发现：**
 
@@ -86,21 +88,41 @@ curl http://127.0.0.1:8083/version
   "verdict": "reject",
   "summary": {
     "statements": 2,
-    "blockers": 1,
-    "warnings": 1,
+    "blockers": 2,
+    "warnings": 0,
     "notices": 0
+  },
+  "explanation": {
+    "summary": "Audit produced 2 finding(s) across 2 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause",
+      "table t does not have a primary key"
+    ]
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
+      "index": 0,
+      "kind": "dml",
       "raw_sql": "DELETE FROM users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "statement_kind": "dml",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          },
           "location": {
             "line": 1,
             "column": 1
@@ -109,20 +131,33 @@ curl http://127.0.0.1:8083/version
       ]
     },
     {
-      "index": 2,
-      "kind": "CREATE TABLE",
+      "index": 1,
+      "kind": "ddl",
       "raw_sql": "CREATE TABLE t (id INT) COMMENT='t'",
+      "explanation": {
+        "summary": "Statement 2 has 1 finding(s)",
+        "reasons": [
+          "table t does not have a primary key"
+        ]
+      },
       "findings": [
         {
           "rule_id": "ddl.table.primary_key.require",
           "level": "blocker",
           "message": "table t does not have a primary key",
-          "suggestion": "Add a PRIMARY KEY constraint"
+          "statement_index": 1,
+          "statement_kind": "ddl",
+          "suggestion": "Add a PRIMARY KEY constraint",
+          "explanation": {
+            "summary": "Require DDL table primary key require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+            "suggestion": "Add a PRIMARY KEY constraint"
+          }
         }
       ]
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 
@@ -141,13 +176,11 @@ curl http://127.0.0.1:8083/version
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "CREATE TABLE",
-      "raw_sql": "CREATE TABLE users (\n  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',\n  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',\n  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',\n  PRIMARY KEY (id)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='user records'",
-      "findings": []
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE users (\n  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',\n  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',\n  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',\n  PRIMARY KEY (id)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='user records'"
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 
@@ -155,7 +188,7 @@ curl http://127.0.0.1:8083/version
 
 | HTTP 状态码 | 错误码 | 触发条件 |
 |-------------|--------|----------|
-| 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段，或包含多个 JSON 对象 |
+| 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段、包含多个 JSON 对象，或超过 1 MiB 请求体大小限制 |
 | 400 | `bad_request` | `sql` 字段为空，或 `dialect` 值无法识别 |
 | 500 | `config_invalid` | 服务器配置文件加载失败 |
 
@@ -165,7 +198,7 @@ curl http://127.0.0.1:8083/version
 {
   "error": {
     "code": "bad_request",
-    "message": "sql is required"
+    "message": "audit SQL must not be empty"
   }
 }
 ```
@@ -187,7 +220,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 curl -s -X POST http://127.0.0.1:8083/v1/audit \
   -H 'Content-Type: application/json' \
   -d '{"sql": ""}'
-# 返回：{"error":{"code":"bad_request","message":"sql is required"}}
+# 返回：{"error":{"code":"bad_request","message":"audit SQL must not be empty"}}
 
 # 触发错误：无效 JSON
 curl -s -X POST http://127.0.0.1:8083/v1/audit \
@@ -216,6 +249,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | `summary` | object | 汇总计数：statements、blockers、warnings、notices |
 | `statements` | array | 各语句的审计结果；为空时省略 |
 | `global_findings` | array | 来自全局规则（跨语句检查）的发现；为空时省略 |
+| `explanation` | object | 可选的聚合级解释对象，包含 `summary` 和 `reasons`。当审计产生一条或多条 finding 时，内置 HTTP 审计流程会填充该字段 |
 
 ### StatementResult
 
@@ -223,11 +257,12 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `index` | int | 该语句在输入中的位置，从 1 开始计数 |
-| `kind` | string | 语句类型，例如 `CREATE TABLE`、`ALTER TABLE`、`DELETE`、`UPDATE` |
+| `index` | int | 该语句在输入中的位置，从 0 开始计数 |
+| `kind` | string | 规范化后的语句类别，当前为 `ddl` 或 `dml` |
 | `raw_sql` | string | 该语句的原始 SQL 文本 |
 | `normalized_sql` | string | 规范化后的 SQL（空白符标准化）；不可用时省略 |
 | `findings` | array | 该语句的规则发现；为空时省略 |
+| `explanation` | object | 可选的语句级解释对象，包含 `summary` 和 `reasons`。当该语句产生一条或多条 finding 时，内置 HTTP 审计流程会填充该字段 |
 
 ### Finding
 
@@ -239,8 +274,11 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | `level` | string | `blocker`、`warning` 或 `notice` |
 | `message` | string | 问题的人类可读描述 |
 | `suggestion` | string | 建议的修复措施；不可用时省略 |
+| `statement_index` | int | 该 finding 所属语句的 0 基位置；当值为 `0` 时省略 |
+| `statement_kind` | string | 产生该 finding 的语句类别，例如 `ddl` 或 `dml`；不可用时省略 |
 | `location` | object | 原始 SQL 中的位置 `{"line": N, "column": N}`；不可用时省略 |
 | `metadata` | object | 规则特定的附加键值上下文；为空时省略 |
+| `explanation` | object | 当前审计响应中包含的结构化解释。内置 catalog 规则通常会提供更丰富的 `why`、`risk` 和嵌套 `metadata` 字段；未收录规则会回退为最小解释，只设置由 finding `message` 派生的 `summary` 和由 finding `suggestion` 派生的 `suggestion` |
 
 ### Summary
 

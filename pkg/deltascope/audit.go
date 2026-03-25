@@ -90,25 +90,48 @@ type Location struct {
 	Column int `json:"column,omitempty"`
 }
 
+// Explanation is the stable public result-level explanation shape.
+type Explanation struct {
+	Summary string   `json:"summary,omitempty"`
+	Reasons []string `json:"reasons,omitempty"`
+}
+
+// ExplanationMetadata describes how metadata availability affected a public finding explanation.
+type ExplanationMetadata struct {
+	Status string `json:"status,omitempty"`
+	Note   string `json:"note,omitempty"`
+}
+
+// FindingExplanation is the stable public per-finding explanation shape.
+type FindingExplanation struct {
+	Summary    string               `json:"summary,omitempty"`
+	Why        string               `json:"why,omitempty"`
+	Risk       string               `json:"risk,omitempty"`
+	Suggestion string               `json:"suggestion,omitempty"`
+	Metadata   *ExplanationMetadata `json:"metadata,omitempty"`
+}
+
 // Finding is the stable public finding shape.
 type Finding struct {
-	RuleID         string         `json:"rule_id"`
-	Level          Level          `json:"level"`
-	Message        string         `json:"message"`
-	StatementIndex int            `json:"statement_index,omitempty"`
-	StatementKind  string         `json:"statement_kind,omitempty"`
-	Location       *Location      `json:"location,omitempty"`
-	Suggestion     string         `json:"suggestion,omitempty"`
-	Metadata       map[string]any `json:"metadata,omitempty"`
+	RuleID         string              `json:"rule_id"`
+	Level          Level               `json:"level"`
+	Message        string              `json:"message"`
+	StatementIndex int                 `json:"statement_index,omitempty"`
+	StatementKind  string              `json:"statement_kind,omitempty"`
+	Location       *Location           `json:"location,omitempty"`
+	Suggestion     string              `json:"suggestion,omitempty"`
+	Metadata       map[string]any      `json:"metadata,omitempty"`
+	Explanation    *FindingExplanation `json:"explanation,omitempty"`
 }
 
 // StatementResult stores public findings for a single SQL statement.
 type StatementResult struct {
-	Index         int       `json:"index"`
-	Kind          string    `json:"kind"`
-	RawSQL        string    `json:"raw_sql,omitempty"`
-	NormalizedSQL string    `json:"normalized_sql,omitempty"`
-	Findings      []Finding `json:"findings,omitempty"`
+	Index         int          `json:"index"`
+	Kind          string       `json:"kind"`
+	RawSQL        string       `json:"raw_sql,omitempty"`
+	NormalizedSQL string       `json:"normalized_sql,omitempty"`
+	Findings      []Finding    `json:"findings,omitempty"`
+	Explanation   *Explanation `json:"explanation,omitempty"`
 }
 
 // Result is the stable public audit output.
@@ -117,6 +140,7 @@ type Result struct {
 	Summary        Summary           `json:"summary"`
 	Statements     []StatementResult `json:"statements,omitempty"`
 	GlobalFindings []Finding         `json:"global_findings,omitempty"`
+	Explanation    *Explanation      `json:"explanation,omitempty"`
 }
 
 // Audit executes the stable public audit flow.
@@ -156,6 +180,7 @@ func fromDomainResult(result report.Result) Result {
 		Summary:        Summary(result.Summary),
 		Statements:     make([]StatementResult, 0, len(result.Statements)),
 		GlobalFindings: make([]Finding, 0, len(result.GlobalFindings)),
+		Explanation:    fromDomainExplanation(result.Explanation),
 	}
 
 	for _, stmt := range result.Statements {
@@ -165,6 +190,7 @@ func fromDomainResult(result report.Result) Result {
 			RawSQL:        stmt.RawSQL,
 			NormalizedSQL: stmt.NormalizedSQL,
 			Findings:      fromDomainFindings(stmt.Findings),
+			Explanation:   fromDomainExplanation(stmt.Explanation),
 		})
 	}
 
@@ -182,7 +208,8 @@ func fromDomainFindings(findings []rule.Finding) []Finding {
 			StatementIndex: finding.StatementIndex,
 			StatementKind:  finding.StatementKind,
 			Suggestion:     finding.Suggestion,
-			Metadata:       finding.Metadata,
+			Metadata:       cloneMetadataMap(finding.Metadata),
+			Explanation:    fromDomainFindingExplanation(finding.Explanation),
 		}
 		if finding.Location != nil {
 			item.Location = &Location{
@@ -195,6 +222,149 @@ func fromDomainFindings(findings []rule.Finding) []Finding {
 	return public
 }
 
+func fromDomainExplanation(explanation *report.Explanation) *Explanation {
+	if explanation == nil {
+		return nil
+	}
+	return &Explanation{
+		Summary: explanation.Summary,
+		Reasons: append([]string(nil), explanation.Reasons...),
+	}
+}
+
+func cloneMetadataMap(in map[string]any) map[string]any {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(in))
+	for key, value := range in {
+		out[key] = cloneMetadataValue(value)
+	}
+	return out
+}
+
+func cloneMetadataValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		return cloneMetadataMap(typed)
+	case []any:
+		out := make([]any, len(typed))
+		for i := range typed {
+			out[i] = cloneMetadataValue(typed[i])
+		}
+		return out
+	case []map[string]any:
+		out := make([]map[string]any, len(typed))
+		for i := range typed {
+			out[i] = cloneMetadataMap(typed[i])
+		}
+		return out
+	case [][]string:
+		out := make([][]string, len(typed))
+		for i := range typed {
+			out[i] = append([]string(nil), typed[i]...)
+		}
+		return out
+	case []string:
+		return append([]string(nil), typed...)
+	case []int:
+		return append([]int(nil), typed...)
+	case []int64:
+		return append([]int64(nil), typed...)
+	case []float64:
+		return append([]float64(nil), typed...)
+	case []bool:
+		return append([]bool(nil), typed...)
+	default:
+		return value
+	}
+}
+
+func cloneInstanceFacts(in *spec.InstanceFacts) *spec.InstanceFacts {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
+}
+
+func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	if in.Table != nil {
+		table := *in.Table
+		out.Table = &table
+	}
+	out.Columns = append([]spec.Column(nil), in.Columns...)
+	if in.PrimaryKey != nil {
+		out.PrimaryKey = cloneIndex(in.PrimaryKey)
+	}
+	out.Indexes = cloneIndexes(in.Indexes)
+	out.Constraints = cloneConstraints(in.Constraints)
+	if len(in.Options) > 0 {
+		out.Options = make(map[string]string, len(in.Options))
+		for key, value := range in.Options {
+			out.Options[key] = value
+		}
+	} else {
+		out.Options = nil
+	}
+	return &out
+}
+
+func cloneIndexes(in []spec.Index) []spec.Index {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]spec.Index, len(in))
+	for i := range in {
+		out[i] = *cloneIndex(&in[i])
+	}
+	return out
+}
+
+func cloneIndex(in *spec.Index) *spec.Index {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	out.Columns = append([]string(nil), in.Columns...)
+	return &out
+}
+
+func cloneConstraints(in []spec.Constraint) []spec.Constraint {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]spec.Constraint, len(in))
+	for i := range in {
+		out[i] = in[i]
+		out[i].Columns = append([]string(nil), in[i].Columns...)
+	}
+	return out
+}
+
+func fromDomainFindingExplanation(explanation *rule.FindingExplanation) *FindingExplanation {
+	if explanation == nil {
+		return nil
+	}
+	mapped := &FindingExplanation{
+		Summary:    explanation.Summary,
+		Why:        explanation.Why,
+		Risk:       explanation.Risk,
+		Suggestion: explanation.Suggestion,
+	}
+	if explanation.Metadata != nil {
+		mapped.Metadata = &ExplanationMetadata{
+			Status: explanation.Metadata.Status,
+			Note:   explanation.Metadata.Note,
+		}
+	}
+	return mapped
+}
+
 type publicMetadataProvider struct {
 	provider MetadataProvider
 }
@@ -203,12 +373,20 @@ func (p publicMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect s
 	if p.provider == nil {
 		return nil, nil
 	}
-	return p.provider.LoadInstanceFacts(ctx, Dialect(dialect), schema)
+	instanceFacts, err := p.provider.LoadInstanceFacts(ctx, Dialect(dialect), schema)
+	if err != nil {
+		return nil, err
+	}
+	return cloneInstanceFacts(instanceFacts), nil
 }
 
 func (p publicMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
 	if p.provider == nil {
 		return nil, nil
 	}
-	return p.provider.LoadTableSnapshot(ctx, Dialect(dialect), schema, table)
+	snapshot, err := p.provider.LoadTableSnapshot(ctx, Dialect(dialect), schema, table)
+	if err != nil {
+		return nil, err
+	}
+	return cloneTableSnapshot(snapshot), nil
 }

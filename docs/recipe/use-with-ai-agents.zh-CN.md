@@ -1,10 +1,10 @@
 # 与 AI 智能体集成
 
-DeltaScope 专为 AI 智能体集成而设计。JSON 输出格式提供稳定的机器可读发现，智能体无需解析文本即可进行推理。规则 ID 在补丁版本间保持稳定，每个发现都包含 `suggestion` 字段，为智能体提供可操作的修复指引。
+DeltaScope 专为 AI 智能体集成而设计。JSON 输出格式提供稳定的机器可读发现，智能体无需解析文本即可进行推理。规则 ID 在主版本内保持稳定，finding 除了 `suggestion` 之外，还会附带结构化的 `explanation` 对象，使智能体能够区分 summary、why、risk、suggestion 以及元数据可用性说明，而不必去解析自然语言段落。
 
 ## 为何使用 JSON 模式
 
-- **字段名称稳定**——`verdict`、`rule_id`、`level`、`message` 和 `suggestion` 跨版本保持一致，智能体无需为文本变化做适配。
+- **字段名称稳定**——智能体可以稳定依赖 `verdict`、`rule_id`、`level`、`message`、`suggestion` 以及嵌套的 `explanation` 字段，而无需为文本变化做适配。
 - **`rule_id` 值稳定**——智能体可通过 `deltascope rules show` 查询完整描述和修复指引。
 - **`verdict` 字段**提供单一可操作结论：`pass` / `review` / `reject`——无需文本解析。
 - **`global_findings`** 捕获跨语句问题（例如，当一批语句中多个 `ALTER TABLE` 针对同一张表时，merge-alter 规则会触发）。
@@ -16,7 +16,7 @@ DeltaScope 专为 AI 智能体集成而设计。JSON 输出格式提供稳定的
 deltascope audit --sql "$SQL" --format json --quiet
 ```
 
-针对风险 DML 语句的完整 JSON 输出示例：
+针对风险 DML 语句的完整 CLI JSON 输出示例：
 
 ```json
 {
@@ -27,26 +27,53 @@ deltascope audit --sql "$SQL" --format json --quiet
     "warnings": 0,
     "notices": 0
   },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
-      "raw_sql": "DELETE FROM users",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "metadata": {
+            "operation": "delete"
+          },
+          "statement_kind": "dml",
           "location": {
             "line": 1,
             "column": 1
+          },
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
           }
         }
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -60,17 +87,44 @@ deltascope rules show dml.where.require
 
 输出：
 
-```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+```md
+# dml.where.require
+
+Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+
+- Default Enabled: `true`
+- Default Level: `blocker`
+- Statement Kinds: `dml`
+- Metadata Aware: `false`
+
+## Default Params
+- `required`: `true`
+
+## Trigger Example
+```sql
+DELETE FROM users;
 ```
 
-这为智能体提供了精确的修复词汇：规则名称、严重级别、是否需要元数据、控制该规则的参数。智能体可据此向用户说明问题或自行修正生成的 SQL。
+## Valid Example
+```sql
+DELETE FROM users WHERE id = 42;
+```
+
+## Config Example
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+```
+
+## Remediation
+Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+```
+
+这为智能体提供了更完整的修复上下文：规则名称、默认级别、是否启用、适用语句类型、是否依赖元数据、默认参数、触发/合法示例以及 remediation 指引。智能体可据此向用户解释问题，或自行修正生成的 SQL。
 
 ## 建议的智能体工作流
 
@@ -88,8 +142,8 @@ Params:
    ```bash
    deltascope rules show <rule_id>
    ```
-   利用 `Description` 和 `Params` 字段准确理解规则要求。
-6. 根据规则描述和建议修正 SQL。
+   利用规则页中的默认参数、触发示例、合法示例、配置示例与 remediation 小节准确理解规则要求。
+6. 根据规则描述、finding 的 `explanation` 字段以及建议修正 SQL。
 7. 重新审计修正后的 SQL，循环直至 `verdict` 为 `"pass"`（或 `"review"` 在可接受范围内）。
 
 **提示：** 设置最大重试次数（如 3 次），防止无限循环。若经过 N 次尝试 SQL 仍未通过，将原始发现展示给用户进行人工审查。
@@ -180,7 +234,8 @@ deltascope rules show "$RULE_ID"
 | `level` | 始终为 `"blocker"` / `"warning"` / `"notice"` 之一 |
 | `message` | 可读描述；可能随版本变化——不要解析 |
 | `suggestion` | 如适用则存在；提供可操作的修复指引 |
-| `global_findings` | 始终以数组形式存在（可为空） |
+| `explanation` | 如适用则存在；提供结构化的 summary / why / risk / suggestion / 元数据说明 |
+| `global_findings` | 有全局发现时返回；为空时省略 |
 | 退出码 `0` | 发现低于 `--fail-on` 阈值（或无任何发现） |
 | 退出码 `1` | 发现超过 `--fail-on` 阈值 |
 | 退出码 `2` | 输入或配置有误——不要在不修复输入的情况下重试 |

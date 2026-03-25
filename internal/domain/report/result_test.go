@@ -54,3 +54,143 @@ func TestVerdictReject(t *testing.T) {
 		t.Fatalf("expected 2 global findings, got %+v", result.GlobalFindings)
 	}
 }
+
+func TestAggregatePreservesStatementExplanation(t *testing.T) {
+	result := Aggregate([]StatementResult{{
+		Index: 0,
+		Kind:  "dml",
+		Findings: []rule.Finding{{
+			RuleID:  "dml.where.require",
+			Level:   rule.LevelWarning,
+			Message: "where clause is recommended",
+		}},
+		Explanation: &Explanation{
+			Summary: "statement explanation",
+			Reasons: []string{"missing predicate"},
+		},
+	}}, nil)
+
+	if result.Statements[0].Explanation == nil {
+		t.Fatal("expected statement explanation to be preserved")
+	}
+	if result.Statements[0].Explanation.Summary != "statement explanation" {
+		t.Fatalf("expected statement explanation summary to be preserved, got %#v", result.Statements[0].Explanation)
+	}
+	if result.Verdict != VerdictReview {
+		t.Fatalf("expected verdict %q, got %q", VerdictReview, result.Verdict)
+	}
+	if result.Summary.Warnings != 1 {
+		t.Fatalf("expected warning count to stay based on findings, got %+v", result.Summary)
+	}
+}
+
+func TestAggregatePreservesVerdictSemanticsWithExplanation(t *testing.T) {
+	result := Aggregate([]StatementResult{{
+		Index: 0,
+		Kind:  "ddl",
+		Findings: []rule.Finding{{
+			RuleID:  "ddl.table.comment.require",
+			Level:   rule.LevelWarning,
+			Message: "table comment is recommended",
+		}},
+		Explanation: &Explanation{
+			Summary: "statement explanation",
+			Reasons: []string{"missing table comment"},
+		},
+	}}, []rule.Finding{{
+		RuleID:  "dml.where.require",
+		Level:   rule.LevelBlocker,
+		Message: "where clause is required",
+	}})
+
+	if result.Verdict != VerdictReject {
+		t.Fatalf("expected verdict %q, got %q", VerdictReject, result.Verdict)
+	}
+	if result.Summary.Blockers != 1 || result.Summary.Warnings != 1 {
+		t.Fatalf("expected blocker and warning counts to remain unchanged, got %+v", result.Summary)
+	}
+	if result.Statements[0].Explanation == nil {
+		t.Fatal("expected statement explanation to be preserved")
+	}
+}
+
+func TestAggregateBuildsStatementExplanationFromFindings(t *testing.T) {
+	result := Aggregate([]StatementResult{{
+		Index: 0,
+		Kind:  "dml",
+		Findings: []rule.Finding{{
+			RuleID:  "dml.where.require",
+			Level:   rule.LevelBlocker,
+			Message: "where clause is required",
+		}, {
+			RuleID:  "dml.limit.forbid",
+			Level:   rule.LevelWarning,
+			Message: "limit is discouraged",
+		}},
+	}}, nil)
+
+	if result.Statements[0].Explanation == nil {
+		t.Fatal("expected generated statement explanation")
+	}
+	if result.Statements[0].Explanation.Summary == "" {
+		t.Fatalf("expected statement explanation summary, got %#v", result.Statements[0].Explanation)
+	}
+	if len(result.Statements[0].Explanation.Reasons) != 2 {
+		t.Fatalf("expected statement explanation reasons from findings, got %#v", result.Statements[0].Explanation)
+	}
+	if result.Summary.Blockers != 1 || result.Summary.Warnings != 1 {
+		t.Fatalf("expected summary counts to remain based on findings, got %+v", result.Summary)
+	}
+}
+
+func TestAggregateBuildsResultExplanationFromAggregateFindings(t *testing.T) {
+	result := Aggregate([]StatementResult{{
+		Index: 0,
+		Kind:  "dml",
+		Findings: []rule.Finding{{
+			RuleID:  "dml.where.require",
+			Level:   rule.LevelBlocker,
+			Message: "where clause is required",
+		}},
+	}}, []rule.Finding{{
+		RuleID:  "ddl.alter.merge.mysql.require",
+		Level:   rule.LevelWarning,
+		Message: "merge repeated alters",
+	}})
+
+	if result.Explanation == nil {
+		t.Fatal("expected generated result explanation")
+	}
+	if result.Explanation.Summary == "" {
+		t.Fatalf("expected result explanation summary, got %#v", result.Explanation)
+	}
+	if len(result.Explanation.Reasons) != 2 {
+		t.Fatalf("expected result explanation reasons from all findings, got %#v", result.Explanation)
+	}
+	if result.Verdict != VerdictReject {
+		t.Fatalf("expected verdict %q, got %q", VerdictReject, result.Verdict)
+	}
+}
+
+func TestAggregateKeepsDistinctReasonsWhenMessagesMatch(t *testing.T) {
+	result := Aggregate([]StatementResult{{
+		Index: 0,
+		Kind:  "ddl",
+		Findings: []rule.Finding{{
+			RuleID:  "ddl.rule.one",
+			Level:   rule.LevelWarning,
+			Message: "duplicate message",
+		}, {
+			RuleID:  "ddl.rule.two",
+			Level:   rule.LevelWarning,
+			Message: "duplicate message",
+		}},
+	}}, nil)
+
+	if result.Explanation == nil {
+		t.Fatal("expected generated result explanation")
+	}
+	if len(result.Explanation.Reasons) != 2 {
+		t.Fatalf("expected one reason per finding even when messages match, got %#v", result.Explanation)
+	}
+}

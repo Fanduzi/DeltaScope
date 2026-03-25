@@ -16,16 +16,32 @@ const (
 	LevelNotice  Level = "notice"
 )
 
+// ExplanationMetadata describes how metadata availability affected a finding explanation.
+type ExplanationMetadata struct {
+	Status string `json:"status,omitempty"`
+	Note   string `json:"note,omitempty"`
+}
+
+// FindingExplanation captures additive explanation data for one finding.
+type FindingExplanation struct {
+	Summary    string               `json:"summary,omitempty"`
+	Why        string               `json:"why,omitempty"`
+	Risk       string               `json:"risk,omitempty"`
+	Suggestion string               `json:"suggestion,omitempty"`
+	Metadata   *ExplanationMetadata `json:"metadata,omitempty"`
+}
+
 // Finding is the domain result produced by a rule.
 type Finding struct {
-	RuleID         string         `json:"rule_id"`
-	Level          Level          `json:"level"`
-	Message        string         `json:"message"`
-	StatementIndex int            `json:"statement_index,omitempty"`
-	StatementKind  string         `json:"statement_kind,omitempty"`
-	Location       *Location      `json:"location,omitempty"`
-	Suggestion     string         `json:"suggestion,omitempty"`
-	Metadata       map[string]any `json:"metadata,omitempty"`
+	RuleID         string              `json:"rule_id"`
+	Level          Level               `json:"level"`
+	Message        string              `json:"message"`
+	StatementIndex int                 `json:"statement_index,omitempty"`
+	StatementKind  string              `json:"statement_kind,omitempty"`
+	Location       *Location           `json:"location,omitempty"`
+	Suggestion     string              `json:"suggestion,omitempty"`
+	Metadata       map[string]any      `json:"metadata,omitempty"`
+	Explanation    *FindingExplanation `json:"explanation,omitempty"`
 }
 
 // Location identifies a source span when available.

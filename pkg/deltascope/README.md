@@ -25,7 +25,10 @@ Stable public package surface for library consumers.
 - `Constraint`
 - `Result`
 - `StatementResult`
+- `Explanation`
 - `Finding`
+- `FindingExplanation`
+- `ExplanationMetadata`
 - `Level`
   Public finding severity type for `blocker`, `warning`, and `notice`
 - `Summary`
@@ -38,6 +41,8 @@ Stable public package surface for library consumers.
 ## Notes
 
 - `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.
+- `Result` and `StatementResult` expose an optional `Explanation` field for additive shared result context without changing verdict semantics. The built-in audit flow populates these aggregate fields whenever findings are present.
+- `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
 
 ## Dependencies
 - Upstream: external library consumers

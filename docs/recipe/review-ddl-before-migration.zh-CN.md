@@ -21,14 +21,39 @@ deltascope audit --config ./deltascope.yaml --file ./migrations/20260322.sql
 预期输出：
 
 ```text
-Verdict: review
-Statements: 1
-Warnings:   1
+# DeltaScope Audit Result
 
-Statement 1: CREATE TABLE
-  [warning] ddl.column.comment.require: column `id` must have a comment
-            Suggestion: Add a COMMENT clause to column `id`
+Verdict: `review`
+
+- Statements: 1
+- Blockers: 0
+- Warnings: 1
+- Notices: 0
+
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- column `id` must have a comment
+
+## Statement 1
+
+- Kind: `ddl`
+- SQL: `CREATE TABLE users ( id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL COMMENT 'user name', PRIMARY KEY (id) ) COMMENT='user table'`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- column `id` must have a comment
+
+### Findings
+
+- [warning] `ddl.column.comment.require`: column `id` must have a comment
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can lead to schema changes that do not meet governance or review expectations.
+  Suggestion: Add a COMMENT clause to column `id`
+  Statement kind: `ddl`
 ```
+
 
 ## 多语句迁移文件
 
@@ -57,19 +82,37 @@ deltascope audit --file ./migrations/20260323.sql --format json --fail-on blocke
 
 ```json
 {
-  "verdict": "reject",
-  "summary": { "statements": 3, "blockers": 1, "warnings": 3, "notices": 0 },
+  "verdict": "review",
+  "summary": { "statements": 3, "blockers": 0, "warnings": 4, "notices": 0 },
+  "explanation": {
+    "summary": "Audit produced 4 finding(s) across 3 statement(s)",
+    "reasons": [
+      "column `id` must have a comment",
+      "column `name` must have a comment",
+      "column `price` must have a comment",
+      "column `discount` must have a comment"
+    ]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "CREATE TABLE",
+      "index": 0,
+      "kind": "ddl",
       "raw_sql": "CREATE TABLE products (...)",
+      "explanation": {
+        "summary": "Statement 1 has 3 finding(s)",
+        "reasons": [
+          "column `id` must have a comment",
+          "column `name` must have a comment",
+          "column `price` must have a comment"
+        ]
+      },
       "findings": [
         {
           "rule_id": "ddl.column.comment.require",
           "level": "warning",
           "message": "column `id` must have a comment",
           "suggestion": "Add a COMMENT clause to column `id`",
+          "statement_kind": "ddl",
           "location": { "line": 2, "column": 3 }
         },
         {
@@ -77,6 +120,7 @@ deltascope audit --file ./migrations/20260323.sql --format json --fail-on blocke
           "level": "warning",
           "message": "column `name` must have a comment",
           "suggestion": "Add a COMMENT clause to column `name`",
+          "statement_kind": "ddl",
           "location": { "line": 3, "column": 3 }
         },
         {
@@ -84,36 +128,40 @@ deltascope audit --file ./migrations/20260323.sql --format json --fail-on blocke
           "level": "warning",
           "message": "column `price` must have a comment",
           "suggestion": "Add a COMMENT clause to column `price`",
+          "statement_kind": "ddl",
           "location": { "line": 4, "column": 3 }
         }
       ]
     },
     {
-      "index": 2,
-      "kind": "ALTER TABLE",
+      "index": 1,
+      "kind": "ddl",
       "raw_sql": "ALTER TABLE orders ADD COLUMN discount DECIMAL(10,2)",
+      "explanation": {
+        "summary": "Statement 2 has 1 finding(s)",
+        "reasons": ["column `discount` must have a comment"]
+      },
       "findings": [
         {
           "rule_id": "ddl.column.comment.require",
           "level": "warning",
           "message": "column `discount` must have a comment",
           "suggestion": "Add a COMMENT clause to column `discount`",
+          "statement_kind": "ddl",
           "location": { "line": 1, "column": 38 }
         }
       ]
     },
     {
-      "index": 3,
-      "kind": "DELETE",
-      "raw_sql": "DELETE FROM audit_log WHERE created_at < '2020-01-01'",
-      "findings": []
+      "index": 2,
+      "kind": "dml",
+      "raw_sql": "DELETE FROM audit_log WHERE created_at < '2020-01-01'"
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 
-退出码 `1`——超过了 `blocker` 阈值（本例中所有发现均为 `warning`，使用 `--fail-on blocker` 实际退出码为 `0`；若需对 warning 也阻断，请使用 `--fail-on warning`）。
+退出码 `0`——本例中所有发现均为 `warning`，因此使用 `--fail-on blocker` 不会让审计失败；若需对 warning 也阻断，请使用 `--fail-on warning`。
 
 ## 集成模式
 
@@ -222,9 +270,8 @@ JSON 输出包含 `context` 字段，确认元数据感知模式已激活：
     "schema_source": "flag"
   },
   "statements": [
-    { "index": 1, "kind": "ALTER TABLE", "raw_sql": "...", "findings": [] }
-  ],
-  "global_findings": []
+    { "index": 0, "kind": "ddl", "raw_sql": "..." }
+  ]
 }
 ```
 
@@ -240,7 +287,7 @@ if [ "$VERDICT" = "reject" ]; then
   echo "Migration blocked: verdict=$VERDICT"
   echo "Blocker findings:"
   echo "$RESULT" | jq -r '
-    .statements[].findings[]
+    .statements[] | .findings[]?
     | select(.level == "blocker")
     | "  [\(.rule_id)] \(.message)"
   '
@@ -250,7 +297,7 @@ fi
 if [ "$VERDICT" = "review" ]; then
   echo "Migration has warnings — review before deploying:"
   echo "$RESULT" | jq -r '
-    .statements[].findings[]
+    .statements[] | .findings[]?
     | "  [\(.level)] [\(.rule_id)] \(.message)"
   '
 fi
@@ -265,4 +312,4 @@ echo "Audit result: $VERDICT"
 - [ ] 以 `--fail-on blocker` 作为默认门控。对要求更严格的团队，可收紧至 `--fail-on warning`。
 - [ ] 在 CI 中使用 `--format json`，使发现以结构化数据形式出现在日志中。
 - [ ] 在代码仓库中保留至少一个迁移示例文件，以便开发者在本地重现相同的审计结果。
-- [ ] 对多文件迁移目录，按迁移顺序（字母序或版本排序）遍历文件，以便 merge-alter 规则能正确检测。
+- [ ] 对多文件迁移目录，按迁移顺序（字母序或版本排序）遍历文件，以保证 CI 运行具有确定性。跨语句的 `merge-alter` 发现只有在相关语句被放进同一次 DeltaScope 审计时才会被检测到。

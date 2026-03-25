@@ -187,4 +187,4 @@ deltascope audit \
 
 若 `context` 字段缺失，或 `mode` 不是 `"metadata-aware"`，说明连接参数未提供，或连接失败后 DeltaScope 退回了离线模式。请检查参数和凭据。
 
-关于元数据感知模式的概念模型，请参阅 [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md)。
+关于元数据感知模式的概念模型，请参阅 [../concept/metadata-aware-mode.zh-CN.md](../concept/metadata-aware-mode.zh-CN.md)。

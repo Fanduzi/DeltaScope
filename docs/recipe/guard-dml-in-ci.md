@@ -30,23 +30,31 @@ Expected output (JSON):
 {
   "verdict": "reject",
   "summary": { "statements": 1, "blockers": 1, "warnings": 0, "notices": 0 },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": ["UPDATE and DELETE statements must include a WHERE clause"]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "UPDATE",
+      "index": 0,
+      "kind": "dml",
       "raw_sql": "UPDATE users SET status = 'disabled'",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": ["UPDATE and DELETE statements must include a WHERE clause"]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "UPDATE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "statement_kind": "dml",
           "location": { "line": 1, "column": 1 }
         }
       ]
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 
@@ -70,9 +78,10 @@ jobs:
 
       - name: Install DeltaScope
         run: |
-          curl -L https://github.com/Fanduzi/DeltaScope/releases/latest/download/deltascope-linux-amd64 \
-            -o /usr/local/bin/deltascope
-          chmod +x /usr/local/bin/deltascope
+          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.2/deltascope_0.6.2_linux_amd64.tar.gz \
+            -o /tmp/deltascope.tar.gz
+          tar -xzf /tmp/deltascope.tar.gz -C /tmp
+          install /tmp/deltascope /usr/local/bin/deltascope
 
       - name: Audit SQL migrations
         run: |
@@ -113,10 +122,11 @@ audit-sql:
   stage: validate
   image: ubuntu:22.04
   before_script:
-    - apt-get update -qq && apt-get install -y -qq curl
-    - curl -L https://github.com/Fanduzi/DeltaScope/releases/latest/download/deltascope-linux-amd64
-        -o /usr/local/bin/deltascope
-    - chmod +x /usr/local/bin/deltascope
+    - apt-get update -qq && apt-get install -y -qq curl tar
+    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.2/deltascope_0.6.2_linux_amd64.tar.gz
+        -o /tmp/deltascope.tar.gz
+    - tar -xzf /tmp/deltascope.tar.gz -C /tmp
+    - install /tmp/deltascope /usr/local/bin/deltascope
   script:
     - |
       for f in ./sql/migrations/*.sql; do

@@ -6,27 +6,25 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
-Release target: `v0.6.1`
+Release target: `TBD`
+
+## [v0.6.2] - 2026-03-25
 
 ### Added
 
-- Product docs IA under `docs/admin`, `docs/concept`, `docs/dev`, `docs/recipe`, and `docs/reference`
-- Product-facing English and Chinese landing pages
-- Product-level and implementation-level ASCII architecture docs
-- Task-oriented recipe docs and stable reference docs
-- Tag-driven GitHub Actions release workflow with GoReleaser packaging
-- `install.sh` for release-archive installation
-- Stable local operator targets in `Makefile` for test/build/CLI e2e flows
-- Metadata-aware lifecycle checks for `DROP TABLE` and `TRUNCATE TABLE`
-- Explicit DDL operation modeling for create-view, drop-table, drop-view, and truncate-table extraction
-- Product-surface docs including bilingual README, changelog, and security policy
+- Aggregate `explanation` blocks on audit results and per-statement results
+- Structured per-finding explanation fields including `summary`, `why`, `risk`, and `suggestion`
+- Metadata-availability notes on explanation metadata for metadata-aware findings
+- Public API and HTTP coverage for explainable audit result shapes
+- English and Chinese release notes for `v0.6.2`
 
 ### Changed
 
-- Release-facing artifact contract now centers on `deltascope_<version>_<os>_<arch>.tar.gz`
-- Default source-build version target now points to `v0.6.1`
-- Metadata-backed existence rules now advertise `requires_metadata: true` instead of the misleading legacy `required` param
-- Capability matrix statuses now reflect shipped metadata-aware and lifecycle coverage
+- Markdown CLI output now renders richer explanation details for findings and aggregate audit summaries
+- Rule catalog entries now carry explanation-oriented metadata, examples, and remediation hints for discovery commands
+- English and Chinese README, recipe, and reference docs now align with runtime output contracts and localized links
+- Default source-build version target now points to `v0.6.2`
+- Release-facing install examples now target `v0.6.2`
 
 ## [v0.5.0] - 2026-03-21
 

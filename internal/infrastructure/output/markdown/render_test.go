@@ -69,9 +69,248 @@ func TestRenderIncludesGlobalFindings(t *testing.T) {
 	assertContains(t, string(rendered), "`batch.warning`")
 }
 
+func TestRenderIncludesAggregateExplanations(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Explanation: &report.Explanation{
+			Summary: "Audit produced 1 finding",
+			Reasons: []string{"where clause required"},
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Explanation: &report.Explanation{
+				Summary: "Statement 1 has 1 finding",
+				Reasons: []string{"where clause required"},
+			},
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause required",
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "## Result Explanation")
+	assertContains(t, output, "Audit produced 1 finding")
+	assertContains(t, output, "## Statement 1")
+	assertContains(t, output, "### Explanation")
+	assertContains(t, output, "Statement 1 has 1 finding")
+}
+
+func TestRenderUsesSingleSuggestionLineWhenExplanationIncludesSuggestion(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:      "dml.where.require",
+				Level:       rule.LevelBlocker,
+				Message:     "where clause required",
+				Suggestion:  "legacy suggestion",
+				Explanation: &rule.FindingExplanation{Suggestion: "explanation suggestion"},
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	if strings.Count(output, "Suggestion:") != 1 {
+		t.Fatalf("expected exactly one suggestion line, got output:\n%s", output)
+	}
+	assertContains(t, output, "Suggestion: explanation suggestion")
+	assertNotContains(t, output, "Suggestion: legacy suggestion")
+}
+
+func TestRenderFallsBackToLegacySuggestionWhenExplanationSuggestionIsEmpty(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:     "dml.where.require",
+				Level:      rule.LevelBlocker,
+				Message:    "where clause required",
+				Suggestion: "legacy suggestion",
+				Explanation: &rule.FindingExplanation{
+					Why: "predicate required",
+				},
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	if strings.Count(output, "Suggestion:") != 1 {
+		t.Fatalf("expected exactly one suggestion line, got output:\n%s", output)
+	}
+	assertContains(t, output, "Suggestion: legacy suggestion")
+}
+
+func TestRenderUsesLongerCodeSpanDelimiterWhenSQLContainsBackticks(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index:         0,
+			Kind:          "dml",
+			NormalizedSQL: "delete from `users` where `id` = 1",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "UPDATE and DELETE statements must include a WHERE clause",
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "- SQL: ``delete from `users` where `id` = 1``")
+	assertNotContains(t, output, "- SQL: `delete from `users` where `id` = 1`")
+	assertNotContains(t, output, "\\`")
+}
+
+func TestRenderUsesDelimiterLongerThanLongestBacktickRun(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index:         0,
+			Kind:          "dml",
+			NormalizedSQL: "select ``value`` from audit_log",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "UPDATE and DELETE statements must include a WHERE clause",
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "- SQL: ```select ``value`` from audit_log```")
+}
+
+func TestRenderPadsCodeSpanWhenSQLStartsWithBacktick(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index:         0,
+			Kind:          "dml",
+			NormalizedSQL: "`users`",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "UPDATE and DELETE statements must include a WHERE clause",
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "- SQL: `` `users` ``")
+}
+
+func TestRenderPadsCodeSpanWhenSQLEndsWithBacktick(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index:         0,
+			Kind:          "dml",
+			NormalizedSQL: "users`",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "UPDATE and DELETE statements must include a WHERE clause",
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "- SQL: `` users` ``")
+}
+
+func TestRenderPadsCodeSpanWhenSQLStartsAndEndsWithBacktick(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{
+			Statements: 1,
+			Blockers:   1,
+		},
+		Statements: []report.StatementResult{{
+			Index:         0,
+			Kind:          "dml",
+			NormalizedSQL: "`users`",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "UPDATE and DELETE statements must include a WHERE clause",
+			}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "- SQL: `` `users` ``")
+}
+
 func assertContains(t *testing.T, output string, want string) {
 	t.Helper()
 	if !strings.Contains(output, want) {
 		t.Fatalf("expected output to contain %q\noutput:\n%s", want, output)
+	}
+}
+
+func assertNotContains(t *testing.T, output string, want string) {
+	t.Helper()
+	if strings.Contains(output, want) {
+		t.Fatalf("expected output not to contain %q\noutput:\n%s", want, output)
 	}
 }

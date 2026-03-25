@@ -93,13 +93,11 @@ deltascope audit \
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "ALTER TABLE",
+      "index": 0,
+      "kind": "ddl",
       "raw_sql": "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'email address'",
-      "findings": []
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 
@@ -158,9 +156,8 @@ deltascope audit --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL
   "verdict": "pass",
   "summary": { "statements": 1, "blockers": 0, "warnings": 0, "notices": 0 },
   "statements": [
-    { "index": 1, "kind": "ALTER TABLE", "raw_sql": "...", "findings": [] }
-  ],
-  "global_findings": []
+    { "index": 0, "kind": "ddl", "raw_sql": "..." }
+  ]
 }
 ```
 
@@ -186,12 +183,12 @@ deltascope audit \
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "ALTER TABLE",
+      "index": 0,
+      "kind": "ddl",
       "raw_sql": "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'email'",
       "findings": [
         {
-          "rule_id": "ddl.alter.column.exists",
+          "rule_id": "ddl.alter.add_column.exists.forbid",
           "level": "blocker",
           "message": "column `email` already exists in table `users`",
           "suggestion": "Remove the ADD COLUMN clause or check the column name",
@@ -199,8 +196,7 @@ deltascope audit \
         }
       ]
     }
-  ],
-  "global_findings": []
+  ]
 }
 ```
 

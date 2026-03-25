@@ -14,7 +14,7 @@
 | `--dialect` | string | `mysql` | SQL 方言：`mysql` 或 `tidb`。控制解析器模式和方言特定规则。在元数据感知模式下，方言从实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
 | `--format` | string | `markdown` | 输出格式：`markdown`（人类可读）或 `json`（稳定的机器可读契约）。 |
 | `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
-| `--quiet` | bool | false | 抑制非结果输出。每条发现以单行形式打印。 |
+| `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
 | `--version` | bool | false | 仅打印语义化版本字符串后退出。 |
 
 ---
@@ -90,20 +90,42 @@ deltascope audit \
 
 #### Markdown 输出（默认）
 
-人类可读的输出，适合在终端和 Pull Request 评论中查看。
+人类可读的输出，适合在终端和 Pull Request 评论中查看。Markdown 中的 `Statement 1`、`Statement 2` 标题按 1 开始显示，但 JSON 中的 `index` 字段从 0 开始计数。
 
 ```
-## Audit Result
+# DeltaScope Audit Result
 
-Verdict: reject
-Statements: 1 | Blockers: 1 | Warnings: 0 | Notices: 0
+Verdict: `reject`
 
-### Statement 1: DELETE
-**Raw SQL:** `DELETE FROM users`
+- Statements: 1
+- Blockers: 1
+- Warnings: 0
+- Notices: 0
 
-| Rule ID | Level | Message |
-|---------|-------|---------|
-| dml.where.require | blocker | DELETE statement is missing a WHERE clause |
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+## Statement 1
+
+- Kind: `dml`
+- SQL: `delete from users`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+### Findings
+
+- [blocker] `dml.where.require`: UPDATE and DELETE statements must include a WHERE clause
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+  Suggestion: add a WHERE clause that narrows the affected rows
+  Statement kind: `dml`
+  Metadata:
+  - `operation`: `delete`
 ```
 
 #### JSON 输出
@@ -114,6 +136,8 @@ Statements: 1 | Blockers: 1 | Warnings: 0 | Notices: 0
 deltascope audit --format json --sql "DELETE FROM users"
 ```
 
+CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来源；metadata-aware 模式下它还包含 schema 的解析结果。
+
 ```json
 {
   "verdict": "reject",
@@ -123,36 +147,58 @@ deltascope audit --format json --sql "DELETE FROM users"
     "warnings": 0,
     "notices": 0
   },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
-      "raw_sql": "DELETE FROM users",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
-          "location": { "line": 1, "column": 1 }
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "statement_kind": "dml",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          }
         }
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
 #### 元数据感知 JSON 输出
 
-在元数据感知模式下，JSON 响应中包含额外的 `context` 字段，描述方言和 schema 的解析方式。
+在 metadata-aware 模式下，JSON 响应中的 `context` 会额外说明方言与 schema 的解析方式。
 
 ```json
 {
   "verdict": "pass",
   "summary": { "statements": 1, "blockers": 0, "warnings": 0, "notices": 0 },
   "statements": [...],
-  "global_findings": [],
   "context": {
     "mode": "metadata-aware",
     "dialect": "mysql",
@@ -163,15 +209,15 @@ deltascope audit --format json --sql "DELETE FROM users"
 }
 ```
 
-`dialect_source` 取值：`"detected"`（来自实例检测）或 `"explicit"`（来自 `--dialect` 标志）。
-`schema_source` 取值：`"flag"`（来自 `--schema`）、`"inferred"`（唯一匹配）或 `"qualified"`（SQL 级限定符）。
+`dialect_source` 取值：`"default"`（离线默认值）、`"flag"`（来自 `--dialect`）或 `"detected"`（metadata-aware 模式下来自实例检测）。
+`schema_source` 取值：`"flag"`（来自 `--schema`）、`"inferred"`（唯一匹配）或 `"qualified"`（SQL 中显式限定）。
 
 #### 静默模式
 
-`--quiet` 抑制所有输出，仅保留发现内容。每条发现以单行形式打印：
+`--quiet` 只改变 markdown 输出。使用 markdown 输出时，DeltaScope 会省略常规报告主体，并将每条 finding 以单行形式打印；使用 `--format json` 时，JSON 契约保持不变。
 
 ```
-dml.where.require [blocker] DELETE statement is missing a WHERE clause
+[blocker] dml.where.require: UPDATE and DELETE statements must include a WHERE clause
 ```
 
 适用于脚本处理或极简 CI 日志输出。
@@ -208,13 +254,11 @@ deltascope rules list --enabled-only
 
 输出示例：
 
-```
-RULE ID                                   KIND  LEVEL    METADATA
-dml.where.require                         dml   blocker  false
-dml.limit.forbid                          dml   warning  false
-ddl.table.comment.require                 ddl   warning  false
-ddl.table.row_size.max_bytes.require      ddl   blocker  true
-...
+```md
+- `ddl.table.comment.require` [warning] (ddl) Require DDL table comment require
+- `ddl.table.row_size.max_bytes.require` [blocker] (ddl) Require DDL table row size max bytes require
+- `dml.limit.forbid` [warning] (dml) Forbid DML limit forbid
+- `dml.where.require` [blocker] (dml) Require DML where require
 ```
 
 ### rules show
@@ -227,14 +271,41 @@ deltascope rules show dml.where.require
 
 输出示例：
 
+```md
+# dml.where.require
+
+Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+
+- Default Enabled: `true`
+- Default Level: `blocker`
+- Statement Kinds: `dml`
+- Metadata Aware: `false`
+
+## Default Params
+- `required`: `true`
+
+## Trigger Example
+```sql
+DELETE FROM users;
 ```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+
+## Valid Example
+```sql
+DELETE FROM users WHERE id = 42;
+```
+
+## Config Example
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+```
+
+## Remediation
+Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
 ```
 
 ### rules search
@@ -274,7 +345,7 @@ deltascope config lint --file ./deltascope.yaml
 成功输出：
 
 ```
-Config file ./deltascope.yaml is valid.
+Config OK
 ```
 
 失败输出（示例）：
@@ -335,6 +406,6 @@ deltascope --version
 ## 参考链接
 
 - **规则目录** — [rules.zh-CN.md](rules.zh-CN.md)
-- **策略配置** — [config.md](config.md)
-- **HTTP API** — [http-api.md](http-api.md)
-- **元数据感知模式** — [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md)
+- **策略配置** — [config.zh-CN.md](config.zh-CN.md)
+- **HTTP API** — [http-api.zh-CN.md](http-api.zh-CN.md)
+- **元数据感知模式** — [../concept/metadata-aware-mode.zh-CN.md](../concept/metadata-aware-mode.zh-CN.md)

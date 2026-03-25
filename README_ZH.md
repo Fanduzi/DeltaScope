@@ -7,7 +7,7 @@
 ![Go Version](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-[English](README.md) | 中文 | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.6.1.zh-CN.md)
+[English](README.md) | 中文 | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.6.2.zh-CN.md)
 </div>
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
@@ -23,11 +23,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.1/install.sh | \
-  DELTASCOPE_VERSION=v0.6.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.2/install.sh | \
+  DELTASCOPE_VERSION=v0.6.2 sh
 ```
 
-发布产物命名为 `deltascope_0.6.1_<os>_<arch>.tar.gz`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+发布产物命名为 `deltascope_0.6.2_<os>_<arch>.tar.gz`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ## 快速开始
 
@@ -40,14 +40,39 @@ deltascope audit --sql "delete from users"
 示例输出：
 
 ```text
-Verdict: reject
-Statements: 1
-Blockers: 1
-Warnings: 0
-Notices: 0
+# DeltaScope Audit Result
 
-Statement 1: DELETE
-- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+Verdict: `reject`
+
+- Statements: 1
+- Blockers: 1
+- Warnings: 0
+- Notices: 0
+
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+## Statement 1
+
+- Kind: `dml`
+- SQL: `delete from users`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- UPDATE and DELETE statements must include a WHERE clause
+
+### Findings
+
+- [blocker] `dml.where.require`: UPDATE and DELETE statements must include a WHERE clause
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+  Suggestion: add a WHERE clause that narrows the affected rows
+  Statement kind: `dml`
+  Metadata:
+  - `operation`: `delete`
 ```
 
 审核 `CREATE TABLE`：
@@ -59,14 +84,39 @@ deltascope audit --sql "create table users (id bigint unsigned not null auto_inc
 示例输出：
 
 ```text
-Verdict: review
-Statements: 1
-Blockers: 0
-Warnings: 1
-Notices: 0
+# DeltaScope Audit Result
 
-Statement 1: CREATE TABLE
-- [warning] ddl.column.comment.require: column `id` must have a comment
+Verdict: `review`
+
+- Statements: 1
+- Blockers: 0
+- Warnings: 1
+- Notices: 0
+
+## Result Explanation
+
+Audit produced 1 finding(s) across 1 statement(s)
+- column `id` must have a comment
+
+## Statement 1
+
+- Kind: `ddl`
+- SQL: `create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'`
+
+### Explanation
+
+Statement 1 has 1 finding(s)
+- column `id` must have a comment
+
+### Findings
+
+- [warning] `ddl.column.comment.require`: column `id` must have a comment
+  Why: The statement is missing a clause, option, or object that the shipped policy requires.
+  Risk: Ignoring this rule can lead to schema changes that do not meet governance or review expectations.
+  Suggestion: Add a COMMENT clause to column `id`
+  Statement kind: `ddl`
+  Metadata:
+  - `column`: `id`
 ```
 
 审核文件：
@@ -79,34 +129,65 @@ deltascope audit --file ./change.sql
 
 ```bash
 deltascope audit \
-  --sql "alter table users drop column age" \
+  --sql "delete from users" \
   --format json \
   --fail-on warning
 ```
 
-JSON 结构示例：
+JSON 结构示例（`context` 仅为 CLI 输出字段，不属于 HTTP API 或 `pkg/deltascope.Result` 共享结果结构）：
 
 ```json
 {
-  "verdict": "review",
+  "verdict": "reject",
   "summary": {
-    "blockers": 0,
-    "warnings": 1,
+    "statements": 1,
+    "blockers": 1,
+    "warnings": 0,
     "notices": 0
+  },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
   },
   "statements": [
     {
-      "index": 1,
-      "kind": "ALTER TABLE",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
-          "rule_id": "ddl.alter.drop_column.forbid",
-          "level": "warning",
-          "message": "dropping columns should be reviewed carefully"
+          "rule_id": "dml.where.require",
+          "level": "blocker",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "statement_kind": "dml",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "metadata": {
+            "operation": "delete"
+          },
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          }
         }
       ]
     }
-  ]
+  ],
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
@@ -186,7 +267,7 @@ result, err := deltascope.Audit(ctx, deltascope.Request{
 
 ## Architecture
 
-DeltaScope 保持一条共享审核主路径，再通过多个入口暴露给用户。产品层和实现层 ASCII 架构图分别位于 [docs/concept/architecture.md](docs/concept/architecture.md) 和 [docs/dev/architecture.md](docs/dev/architecture.md)。
+DeltaScope 保持一条共享审核主路径，再通过多个入口暴露给用户。产品层和实现层 ASCII 架构图分别位于 [docs/concept/architecture.zh-CN.md](docs/concept/architecture.zh-CN.md) 和 [docs/dev/architecture.md](docs/dev/architecture.md)。
 
 ### Modules
 

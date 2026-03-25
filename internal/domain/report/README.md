@@ -12,10 +12,15 @@ Audit result aggregation, summary counts, and verdict calculation.
 ## Exports
 
 - `Verdict`
+- `Explanation`
 - `StatementResult`
 - `Summary`
 - `Result`
 - `Aggregate()`
+
+## Notes
+
+- `StatementResult` and `Result` now expose an optional `Explanation` field for additive, shared result context without changing verdict calculation.
 
 ## Dependencies
 - Upstream: application audit orchestration

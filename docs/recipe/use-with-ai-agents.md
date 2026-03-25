@@ -1,14 +1,14 @@
 # Use With AI Agents
 
-DeltaScope is designed for AI agent integration. The JSON output format provides stable, machine-readable findings that agents can reason about without parsing text. Rule IDs are stable across patch versions, and every finding includes a `suggestion` field that gives the agent an actionable fix.
+DeltaScope is designed for AI agent integration. The JSON output format provides stable, machine-readable findings that agents can reason about without parsing text. Rule IDs are stable within a major version, and findings now include structured `explanation` fields so agents can distinguish the summary, why, risk, suggestion, and metadata-availability notes without scraping prose.
 
 ## Why JSON Mode
 
-- **Stable field names** across versions — agents can rely on `verdict`, `rule_id`, `level`, `message`, and `suggestion` without adapting to text changes.
+- **Stable field names** across versions — agents can rely on `verdict`, `rule_id`, `level`, `message`, `suggestion`, and nested `explanation` fields without adapting to text changes.
 - **`rule_id` values are stable** — agents can look them up with `deltascope rules show` to get full descriptions and fix guidance.
 - **`verdict` field** gives a single actionable outcome: `pass` / `review` / `reject` — no text parsing required.
 - **`global_findings`** captures cross-statement issues (e.g., the merge-alter rule fires when multiple `ALTER TABLE` statements target the same table in one batch).
-- **`--quiet` flag** suppresses progress output so only the JSON object is written to stdout — safe to capture with `$(...)` or pipe to `jq`.
+- **`--quiet` flag** is safe to combine with `--format json`; the JSON contract is unchanged, so the command remains safe to capture with `$(...)` or pipe to `jq`.
 
 ## Basic Integration
 
@@ -16,7 +16,7 @@ DeltaScope is designed for AI agent integration. The JSON output format provides
 deltascope audit --sql "$SQL" --format json --quiet
 ```
 
-Complete JSON output example for a risky DML statement:
+Complete CLI JSON output example for a risky DML statement:
 
 ```json
 {
@@ -27,17 +27,40 @@ Complete JSON output example for a risky DML statement:
     "warnings": 0,
     "notices": 0
   },
+  "explanation": {
+    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
+    "reasons": [
+      "UPDATE and DELETE statements must include a WHERE clause"
+    ]
+  },
   "statements": [
     {
-      "index": 1,
-      "kind": "DELETE",
-      "raw_sql": "DELETE FROM users",
+      "index": 0,
+      "kind": "dml",
+      "raw_sql": "delete from users",
+      "normalized_sql": "delete from users",
+      "explanation": {
+        "summary": "Statement 1 has 1 finding(s)",
+        "reasons": [
+          "UPDATE and DELETE statements must include a WHERE clause"
+        ]
+      },
       "findings": [
         {
           "rule_id": "dml.where.require",
           "level": "blocker",
-          "message": "DELETE statement is missing a WHERE clause",
-          "suggestion": "Add a WHERE clause to restrict the rows affected",
+          "message": "UPDATE and DELETE statements must include a WHERE clause",
+          "statement_kind": "dml",
+          "suggestion": "add a WHERE clause that narrows the affected rows",
+          "metadata": {
+            "operation": "delete"
+          },
+          "explanation": {
+            "summary": "Require DML where require",
+            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+            "suggestion": "add a WHERE clause that narrows the affected rows"
+          },
           "location": {
             "line": 1,
             "column": 1
@@ -46,13 +69,17 @@ Complete JSON output example for a risky DML statement:
       ]
     }
   ],
-  "global_findings": []
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 
 ## Looking Up Rule Details
 
-When a finding contains a `rule_id`, agents can fetch the full rule description including parameters:
+When a finding contains a `rule_id`, agents can fetch the shipped rule summary, defaults, examples, and remediation guidance:
 
 ```bash
 deltascope rules show dml.where.require
@@ -60,17 +87,44 @@ deltascope rules show dml.where.require
 
 Output:
 
-```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+```md
+# dml.where.require
+
+Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+
+- Default Enabled: `true`
+- Default Level: `blocker`
+- Statement Kinds: `dml`
+- Metadata Aware: `false`
+
+## Default Params
+- `required`: `true`
+
+## Trigger Example
+```sql
+DELETE FROM users;
 ```
 
-This gives the agent precise vocabulary for the fix: it knows the rule name, the severity, whether metadata is needed, and what parameter controls it. The agent can use this to instruct the user or to self-correct the generated SQL.
+## Valid Example
+```sql
+DELETE FROM users WHERE id = 42;
+```
+
+## Config Example
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+```
+
+## Remediation
+Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+```
+
+This gives the agent stable rule metadata in one response: rule ID, defaults, supported statement kinds, trigger examples, config knobs, and remediation guidance.
 
 ## Suggested Agent Workflow
 
@@ -88,7 +142,7 @@ This gives the agent precise vocabulary for the fix: it knows the rule name, the
    ```bash
    deltascope rules show <rule_id>
    ```
-   Use the `Description` and `Params` fields to understand exactly what is required.
+   Use the rule summary, default params, examples, and remediation sections to understand exactly what is required.
 6. Revise the SQL based on the rule descriptions and suggestions.
 7. Re-audit the revised SQL and repeat until `verdict` is `"pass"` (or `"review"` if warnings are acceptable).
 
@@ -180,7 +234,8 @@ deltascope rules show "$RULE_ID"
 | `level` | Always `"blocker"` / `"warning"` / `"notice"` |
 | `message` | Human-readable; may change across versions — do not parse |
 | `suggestion` | Present when available; gives actionable fix guidance |
-| `global_findings` | Always present as an array (may be empty) |
+| `explanation` | Present when available; provides structured summary / why / risk / suggestion / metadata notes |
+| `global_findings` | Present when cross-statement rules emit findings; omitted when empty |
 | Exit code `0` | Findings below `--fail-on` threshold (or no findings) |
 | Exit code `1` | Findings crossed `--fail-on` threshold |
 | Exit code `2` | Bad input or config — do not retry without fixing input |

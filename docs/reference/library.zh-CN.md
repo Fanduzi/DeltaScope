@@ -52,6 +52,7 @@ type Result struct {
     Summary        Summary           // 按级别汇总的计数
     Statements     []StatementResult // 各语句的审计发现
     GlobalFindings []Finding         // 全局规则（跨语句检查）产生的发现
+    Explanation    *Explanation      // 审计产生发现时可选的结果级共享解释
 }
 ```
 
@@ -70,34 +71,37 @@ type Summary struct {
 
 ```go
 type StatementResult struct {
-    Index         int       `json:"index"`
-    Kind          string    `json:"kind"`
-    RawSQL        string    `json:"raw_sql,omitempty"`
-    NormalizedSQL string    `json:"normalized_sql,omitempty"`
-    Findings      []Finding `json:"findings,omitempty"`
+    Index         int          `json:"index"`
+    Kind          string       `json:"kind"`
+    RawSQL        string       `json:"raw_sql,omitempty"`
+    NormalizedSQL string       `json:"normalized_sql,omitempty"`
+    Findings      []Finding    `json:"findings,omitempty"`
+    Explanation   *Explanation `json:"explanation,omitempty"` // 该语句产生 finding 时输出
 }
 ```
 
 | 字段 | 说明 |
 |------|------|
-| `Index` | 该语句在输入中的位置，从 1 开始计数。 |
-| `Kind` | 语句类型，例如 `CREATE TABLE`、`ALTER TABLE`、`DELETE`、`UPDATE`。 |
+| `Index` | 该语句在输入中的位置，从 0 开始计数。 |
+| `Kind` | 规范化后的语句族，目前为 `ddl` 或 `dml`。 |
 | `RawSQL` | 该语句的原始 SQL 文本。 |
 | `NormalizedSQL` | 空白符规范化后的 SQL，可能为空字符串。 |
-| `Findings` | 该语句的规则发现。语句通过时为空切片。 |
+| `Findings` | 该语句的规则发现。为空时 JSON 中可能省略该字段。 |
+| `Explanation` | 可选的语句级共享解释。内置审计流程在该语句产生一条或多条 finding 时会填充它。 |
 
 ### Finding
 
 ```go
 type Finding struct {
-    RuleID         string         `json:"rule_id"`
-    Level          Level          `json:"level"`
-    Message        string         `json:"message"`
-    StatementIndex int            `json:"statement_index,omitempty"`
-    StatementKind  string         `json:"statement_kind,omitempty"`
-    Location       *Location      `json:"location,omitempty"`
-    Suggestion     string         `json:"suggestion,omitempty"`
-    Metadata       map[string]any `json:"metadata,omitempty"`
+    RuleID         string              `json:"rule_id"`
+    Level          Level               `json:"level"`
+    Message        string              `json:"message"`
+    StatementIndex int                 `json:"statement_index,omitempty"`
+    StatementKind  string              `json:"statement_kind,omitempty"`
+    Location       *Location           `json:"location,omitempty"`
+    Suggestion     string              `json:"suggestion,omitempty"`
+    Metadata       map[string]any      `json:"metadata,omitempty"`
+    Explanation    *FindingExplanation `json:"explanation,omitempty"`
 }
 ```
 
@@ -106,11 +110,42 @@ type Finding struct {
 | `RuleID` | 稳定的规则标识符，例如 `dml.where.require`。 |
 | `Level` | `LevelBlocker`、`LevelWarning` 或 `LevelNotice`。 |
 | `Message` | 问题的人类可读描述。 |
-| `StatementIndex` | 产生此发现的语句的 1-based 索引，在全局发现中使用。 |
-| `StatementKind` | 产生此发现的语句类型，在全局发现中使用。 |
+| `StatementIndex` | 附带语句上下文时，对应语句的 0-based 索引。 |
+| `StatementKind` | 附带语句上下文时，对应语句的类型。 |
 | `Location` | 原始 SQL 中的位置，不可用时为 `nil`。 |
 | `Suggestion` | 建议的修复措施，不可用时为空字符串。 |
 | `Metadata` | 规则特定的附加键值上下文，不存在时为 `nil`。 |
+| `Explanation` | 可选的结构化解释，包含 `summary`、`why`、`risk`、`suggestion` 以及元数据可用性说明。 |
+
+### Explanation
+
+```go
+type Explanation struct {
+    Summary string   `json:"summary,omitempty"`
+    Reasons []string `json:"reasons,omitempty"`
+}
+```
+
+### FindingExplanation
+
+```go
+type FindingExplanation struct {
+    Summary    string               `json:"summary,omitempty"`
+    Why        string               `json:"why,omitempty"`
+    Risk       string               `json:"risk,omitempty"`
+    Suggestion string               `json:"suggestion,omitempty"`
+    Metadata   *ExplanationMetadata `json:"metadata,omitempty"`
+}
+```
+
+### ExplanationMetadata
+
+```go
+type ExplanationMetadata struct {
+    Status string `json:"status,omitempty"`
+    Note   string `json:"note,omitempty"`
+}
+```
 
 ### Location
 
@@ -146,8 +181,8 @@ const (
 
 | 值 | 含义 |
 |----|------|
-| `VerdictPass` | 所有语句均通过，无达到或超过当前阈值的发现。 |
-| `VerdictReview` | 存在一条或多条 warning 或 notice 级别的发现，但无 blocker。 |
+| `VerdictPass` | 所有语句均通过，且没有 warning 或 blocker 级别的发现。 |
+| `VerdictReview` | 存在一条或多条 warning 级别的发现，且没有 blocker。 |
 | `VerdictReject` | 存在一条或多条 blocker 级别的发现。 |
 
 ### Level
@@ -284,4 +319,4 @@ case deltascope.VerdictPass:
 - `deltascope audit --format json ...` （CLI）
 - `POST /v1/audit` （HTTP）
 
-产生结构完全相同的 `Result` JSON。库的 `Result` 类型序列化后与 HTTP 响应体和 CLI `--format json` 输出具有相同的 JSON 结构。
+产生共享的结果主体结构。库的 `Result` 类型序列化后与 HTTP 响应体主体一致；CLI `--format json` 在此基础上额外包裹顶层 `context` 字段，用于描述运行模式、方言来源和 schema 解析来源。

@@ -1,6 +1,6 @@
 # Go Library Reference
 
-`pkg/deltascope` is the stable public Go API for embedding DeltaScope in tools, agents, and CI pipelines. It wraps the same audit engine used by the CLI and the HTTP service, so the same SQL, dialect, and config always produce the same findings regardless of which surface you use.
+`pkg/deltascope` is the stable public Go API for embedding DeltaScope in tools, agents, and CI pipelines. It wraps the same audit engine used by the CLI and the HTTP service, so the same SQL, dialect, and config produce the same findings regardless of which surface you use.
 
 ## Import
 
@@ -52,6 +52,7 @@ type Result struct {
     Summary        Summary           // aggregate counts by level
     Statements     []StatementResult // per-statement findings
     GlobalFindings []Finding         // cross-statement findings from global rules
+    Explanation    *Explanation      // optional shared result-level explanation emitted when the audit produces findings
 }
 ```
 
@@ -70,34 +71,37 @@ type Summary struct {
 
 ```go
 type StatementResult struct {
-    Index         int       `json:"index"`
-    Kind          string    `json:"kind"`
-    RawSQL        string    `json:"raw_sql,omitempty"`
-    NormalizedSQL string    `json:"normalized_sql,omitempty"`
-    Findings      []Finding `json:"findings,omitempty"`
+    Index         int          `json:"index"`
+    Kind          string       `json:"kind"`
+    RawSQL        string       `json:"raw_sql,omitempty"`
+    NormalizedSQL string       `json:"normalized_sql,omitempty"`
+    Findings      []Finding    `json:"findings,omitempty"`
+    Explanation   *Explanation `json:"explanation,omitempty"` // emitted when this statement produces findings
 }
 ```
 
 | Field | Description |
 |-------|-------------|
-| `Index` | 1-based position of this statement in the input. |
-| `Kind` | Statement type, e.g. `CREATE TABLE`, `ALTER TABLE`, `DELETE`, `UPDATE`. |
+| `Index` | 0-based position of this statement in the input. |
+| `Kind` | Normalized statement family, currently `ddl` or `dml`. |
 | `RawSQL` | Original SQL text of this statement. |
 | `NormalizedSQL` | Whitespace-normalized form of the SQL; may be empty. |
-| `Findings` | Rule findings for this statement. Empty slice when the statement passes. |
+| `Findings` | Rule findings for this statement. May be omitted from JSON when empty. |
+| `Explanation` | Optional shared explanation for the statement-level result. The built-in audit flow populates it whenever the statement produces one or more findings. |
 
 ### Finding
 
 ```go
 type Finding struct {
-    RuleID         string         `json:"rule_id"`
-    Level          Level          `json:"level"`
-    Message        string         `json:"message"`
-    StatementIndex int            `json:"statement_index,omitempty"`
-    StatementKind  string         `json:"statement_kind,omitempty"`
-    Location       *Location      `json:"location,omitempty"`
-    Suggestion     string         `json:"suggestion,omitempty"`
-    Metadata       map[string]any `json:"metadata,omitempty"`
+    RuleID         string              `json:"rule_id"`
+    Level          Level               `json:"level"`
+    Message        string              `json:"message"`
+    StatementIndex int                 `json:"statement_index,omitempty"`
+    StatementKind  string              `json:"statement_kind,omitempty"`
+    Location       *Location           `json:"location,omitempty"`
+    Suggestion     string              `json:"suggestion,omitempty"`
+    Metadata       map[string]any      `json:"metadata,omitempty"`
+    Explanation    *FindingExplanation `json:"explanation,omitempty"`
 }
 ```
 
@@ -106,11 +110,42 @@ type Finding struct {
 | `RuleID` | Stable rule identifier, e.g. `dml.where.require`. |
 | `Level` | `LevelBlocker`, `LevelWarning`, or `LevelNotice`. |
 | `Message` | Human-readable description of the issue. |
-| `StatementIndex` | 1-based index of the statement that produced this finding. Set on global findings. |
-| `StatementKind` | Kind of the statement that produced this finding. Set on global findings. |
+| `StatementIndex` | 0-based index of the statement that produced this finding when that context is attached. |
+| `StatementKind` | Kind of the statement that produced this finding when that context is attached. |
 | `Location` | Source position in the original SQL text; `nil` when unavailable. |
 | `Suggestion` | Recommended corrective action; empty string when not available. |
 | `Metadata` | Additional key/value context specific to the rule; `nil` when not present. |
+| `Explanation` | Optional structured explanation with `summary`, `why`, `risk`, `suggestion`, and metadata-availability notes. |
+
+### Explanation
+
+```go
+type Explanation struct {
+    Summary string   `json:"summary,omitempty"`
+    Reasons []string `json:"reasons,omitempty"`
+}
+```
+
+### FindingExplanation
+
+```go
+type FindingExplanation struct {
+    Summary    string               `json:"summary,omitempty"`
+    Why        string               `json:"why,omitempty"`
+    Risk       string               `json:"risk,omitempty"`
+    Suggestion string               `json:"suggestion,omitempty"`
+    Metadata   *ExplanationMetadata `json:"metadata,omitempty"`
+}
+```
+
+### ExplanationMetadata
+
+```go
+type ExplanationMetadata struct {
+    Status string `json:"status,omitempty"`
+    Note   string `json:"note,omitempty"`
+}
+```
 
 ### Location
 
@@ -146,8 +181,8 @@ const (
 
 | Value | Meaning |
 |-------|---------|
-| `VerdictPass` | All statements passed with no findings at or above the active threshold. |
-| `VerdictReview` | One or more warnings or notices were found but no blockers. |
+| `VerdictPass` | All statements passed with no blocker- or warning-level findings. Notice-only results also remain `pass`. |
+| `VerdictReview` | One or more warnings were found and no blockers were found. |
 | `VerdictReject` | One or more blocker-level findings were found. |
 
 ### Level
@@ -284,4 +319,4 @@ The library, CLI, and HTTP service all run the same audit engine. Given the same
 - `deltascope audit --format json ...` (CLI)
 - `POST /v1/audit` (HTTP)
 
-produce structurally identical `Result` JSON. The library's `Result` type serializes to the same JSON shape as the HTTP response body and the CLI `--format json` output.
+produce the same audit findings and core `Result` fields. The library's `Result` type serializes to the same JSON shape as the HTTP response body. The CLI `--format json` output uses the same `Result` payload and adds a top-level `context` object describing the CLI audit run.

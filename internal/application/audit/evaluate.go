@@ -25,6 +25,7 @@ func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (r
 			findings[i].StatementIndex = idx
 			findings[i].StatementKind = statement.Kind.String()
 		}
+		findings = enrichFindings(findings, &statement)
 
 		statementResults = append(statementResults, report.StatementResult{
 			Index:         idx,
@@ -39,6 +40,7 @@ func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (r
 	if err != nil {
 		return report.Result{}, err
 	}
+	globalFindings = enrichFindings(globalFindings, nil)
 
 	return report.Aggregate(statementResults, globalFindings), nil
 }

@@ -28,8 +28,8 @@ DeltaScope 将所有审计逻辑以可发现的稳定规则 ID 形式提供，�
 | 批次中的发现 | 结论 |
 |-------------|------|
 | 存在任意 `blocker` 发现 | `reject` |
-| 无 blocker；但存在至少一个 `warning` 或 `notice` | `review` |
-| 无任何发现 | `pass` |
+| 无 blocker；但存在至少一个 `warning` | `review` |
+| 无 blocker 且无 `warning`（包括仅有 `notice` 或完全无发现） | `pass` |
 
 `--fail-on` 标志控制哪个结论阈值会导致 CLI 以退出码 `1` 退出。详情参见 [CLI 参考手册](cli.zh-CN.md)。
 
@@ -59,13 +59,13 @@ deltascope rules list --enabled-only
 
 输出示例：
 
-```
-RULE ID                                   KIND  LEVEL    METADATA
-dml.where.require                         dml   blocker  false
-dml.limit.forbid                          dml   warning  false
-ddl.table.comment.require                 ddl   warning  false
-ddl.table.row_size.max_bytes.require      ddl   blocker  true
-...
+```md
+# DeltaScope Rules
+
+- `ddl.table.comment.require` [warning] (ddl) Require DDL table comment require
+- `ddl.table.row_size.max_bytes.require` [blocker] (ddl) Require DDL table row size max bytes require
+- `dml.limit.forbid` [warning] (dml) Forbid DML limit forbid
+- `dml.where.require` [blocker] (dml) Require DML where require
 ```
 
 ### deltascope rules show
@@ -78,14 +78,41 @@ deltascope rules show dml.where.require
 
 输出示例：
 
+```md
+# dml.where.require
+
+Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+
+- Default Enabled: `true`
+- Default Level: `blocker`
+- Statement Kinds: `dml`
+- Metadata Aware: `false`
+
+## Default Params
+- `required`: `true`
+
+## Trigger Example
+```sql
+DELETE FROM users;
 ```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+
+## Valid Example
+```sql
+DELETE FROM users WHERE id = 1;
+```
+
+## Config Example
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+```
+
+## Remediation
+Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
 ```
 
 ### deltascope rules search
@@ -130,7 +157,7 @@ deltascope rules search "prefix"
 | `ddl.table.create_like.forbid` | 禁止 CREATE TABLE … LIKE | blocker | 否 |
 | `ddl.table.create_as.forbid` | 禁止 CREATE TABLE … AS SELECT | blocker | 否 |
 | `ddl.table.row_size.max_bytes.require` | 估算行大小不得超过 InnoDB 限制 | blocker | **是** |
-| `ddl.table.denylist.forbid` | 禁止对拒绝列表中的 schema/表执行 DDL | blocker | 否 |
+| `ddl.table.denylist.forbid` | 禁止对拒绝列表中的 schema/表执行 DDL | blocker | **是** |
 
 ### 列级规则（16 条）
 
@@ -288,7 +315,7 @@ deltascope rules search "prefix"
 | `dml.replace.forbid` | 禁止 REPLACE INTO | blocker | 否 |
 | `dml.insert.select.forbid` | 禁止 INSERT INTO … SELECT | blocker | 否 |
 | `dml.insert.on_duplicate.forbid` | 禁止 INSERT … ON DUPLICATE KEY UPDATE | blocker | 否 |
-| `dml.table.denylist.forbid` | 禁止对拒绝列表中的 schema/表执行 DML | blocker | 否 |
+| `dml.table.denylist.forbid` | 禁止对拒绝列表中的 schema/表执行 DML | blocker | **是** |
 
 ---
 
@@ -332,13 +359,15 @@ deltascope rules search "prefix"
 | `ddl.table.truncate.exists.require` |
 | `ddl.table.truncate.adaptive_hash.warn` |
 | `ddl.table.truncate.rows.max_count` |
+| `ddl.table.denylist.forbid` |
+| `dml.table.denylist.forbid` |
 
 ---
 
 ## 参考链接
 
-- **参数文档** — [config.md](config.md)
-- **规则评估概念概述** — [../concept/core-concepts.md](../concept/core-concepts.md)
-- **元数据感知模式** — [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md)
+- **参数文档** — [config.zh-CN.md](config.zh-CN.md)
+- **规则评估概念概述** — [../concept/core-concepts.zh-CN.md](../concept/core-concepts.zh-CN.md)
+- **元数据感知模式** — [../concept/metadata-aware-mode.zh-CN.md](../concept/metadata-aware-mode.zh-CN.md)
 - **CLI 用法** — [cli.zh-CN.md](cli.zh-CN.md)
-- **能力矩阵** — [audit-capability-matrix.md](../audit-capability-matrix.md)
+- **能力矩阵** — [audit-capability-matrix.zh-CN.md](audit-capability-matrix.zh-CN.md)
