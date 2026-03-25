@@ -11,19 +11,32 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Setup Go
+        uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
+          go-version-file: "go.mod"
+          cache: true
 
-      - name: Run tests
+      - name: Run unit tests
         run: go test ./...
+
+      - name: Resolve release note path
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          NOTES_FILE="docs/releases/release-notes-${TAG}.md"
+          if [ ! -f "$NOTES_FILE" ]; then
+            echo "missing release notes file: $NOTES_FILE" >&2
+            exit 1
+          fi
+          echo "RELEASE_NOTES_FILE=$NOTES_FILE" >> "$GITHUB_ENV"
 
       - name: Run GoReleaser check
         uses: goreleaser/goreleaser-action@v6
@@ -37,6 +50,11 @@ jobs:
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean --release-notes docs/releases/release-notes-v0.6.1.md
+          args: release --clean --release-notes ${{ env.RELEASE_NOTES_FILE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync GitHub release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${GITHUB_REF_NAME}" --notes-file "${RELEASE_NOTES_FILE}"
