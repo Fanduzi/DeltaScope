@@ -165,96 +165,22 @@ When fixing findings, use `deltascope rules show <rule_id>` to understand the ex
 
 ## MCP / Tool-Use Integration
 
-DeltaScope now ships an official MCP stdio server via `deltascope-mcp`. It exposes a fixed tool surface for agent clients instead of relying on an ad hoc shell wrapper.
+DeltaScope now ships an official MCP stdio server via `deltascope-mcp`. If you need setup commands, launcher usage, direct connection, `connection_ref`, proxy configuration, or generic stdio examples, use [Use DeltaScope MCP](use-deltascope-mcp.md).
 
-Official tools:
+The MCP tool surface remains:
 
-- `audit_sql`: audit one SQL payload and return the normal DeltaScope result body plus `context`
-- `describe_rule`: return the shipped metadata for one rule ID
-- `list_rules`: search the shipped rule catalog
-- `get_capabilities`: return MCP-client-facing server capabilities, result fields, connection inputs, and stable error codes
+- `audit_sql`
+- `describe_rule`
+- `list_rules`
+- `get_capabilities`
 
-Example MCP client configuration:
+For agent workflow design, the important contract points are:
 
-```json
-{
-  "mcpServers": {
-    "deltascope": {
-      "command": "deltascope-mcp",
-      "args": []
-    }
-  }
-}
-```
-
-Use `audit_sql` for the actual audit call. The request contract supports:
-
-- `sql`
-- `dialect`
-- `config_path`
-- `connection_ref`
-- `connection.host`
-- `connection.port`
-- `connection.socket`
-- `connection.user`
-- `connection.schema`
-- `connection.dialect`
-- `connection.password`
-- `connection.password_env`
-- `connection.password_file`
-
-If both `dialect` and `connection.dialect` are present, the top-level `dialect` wins.
-
-Success responses preserve the normal DeltaScope audit result fields and add:
-
-- `context.mode`
-- `context.dialect`
-- `context.dialect_source`
-- `context.schema`
-- `context.schema_source`
-- `context.metadata_source`
-
-The advertised result fields from `get_capabilities` include:
-
-- `verdict`
-- `summary`
-- `statements`
-- `global_findings`
-- `explanation`
-- `context`
-
-Structured tool errors use stable codes:
-
-- `bad_request`
-- `connection_invalid`
-- `connection_failed`
-- `config_invalid`
-
-Rule lookup stays available through the MCP server too. Example `describe_rule` input:
-
-```json
-{
-  "rule_id": "dml.where.require"
-}
-```
-
-If a client needs a compact contract summary before its first call, use `get_capabilities`.
-That summary includes top-level audit inputs such as `sql`, `dialect`, `config_path`, `connection_ref`, `connection`, plus the rules that `connection_ref` and `connection` are mutually exclusive and top-level `dialect` overrides `connection.dialect`.
-
-For `connection_ref`, `deltascope-mcp` reads `~/.config/deltascope/connections.yaml` by default. You can override that with `-connections-path /path/to/connections.yaml`.
-
-Expected file shape:
-
-```yaml
-connections:
-  prod_readonly:
-    host: 10.0.0.12
-    port: 3306
-    user: audit_bot
-    schema: app
-    dialect: mysql
-    password_env: PROD_DB_PASSWORD
-```
+- `audit_sql` preserves the normal DeltaScope audit result body and adds top-level `context`
+- `connection_ref` and `connection` are mutually exclusive
+- top-level `dialect` overrides `connection.dialect`
+- stable structured tool errors use `bad_request`, `connection_invalid`, `connection_failed`, and `config_invalid`
+- `get_capabilities` is the compact MCP contract summary for clients that want to inspect the surface before the first tool call
 
 ## Stable Contracts Agents Can Rely On
 

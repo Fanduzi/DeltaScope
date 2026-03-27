@@ -1,6 +1,6 @@
 # DeltaScope MCP Command
 
-MCP stdio service entrypoint for exposing DeltaScope audit and rule-discovery tools to agent clients.
+Native stdio runtime for the official DeltaScope MCP server. For client onboarding, start with [Use DeltaScope MCP](../../docs/recipe/use-deltascope-mcp.md).
 
 ## Files
 
@@ -13,12 +13,10 @@ MCP stdio service entrypoint for exposing DeltaScope audit and rule-discovery to
 ## Notes
 
 - This command is intentionally thin and delegates MCP wiring to `internal/interfaces/mcp`.
-- The initial MCP milestone focuses on stdio transport only.
 - The exposed MCP surface includes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.
 - `connection_ref` reads `~/.config/deltascope/connections.yaml` by default and can be overridden with `-connections-path`.
 - After startup, stdout is reserved for MCP stdio protocol traffic.
 - `-version` prints only the semantic version string and defaults to `v0.7.0` in source builds.
-- The real metadata-aware MCP smokes stay behind `go test -tags=e2e ...`, `make test-e2e-mcp-mysql`, and `make test-e2e-mcp-tidb` so the default Go test loop remains fast.
 
 ## Update Rule
 

@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { resolveCacheBinaryPath } from "../lib/cache.js";
-import { ensureExecutable } from "../lib/launcher.js";
+import { ensureExecutable, formatBootstrapContext } from "../lib/launcher.js";
 
 test("ensureExecutable reuses a cached binary without downloading", async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "deltascope-mcp-cache-"));
@@ -31,4 +31,18 @@ test("ensureExecutable reuses a cached binary without downloading", async () => 
 
   assert.equal(resolved, cachedBinary);
   assert.equal(downloadCalls, 0);
+});
+
+test("formatBootstrapContext includes proxy guidance for download failures", () => {
+  const text = formatBootstrapContext({
+    version: "v0.7.0",
+    platform: { os: "darwin", arch: "arm64" },
+    archiveURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_darwin_arm64.tar.gz",
+    destinationPath: "/tmp/cache/deltascope-mcp"
+  });
+
+  assert.match(text, /v0\.7\.0/);
+  assert.match(text, /darwin-arm64/);
+  assert.match(text, /NODE_USE_ENV_PROXY=1/);
+  assert.match(text, /\/tmp\/cache\/deltascope-mcp/);
 });

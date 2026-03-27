@@ -43,3 +43,14 @@ export async function ensureExecutable({
 export function spawnBinary(binaryPath, args = [], options = {}) {
   return spawn(binaryPath, args, options);
 }
+
+export function formatBootstrapContext({ version, platform, archiveURL, destinationPath }) {
+  return [
+    `DeltaScope MCP launcher context:`,
+    `  version: ${version}`,
+    `  platform: ${platform.os}-${platform.arch}`,
+    `  archive: ${archiveURL}`,
+    `  cache target: ${destinationPath}`,
+    `  hint: if your network requires a proxy, set HTTP_PROXY / HTTPS_PROXY and NODE_USE_ENV_PROXY=1`
+  ].join("\n");
+}

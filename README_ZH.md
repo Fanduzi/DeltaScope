@@ -14,8 +14,6 @@ DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它
 
 ## 安装
 
-首选安装入口是仓库内的 installer script，它解析的就是 CI 发布时使用的同一套 release archive 合同。
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```
@@ -27,97 +25,22 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.7.0/install.s
   DELTASCOPE_VERSION=v0.7.0 sh
 ```
 
-发布产物命名为 `deltascope_0.7.0_<os>_<arch>.tar.gz`。installer 对 `v0.7.0+` 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`，而旧版本 tag 仍只安装当时归档中存在的二进制。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+## MCP 快速接入
 
-## 快速开始
-
-审核高风险 DML：
+推荐 launcher：
 
 ```bash
-deltascope audit --sql "delete from users"
+claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
+codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 ```
 
-示例输出：
+如果你需要通用 stdio TOML、原生 `deltascope-mcp`、direct connection、`connection_ref`、代理配置和常见错误说明，请看 [使用 DeltaScope MCP](docs/recipe/use-deltascope-mcp.zh-CN.md)。
 
-```text
-# DeltaScope Audit Result
+## 更多文档
 
-Verdict: `reject`
-
-- Statements: 1
-- Blockers: 1
-- Warnings: 0
-- Notices: 0
-
-## Result Explanation
-
-Audit produced 1 finding(s) across 1 statement(s)
-- UPDATE and DELETE statements must include a WHERE clause
-
-## Statement 1
-
-- Kind: `dml`
-- SQL: `delete from users`
-
-### Explanation
-
-Statement 1 has 1 finding(s)
-- UPDATE and DELETE statements must include a WHERE clause
-
-### Findings
-
-- [blocker] `dml.where.require`: UPDATE and DELETE statements must include a WHERE clause
-  Why: The statement is missing a clause, option, or object that the shipped policy requires.
-  Risk: Ignoring this rule can allow high-impact data changes to proceed with less safety review.
-  Suggestion: add a WHERE clause that narrows the affected rows
-  Statement kind: `dml`
-  Metadata:
-  - `operation`: `delete`
-```
-
-审核 `CREATE TABLE`：
-
-```bash
-deltascope audit --sql "create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'"
-```
-
-示例输出：
-
-```text
-# DeltaScope Audit Result
-
-Verdict: `review`
-
-- Statements: 1
-- Blockers: 0
-- Warnings: 1
-- Notices: 0
-
-## Result Explanation
-
-Audit produced 1 finding(s) across 1 statement(s)
-- column `id` must have a comment
-
-## Statement 1
-
-- Kind: `ddl`
-- SQL: `create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'`
-
-### Explanation
-
-Statement 1 has 1 finding(s)
-- column `id` must have a comment
-
-### Findings
-
-- [warning] `ddl.column.comment.require`: column `id` must have a comment
-  Why: The statement is missing a clause, option, or object that the shipped policy requires.
-  Risk: Ignoring this rule can lead to schema changes that do not meet governance or review expectations.
-  Suggestion: Add a COMMENT clause to column `id`
-  Statement kind: `ddl`
-  Metadata:
-  - `column`: `id`
-```
+- [Recipes](docs/recipe/README.md)
+- [Dev docs](docs/dev/README.md)
+- [Reference docs](docs/reference/README.md)
 
 审核文件：
 
