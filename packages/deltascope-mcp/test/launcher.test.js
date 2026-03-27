@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { resolveCacheBinaryPath } from "../lib/cache.js";
+import { resolveCacheBinaryPath, resolveCacheMetadataPath } from "../lib/cache.js";
 import { ensureExecutable, formatBootstrapContext } from "../lib/launcher.js";
 
 test("ensureExecutable reuses a cached binary without downloading", async () => {
@@ -15,14 +15,33 @@ test("ensureExecutable reuses a cached binary without downloading", async () => 
     os: "linux",
     arch: "amd64"
   });
+  const metadataPath = resolveCacheMetadataPath({
+    homeDir: tempDir,
+    version: "v0.7.0",
+    os: "linux",
+    arch: "amd64"
+  });
   await fs.mkdir(path.dirname(cachedBinary), { recursive: true });
   await fs.writeFile(cachedBinary, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  await fs.writeFile(
+    metadataPath,
+    `${JSON.stringify({
+      version: "v0.7.0",
+      os: "linux",
+      arch: "amd64",
+      archiveURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz",
+      checksumsURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt",
+      archiveChecksum: "abc123"
+    })}\n`
+  );
 
   let downloadCalls = 0;
   const resolved = await ensureExecutable({
     version: "v0.7.0",
     homeDir: tempDir,
     platform: { os: "linux", arch: "amd64" },
+    archiveURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz",
+    checksumsURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt",
     downloadBinary: async () => {
       downloadCalls += 1;
       return cachedBinary;
@@ -31,6 +50,49 @@ test("ensureExecutable reuses a cached binary without downloading", async () => 
 
   assert.equal(resolved, cachedBinary);
   assert.equal(downloadCalls, 0);
+});
+
+test("ensureExecutable redownloads when cache metadata is missing", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "deltascope-mcp-cache-"));
+  const cachedBinary = resolveCacheBinaryPath({
+    homeDir: tempDir,
+    version: "v0.7.0",
+    os: "linux",
+    arch: "amd64"
+  });
+  const metadataPath = resolveCacheMetadataPath({
+    homeDir: tempDir,
+    version: "v0.7.0",
+    os: "linux",
+    arch: "amd64"
+  });
+  await fs.mkdir(path.dirname(cachedBinary), { recursive: true });
+  await fs.writeFile(cachedBinary, "stale\n", { mode: 0o755 });
+  await fs.rm(metadataPath, { force: true });
+
+  let downloadCalls = 0;
+  const resolved = await ensureExecutable({
+    version: "v0.7.0",
+    homeDir: tempDir,
+    platform: { os: "linux", arch: "amd64" },
+    archiveURL: "https://mirror.example.com/v0.7.0/archive.tar.gz",
+    checksumsURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt",
+    downloadBinary: async () => {
+      downloadCalls += 1;
+      const stagedPath = `${cachedBinary}.tmp-${process.pid}`;
+      await fs.writeFile(stagedPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      return {
+        binaryPath: stagedPath,
+        archiveChecksum: "abc123"
+      };
+    }
+  });
+
+  assert.equal(resolved, cachedBinary);
+  assert.equal(downloadCalls, 1);
+  assert.equal(await fs.readFile(cachedBinary, "utf8"), "#!/bin/sh\nexit 0\n");
+  const metadata = JSON.parse(await fs.readFile(metadataPath, "utf8"));
+  assert.equal(metadata.archiveChecksum, "abc123");
 });
 
 test("formatBootstrapContext includes proxy guidance for download failures", () => {

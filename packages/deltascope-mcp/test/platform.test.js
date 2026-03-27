@@ -1,7 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { resolveArchiveName, resolveArchiveURL, resolveDeltaScopeVersion, resolvePlatform } from "../lib/releases.js";
+import {
+  resolveArchiveName,
+  resolveArchiveURL,
+  resolveChecksumsName,
+  resolveChecksumsURL,
+  resolveDeltaScopeVersion,
+  resolvePlatform
+} from "../lib/releases.js";
 import { resolveCacheBinaryPath } from "../lib/cache.js";
 
 test("resolvePlatform normalizes supported hosts", () => {
@@ -28,6 +35,7 @@ test("resolveDeltaScopeVersion prefers env override and prefixes v", () => {
 
 test("resolveArchiveName and resolveArchiveURL follow the release contract", () => {
   assert.equal(resolveArchiveName({ version: "v0.7.0", os: "darwin", arch: "arm64" }), "deltascope_0.7.0_darwin_arm64.tar.gz");
+  assert.equal(resolveChecksumsName({ version: "v0.7.0" }), "deltascope_0.7.0_checksums.txt");
   assert.equal(
     resolveArchiveURL({
       repo: "Fanduzi/DeltaScope",
@@ -45,6 +53,13 @@ test("resolveArchiveName and resolveArchiveURL follow the release contract", () 
       arch: "amd64"
     }),
     "https://mirror.example.com/deltascope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz"
+  );
+  assert.equal(
+    resolveChecksumsURL({
+      repo: "Fanduzi/DeltaScope",
+      version: "v0.7.0"
+    }),
+    "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt"
   );
 });
 

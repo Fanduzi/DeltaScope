@@ -140,7 +140,7 @@ npm launcher 应负责：
 - 解析 DeltaScope 版本
 - 从 GitHub Releases 下载匹配 release asset
 - 缓存解压后的二进制
-- 透明启动 `deltascope-mcp` 并转发 stdio
+- 启动 `deltascope-mcp`，并保持 `stdout` 专用于 MCP 协议，同时允许 bootstrap 诊断日志写到 `stderr`
 
 它不应该：
 
@@ -152,11 +152,11 @@ npm launcher 应负责：
 
 推荐行为：
 
-- 默认：launcher 使用最新兼容 DeltaScope release
+- 默认：launcher 使用与 npm package 版本一致的 DeltaScope release
 - 覆盖：允许通过环境变量或 launcher flag 显式指定版本
 - cache key：release version + platform + architecture
 
-这样可以同时满足新用户的简单体验和高级用户的可复现要求。
+这样既能保持 onboarding 的确定性，也能满足高级用户的可复现要求。
 
 ### 3. Onboarding 路径
 

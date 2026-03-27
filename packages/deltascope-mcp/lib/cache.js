@@ -7,3 +7,7 @@ export function resolveCacheRoot({ homeDir }) {
 export function resolveCacheBinaryPath({ homeDir, version, os, arch }) {
   return path.join(resolveCacheRoot({ homeDir }), version, `${os}-${arch}`, "deltascope-mcp");
 }
+
+export function resolveCacheMetadataPath({ homeDir, version, os, arch }) {
+  return path.join(resolveCacheRoot({ homeDir }), version, `${os}-${arch}`, "deltascope-mcp.json");
+}

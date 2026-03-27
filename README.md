@@ -27,6 +27,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.7.0/install.s
 
 ## MCP Quick Start
 
+Launcher requirements:
+
+- Node.js 20 or newer
+- supported native targets: `darwin` or `linux`, `amd64` or `arm64`
+
 Recommended launcher:
 
 ```bash

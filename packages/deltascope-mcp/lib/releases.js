@@ -39,10 +39,18 @@ export function resolveArchiveName({ version, os, arch }) {
   return `deltascope_${version.replace(/^v/, "")}_${os}_${arch}.tar.gz`;
 }
 
+export function resolveChecksumsName({ version }) {
+  return `deltascope_${version.replace(/^v/, "")}_checksums.txt`;
+}
+
 export function resolveArchiveURL({ repo = "Fanduzi/DeltaScope", version, os, arch }) {
   const baseURL = arguments[0].baseURL ?? "";
   if (baseURL) {
     return `${baseURL.replace(/\/$/, "")}/${version}/${resolveArchiveName({ version, os, arch })}`;
   }
   return `https://github.com/${repo}/releases/download/${version}/${resolveArchiveName({ version, os, arch })}`;
+}
+
+export function resolveChecksumsURL({ repo = "Fanduzi/DeltaScope", version }) {
+  return `https://github.com/${repo}/releases/download/${version}/${resolveChecksumsName({ version })}`;
 }

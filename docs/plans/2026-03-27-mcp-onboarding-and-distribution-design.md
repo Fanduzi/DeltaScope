@@ -140,7 +140,7 @@ The npm launcher should:
 - resolve a DeltaScope version
 - download the matching release asset from GitHub Releases
 - cache the unpacked binary locally
-- spawn `deltascope-mcp` and bridge stdio transparently
+- spawn `deltascope-mcp`, preserve `stdout` for MCP protocol traffic, and allow bootstrap diagnostics on `stderr`
 
 The launcher should not:
 
@@ -152,11 +152,11 @@ The launcher should not:
 
 Recommended behavior:
 
-- default: launcher uses the latest compatible DeltaScope release
+- default: launcher uses the DeltaScope release that matches the npm package version
 - override: allow explicit version pinning through an environment variable or launcher flag
 - cache key: release version + platform + architecture
 
-This keeps local onboarding simple while preserving reproducibility for advanced users.
+This keeps local onboarding deterministic while preserving reproducibility for advanced users.
 
 ### 3. Onboarding Paths
 

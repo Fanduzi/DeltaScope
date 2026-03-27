@@ -3,6 +3,9 @@
   "version": "0.7.0",
   "description": "Launcher package for the DeltaScope MCP stdio server",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "deltascope-mcp": "./bin/deltascope-mcp.js"
   },

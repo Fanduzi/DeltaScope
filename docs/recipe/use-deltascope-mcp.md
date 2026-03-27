@@ -4,6 +4,12 @@ DeltaScope ships `deltascope-mcp` as the canonical MCP stdio server. For day-one
 
 Use the launcher when you want a copy-and-use setup. Use the native binary when you need a fixed local executable or a custom `-connections-path`.
 
+## Requirements
+
+- Node.js 20 or newer for the npm launcher
+- supported native targets: `darwin` or `linux`, `amd64` or `arm64`
+- launcher downloads are verified against the official DeltaScope release checksums before execution
+
 ## What The Server Exposes
 
 DeltaScope MCP exposes four official tools:
@@ -73,6 +79,12 @@ export NODE_USE_ENV_PROXY=1
 ```
 
 If the launcher still cannot reach GitHub, retry with the native binary path after installing the release archive manually.
+
+If you need a release mirror, you can override only the archive base URL while still verifying the archive against the official GitHub checksums:
+
+```bash
+export DELTASCOPE_MCP_BASE_URL=https://mirror.example.com/deltascope/releases/download
+```
 
 ## Direct Connection
 

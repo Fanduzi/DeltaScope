@@ -4,6 +4,12 @@ DeltaScope 提供 `deltascope-mcp` 作为规范的 MCP stdio server。对于首�
 
 如果你想要“复制即可用”的体验，用 launcher。若你需要固定本地二进制或自定义 `-connections-path`，则使用原生 binary。
 
+## 前提
+
+- npm launcher 需要 Node.js 20 或更高版本
+- 当前原生目标只支持 `darwin` 或 `linux`，以及 `amd64` 或 `arm64`
+- launcher 会先用 DeltaScope 官方 release checksums 校验 archive，再执行其中的二进制
+
 ## 服务暴露的工具
 
 DeltaScope MCP 暴露四个官方工具：
@@ -73,6 +79,12 @@ export NODE_USE_ENV_PROXY=1
 ```
 
 如果 launcher 仍无法访问 GitHub，可先手动安装 release archive，再走原生 binary 路径。
+
+如果你需要 release mirror，可以只覆盖 archive 下载基址，同时继续使用 GitHub 官方 checksums 做校验：
+
+```bash
+export DELTASCOPE_MCP_BASE_URL=https://mirror.example.com/deltascope/releases/download
+```
 
 ## Direct Connection
 
