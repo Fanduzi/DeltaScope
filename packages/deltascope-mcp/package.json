@@ -7,7 +7,7 @@
     "access": "public"
   },
   "bin": {
-    "deltascope-mcp": "./bin/deltascope-mcp.js"
+    "deltascope-mcp": "bin/deltascope-mcp.js"
   },
   "files": [
     "bin",
@@ -18,7 +18,7 @@
     "test": "node --test"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "keywords": [
     "mcp",

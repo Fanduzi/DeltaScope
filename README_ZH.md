@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.7.0/install.s
 
 launcher 的前提：
 
-- Node.js 20 或更高版本
+- Node.js 24 或更高版本
 - 当前原生目标只支持 `darwin` 或 `linux`，以及 `amd64` 或 `arm64`
 
 推荐 launcher：

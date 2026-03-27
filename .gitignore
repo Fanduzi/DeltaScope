@@ -1,3 +1,5 @@
 .idea/
 bin/
+!packages/deltascope-mcp/bin/
+!packages/deltascope-mcp/bin/deltascope-mcp.js
 .worktrees/

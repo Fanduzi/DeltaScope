@@ -6,7 +6,7 @@ Use the launcher when you want a copy-and-use setup. Use the native binary when 
 
 ## Requirements
 
-- Node.js 20 or newer for the npm launcher
+- Node.js 24 or newer for the npm launcher
 - supported native targets: `darwin` or `linux`, `amd64` or `arm64`
 - launcher downloads are verified against the official DeltaScope release checksums before execution
 

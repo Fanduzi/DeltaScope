@@ -23,14 +23,27 @@ async function readJSON(pathname) {
   }
 }
 
-async function acquireLock(lockDir) {
+async function acquireLock(lockDir, { staleLockMs = 60000, lockTimeoutMs = 10000, lockRetryDelayMs = 100 } = {}) {
+  const startedAt = Date.now();
   for (;;) {
     try {
       await fs.mkdir(lockDir);
       return;
     } catch (error) {
       if (error && error.code === "EEXIST") {
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        try {
+          const stat = await fs.stat(lockDir);
+          if (Date.now() - stat.mtimeMs > staleLockMs) {
+            await fs.rm(lockDir, { recursive: true, force: true });
+            continue;
+          }
+        } catch {
+          continue;
+        }
+        if (Date.now() - startedAt > lockTimeoutMs) {
+          throw new Error("timed out waiting for launcher cache lock");
+        }
+        await new Promise((resolve) => setTimeout(resolve, lockRetryDelayMs));
         continue;
       }
       throw error;
@@ -48,6 +61,9 @@ export async function ensureExecutable({
   platform = resolvePlatform(),
   archiveURL = "",
   checksumsURL = "",
+  staleLockMs,
+  lockTimeoutMs,
+  lockRetryDelayMs,
   downloadBinary
 }) {
   const binaryPath = resolveCacheBinaryPath({
@@ -92,7 +108,11 @@ export async function ensureExecutable({
   }
 
   await fs.mkdir(cacheDir, { recursive: true });
-  await acquireLock(lockDir);
+  await acquireLock(lockDir, {
+    staleLockMs,
+    lockTimeoutMs,
+    lockRetryDelayMs
+  });
   try {
     if (await isCacheValid()) {
       return binaryPath;

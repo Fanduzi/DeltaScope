@@ -6,7 +6,7 @@ DeltaScope 提供 `deltascope-mcp` 作为规范的 MCP stdio server。对于首�
 
 ## 前提
 
-- npm launcher 需要 Node.js 20 或更高版本
+- npm launcher 需要 Node.js 24 或更高版本
 - 当前原生目标只支持 `darwin` 或 `linux`，以及 `amd64` 或 `arm64`
 - launcher 会先用 DeltaScope 官方 release checksums 校验 archive，再执行其中的二进制
 
