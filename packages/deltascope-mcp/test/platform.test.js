@@ -37,6 +37,15 @@ test("resolveArchiveName and resolveArchiveURL follow the release contract", () 
     }),
     "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz"
   );
+  assert.equal(
+    resolveArchiveURL({
+      baseURL: "https://mirror.example.com/deltascope/releases/download",
+      version: "v0.7.0",
+      os: "linux",
+      arch: "amd64"
+    }),
+    "https://mirror.example.com/deltascope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz"
+  );
 });
 
 test("resolveCacheBinaryPath keys cache by version and platform", () => {
