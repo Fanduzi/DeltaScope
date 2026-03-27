@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # input: release version selectors, host os/arch facts, and GitHub release archives from the DeltaScope repository
-# output: installed deltascope and deltascope-server binaries under a local operator-selected bin directory
+# output: installed DeltaScope release binaries under a local operator-selected bin directory
 # pos: release-facing installer that resolves one trusted artifact contract into local binaries
 # note: if this file changes, update this header and module README.md.
 
@@ -9,7 +9,7 @@ set -eu
 REPO="${DELTASCOPE_REPO:-Fanduzi/DeltaScope}"
 VERSION="${DELTASCOPE_VERSION:-}"
 INSTALL_DIR="${DELTASCOPE_INSTALL_DIR:-/usr/local/bin}"
-BINARIES="${DELTASCOPE_BINARIES:-deltascope deltascope-server}"
+BINARIES="${DELTASCOPE_BINARIES:-}"
 
 log() {
   printf '%s\n' "$*"
@@ -64,6 +64,63 @@ download_file() {
   fi
 }
 
+version_gte() {
+  left="${1#v}"
+  right="${2#v}"
+
+  parse() {
+    printf '%s' "$1" | sed 's/[^0-9.].*$//' 
+  }
+
+  left="$(parse "${left}")"
+  right="$(parse "${right}")"
+
+  left_major="$(printf '%s' "${left}" | cut -d. -f1)"
+  left_minor="$(printf '%s' "${left}" | cut -d. -f2)"
+  left_patch="$(printf '%s' "${left}" | cut -d. -f3)"
+  right_major="$(printf '%s' "${right}" | cut -d. -f1)"
+  right_minor="$(printf '%s' "${right}" | cut -d. -f2)"
+  right_patch="$(printf '%s' "${right}" | cut -d. -f3)"
+
+  left_major="${left_major:-0}"
+  left_minor="${left_minor:-0}"
+  left_patch="${left_patch:-0}"
+  right_major="${right_major:-0}"
+  right_minor="${right_minor:-0}"
+  right_patch="${right_patch:-0}"
+
+  if [ "${left_major}" -gt "${right_major}" ]; then
+    return 0
+  fi
+  if [ "${left_major}" -lt "${right_major}" ]; then
+    return 1
+  fi
+  if [ "${left_minor}" -gt "${right_minor}" ]; then
+    return 0
+  fi
+  if [ "${left_minor}" -lt "${right_minor}" ]; then
+    return 1
+  fi
+  if [ "${left_patch}" -ge "${right_patch}" ]; then
+    return 0
+  fi
+  return 1
+}
+
+resolve_binaries() {
+  if [ -n "${BINARIES}" ]; then
+    printf '%s' "${BINARIES}"
+    return
+  fi
+
+  if version_gte "${VERSION}" "v0.7.0"; then
+    printf '%s' "deltascope deltascope-server deltascope-mcp"
+    return
+  fi
+
+  printf '%s' "deltascope deltascope-server"
+}
+
 install_one() {
   src="$1"
   name="$2"
@@ -96,6 +153,7 @@ if [ -z "${VERSION}" ]; then
 fi
 
 [ -n "${VERSION}" ] || fail "could not resolve a release version"
+BINARIES="$(resolve_binaries)"
 
 VERSION_NO_V="${VERSION#v}"
 ARCHIVE="deltascope_${VERSION_NO_V}_${OS}_${ARCH}.tar.gz"

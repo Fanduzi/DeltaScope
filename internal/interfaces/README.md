@@ -8,6 +8,7 @@ Transport adapters that expose the DeltaScope audit engine to users and other sy
 |--------|---------------|
 | cli | Cobra-based command-line adapter |
 | http | JSON HTTP service adapter |
+| mcp | MCP stdio adapter for agent tool use |
 
 ## Notes
 

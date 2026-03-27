@@ -747,6 +747,41 @@ func TestRenderJSONResultIncludesFindingExplanationFields(t *testing.T) {
 	}
 }
 
+func TestAuditCommandJSONMetadataContextUsesFlagSchemaSource(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectMySQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--schema", "app", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	contextValue, ok := decoded["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", decoded["context"])
+	}
+	if contextValue["schema_source"] != "flag" {
+		t.Fatalf("expected schema_source flag, got %#v", contextValue["schema_source"])
+	}
+}
+
 func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
 	output, err := renderJSONResult(report.Result{
 		Explanation: &report.Explanation{

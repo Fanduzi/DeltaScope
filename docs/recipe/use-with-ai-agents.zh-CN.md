@@ -165,64 +165,95 @@ When fixing findings, use `deltascope rules show <rule_id>` to understand the ex
 
 ## MCP / Tool-Use 集成
 
-DeltaScope 可封装为 MCP 服务器或智能体工具定义中的一个工具。该 shell 命令是无状态的轻量级包装器，非常适合 tool-use 模式。
+DeltaScope 现在提供正式的 MCP stdio 服务 `deltascope-mcp`。智能体客户端可以直接连这个固定工具面，而不是自己再封装一层 shell wrapper。
 
-示例工具定义（伪代码 / JSON Schema）：
+官方工具包括：
+
+- `audit_sql`：审核一段 SQL，返回 DeltaScope 标准结果体，并额外附带 `context`
+- `describe_rule`：返回单个规则 ID 的完整内置元数据
+- `list_rules`：搜索内置规则目录
+- `get_capabilities`：返回面向 MCP 客户端的服务能力摘要、结果字段、连接输入字段和稳定错误码
+
+示例 MCP 客户端配置：
 
 ```json
 {
-  "name": "audit_sql",
-  "description": "Audit SQL statements for policy violations using DeltaScope. Returns verdict (pass/review/reject), per-statement findings with rule IDs, severity levels, and suggestions for fixing violations. Call this before returning any SQL to the user.",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "sql": {
-        "type": "string",
-        "description": "The SQL text to audit. May contain multiple statements separated by semicolons."
-      },
-      "dialect": {
-        "type": "string",
-        "enum": ["mysql", "tidb"],
-        "default": "mysql",
-        "description": "SQL dialect. Use 'tidb' for TiDB targets."
-      }
-    },
-    "required": ["sql"]
+  "mcpServers": {
+    "deltascope": {
+      "command": "deltascope-mcp",
+      "args": []
+    }
   }
 }
 ```
 
-工具实现：
+实际审核时调用 `audit_sql`。它支持的请求字段包括：
 
-```bash
-deltascope audit --sql "$SQL" --dialect "$DIALECT" --format json --quiet
-```
+- `sql`
+- `dialect`
+- `config_path`
+- `connection_ref`
+- `connection.host`
+- `connection.port`
+- `connection.socket`
+- `connection.user`
+- `connection.schema`
+- `connection.dialect`
+- `connection.password`
+- `connection.password_env`
+- `connection.password_file`
 
-将 JSON 输出直接返回给智能体——无需任何解析。
+如果同时提供 `dialect` 和 `connection.dialect`，以顶层 `dialect` 为准。
 
-规则查询工具定义示例：
+成功响应会保留 DeltaScope 标准审核结果字段，并额外增加：
+
+- `context.mode`
+- `context.dialect`
+- `context.dialect_source`
+- `context.schema`
+- `context.schema_source`
+- `context.metadata_source`
+
+`get_capabilities` 公布的结果字段包括：
+
+- `verdict`
+- `summary`
+- `statements`
+- `global_findings`
+- `explanation`
+- `context`
+
+结构化工具错误使用稳定错误码：
+
+- `bad_request`
+- `connection_invalid`
+- `connection_failed`
+- `config_invalid`
+
+规则解释也可以直接通过 MCP 服务完成。`describe_rule` 请求示例：
 
 ```json
 {
-  "name": "describe_rule",
-  "description": "Get the full description, severity, and parameters for a DeltaScope rule ID. Use this after audit_sql returns findings to understand what each rule requires.",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "rule_id": {
-        "type": "string",
-        "description": "The rule ID from an audit finding, e.g. 'dml.where.require'"
-      }
-    },
-    "required": ["rule_id"]
-  }
+  "rule_id": "dml.where.require"
 }
 ```
 
-实现：
+如果客户端想先拿一份精简 contract 再开始调用工具，可以先调用 `get_capabilities`。
+这份摘要会包含顶层输入字段 `sql`、`dialect`、`config_path`、`connection_ref`、`connection`，以及 `connection_ref` 与 `connection` 互斥、顶层 `dialect` 覆盖 `connection.dialect` 这两条规则。
 
-```bash
-deltascope rules show "$RULE_ID"
+对 `connection_ref` 而言，`deltascope-mcp` 默认读取 `~/.config/deltascope/connections.yaml`。如果要覆盖它，可使用 `-connections-path /path/to/connections.yaml`。
+
+期望的文件结构：
+
+```yaml
+connections:
+  prod_readonly:
+    host: 10.0.0.12
+    port: 3306
+    user: audit_bot
+    schema: app
+    dialect: mysql
+    password_env: PROD_DB_PASSWORD
 ```
 
 ## 智能体可依赖的稳定契约

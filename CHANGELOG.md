@@ -8,6 +8,23 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.7.0] - 2026-03-27
+
+### Added
+
+- Official `deltascope-mcp` stdio server with `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`
+- Structured MCP tool errors with stable machine-readable codes
+- Metadata-aware MCP support for direct `connection` inputs and named `connection_ref` configs
+- Shared `internal/application/auditmeta` preparation flow reused by both CLI and MCP adapters
+- Explicit MCP output schemas and client-facing capability summaries
+- Docker-backed MCP metadata e2e coverage for MySQL and TiDB, including direct and `connection_ref` flows
+
+### Changed
+
+- Release archives and the default installer now ship `deltascope-mcp` alongside `deltascope` and `deltascope-server`
+- Source-build default version now points to `v0.7.0`
+- English and Chinese README, recipes, release notes, and module docs now describe the official MCP contract and release surface
+
 ## [v0.6.2] - 2026-03-25
 
 ### Added

@@ -8,21 +8,13 @@ package cli
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"sort"
-	"strings"
 
-	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 )
 
-type metadataClient interface {
-	appaudit.MetadataProvider
-	DetectDialect(ctx context.Context) (spec.Dialect, error)
-	FindSchemasForTable(ctx context.Context, table string) ([]string, error)
-	Close() error
-}
+type metadataClient = auditmeta.Client
 
 var newMetadataClient = openMetadataClient
 
@@ -77,150 +69,42 @@ func (c mysqlMetadataClient) Close() error {
 }
 
 func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) (metadataClient, spec.Dialect, string, *auditRunContext, error) {
-	client, err := newMetadataClient(options)
-	if err != nil {
-		return nil, "", "", nil, newUserError(fmt.Sprintf("open metadata connection: %v", err))
-	}
-
-	closeOnError := true
-	defer func() {
-		if closeOnError {
-			_ = client.Close()
-		}
-	}()
-
-	detectedDialect, err := client.DetectDialect(ctx)
-	if err != nil {
-		return nil, "", "", nil, newUserError(fmt.Sprintf("detect dialect: %v", err))
-	}
-	if explicitDialect && requestedDialect != detectedDialect {
-		return nil, "", "", nil, newUserError(fmt.Sprintf("detected dialect %q does not match --dialect %q", detectedDialect, requestedDialect))
-	}
-
-	schema, schemaSource, err := resolveAuditSchema(ctx, client, sqlText, detectedDialect, options.Schema)
+	prepared, err := auditmeta.Prepare(ctx, auditmeta.Request{
+		SQL:                  sqlText,
+		Connection:           toAuditMetaConnection(options),
+		RequestedDialect:     requestedDialect,
+		ExplicitDialect:      explicitDialect,
+		ExplicitSchema:       options.Schema,
+		ExplicitSchemaSource: "flag",
+		OpenClient: func(config auditmeta.ConnectionConfig) (auditmeta.Client, error) {
+			return newMetadataClient(auditConnectionOptions{
+				Host:     config.Host,
+				Port:     config.Port,
+				Socket:   config.Socket,
+				User:     config.User,
+				Password: config.Password,
+			})
+		},
+	})
 	if err != nil {
 		return nil, "", "", nil, err
 	}
 
-	closeOnError = false
-	return client, detectedDialect, schema, &auditRunContext{
+	return prepared.Client, prepared.Dialect, prepared.Schema, &auditRunContext{
 		Mode:          "metadata-aware",
-		Dialect:       string(detectedDialect),
-		DialectSource: "detected",
-		Schema:        schema,
-		SchemaSource:  schemaSource,
+		Dialect:       string(prepared.Dialect),
+		DialectSource: prepared.DialectSource,
+		Schema:        prepared.Schema,
+		SchemaSource:  prepared.SchemaSource,
 	}, nil
 }
 
-func resolveAuditSchema(ctx context.Context, client metadataClient, sqlText string, dialect spec.Dialect, explicitSchema string) (string, string, error) {
-	if strings.TrimSpace(explicitSchema) != "" {
-		return strings.TrimSpace(explicitSchema), "flag", nil
+func toAuditMetaConnection(options auditConnectionOptions) auditmeta.ConnectionConfig {
+	return auditmeta.ConnectionConfig{
+		Host:     options.Host,
+		Port:     options.Port,
+		Socket:   options.Socket,
+		User:     options.User,
+		Password: options.Password,
 	}
-
-	targets, err := collectTargetTables(sqlText, dialect)
-	if err != nil {
-		return "", "", newUserError(fmt.Sprintf("resolve schema targets: %v", err))
-	}
-	if len(targets) == 0 {
-		return "", "", nil
-	}
-
-	resolvedSchemas := make(map[string]struct{})
-	for _, target := range targets {
-		if target.Schema != "" {
-			resolvedSchemas[target.Schema] = struct{}{}
-			continue
-		}
-		schemas, err := client.FindSchemasForTable(ctx, target.Name)
-		if err != nil {
-			return "", "", newUserError(fmt.Sprintf("resolve schema for table %q: %v", target.Name, err))
-		}
-		switch len(schemas) {
-		case 0:
-			if target.RequiresExisting {
-				return "", "", newUserError(fmt.Sprintf("could not infer schema for table %q; pass --schema", target.Name))
-			}
-		case 1:
-			resolvedSchemas[schemas[0]] = struct{}{}
-		default:
-			return "", "", newUserError(fmt.Sprintf("schema inference for table %q is ambiguous; pass --schema", target.Name))
-		}
-	}
-
-	if len(resolvedSchemas) == 0 {
-		return "", "", nil
-	}
-	if len(resolvedSchemas) > 1 {
-		schemas := make([]string, 0, len(resolvedSchemas))
-		for schema := range resolvedSchemas {
-			schemas = append(schemas, schema)
-		}
-		sort.Strings(schemas)
-		return "", "", newUserError(fmt.Sprintf("resolved multiple schemas (%s); pass --schema", strings.Join(schemas, ", ")))
-	}
-	for schema := range resolvedSchemas {
-		return schema, "inferred", nil
-	}
-	return "", "", nil
-}
-
-type schemaTarget struct {
-	Schema           string
-	Name             string
-	RequiresExisting bool
-}
-
-func collectTargetTables(sqlText string, dialect spec.Dialect) ([]schemaTarget, error) {
-	parsed, err := appaudit.Parse(sqlText, dialect)
-	if err != nil {
-		return nil, err
-	}
-	statements, err := appaudit.Extract(parsed)
-	if err != nil {
-		return nil, err
-	}
-
-	targetsByName := make(map[string]schemaTarget)
-	order := make([]string, 0)
-	for _, statement := range statements {
-		schema, name, requiresExisting := statementTarget(statement)
-		if name == "" {
-			continue
-		}
-		key := strings.ToLower(schema) + "." + strings.ToLower(name)
-		existing, ok := targetsByName[key]
-		if ok {
-			existing.RequiresExisting = existing.RequiresExisting || requiresExisting
-			targetsByName[key] = existing
-			continue
-		}
-		targetsByName[key] = schemaTarget{Schema: schema, Name: name, RequiresExisting: requiresExisting}
-		order = append(order, key)
-	}
-
-	targets := make([]schemaTarget, 0, len(order))
-	for _, key := range order {
-		targets = append(targets, targetsByName[key])
-	}
-	return targets, nil
-}
-
-func statementTarget(statement spec.Statement) (string, string, bool) {
-	if statement.DDL != nil && statement.DDL.Table != nil {
-		schema := strings.TrimSpace(statement.DDL.Table.Schema)
-		name := strings.TrimSpace(statement.DDL.Table.Name)
-		if name == "" {
-			return "", "", false
-		}
-		return schema, name, statement.DDL.Operation != spec.DDLOperationCreateTable
-	}
-	if statement.DML != nil && len(statement.DML.Tables) > 0 {
-		schema := strings.TrimSpace(statement.DML.Tables[0].Schema)
-		name := strings.TrimSpace(statement.DML.Tables[0].Name)
-		if name == "" {
-			return "", "", false
-		}
-		return schema, name, true
-	}
-	return "", "", false
 }

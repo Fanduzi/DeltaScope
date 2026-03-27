@@ -1,12 +1,12 @@
 # 产品架构
 
-DeltaScope 通过三种产品入口暴露同一个审计引擎：`deltascope` CLI、`deltascope-server` HTTP 服务，以及 `pkg/deltascope` Go 库。三种入口共享相同的规则评估路径、相同的严重级别模型，以及相同的离线优先保证。
+DeltaScope 通过四种产品入口暴露同一个审计引擎：`deltascope` CLI、`deltascope-server` HTTP 服务、`deltascope-mcp` MCP stdio 服务，以及 `pkg/deltascope` Go 库。它们共享相同的规则评估路径、相同的严重级别模型，以及相同的离线优先保证。
 
 ---
 
-## 设计理念：一条路径，三种入口
+## 设计理念：一条路径，四种入口
 
-CLI、HTTP 服务和库均是对同一套应用逻辑的轻量适配层。这带来了几个实际意义：
+CLI、HTTP 服务、MCP 服务和库均是对同一套应用逻辑的轻量适配层。这带来了几个实际意义：
 
 - 离线模式产生的发现与元数据感知模式产生的发现完全一致——相同的规则 ID、相同的级别、相同的消息格式。
 - 发现结果在各入口间可复现：通过 CLI 和通过 Go 库审计同一个 SQL 文件，产生的结果相同。
@@ -130,7 +130,7 @@ pkg/deltascope                                ← stable public API facade
 
 ## 严重级别模型
 
-三种产品入口均使用相同的三个严重级别：
+四种产品入口均使用相同的三个严重级别：
 
 | 级别 | 含义 |
 |---|---|

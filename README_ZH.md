@@ -7,7 +7,7 @@
 ![Go Version](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-[English](README.md) | 中文 | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.6.2.zh-CN.md)
+[English](README.md) | 中文 | [Changelog](CHANGELOG.md) | [Security](SECURITY.md) | [License](LICENSE) | [Release Notes](docs/releases/release-notes-v0.7.0.zh-CN.md)
 </div>
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
@@ -23,11 +23,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.6.2/install.sh | \
-  DELTASCOPE_VERSION=v0.6.2 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.7.0/install.sh | \
+  DELTASCOPE_VERSION=v0.7.0 sh
 ```
 
-发布产物命名为 `deltascope_0.6.2_<os>_<arch>.tar.gz`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+发布产物命名为 `deltascope_0.7.0_<os>_<arch>.tar.gz`。installer 对 `v0.7.0+` 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`，而旧版本 tag 仍只安装当时归档中存在的二进制。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ## 快速开始
 
@@ -212,7 +212,8 @@ deltascope audit \
 - `ALTER TABLE` 治理：破坏性动作、兼容性检查、存在性验证、merge 提示。
 - 对象生命周期检查：`CREATE VIEW`、`DROP TABLE`、`TRUNCATE TABLE`。
 - DML 防护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、join 条件、批量插入模式和 denylist。
-- 稳定产品面：`deltascope` CLI、`deltascope-server`、`pkg/deltascope`。
+- 稳定产品面：`deltascope` CLI、`deltascope-server`、`deltascope-mcp`、`pkg/deltascope`。
+- `deltascope-mcp` 是正式的 MCP stdio 服务，提供 `audit_sql`、`describe_rule`、`list_rules`、`get_capabilities` 四个工具。
 
 ## Recipes
 
@@ -235,7 +236,7 @@ deltascope audit \
 ## 开发工作流
 
 - `make test` 执行 `go test ./...`
-- `make build` 在 `bin/` 下产出两个本地二进制
+- `make build` 在 `bin/` 下产出全部本地二进制
 - `make build-linux` 在 `bin/` 下产出 Linux amd64 二进制
 - `make test-e2e-cli` 执行基于 Docker 的 metadata CLI smoke
 - [docs/dev/testing.md](docs/dev/testing.md) 汇总了完整目标集
@@ -275,11 +276,14 @@ DeltaScope 保持一条共享审核主路径，再通过多个入口暴露给用
 |--------|-------------|-----|
 | `cmd/deltascope` | CLI 入口 | [README](cmd/deltascope/README.md) |
 | `cmd/deltascope-server` | HTTP 服务入口 | [README](cmd/deltascope-server/README.md) |
+| `cmd/deltascope-mcp` | MCP 服务入口 | [README](cmd/deltascope-mcp/README.md) |
 | `internal/interfaces` | 传输适配层命名空间 | [README](internal/interfaces/README.md) |
 | `internal/interfaces/cli` | CLI 适配层 | [README](internal/interfaces/cli/README.md) |
 | `internal/interfaces/http` | HTTP 适配层 | [README](internal/interfaces/http/README.md) |
+| `internal/interfaces/mcp` | MCP 适配层 | [README](internal/interfaces/mcp/README.md) |
 | `internal/application` | 用例编排层 | [README](internal/application/README.md) |
 | `internal/application/audit` | 解析与审核编排 | [README](internal/application/audit/README.md) |
+| `internal/application/auditmeta` | 共享的 metadata-aware 审计准备 | [README](internal/application/auditmeta/README.md) |
 | `internal/application/policy` | 配置加载 | [README](internal/application/policy/README.md) |
 | `internal/domain` | 核心领域对象与规则 | [README](internal/domain/README.md) |
 | `internal/domain/spec` | 归一化 statement 模型 | [README](internal/domain/spec/README.md) |

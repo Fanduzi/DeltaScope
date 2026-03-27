@@ -78,7 +78,7 @@ jobs:
 
       - name: Install DeltaScope
         run: |
-          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.2/deltascope_0.6.2_linux_amd64.tar.gz \
+          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz \
             -o /tmp/deltascope.tar.gz
           tar -xzf /tmp/deltascope.tar.gz -C /tmp
           install /tmp/deltascope /usr/local/bin/deltascope
@@ -123,7 +123,7 @@ audit-sql:
   image: ubuntu:22.04
   before_script:
     - apt-get update -qq && apt-get install -y -qq curl tar
-    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.6.2/deltascope_0.6.2_linux_amd64.tar.gz
+    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz
         -o /tmp/deltascope.tar.gz
     - tar -xzf /tmp/deltascope.tar.gz -C /tmp
     - install /tmp/deltascope /usr/local/bin/deltascope

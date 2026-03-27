@@ -1,12 +1,12 @@
 # Product Architecture
 
-DeltaScope exposes one audit engine through three product surfaces: the `deltascope` CLI, the `deltascope-server` HTTP service, and the `pkg/deltascope` Go library. All three surfaces share the same rule evaluation path, the same severity model, and the same offline-first guarantee.
+DeltaScope exposes one audit engine through four product surfaces: the `deltascope` CLI, the `deltascope-server` HTTP service, the `deltascope-mcp` MCP stdio service, and the `pkg/deltascope` Go library. They share the same rule evaluation path, the same severity model, and the same offline-first guarantee.
 
 ---
 
-## Design Philosophy: One Path, Three Surfaces
+## Design Philosophy: One Path, Four Surfaces
 
-The CLI, HTTP server, and library are thin adapters over identical application logic. This has several practical consequences:
+The CLI, HTTP server, MCP server, and library are thin adapters over identical application logic. This has several practical consequences:
 
 - A finding produced offline is identical to one produced in metadata-aware mode — same rule ID, same level, same message format.
 - Findings are reproducible across surfaces: auditing the same SQL file via CLI and via the Go library produces the same result.
@@ -130,7 +130,7 @@ pkg/deltascope                                ← stable public API facade
 
 ## Severity Model
 
-All three product surfaces use the same three severity levels:
+All four product surfaces use the same three severity levels:
 
 | Level | Meaning |
 |---|---|

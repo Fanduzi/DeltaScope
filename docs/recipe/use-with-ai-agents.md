@@ -165,64 +165,95 @@ When fixing findings, use `deltascope rules show <rule_id>` to understand the ex
 
 ## MCP / Tool-Use Integration
 
-DeltaScope can be wrapped as a tool in an MCP server or agent tool definition. The shell command is a thin, stateless wrapper — ideal for tool-use patterns.
+DeltaScope now ships an official MCP stdio server via `deltascope-mcp`. It exposes a fixed tool surface for agent clients instead of relying on an ad hoc shell wrapper.
 
-Example tool definition (pseudocode / JSON schema):
+Official tools:
+
+- `audit_sql`: audit one SQL payload and return the normal DeltaScope result body plus `context`
+- `describe_rule`: return the shipped metadata for one rule ID
+- `list_rules`: search the shipped rule catalog
+- `get_capabilities`: return MCP-client-facing server capabilities, result fields, connection inputs, and stable error codes
+
+Example MCP client configuration:
 
 ```json
 {
-  "name": "audit_sql",
-  "description": "Audit SQL statements for policy violations using DeltaScope. Returns verdict (pass/review/reject), per-statement findings with rule IDs, severity levels, and suggestions for fixing violations. Call this before returning any SQL to the user.",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "sql": {
-        "type": "string",
-        "description": "The SQL text to audit. May contain multiple statements separated by semicolons."
-      },
-      "dialect": {
-        "type": "string",
-        "enum": ["mysql", "tidb"],
-        "default": "mysql",
-        "description": "SQL dialect. Use 'tidb' for TiDB targets."
-      }
-    },
-    "required": ["sql"]
+  "mcpServers": {
+    "deltascope": {
+      "command": "deltascope-mcp",
+      "args": []
+    }
   }
 }
 ```
 
-The tool implementation runs:
+Use `audit_sql` for the actual audit call. The request contract supports:
 
-```bash
-deltascope audit --sql "$SQL" --dialect "$DIALECT" --format json --quiet
-```
+- `sql`
+- `dialect`
+- `config_path`
+- `connection_ref`
+- `connection.host`
+- `connection.port`
+- `connection.socket`
+- `connection.user`
+- `connection.schema`
+- `connection.dialect`
+- `connection.password`
+- `connection.password_env`
+- `connection.password_file`
 
-And returns the JSON output directly to the agent — no parsing needed.
+If both `dialect` and `connection.dialect` are present, the top-level `dialect` wins.
 
-Example rule lookup tool definition:
+Success responses preserve the normal DeltaScope audit result fields and add:
+
+- `context.mode`
+- `context.dialect`
+- `context.dialect_source`
+- `context.schema`
+- `context.schema_source`
+- `context.metadata_source`
+
+The advertised result fields from `get_capabilities` include:
+
+- `verdict`
+- `summary`
+- `statements`
+- `global_findings`
+- `explanation`
+- `context`
+
+Structured tool errors use stable codes:
+
+- `bad_request`
+- `connection_invalid`
+- `connection_failed`
+- `config_invalid`
+
+Rule lookup stays available through the MCP server too. Example `describe_rule` input:
 
 ```json
 {
-  "name": "describe_rule",
-  "description": "Get the full description, severity, and parameters for a DeltaScope rule ID. Use this after audit_sql returns findings to understand what each rule requires.",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "rule_id": {
-        "type": "string",
-        "description": "The rule ID from an audit finding, e.g. 'dml.where.require'"
-      }
-    },
-    "required": ["rule_id"]
-  }
+  "rule_id": "dml.where.require"
 }
 ```
 
-Implementation:
+If a client needs a compact contract summary before its first call, use `get_capabilities`.
+That summary includes top-level audit inputs such as `sql`, `dialect`, `config_path`, `connection_ref`, `connection`, plus the rules that `connection_ref` and `connection` are mutually exclusive and top-level `dialect` overrides `connection.dialect`.
 
-```bash
-deltascope rules show "$RULE_ID"
+For `connection_ref`, `deltascope-mcp` reads `~/.config/deltascope/connections.yaml` by default. You can override that with `-connections-path /path/to/connections.yaml`.
+
+Expected file shape:
+
+```yaml
+connections:
+  prod_readonly:
+    host: 10.0.0.12
+    port: 3306
+    user: audit_bot
+    schema: app
+    dialect: mysql
+    password_env: PROD_DB_PASSWORD
 ```
 
 ## Stable Contracts Agents Can Rely On
