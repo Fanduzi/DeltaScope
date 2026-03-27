@@ -1,0 +1,27 @@
+{
+  "name": "@fanduzi/deltascope-mcp",
+  "version": "0.7.0",
+  "description": "Launcher package for the DeltaScope MCP stdio server",
+  "type": "module",
+  "bin": {
+    "deltascope-mcp": "./bin/deltascope-mcp.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "deltascope",
+    "sql",
+    "audit"
+  ],
+  "license": "Apache-2.0"
+}
