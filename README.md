@@ -43,6 +43,25 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 
 For raw stdio TOML, native `deltascope-mcp`, direct connection, `connection_ref`, proxy setup, and common errors, see [Use DeltaScope MCP](docs/recipe/use-deltascope-mcp.md).
 
+## Claude Code Skill
+
+DeltaScope ships a Claude Code skill for inline SQL review during AI coding sessions.
+
+```bash
+# Install the skill
+mkdir -p ~/.claude/skills/deltascope-review
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/deltascope-review/SKILL.md \
+  -o ~/.claude/skills/deltascope-review/SKILL.md
+```
+
+Then in any Claude Code session:
+
+```
+/deltascope-review
+```
+
+Paste a SQL snippet or point to a file — Claude audits it with DeltaScope and suggests fixes. See [skills/README.md](skills/README.md) for full setup and usage.
+
 ## More Docs
 
 - [Recipes](docs/recipe/README.md)

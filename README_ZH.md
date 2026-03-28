@@ -43,6 +43,25 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 
 如果你需要通用 stdio TOML、原生 `deltascope-mcp`、direct connection、`connection_ref`、代理配置和常见错误说明，请看 [使用 DeltaScope MCP](docs/recipe/use-deltascope-mcp.zh-CN.md)。
 
+## Claude Code Skill
+
+DeltaScope 提供 Claude Code Skill，可在 AI 编码会话中直接审核 SQL。
+
+```bash
+# 安装 Skill
+mkdir -p ~/.claude/skills/deltascope-review
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/deltascope-review/SKILL.md \
+  -o ~/.claude/skills/deltascope-review/SKILL.md
+```
+
+在 Claude Code 会话中调用：
+
+```
+/deltascope-review
+```
+
+粘贴 SQL 片段或指定文件路径，Claude 会用 DeltaScope 审核并给出修复建议。详见 [skills/README.md](skills/README.md)。
+
 ## 更多文档
 
 - [Recipes](docs/recipe/README.md)
