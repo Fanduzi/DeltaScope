@@ -48,10 +48,8 @@ For raw stdio TOML, native `deltascope-mcp`, direct connection, `connection_ref`
 DeltaScope ships a Claude Code skill for inline SQL review during AI coding sessions.
 
 ```bash
-# Install the skill
-mkdir -p ~/.claude/skills/deltascope-review
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/deltascope-review/SKILL.md \
-  -o ~/.claude/skills/deltascope-review/SKILL.md
+# Install the skill (supports Claude Code, Codex, Cursor and 40+ AI agents)
+npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 ```
 
 Then in any Claude Code session:

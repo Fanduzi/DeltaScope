@@ -8,18 +8,24 @@ Review SQL snippets or files for safety and quality issues using DeltaScope.
 
 ### Install
 
-Copy the skill into your Claude Code skills directory:
+**Option 1 — `npx skills` (recommended, works with Claude Code, Codex, Cursor and 40+ AI agents)**
 
 ```bash
-mkdir -p ~/.claude/skills/deltascope-review
-cp skills/deltascope-review/SKILL.md ~/.claude/skills/deltascope-review/SKILL.md
+npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 ```
 
-Or with `curl` (no clone required):
+Install globally (available across all projects):
+
+```bash
+npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code -g
+```
+
+**Option 2 — `curl`**
 
 ```bash
 mkdir -p ~/.claude/skills/deltascope-review
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/deltascope-review/SKILL.md \n  -o ~/.claude/skills/deltascope-review/SKILL.md
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/deltascope-review/SKILL.md \
+  -o ~/.claude/skills/deltascope-review/SKILL.md
 ```
 
 ### Requirement

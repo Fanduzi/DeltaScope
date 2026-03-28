@@ -48,10 +48,8 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 DeltaScope 提供 Claude Code Skill，可在 AI 编码会话中直接审核 SQL。
 
 ```bash
-# 安装 Skill
-mkdir -p ~/.claude/skills/deltascope-review
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/deltascope-review/SKILL.md \
-  -o ~/.claude/skills/deltascope-review/SKILL.md
+# 安装 Skill（支持 Claude Code、Codex、Cursor 等 40+ AI 编码工具）
+npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 ```
 
 在 Claude Code 会话中调用：
