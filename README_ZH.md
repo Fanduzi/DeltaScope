@@ -9,7 +9,7 @@
 
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md) [![简体中文](https://img.shields.io/badge/docs-简体中文-yellow)](README_ZH.md)
 
-[![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/release-notes-v0.9.0.zh-CN.md)
+[![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/release-notes-v0.9.1.zh-CN.md)
 </div>
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.0/install.sh | \
-  DELTASCOPE_VERSION=v0.9.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.1/install.sh | \
+  DELTASCOPE_VERSION=v0.9.1 sh
 ```
 
 发布产物命名为 `deltascope_0.9.0_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。

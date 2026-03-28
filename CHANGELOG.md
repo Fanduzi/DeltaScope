@@ -8,6 +8,12 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.9.1] - 2026-03-28
+
+### Fixed
+
+- CI release pipeline: removed redundant `npm publish --dry-run` call that caused false failures when publishing a new tag (npm rejects even dry-run publishes for already-published versions)
+
 ## [v0.9.0] - 2026-03-28
 
 ### Added
