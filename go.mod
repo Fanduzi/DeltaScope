@@ -5,6 +5,7 @@ go 1.26.1
 require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
+	github.com/google/jsonschema-go v0.4.2
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260319162650-7d7a2372f4ec
 	github.com/spf13/cobra v1.9.1
@@ -16,7 +17,6 @@ require (
 require (
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pingcap/errors v0.11.5-0.20250523034308-74f78ae071ee // indirect
