@@ -1,6 +1,6 @@
 # DeltaScope Skills
 
-Claude Code skills that wrap DeltaScope for use inside AI coding sessions.
+Universal AI agent skills that wrap DeltaScope for inline SQL review inside AI coding sessions. Works with Claude Code, Codex, Cursor, and 40+ AI agents.
 
 ## deltascope-review
 
@@ -43,7 +43,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 
 ### Usage
 
-In any Claude Code session, invoke the skill:
+In any supported AI session (Claude Code, Codex, Cursor, etc.), invoke the skill:
 
 ```
 /deltascope-review
@@ -66,4 +66,4 @@ Review this migration:
 ALTER TABLE orders ADD COLUMN status VARCHAR(32) NOT NULL;
 ```
 
-Claude will write the SQL to a temp file, run `deltascope audit`, and return a structured finding report with suggested fixes.
+The AI agent will write the SQL to a temp file, run `deltascope audit`, and return a structured finding report with suggested fixes.
