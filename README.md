@@ -9,7 +9,7 @@
 
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md) [![简体中文](https://img.shields.io/badge/docs-简体中文-yellow)](README_ZH.md)
 
-[![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/release-notes-v0.8.1.md)
+[![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/release-notes-v0.9.0.md)
 </div>
 
 DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
@@ -23,9 +23,42 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.8.1/install.sh | \
-  DELTASCOPE_VERSION=v0.8.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.0/install.sh | \
+  DELTASCOPE_VERSION=v0.9.0 sh
 ```
+
+## Quick Start
+
+Audit a risky DML statement:
+
+```bash
+deltascope audit --sql "delete from users"
+```
+
+Audit a SQL file:
+
+```bash
+deltascope audit --file ./migrations/20260328_add_column.sql
+```
+
+See all shipped rules:
+
+```bash
+deltascope rules
+```
+
+## Why DeltaScope
+
+SQL mistakes are cheap to catch before they run and expensive after. DeltaScope gives you one consistent engine across local dev, CI, HTTP service, and MCP so the same policy applies everywhere — no per-tool rule duplication, no dialect surprises.
+
+## Key Features
+
+- Create-table governance across identifiers, comments, primary keys, audit columns, charset/collation, indexes, and table options.
+- Alter-table governance for destructive actions, compatibility checks, existence validation, and merge guidance.
+- Object-lifecycle checks for `CREATE VIEW`, `DROP TABLE`, and `TRUNCATE TABLE`.
+- DML protections for `WHERE`, `LIMIT`, `ORDER BY`, subqueries, join conditions, bulk insert patterns, and denylisted objects.
+- Stable product surfaces: `deltascope` CLI, `deltascope-server`, `deltascope-mcp`, and `pkg/deltascope`.
+- `deltascope-mcp` is the official MCP stdio server and exposes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.
 
 ## MCP Quick Start
 
