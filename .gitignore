@@ -4,3 +4,4 @@ bin/
 /.tool-versions
 .gitnexus
 .claude/
+/AGENTS.md
