@@ -8,6 +8,20 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.8.0] - 2026-03-28
+
+### Added
+
+- npm launcher package `@fanduzi/deltascope-mcp` for copy-and-use MCP onboarding through `npx`
+- dedicated DeltaScope MCP onboarding guides in English and Chinese with Claude Code, Codex, generic stdio, direct connection, and `connection_ref` examples
+- launcher bootstrap diagnostics on `stderr`, GitHub release checksum verification, cache metadata, and override support for release mirrors
+
+### Changed
+
+- release workflow now validates and publishes the MCP launcher package alongside Go release assets
+- README and recipe entrypoints now present MCP quick-start guidance and explicit Node 24+ / platform requirements
+- launcher cache handling now uses lock timeout and stale-lock recovery to avoid wedged first-run installs
+
 ## [v0.7.0] - 2026-03-27
 
 ### Added
