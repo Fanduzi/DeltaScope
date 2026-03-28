@@ -84,6 +84,14 @@ Every `internal/` and `pkg/` package has a `README.md` listing files, exports, a
 
 Rules that require live schema facts are metadata-gated: they are registered via the normal `Register(...)` path but no-op when no `TargetTable` snapshot or `InstanceFacts` is attached. Offline audits are always safe to run without a database connection.
 
+## Execution Preferences
+
+- For UI/design update requests in a specific node/screen, implement the requested change directly in the named target first. Do not switch into brainstorming, direction selection, or extra clarification unless a required constraint is truly missing.
+
+## Documentation Workflow
+
+- When asked to do documentation rewrites or audits, follow a docs/plans-first workflow: create the review/implementation plan documents first, then make content changes, and use an isolated worktree when the scope is large.
+
 ## Configuration
 
 - Default policy: `internal/domain/policy/defaults.go` — `policy.Default()`.
