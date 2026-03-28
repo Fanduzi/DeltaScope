@@ -1,8 +1,12 @@
 {
   "name": "@fanduzi/deltascope-mcp",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Launcher package for the DeltaScope MCP stdio server",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fanduzi/DeltaScope.git"
+  },
   "publishConfig": {
     "access": "public"
   },

@@ -8,6 +8,13 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.8.1] - 2026-03-28
+
+### Fixed
+
+- npm launcher package metadata now declares the canonical GitHub repository URL so npm provenance validation can accept CI publishes
+- source-build default version and release-facing install links now point to `v0.8.1`
+
 ## [v0.8.0] - 2026-03-28
 
 ### Added
