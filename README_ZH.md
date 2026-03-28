@@ -9,23 +9,67 @@
 
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md) [![简体中文](https://img.shields.io/badge/docs-简体中文-yellow)](README_ZH.md)
 
-[![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/release-notes-v0.8.1.zh-CN.md)
+[![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/release-notes-v0.9.0.zh-CN.md)
 </div>
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
+首选安装入口是仓库内的 installer script，它解析的就是 CI 发布时使用的同一套 release archive 合同。
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
+```
+
+macOS 用户也可以通过 Homebrew 安装：
+
+```bash
+brew tap Fanduzi/deltascope
+brew install --cask deltascope
 ```
 
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.8.1/install.sh | \
-  DELTASCOPE_VERSION=v0.8.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.0/install.sh | \
+  DELTASCOPE_VERSION=v0.9.0 sh
 ```
+
+发布产物命名为 `deltascope_0.9.0_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+
+## 快速开始
+
+审核高风险 DML：
+
+```bash
+deltascope audit --sql "delete from users"
+```
+
+审核 SQL 文件：
+
+```bash
+deltascope audit --file ./migrations/20260328_add_column.sql
+```
+
+查看所有内置规则：
+
+```bash
+deltascope rules
+```
+
+## 为什么是 DeltaScope
+
+SQL 错误在落库前发现代价极低，落库后代价极高。DeltaScope 在本地开发、CI、HTTP 服务和 MCP 四个环节提供同一套审核引擎，同一套策略全局生效——无需在各工具间重复配置规则，无需担心方言差异。
+
+## 关键能力
+
+- 建表治理：标识符、注释、主键、审计列、字符集/排序规则、索引、表选项。
+- 改表治理：破坏性操作、兼容性检查、存在性校验、合并建议。
+- 对象生命周期检查：`CREATE VIEW`、`DROP TABLE`、`TRUNCATE TABLE`。
+- DML 保护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、JOIN 条件、批量写入模式、黑名单对象。
+- 稳定产品接口：`deltascope` CLI、`deltascope-server`、`deltascope-mcp`、`pkg/deltascope`。
+- `deltascope-mcp` 是官方 MCP stdio 服务，暴露 `audit_sql`、`describe_rule`、`list_rules`、`get_capabilities`。
 
 ## MCP 快速接入
 
@@ -65,6 +109,14 @@ npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 - [Recipes](docs/recipe/README.md)
 - [Dev docs](docs/dev/README.md)
 - [Reference docs](docs/reference/README.md)
+- [使用元数据审核 SQL](docs/recipe/audit-sql-with-metadata.zh-CN.md)
+- [迁移前审查 DDL](docs/recipe/review-ddl-before-migration.zh-CN.md)
+- [在 CI 中防护 DML](docs/recipe/guard-dml-in-ci.zh-CN.md)
+- [使用 DeltaScope MCP](docs/recipe/use-deltascope-mcp.zh-CN.md)
+
+## Recipes
+
+常见使用场景：
 
 审核文件：
 
@@ -81,159 +133,63 @@ deltascope audit \
   --fail-on warning
 ```
 
-JSON 结构示例（`context` 仅为 CLI 输出字段，不属于 HTTP API 或 `pkg/deltascope.Result` 共享结果结构）：
-
-```json
-{
-  "verdict": "reject",
-  "summary": {
-    "statements": 1,
-    "blockers": 1,
-    "warnings": 0,
-    "notices": 0
-  },
-  "explanation": {
-    "summary": "Audit produced 1 finding(s) across 1 statement(s)",
-    "reasons": [
-      "UPDATE and DELETE statements must include a WHERE clause"
-    ]
-  },
-  "statements": [
-    {
-      "index": 0,
-      "kind": "dml",
-      "raw_sql": "delete from users",
-      "normalized_sql": "delete from users",
-      "explanation": {
-        "summary": "Statement 1 has 1 finding(s)",
-        "reasons": [
-          "UPDATE and DELETE statements must include a WHERE clause"
-        ]
-      },
-      "findings": [
-        {
-          "rule_id": "dml.where.require",
-          "level": "blocker",
-          "message": "UPDATE and DELETE statements must include a WHERE clause",
-          "statement_kind": "dml",
-          "suggestion": "add a WHERE clause that narrows the affected rows",
-          "metadata": {
-            "operation": "delete"
-          },
-          "explanation": {
-            "summary": "Require DML where require",
-            "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
-            "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
-            "suggestion": "add a WHERE clause that narrows the affected rows"
-          }
-        }
-      ]
-    }
-  ],
-  "context": {
-    "mode": "offline",
-    "dialect": "mysql",
-    "dialect_source": "default"
-  }
-}
-```
-
-对在线实例执行 metadata-aware 审核：
-
-```bash
-deltascope audit \
-  --sql "alter table users add column email varchar(255)" \
-  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
-```
-
-## 为什么是 DeltaScope
-
-- 使用稳定的 `blocker`、`warning`、`notice` finding 模型审核 DDL 和 DML。
-- 默认离线可用，适合本地开发、CI 和 agent 自动化。
-- CLI、HTTP、library 共用同一套规则引擎，而不是三套分裂行为。
-- 只有在确实需要实例事实或现有 schema 状态时，才启用 metadata-aware 增强。
-
-## 关键能力
-
-- `CREATE TABLE` 治理：标识符、注释、主键、审计列、字符集/排序规则、索引、表级 option。
-- `ALTER TABLE` 治理：破坏性动作、兼容性检查、存在性验证、merge 提示。
-- 对象生命周期检查：`CREATE VIEW`、`DROP TABLE`、`TRUNCATE TABLE`。
-- DML 防护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、join 条件、批量插入模式和 denylist。
-- 稳定产品面：`deltascope` CLI、`deltascope-server`、`deltascope-mcp`、`pkg/deltascope`。
-- `deltascope-mcp` 是正式的 MCP stdio 服务，提供 `audit_sql`、`describe_rule`、`list_rules`、`get_capabilities` 四个工具。
-
-## Recipes
-
-- [离线审核 SQL](docs/recipe/audit-sql-offline.zh-CN.md)
-- [连接数据库审核 SQL](docs/recipe/audit-sql-with-metadata.zh-CN.md)
-- [迁移前审核 DDL](docs/recipe/review-ddl-before-migration.zh-CN.md)
-- [在 CI 中拦截 DML](docs/recipe/guard-dml-in-ci.zh-CN.md)
-- [与 AI Agent 集成](docs/recipe/use-with-ai-agents.zh-CN.md)
-- [查看规则与配置](docs/recipe/inspect-rules-and-config.zh-CN.md)
-- [排查 metadata-aware 审核问题](docs/recipe/troubleshoot-metadata-aware-audit.zh-CN.md)
-
 ## 文档导航
 
-- [管理文档](docs/admin/README.md)
-- [概念文档](docs/concept/README.md)
-- [开发文档](docs/dev/README.md)
-- [参考文档](docs/reference/README.md)
-- [审核能力矩阵](docs/reference/audit-capability-matrix.zh-CN.md)
+完整文档见 [docs/](docs/)。
+
+- [Concept docs](docs/concept/README.md) — 架构与设计决策
+- [Dev docs](docs/dev/README.md) — 构建、测试、发布指南
+- [Reference docs](docs/reference/README.md) — 规则参考、配置 schema
+- [Recipe docs](docs/recipe/README.md) — 典型场景的端到端操作指南
+- [Release notes](docs/releases/README.md) — 版本发行说明
 
 ## 开发工作流
 
-- `make test` 执行 `go test ./...`
-- `make build` 在 `bin/` 下产出全部本地二进制
-- `make build-linux` 在 `bin/` 下产出 Linux amd64 二进制
-- `make test-e2e-cli` 执行基于 Docker 的 metadata CLI smoke
-- [docs/dev/testing.md](docs/dev/testing.md) 汇总了完整目标集
+```bash
+make build      # 构建所有二进制到 bin/
+make test       # 单元测试（无 Docker）
+make test-e2e-cli  # 端到端测试（需要 Docker）
+```
+
+详情见 [Dev docs](docs/dev/README.md)。
 
 ## HTTP 服务
 
-HTTP 适配层复用同一条审核主路径：
-
 ```bash
-deltascope-server -listen 127.0.0.1:8083
+deltascope-server --port 8080
 ```
 
-接口：
-
-- `GET /healthz`
-- `GET /version`
-- `POST /v1/audit`
+`POST /audit` 接受与 CLI `--sql` / `--file` 相同的参数，返回相同的 JSON 结构。详情见 [HTTP service docs](docs/reference/http-api.md)。
 
 ## Library 用法
 
 ```go
+import "github.com/Fanduzi/DeltaScope/pkg/deltascope"
+
 result, err := deltascope.Audit(ctx, deltascope.Request{
     SQL:     "delete from users",
-    Dialect: deltascope.DialectMySQL,
+    Dialect: "mysql",
 })
 ```
 
-稳定公共 API 位于 [pkg/deltascope](pkg/deltascope/README.md)。
+详情见 [pkg/deltascope README](pkg/deltascope/README.md)。
 
 ## Architecture
 
-DeltaScope 保持一条共享审核主路径，再通过多个入口暴露给用户。产品层和实现层 ASCII 架构图分别位于 [docs/concept/architecture.zh-CN.md](docs/concept/architecture.zh-CN.md) 和 [docs/dev/architecture.md](docs/dev/architecture.md)。
+高层次架构图和实现级图表见 [docs/concept/architecture.md](docs/concept/architecture.md) 和 [docs/dev/architecture.md](docs/dev/architecture.md)。
 
 ### Modules
 
-| Module | Description | Doc |
-|--------|-------------|-----|
+| 模块 | 描述 | 文档 |
+|------|------|------|
 | `cmd/deltascope` | CLI 入口 | [README](cmd/deltascope/README.md) |
 | `cmd/deltascope-server` | HTTP 服务入口 | [README](cmd/deltascope-server/README.md) |
-| `cmd/deltascope-mcp` | MCP 服务入口 | [README](cmd/deltascope-mcp/README.md) |
-| `internal/interfaces` | 传输适配层命名空间 | [README](internal/interfaces/README.md) |
+| `cmd/deltascope-mcp` | MCP stdio 服务入口 | [README](cmd/deltascope-mcp/README.md) |
 | `internal/interfaces/cli` | CLI 适配层 | [README](internal/interfaces/cli/README.md) |
 | `internal/interfaces/http` | HTTP 适配层 | [README](internal/interfaces/http/README.md) |
 | `internal/interfaces/mcp` | MCP 适配层 | [README](internal/interfaces/mcp/README.md) |
-| `internal/application` | 用例编排层 | [README](internal/application/README.md) |
-| `internal/application/audit` | 解析与审核编排 | [README](internal/application/audit/README.md) |
-| `internal/application/auditmeta` | 共享的 metadata-aware 审计准备 | [README](internal/application/auditmeta/README.md) |
-| `internal/application/policy` | 配置加载 | [README](internal/application/policy/README.md) |
-| `internal/domain` | 核心领域对象与规则 | [README](internal/domain/README.md) |
-| `internal/domain/spec` | 归一化 statement 模型 | [README](internal/domain/spec/README.md) |
+| `internal/application/audit` | 审核用例 | [README](internal/application/audit/README.md) |
+| `internal/application/auditmeta` | 元数据感知审核用例 | [README](internal/application/auditmeta/README.md) |
 | `internal/domain/rule` | rule/finding/severity 模型 | [README](internal/domain/rule/README.md) |
 | `internal/domain/rule/catalog` | 面向解释和发现的内置规则目录 | [README](internal/domain/rule/catalog/README.md) |
 | `internal/domain/rule/ddl` | DDL 规则目录 | [README](internal/domain/rule/ddl/README.md) |
@@ -241,11 +197,9 @@ DeltaScope 保持一条共享审核主路径，再通过多个入口暴露给用
 | `internal/domain/policy` | 策略配置模型 | [README](internal/domain/policy/README.md) |
 | `internal/domain/report` | 审核结果与 verdict 聚合 | [README](internal/domain/report/README.md) |
 | `internal/infrastructure` | 基础设施适配层 | [README](internal/infrastructure/README.md) |
-| `internal/infrastructure/parser` | parser 适配命名空间 | [README](internal/infrastructure/parser/README.md) |
 | `internal/infrastructure/parser/tidb` | TiDB parser 适配 | [README](internal/infrastructure/parser/tidb/README.md) |
 | `internal/infrastructure/config/viper` | YAML 配置适配 | [README](internal/infrastructure/config/viper/README.md) |
 | `internal/infrastructure/metadata/mysql` | MySQL/TiDB metadata provider | [README](internal/infrastructure/metadata/mysql/README.md) |
-| `internal/infrastructure/output` | 输出渲染命名空间 | [README](internal/infrastructure/output/README.md) |
 | `internal/infrastructure/output/markdown` | Markdown 渲染器 | [README](internal/infrastructure/output/markdown/README.md) |
 | `internal/infrastructure/output/json` | JSON 渲染器 | [README](internal/infrastructure/output/json/README.md) |
 | `configs` | 示例配置 | [README](configs/README.md) |
