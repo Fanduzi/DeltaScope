@@ -8,6 +8,15 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.9.0] - 2026-03-28
+
+### Added
+
+- Homebrew Cask distribution via `brew tap Fanduzi/deltascope && brew install --cask deltascope`
+- Claude Code Skill `deltascope-review` for inline SQL review in Claude Code, Codex, Cursor and 40+ AI agents
+- `skills/` directory with public Skill file and install documentation
+- Install via `npx skills add Fanduzi/DeltaScope --skill deltascope-review`
+
 ## [v0.8.1] - 2026-03-28
 
 ### Fixed
