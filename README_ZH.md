@@ -9,7 +9,7 @@
 
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md) [![简体中文](https://img.shields.io/badge/docs-简体中文-yellow)](README_ZH.md)
 
-[![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/release-notes-v0.9.1.zh-CN.md)
+[![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
 DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
@@ -32,15 +32,15 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.1/install.sh | \
-  DELTASCOPE_VERSION=v0.9.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.2/install.sh | \
+  DELTASCOPE_VERSION=v0.9.2 sh
 ```
 
-发布产物命名为 `deltascope_0.9.1_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ### Release Contract
 
-每个 tag 产出的 archive 命名格式为 `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。installer script、Homebrew Cask 和 npm MCP launcher 均从同一份 GitHub Release assets 解析下载。npm 包 `@fanduzi/deltascope-mcp` 的版本号与 Go release tag 保持严格一致。
+每个 tag 产出的 archive 命名格式为 `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。installer script、Homebrew Cask 和 npm MCP launcher 均从 GitHub Release assets 解析对应平台的二进制。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
 
 ## 快速开始
 
@@ -114,7 +114,7 @@ deltascope audit \
       "findings": [
         {
           "level": "warning",
-          "rule": "ddl.column.drop",
+          "rule_id": "ddl.alter.drop.column",
           "message": "dropping column `age` is destructive and cannot be undone"
         }
       ]
@@ -255,7 +255,7 @@ make test-e2e-cli  # 端到端测试（需要 Docker）
 deltascope-server --port 8080
 ```
 
-`POST /audit` 接受与 CLI `--sql` / `--file` 相同的参数，返回相同的 JSON 结构。详情见 [HTTP service docs](docs/reference/http-api.md)。
+`POST /v1/audit` 接受与 CLI `--sql` / `--file` 相同的参数，返回相同的 JSON 结构。详情见 [HTTP service docs](docs/reference/http-api.md)。
 
 ## Library 用法
 

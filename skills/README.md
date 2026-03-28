@@ -49,14 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 ```
 Ensure `~/.local/bin` is in your `PATH` after install.
 
-**Windows (PowerShell):**
-```powershell
-$v = (Invoke-RestMethod https://api.github.com/repos/Fanduzi/DeltaScope/releases/latest).tag_name
-$url = "https://github.com/Fanduzi/DeltaScope/releases/download/$v/deltascope_$($v.TrimStart('v'))_windows_amd64.zip"
-Invoke-WebRequest $url -OutFile "$env:TEMP\ds.zip"
-Expand-Archive "$env:TEMP\ds.zip" -DestinationPath "$env:LOCALAPPDATA\DeltaScope" -Force
-```
-Then add `$env:LOCALAPPDATA\DeltaScope` to your system PATH and restart the terminal.
+Native release installs are currently documented for `darwin` and `linux` only. If you are on Windows, use WSL or another supported environment for the local `deltascope` binary.
 
 ### Usage
 
