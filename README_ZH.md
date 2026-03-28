@@ -36,7 +36,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.1/install.s
   DELTASCOPE_VERSION=v0.9.1 sh
 ```
 
-发布产物命名为 `deltascope_0.9.0_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+发布产物命名为 `deltascope_0.9.1_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+
+### Release Contract
+
+每个 tag 产出的 archive 命名格式为 `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。installer script、Homebrew Cask 和 npm MCP launcher 均从同一份 GitHub Release assets 解析下载。npm 包 `@fanduzi/deltascope-mcp` 的版本号与 Go release tag 保持严格一致。
 
 ## 快速开始
 
@@ -46,10 +50,85 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.1/install.s
 deltascope audit --sql "delete from users"
 ```
 
+示例输出：
+
+```text
+Verdict: reject
+Statements: 1
+Blockers: 1
+Warnings: 0
+Notices: 0
+
+Statement 1: DELETE
+- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+```
+
+审核 `CREATE TABLE` 语句：
+
+```bash
+deltascope audit --sql "create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'"
+```
+
+示例输出：
+
+```text
+Verdict: review
+Statements: 1
+Blockers: 0
+Warnings: 1
+Notices: 0
+
+Statement 1: CREATE TABLE
+- [warning] ddl.column.comment.require: column `id` must have a comment
+```
+
 审核 SQL 文件：
 
 ```bash
 deltascope audit --file ./migrations/20260328_add_column.sql
+```
+
+在 CI 中使用 JSON 输出：
+
+```bash
+deltascope audit \
+  --sql "alter table users drop column age" \
+  --format json \
+  --fail-on warning
+```
+
+示例 JSON 结构：
+
+```json
+{
+  "verdict": "review",
+  "summary": {
+    "blockers": 0,
+    "warnings": 1,
+    "notices": 0
+  },
+  "statements": [
+    {
+      "index": 1,
+      "kind": "ALTER TABLE",
+      "findings": [
+        {
+          "level": "warning",
+          "rule": "ddl.column.drop",
+          "message": "dropping column `age` is destructive and cannot be undone"
+        }
+      ]
+    }
+  ]
+}
+```
+
+metadata-aware 审核（需要数据库连接）：
+
+```bash
+deltascope audit \
+  --sql "alter table orders add column status tinyint not null comment 'order status'" \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
 查看所有内置规则：
@@ -73,6 +152,8 @@ SQL 错误在落库前发现代价极低，落库后代价极高。DeltaScope �
 
 ## MCP 快速接入
 
+> **无需手动安装二进制。** npm launcher 会自动为当前平台下载并运行对应的 `deltascope-mcp` 二进制文件。
+
 launcher 的前提：
 
 - Node.js 24 或更高版本
@@ -87,22 +168,31 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 
 如果你需要通用 stdio TOML、原生 `deltascope-mcp`、direct connection、`connection_ref`、代理配置和常见错误说明，请看 [使用 DeltaScope MCP](docs/recipe/use-deltascope-mcp.zh-CN.md)。
 
-## Claude Code Skill
+## AI Agent Skill
 
-DeltaScope 提供 Claude Code Skill，可在 AI 编码会话中直接审核 SQL。
+> **支持 Claude Code、Codex、Cursor 及 40+ AI 编码工具。**
+> 安装一次，在所有 AI 编码会话中获得内联 SQL 审核能力。
+
+DeltaScope 提供通用 AI Agent Skill，可在 AI 编码会话中直接审核 SQL。Skill 会自动检测本地是否安装了 DeltaScope，调用它审核你的 SQL，并给出修复建议——无需离开 AI 编码会话。
 
 ```bash
-# 安装 Skill（支持 Claude Code、Codex、Cursor 等 40+ AI 编码工具）
+# 通过 npx skills 安装（支持 Claude Code、Codex、Cursor 等 40+ AI 工具）
 npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 ```
 
-在 Claude Code 会话中调用：
+全局安装（所有项目均可使用）：
+
+```bash
+npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code -g
+```
+
+在任意支持的 AI 会话中调用：
 
 ```
 /deltascope-review
 ```
 
-粘贴 SQL 片段或指定文件路径，Claude 会用 DeltaScope 审核并给出修复建议。详见 [skills/README.md](skills/README.md)。
+粘贴 SQL 片段或指定文件路径——AI 会用 DeltaScope 审核并给出修复建议。详见 [skills/README.md](skills/README.md)。
 
 ## 更多文档
 

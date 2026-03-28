@@ -16,6 +16,8 @@ DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBA
 
 ## Install
 
+The primary install path is the repository installer script, which resolves the same release archive contract used by CI publishing.
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```
@@ -27,6 +29,19 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.1/install.s
   DELTASCOPE_VERSION=v0.9.1 sh
 ```
 
+**macOS (Homebrew):**
+
+```bash
+brew tap Fanduzi/deltascope
+brew install --cask deltascope
+```
+
+The published archive format is `deltascope_0.9.1_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
+
+### Release Contract
+
+Every tag produces archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve from the same GitHub Release assets. The npm package `@fanduzi/deltascope-mcp` is versioned identically to the Go release tag.
+
 ## Quick Start
 
 Audit a risky DML statement:
@@ -35,10 +50,85 @@ Audit a risky DML statement:
 deltascope audit --sql "delete from users"
 ```
 
-Audit a SQL file:
+Example output:
+
+```text
+Verdict: reject
+Statements: 1
+Blockers: 1
+Warnings: 0
+Notices: 0
+
+Statement 1: DELETE
+- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+```
+
+Audit a `CREATE TABLE` statement:
+
+```bash
+deltascope audit --sql "create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'"
+```
+
+Example output:
+
+```text
+Verdict: review
+Statements: 1
+Blockers: 0
+Warnings: 1
+Notices: 0
+
+Statement 1: CREATE TABLE
+- [warning] ddl.column.comment.require: column `id` must have a comment
+```
+
+Audit a file:
 
 ```bash
 deltascope audit --file ./migrations/20260328_add_column.sql
+```
+
+Use JSON output for CI or agents:
+
+```bash
+deltascope audit \
+  --sql "alter table users drop column age" \
+  --format json \
+  --fail-on warning
+```
+
+Example JSON shape:
+
+```json
+{
+  "verdict": "review",
+  "summary": {
+    "blockers": 0,
+    "warnings": 1,
+    "notices": 0
+  },
+  "statements": [
+    {
+      "index": 1,
+      "kind": "ALTER TABLE",
+      "findings": [
+        {
+          "level": "warning",
+          "rule": "ddl.alter.drop.column",
+          "message": "dropping column `age` is destructive and cannot be undone"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Audit with live metadata (instance-aware rules):
+
+```bash
+deltascope audit \
+  --sql "alter table orders add index idx_status (status)" \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
 See all shipped rules:
@@ -62,6 +152,8 @@ SQL mistakes are cheap to catch before they run and expensive after. DeltaScope 
 
 ## MCP Quick Start
 
+> **No install required.** The npm launcher fetches and runs the correct `deltascope-mcp` binary for your platform automatically.
+
 Launcher requirements:
 
 - Node.js 24 or newer
@@ -76,22 +168,31 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 
 For raw stdio TOML, native `deltascope-mcp`, direct connection, `connection_ref`, proxy setup, and common errors, see [Use DeltaScope MCP](docs/recipe/use-deltascope-mcp.md).
 
-## Claude Code Skill
+## AI Agent Skill
 
-DeltaScope ships a Claude Code skill for inline SQL review during AI coding sessions.
+> **Works in Claude Code, Codex, Cursor, and 40+ AI coding agents.**
+> Install once, get inline SQL review in every session.
+
+DeltaScope ships a universal AI agent skill for inline SQL review during AI coding sessions. The skill detects whether DeltaScope is installed locally, calls it to audit your SQL, and surfaces findings with fix suggestions — without leaving your AI coding session.
 
 ```bash
-# Install the skill (supports Claude Code, Codex, Cursor and 40+ AI agents)
+# Install via npx skills (Claude Code, Codex, Cursor and 40+ AI agents)
 npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 ```
 
-Then in any Claude Code session:
+Install globally (available across all projects):
+
+```bash
+npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code -g
+```
+
+Then invoke in any supported AI session:
 
 ```
 /deltascope-review
 ```
 
-Paste a SQL snippet or point to a file — Claude audits it with DeltaScope and suggests fixes. See [skills/README.md](skills/README.md) for full setup and usage.
+Paste a SQL snippet or point to a file — the agent audits it with DeltaScope and suggests fixes. See [skills/README.md](skills/README.md) for full setup and usage.
 
 ## More Docs
 
