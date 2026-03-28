@@ -20,6 +20,12 @@ Install globally (available across all projects):
 npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code -g
 ```
 
+**Keep up to date:**
+
+```bash
+npx skills update
+```
+
 **Option 2 — `curl`**
 
 ```bash
@@ -32,14 +38,25 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/skills/delt
 
 The skill calls the local `deltascope` binary. Install it first:
 
+**macOS (recommended):**
 ```bash
-# macOS
-brew tap Fanduzi/deltascope
-brew install --cask deltascope
-
-# Linux / manual
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
+brew tap Fanduzi/deltascope && brew install --cask deltascope
 ```
+
+**Linux (installs to `~/.local/bin`, no sudo needed):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | DELTASCOPE_INSTALL_DIR="$HOME/.local/bin" sh
+```
+Ensure `~/.local/bin` is in your `PATH` after install.
+
+**Windows (PowerShell):**
+```powershell
+$v = (Invoke-RestMethod https://api.github.com/repos/Fanduzi/DeltaScope/releases/latest).tag_name
+$url = "https://github.com/Fanduzi/DeltaScope/releases/download/$v/deltascope_$($v.TrimStart('v'))_windows_amd64.zip"
+Invoke-WebRequest $url -OutFile "$env:TEMP\ds.zip"
+Expand-Archive "$env:TEMP\ds.zip" -DestinationPath "$env:LOCALAPPDATA\DeltaScope" -Force
+```
+Then add `$env:LOCALAPPDATA\DeltaScope` to your system PATH and restart the terminal.
 
 ### Usage
 

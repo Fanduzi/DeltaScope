@@ -35,9 +35,27 @@ else
 fi
 ```
 
-If no runner is found, tell the user:
-- **Mac:** `brew tap Fanduzi/deltascope && brew install --cask deltascope`
-- **Manual:** Download binary from https://github.com/Fanduzi/DeltaScope/releases
+If no runner is found, tell the user that DeltaScope is not installed, then provide the appropriate install command for their OS. Ask them to run it and confirm with `deltascope --version` before continuing.
+
+**Mac (recommended):**
+```bash
+brew tap Fanduzi/deltascope && brew install --cask deltascope
+```
+
+**Linux (installs to `~/.local/bin`, no sudo needed):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | DELTASCOPE_INSTALL_DIR="$HOME/.local/bin" sh
+```
+If `deltascope` is still not found after install, ensure `~/.local/bin` is in the `PATH`.
+
+**Windows (PowerShell):**
+```powershell
+$v = (Invoke-RestMethod https://api.github.com/repos/Fanduzi/DeltaScope/releases/latest).tag_name
+$url = "https://github.com/Fanduzi/DeltaScope/releases/download/$v/deltascope_$($v.TrimStart('v'))_windows_amd64.zip"
+Invoke-WebRequest $url -OutFile "$env:TEMP\ds.zip"
+Expand-Archive "$env:TEMP\ds.zip" -DestinationPath "$env:LOCALAPPDATA\DeltaScope" -Force
+```
+Then add `$env:LOCALAPPDATA\DeltaScope` to the system PATH and restart the terminal.
 
 ## Step 3 — Run the audit
 

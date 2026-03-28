@@ -186,6 +186,12 @@ npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code
 npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code -g
 ```
 
+保持 Skill 更新：
+
+```bash
+npx skills update
+```
+
 在任意支持的 AI 会话中调用：
 
 ```

@@ -186,6 +186,12 @@ Install globally (available across all projects):
 npx skills add Fanduzi/DeltaScope --skill deltascope-review -a claude-code -g
 ```
 
+Keep the skill up to date:
+
+```bash
+npx skills update
+```
+
 Then invoke in any supported AI session:
 
 ```
