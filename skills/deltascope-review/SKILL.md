@@ -1,6 +1,6 @@
 ---
 name: deltascope-review
-description: "Use when the user wants to audit or review SQL for quality, safety, or correctness issues. Examples: 'Review this SQL', 'Audit my migration file', 'Check this ALTER TABLE statement', 'Is this DELETE safe?'"
+description: "Use when reviewing SQL, MySQL, or TiDB statements for DDL/DML safety, migration risk, schema changes, ALTER TABLE checks, DELETE/UPDATE safety, and query correctness."
 ---
 
 # DeltaScope SQL Review
