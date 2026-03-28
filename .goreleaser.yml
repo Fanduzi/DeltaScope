@@ -58,6 +58,8 @@ checksum:
 homebrew_casks:
   - name: deltascope
     ids:
+      - default
+    binaries:
       - deltascope
     repository:
       owner: Fanduzi
@@ -66,12 +68,6 @@ homebrew_casks:
     homepage: "https://github.com/Fanduzi/DeltaScope"
     description: "Offline SQL review for MySQL and TiDB"
     license: "Apache-2.0"
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/deltascope"]
-          end
 
 changelog:
   disable: true
