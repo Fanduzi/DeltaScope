@@ -10,10 +10,11 @@ ASCII diagram:
 cmd/
   deltascope
   deltascope-server
+  deltascope-mcp
         |
         v
 internal/interfaces/
-  cli            http
+  cli            http           mcp
         |
         v
 internal/application/
@@ -40,7 +41,7 @@ pkg/deltascope
 ## Practical Boundaries
 
 - `cmd` packages stay thin and mostly bind process flags or command startup.
-- `internal/interfaces` owns CLI and HTTP request/response translation.
+- `internal/interfaces` owns CLI, HTTP, and MCP request/response translation.
 - `internal/application` coordinates parse, metadata enrichment, config loading, and rule execution.
 - `internal/domain` owns normalized SQL specs, rule semantics, and final reports.
 - `internal/infrastructure` adapts external dependencies without redefining product rules.

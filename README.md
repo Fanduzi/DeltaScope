@@ -9,7 +9,7 @@
 
 [![English](https://img.shields.io/badge/docs-English-blue)](README.md) [![简体中文](https://img.shields.io/badge/docs-简体中文-yellow)](README_ZH.md)
 
-[![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/release-notes-v0.9.1.md)
+[![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
 DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
@@ -25,8 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.1/install.sh | \
-  DELTASCOPE_VERSION=v0.9.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.9.2/install.sh | \
+  DELTASCOPE_VERSION=v0.9.2 sh
 ```
 
 **macOS (Homebrew):**
@@ -36,11 +36,11 @@ brew tap Fanduzi/deltascope
 brew install --cask deltascope
 ```
 
-The published archive format is `deltascope_0.9.1_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
+The published archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ### Release Contract
 
-Every tag produces archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve from the same GitHub Release assets. The npm package `@fanduzi/deltascope-mcp` is versioned identically to the Go release tag.
+Every tag produces archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve platform binaries from GitHub Release assets. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
 
 ## Quick Start
 

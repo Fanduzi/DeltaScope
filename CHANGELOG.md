@@ -8,6 +8,13 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.9.2] - 2026-03-28
+
+### Changed
+
+- Documentation now aligns top-level install, MCP, skill, and architecture guidance with the current multi-surface product story and release metadata
+- Release notes index now includes the published `v0.9.0`, `v0.9.1`, and `v0.9.2` entries for stable navigation from the root README
+
 ## [v0.9.1] - 2026-03-28
 
 ### Fixed
