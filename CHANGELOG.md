@@ -8,6 +8,21 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.10.0] - 2026-03-29
+
+### Added
+
+- Gin-based HTTP adapter with middleware guardrails (request ID, panic recovery, timeout context, structured access logs)
+- Optional `X-API-Key` authentication for HTTP audit endpoints with `401 auth_required` and `403 auth_invalid`
+- Optional rate limiting with `429 rate_limited` support (`api-key` and `ip` strategies)
+- Prometheus `/metrics` endpoint with HTTP request count and latency metrics
+- `-trusted-proxies` flag to explicitly configure trusted proxy CIDRs for client IP extraction
+
+### Fixed
+
+- Removed Gin global mode side effect from library-level handler construction
+- Added stale-entry cleanup for in-memory rate-limit key buckets
+
 ## [v0.9.2] - 2026-03-28
 
 ### Changed
