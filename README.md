@@ -2,6 +2,8 @@
 
 # DeltaScope
 
+[![SafeSkill 55/100](https://img.shields.io/badge/SafeSkill-55%2F100_Use%20with%20Caution-orange)](https://safeskill.dev/scan/fanduzi-deltascope)
+
 [![Release](https://img.shields.io/github/v/release/Fanduzi/DeltaScope?display_name=tag)](https://github.com/Fanduzi/DeltaScope/releases)
 ![Platform](https://img.shields.io/badge/platform-darwin%20%7C%20linux-blue)
 ![Go Version](https://img.shields.io/badge/go-1.26.1-00ADD8?logo=go)
