@@ -486,6 +486,44 @@ func TestHandlerAuditRateLimitByAPIKey(t *testing.T) {
 	}
 }
 
+func TestHandlerAuditRateLimitByIPIgnoresForwardedForWhenNoTrustedProxies(t *testing.T) {
+	handler, err := NewHandler(
+		"",
+		"test-build",
+		WithMiddlewareConfig(MiddlewareConfig{
+			RateLimit: RateLimitConfig{
+				Enabled: true,
+				RPS:     1,
+				Burst:   1,
+				KeyBy:   "ip",
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req1 := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set("X-Forwarded-For", "198.51.100.10")
+	req1.RemoteAddr = "10.0.0.2:20001"
+	rec1 := httptest.NewRecorder()
+	handler.ServeHTTP(rec1, req1)
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("first request expected 200, got %d: %s", rec1.Code, rec1.Body.String())
+	}
+
+	req2 := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-Forwarded-For", "203.0.113.20")
+	req2.RemoteAddr = "10.0.0.2:20002"
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+	if rec2.Code != http.StatusTooManyRequests {
+		t.Fatalf("second request expected 429 when remote ip is same, got %d: %s", rec2.Code, rec2.Body.String())
+	}
+}
+
 func TestRequestRateLimitKeyIPUsesForwardedClientIP(t *testing.T) {
 	gin.SetMode(gin.ReleaseMode)
 	rec := httptest.NewRecorder()

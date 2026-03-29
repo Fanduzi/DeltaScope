@@ -20,6 +20,7 @@ HTTP 适配层会在每个响应写入 `X-Request-ID`。如果请求已经携带
 -rate-limit-key  限流维度：api-key 或 ip（默认 "api-key"）
 -rate-limit-allow-paths 逗号分隔的限流放行路径（默认 "/healthz,/version,/metrics"）
 -metrics-enabled 是否开启 Prometheus `/metrics`（默认 true）
+-trusted-proxies 用于提取客户端 IP 的可信代理 CIDR 列表；为空表示不信任任何代理
 -version         打印服务器构建版本并退出
 ```
 
@@ -46,6 +47,8 @@ deltascope-server \
   -rate-limit-burst 20 \
   -rate-limit-key api-key
 ```
+
+> 如果你在反向代理后使用 `-rate-limit-key ip`，请把代理网段配置到 `-trusted-proxies`。默认不信任任何代理。
 
 ---
 

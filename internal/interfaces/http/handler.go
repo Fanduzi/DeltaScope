@@ -58,6 +58,7 @@ type handlerOptions struct {
 	auditFn        func(context.Context, deltascope.Request) (deltascope.Result, error)
 	rateLimit      RateLimitConfig
 	metricsEnabled bool
+	trustedProxies []string
 }
 
 // HandlerOption configures NewHandler behavior.
@@ -76,6 +77,7 @@ type MiddlewareConfig struct {
 	Logger         *log.Logger
 	RateLimit      RateLimitConfig
 	MetricsEnabled *bool
+	TrustedProxies []string
 }
 
 // RateLimitConfig controls per-key request throttling.
@@ -99,6 +101,9 @@ func WithMiddlewareConfig(cfg MiddlewareConfig) HandlerOption {
 		options.rateLimit = cfg.RateLimit
 		if cfg.MetricsEnabled != nil {
 			options.metricsEnabled = *cfg.MetricsEnabled
+		}
+		if cfg.TrustedProxies != nil {
+			options.trustedProxies = cfg.TrustedProxies
 		}
 	}
 }
@@ -125,13 +130,16 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 		logger:         log.Default(),
 		auditFn:        deltascope.Audit,
 		metricsEnabled: true,
+		trustedProxies: []string{},
 	}
 	for _, option := range opts {
 		option(&options)
 	}
 
-	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
+	if err := router.SetTrustedProxies(options.trustedProxies); err != nil {
+		return nil, err
+	}
 	metricsMiddleware, metricsHandler := newMetricsMiddleware()
 	router.Use(
 		requestIDMiddleware(),

@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	httpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/http"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -33,6 +35,7 @@ func main() {
 	rateLimitKey := flag.String("rate-limit-key", "api-key", "rate limit key strategy: api-key or ip")
 	rateLimitAllowPaths := flag.String("rate-limit-allow-paths", "/healthz,/version,/metrics", "comma-separated paths that bypass rate limiting")
 	metricsEnabled := flag.Bool("metrics-enabled", true, "enable Prometheus metrics endpoint at /metrics")
+	trustedProxies := flag.String("trusted-proxies", "", "comma-separated trusted proxy CIDRs for client IP extraction; empty means trust no proxies")
 	flag.Parse()
 
 	if *showVersion {
@@ -42,10 +45,12 @@ func main() {
 
 	keys := parseCSV(*authKeys)
 	allowPaths := parseCSV(*authAllowPaths)
+	proxies := parseCSV(*trustedProxies)
 	if *authEnabled && len(keys) == 0 {
 		_, _ = fmt.Fprintln(os.Stderr, "auth is enabled but no keys were provided; set --auth-keys")
 		os.Exit(2)
 	}
+	gin.SetMode(gin.ReleaseMode)
 
 	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithAuthConfig(httpapi.AuthConfig{
 		Enabled:    *authEnabled,
@@ -60,6 +65,7 @@ func main() {
 			KeyBy:      *rateLimitKey,
 			AllowPaths: parseCSV(*rateLimitAllowPaths),
 		},
+		TrustedProxies: proxies,
 	}))
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "build server: %v\n", err)

@@ -20,6 +20,7 @@ The HTTP adapter sets `X-Request-ID` on every response. If a request already inc
 -rate-limit-key  rate limit key strategy: api-key or ip (default "api-key")
 -rate-limit-allow-paths comma-separated paths that bypass rate limiting (default "/healthz,/version,/metrics")
 -metrics-enabled enable Prometheus metrics endpoint at /metrics (default true)
+-trusted-proxies comma-separated trusted proxy CIDRs for client IP extraction; empty means trust no proxies
 -version         print the server build version and exit
 ```
 
@@ -46,6 +47,8 @@ deltascope-server \
   -rate-limit-burst 20 \
   -rate-limit-key api-key
 ```
+
+> If you use `-rate-limit-key ip` behind a reverse proxy, set `-trusted-proxies` to your proxy CIDRs. By default, no proxies are trusted.
 
 ---
 
