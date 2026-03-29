@@ -21,6 +21,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 func TestHandlerHealthz(t *testing.T) {
@@ -482,6 +483,45 @@ func TestHandlerAuditRateLimitByAPIKey(t *testing.T) {
 	}
 	if !bytes.Contains(rec2.Body.Bytes(), []byte(`"rate_limited"`)) {
 		t.Fatalf("expected rate_limited code, got %q", rec2.Body.String())
+	}
+}
+
+func TestRequestRateLimitKeyIPUsesForwardedClientIP(t *testing.T) {
+	gin.SetMode(gin.ReleaseMode)
+	rec := httptest.NewRecorder()
+	ctx, engine := gin.CreateTestContext(rec)
+	if err := engine.SetTrustedProxies([]string{"0.0.0.0/0", "::/0"}); err != nil {
+		t.Fatalf("set trusted proxies: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/audit", nil)
+	req.RemoteAddr = "10.0.0.2:12345"
+	req.Header.Set("X-Forwarded-For", "203.0.113.8")
+	ctx.Request = req
+
+	got := requestRateLimitKey(ctx, "ip")
+	if got != "203.0.113.8" {
+		t.Fatalf("expected forwarded client ip, got %q", got)
+	}
+}
+
+func TestLimiterStoreCleansExpiredEntries(t *testing.T) {
+	store := newLimiterStore(rate.Limit(1), 1)
+	store.ttl = time.Millisecond
+	store.cleanupInterval = time.Millisecond
+	store.nextCleanup = time.Now().Add(-time.Second)
+	store.entries["stale"] = limiterEntry{
+		limiter:  rate.NewLimiter(rate.Limit(1), 1),
+		lastSeen: time.Now().Add(-time.Hour),
+	}
+
+	_ = store.Allow("fresh")
+
+	store.mu.Lock()
+	_, exists := store.entries["stale"]
+	store.mu.Unlock()
+	if exists {
+		t.Fatalf("expected stale limiter entry to be evicted")
 	}
 }
 

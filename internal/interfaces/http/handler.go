@@ -13,7 +13,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -341,51 +340,85 @@ func rateLimitMiddleware(cfg RateLimitConfig) gin.HandlerFunc {
 func requestRateLimitKey(c *gin.Context, keyBy string) string {
 	switch keyBy {
 	case "ip":
-		return clientIPFromRequest(c.Request)
+		return clientIPFromContext(c)
 	default:
 		apiKey := strings.TrimSpace(c.GetHeader("X-API-Key"))
 		if apiKey == "" {
-			return "anon:" + clientIPFromRequest(c.Request)
+			return "anon:" + clientIPFromContext(c)
 		}
 		return "api-key:" + apiKey
 	}
 }
 
-func clientIPFromRequest(r *http.Request) string {
-	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-	if err == nil && host != "" {
-		return host
-	}
-	if r.RemoteAddr != "" {
-		return r.RemoteAddr
+func clientIPFromContext(c *gin.Context) string {
+	if c != nil {
+		if ip := strings.TrimSpace(c.ClientIP()); ip != "" {
+			return ip
+		}
 	}
 	return "unknown"
 }
 
 type limiterStore struct {
-	mu       sync.Mutex
-	limit    rate.Limit
-	burst    int
-	limiters map[string]*rate.Limiter
+	mu              sync.Mutex
+	limit           rate.Limit
+	burst           int
+	entries         map[string]limiterEntry
+	ttl             time.Duration
+	cleanupInterval time.Duration
+	nextCleanup     time.Time
+	callCount       uint64
+}
+
+type limiterEntry struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
 }
 
 func newLimiterStore(limit rate.Limit, burst int) *limiterStore {
+	now := time.Now()
 	return &limiterStore{
-		limit:    limit,
-		burst:    burst,
-		limiters: make(map[string]*rate.Limiter),
+		limit:           limit,
+		burst:           burst,
+		entries:         make(map[string]limiterEntry),
+		ttl:             10 * time.Minute,
+		cleanupInterval: time.Minute,
+		nextCleanup:     now.Add(time.Minute),
 	}
 }
 
 func (s *limiterStore) Allow(key string) bool {
+	now := time.Now()
+
 	s.mu.Lock()
-	limiter, ok := s.limiters[key]
+	entry, ok := s.entries[key]
 	if !ok {
-		limiter = rate.NewLimiter(s.limit, s.burst)
-		s.limiters[key] = limiter
+		entry = limiterEntry{
+			limiter:  rate.NewLimiter(s.limit, s.burst),
+			lastSeen: now,
+		}
+	} else {
+		entry.lastSeen = now
 	}
+	s.entries[key] = entry
+
+	s.callCount++
+	if now.After(s.nextCleanup) || s.callCount%1024 == 0 {
+		s.cleanupExpiredLocked(now)
+	}
+
 	s.mu.Unlock()
-	return limiter.Allow()
+	return entry.limiter.Allow()
+}
+
+func (s *limiterStore) cleanupExpiredLocked(now time.Time) {
+	expireBefore := now.Add(-s.ttl)
+	for key, entry := range s.entries {
+		if entry.lastSeen.Before(expireBefore) {
+			delete(s.entries, key)
+		}
+	}
+	s.nextCleanup = now.Add(s.cleanupInterval)
 }
 
 func handleAudit(
