@@ -7,13 +7,20 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
+	"github.com/gin-gonic/gin"
 )
 
 func TestHandlerHealthz(t *testing.T) {
@@ -228,6 +235,253 @@ func TestHandlerAuditRejectsOversizedRequestBody(t *testing.T) {
 func TestNewHandlerRejectsInvalidConfigPath(t *testing.T) {
 	if _, err := NewHandler("/tmp/deltascope-missing-config.yaml", "test-build"); err == nil {
 		t.Fatalf("expected invalid config path to fail")
+	}
+}
+
+func TestHandlerAuditRejectsMissingAPIKeyWhenAuthEnabled(t *testing.T) {
+	handler, err := NewHandler("", "test-build", WithAuthConfig(AuthConfig{
+		Enabled: true,
+		Keys:    []string{"ds_test_key"},
+	}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"auth_required"`)) {
+		t.Fatalf("expected auth_required code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditRejectsInvalidAPIKeyWhenAuthEnabled(t *testing.T) {
+	handler, err := NewHandler("", "test-build", WithAuthConfig(AuthConfig{
+		Enabled: true,
+		Keys:    []string{"ds_test_key"},
+	}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "wrong_key")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"auth_invalid"`)) {
+		t.Fatalf("expected auth_invalid code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditAllowsValidAPIKeyWhenAuthEnabled(t *testing.T) {
+	handler, err := NewHandler("", "test-build", WithAuthConfig(AuthConfig{
+		Enabled: true,
+		Keys:    []string{"ds_test_key"},
+	}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "ds_test_key")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandlerHealthzBypassesAuthWhenAllowPathConfigured(t *testing.T) {
+	handler, err := NewHandler("", "test-build", WithAuthConfig(AuthConfig{
+		Enabled:    true,
+		Keys:       []string{"ds_test_key"},
+		AllowPaths: []string{"/healthz"},
+	}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandlerHealthzSetsRequestIDHeader(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	requestID := rec.Header().Get("X-Request-ID")
+	if requestID == "" {
+		t.Fatalf("expected X-Request-ID header to be set")
+	}
+	if matched, _ := regexp.MatchString(`^req-[a-f0-9]{24}$`, requestID); !matched {
+		t.Fatalf("unexpected request id format: %q", requestID)
+	}
+}
+
+func TestRecoveryMiddlewareReturnsJSONEnvelopeOnPanic(t *testing.T) {
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(recoveryMiddleware(log.New(io.Discard, "", 0)))
+	router.GET("/panic", func(c *gin.Context) {
+		panic("boom")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/panic", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"internal_error"`)) {
+		t.Fatalf("expected internal_error code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditReturnsTimeoutWhenRequestDeadlineExceeded(t *testing.T) {
+	handler, err := NewHandler(
+		"",
+		"test-build",
+		WithMiddlewareConfig(MiddlewareConfig{RequestTimeout: 5 * time.Millisecond}),
+		WithAuditFunc(func(ctx context.Context, _ deltascope.Request) (deltascope.Result, error) {
+			select {
+			case <-time.After(100 * time.Millisecond):
+				return deltascope.Result{}, nil
+			case <-ctx.Done():
+				return deltascope.Result{}, ctx.Err()
+			}
+		}),
+	)
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusGatewayTimeout {
+		t.Fatalf("expected 504, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"request_timeout"`)) {
+		t.Fatalf("expected request_timeout code, got %q", rec.Body.String())
+	}
+}
+
+func TestMapAuditErrorTimeout(t *testing.T) {
+	status, code := mapAuditError(context.DeadlineExceeded)
+	if status != http.StatusGatewayTimeout || code != "request_timeout" {
+		t.Fatalf("unexpected timeout mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorCanceled(t *testing.T) {
+	status, code := mapAuditError(context.Canceled)
+	if status != http.StatusRequestTimeout || code != "request_canceled" {
+		t.Fatalf("unexpected canceled mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorEmptySQL(t *testing.T) {
+	status, code := mapAuditError(appaudit.ErrEmptySQL)
+	if status != http.StatusBadRequest || code != "bad_request" {
+		t.Fatalf("unexpected bad request mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestHandlerMetricsEndpoint(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	primeReq := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	primeRec := httptest.NewRecorder()
+	handler.ServeHTTP(primeRec, primeReq)
+	if primeRec.Code != http.StatusOK {
+		t.Fatalf("prime request expected 200, got %d: %s", primeRec.Code, primeRec.Body.String())
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte("deltascope_http_requests_total")) {
+		t.Fatalf("expected metrics payload, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditRateLimitByAPIKey(t *testing.T) {
+	handler, err := NewHandler(
+		"",
+		"test-build",
+		WithAuthConfig(AuthConfig{
+			Enabled: true,
+			Keys:    []string{"ds_test_key"},
+		}),
+		WithMiddlewareConfig(MiddlewareConfig{
+			RateLimit: RateLimitConfig{
+				Enabled: true,
+				RPS:     1,
+				Burst:   1,
+				KeyBy:   "api-key",
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req1 := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set("X-API-Key", "ds_test_key")
+	rec1 := httptest.NewRecorder()
+	handler.ServeHTTP(rec1, req1)
+	if rec1.Code != http.StatusOK {
+		t.Fatalf("first request expected 200, got %d: %s", rec1.Code, rec1.Body.String())
+	}
+
+	req2 := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("X-API-Key", "ds_test_key")
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+
+	if rec2.Code != http.StatusTooManyRequests {
+		t.Fatalf("second request expected 429, got %d: %s", rec2.Code, rec2.Body.String())
+	}
+	if !bytes.Contains(rec2.Body.Bytes(), []byte(`"rate_limited"`)) {
+		t.Fatalf("expected rate_limited code, got %q", rec2.Body.String())
 	}
 }
 

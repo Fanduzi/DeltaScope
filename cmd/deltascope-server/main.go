@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	httpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/http"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -23,6 +24,15 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:8083", "HTTP listen address")
 	configPath := flag.String("config", "", "path to YAML policy config")
 	showVersion := flag.Bool("version", false, "print the DeltaScope server build version")
+	authEnabled := flag.Bool("auth-enabled", false, "enable X-API-Key authentication for protected routes")
+	authKeys := flag.String("auth-keys", "", "comma-separated API keys for X-API-Key auth")
+	authAllowPaths := flag.String("auth-allow-paths", "/healthz,/version,/metrics", "comma-separated paths that bypass auth")
+	rateLimitEnabled := flag.Bool("rate-limit-enabled", false, "enable rate limiting middleware")
+	rateLimitRPS := flag.Float64("rate-limit-rps", 5, "rate limit requests per second")
+	rateLimitBurst := flag.Int("rate-limit-burst", 10, "rate limit burst size")
+	rateLimitKey := flag.String("rate-limit-key", "api-key", "rate limit key strategy: api-key or ip")
+	rateLimitAllowPaths := flag.String("rate-limit-allow-paths", "/healthz,/version,/metrics", "comma-separated paths that bypass rate limiting")
+	metricsEnabled := flag.Bool("metrics-enabled", true, "enable Prometheus metrics endpoint at /metrics")
 	flag.Parse()
 
 	if *showVersion {
@@ -30,7 +40,27 @@ func main() {
 		return
 	}
 
-	server, err := httpapi.NewServer(*listen, *configPath, Version)
+	keys := parseCSV(*authKeys)
+	allowPaths := parseCSV(*authAllowPaths)
+	if *authEnabled && len(keys) == 0 {
+		_, _ = fmt.Fprintln(os.Stderr, "auth is enabled but no keys were provided; set --auth-keys")
+		os.Exit(2)
+	}
+
+	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithAuthConfig(httpapi.AuthConfig{
+		Enabled:    *authEnabled,
+		Keys:       keys,
+		AllowPaths: allowPaths,
+	}), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
+		MetricsEnabled: metricsEnabled,
+		RateLimit: httpapi.RateLimitConfig{
+			Enabled:    *rateLimitEnabled,
+			RPS:        *rateLimitRPS,
+			Burst:      *rateLimitBurst,
+			KeyBy:      *rateLimitKey,
+			AllowPaths: parseCSV(*rateLimitAllowPaths),
+		},
+	}))
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "build server: %v\n", err)
 		os.Exit(2)
@@ -40,4 +70,17 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "serve http: %v\n", err)
 		os.Exit(3)
 	}
+}
+
+func parseCSV(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item == "" {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
 }
