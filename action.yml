@@ -17,7 +17,7 @@ inputs:
     required: false
     default: 'latest'
   files:
-    description: 'Glob pattern (relative to repo root) of SQL files to audit. Passed to deltascope --files.'
+    description: 'Glob pattern (relative to repo root) of SQL files to audit, e.g. migrations/*.sql.'
     required: false
     default: 'migrations/*.sql'
   fail-on:
@@ -34,12 +34,12 @@ inputs:
     default: '${{ github.token }}'
 
 outputs:
+  has-issues:
+    description: '"true" if any file has findings at or above fail-on threshold, otherwise "false".'
+    value: '${{ steps.audit.outputs.has-issues }}'
   result:
-    description: 'Audit outcome: passed | failed | skipped'
+    description: 'JSON array of per-file audit results.'
     value: '${{ steps.audit.outputs.result }}'
-  summary:
-    description: 'One-line human-readable summary of the audit (e.g. "3 blockers, 1 warning").'
-    value: '${{ steps.audit.outputs.summary }}'
 
 runs:
   using: 'composite'
@@ -100,77 +100,75 @@ runs:
         DS_CONFIG:   '${{ inputs.config }}'
       run: |
         set -euo pipefail
-        ARGS=(--files "${DS_FILES}" --fail-on "${DS_FAIL_ON}" --format json)
+
+        EXTRA_ARGS=()
         if [[ -n "${DS_CONFIG}" ]]; then
-          ARGS+=(--config "${DS_CONFIG}")
+          EXTRA_ARGS+=(--config "${DS_CONFIG}")
         fi
 
-        set +e
-        OUTPUT=$(/tmp/deltascope "${ARGS[@]}" 2>&1)
-        EXIT_CODE=$?
-        set -e
+        # Expand glob and collect matching files
+        shopt -s nullglob
+        FILES=(${DS_FILES})
+        shopt -u nullglob
 
-        # Parse summary from JSON output when possible
-        SUMMARY=$(echo "${OUTPUT}" | python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    items = data.get('results', [])
-    blockers = sum(1 for r in items if r.get('level') == 'blocker')
-    warnings = sum(1 for r in items if r.get('level') == 'warning')
-    notices  = sum(1 for r in items if r.get('level') == 'notice')
-    parts = []
-    if blockers: parts.append(f'{blockers} blocker(s)')
-    if warnings: parts.append(f'{warnings} warning(s)')
-    if notices:  parts.append(f'{notices} notice(s)')
-    print(', '.join(parts) if parts else 'no issues found')
-except Exception:
-    print('audit complete')
-" 2>/dev/null || echo 'audit complete')
-
-        if [[ ${EXIT_CODE} -eq 0 ]]; then
-          RESULT="passed"
-        else
-          RESULT="failed"
+        if [[ ${#FILES[@]} -eq 0 ]]; then
+          echo "No files matched: ${DS_FILES}"
+          echo "has-issues=false" >> "${GITHUB_OUTPUT}"
+          echo "result=[]"        >> "${GITHUB_OUTPUT}"
+          exit 0
         fi
 
-        echo "result=${RESULT}"   >> "${GITHUB_OUTPUT}"
-        echo "summary=${SUMMARY}" >> "${GITHUB_OUTPUT}"
-        echo "exit_code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
-        echo "__output<<EOF" >> "${GITHUB_OUTPUT}"
-        echo "${OUTPUT}" >> "${GITHUB_OUTPUT}"
-        echo "EOF" >> "${GITHUB_OUTPUT}"
+        OVERALL_EXIT=0
+        HAS_ISSUES=false
+        ALL_RESULTS="["
+        FIRST=1
 
-        # Write step summary (always, even on failure)
+        for f in "${FILES[@]}"; do
+          set +e
+          FILE_OUTPUT=$(/tmp/deltascope audit --file "${f}" --fail-on "${DS_FAIL_ON}" --format json "${EXTRA_ARGS[@]}" 2>&1)
+          FILE_EXIT=$?
+          set -e
+
+          [[ ${FILE_EXIT} -ne 0 ]] && OVERALL_EXIT=1 && HAS_ISSUES=true
+
+          if [[ ${FIRST} -eq 0 ]]; then
+            ALL_RESULTS+=","
+          fi
+          ALL_RESULTS+="{\"file\":\"${f}\",\"exit_code\":${FILE_EXIT},\"output\":$(echo "${FILE_OUTPUT}" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo '""')}"
+          FIRST=0
+        done
+        ALL_RESULTS+="]"
+
+        echo "has-issues=${HAS_ISSUES}" >> "${GITHUB_OUTPUT}"
+        printf 'result=%s\n' "${ALL_RESULTS}" >> "${GITHUB_OUTPUT}"
+
+        # Write step summary
         {
-          if [[ "${RESULT}" == "passed" ]]; then
+          if [[ "${HAS_ISSUES}" == "false" ]]; then
             echo "## DeltaScope SQL Audit: Passed"
           else
             echo "## DeltaScope SQL Audit: Failed"
           fi
           echo ""
-          echo "**Summary:** ${SUMMARY}"
-          echo ""
-          echo '```'
-          echo "${OUTPUT}"
-          echo '```'
+          for f in "${FILES[@]}"; do
+            echo "- \`${f}\`"
+          done
         } >> "${GITHUB_STEP_SUMMARY}"
 
-        exit ${EXIT_CODE}
+        exit ${OVERALL_EXIT}
 
     # ── 4. Post PR comment ────────────────────────────────────────────────────
     - name: Post PR comment
       if: github.event_name == 'pull_request' && inputs.token != ''
       shell: bash
       env:
-        GH_TOKEN:       '${{ inputs.token }}'
-        AUDIT_RESULT:   '${{ steps.audit.outputs.result }}'
-        AUDIT_SUMMARY:  '${{ steps.audit.outputs.summary }}'
-        REPO:           '${{ github.repository }}'
-        PR_NUMBER:      '${{ github.event.pull_request.number }}'
+        GH_TOKEN:      '${{ inputs.token }}'
+        HAS_ISSUES:    '${{ steps.audit.outputs.has-issues }}'
+        REPO:          '${{ github.repository }}'
+        PR_NUMBER:     '${{ github.event.pull_request.number }}'
       run: |
         set -euo pipefail
-        if [[ "${AUDIT_RESULT}" == "passed" ]]; then
+        if [[ "${HAS_ISSUES}" == "false" ]]; then
           STATUS_ICON=":white_check_mark:"
           STATUS_TEXT="Passed"
         else
@@ -179,8 +177,7 @@ except Exception:
         fi
 
         BODY=$(printf '%s' \
-          "## ${STATUS_ICON} DeltaScope SQL Audit \u2014 ${STATUS_TEXT}" $'\n\n' \
-          "**Summary:** ${AUDIT_SUMMARY}" $'\n\n' \
+          "## ${STATUS_ICON} DeltaScope SQL Audit — ${STATUS_TEXT}" $'\n\n' \
           "_Triggered by commit \`${{ github.sha }}\`._")
 
         curl -fsSL \

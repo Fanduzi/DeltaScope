@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: HTTP requests carrying SQL audit payloads plus service-level config/version wiring
-// output: JSON audit, health, version, and structured error responses
+// output: JSON audit, health, readiness, version, structured error responses, and structured access log lines
 // pos: interface adapter between net/http and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi

@@ -6,7 +6,7 @@ Thin HTTP adapter for exposing the offline DeltaScope audit engine as a JSON ser
 
 | File | Responsibility |
 |------|---------------|
-| handler.go | Binds Gin HTTP requests to the public audit API, auth checks, and JSON responses |
+| handler.go | Binds Gin HTTP requests to the public audit API, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
 | handler_test.go | Verifies HTTP request binding, error mapping, and JSON response shape |
 | server.go | Assembles the HTTP handler and long-running server wiring |
 

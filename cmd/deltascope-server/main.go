@@ -1,5 +1,5 @@
 // Package main starts the DeltaScope HTTP service.
-// input: process flags for listen address, optional config path, and version printing
+// input: process flags for listen address, optional config path, shutdown timeout, and version printing
 // output: a long-running JSON HTTP server process over the offline audit engine
 // pos: HTTP service entrypoint above the internal HTTP adapter
 // note: if this file changes, update this header and module README.md.
