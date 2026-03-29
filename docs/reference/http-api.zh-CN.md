@@ -85,7 +85,7 @@ curl http://127.0.0.1:8083/version
 **响应（200）：**
 
 ```json
-{"version": "v0.7.0"}
+{"version": "v0.10.0"}
 ```
 
 ---

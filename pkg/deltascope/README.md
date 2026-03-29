@@ -43,8 +43,8 @@ Stable public package surface for library consumers.
 - `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.
 - `Result` and `StatementResult` expose an optional `Explanation` field for additive shared result context without changing verdict semantics. The built-in audit flow populates these aggregate fields whenever findings are present.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
-- `DefaultVersion` is now `v0.7.0`, which matches the source-build baseline used by the CLI, HTTP server, and official MCP server release artifacts.
-- The public package surface stays stable in `v0.7.0`; the release expands product entrypoints, not the exported `pkg/deltascope` contract.
+- `DefaultVersion` is now `v0.10.0`, which matches the source-build baseline used by the CLI, HTTP server, and official MCP server release artifacts.
+- The public package surface stays stable in `v0.10.0`; the release expands product entrypoints, not the exported `pkg/deltascope` contract.
 
 ## Dependencies
 - Upstream: external library consumers
