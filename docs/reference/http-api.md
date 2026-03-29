@@ -2,6 +2,8 @@
 
 `deltascope-server` exposes a thin JSON adapter over the same audit engine used by the CLI and the `pkg/deltascope` Go library. Every request and response is JSON. The server is stateless and re-reads its config file on each audit request, so policy changes take effect without a restart.
 
+The HTTP adapter sets `X-Request-ID` on every response. If a request already includes `X-Request-ID`, that value is echoed back.
+
 ## Server Startup
 
 ### Flags
@@ -9,6 +11,15 @@
 ```
 -listen string   HTTP listen address (default "127.0.0.1:8083")
 -config string   path to YAML policy config file (optional)
+-auth-enabled    enable X-API-Key authentication for protected routes
+-auth-keys       comma-separated API keys for X-API-Key auth
+-auth-allow-paths comma-separated paths that bypass auth (default "/healthz,/version,/metrics")
+-rate-limit-enabled enable rate limiting middleware
+-rate-limit-rps  rate limit requests per second (default 5)
+-rate-limit-burst rate limit burst size (default 10)
+-rate-limit-key  rate limit key strategy: api-key or ip (default "api-key")
+-rate-limit-allow-paths comma-separated paths that bypass rate limiting (default "/healthz,/version,/metrics")
+-metrics-enabled enable Prometheus metrics endpoint at /metrics (default true)
 -version         print the server build version and exit
 ```
 
@@ -20,6 +31,20 @@ deltascope-server -listen 127.0.0.1:8083
 
 # With a custom policy config
 deltascope-server -listen 127.0.0.1:8083 -config ./deltascope.yaml
+
+# Enable API-key auth (protects /v1/audit)
+deltascope-server \
+  -listen 127.0.0.1:8083 \
+  -auth-enabled \
+  -auth-keys 'ds_live_key_1,ds_live_key_2'
+
+# Enable rate limiting by API key and keep /metrics open
+deltascope-server \
+  -listen 127.0.0.1:8083 \
+  -rate-limit-enabled \
+  -rate-limit-rps 10 \
+  -rate-limit-burst 20 \
+  -rate-limit-key api-key
 ```
 
 ---
@@ -58,6 +83,26 @@ curl http://127.0.0.1:8083/version
 
 ```json
 {"version": "v0.7.0"}
+```
+
+---
+
+### GET /metrics
+
+Returns Prometheus metrics in text format.
+
+**Request:**
+
+```bash
+curl http://127.0.0.1:8083/metrics
+```
+
+**Response (200):**
+
+```text
+# HELP deltascope_http_requests_total Total HTTP requests handled by DeltaScope HTTP adapter.
+# TYPE deltascope_http_requests_total counter
+...
 ```
 
 ---
@@ -190,7 +235,13 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, contains more than one JSON object, or exceeds the 1 MiB request-body limit |
 | 400 | `bad_request` | `sql` field is empty, or `dialect` value is unrecognized |
+| 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
+| 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |
+| 429 | `rate_limited` | Request exceeded configured rate limit |
+| 408 | `request_canceled` | Request context was canceled before audit completed |
+| 500 | `internal_error` | A panic was recovered by HTTP middleware |
 | 500 | `config_invalid` | Server config file failed to load |
+| 504 | `request_timeout` | Audit did not complete before request timeout |
 
 **Error response format:**
 
@@ -209,6 +260,7 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 # Audit SQL — dialect defaults to mysql
 curl -s -X POST http://127.0.0.1:8083/v1/audit \
   -H 'Content-Type: application/json' \
+  -H 'X-API-Key: ds_live_key_1' \
   -d '{"sql": "DELETE FROM users WHERE id = 1"}'
 
 # Audit with explicit TiDB dialect
