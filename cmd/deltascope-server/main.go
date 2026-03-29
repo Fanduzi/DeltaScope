@@ -93,12 +93,14 @@ func main() {
 		}
 	case sig := <-quit:
 		_, _ = fmt.Fprintf(os.Stderr, "received signal %s, shutting down\n", sig)
+		signal.Stop(quit)
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {
+			cancel()
 			_, _ = fmt.Fprintf(os.Stderr, "graceful shutdown: %v\n", err)
 			os.Exit(3)
 		}
+		cancel()
 	}
 }
 

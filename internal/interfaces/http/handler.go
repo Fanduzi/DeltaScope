@@ -197,10 +197,6 @@ func newMetricsMiddleware() (gin.HandlerFunc, http.Handler) {
 		if path == "" {
 			path = c.Request.URL.Path
 		}
-		status := http.StatusText(c.Writer.Status())
-		if status == "" {
-			status = "unknown"
-		}
 		statusCode := http.StatusText(c.Writer.Status())
 		if statusCode == "" {
 			statusCode = "unknown"
@@ -269,7 +265,7 @@ func accessLogMiddleware(logger *log.Logger) gin.HandlerFunc {
 		c.Next()
 		requestID := c.Writer.Header().Get("X-Request-ID")
 		entry := accessLogEntry{
-			Timestamp:  time.Now().UTC().Format(time.RFC3339),
+			Timestamp:  start.UTC().Format(time.RFC3339),
 			Level:      "info",
 			Msg:        "http request",
 			Method:     c.Request.Method,
