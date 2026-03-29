@@ -1,0 +1,192 @@
+# action.yml — DeltaScope GitHub Actions Composite Action
+# input: SQL migration files, fail-on severity level, DeltaScope version, optional PR comment token
+# output: annotated audit results written to GITHUB_STEP_SUMMARY; non-zero exit on threshold breach
+# pos: composite action entrypoint consumed by caller workflows via `uses: Fanduzi/deltascope@v0.11.0`
+# note: if this file changes, update docs/examples/github-actions.yml and this header.
+name: 'DeltaScope SQL Audit'
+description: 'Offline SQL audit for MySQL/TiDB migrations — runs deltascope CLI, annotates the step summary, and optionally comments on pull requests.'
+author: 'Fanduzi'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'DeltaScope release tag to download (e.g. v0.11.0). Defaults to latest.'
+    required: false
+    default: 'latest'
+  files:
+    description: 'Glob pattern (relative to repo root) of SQL files to audit. Passed to deltascope --files.'
+    required: false
+    default: 'migrations/*.sql'
+  fail-on:
+    description: 'Minimum severity that causes a non-zero exit: blocker | warning | notice | none'
+    required: false
+    default: 'blocker'
+  config:
+    description: 'Path to a deltascope YAML policy config file. Leave blank to use built-in defaults.'
+    required: false
+    default: ''
+  token:
+    description: 'GitHub token used to post a PR comment with the audit summary. Set to empty string to disable PR comments.'
+    required: false
+    default: '${{ github.token }}'
+
+outputs:
+  result:
+    description: 'Audit outcome: passed | failed | skipped'
+    value: '${{ steps.audit.outputs.result }}'
+  summary:
+    description: 'One-line human-readable summary of the audit (e.g. "3 blockers, 1 warning").'
+    value: '${{ steps.audit.outputs.summary }}'
+
+runs:
+  using: 'composite'
+  steps:
+    # ── 1. Resolve version ────────────────────────────────────────────────────
+    - name: Resolve DeltaScope version
+      id: resolve-version
+      shell: bash
+      run: |
+        set -euo pipefail
+        INPUT_VERSION="${{ inputs.version }}"
+        if [[ "${INPUT_VERSION}" == "latest" ]]; then
+          RESOLVED=$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/Fanduzi/DeltaScope/releases/latest \
+            | grep -Po '"tag_name":\s*"\K[^"]+' | head -1)
+        else
+          RESOLVED="${INPUT_VERSION}"
+        fi
+        echo "Resolved DeltaScope version: ${RESOLVED}"
+        echo "version=${RESOLVED}" >> "${GITHUB_OUTPUT}"
+
+    # ── 2. Install deltascope binary ──────────────────────────────────────────
+    - name: Install deltascope
+      id: install
+      shell: bash
+      env:
+        DS_VERSION: '${{ steps.resolve-version.outputs.version }}'
+      run: |
+        set -euo pipefail
+        OS="linux"
+        ARCH=$(uname -m)
+        case "${ARCH}" in
+          x86_64)  ARCH="amd64" ;;
+          aarch64) ARCH="arm64" ;;
+          *) echo "Unsupported architecture: ${ARCH}"; exit 1 ;;
+        esac
+
+        RAW_VERSION="${DS_VERSION#v}"   # strip leading 'v'
+        ARCHIVE="deltascope_${RAW_VERSION}_${OS}_${ARCH}.tar.gz"
+        URL="https://github.com/Fanduzi/DeltaScope/releases/download/${DS_VERSION}/${ARCHIVE}"
+
+        echo "Downloading ${URL}"
+        curl -fsSL "${URL}" -o /tmp/deltascope.tar.gz
+        tar -xzf /tmp/deltascope.tar.gz -C /tmp deltascope
+        chmod +x /tmp/deltascope
+        echo "/tmp" >> "${GITHUB_PATH}"
+        echo "binary=/tmp/deltascope" >> "${GITHUB_OUTPUT}"
+
+    # ── 3. Run audit ──────────────────────────────────────────────────────────
+    - name: Run DeltaScope audit
+      id: audit
+      shell: bash
+      env:
+        DS_FILES:    '${{ inputs.files }}'
+        DS_FAIL_ON:  '${{ inputs.fail-on }}'
+        DS_CONFIG:   '${{ inputs.config }}'
+      run: |
+        set -euo pipefail
+        ARGS=(--files "${DS_FILES}" --fail-on "${DS_FAIL_ON}" --format json)
+        if [[ -n "${DS_CONFIG}" ]]; then
+          ARGS+=(--config "${DS_CONFIG}")
+        fi
+
+        set +e
+        OUTPUT=$(/tmp/deltascope "${ARGS[@]}" 2>&1)
+        EXIT_CODE=$?
+        set -e
+
+        # Parse summary from JSON output when possible
+        SUMMARY=$(echo "${OUTPUT}" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    items = data.get('results', [])
+    blockers = sum(1 for r in items if r.get('level') == 'blocker')
+    warnings = sum(1 for r in items if r.get('level') == 'warning')
+    notices  = sum(1 for r in items if r.get('level') == 'notice')
+    parts = []
+    if blockers: parts.append(f'{blockers} blocker(s)')
+    if warnings: parts.append(f'{warnings} warning(s)')
+    if notices:  parts.append(f'{notices} notice(s)')
+    print(', '.join(parts) if parts else 'no issues found')
+except Exception:
+    print('audit complete')
+" 2>/dev/null || echo 'audit complete')
+
+        if [[ ${EXIT_CODE} -eq 0 ]]; then
+          RESULT="passed"
+        else
+          RESULT="failed"
+        fi
+
+        echo "result=${RESULT}"   >> "${GITHUB_OUTPUT}"
+        echo "summary=${SUMMARY}" >> "${GITHUB_OUTPUT}"
+        echo "exit_code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
+        echo "__output<<EOF" >> "${GITHUB_OUTPUT}"
+        echo "${OUTPUT}" >> "${GITHUB_OUTPUT}"
+        echo "EOF" >> "${GITHUB_OUTPUT}"
+
+        # Write step summary (always, even on failure)
+        {
+          if [[ "${RESULT}" == "passed" ]]; then
+            echo "## DeltaScope SQL Audit: Passed"
+          else
+            echo "## DeltaScope SQL Audit: Failed"
+          fi
+          echo ""
+          echo "**Summary:** ${SUMMARY}"
+          echo ""
+          echo '```'
+          echo "${OUTPUT}"
+          echo '```'
+        } >> "${GITHUB_STEP_SUMMARY}"
+
+        exit ${EXIT_CODE}
+
+    # ── 4. Post PR comment ────────────────────────────────────────────────────
+    - name: Post PR comment
+      if: github.event_name == 'pull_request' && inputs.token != ''
+      shell: bash
+      env:
+        GH_TOKEN:       '${{ inputs.token }}'
+        AUDIT_RESULT:   '${{ steps.audit.outputs.result }}'
+        AUDIT_SUMMARY:  '${{ steps.audit.outputs.summary }}'
+        REPO:           '${{ github.repository }}'
+        PR_NUMBER:      '${{ github.event.pull_request.number }}'
+      run: |
+        set -euo pipefail
+        if [[ "${AUDIT_RESULT}" == "passed" ]]; then
+          STATUS_ICON=":white_check_mark:"
+          STATUS_TEXT="Passed"
+        else
+          STATUS_ICON=":x:"
+          STATUS_TEXT="Failed"
+        fi
+
+        BODY=$(printf '%s' \
+          "## ${STATUS_ICON} DeltaScope SQL Audit \u2014 ${STATUS_TEXT}" $'\n\n' \
+          "**Summary:** ${AUDIT_SUMMARY}" $'\n\n' \
+          "_Triggered by commit \`${{ github.sha }}\`._")
+
+        curl -fsSL \
+          -X POST \
+          -H "Authorization: Bearer ${GH_TOKEN}" \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/repos/${REPO}/issues/${PR_NUMBER}/comments" \
+          -d "{\"body\": $(echo "${BODY}" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}"

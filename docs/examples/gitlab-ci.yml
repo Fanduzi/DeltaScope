@@ -1,0 +1,181 @@
+# docs/examples/gitlab-ci.yml — Example GitLab CI job using DeltaScope
+# L3: Include or copy this snippet into your .gitlab-ci.yml to audit SQL migration
+# files on merge requests and pushes to the default branch.
+# The job manually downloads the deltascope binary from GitHub Releases — no
+# external GitLab CI includes or Docker images beyond the standard debian slim
+# base are required.
+# Requirements: a GitLab project with SQL migrations under migrations/,
+# and internet access from the runner (curl + jq available).
+
+# ── Stage definition ──────────────────────────────────────────────────────────
+# Add 'audit' to your existing stages list, or use this as a standalone snippet.
+stages:
+  - audit
+
+# ── Variables ─────────────────────────────────────────────────────────────────
+variables:
+  DELTASCOPE_VERSION: "v0.11.0"   # Pin to a release tag, or set to "latest"
+  DELTASCOPE_FAIL_ON: "blocker"   # blocker | warning | notice | none
+  DELTASCOPE_FILES: "migrations/*.sql"  # Glob relative to repository root
+
+# ── Reusable setup script (YAML anchor) ───────────────────────────────────────
+.deltascope-install: &deltascope-install |
+  set -euo pipefail
+
+  # Detect architecture
+  ARCH_RAW=$(uname -m)
+  case "${ARCH_RAW}" in
+    x86_64)  ARCH="amd64" ;;
+    aarch64) ARCH="arm64" ;;
+    *)
+      echo "ERROR: Unsupported architecture: ${ARCH_RAW}"
+      exit 1
+      ;;
+  esac
+  OS="linux"
+
+  # Resolve version
+  VERSION="${DELTASCOPE_VERSION}"
+  if [ "${VERSION}" = "latest" ]; then
+    VERSION=$(curl -fsSL \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/Fanduzi/DeltaScope/releases/latest" \
+      | jq -r '.tag_name')
+    if [ -z "${VERSION}" ] || [ "${VERSION}" = "null" ]; then
+      echo "ERROR: Failed to resolve latest DeltaScope release tag."
+      exit 1
+    fi
+  fi
+
+  # Strip leading 'v' for archive name (GoReleaser uses RawVersion)
+  RAW_VERSION="${VERSION#v}"
+
+  # Construct download URL
+  # Archive pattern: deltascope_<RawVersion>_<os>_<arch>.tar.gz
+  ARCHIVE="deltascope_${RAW_VERSION}_${OS}_${ARCH}.tar.gz"
+  DOWNLOAD_URL="https://github.com/Fanduzi/DeltaScope/releases/download/${VERSION}/${ARCHIVE}"
+
+  echo "Downloading DeltaScope ${VERSION} (${OS}/${ARCH})..."
+  echo "URL: ${DOWNLOAD_URL}"
+
+  INSTALL_DIR="/tmp/deltascope-bin"
+  mkdir -p "${INSTALL_DIR}"
+  curl -fsSL "${DOWNLOAD_URL}" -o "${INSTALL_DIR}/${ARCHIVE}"
+  tar -xzf "${INSTALL_DIR}/${ARCHIVE}" -C "${INSTALL_DIR}"
+  chmod +x "${INSTALL_DIR}/deltascope"
+  export PATH="${INSTALL_DIR}:${PATH}"
+  echo "deltascope $(deltascope version 2>/dev/null || echo '(version flag not supported)') installed."
+
+# ── Audit job ─────────────────────────────────────────────────────────────────
+sql-audit:
+  stage: audit
+  image: debian:bookworm-slim
+
+  # Run on merge requests and default branch pushes.
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+  # Only trigger when SQL migration files change.
+  # Remove this block if you want the job to always run.
+  changes:
+    - migrations/**
+
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl jq tar ca-certificates
+    - *deltascope-install
+
+  script:
+    - |
+      set -euo pipefail
+
+      # Validate fail-on value
+      case "${DELTASCOPE_FAIL_ON}" in
+        blocker|warning|notice|none) ;;
+        *)
+          echo "ERROR: Invalid DELTASCOPE_FAIL_ON='${DELTASCOPE_FAIL_ON}'. Must be: blocker | warning | notice | none"
+          exit 1
+          ;;
+      esac
+
+      # Expand glob and collect SQL files
+      SQL_FILES=$(find . -path "./${DELTASCOPE_FILES}" -name '*.sql' 2>/dev/null || true)
+
+      if [ -z "${SQL_FILES}" ]; then
+        # Fallback: direct glob
+        shopt -s nullglob globstar 2>/dev/null || true
+        SQL_FILES=$(ls ${DELTASCOPE_FILES} 2>/dev/null || true)
+      fi
+
+      if [ -z "${SQL_FILES}" ]; then
+        echo "WARNING: No SQL files matched pattern: ${DELTASCOPE_FILES}"
+        exit 0
+      fi
+
+      FILE_COUNT=$(echo "${SQL_FILES}" | wc -l | tr -d ' ')
+      echo "Found ${FILE_COUNT} SQL file(s) to audit."
+
+      RESULTS="[]"
+      HAS_ISSUES=0
+      RESULTS_DIR="/tmp/deltascope-results"
+      mkdir -p "${RESULTS_DIR}"
+
+      # Audit each file
+      echo "${SQL_FILES}" | while IFS= read -r SQL_FILE; do
+        [ -z "${SQL_FILE}" ] && continue
+        echo "Auditing: ${SQL_FILE}"
+
+        AUDIT_EXIT=0
+        RAW_OUTPUT=$(/tmp/deltascope-bin/deltascope audit \
+          --file "${SQL_FILE}" \
+          --format json \
+          --fail-on "${DELTASCOPE_FAIL_ON}" 2>&1) || AUDIT_EXIT=$?
+
+        # Save per-file result
+        SAFE_NAME=$(echo "${SQL_FILE}" | tr '/' '_' | tr -dc 'a-zA-Z0-9_.-')
+        echo "${RAW_OUTPUT}" > "${RESULTS_DIR}/${SAFE_NAME}.json"
+
+        if [ "${AUDIT_EXIT}" -ne 0 ]; then
+          echo "  -> Issues found in ${SQL_FILE} (exit ${AUDIT_EXIT})"
+          touch /tmp/deltascope-has-issues
+        else
+          echo "  -> OK"
+        fi
+      done
+
+      # Check if any file had issues
+      if [ -f /tmp/deltascope-has-issues ]; then
+        echo ""
+        echo "ERROR: DeltaScope found SQL issues at or above the '${DELTASCOPE_FAIL_ON}' severity threshold."
+        echo "Review the per-file JSON results in the artifacts below."
+        exit 1
+      fi
+
+      echo "Audit complete. No issues found at '${DELTASCOPE_FAIL_ON}' level or above."
+
+  # Expose per-file JSON results as CI artifacts for download and review.
+  artifacts:
+    name: "deltascope-audit-${CI_COMMIT_SHORT_SHA}"
+    when: always
+    expire_in: 30 days
+    paths:
+      - /tmp/deltascope-results/*.json
+    reports:
+      # If you convert results to JUnit XML format, reference the file here.
+      # junit: /tmp/deltascope-results/junit.xml
+
+# ── Optional: audit with a custom policy file ─────────────────────────────────
+# Uncomment and adapt this job if you maintain a deltascope.yml policy config.
+#
+# sql-audit-custom-policy:
+#   extends: sql-audit
+#   variables:
+#     DELTASCOPE_VERSION: "v0.11.0"
+#     DELTASCOPE_FAIL_ON: "warning"
+#   script:
+#     - |
+#       /tmp/deltascope-bin/deltascope audit \
+#         --file migrations/*.sql \
+#         --config configs/deltascope.yml \
+#         --format json \
+#         --fail-on "${DELTASCOPE_FAIL_ON}"

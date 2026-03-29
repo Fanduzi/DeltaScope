@@ -154,6 +154,9 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 	router.GET("/healthz", func(c *gin.Context) {
 		writeJSON(c.Writer, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	router.GET("/readyz", func(c *gin.Context) {
+		writeJSON(c.Writer, http.StatusOK, map[string]string{"status": "ready"})
+	})
 	router.GET("/version", func(c *gin.Context) {
 		writeJSON(c.Writer, http.StatusOK, map[string]string{"version": version})
 	})
@@ -245,6 +248,18 @@ func timeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 	}
 }
 
+// accessLogEntry is the structured JSON shape emitted by accessLogMiddleware.
+type accessLogEntry struct {
+	Timestamp  string `json:"timestamp"`
+	Level      string `json:"level"`
+	Msg        string `json:"msg"`
+	Method     string `json:"method"`
+	Path       string `json:"path"`
+	Status     int    `json:"status"`
+	DurationMs int64  `json:"duration_ms"`
+	RequestID  string `json:"request_id"`
+}
+
 func accessLogMiddleware(logger *log.Logger) gin.HandlerFunc {
 	if logger == nil {
 		logger = log.Default()
@@ -253,14 +268,22 @@ func accessLogMiddleware(logger *log.Logger) gin.HandlerFunc {
 		start := time.Now()
 		c.Next()
 		requestID := c.Writer.Header().Get("X-Request-ID")
-		logger.Printf(
-			"http request method=%s path=%s status=%d duration_ms=%d request_id=%s",
-			c.Request.Method,
-			c.Request.URL.Path,
-			c.Writer.Status(),
-			time.Since(start).Milliseconds(),
-			requestID,
-		)
+		entry := accessLogEntry{
+			Timestamp:  time.Now().UTC().Format(time.RFC3339),
+			Level:      "info",
+			Msg:        "http request",
+			Method:     c.Request.Method,
+			Path:       c.Request.URL.Path,
+			Status:     c.Writer.Status(),
+			DurationMs: time.Since(start).Milliseconds(),
+			RequestID:  requestID,
+		}
+		b, err := json.Marshal(entry)
+		if err != nil {
+			logger.Printf("access log marshal error: %v", err)
+			return
+		}
+		logger.Println(string(b))
 	}
 }
 
