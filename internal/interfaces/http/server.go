@@ -8,8 +8,8 @@ package httpapi
 import "net/http"
 
 // NewServer builds the DeltaScope HTTP service.
-func NewServer(addr, configPath, version string) (*http.Server, error) {
-	handler, err := NewHandler(configPath, version)
+func NewServer(addr, configPath, version string, opts ...HandlerOption) (*http.Server, error) {
+	handler, err := NewHandler(configPath, version, opts...)
 	if err != nil {
 		return nil, err
 	}

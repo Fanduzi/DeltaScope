@@ -2,6 +2,8 @@
 
 `deltascope-server` 是一个轻量 JSON 适配层，底层使用与 CLI 和 `pkg/deltascope` Go 库完全相同的审计引擎。所有请求和响应均为 JSON 格式。服务器是无状态的，每次审计请求都会重新读取配置文件，因此策略变更无需重启即可生效。
 
+HTTP 适配层会在每个响应写入 `X-Request-ID`。如果请求已经携带 `X-Request-ID`，服务端会回传该值。
+
 ## 服务器启动
 
 ### 启动参数
@@ -9,6 +11,16 @@
 ```
 -listen string   HTTP 监听地址（默认 "127.0.0.1:8083"）
 -config string   YAML 策略配置文件路径（可选）
+-auth-enabled    开启受保护路由的 X-API-Key 认证
+-auth-keys       X-API-Key 认证使用的逗号分隔 key 列表
+-auth-allow-paths 逗号分隔的免认证路径（默认 "/healthz,/version,/metrics"）
+-rate-limit-enabled 开启限流中间件
+-rate-limit-rps  每秒请求上限（默认 5）
+-rate-limit-burst 限流突发桶大小（默认 10）
+-rate-limit-key  限流维度：api-key 或 ip（默认 "api-key"）
+-rate-limit-allow-paths 逗号分隔的限流放行路径（默认 "/healthz,/version,/metrics"）
+-metrics-enabled 是否开启 Prometheus `/metrics`（默认 true）
+-trusted-proxies 用于提取客户端 IP 的可信代理 CIDR 列表；为空表示不信任任何代理
 -version         打印服务器构建版本并退出
 ```
 
@@ -20,7 +32,23 @@ deltascope-server -listen 127.0.0.1:8083
 
 # 指定自定义策略配置
 deltascope-server -listen 127.0.0.1:8083 -config ./deltascope.yaml
+
+# 开启 API Key 认证（保护 /v1/audit）
+deltascope-server \
+  -listen 127.0.0.1:8083 \
+  -auth-enabled \
+  -auth-keys 'ds_live_key_1,ds_live_key_2'
+
+# 开启按 API Key 限流，并放行 /metrics
+deltascope-server \
+  -listen 127.0.0.1:8083 \
+  -rate-limit-enabled \
+  -rate-limit-rps 10 \
+  -rate-limit-burst 20 \
+  -rate-limit-key api-key
 ```
+
+> 如果你在反向代理后使用 `-rate-limit-key ip`，请把代理网段配置到 `-trusted-proxies`。默认不信任任何代理。
 
 ---
 
@@ -58,6 +86,26 @@ curl http://127.0.0.1:8083/version
 
 ```json
 {"version": "v0.7.0"}
+```
+
+---
+
+### GET /metrics
+
+返回 Prometheus 文本格式指标。
+
+**请求：**
+
+```bash
+curl http://127.0.0.1:8083/metrics
+```
+
+**响应（200）：**
+
+```text
+# HELP deltascope_http_requests_total Total HTTP requests handled by DeltaScope HTTP adapter.
+# TYPE deltascope_http_requests_total counter
+...
 ```
 
 ---
@@ -190,7 +238,13 @@ curl http://127.0.0.1:8083/version
 |-------------|--------|----------|
 | 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段、包含多个 JSON 对象，或超过 1 MiB 请求体大小限制 |
 | 400 | `bad_request` | `sql` 字段为空，或 `dialect` 值无法识别 |
+| 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
+| 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |
+| 429 | `rate_limited` | 请求超过当前限流阈值 |
+| 408 | `request_canceled` | 审核完成前，请求上下文被取消 |
+| 500 | `internal_error` | HTTP 中间件捕获并恢复了 panic |
 | 500 | `config_invalid` | 服务器配置文件加载失败 |
+| 504 | `request_timeout` | 审核在请求超时时间内未完成 |
 
 **错误响应格式：**
 
@@ -209,6 +263,7 @@ curl http://127.0.0.1:8083/version
 # 审计 SQL——dialect 默认为 mysql
 curl -s -X POST http://127.0.0.1:8083/v1/audit \
   -H 'Content-Type: application/json' \
+  -H 'X-API-Key: ds_live_key_1' \
   -d '{"sql": "DELETE FROM users WHERE id = 1"}'
 
 # 指定 TiDB 方言进行审计
