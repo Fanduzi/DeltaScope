@@ -1,0 +1,73 @@
+# docs/examples/github-actions.yml — Example GitHub Actions workflow using DeltaScope
+# L3: Drop this file into .github/workflows/ (or adapt it) to audit SQL migration
+# files on every push and pull request that touches the migrations/ directory.
+# The workflow uses the official DeltaScope composite action and posts a PR comment
+# with the audit summary when a pull_request event is detected.
+# Requirements: a GitHub repository with SQL migrations under migrations/.
+
+name: SQL Audit
+
+on:
+  push:
+    paths:
+      - 'migrations/**'
+  pull_request:
+    paths:
+      - 'migrations/**'
+
+# Limit concurrent runs on the same branch/PR to avoid redundant audits.
+concurrency:
+  group: sql-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: DeltaScope SQL Audit
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to post PR comments when token is provided.
+      pull-requests: write
+      # Required to read repo contents.
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run DeltaScope SQL audit
+        id: deltascope
+        uses: Fanduzi/DeltaScope@v0.11.0
+        with:
+          # Glob pattern relative to the repository root.
+          files: 'migrations/*.sql'
+
+          # Pin to a specific release for reproducible builds, or use 'latest'.
+          version: 'v0.11.0'
+
+          # Exit with a non-zero code if any finding at this level or above exists.
+          # Valid values: blocker | warning | notice | none
+          fail-on: 'blocker'
+
+          # Provide GITHUB_TOKEN to enable automatic PR comments with audit results.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: upload the raw JSON results as a workflow artifact for later review.
+      - name: Upload audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deltascope-audit-results
+          path: |
+            /tmp/deltascope-*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Optional: surface the summary in the GitHub Actions job summary UI.
+      - name: Write job summary
+        if: always()
+        shell: bash
+        env:
+          HAS_ISSUES: ${{ steps.deltascope.outputs.has-issues }}
+          RESULT: ${{ steps.deltascope.outputs.result }}
+        run: |
+          if [[

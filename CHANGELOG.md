@@ -8,6 +8,21 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.11.0] - 2026-03-30
+
+### Added
+
+- GitHub Actions composite action (`action.yml`) for one-step SQL audit in CI — supports `fail-on` severity threshold, optional PR comment, and auto-downloads the correct release binary
+- `docs/examples/github-actions.yml` — caller workflow example for GitHub Actions
+- `docs/examples/gitlab-ci.yml` — standalone GitLab CI job example
+- `/readyz` endpoint alongside existing `/healthz`; both bypass auth and rate-limit
+- Structured JSON access log lines from `accessLogMiddleware` (replaces plain-text format)
+- SIGTERM/SIGINT graceful shutdown with 15-second drain timeout in `deltascope-server`
+
+### Changed
+
+- Auth and rate-limit allow-paths defaults now include `/readyz` in addition to `/healthz` and `/metrics`
+
 ## [v0.10.0] - 2026-03-29
 
 ### Added

@@ -626,6 +626,58 @@ func firstFindingWithoutExplanationByRuleID(t *testing.T, payload map[string]any
 	return nil
 }
 
+func TestHandlerReadyz(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/readyz", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	var body map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("expected JSON body: %v", err)
+	}
+	if body["status"] != "ready" {
+		t.Fatalf("expected status=ready, got %q", body["status"])
+	}
+}
+
+func TestAccessLogMiddlewareEmitsJSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	var buf strings.Builder
+	logger := log.New(&buf, "", 0)
+
+	r := gin.New()
+	r.Use(accessLogMiddleware(logger))
+	r.GET("/ping", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	line := strings.TrimSpace(buf.String())
+	if line == "" {
+		t.Fatal("expected access log output, got empty")
+	}
+	var entry map[string]any
+	if err := json.Unmarshal([]byte(line), &entry); err != nil {
+		t.Fatalf("expected JSON log line, got %q: %v", line, err)
+	}
+	for _, key := range []string{"method", "path", "status", "duration_ms", "request_id"} {
+		if _, ok := entry[key]; !ok {
+			t.Fatalf("missing JSON log field %q in %q", key, line)
+		}
+	}
+}
+
 func assertExplanationFieldString(t *testing.T, object map[string]any, key string) string {
 	t.Helper()
 	value, ok := object[key].(string)
