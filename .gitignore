@@ -5,3 +5,5 @@ bin/
 .gitnexus
 .claude/
 /AGENTS.md
+docs/plans/
+docs/plans_zh/
