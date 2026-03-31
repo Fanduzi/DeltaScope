@@ -60,6 +60,12 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `CREATE TABLE ... AS SELECT`
   - partitioned tables
 - `DDL.Operation` now distinguishes `create_table`, `create_view`, `alter_table`, `drop_table`, `drop_view`, and `truncate_table` so lifecycle rules do not rely on structural guesswork.
+- `DDL` preserves explicit naming-governance subjects directly on the normalized model:
+  - `Table.Name` for table-level rules
+  - `Column.Name` for column-level rules
+  - `PrimaryKey.Name` plus `PrimaryKey.Kind`
+  - `Indexes[].Name` plus `Indexes[].Kind` for unique, secondary, and fulltext index rules
+  - `Constraints[].Name` plus `Constraints[].Type` for non-index constraints such as foreign keys and checks when extraction provides explicit names
 - `Alter` now has room for richer normalized payloads:
   - `Name` is the canonical subject identifier:
     - existing-object actions use the pre-change name
