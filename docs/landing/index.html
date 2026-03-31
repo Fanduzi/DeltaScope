@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeltaScope — Audit Risky MySQL &amp; TiDB DDL &amp; DML Before It Ships</title>
+  <meta name="description" content="DeltaScope helps teams catch risky MySQL and TiDB DDL and DML before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --warn: #d29922;
+      --danger: #f85149;
+      --glow: rgba(88,166,255,0.15);
+      --radius: 10px;
+      --transition: 0.2s ease;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .mono,
+    .hero-code::before,
+    .hero-code code,
+    .code-block code,
+    .rules-table .mono {
+      font-family: monospace;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tag-go     { background: rgba(0,168,220,0.15); color: #58d3f7; border: 1px solid rgba(0,168,220,0.3); }
+    .tag-mcp    { background: rgba(168,100,255,0.15); color: #c084fc; border: 1px solid rgba(168,100,255,0.3); }
+    .tag-cli    { background: rgba(63,185,80,0.15); color: var(--accent2); border: 1px solid rgba(63,185,80,0.3); }
+    .tag-new    { background: rgba(210,153,34,0.15); color: var(--warn); border: 1px solid rgba(210,153,34,0.3); }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; gap: 16px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--text);
+      flex-shrink: 0;
+    }
+    .nav-logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #79c0ff);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 1rem; color: #0d1117;
+    }
+    .nav-logo-text { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; list-style: none; margin-left: auto; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color var(--transition); }
+    .nav-links a:hover { color: var(--text); }
+    .nav-actions { display: flex; align-items: center; gap: 14px; }
+    .nav-lang {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 0.82rem;
+      border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    .lang-btn {
+      border: none; background: transparent; color: var(--muted); cursor: pointer;
+      font: inherit; font-weight: 700; transition: color var(--transition), opacity var(--transition);
+      opacity: 0.7;
+    }
+    .lang-btn.active, .lang-btn:hover { color: var(--text); opacity: 1; }
+    .nav-cta {
+      padding: 7px 16px;
+      background: var(--accent); color: #0d1117;
+      border-radius: var(--radius); font-size: 0.85rem; font-weight: 600;
+      text-decoration: none; transition: opacity var(--transition);
+      flex-shrink: 0;
+    }
+    .nav-cta:hover { opacity: 0.85; color: #0d1117; }
+
+    .hero {
+      padding: 160px 0 100px;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 600px;
+      background: radial-gradient(ellipse at center, rgba(88,166,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge { margin-bottom: 24px; }
+    .hero h1 {
+      font-size: clamp(2.8rem, 6vw, 4.4rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #e6edf3 30%, #79c0ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      white-space: pre-line;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.18rem);
+      color: var(--muted);
+      max-width: 760px;
+      margin: 0 auto 40px;
+      line-height: 1.75;
+      white-space: pre-line;
+    }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+    .btn-primary {
+      padding: 12px 28px;
+      background: var(--accent); color: #0d1117;
+      border-radius: var(--radius); font-weight: 700; font-size: 0.95rem;
+      text-decoration: none; border: none; cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(88,166,255,0.3); }
+    .btn-secondary {
+      padding: 12px 28px;
+      background: transparent; color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-weight: 600; font-size: 0.95rem;
+      text-decoration: none; cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .btn-secondary:hover { border-color: var(--accent); background: var(--glow); }
+    .hero-code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 28px;
+      max-width: 620px;
+      margin: 0 auto;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-code::before {
+      content: 'bash';
+      position: absolute; top: 12px; left: 16px;
+      font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .hero-code code,
+    .code-block code {
+      font-size: 0.82rem;
+      line-height: 1.68;
+      letter-spacing: 0;
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: auto;
+      font-weight: 400;
+    }
+    .hero-code code {
+      display: block;
+      color: #9ecbff;
+      padding-top: 20px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-weight: 400;
+    }
+    .hero-code .prompt { color: var(--accent2); }
+
+    section { padding: 90px 0; }
+    section:nth-child(even) { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .section-label {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 16px; line-height: 1.15;
+      white-space: pre-line;
+    }
+    .section-sub {
+      font-size: 1rem; color: var(--muted);
+      max-width: 680px; margin-bottom: 48px; line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    .impact-grid,
+    .scenarios-grid,
+    .benefits-grid,
+    .surfaces-grid,
+    .trust-grid,
+    .example-grid,
+    .severity-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .impact-grid { grid-template-columns: repeat(3, 1fr); }
+    .scenarios-grid { grid-template-columns: repeat(3, 1fr); }
+    .benefits-grid { grid-template-columns: repeat(3, 1fr); }
+    .surfaces-grid { grid-template-columns: repeat(4, 1fr); }
+    .trust-grid { grid-template-columns: repeat(4, 1fr); }
+    .example-grid { grid-template-columns: 1fr; }
+    .severity-grid { grid-template-columns: repeat(3, 1fr); }
+
+    .card,
+    .surface-card,
+    .feature-card,
+    .severity-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: border-color var(--transition), transform 0.15s ease;
+    }
+    .card:hover,
+    .surface-card:hover,
+    .feature-card:hover,
+    .severity-card:hover { border-color: rgba(88,166,255,0.4); transform: translateY(-2px); }
+    .card h3,
+    .feature-title,
+    .surface-name,
+    .severity-name { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+    .card p,
+    .feature-desc,
+    .surface-desc,
+    .severity-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+    .card-icon,
+    .feature-icon,
+    .surface-icon,
+    .severity-icon {
+      width: 40px; height: 40px;
+      background: rgba(88,166,255,0.1);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+      font-size: 1.15rem;
+    }
+    .surface-card,
+    .severity-card { text-align: center; }
+    .surface-icon,
+    .severity-icon { margin-left: auto; margin-right: auto; width: 44px; height: 44px; }
+    .card-link {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+    .card-link:hover { text-decoration: underline; }
+
+    .workflow {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px;
+    }
+    .workflow-steps {
+      display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .step {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-align: center;
+      min-width: 145px;
+    }
+    .step span { display: block; margin-top: 4px; font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+    .step-arrow { color: var(--border); font-size: 1.2rem; }
+
+    .proof-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .proof-item {
+      background: rgba(88,166,255,0.04);
+      border: 1px solid rgba(88,166,255,0.12);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .proof-item strong { display: block; font-size: 0.92rem; margin-bottom: 6px; }
+    .proof-item span { font-size: 0.84rem; color: var(--muted); }
+
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      overflow-x: auto;
+    }
+    .code-block code { white-space: pre; }
+    .code-block .k { color: #ff7b72; }
+    .code-block .s { color: #a5d6ff; }
+    .code-block .c { color: var(--muted); }
+    .code-block .n { color: #79c0ff; }
+    .code-block .t { color: #d2a8ff; }
+    .prompt { color: var(--accent2); }
+
+    .rules-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 0.875rem;
+    }
+    .rules-table th {
+      background: rgba(88,166,255,0.06);
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .rules-table td { padding: 12px 16px; border-bottom: 1px solid rgba(48,54,61,0.5); }
+    .rules-table tr:last-child td { border-bottom: none; }
+    .rules-table tr:hover td { background: rgba(88,166,255,0.03); }
+    .rules-table .mono { color: var(--accent); font-size: 0.8rem; }
+    .level-blocker { color: var(--danger); font-weight: 700; }
+    .level-warning { color: var(--warn); font-weight: 700; }
+    .level-notice { color: var(--muted); font-weight: 500; }
+
+    .timeline { position: relative; padding-left: 32px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px; top: 8px; bottom: 8px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent), rgba(88,166,255,0.1));
+      border-radius: 1px;
+    }
+    .timeline-item { position: relative; margin-bottom: 32px; }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -28px; top: 8px;
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+    }
+    .timeline-date { font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+    .timeline-version { font-weight: 800; font-size: 1rem; margin-bottom: 6px; }
+    .timeline-changes { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    .cta-section {
+      padding: 100px 0;
+      text-align: center;
+      background: radial-gradient(ellipse at center, rgba(88,166,255,0.06) 0%, transparent 65%);
+    }
+    .cta-section h2 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 900; letter-spacing: -0.04em;
+      margin-bottom: 16px;
+      white-space: pre-line;
+    }
+    .cta-section p { color: var(--muted); font-size: 1.08rem; margin-bottom: 40px; white-space: pre-line; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 0;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .footer-brand p { color: var(--muted); font-size: 0.85rem; margin-top: 12px; line-height: 1.6; max-width: 320px; white-space: pre-line; }
+    .footer-col-title { font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 16px; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: var(--muted); text-decoration: none; font-size: 0.875rem; transition: color var(--transition); }
+    .footer-col a:hover { color: var(--text); }
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px;
+      font-size: 0.8rem; color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .footer-bottom a { color: var(--muted); text-decoration: none; }
+    .footer-bottom a:hover { color: var(--text); }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+    .back-to-top {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(22,27,34,0.9);
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.18s ease, transform 0.18s ease, border-color var(--transition), background var(--transition);
+      z-index: 90;
+    }
+    .back-to-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .back-to-top:hover {
+      border-color: var(--accent);
+      background: rgba(30,41,59,0.96);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.45s ease, transform 0.45s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .i18n-root { transition: opacity 0.18s ease, transform 0.18s ease; }
+    .i18n-root.switching { opacity: 0.7; transform: translateY(4px); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .animate-fade-up,
+      .reveal,
+      .i18n-root,
+      .card,
+      .surface-card,
+      .feature-card,
+      .severity-card {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+      }
+      .animate-fade-up,
+      .reveal { opacity: 1 !important; }
+    }
+
+    @media (max-width: 980px) {
+      .impact-grid,
+      .benefits-grid,
+      .scenarios-grid,
+      .proof-list,
+      .trust-grid { grid-template-columns: 1fr 1fr; }
+      .surfaces-grid { grid-template-columns: repeat(2, 1fr); }
+      .severity-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 640px) {
+      .impact-grid,
+      .benefits-grid,
+      .scenarios-grid,
+      .proof-list,
+      .trust-grid,
+      .surfaces-grid,
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero { padding: 120px 0 60px; }
+      .workflow-steps { flex-direction: column; }
+      .step-arrow { transform: rotate(90deg); }
+      .nav-actions { gap: 8px; }
+      .nav-lang { padding: 4px 8px; }
+      .nav-cta { padding: 7px 12px; }
+      .footer-bottom { flex-direction: column; align-items: flex-start; }
+      .back-to-top {
+        right: 16px;
+        bottom: 16px;
+        width: 40px;
+        height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="i18n-root" id="i18n-root">
+    <nav>
+      <div class="container">
+        <a href="#" class="nav-logo">
+          <div class="nav-logo-icon">DS</div>
+          <span class="nav-logo-text">DeltaScope</span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="#why" data-i18n="nav.why">Why</a></li>
+          <li><a href="#scenarios" data-i18n="nav.scenarios">Scenarios</a></li>
+          <li><a href="#workflow" data-i18n="nav.how">How it Works</a></li>
+          <li><a href="#rules" data-i18n="nav.rules">Rules</a></li>
+          <li><a href="#integrations" data-i18n="nav.integrations">Integrations</a></li>
+          <li><a href="#trust" data-i18n="nav.trust">Trust</a></li>
+        </ul>
+        <div class="nav-actions">
+          <div class="nav-lang" aria-label="Language switcher">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <span>/</span>
+            <button class="lang-btn" data-lang="zh-CN">中文</button>
+          </div>
+          <a href="https://github.com/Fanduzi/DeltaScope#install" class="nav-cta" target="_blank" rel="noopener" data-i18n="nav.install">Install</a>
+        </div>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="container" style="position:relative;">
+        <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
+          <span class="tag tag-new" data-i18n="hero.badge">v0.11.0 — latest release</span>
+        </div>
+        <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL &amp; TiDB DDL &amp; DML
+before it ships</h1>
+        <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.
+Use the same offline-first audit engine in migration review, CI pipelines, HTTP services, and AI-assisted SQL workflows.</p>
+        <div class="hero-actions animate-fade-up" style="animation-delay:0.28s;">
+          <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero.ctaPrimary">Install DeltaScope</a>
+          <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
+        </div>
+        <div class="hero-code animate-fade-up" style="animation-delay:0.36s;">
+          <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh</code>
+        </div>
+        <div class="badge-row animate-fade-up" style="justify-content:center; margin-top:20px; animation-delay:0.44s;">
+          <span class="tag tag-go">Go 1.26</span>
+          <span class="tag tag-cli">CLI</span>
+          <span class="tag tag-mcp">MCP Server</span>
+          <span class="tag tag-cli">HTTP API</span>
+          <span class="tag tag-mcp" data-i18n="hero.badgeAgent">Agent Ready</span>
+          <span class="tag tag-go">Apache 2.0</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="why" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="why.label">Why DeltaScope</p>
+        <h2 class="section-title" data-i18n="why.title">DDL and DML mistakes are cheap before execution and expensive after</h2>
+        <p class="section-sub" data-i18n="why.sub">DeltaScope gives DBAs, application engineers, CI systems, and AI agents one consistent way to review DDL and DML before rollout.
+The goal is simple: catch risky changes early, keep policy consistent, and avoid discovering preventable issues after a migration or script has already run.</p>
+
+        <div class="impact-grid">
+          <div class="card reveal">
+            <div class="card-icon">🧱</div>
+            <h3 data-i18n="why.cards.schema.title">Stop dangerous schema changes early</h3>
+            <p data-i18n="why.cards.schema.desc">Catch risky DDL such as destructive ALTER TABLE operations, missing comments, or policy violations before migration tools ever touch the database.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">🚦</div>
+            <h3 data-i18n="why.cards.gate.title">Turn DDL and DML review into a repeatable gate</h3>
+            <p data-i18n="why.cards.gate.desc">Use the same audit logic in local review and CI so developers do not get one answer locally and a different answer in automation.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">🔌</div>
+            <h3 data-i18n="why.cards.contract.title">Keep one audit contract across workflows</h3>
+            <p data-i18n="why.cards.contract.desc">CLI, HTTP, MCP, and Go library integrations all return the same underlying findings, verdicts, and rule identifiers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="scenarios" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="scenarios.label">Core Workflows</p>
+        <h2 class="section-title" data-i18n="scenarios.title">Start where risky DDL and DML actually show up</h2>
+        <p class="section-sub" data-i18n="scenarios.sub">DeltaScope is most useful at the moments when teams make high-impact DDL and DML decisions: before merging migrations, inside CI, and inside agent-driven coding loops.</p>
+
+        <div class="scenarios-grid">
+          <div class="card reveal">
+            <div class="card-icon">🗂️</div>
+            <h3 data-i18n="scenarios.cards.ddl.title">Review migration DDL before rollout</h3>
+            <p data-i18n="scenarios.cards.ddl.desc">Audit migration files before they are applied so destructive changes, missing governance details, and schema policy violations are caught while they are still cheap to fix.</p>
+            <a class="card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/recipe/review-ddl-before-migration.md" target="_blank" rel="noopener" data-i18n="scenarios.cards.ddl.link">Read migration workflow</a>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">🔒</div>
+            <h3 data-i18n="scenarios.cards.dml.title">Gate risky DML in CI</h3>
+            <p data-i18n="scenarios.cards.dml.desc">Block merges or deployments when statements cross your configured threshold. This works well for teams that want dangerous DELETE and UPDATE patterns stopped automatically.</p>
+            <a class="card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/recipe/guard-dml-in-ci.md" target="_blank" rel="noopener" data-i18n="scenarios.cards.dml.link">Read CI workflow</a>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">🤖</div>
+            <h3 data-i18n="scenarios.cards.ai.title">Review AI-generated SQL with structure</h3>
+            <p data-i18n="scenarios.cards.ai.desc">Give agents a stable JSON contract, stable rule IDs, and explicit verdicts so they can revise unsafe SQL without scraping prose or guessing what failed.</p>
+            <a class="card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/recipe/use-with-ai-agents.md" target="_blank" rel="noopener" data-i18n="scenarios.cards.ai.link">Read AI agent workflow</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="workflow.label">How It Works</p>
+        <h2 class="section-title" data-i18n="workflow.title">Submit DDL or DML, evaluate against policy, get a clear outcome</h2>
+        <p class="section-sub" data-i18n="workflow.sub">DeltaScope is offline-first by default. You can audit DDL and DML with no database connection, then optionally add live metadata when your workflow needs instance-aware checks.</p>
+
+        <div class="workflow reveal">
+          <div class="workflow-steps">
+            <div class="step" data-i18n="workflow.step1">Provide DDL or DML<span>file, stdin, API, or library call</span></div>
+            <span class="step-arrow">→</span>
+            <div class="step" data-i18n="workflow.step2">Evaluate policy<span>DDL and DML rules run consistently</span></div>
+            <span class="step-arrow">→</span>
+            <div class="step" data-i18n="workflow.step3">Get a verdict<span>pass, review, or reject</span></div>
+          </div>
+
+          <div class="proof-list">
+            <div class="proof-item">
+              <strong data-i18n="workflow.proof.offline.title">Offline-first</strong>
+              <span data-i18n="workflow.proof.offline.desc">Run on laptops, in CI, or in agent sessions without injecting database credentials into every workflow.</span>
+            </div>
+            <div class="proof-item">
+              <strong data-i18n="workflow.proof.policy.title">Policy-driven</strong>
+              <span data-i18n="workflow.proof.policy.desc">Enable, disable, or tune rule severity through configuration instead of forking logic across tools.</span>
+            </div>
+            <div class="proof-item">
+              <strong data-i18n="workflow.proof.metadata.title">Metadata-aware when needed</strong>
+              <span data-i18n="workflow.proof.metadata.desc">Attach live schema and instance facts only for checks that need them, without changing the core audit path.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="benefits" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="benefits.label">What You Get</p>
+        <h2 class="section-title" data-i18n="benefits.title">Keep one DDL and DML audit path across humans, CI, and agents</h2>
+        <p class="section-sub" data-i18n="benefits.sub">DeltaScope covers both governance and automation: safe local review for humans, stable structured output for machines, and one engine that stays consistent across delivery surfaces.</p>
+
+        <div class="benefits-grid">
+          <div class="card reveal">
+            <div class="card-icon">🛡️</div>
+            <h3 data-i18n="benefits.cards.coverage.title">Coverage for DDL and DML</h3>
+            <p data-i18n="benefits.cards.coverage.desc">Audit both schema changes and data-changing statements instead of stitching together separate tools for separate risk categories.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">📄</div>
+            <h3 data-i18n="benefits.cards.machine.title">Stable machine-readable results</h3>
+            <p data-i18n="benefits.cards.machine.desc">Return verdicts, findings, and rule IDs in a predictable structure that CI systems and AI agents can rely on.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">⚙️</div>
+            <h3 data-i18n="benefits.cards.policy.title">Policy as configuration</h3>
+            <p data-i18n="benefits.cards.policy.desc">Change enforcement without changing code. Teams can start with blockers only, then tighten to warnings as confidence grows.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">🌐</div>
+            <h3 data-i18n="benefits.cards.engine.title">One engine across surfaces</h3>
+            <p data-i18n="benefits.cards.engine.desc">Use the same audit behavior from the CLI, inside services, through MCP tooling, or by embedding the Go library directly.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">📡</div>
+            <h3 data-i18n="benefits.cards.live.title">Optional live metadata</h3>
+            <p data-i18n="benefits.cards.live.desc">Stay offline when you want portability and safety. Add instance-aware checks only when your workflow needs real schema context.</p>
+          </div>
+          <div class="card reveal">
+            <div class="card-icon">🧠</div>
+            <h3 data-i18n="benefits.cards.agent.title">Built for human and agent workflows</h3>
+            <p data-i18n="benefits.cards.agent.desc">Readable output for engineers, structured output for automation, and stable contracts for agentic review loops.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pipeline" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="severity.label">Verdict Model</p>
+        <h2 class="section-title" data-i18n="severity.title">Three levels, clear outcomes</h2>
+        <p class="section-sub" data-i18n="severity.sub">Every finding maps to a severity. Every audit request maps to a verdict. You can keep the same model across local review, CI, services, and AI workflows.</p>
+
+        <div class="severity-grid">
+          <div class="severity-card reject reveal">
+            <div class="severity-icon">🛑</div>
+            <div class="severity-name">blocker</div>
+            <div class="severity-desc" data-i18n="severity.blocker">SQL must not be applied as-is. This usually means a policy violation or a meaningful risk of outage, data loss, or corruption.</div>
+          </div>
+          <div class="severity-card review reveal">
+            <div class="severity-icon">⚠️</div>
+            <div class="severity-name">warning</div>
+            <div class="severity-desc" data-i18n="severity.warning">The change should be reviewed before applying. It may be valid, but it deserves explicit human sign-off.</div>
+          </div>
+          <div class="severity-card pass reveal">
+            <div class="severity-icon">ℹ️</div>
+            <div class="severity-name">notice</div>
+            <div class="severity-desc" data-i18n="severity.notice">Informational only. Worth surfacing, but not something that should block rollout by itself.</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 40px;" class="reveal">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;" data-i18n="severity.calc">Verdict calculation</h3>
+          <table class="rules-table">
+            <thead>
+              <tr>
+                <th data-i18n="severity.table.verdict">Verdict</th>
+                <th data-i18n="severity.table.condition">Condition</th>
+                <th data-i18n="severity.table.exit">Exit Code (CLI)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="level-blocker">reject</td>
+                <td data-i18n="severity.table.reject">≥ 1 blocker finding</td>
+                <td><code class="mono">1</code> <span data-i18n="severity.table.rejectNote">(when --fail-on blocker)</span></td>
+              </tr>
+              <tr>
+                <td class="level-warning">review</td>
+                <td data-i18n="severity.table.review">No blockers, ≥ 1 warning or notice</td>
+                <td><code class="mono">1</code> <span data-i18n="severity.table.reviewNote">(when --fail-on warning)</span></td>
+              </tr>
+              <tr>
+                <td class="level-notice">pass</td>
+                <td data-i18n="severity.table.pass">No findings at any level</td>
+                <td><code class="mono">0</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="rules" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="rules.label">Rule Catalog</p>
+        <h2 class="section-title" data-i18n="rules.title">Built-in rules, ready to use</h2>
+        <p class="section-sub" data-i18n="rules.sub">Stable dotted rule IDs let teams inspect, tune, and discuss the same checks across CLI, CI, services, and agent workflows.</p>
+
+        <table class="rules-table reveal">
+          <thead>
+            <tr>
+              <th data-i18n="rules.table.id">Rule ID</th>
+              <th data-i18n="rules.table.area">Area</th>
+              <th data-i18n="rules.table.level">Default Level</th>
+              <th data-i18n="rules.table.desc">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code class="mono">dml.where.require</code></td>
+              <td>DML</td>
+              <td><span class="level-blocker">blocker</span></td>
+              <td data-i18n="rules.rows.where">DELETE or UPDATE must include a WHERE clause</td>
+            </tr>
+            <tr>
+              <td><code class="mono">dml.limit.forbid</code></td>
+              <td>DML</td>
+              <td><span class="level-warning">warning</span></td>
+              <td data-i18n="rules.rows.limit">UPDATE and DELETE statements must not include LIMIT</td>
+            </tr>
+            <tr>
+              <td><code class="mono">dml.subquery.forbid</code></td>
+              <td>DML</td>
+              <td><span class="level-blocker">blocker</span></td>
+              <td data-i18n="rules.rows.subquery">UPDATE and DELETE statements must not include subqueries</td>
+            </tr>
+            <tr>
+              <td><code class="mono">ddl.column.comment.require</code></td>
+              <td>DDL</td>
+              <td><span class="level-warning">warning</span></td>
+              <td data-i18n="rules.rows.columnComment">Columns must have a comment</td>
+            </tr>
+            <tr>
+              <td><code class="mono">ddl.table.comment.require</code></td>
+              <td>DDL</td>
+              <td><span class="level-warning">warning</span></td>
+              <td data-i18n="rules.rows.tableComment">Tables must have a comment</td>
+            </tr>
+            <tr>
+              <td><code class="mono">ddl.alter.drop_column.forbid</code></td>
+              <td>DDL</td>
+              <td><span class="level-warning">warning</span></td>
+              <td data-i18n="rules.rows.dropColumn">ALTER TABLE drop column is forbidden</td>
+            </tr>
+            <tr>
+              <td><code class="mono">ddl.alter.merge.mysql.require</code></td>
+              <td>DDL</td>
+              <td><span class="level-warning">warning</span></td>
+              <td data-i18n="rules.rows.mergeAlter">Multiple ALTER TABLE statements on the same table should be merged</td>
+            </tr>
+            <tr>
+              <td><code class="mono">ddl.index.key_length.max_bytes.require</code></td>
+              <td>DDL</td>
+              <td><span class="level-blocker">blocker</span></td>
+              <td data-i18n="rules.rows.indexLength">Index key length must stay within InnoDB instance limits</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top: 32px;" class="reveal">
+          <div class="code-block">
+            <code data-i18n="rules.code"><span class="c"># View all rules</span>
+<span class="prompt">$</span> deltascope rules list
+
+<span class="c"># Show detail for one rule</span>
+<span class="prompt">$</span> deltascope rules show dml.where.require
+
+<span class="c"># Audit with custom policy</span>
+<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="integrations" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="integrations.label">Integrations</p>
+        <h2 class="section-title" data-i18n="integrations.title">Use the same audit engine where your team already works</h2>
+        <p class="section-sub" data-i18n="integrations.sub">Product surfaces matter, but they matter more after the homepage has already earned trust. DeltaScope keeps them aligned so teams do not have to duplicate DDL and DML review logic.</p>
+
+        <div class="surfaces-grid">
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">⚡</div>
+            <h3>CLI</h3>
+            <p data-i18n="integrations.cards.cli">Fast local review for developers, scripts, and migration checks.</p>
+          </div>
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">🌐</div>
+            <h3>HTTP API</h3>
+            <p data-i18n="integrations.cards.http">Expose the same audit engine as a service for internal tooling and platform workflows.</p>
+          </div>
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">🤖</div>
+            <h3>MCP Server</h3>
+            <p data-i18n="integrations.cards.mcp">Plug DDL and DML review into Claude Code, Codex, Cursor, and other agent-driven environments.</p>
+          </div>
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">📦</div>
+            <h3>Go Library</h3>
+            <p data-i18n="integrations.cards.go">Embed DeltaScope directly inside Go services that need deterministic DDL and DML audit behavior.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="examples" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="examples.label">Usage Examples</p>
+        <h2 class="section-title" data-i18n="examples.title">From quick audit to CI gate</h2>
+        <p class="section-sub" data-i18n="examples.sub">Three distinct examples: one for unsafe DML, one for migration DDL, and one for machine-readable CI output.</p>
+
+        <div class="code-block reveal">
+          <code data-i18n="examples.dml"><span class="c"># ── DML: reject an unsafe DELETE ──</span>
+<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>
+
+Verdict: reject
+Statements: 1
+Blockers: 1  Warnings: 0  Notices: 0
+
+Statement 1: DELETE
+  <span class="level-blocker">[blocker]</span> dml.where.require: DELETE or UPDATE must include a WHERE clause</code>
+        </div>
+
+        <div class="code-block reveal" style="margin-top: 16px;">
+          <code data-i18n="examples.ddl"><span class="c"># ── DDL: review a migration before rollout ──</span>
+<span class="prompt">$</span> deltascope audit --file <span class="s">"./migrations/20260322.sql"</span>
+
+Verdict: review
+Statements: 1
+Blockers: 0  Warnings: 1  Notices: 0
+
+Statement 1: CREATE TABLE
+  <span class="level-warning">[warning]</span> ddl.column.comment.require: column <span class="s">`id`</span> must have a comment</code>
+        </div>
+
+        <div class="code-block reveal" style="margin-top: 16px;">
+          <code data-i18n="examples.ci"><span class="c"># ── CI / JSON output ──</span>
+<span class="prompt">$</span> deltascope audit <span class="t">\</span>
+  --sql <span class="s">"alter table users drop column age"</span> <span class="t">\</span>
+  --format json <span class="t">\</span>
+  --fail-on warning
+
+<span class="c">{</span>
+  <span class="s">"verdict"</span>: <span class="s">"review"</span>,
+  <span class="s">"summary"</span>: <span class="t">{ "blockers": 0, "warnings": 1, "notices": 0 }</span>,
+  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>
+<span class="c">}</span></code>
+        </div>
+      </div>
+    </section>
+
+    <section id="trust" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="trust.label">Trust Signals</p>
+        <h2 class="section-title" data-i18n="trust.title">Trust the contract, not just the changelog</h2>
+        <p class="section-sub" data-i18n="trust.sub">DeltaScope is open source, ships published releases, documents its contracts, and keeps one audit path across human and machine workflows. Those are stronger trust signals than broad promises.</p>
+
+        <div class="trust-grid">
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">📘</div>
+            <h3 data-i18n="trust.cards.docs.title">Documented concepts</h3>
+            <p data-i18n="trust.cards.docs.desc">Core concepts, recipes, and references are published for teams that need implementation depth after the homepage overview.</p>
+          </div>
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">🧾</div>
+            <h3 data-i18n="trust.cards.rules.title">Stable rule IDs</h3>
+            <p data-i18n="trust.cards.rules.desc">Findings are grounded in stable dotted identifiers so humans and automation can speak about the same rule consistently.</p>
+          </div>
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">📦</div>
+            <h3 data-i18n="trust.cards.release.title">Published releases</h3>
+            <p data-i18n="trust.cards.release.desc">Installers, release artifacts, and release notes are already part of the product story, which matters for adoption and automation.</p>
+          </div>
+          <div class="card reveal" style="text-align:center;">
+            <div class="card-icon" style="margin:0 auto 16px;">🔍</div>
+            <h3 data-i18n="trust.cards.offline.title">Offline-first by default</h3>
+            <p data-i18n="trust.cards.offline.desc">Teams can adopt the tool without granting database access to every local, CI, or agent execution environment.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="changelog" class="reveal">
+      <div class="container">
+        <p class="section-label" data-i18n="releases.label">Releases</p>
+        <h2 class="section-title" data-i18n="releases.title">Shipping steadily across CLI, HTTP, MCP, and library workflows</h2>
+        <p class="section-sub" data-i18n="releases.sub">Recent releases show the product getting more usable in real delivery paths: CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.</p>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
+          <div class="reveal">
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-30</div>
+                <div class="timeline-version">v0.11.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-changes" data-i18n="releases.items.v011">GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-29</div>
+                <div class="timeline-version">v0.10.0</div>
+                <div class="timeline-changes" data-i18n="releases.items.v010">HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-28</div>
+                <div class="timeline-version">v0.9.0</div>
+                <div class="timeline-changes" data-i18n="releases.items.v09">Homebrew distribution and Claude Code skill support for agent-driven review.</div>
+              </div>
+            </div>
+          </div>
+          <div class="reveal">
+            <div class="timeline" style="padding-left:32px;">
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-27</div>
+                <div class="timeline-version">v0.7.0</div>
+                <div class="timeline-changes" data-i18n="releases.items.v07">Official MCP stdio server with audit_sql, describe_rule, list_rules, and get_capabilities.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-25</div>
+                <div class="timeline-version">v0.6.x</div>
+                <div class="timeline-changes" data-i18n="releases.items.v06">Richer explanations in audit results, including why, risk, suggestion, and metadata notes.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-21</div>
+                <div class="timeline-version">v0.5.0</div>
+                <div class="timeline-changes" data-i18n="releases.items.v05">First release with CLI, HTTP, offline DDL/DML rules, and the public Go API.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section reveal">
+      <div class="container">
+        <h2 data-i18n="cta.title">Put DDL and DML review earlier in the workflow</h2>
+        <p data-i18n="cta.sub">Install once, audit locally, gate in CI, and reuse the same policy everywhere.</p>
+        <div class="hero-actions" style="margin-bottom:0;">
+          <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="cta.primary">Install DeltaScope</a>
+          <a href="https://github.com/Fanduzi/DeltaScope#quick-start" class="btn-secondary" target="_blank" rel="noopener" data-i18n="cta.secondary">Read Quick Start</a>
+        </div>
+      </div>
+    </section>
+
+    <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top">↑</button>
+
+    <footer>
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a href="#" class="nav-logo" style="margin-bottom:0;">
+              <div class="nav-logo-icon">DS</div>
+              <span class="nav-logo-text">DeltaScope</span>
+            </a>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL and TiDB.
+Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
+            <div class="badge-row">
+              <span class="tag tag-go">Go</span>
+              <span class="tag tag-cli">Apache 2.0</span>
+            </div>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title" data-i18n="footer.start">Start</div>
+            <ul>
+              <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.11.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title" data-i18n="footer.docs">Workflow Docs</div>
+            <ul>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/recipe/review-ddl-before-migration.md" target="_blank" rel="noopener" data-i18n="footer.links.migration">Migration Review</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/recipe/guard-dml-in-ci.md" target="_blank" rel="noopener" data-i18n="footer.links.ci">CI Gate</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/recipe/use-with-ai-agents.md" target="_blank" rel="noopener" data-i18n="footer.links.ai">AI Agents</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/README.md" target="_blank" rel="noopener" data-i18n="footer.links.reference">Reference Docs</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title" data-i18n="footer.community">Community</div>
+            <ul>
+              <li><a href="https://github.com/Fanduzi/DeltaScope" target="_blank" rel="noopener">GitHub</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/issues" target="_blank" rel="noopener">Issues</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/discussions" target="_blank" rel="noopener">Discussions</a></li>
+              <li><a href="https://github.com/Fanduzi" target="_blank" rel="noopener" data-i18n="footer.links.author">Author</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span data-i18n="footer.copyright">© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.</span>
+          <a href="https://deerflow.tech" target="_blank" rel="noopener">Created by Deerflow</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const translations = {
+      en: {
+        title: 'DeltaScope — Audit Risky MySQL & TiDB DDL & DML Before It Ships',
+        metaDescription: 'DeltaScope helps teams catch risky MySQL and TiDB DDL and DML before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine.',
+        nav: {
+          why: 'Why',
+          scenarios: 'Scenarios',
+          how: 'How it Works',
+          rules: 'Rules',
+          integrations: 'Integrations',
+          trust: 'Trust',
+          install: 'Install'
+        },
+        hero: {
+          badge: 'v0.11.0 — latest release',
+          title: 'Audit risky MySQL & TiDB DDL & DML\nbefore it ships',
+          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nUse the same offline-first audit engine in migration review, CI pipelines, HTTP services, and AI-assisted SQL workflows.',
+          ctaPrimary: 'Install DeltaScope',
+          ctaSecondary: 'See Real Workflows',
+          badgeAgent: 'Agent Ready'
+        },
+        why: {
+          label: 'Why DeltaScope',
+          title: 'DDL and DML mistakes are cheap before execution and expensive after',
+          sub: 'DeltaScope gives DBAs, application engineers, CI systems, and AI agents one consistent way to review DDL and DML before rollout.\nThe goal is simple: catch risky changes early, keep policy consistent, and avoid discovering preventable issues after a migration or script has already run.',
+          cards: {
+            schema: { title: 'Stop dangerous schema changes early', desc: 'Catch risky DDL such as destructive ALTER TABLE operations, missing comments, or policy violations before migration tools ever touch the database.' },
+            gate: { title: 'Turn DDL and DML review into a repeatable gate', desc: 'Use the same audit logic in local review and CI so developers do not get one answer locally and a different answer in automation.' },
+            contract: { title: 'Keep one audit contract across workflows', desc: 'CLI, HTTP, MCP, and Go library integrations all return the same underlying findings, verdicts, and rule identifiers.' }
+          }
+        },
+        scenarios: {
+          label: 'Core Workflows',
+          title: 'Start where risky DDL and DML actually show up',
+          sub: 'DeltaScope is most useful at the moments when teams make high-impact DDL and DML decisions: before merging migrations, inside CI, and inside agent-driven coding loops.',
+          cards: {
+            ddl: { title: 'Review migration DDL before rollout', desc: 'Audit migration files before they are applied so destructive changes, missing governance details, and schema policy violations are caught while they are still cheap to fix.', link: 'Read migration workflow' },
+            dml: { title: 'Gate risky DML in CI', desc: 'Block merges or deployments when statements cross your configured threshold. This works well for teams that want dangerous DELETE and UPDATE patterns stopped automatically.', link: 'Read CI workflow' },
+            ai: { title: 'Review AI-generated SQL with structure', desc: 'Give agents a stable JSON contract, stable rule IDs, and explicit verdicts so they can revise unsafe SQL without scraping prose or guessing what failed.', link: 'Read AI agent workflow' }
+          }
+        },
+        severity: {
+          label: 'Verdict Model',
+          title: 'Three levels, clear outcomes',
+          sub: 'Every finding maps to a severity. Every audit request maps to a verdict. You can keep the same model across local review, CI, services, and AI workflows.',
+          blocker: 'SQL must not be applied as-is. This usually means a policy violation or a meaningful risk of outage, data loss, or corruption.',
+          warning: 'The change should be reviewed before applying. It may be valid, but it deserves explicit human sign-off.',
+          notice: 'Informational only. Worth surfacing, but not something that should block rollout by itself.',
+          calc: 'Verdict calculation',
+          table: {
+            verdict: 'Verdict',
+            condition: 'Condition',
+            exit: 'Exit Code (CLI)',
+            reject: '≥ 1 blocker finding',
+            rejectNote: '(when --fail-on blocker)',
+            review: 'No blockers, ≥ 1 warning or notice',
+            reviewNote: '(when --fail-on warning)',
+            pass: 'No findings at any level'
+          }
+        },
+        workflow: {
+          label: 'How It Works',
+          title: 'Submit DDL or DML, evaluate against policy, get a clear outcome',
+          sub: 'DeltaScope is offline-first by default. You can audit DDL and DML with no database connection, then optionally add live metadata when your workflow needs instance-aware checks.',
+          step1: 'Provide DDL or DML<span>file, stdin, API, or library call</span>',
+          step2: 'Evaluate policy<span>DDL and DML rules run consistently</span>',
+          step3: 'Get a verdict<span>pass, review, or reject</span>',
+          proof: {
+            offline: { title: 'Offline-first', desc: 'Run on laptops, in CI, or in agent sessions without injecting database credentials into every workflow.' },
+            policy: { title: 'Policy-driven', desc: 'Enable, disable, or tune rule severity through configuration instead of forking logic across tools.' },
+            metadata: { title: 'Metadata-aware when needed', desc: 'Attach live schema and instance facts only for checks that need them, without changing the core audit path.' }
+          }
+        },
+        benefits: {
+          label: 'What You Get',
+          title: 'Keep one DDL and DML audit path across humans, CI, and agents',
+          sub: 'DeltaScope covers both governance and automation: safe local review for humans, stable structured output for machines, and one engine that stays consistent across delivery surfaces.',
+          cards: {
+            coverage: { title: 'Coverage for DDL and DML', desc: 'Audit both schema changes and data-changing statements instead of stitching together separate tools for separate risk categories.' },
+            machine: { title: 'Stable machine-readable results', desc: 'Return verdicts, findings, and rule IDs in a predictable structure that CI systems and AI agents can rely on.' },
+            policy: { title: 'Policy as configuration', desc: 'Change enforcement without changing code. Teams can start with blockers only, then tighten to warnings as confidence grows.' },
+            engine: { title: 'One engine across surfaces', desc: 'Use the same audit behavior from the CLI, inside services, through MCP tooling, or by embedding the Go library directly.' },
+            live: { title: 'Optional live metadata', desc: 'Stay offline when you want portability and safety. Add instance-aware checks only when your workflow needs real schema context.' },
+            agent: { title: 'Built for human and agent workflows', desc: 'Readable output for engineers, structured output for automation, and stable contracts for agentic review loops.' }
+          }
+        },
+        rules: {
+          label: 'Rule Catalog',
+          title: 'Built-in rules, ready to use',
+          sub: 'Stable dotted rule IDs let teams inspect, tune, and discuss the same checks across CLI, CI, services, and agent workflows.',
+          table: { id: 'Rule ID', area: 'Area', level: 'Default Level', desc: 'Description' },
+          rows: {
+            where: 'DELETE or UPDATE must include a WHERE clause',
+            limit: 'UPDATE and DELETE statements must not include LIMIT',
+            subquery: 'UPDATE and DELETE statements must not include subqueries',
+            columnComment: 'Columns must have a comment',
+            tableComment: 'Tables must have a comment',
+            dropColumn: 'ALTER TABLE drop column is forbidden',
+            mergeAlter: 'Multiple ALTER TABLE statements on the same table should be merged',
+            indexLength: 'Index key length must stay within InnoDB instance limits'
+          },
+          code: '<span class="c"># View all rules</span>\n<span class="prompt">$</span> deltascope rules list\n\n<span class="c"># Show detail for one rule</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># Audit with custom policy</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
+        },
+        integrations: {
+          label: 'Integrations',
+          title: 'Use the same audit engine where your team already works',
+          sub: 'Product surfaces matter, but they matter more after the homepage has already earned trust. DeltaScope keeps them aligned so teams do not have to duplicate DDL and DML review logic.',
+          cards: {
+            cli: 'Fast local review for developers, scripts, and migration checks.',
+            http: 'Expose the same audit engine as a service for internal tooling and platform workflows.',
+            mcp: 'Plug DDL and DML review into Claude Code, Codex, Cursor, and other agent-driven environments.',
+            go: 'Embed DeltaScope directly inside Go services that need deterministic DDL and DML audit behavior.'
+          }
+        },
+        examples: {
+          label: 'Usage Examples',
+          title: 'Two examples are enough to explain the product',
+          sub: 'One human-readable pair for DML and DDL, plus one machine-readable CI output block to show how the same audit contract scales into automation.',
+          dml: '<span class="c"># ── DML: reject an unsafe DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: DELETE or UPDATE must include a WHERE clause',
+          ddl: '<span class="c"># ── DDL: review a migration before rollout ──</span>\n<span class="prompt">$</span> deltascope audit --file <span class="s">"./migrations/20260322.sql"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.comment.require: column <span class="s">`id`</span> must have a comment',
+          ci: '<span class="c"># ── CI / JSON output ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"alter table users drop column age"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>\n<span class="c">}</span>'
+        },
+        trust: {
+          label: 'Trust Signals',
+          title: 'Trust the contract, not just the changelog',
+          sub: 'DeltaScope is open source, ships published releases, documents its contracts, and keeps one audit path across human and machine workflows. Those are stronger trust signals than broad promises.',
+          cards: {
+            docs: { title: 'Documented concepts', desc: 'Core concepts, recipes, and references are published for teams that need implementation depth after the homepage overview.' },
+            rules: { title: 'Stable rule IDs', desc: 'Findings are grounded in stable dotted identifiers so humans and automation can speak about the same rule consistently.' },
+            release: { title: 'Published releases', desc: 'Installers, release artifacts, and release notes are already part of the product story, which matters for adoption and automation.' },
+            offline: { title: 'Offline-first by default', desc: 'Teams can adopt the tool without granting database access to every local, CI, or agent execution environment.' }
+          }
+        },
+        releases: {
+          label: 'Releases',
+          title: 'Shipping steadily across CLI, HTTP, MCP, and library workflows',
+          sub: 'Recent releases show the product getting more usable in real delivery paths: CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.',
+          latest: 'latest',
+          items: {
+            v011: 'GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.',
+            v010: 'HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.',
+            v09: 'Homebrew distribution and Claude Code skill support for agent-driven review.',
+            v07: 'Official MCP stdio server with audit_sql, describe_rule, list_rules, and get_capabilities.',
+            v06: 'Richer explanations in audit results, including why, risk, suggestion, and metadata notes.',
+            v05: 'First release with CLI, HTTP, offline DDL/DML rules, and the public Go API.'
+          }
+        },
+        cta: {
+          title: 'Put DDL and DML review earlier in the workflow',
+          sub: 'Install once, audit locally, gate in CI, and reuse the same policy everywhere.',
+          primary: 'Install DeltaScope',
+          secondary: 'Read Quick Start'
+        },
+        footer: {
+          brand: 'Offline-first DDL and DML audit engine for MySQL and TiDB.\nBuilt for migration review, CI gates, and AI-assisted SQL workflows.',
+          start: 'Start',
+          docs: 'Workflow Docs',
+          community: 'Community',
+          copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
+          version: '',
+          links: {
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Latest Release Notes',
+            migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
+          }
+        }
+      },
+      'zh-CN': {
+        title: 'DeltaScope —— 在上线前审计高风险 MySQL 与 TiDB DDL / DML',
+        metaDescription: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现高风险的 MySQL 与 TiDB DDL / DML。可用于迁移审查、CI 门禁和 AI 生成 SQL 变更的审计。',
+        nav: {
+          why: '为什么',
+          scenarios: '场景',
+          how: '工作方式',
+          rules: '规则',
+          integrations: '集成',
+          trust: '信任',
+          install: '安装'
+        },
+        hero: {
+          badge: 'v0.11.0 —— 最新版本',
+          title: '在上线前审计高风险 MySQL 与 TiDB DDL / DML',
+          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\n同一套离线优先审计引擎可用于迁移审查、CI 流水线、HTTP 服务和 AI 辅助 SQL 工作流。',
+          ctaPrimary: '安装 DeltaScope',
+          ctaSecondary: '查看真实场景',
+          badgeAgent: '支持 Agent'
+        },
+        why: {
+          label: '为什么选择 DeltaScope',
+          title: 'DDL / DML 的问题在执行前代价低，在执行后代价高',
+          sub: 'DeltaScope 为 DBA、应用工程师、CI 系统和 AI Agent 提供同一套 DDL / DML 审查方式。\n目标很简单：在变更落库前提前发现风险，保持策略一致，避免在迁移或脚本执行之后才看到本可预防的问题。',
+          cards: {
+            schema: { title: '提前拦下危险 schema 变更', desc: '在迁移工具真正触库前，就把高风险 DDL、缺少治理信息的建表语句或策略违规拦下来。' },
+            gate: { title: '把 DDL / DML 审查变成稳定门禁', desc: '本地评审和 CI 使用同一套审计逻辑，避免开发者本地一个结论、自动化里又是另一个结论。' },
+            contract: { title: '在不同工作流里保持同一审计契约', desc: 'CLI、HTTP、MCP 和 Go Library 都返回同样的 findings、verdict 和 rule ID。' }
+          }
+        },
+        scenarios: {
+          label: '核心工作流',
+          title: '从真正会出现高风险 DDL / DML 的位置开始',
+          sub: 'DeltaScope 最适合落在团队做高影响 DDL / DML 决策的节点：迁移合并前、CI 中，以及 agent 驱动的编码流程里。',
+          cards: {
+            ddl: { title: '在发布前审查迁移 DDL', desc: '在迁移真正执行前先审计文件，把破坏性变更、缺少治理信息和 schema 策略违规都拦在成本最低的时候。', link: '查看迁移工作流' },
+            dml: { title: '在 CI 里拦住危险 DML', desc: '当语句触发你配置的阈值时阻止合并或发布，适合希望自动拦截危险 DELETE / UPDATE 模式的团队。', link: '查看 CI 工作流' },
+            ai: { title: '用结构化结果审查 AI 生成 SQL', desc: '给 agent 一个稳定 JSON 契约、稳定 rule ID 和明确 verdict，让它能修改不安全 SQL，而不是靠猜。', link: '查看 AI Agent 工作流' }
+          }
+        },
+        severity: {
+          label: 'Verdict 模型',
+          title: '三级结果，结论清晰',
+          sub: '每条 finding 都映射到一个级别；每次审计请求都会得到一个 verdict。这个模型可以在本地评审、CI、服务端和 AI 工作流中保持一致。',
+          blocker: 'SQL 不应按当前状态执行。通常意味着策略违规，或存在明显的宕机、数据丢失或数据破坏风险。',
+          warning: '建议在执行前人工复核。它不一定错误，但值得明确签字确认。',
+          notice: '仅作提示。值得知道，但本身不应阻止发布。',
+          calc: 'Verdict 计算方式',
+          table: {
+            verdict: 'Verdict',
+            condition: '条件',
+            exit: 'CLI 退出码',
+            reject: '≥ 1 条 blocker finding',
+            rejectNote: '（当 --fail-on blocker）',
+            review: '无 blocker，但存在 ≥ 1 条 warning 或 notice',
+            reviewNote: '（当 --fail-on warning）',
+            pass: '所有级别都无 finding'
+          }
+        },
+        workflow: {
+          label: '工作方式',
+          title: '提交 DDL / DML，按策略评估，然后拿到明确结果',
+          sub: 'DeltaScope 默认离线优先。你可以在没有数据库连接的情况下审计 DDL / DML，只有当流程需要实例级检查时才接入真实元数据。',
+          step1: '提供 DDL 或 DML<span>文件、stdin、API 或库调用</span>',
+          step2: '按策略评估<span>DDL / DML 规则一致执行</span>',
+          step3: '得到 verdict<span>pass、review 或 reject</span>',
+          proof: {
+            offline: { title: '离线优先', desc: '在开发机、CI 或 agent 会话里运行时，不必把数据库凭证注入到每个执行环境。' },
+            policy: { title: '策略驱动', desc: '通过配置启用、禁用或调整规则级别，而不是在不同工具里复制逻辑。' },
+            metadata: { title: '需要时再接入元数据', desc: '只有真正需要时才附加 live schema / instance 信息，而不用改变核心审计路径。' }
+          }
+        },
+        benefits: {
+          label: '你能得到什么',
+          title: '在人工、CI 和 Agent 之间复用同一条 DDL / DML 审计路径',
+          sub: 'DeltaScope 同时覆盖治理与自动化：给人类可读的本地评审，给机器稳定的结构化输出，以及一套在各接入面保持一致的引擎。',
+          cards: {
+            coverage: { title: '同时覆盖 DDL 和 DML', desc: '同时审计 schema 变更和数据变更语句，而不是为不同风险类别拼凑多套工具。' },
+            machine: { title: '稳定的机器可读结果', desc: '返回可预测的 verdict、finding 和 rule ID，便于 CI 系统和 AI Agent 消费。' },
+            policy: { title: '策略即配置', desc: '不改代码也能调整执行强度。团队可以先从 blocker 开始，再逐步收紧到 warning。' },
+            engine: { title: '一个引擎覆盖多接入面', desc: '从 CLI、服务内部、MCP 到 Go Library，使用同一套审计行为。' },
+            live: { title: '按需接入真实元数据', desc: '当你需要可移植性和安全性时保持离线；当流程需要真实 schema 上下文时再接入。' },
+            agent: { title: '同时适配人类与 Agent 工作流', desc: '给工程师可读输出，给自动化结构化输出，给 agent 稳定契约。' }
+          }
+        },
+        rules: {
+          label: '规则目录',
+          title: '内置规则，开箱即用',
+          sub: '稳定的点式 rule ID 让团队可以在 CLI、CI、服务端和 agent 工作流中讨论同一条规则。',
+          table: { id: '规则 ID', area: '领域', level: '默认级别', desc: '说明' },
+          rows: {
+            where: 'DELETE 或 UPDATE 必须包含 WHERE 子句',
+            limit: 'UPDATE 和 DELETE 不允许包含 LIMIT',
+            subquery: 'UPDATE 和 DELETE 不允许包含子查询',
+            columnComment: '列必须带注释',
+            tableComment: '表必须带注释',
+            dropColumn: '禁止执行 ALTER TABLE drop column',
+            mergeAlter: '针对同一张表的多个 ALTER TABLE 应合并',
+            indexLength: '索引键长度必须在 InnoDB 实例限制内'
+          },
+          code: '<span class="c"># 查看所有规则</span>\n<span class="prompt">$</span> deltascope rules list\n\n<span class="c"># 查看单条规则详情</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># 使用自定义策略审计</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
+        },
+        integrations: {
+          label: '集成',
+          title: '把同一套审计引擎放进团队已经在用的地方',
+          sub: '接入面很重要，但前提是首页先建立信任。DeltaScope 让这些接入面保持一致，这样团队不需要重复实现 DDL / DML 审计逻辑。',
+          cards: {
+            cli: '适合开发者、本地脚本和迁移检查的快速本地审计入口。',
+            http: '把同一套审计引擎作为服务暴露给内部工具和平台工作流。',
+            mcp: '把 DDL / DML 审查接入 Claude Code、Codex、Cursor 等 agent 驱动环境。',
+            go: '把 DeltaScope 直接嵌入需要确定性 DDL / DML 审计行为的 Go 服务。'
+          }
+        },
+        examples: {
+          label: '使用示例',
+          title: '两个例子已经足够解释这个产品',
+          sub: '一个面向人的示例组覆盖 DML 和 DDL，再加一个面向机器的 CI 输出块，展示同一套审计契约如何延伸到自动化。',
+          dml: '<span class="c"># ── DML：拦下危险 DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: DELETE or UPDATE must include a WHERE clause',
+          ddl: '<span class="c"># ── DDL：在发布前审查迁移 ──</span>\n<span class="prompt">$</span> deltascope audit --file <span class="s">"./migrations/20260322.sql"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.comment.require: column <span class="s">`id`</span> must have a comment',
+          ci: '<span class="c"># ── CI / JSON 输出 ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"alter table users drop column age"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>\n<span class="c">}</span>'
+        },
+        trust: {
+          label: '信任信号',
+          title: '信任契约本身，而不只是更新速度',
+          sub: 'DeltaScope 是开源项目，有公开发布、文档化契约，并在人工与机器工作流中保持同一条审计路径。这些比更宽泛的承诺更能建立信任。',
+          cards: {
+            docs: { title: '概念和文档都已发布', desc: '核心概念、recipes 和参考文档都已公开，团队在看完首页后还能继续深入。' },
+            rules: { title: '稳定的 rule ID', desc: 'finding 绑定在稳定的点式标识符上，让人类和自动化都能讨论同一条规则。' },
+            release: { title: '有正式发布版本', desc: '安装方式、发布产物和 release notes 已经是产品故事的一部分，这对采用和自动化都重要。' },
+            offline: { title: '默认离线优先', desc: '团队可以在不把数据库访问权限分发到每个本地、CI 或 agent 环境的前提下采用它。' }
+          }
+        },
+        releases: {
+          label: '发布',
+          title: '围绕 CLI、HTTP、MCP 与库接入持续稳步推进',
+          sub: '最近几个版本主要在真实交付路径上增强可用性：CI 集成、HTTP 可用性、MCP 工具接入，以及更完整的审计结果契约。',
+          latest: '最新',
+          items: {
+            v011: '增加 GitHub Actions composite action、GitLab CI 示例、/readyz、结构化 JSON access log，以及优雅退出。',
+            v010: '增加 HTTP adapter、API key 鉴权、限流和 Prometheus 指标。',
+            v09: '增加 Homebrew 分发和 Claude Code skill 支持。',
+            v07: '发布官方 MCP stdio 服务，提供 audit_sql、describe_rule、list_rules 和 get_capabilities。',
+            v06: '增强审计结果说明，包括 why、risk、suggestion 和元数据说明。',
+            v05: '首次发布 CLI、HTTP、离线 DDL / DML 规则以及公共 Go API。'
+          }
+        },
+        cta: {
+          title: '把 DDL / DML 审查前移到工作流更早的位置',
+          sub: '一次安装，本地先审，CI 再卡口，并在所有接入面上复用同一套策略。',
+          primary: '安装 DeltaScope',
+          secondary: '查看 Quick Start'
+        },
+        footer: {
+          brand: '面向 MySQL 与 TiDB 的离线优先 DDL / DML 审计引擎。\n适用于迁移审查、CI 门禁和 AI 辅助 SQL 工作流。',
+          start: '开始使用',
+          docs: '工作流文档',
+          community: '社区',
+          copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
+          version: 'v3 草案 · 已包含 EN / 中文切换',
+          links: {
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: '最新 Release Notes',
+            migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
+          }
+        }
+      }
+    };
+
+    const root = document.getElementById('i18n-root');
+    const langButtons = document.querySelectorAll('.lang-btn');
+    const backToTopButton = document.getElementById('back-to-top');
+
+    function getLang() {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get('lang');
+      if (fromQuery && translations[fromQuery]) return fromQuery;
+      const stored = localStorage.getItem('deltascope-landing-lang');
+      if (stored && translations[stored]) return stored;
+      return 'en';
+    }
+
+    function applyTranslations(lang) {
+      const dict = translations[lang];
+      document.documentElement.lang = lang;
+      document.title = dict.title;
+      document.querySelector('meta[name="description"]').setAttribute('content', dict.metaDescription);
+
+      document.querySelectorAll('[data-i18n]').forEach((node) => {
+        const path = node.getAttribute('data-i18n').split('.');
+        let value = dict;
+        path.forEach((part) => { value = value?.[part]; });
+        if (typeof value === 'string') node.innerHTML = value.replace(/\n/g, '<br>');
+      });
+
+      langButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.lang === lang));
+      localStorage.setItem('deltascope-landing-lang', lang);
+
+      const url = new URL(window.location.href);
+      if (lang === 'en') url.searchParams.delete('lang');
+      else url.searchParams.set('lang', lang);
+      window.history.replaceState({}, '', url);
+    }
+
+    function switchLanguage(lang) {
+      root.classList.add('switching');
+      window.setTimeout(() => {
+        applyTranslations(lang);
+        root.classList.remove('switching');
+      }, 90);
+    }
+
+    langButtons.forEach((btn) => {
+      btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.reveal').forEach((node) => observer.observe(node));
+
+    function updateBackToTopVisibility() {
+      if (window.scrollY > 480) backToTopButton.classList.add('visible');
+      else backToTopButton.classList.remove('visible');
+    }
+
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    window.addEventListener('scroll', updateBackToTopVisibility, { passive: true });
+
+    applyTranslations(getLang());
+    updateBackToTopVisibility();
+  </script>
+</body>
+</html>
