@@ -8,6 +8,16 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.11.1] - 2026-03-31
+
+### Changed
+
+- macOS install guidance now leads with Homebrew across README and landing page surfaces, while the portable installer remains the fallback for Linux and other environments
+- `install.sh` now defaults to installing only `deltascope`, prompts interactive users to choose binaries and install directory, prints an install summary, and warns before requiring `sudo`
+- `deltascope audit` now prints an interactive stdin hint before waiting for pasted SQL from a terminal session
+- `deltascope rules list` and `deltascope rules search` now render shipped rules as an aligned ASCII table for easier scanning in terminals and screenshots
+- CLI and reference docs now match the current install and rule-list output contracts in English and Chinese
+
 ## [v0.11.0] - 2026-03-30
 
 ### Added

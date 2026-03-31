@@ -61,13 +61,15 @@ deltascope rules list --enabled-only
 
 Example output:
 
-```md
+```text
 # DeltaScope Rules
 
-- `ddl.table.comment.require` [warning] (ddl) Require DDL table comment require
-- `ddl.table.row_size.max_bytes.require` [blocker] (ddl) Require DDL table row size max bytes require
-- `dml.limit.forbid` [warning] (dml) Forbid DML limit forbid
-- `dml.where.require` [blocker] (dml) Require DML where require
+RULE ID                              LEVEL    KIND  SUMMARY
+-----------------------------------  -------  ----  ----------------------------------------------
+ddl.table.comment.require           warning  ddl   Require DDL table comment require
+ddl.table.row_size.max_bytes.require  blocker  ddl   Require DDL table row size max bytes require
+dml.limit.forbid                    warning  dml   Forbid DML limit forbid
+dml.where.require                   blocker  dml   Require DML where require
 ```
 
 ### deltascope rules show

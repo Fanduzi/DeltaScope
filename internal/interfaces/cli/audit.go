@@ -49,7 +49,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 			"Metadata-aware example:\n" +
 			"  deltascope audit --sql \"alter table users add column email varchar(255)\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath)
+			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd))
 			if err != nil {
 				*exitCode = exitUser
 				return err
@@ -172,7 +172,7 @@ func (o auditConnectionOptions) Enabled() bool {
 	return o.Host != "" || o.PortSet || o.User != "" || o.Password != "" || o.Schema != "" || o.Socket != ""
 }
 
-func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string) (string, error) {
+func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool) (string, error) {
 	if strings.TrimSpace(inlineSQL) != "" && strings.TrimSpace(filePath) != "" {
 		return "", newUserError("use either --sql or --file, not both")
 	}
@@ -193,6 +193,12 @@ func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, fil
 		return string(content), nil
 	}
 
+	if interactive {
+		if _, err := io.WriteString(stderr, "Waiting for SQL from stdin. Press Ctrl+D to finish.\n"); err != nil {
+			return "", newUserError(fmt.Sprintf("write stdin hint: %v", err))
+		}
+	}
+
 	content, err := io.ReadAll(stdin)
 	if err != nil {
 		return "", newUserError(fmt.Sprintf("read stdin: %v", err))
@@ -204,6 +210,14 @@ func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, fil
 		return "", newUserError("SQL input must not be empty")
 	}
 	return string(content), nil
+}
+
+func stdinIsTerminal(cmd *cobra.Command) bool {
+	file, ok := cmd.InOrStdin().(*os.File)
+	if !ok {
+		return false
+	}
+	return term.IsTerminal(int(file.Fd()))
 }
 
 func parseDialect(value string) spec.Dialect {

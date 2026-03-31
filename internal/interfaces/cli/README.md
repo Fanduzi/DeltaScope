@@ -8,9 +8,9 @@ CLI adapter layer for the DeltaScope application.
 |------|---------------|
 | cli.go | Bridges process execution into the testable CLI executor |
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
-| audit.go | Implements the `audit` subcommand, SQL input loading, MySQL-style connection flag parsing, password prompting, quiet/normal rendering, and fail-threshold logic |
+| audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password prompting, quiet/normal rendering, and fail-threshold logic |
 | audit_metadata.go | Bridges CLI metadata-aware options into the shared metadata-preparation flow and MySQL-compatible client opener |
-| rules.go | Implements `rules list`, `rules show`, and `rules search` on top of the shipped rule catalog |
+| rules.go | Implements `rules list`, `rules show`, and `rules search` on top of the shipped rule catalog, including ASCII table rendering for list/search output |
 | config.go | Implements the `config` command group, including `lint` and `show-default` validation/inspection flows |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
 | capabilities.go | Implements the `capabilities` summary command for human/agent CLI discovery |

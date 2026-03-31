@@ -89,6 +89,21 @@ func TestAuditCommandSupportsStdinInput(t *testing.T) {
 	}
 }
 
+func TestResolveAuditSQLPrintsInteractiveStdinHint(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	sql, err := resolveAuditSQL(context.Background(), strings.NewReader("delete from users"), "", "", stderr, true)
+	if err != nil {
+		t.Fatalf("resolve audit sql: %v", err)
+	}
+	if sql != "delete from users" {
+		t.Fatalf("expected stdin sql, got %q", sql)
+	}
+	if !strings.Contains(stderr.String(), "Waiting for SQL from stdin. Press Ctrl+D to finish.") {
+		t.Fatalf("expected stdin waiting hint, got %q", stderr.String())
+	}
+}
+
 func TestAuditCommandHonorsFailOnThreshold(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
@@ -542,8 +557,11 @@ func TestRulesListPrintsShippedRules(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "dml.where.require") {
-		t.Fatalf("expected shipped rule in list output, got %q", stdout.String())
+	output := stdout.String()
+	for _, expected := range []string{"RULE ID", "LEVEL", "KIND", "SUMMARY", "dml.where.require"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected table output to contain %q, got %q", expected, output)
+		}
 	}
 }
 
