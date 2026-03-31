@@ -13,6 +13,12 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 )
 
+type namingRequirement struct {
+	prefix   string
+	suffix   string
+	contains []string
+}
+
 func configuredLevel(cfg policy.RulePolicy, fallback rule.Level) rule.Level {
 	if cfg.Level == "" {
 		return fallback
@@ -146,4 +152,39 @@ func normalizedStringSetParam(ruleID string, cfg policy.RulePolicy, key string, 
 		set[item] = struct{}{}
 	}
 	return set, nil
+}
+
+func namingRequirementParam(ruleID string, cfg policy.RulePolicy) (namingRequirement, error) {
+	prefix, err := stringParam(ruleID, cfg, "prefix", "")
+	if err != nil {
+		return namingRequirement{}, err
+	}
+
+	suffix, err := stringParam(ruleID, cfg, "suffix", "")
+	if err != nil {
+		return namingRequirement{}, err
+	}
+
+	contains, err := stringSliceParam(ruleID, cfg, "contains", nil)
+	if err != nil {
+		return namingRequirement{}, err
+	}
+
+	return namingRequirement{
+		prefix:   strings.TrimSpace(prefix),
+		suffix:   strings.TrimSpace(suffix),
+		contains: trimEmptyStrings(contains),
+	}, nil
+}
+
+func trimEmptyStrings(items []string) []string {
+	trimmed := make([]string, 0, len(items))
+	for _, item := range items {
+		value := strings.TrimSpace(item)
+		if value == "" {
+			continue
+		}
+		trimmed = append(trimmed, value)
+	}
+	return trimmed
 }

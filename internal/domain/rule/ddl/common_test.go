@@ -6,8 +6,10 @@
 package ddl
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -204,5 +206,102 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 	value, ok := alterOptionValue(options[0], "engine")
 	if !ok || value != "InnoDB" {
 		t.Fatalf("expected engine option InnoDB, got ok=%t value=%q", ok, value)
+	}
+}
+
+func TestNamingConfigParsesStructuredRequirements(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name        string
+		params      map[string]any
+		want        namingRequirement
+		wantErrText string
+	}{
+		{
+			name: "prefix suffix and contains are trimmed",
+			params: map[string]any{
+				"prefix":   "  tbl_  ",
+				"suffix":   "  _audit ",
+				"contains": []any{" order ", "user", " "},
+			},
+			want: namingRequirement{
+				prefix:   "tbl_",
+				suffix:   "_audit",
+				contains: []string{"order", "user"},
+			},
+		},
+		{
+			name: "empty values stay inactive",
+			params: map[string]any{
+				"prefix":   "   ",
+				"suffix":   "",
+				"contains": []string{" ", ""},
+			},
+			want: namingRequirement{},
+		},
+		{
+			name: "prefix must be string",
+			params: map[string]any{
+				"prefix": 1,
+			},
+			wantErrText: `rule ddl.naming.test param "prefix" must be string`,
+		},
+		{
+			name: "suffix must be string",
+			params: map[string]any{
+				"suffix": true,
+			},
+			wantErrText: `rule ddl.naming.test param "suffix" must be string`,
+		},
+		{
+			name: "contains must be string list",
+			params: map[string]any{
+				"contains": "order",
+			},
+			wantErrText: `rule ddl.naming.test param "contains" must be a string list`,
+		},
+		{
+			name: "contains rejects non string members",
+			params: map[string]any{
+				"contains": []any{"order", 2},
+			},
+			wantErrText: `rule ddl.naming.test param "contains" must contain only strings`,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := policy.RulePolicy{Params: tt.params}
+
+			got, err := namingRequirementParam("ddl.naming.test", cfg)
+			if tt.wantErrText != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrText)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrText) {
+					t.Fatalf("expected error containing %q, got %q", tt.wantErrText, err.Error())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+
+			if got.prefix != tt.want.prefix {
+				t.Fatalf("expected prefix %q, got %q", tt.want.prefix, got.prefix)
+			}
+			if got.suffix != tt.want.suffix {
+				t.Fatalf("expected suffix %q, got %q", tt.want.suffix, got.suffix)
+			}
+			if len(got.contains) != len(tt.want.contains) {
+				t.Fatalf("expected contains %v, got %v", tt.want.contains, got.contains)
+			}
+			for i := range tt.want.contains {
+				if got.contains[i] != tt.want.contains[i] {
+					t.Fatalf("expected contains %v, got %v", tt.want.contains, got.contains)
+				}
+			}
+		})
 	}
 }

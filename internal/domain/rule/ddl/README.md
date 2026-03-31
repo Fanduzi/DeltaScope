@@ -8,7 +8,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 |------|---------------|
 | common.go | Shared DDL rule IDs plus parser-neutral alter matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
-| config.go | Parses policy params for DDL rule constructors, including normalized string-list and bounded integer helpers for upcoming alter semantics |
+| config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
 | primary_key_rules.go | Implements primary-key presence and column-count rules |
 | primary_key_semantic_rules.go | Implements bigint/unsigned/auto-increment/not-null primary-key semantic rules |
