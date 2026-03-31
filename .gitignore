@@ -7,3 +7,7 @@ bin/
 /AGENTS.md
 docs/plans/
 docs/plans_zh/
+.DS_Store
+*/.DS_Store
+/.playwright-mcp/
+/docs/superpowers/
