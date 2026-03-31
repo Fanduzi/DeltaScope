@@ -14,7 +14,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | primary_key_semantic_rules.go | Implements bigint/unsigned/auto-increment/not-null primary-key semantic rules |
 | column_rules.go | Implements table-column count and column-level governance rules |
 | audit_column_rules.go | Implements audit timestamp column rules |
-| identifier_rules.go | Implements create-table identifier-pattern and reserved-keyword rules |
+| identifier_rules.go | Implements create-table identifier-pattern, reserved-keyword, and reusable naming-governance primitives for prefix/suffix/contains checks |
 | index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
@@ -32,7 +32,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | primary_key_semantic_rules_test.go | Verifies primary-key semantic rules for bigint/unsigned/auto-increment/not-null requirements |
 | column_rules_test.go | Verifies column-count, comment, naming, default, nullability, and type rules |
 | audit_column_rules_test.go | Verifies audit timestamp column rules |
-| identifier_rules_test.go | Verifies create-table identifier-pattern and reserved-keyword rules |
+| identifier_rules_test.go | Verifies create-table identifier-pattern, reserved-keyword, and reusable naming primitive behavior |
 | index_rules_test.go | Verifies create-table index governance rules |
 | type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |

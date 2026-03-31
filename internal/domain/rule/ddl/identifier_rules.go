@@ -26,6 +26,18 @@ type identifierSubject struct {
 	name string
 }
 
+type namingRule struct {
+	ruleID     string
+	subject    string
+	level      rule.Level
+	selects    func(spec.Statement) []identifierSubject
+	matchKind  string
+	prefix     string
+	suffix     string
+	contains   []string
+	suggestion string
+}
+
 type identifierPatternRule struct {
 	ruleID  string
 	subject string
@@ -59,10 +71,85 @@ func newIdentifierPatternRule(ruleID, subject string, fallbackLevel rule.Level, 
 	}, nil
 }
 
+func newNamingPrefixRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+	requirement, err := namingRequirementParam(ruleID, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if requirement.prefix == "" {
+		return namingRule{ruleID: ruleID}, nil
+	}
+	return namingRule{
+		ruleID:     ruleID,
+		subject:    subject,
+		level:      configuredLevel(cfg, fallbackLevel),
+		selects:    selects,
+		matchKind:  "prefix",
+		prefix:     requirement.prefix,
+		suggestion: fmt.Sprintf("rename the %s to start with %q", subject, requirement.prefix),
+	}, nil
+}
+
+func newNamingSuffixRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+	requirement, err := namingRequirementParam(ruleID, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if requirement.suffix == "" {
+		return namingRule{ruleID: ruleID}, nil
+	}
+	return namingRule{
+		ruleID:     ruleID,
+		subject:    subject,
+		level:      configuredLevel(cfg, fallbackLevel),
+		selects:    selects,
+		matchKind:  "suffix",
+		suffix:     requirement.suffix,
+		suggestion: fmt.Sprintf("rename the %s to end with %q", subject, requirement.suffix),
+	}, nil
+}
+
+func newNamingContainsRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+	requirement, err := namingRequirementParam(ruleID, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if len(requirement.contains) == 0 {
+		return namingRule{ruleID: ruleID}, nil
+	}
+	return namingRule{
+		ruleID:     ruleID,
+		subject:    subject,
+		level:      configuredLevel(cfg, fallbackLevel),
+		selects:    selects,
+		matchKind:  "contains",
+		contains:   append([]string(nil), requirement.contains...),
+		suggestion: fmt.Sprintf("rename the %s to include one of: %s", subject, strings.Join(requirement.contains, ", ")),
+	}, nil
+}
+
 func (r identifierPatternRule) ID() string { return r.ruleID }
+
+func (r namingRule) ID() string { return r.ruleID }
 
 func (r identifierPatternRule) AppliesTo(statement spec.Statement) bool {
 	return r.pattern != nil && appliesToCreateTable(statement)
+}
+
+func (r namingRule) AppliesTo(statement spec.Statement) bool {
+	if !appliesToCreateTable(statement) {
+		return false
+	}
+	switch r.matchKind {
+	case "prefix":
+		return r.prefix != ""
+	case "suffix":
+		return r.suffix != ""
+	case "contains":
+		return len(r.contains) > 0
+	default:
+		return false
+	}
 }
 
 func (r identifierPatternRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -85,6 +172,26 @@ func (r identifierPatternRule) Evaluate(statement spec.Statement) ([]rule.Findin
 				"name":    subject.name,
 				"pattern": r.pattern.String(),
 			},
+		})
+	}
+	return findings, nil
+}
+
+func (r namingRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, subject := range r.selects(statement) {
+		if strings.TrimSpace(subject.name) == "" || r.matches(subject.name) {
+			continue
+		}
+		findings = append(findings, rule.Finding{
+			Level:      r.level,
+			Message:    r.message(subject.name),
+			Suggestion: r.suggestion,
+			Metadata:   r.metadata(statement, subject),
 		})
 	}
 	return findings, nil
@@ -169,6 +276,54 @@ func selectIndexNames(statement spec.Statement) []identifierSubject {
 		subjects = append(subjects, identifierSubject{kind: "index", name: index.Name})
 	}
 	return subjects
+}
+
+func (r namingRule) matches(name string) bool {
+	switch r.matchKind {
+	case "prefix":
+		return strings.HasPrefix(name, r.prefix)
+	case "suffix":
+		return strings.HasSuffix(name, r.suffix)
+	case "contains":
+		for _, item := range r.contains {
+			if strings.Contains(name, item) {
+				return true
+			}
+		}
+		return false
+	default:
+		return true
+	}
+}
+
+func (r namingRule) message(name string) string {
+	switch r.matchKind {
+	case "prefix":
+		return fmt.Sprintf("%s name %q must start with %q", r.subject, name, r.prefix)
+	case "suffix":
+		return fmt.Sprintf("%s name %q must end with %q", r.subject, name, r.suffix)
+	case "contains":
+		return fmt.Sprintf("%s name %q must contain one of: %s", r.subject, name, strings.Join(r.contains, ", "))
+	default:
+		return ""
+	}
+}
+
+func (r namingRule) metadata(statement spec.Statement, subject identifierSubject) map[string]any {
+	metadata := map[string]any{
+		"table":   statement.DDL.Table.Name,
+		"subject": subject.kind,
+		"name":    subject.name,
+	}
+	switch r.matchKind {
+	case "prefix":
+		metadata["prefix"] = r.prefix
+	case "suffix":
+		metadata["suffix"] = r.suffix
+	case "contains":
+		metadata["contains"] = append([]string(nil), r.contains...)
+	}
+	return metadata
 }
 
 func isReservedKeyword(name string) bool {

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -118,6 +119,159 @@ func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
 			}
 			if len(findings) != 1 {
 				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+		})
+	}
+}
+
+func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
+	tests := []struct {
+		name        string
+		build       func(t *testing.T) rule.StatementRule
+		statement    spec.Statement
+		wantCount    int
+		wantMessage  string
+		wantSubject  string
+		wantMetadata string
+	}{
+		{
+			name: "prefix passes when name matches",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingPrefixRule("ddl.table.name.prefix.require", "table", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": "tbl_"},
+				}, selectTableName)
+				if err != nil {
+					t.Fatalf("new prefix rule: %v", err)
+				}
+				return statementRule
+			},
+			statement: statementWithNamedObjects("tbl_users", nil, nil),
+			wantCount: 0,
+		},
+		{
+			name: "prefix fails when name mismatches",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingPrefixRule("ddl.table.name.prefix.require", "table", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": "tbl_"},
+				}, selectTableName)
+				if err != nil {
+					t.Fatalf("new prefix rule: %v", err)
+				}
+				return statementRule
+			},
+			statement:    statementWithNamedObjects("users", nil, nil),
+			wantCount:    1,
+			wantMessage:  `table name "users" must start with "tbl_"`,
+			wantSubject:  "table",
+			wantMetadata: "tbl_",
+		},
+		{
+			name: "suffix fails when name mismatches",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingSuffixRule("ddl.column.name.suffix.require", "column", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": "_id"},
+				}, selectColumnNames)
+				if err != nil {
+					t.Fatalf("new suffix rule: %v", err)
+				}
+				return statementRule
+			},
+			statement:    statementWithNamedObjects("users", []spec.Column{{Name: "user", Type: "bigint", Comment: "'user'"}}, nil),
+			wantCount:    1,
+			wantMessage:  `column name "user" must end with "_id"`,
+			wantSubject:  "column",
+			wantMetadata: "_id",
+		},
+		{
+			name: "contains uses OR semantics",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingContainsRule("ddl.column.name.contains.require", "column", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"order", "user"}},
+				}, selectColumnNames)
+				if err != nil {
+					t.Fatalf("new contains rule: %v", err)
+				}
+				return statementRule
+			},
+			statement: statementWithNamedObjects("users", []spec.Column{
+				{Name: "order_code", Type: "varchar(32)", Comment: "'order'"},
+				{Name: "tenant_slug", Type: "varchar(32)", Comment: "'tenant'"},
+			}, nil),
+			wantCount:    1,
+			wantMessage:  `column name "tenant_slug" must contain one of: order, user`,
+			wantSubject:  "column",
+			wantMetadata: "order,user",
+		},
+		{
+			name: "empty requirement disables the check",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingContainsRule("ddl.column.name.contains.require", "column", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{" ", ""}},
+				}, selectColumnNames)
+				if err != nil {
+					t.Fatalf("new contains rule: %v", err)
+				}
+				return statementRule
+			},
+			statement: statementWithNamedObjects("users", []spec.Column{
+				{Name: "tenant_slug", Type: "varchar(32)", Comment: "'tenant'"},
+			}, nil),
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule := tt.build(t)
+
+			findings, err := statementRule.Evaluate(tt.statement)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != tt.wantCount {
+				t.Fatalf("expected %d findings, got %d", tt.wantCount, len(findings))
+			}
+			if tt.wantCount == 0 {
+				return
+			}
+			if findings[0].Message != tt.wantMessage {
+				t.Fatalf("expected message %q, got %q", tt.wantMessage, findings[0].Message)
+			}
+			if got := findings[0].Metadata["subject"]; got != tt.wantSubject {
+				t.Fatalf("expected subject metadata %q, got %#v", tt.wantSubject, got)
+			}
+			switch tt.name {
+			case "contains uses OR semantics":
+				values, ok := findings[0].Metadata["contains"].([]string)
+				if !ok {
+					t.Fatalf("expected contains metadata slice, got %#v", findings[0].Metadata["contains"])
+				}
+				if strings.Join(values, ",") != tt.wantMetadata {
+					t.Fatalf("expected contains metadata %q, got %v", tt.wantMetadata, values)
+				}
+			case "prefix fails when name mismatches":
+				if got := findings[0].Metadata["prefix"]; got != tt.wantMetadata {
+					t.Fatalf("expected prefix metadata %q, got %#v", tt.wantMetadata, got)
+				}
+			case "suffix fails when name mismatches":
+				if got := findings[0].Metadata["suffix"]; got != tt.wantMetadata {
+					t.Fatalf("expected suffix metadata %q, got %#v", tt.wantMetadata, got)
+				}
 			}
 		})
 	}
