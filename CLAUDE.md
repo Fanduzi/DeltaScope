@@ -87,6 +87,7 @@ Rules that require live schema facts are metadata-gated: they are registered via
 ## Execution Preferences
 
 - For UI/design update requests in a specific node/screen, implement the requested change directly in the named target first. Do not switch into brainstorming, direction selection, or extra clarification unless a required constraint is truly missing.
+- Do not create Claude-managed worktrees under `.claude/worktrees/` for this repository. When an isolated workspace is required, create it under `.worktrees/` at the repo root.
 
 ## Documentation Workflow
 
