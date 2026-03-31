@@ -190,6 +190,81 @@ func TestColumnFloatDoubleForbiddenRuleFindsFloatColumns(t *testing.T) {
 	}
 }
 
+func TestColumnNameGovernanceRules(t *testing.T) {
+	tests := []struct {
+		name      string
+		columns   []spec.Column
+		rules     map[string]policy.RulePolicy
+		wantIDs   []string
+		wantCount int
+	}{
+		{
+			name: "column prefix suffix and contains checks run independently",
+			columns: []spec.Column{
+				{Name: "user", Type: "bigint", Comment: "'user'"},
+			},
+			rules: map[string]policy.RulePolicy{
+				"ddl.column.name.prefix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": "col_"},
+				},
+				"ddl.column.name.suffix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": "_id"},
+				},
+				"ddl.column.name.contains.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"user", "account"}},
+				},
+			},
+			wantIDs:   []string{"ddl.column.name.prefix.require", "ddl.column.name.suffix.require"},
+			wantCount: 2,
+		},
+		{
+			name: "inactive column naming constraints stay quiet",
+			columns: []spec.Column{
+				{Name: "user", Type: "bigint", Comment: "'user'"},
+			},
+			rules: map[string]policy.RulePolicy{
+				"ddl.column.name.prefix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": " "},
+				},
+				"ddl.column.name.suffix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": ""},
+				},
+				"ddl.column.name.contains.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"", " "}},
+				},
+			},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			findings := evaluateDDLFindings(t, policy.Policy{Rules: tt.rules}, createTableWithColumns("users", tt.columns...))
+
+			if len(findings) != tt.wantCount {
+				t.Fatalf("expected %d findings, got %d", tt.wantCount, len(findings))
+			}
+			for i, wantID := range tt.wantIDs {
+				if findings[i].RuleID != wantID {
+					t.Fatalf("expected finding %d to use rule %q, got %q", i, wantID, findings[i].RuleID)
+				}
+			}
+		})
+	}
+}
+
 func createTableWithColumns(name string, columns ...spec.Column) spec.Statement {
 	return spec.Statement{
 		Kind: spec.KindDDL,

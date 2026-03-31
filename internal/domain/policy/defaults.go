@@ -25,6 +25,27 @@ func Default() Policy {
 					"limit": 64,
 				},
 			},
+			"ddl.table.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"prefix": "",
+				},
+			},
+			"ddl.table.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.table.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
 			"ddl.table.primary_key.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -93,6 +114,27 @@ func Default() Policy {
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
 					"limit": 64,
+				},
+			},
+			"ddl.column.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"prefix": "",
+				},
+			},
+			"ddl.column.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.column.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
 				},
 			},
 			"ddl.table.name.pattern.require": {

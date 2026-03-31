@@ -120,6 +120,78 @@ func TestTableNameMaxLengthRuleAcceptsBoundaryLength(t *testing.T) {
 	}
 }
 
+func TestTableNameGovernanceRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		tableName  string
+		rules      map[string]policy.RulePolicy
+		wantIDs    []string
+		wantCount  int
+		wantAbsent bool
+	}{
+		{
+			name:      "prefix suffix and contains each emit one finding",
+			tableName: "users",
+			rules: map[string]policy.RulePolicy{
+				"ddl.table.name.prefix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": "tbl_"},
+				},
+				"ddl.table.name.suffix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": "_table"},
+				},
+				"ddl.table.name.contains.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"order", "account"}},
+				},
+			},
+			wantIDs:   []string{"ddl.table.name.prefix.require", "ddl.table.name.suffix.require", "ddl.table.name.contains.require"},
+			wantCount: 3,
+		},
+		{
+			name:      "inactive constraints stay quiet",
+			tableName: "users",
+			rules: map[string]policy.RulePolicy{
+				"ddl.table.name.prefix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": ""},
+				},
+				"ddl.table.name.suffix.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": "   "},
+				},
+				"ddl.table.name.contains.require": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{" ", ""}},
+				},
+			},
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			findings := evaluateDDLFindings(t, policy.Policy{Rules: tt.rules}, createTableStatement(tt.tableName, "user table", []string{"id"}))
+
+			if len(findings) != tt.wantCount {
+				t.Fatalf("expected %d findings, got %d", tt.wantCount, len(findings))
+			}
+			for i, wantID := range tt.wantIDs {
+				if findings[i].RuleID != wantID {
+					t.Fatalf("expected finding %d to use rule %q, got %q", i, wantID, findings[i].RuleID)
+				}
+			}
+		})
+	}
+}
+
 func createTableStatement(name string, comment string, primaryKeyColumns []string) spec.Statement {
 	var primaryKey *spec.Index
 	if len(primaryKeyColumns) > 0 {
@@ -139,4 +211,19 @@ func createTableStatement(name string, comment string, primaryKeyColumns []strin
 			PrimaryKey: primaryKey,
 		},
 	}
+}
+
+func evaluateDDLFindings(t *testing.T, cfg policy.Policy, statement spec.Statement) []rule.Finding {
+	t.Helper()
+
+	registry := rule.NewRegistry()
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	return findings
 }

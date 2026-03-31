@@ -21,6 +21,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 	}{
 		{ruleID: ruleIDTableCommentRequired, construct: newTableCommentRequiredRule},
 		{ruleID: ruleIDTableNameMaxLength, construct: newTableNameMaxLengthRule},
+		{ruleID: ruleIDTableNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingPrefixRule(ruleIDTableNamePrefixRequire, "table", rule.LevelWarning, cfg, selectTableName)
+		}},
+		{ruleID: ruleIDTableNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingSuffixRule(ruleIDTableNameSuffixRequire, "table", rule.LevelWarning, cfg, selectTableName)
+		}},
+		{ruleID: ruleIDTableNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingContainsRule(ruleIDTableNameContainsRequire, "table", rule.LevelWarning, cfg, selectTableName)
+		}},
 		{ruleID: ruleIDPrimaryKeyRequired, construct: newPrimaryKeyRequiredRule},
 		{ruleID: ruleIDPrimaryKeyColumnsMaxCount, construct: newPrimaryKeyColumnCountRule},
 		{ruleID: ruleIDPrimaryKeyBigintRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -43,6 +52,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableAuditColumnsRequire, construct: newTableAuditColumnsRequiredRule},
 		{ruleID: ruleIDColumnCommentRequire, construct: newColumnCommentRequiredRule},
 		{ruleID: ruleIDColumnNameMaxLength, construct: newColumnNameMaxLengthRule},
+		{ruleID: ruleIDColumnNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingPrefixRule(ruleIDColumnNamePrefixRequire, "column", rule.LevelWarning, cfg, selectColumnNames)
+		}},
+		{ruleID: ruleIDColumnNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingSuffixRule(ruleIDColumnNameSuffixRequire, "column", rule.LevelWarning, cfg, selectColumnNames)
+		}},
+		{ruleID: ruleIDColumnNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingContainsRule(ruleIDColumnNameContainsRequire, "column", rule.LevelWarning, cfg, selectColumnNames)
+		}},
 		{ruleID: ruleIDTableNamePatternRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newIdentifierPatternRule(ruleIDTableNamePatternRequire, "table", rule.LevelBlocker, cfg, selectTableName)
 		}},

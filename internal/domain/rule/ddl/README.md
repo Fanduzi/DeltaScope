@@ -57,6 +57,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 - `ddl.table.comment.require`
 - `ddl.table.name.max_length`
+- `ddl.table.name.prefix.require`
+- `ddl.table.name.suffix.require`
+- `ddl.table.name.contains.require`
 - `ddl.table.primary_key.require`
 - `ddl.table.primary_key.columns.max_count`
 - `ddl.table.primary_key.bigint.require`
@@ -67,6 +70,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.audit_columns.require`
 - `ddl.column.comment.require`
 - `ddl.column.name.max_length`
+- `ddl.column.name.prefix.require`
+- `ddl.column.name.suffix.require`
+- `ddl.column.name.contains.require`
 - `ddl.table.name.pattern.require`
 - `ddl.column.name.pattern.require`
 - `ddl.index.name.pattern.require`
