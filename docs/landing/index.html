@@ -565,7 +565,12 @@ Use the same offline-first audit engine in migration review, CI pipelines, HTTP 
           <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
         </div>
         <div class="hero-code animate-fade-up" style="animation-delay:0.36s;">
-          <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh</code>
+          <code><span class="c"># macOS</span>
+<span class="prompt">$</span> brew tap Fanduzi/deltascope
+<span class="prompt">$</span> brew install --cask deltascope
+
+<span class="c"># Linux / other environments</span>
+<span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh</code>
         </div>
         <div class="badge-row animate-fade-up" style="justify-content:center; margin-top:20px; animation-delay:0.44s;">
           <span class="tag tag-go">Go 1.26</span>
@@ -1083,7 +1088,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         hero: {
           badge: 'v0.11.0 — latest release',
           title: 'Audit risky MySQL & TiDB DDL & DML\nbefore it ships',
-          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nUse the same offline-first audit engine in migration review, CI pipelines, HTTP services, and AI-assisted SQL workflows.',
+          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.',
           ctaPrimary: 'Install DeltaScope',
           ctaSecondary: 'See Real Workflows',
           badgeAgent: 'Agent Ready'
@@ -1168,7 +1173,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
             mergeAlter: 'Multiple ALTER TABLE statements on the same table should be merged',
             indexLength: 'Index key length must stay within InnoDB instance limits'
           },
-          code: '<span class="c"># View all rules</span>\n<span class="prompt">$</span> deltascope rules list\n\n<span class="c"># Show detail for one rule</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># Audit with custom policy</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
+          code: '<span class="c"># View all rules</span>\n<span class="prompt">$</span> deltascope rules list\n\nRULE ID                     LEVEL    KIND  SUMMARY\n--------------------------  -------  ----  ----------------------------------------\nddl.table.comment.require  warning  ddl   Require DDL table comment require\ndml.where.require          blocker  dml   Require DML where require\n\n<span class="c"># Show detail for one rule</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># Audit with custom policy</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
         },
         integrations: {
           label: 'Integrations',
@@ -1248,7 +1253,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         hero: {
           badge: 'v0.11.0 —— 最新版本',
           title: '在上线前审计高风险 MySQL 与 TiDB DDL / DML',
-          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\n同一套离线优先审计引擎可用于迁移审查、CI 流水线、HTTP 服务和 AI 辅助 SQL 工作流。',
+          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。',
           ctaPrimary: '安装 DeltaScope',
           ctaSecondary: '查看真实场景',
           badgeAgent: '支持 Agent'
@@ -1333,7 +1338,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
             mergeAlter: '针对同一张表的多个 ALTER TABLE 应合并',
             indexLength: '索引键长度必须在 InnoDB 实例限制内'
           },
-          code: '<span class="c"># 查看所有规则</span>\n<span class="prompt">$</span> deltascope rules list\n\n<span class="c"># 查看单条规则详情</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># 使用自定义策略审计</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
+          code: '<span class="c"># 查看所有规则</span>\n<span class="prompt">$</span> deltascope rules list\n\nRULE ID                     LEVEL    KIND  SUMMARY\n--------------------------  -------  ----  ----------------------------------------\nddl.table.comment.require  warning  ddl   Require DDL table comment require\ndml.where.require          blocker  dml   Require DML where require\n\n<span class="c"># 查看单条规则详情</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># 使用自定义策略审计</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
         },
         integrations: {
           label: '集成',

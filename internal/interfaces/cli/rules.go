@@ -123,8 +123,42 @@ func renderCatalogList(entries []rulecatalog.Entry) string {
 		b.WriteString("No rules matched.\n")
 		return b.String()
 	}
+
+	headers := []string{"RULE ID", "LEVEL", "KIND", "SUMMARY"}
+	rows := make([][]string, 0, len(entries))
+	widths := []int{len(headers[0]), len(headers[1]), len(headers[2]), len(headers[3])}
 	for _, entry := range entries {
-		fmt.Fprintf(&b, "- `%s` [%s] (%s) %s\n", entry.RuleID, entry.DefaultLevel, strings.Join(entry.StatementKinds, ","), entry.Summary)
+		row := []string{entry.RuleID, string(entry.DefaultLevel), strings.Join(entry.StatementKinds, ","), entry.Summary}
+		rows = append(rows, row)
+		for index, value := range row {
+			if len(value) > widths[index] {
+				widths[index] = len(value)
+			}
+		}
+	}
+
+	writeRow := func(columns []string) {
+		fmt.Fprintf(&b, "%-*s  %-*s  %-*s  %-*s\n",
+			widths[0], columns[0],
+			widths[1], columns[1],
+			widths[2], columns[2],
+			widths[3], columns[3],
+		)
+	}
+
+	writeRule := func() {
+		fmt.Fprintf(&b, "%s  %s  %s  %s\n",
+			strings.Repeat("-", widths[0]),
+			strings.Repeat("-", widths[1]),
+			strings.Repeat("-", widths[2]),
+			strings.Repeat("-", widths[3]),
+		)
+	}
+
+	writeRow(headers)
+	writeRule()
+	for _, row := range rows {
+		writeRow(row)
 	}
 	return b.String()
 }

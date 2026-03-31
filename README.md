@@ -16,7 +16,16 @@ DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBA
 
 ## Install
 
-The primary install path is the repository installer script, which resolves the same release archive contract used by CI publishing.
+For macOS, prefer Homebrew. The repository installer script remains available as the generic portable installer for environments where Homebrew is not the right fit.
+
+**macOS (recommended):**
+
+```bash
+brew tap Fanduzi/deltascope
+brew install --cask deltascope
+```
+
+**Generic installer:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
@@ -27,13 +36,6 @@ Pin a specific release:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.11.0/install.sh | \
   DELTASCOPE_VERSION=v0.11.0 sh
-```
-
-**macOS (Homebrew):**
-
-```bash
-brew tap Fanduzi/deltascope
-brew install --cask deltascope
 ```
 
 The published archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).

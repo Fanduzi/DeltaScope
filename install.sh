@@ -10,6 +10,8 @@ REPO="${DELTASCOPE_REPO:-Fanduzi/DeltaScope}"
 VERSION="${DELTASCOPE_VERSION:-}"
 INSTALL_DIR="${DELTASCOPE_INSTALL_DIR:-/usr/local/bin}"
 BINARIES="${DELTASCOPE_BINARIES:-}"
+INSTALL_DIR_SET="${DELTASCOPE_INSTALL_DIR:+1}"
+BINARIES_SET="${DELTASCOPE_BINARIES:+1}"
 
 log() {
   printf '%s\n' "$*"
@@ -69,7 +71,7 @@ version_gte() {
   right="${2#v}"
 
   parse() {
-    printf '%s' "$1" | sed 's/[^0-9.].*$//' 
+    printf '%s' "$1" | sed 's/[^0-9.].*$//'
   }
 
   left="$(parse "${left}")"
@@ -107,18 +109,89 @@ version_gte() {
   return 1
 }
 
+is_root() {
+  [ "$(id -u)" -eq 0 ]
+}
+
+is_interactive() {
+  [ -t 0 ]
+}
+
+confirm() {
+  prompt="$1"
+  default="${2:-y}"
+
+  if [ "${default}" = "y" ]; then
+    suffix="[Y/n]"
+  else
+    suffix="[y/N]"
+  fi
+
+  while true; do
+    printf '%s %s ' "${prompt}" "${suffix}" >&2
+    IFS= read -r answer || answer=""
+    answer="$(printf '%s' "${answer}" | tr '[:upper:]' '[:lower:]')"
+    if [ -z "${answer}" ]; then
+      answer="${default}"
+    fi
+    case "${answer}" in
+      y|yes) return 0 ;;
+      n|no) return 1 ;;
+    esac
+  done
+}
+
+supports_mcp_binary() {
+  version_gte "${VERSION}" "v0.7.0"
+}
+
+prompt_binaries() {
+  log "Select binaries to install:"
+  log "  1) deltascope"
+  log "  2) deltascope deltascope-server"
+  if supports_mcp_binary; then
+    log "  3) deltascope deltascope-server deltascope-mcp"
+  else
+    log "  note: ${VERSION} does not publish deltascope-mcp"
+  fi
+  printf '%s' "Selection [1]: " >&2
+  IFS= read -r selection || selection=""
+  case "${selection:-1}" in
+    1) printf '%s' "deltascope" ;;
+    2) printf '%s' "deltascope deltascope-server" ;;
+    3)
+      if supports_mcp_binary; then
+        printf '%s' "deltascope deltascope-server deltascope-mcp"
+      else
+        fail "${VERSION} does not support deltascope-mcp"
+      fi
+      ;;
+    *) fail "unsupported selection: ${selection}" ;;
+  esac
+}
+
+prompt_install_dir() {
+  printf '%s' "Install directory [${INSTALL_DIR}]: " >&2
+  IFS= read -r selected_dir || selected_dir=""
+  if [ -n "${selected_dir}" ]; then
+    INSTALL_DIR="${selected_dir}"
+  fi
+}
+
 resolve_binaries() {
   if [ -n "${BINARIES}" ]; then
     printf '%s' "${BINARIES}"
     return
   fi
 
-  if version_gte "${VERSION}" "v0.7.0"; then
-    printf '%s' "deltascope deltascope-server deltascope-mcp"
-    return
-  fi
+  printf '%s' "deltascope"
+}
 
-  printf '%s' "deltascope deltascope-server"
+summarize_install() {
+  log "Version: ${VERSION}"
+  log "Platform: ${OS}/${ARCH}"
+  log "Binaries: ${BINARIES}"
+  log "Install dir: ${INSTALL_DIR}"
 }
 
 install_one() {
@@ -130,7 +203,16 @@ install_one() {
     return
   fi
 
+  if is_root; then
+    install -m 0755 "${src}" "${INSTALL_DIR}/${name}"
+    return
+  fi
+
   if command -v sudo >/dev/null 2>&1; then
+    log "Install directory ${INSTALL_DIR} is not writable; sudo is required to continue."
+    if is_interactive && ! confirm "Continue with sudo install?" "y"; then
+      fail "installation cancelled"
+    fi
     sudo install -m 0755 "${src}" "${INSTALL_DIR}/${name}"
     return
   fi
@@ -154,6 +236,16 @@ fi
 
 [ -n "${VERSION}" ] || fail "could not resolve a release version"
 BINARIES="$(resolve_binaries)"
+
+if is_interactive && [ -z "${BINARIES_SET}" ]; then
+  BINARIES="$(prompt_binaries)"
+fi
+
+if is_interactive && [ -z "${INSTALL_DIR_SET}" ]; then
+  prompt_install_dir
+fi
+
+summarize_install
 
 VERSION_NO_V="${VERSION#v}"
 ARCHIVE="deltascope_${VERSION_NO_V}_${OS}_${ARCH}.tar.gz"
