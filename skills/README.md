@@ -77,3 +77,8 @@ ALTER TABLE orders ADD COLUMN status VARCHAR(32) NOT NULL;
 ```
 
 The AI agent will write the SQL to a temp file, run `deltascope audit`, and return a structured finding report with suggested fixes.
+
+## product-homepage
+
+Generate or revise a product homepage from repository facts, with support for replication or innovation modes.
+See `./product-homepage/README.md` for the package overview and mode-based workflow.
