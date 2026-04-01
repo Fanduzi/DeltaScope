@@ -42,11 +42,21 @@ rules:
 # 生成默认配置文件
 deltascope config init > deltascope.yaml
 
-# 校验配置文件语法
+# 校验配置文件语法与 rule ID
 deltascope config lint --file ./deltascope.yaml
 
 # 查看内置默认配置
 deltascope config show-default
+```
+
+**`config lint` 成功示例：**
+```text
+Config file ./deltascope.yaml is valid.
+```
+
+**`config lint` 失败示例（未知 rule ID）：**
+```text
+Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.comment.require"?)
 ```
 
 ### 文件来源

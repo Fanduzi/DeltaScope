@@ -296,6 +296,8 @@ rules:
       pattern: ^[A-Za-z0-9_]+$
       required: true
 
+  # Structured naming governance examples for teams that want explicit naming conventions.
+  # These are representative policy choices in this example file, not implicit built-in defaults.
   ddl.column.name.suffix.require:
     enabled: true
     level: warning
