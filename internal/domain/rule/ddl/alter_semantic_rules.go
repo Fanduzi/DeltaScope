@@ -231,6 +231,16 @@ type alterAddedIndexPrefixRule struct {
 	kind  spec.IndexKind
 }
 
+type alterAddedIndexSuffixRule struct {
+	inner rule.StatementRule
+	kind  spec.IndexKind
+}
+
+type alterAddedIndexContainsRule struct {
+	inner rule.StatementRule
+	kind  spec.IndexKind
+}
+
 type alterAddedIndexRule struct {
 	ruleID  string
 	inner   rule.StatementRule
@@ -255,6 +265,72 @@ func (r alterAddedIndexPrefixRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r alterAddedIndexPrefixRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings, err := evaluateProjectedAlterIndexRule(
+		r.inner,
+		r.ID(),
+		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return findings, nil
+}
+
+func newAlterAddedIndexSuffixRule(ruleID string, kind spec.IndexKind, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newIndexSuffixRequiredRule(ruleID, kind, fallbackLevel, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return alterAddedIndexSuffixRule{
+		inner: inner,
+		kind:  kind,
+	}, nil
+}
+
+func (r alterAddedIndexSuffixRule) ID() string { return r.inner.ID() }
+
+func (r alterAddedIndexSuffixRule) AppliesTo(statement spec.Statement) bool {
+	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
+}
+
+func (r alterAddedIndexSuffixRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings, err := evaluateProjectedAlterIndexRule(
+		r.inner,
+		r.ID(),
+		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return findings, nil
+}
+
+func newAlterAddedIndexContainsRule(ruleID string, kind spec.IndexKind, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newIndexContainsRequiredRule(ruleID, kind, fallbackLevel, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return alterAddedIndexContainsRule{
+		inner: inner,
+		kind:  kind,
+	}, nil
+}
+
+func (r alterAddedIndexContainsRule) ID() string { return r.inner.ID() }
+
+func (r alterAddedIndexContainsRule) AppliesTo(statement spec.Statement) bool {
+	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
+}
+
+func (r alterAddedIndexContainsRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

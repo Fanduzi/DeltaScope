@@ -116,11 +116,29 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDIndexUniquePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newIndexPrefixRequiredRule(ruleIDIndexUniquePrefixRequire, spec.IndexKindUnique, "uniq_", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDIndexUniqueSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIndexSuffixRequiredRule(ruleIDIndexUniqueSuffixRequire, spec.IndexKindUnique, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDIndexUniqueContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIndexContainsRequiredRule(ruleIDIndexUniqueContainsRequire, spec.IndexKindUnique, rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDIndexSecondaryPrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newIndexPrefixRequiredRule(ruleIDIndexSecondaryPrefixRequire, spec.IndexKindSecondary, "idx_", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDIndexSecondarySuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIndexSuffixRequiredRule(ruleIDIndexSecondarySuffixRequire, spec.IndexKindSecondary, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDIndexSecondaryContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIndexContainsRequiredRule(ruleIDIndexSecondaryContainsRequire, spec.IndexKindSecondary, rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDIndexFulltextPrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newIndexPrefixRequiredRule(ruleIDIndexFulltextPrefixRequire, spec.IndexKindFulltext, "full_", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDIndexFulltextSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIndexSuffixRequiredRule(ruleIDIndexFulltextSuffixRequire, spec.IndexKindFulltext, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDIndexFulltextContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newIndexContainsRequiredRule(ruleIDIndexFulltextContainsRequire, spec.IndexKindFulltext, rule.LevelWarning, cfg)
 		}},
 		{ruleID: ruleIDIndexDuplicateForbid, construct: newDuplicateIndexForbiddenRule},
 		{ruleID: ruleIDIndexRedundantLeftPrefixForbid, construct: newRedundantLeftPrefixIndexRule},
@@ -158,11 +176,29 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterAddIndexUniquePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexPrefixRule(ruleIDAlterAddIndexUniquePrefixRequire, spec.IndexKindUnique, "uniq_", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDAlterAddIndexUniqueSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexSuffixRule(ruleIDAlterAddIndexUniqueSuffixRequire, spec.IndexKindUnique, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexUniqueContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexContainsRule(ruleIDAlterAddIndexUniqueContainsRequire, spec.IndexKindUnique, rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexSecondaryPrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexPrefixRule(ruleIDAlterAddIndexSecondaryPrefixRequire, spec.IndexKindSecondary, "idx_", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDAlterAddIndexSecondarySuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexSuffixRule(ruleIDAlterAddIndexSecondarySuffixRequire, spec.IndexKindSecondary, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexSecondaryContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexContainsRule(ruleIDAlterAddIndexSecondaryContainsRequire, spec.IndexKindSecondary, rule.LevelWarning, cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexFulltextPrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexPrefixRule(ruleIDAlterAddIndexFulltextPrefixRequire, spec.IndexKindFulltext, "full_", rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexFulltextSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexSuffixRule(ruleIDAlterAddIndexFulltextSuffixRequire, spec.IndexKindFulltext, rule.LevelWarning, cfg)
+		}},
+		{ruleID: ruleIDAlterAddIndexFulltextContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterAddedIndexContainsRule(ruleIDAlterAddIndexFulltextContainsRequire, spec.IndexKindFulltext, rule.LevelWarning, cfg)
 		}},
 		{ruleID: ruleIDAlterChangeColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterChangeColumnForbid, "change_column", "change column", rule.LevelBlocker, cfg)

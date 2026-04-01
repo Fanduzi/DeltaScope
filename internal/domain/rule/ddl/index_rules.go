@@ -112,6 +112,20 @@ type indexPrefixRequiredRule struct {
 	level  rule.Level
 }
 
+type indexSuffixRequiredRule struct {
+	ruleID string
+	kind   spec.IndexKind
+	suffix string
+	level  rule.Level
+}
+
+type indexContainsRequiredRule struct {
+	ruleID   string
+	kind     spec.IndexKind
+	contains []string
+	level    rule.Level
+}
+
 func newIndexPrefixRequiredRule(ruleID string, kind spec.IndexKind, fallbackPrefix string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
 	required, err := boolParam(ruleID, cfg, "required", true)
 	if err != nil {
@@ -163,6 +177,115 @@ func (r indexPrefixRequiredRule) Evaluate(statement spec.Statement) ([]rule.Find
 				"index":  index.Name,
 				"kind":   index.Kind,
 				"prefix": r.prefix,
+			},
+		})
+	}
+	return findings, nil
+}
+
+func newIndexSuffixRequiredRule(ruleID string, kind spec.IndexKind, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	requirement, err := namingRequirementParam(ruleID, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if requirement.suffix == "" {
+		return indexSuffixRequiredRule{ruleID: ruleID, kind: kind}, nil
+	}
+	return indexSuffixRequiredRule{
+		ruleID: ruleID,
+		kind:   kind,
+		suffix: requirement.suffix,
+		level:  configuredLevel(cfg, fallbackLevel),
+	}, nil
+}
+
+func (r indexSuffixRequiredRule) ID() string { return r.ruleID }
+
+func (r indexSuffixRequiredRule) AppliesTo(statement spec.Statement) bool {
+	return r.suffix != "" && appliesToCreateTableIndexes(statement)
+}
+
+func (r indexSuffixRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, index := range statement.DDL.Indexes {
+		if index.Kind != r.kind || strings.TrimSpace(index.Name) == "" {
+			continue
+		}
+		if strings.HasSuffix(index.Name, r.suffix) {
+			continue
+		}
+		findings = append(findings, rule.Finding{
+			RuleID:     r.ruleID,
+			Level:      r.level,
+			Message:    fmt.Sprintf("%s index %q must use suffix %q", indexKindLabel(index.Kind), index.Name, r.suffix),
+			Suggestion: fmt.Sprintf("rename the index to end with %q", r.suffix),
+			Metadata: map[string]any{
+				"table":  statement.DDL.Table.Name,
+				"index":  index.Name,
+				"kind":   index.Kind,
+				"suffix": r.suffix,
+			},
+		})
+	}
+	return findings, nil
+}
+
+func newIndexContainsRequiredRule(ruleID string, kind spec.IndexKind, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	requirement, err := namingRequirementParam(ruleID, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if len(requirement.contains) == 0 {
+		return indexContainsRequiredRule{ruleID: ruleID, kind: kind}, nil
+	}
+	return indexContainsRequiredRule{
+		ruleID:   ruleID,
+		kind:     kind,
+		contains: append([]string(nil), requirement.contains...),
+		level:    configuredLevel(cfg, fallbackLevel),
+	}, nil
+}
+
+func (r indexContainsRequiredRule) ID() string { return r.ruleID }
+
+func (r indexContainsRequiredRule) AppliesTo(statement spec.Statement) bool {
+	return len(r.contains) > 0 && appliesToCreateTableIndexes(statement)
+}
+
+func (r indexContainsRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, index := range statement.DDL.Indexes {
+		if index.Kind != r.kind || strings.TrimSpace(index.Name) == "" {
+			continue
+		}
+		matched := false
+		for _, item := range r.contains {
+			if strings.Contains(index.Name, item) {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			continue
+		}
+		findings = append(findings, rule.Finding{
+			RuleID:     r.ruleID,
+			Level:      r.level,
+			Message:    fmt.Sprintf("%s index %q must contain one of: %s", indexKindLabel(index.Kind), index.Name, strings.Join(r.contains, ", ")),
+			Suggestion: fmt.Sprintf("rename the index to include one of: %s", strings.Join(r.contains, ", ")),
+			Metadata: map[string]any{
+				"table":    statement.DDL.Table.Name,
+				"index":    index.Name,
+				"kind":     index.Kind,
+				"contains": append([]string(nil), r.contains...),
 			},
 		})
 	}

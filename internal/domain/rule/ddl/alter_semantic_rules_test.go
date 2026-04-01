@@ -472,6 +472,145 @@ func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
 	}
 }
 
+func TestAlterAddedIndexSuffixRuleFindsBadNames(t *testing.T) {
+	tests := []struct {
+		name      string
+		ruleID    string
+		kind      spec.IndexKind
+		suffix    string
+		indexName string
+	}{
+		{
+			name:      "unique",
+			ruleID:    ruleIDAlterAddIndexUniqueSuffixRequire,
+			kind:      spec.IndexKindUnique,
+			suffix:    "_uniq",
+			indexName: "uniq_email",
+		},
+		{
+			name:      "secondary",
+			ruleID:    ruleIDAlterAddIndexSecondarySuffixRequire,
+			kind:      spec.IndexKindSecondary,
+			suffix:    "_idx",
+			indexName: "idx_email",
+		},
+		{
+			name:      "fulltext",
+			ruleID:    ruleIDAlterAddIndexFulltextSuffixRequire,
+			kind:      spec.IndexKindFulltext,
+			suffix:    "_fts",
+			indexName: "full_email",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newAlterAddedIndexSuffixRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"suffix": tt.suffix},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(alterStatement(
+				spec.Alter{
+					Action: "add_constraint",
+					Name:   tt.indexName,
+					Index: &spec.AlterIndex{
+						Definition: &spec.Index{
+							Name:    tt.indexName,
+							Kind:    tt.kind,
+							Columns: []string{"email"},
+						},
+					},
+				},
+			))
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].RuleID != tt.ruleID {
+				t.Fatalf("expected rule id %q, got %q", tt.ruleID, findings[0].RuleID)
+			}
+			if got := findings[0].Metadata["suffix"]; got != tt.suffix {
+				t.Fatalf("expected suffix metadata %q, got %#v", tt.suffix, got)
+			}
+		})
+	}
+}
+
+func TestAlterAddedIndexContainsRuleUsesORSemantics(t *testing.T) {
+	tests := []struct {
+		name      string
+		ruleID    string
+		kind      spec.IndexKind
+		indexName string
+		contains  []string
+	}{
+		{
+			name:      "unique",
+			ruleID:    ruleIDAlterAddIndexUniqueContainsRequire,
+			kind:      spec.IndexKindUnique,
+			indexName: "uniq_login",
+			contains:  []string{"user", "account"},
+		},
+		{
+			name:      "secondary",
+			ruleID:    ruleIDAlterAddIndexSecondaryContainsRequire,
+			kind:      spec.IndexKindSecondary,
+			indexName: "idx_lookup",
+			contains:  []string{"order", "account"},
+		},
+		{
+			name:      "fulltext",
+			ruleID:    ruleIDAlterAddIndexFulltextContainsRequire,
+			kind:      spec.IndexKindFulltext,
+			indexName: "full_lookup",
+			contains:  []string{"search", "terms"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newAlterAddedIndexContainsRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"contains": tt.contains},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(alterStatement(
+				spec.Alter{
+					Action: "add_constraint",
+					Name:   tt.indexName,
+					Index: &spec.AlterIndex{
+						Definition: &spec.Index{
+							Name:    tt.indexName,
+							Kind:    tt.kind,
+							Columns: []string{"email"},
+						},
+					},
+				},
+			))
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].RuleID != tt.ruleID {
+				t.Fatalf("expected rule id %q, got %q", tt.ruleID, findings[0].RuleID)
+			}
+		})
+	}
+}
+
 func TestAlterAddedIndexColumnsMaxCountRuleBlocksWideAlterAddedIndexes(t *testing.T) {
 	statementRule, err := newAlterAddedIndexColumnsMaxCountRule(2, rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,

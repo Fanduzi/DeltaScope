@@ -123,6 +123,138 @@ func TestFulltextPrefixRuleFindsBadNames(t *testing.T) {
 	}
 }
 
+func TestIndexSuffixRuleFindsBadNames(t *testing.T) {
+	tests := []struct {
+		name      string
+		ruleID    string
+		kind      spec.IndexKind
+		suffix    string
+		indexName string
+	}{
+		{
+			name:      "unique",
+			ruleID:    ruleIDIndexUniqueSuffixRequire,
+			kind:      spec.IndexKindUnique,
+			suffix:    "_uniq",
+			indexName: "uniq_user_email",
+		},
+		{
+			name:      "secondary",
+			ruleID:    ruleIDIndexSecondarySuffixRequire,
+			kind:      spec.IndexKindSecondary,
+			suffix:    "_idx",
+			indexName: "idx_user_email",
+		},
+		{
+			name:      "fulltext",
+			ruleID:    ruleIDIndexFulltextSuffixRequire,
+			kind:      spec.IndexKindFulltext,
+			suffix:    "_fts",
+			indexName: "full_user_email",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := statementWithIndexes(spec.Index{Name: tt.indexName, Kind: tt.kind, Columns: []string{"email"}})
+			statementRule, err := newIndexSuffixRequiredRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"suffix": tt.suffix},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(statement)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].RuleID != tt.ruleID {
+				t.Fatalf("expected rule id %q, got %q", tt.ruleID, findings[0].RuleID)
+			}
+			if got := findings[0].Metadata["suffix"]; got != tt.suffix {
+				t.Fatalf("expected suffix metadata %q, got %#v", tt.suffix, got)
+			}
+		})
+	}
+}
+
+func TestIndexContainsRuleUsesORSemantics(t *testing.T) {
+	tests := []struct {
+		name      string
+		ruleID    string
+		kind      spec.IndexKind
+		indexes   []spec.Index
+		contains  []string
+		wantCount int
+	}{
+		{
+			name:   "unique",
+			ruleID: ruleIDIndexUniqueContainsRequire,
+			kind:   spec.IndexKindUnique,
+			indexes: []spec.Index{
+				{Name: "uniq_user_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}},
+				{Name: "uniq_login", Kind: spec.IndexKindUnique, Columns: []string{"login"}},
+			},
+			contains:  []string{"user", "account"},
+			wantCount: 1,
+		},
+		{
+			name:   "secondary",
+			ruleID: ruleIDIndexSecondaryContainsRequire,
+			kind:   spec.IndexKindSecondary,
+			indexes: []spec.Index{
+				{Name: "idx_order_status", Kind: spec.IndexKindSecondary, Columns: []string{"status"}},
+				{Name: "idx_lookup", Kind: spec.IndexKindSecondary, Columns: []string{"status"}},
+			},
+			contains:  []string{"order", "account"},
+			wantCount: 1,
+		},
+		{
+			name:   "fulltext",
+			ruleID: ruleIDIndexFulltextContainsRequire,
+			kind:   spec.IndexKindFulltext,
+			indexes: []spec.Index{
+				{Name: "full_search_body", Kind: spec.IndexKindFulltext, Columns: []string{"body"}},
+				{Name: "full_lookup", Kind: spec.IndexKindFulltext, Columns: []string{"body"}},
+			},
+			contains:  []string{"search", "terms"},
+			wantCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newIndexContainsRequiredRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"contains": tt.contains},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(statementWithIndexes(tt.indexes...))
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != tt.wantCount {
+				t.Fatalf("expected %d findings, got %d", tt.wantCount, len(findings))
+			}
+			if tt.wantCount == 0 {
+				return
+			}
+			if findings[0].RuleID != tt.ruleID {
+				t.Fatalf("expected rule id %q, got %q", tt.ruleID, findings[0].RuleID)
+			}
+		})
+	}
+}
+
 func TestDuplicateIndexRuleFindsExactDuplicateIndexes(t *testing.T) {
 	statement := statementWithIndexes(
 		spec.Index{Name: "idx_name", Kind: spec.IndexKindSecondary, Columns: []string{"name"}},

@@ -289,6 +289,20 @@ func Default() Policy {
 					"prefix":   "uniq_",
 				},
 			},
+			"ddl.index.unique.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.index.unique.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
 			"ddl.index.secondary.prefix.require": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -297,12 +311,40 @@ func Default() Policy {
 					"prefix":   "idx_",
 				},
 			},
+			"ddl.index.secondary.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.index.secondary.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
 			"ddl.index.fulltext.prefix.require": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"required": true,
 					"prefix":   "full_",
+				},
+			},
+			"ddl.index.fulltext.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.index.fulltext.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
 				},
 			},
 			"ddl.index.duplicate.forbid": {
@@ -404,6 +446,20 @@ func Default() Policy {
 					"prefix":   "uniq_",
 				},
 			},
+			"ddl.alter.add_index.unique.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.alter.add_index.unique.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
 			"ddl.alter.add_index.secondary.prefix.require": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -412,12 +468,40 @@ func Default() Policy {
 					"prefix":   "idx_",
 				},
 			},
+			"ddl.alter.add_index.secondary.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.alter.add_index.secondary.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
 			"ddl.alter.add_index.fulltext.prefix.require": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
 					"required": true,
 					"prefix":   "full_",
+				},
+			},
+			"ddl.alter.add_index.fulltext.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.alter.add_index.fulltext.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
 				},
 			},
 			"ddl.alter.change_column.forbid": {

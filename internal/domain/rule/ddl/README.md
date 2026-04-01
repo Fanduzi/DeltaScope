@@ -15,7 +15,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | column_rules.go | Implements table-column count and column-level governance rules |
 | audit_column_rules.go | Implements audit timestamp column rules |
 | identifier_rules.go | Implements create-table identifier-pattern, reserved-keyword, and reusable naming-governance primitives for prefix/suffix/contains checks |
-| index_rules.go | Implements create-table index count, prefix, and duplicate-index rules |
+| index_rules.go | Implements create-table index count, prefix, suffix, contains, and duplicate-index rules |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
@@ -24,7 +24,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | denylist_rules.go | Implements DDL table denylist checks against protected schemas or tables |
 | size_rules.go | Implements metadata-backed rough row-size and index-key-length checks for create-table statements |
 | alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
-| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index lifecycle rules, and conservative alter target-type-family rules |
+| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index naming/lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
@@ -94,8 +94,14 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.index.total.max_count`
 - `ddl.index.columns.max_count`
 - `ddl.index.unique.prefix.require`
+- `ddl.index.unique.suffix.require`
+- `ddl.index.unique.contains.require`
 - `ddl.index.secondary.prefix.require`
+- `ddl.index.secondary.suffix.require`
+- `ddl.index.secondary.contains.require`
 - `ddl.index.fulltext.prefix.require`
+- `ddl.index.fulltext.suffix.require`
+- `ddl.index.fulltext.contains.require`
 - `ddl.index.key_length.max_bytes.require`
 - `ddl.index.duplicate.forbid`
 - `ddl.index.redundant_left_prefix.forbid`
@@ -124,8 +130,14 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.add_index.redundant_left_prefix.forbid`
 - `ddl.alter.add_index.redundant_unique_overlap.forbid`
 - `ddl.alter.add_index.unique.prefix.require`
+- `ddl.alter.add_index.unique.suffix.require`
+- `ddl.alter.add_index.unique.contains.require`
 - `ddl.alter.add_index.secondary.prefix.require`
+- `ddl.alter.add_index.secondary.suffix.require`
+- `ddl.alter.add_index.secondary.contains.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
+- `ddl.alter.add_index.fulltext.suffix.require`
+- `ddl.alter.add_index.fulltext.contains.require`
 - `ddl.table.comment.max_length`
 - `ddl.table.engine.allowlist`
 - `ddl.table.row_size.max_bytes.require`
@@ -206,8 +218,14 @@ The first semantic alter batch currently covers:
 - `ddl.alter.modify_column.explicit_auto_increment_change.forbid`
 - `ddl.alter.change_column.explicit_auto_increment_change.forbid`
 - `ddl.alter.add_index.unique.prefix.require`
+- `ddl.alter.add_index.unique.suffix.require`
+- `ddl.alter.add_index.unique.contains.require`
 - `ddl.alter.add_index.secondary.prefix.require`
+- `ddl.alter.add_index.secondary.suffix.require`
+- `ddl.alter.add_index.secondary.contains.require`
 - `ddl.alter.add_index.fulltext.prefix.require`
+- `ddl.alter.add_index.fulltext.suffix.require`
+- `ddl.alter.add_index.fulltext.contains.require`
 - `ddl.alter.add_index.columns.max_count`
 - `ddl.alter.add_index.duplicate.forbid`
 - `ddl.alter.add_index.redundant_left_prefix.forbid`
