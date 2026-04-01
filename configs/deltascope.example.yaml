@@ -296,6 +296,12 @@ rules:
       pattern: ^[A-Za-z0-9_]+$
       required: true
 
+  ddl.column.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix: _id
+
   ddl.column.not_null.require:
     enabled: true
     level: warning
@@ -384,6 +390,36 @@ rules:
     params:
       prefix: uniq_
       required: true
+
+  ddl.constraint.check.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: chk_
+
+  ddl.constraint.foreign_key.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: [user account]
+
+  ddl.constraint.foreign_key.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: fk_
+
+  ddl.constraint.primary_key.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: pk_
+
+  ddl.constraint.unique_key.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: uk_
 
   ddl.table.audit_columns.require:
     enabled: true
@@ -503,6 +539,12 @@ rules:
     params:
       pattern: ^[A-Za-z0-9_]+$
       required: true
+
+  ddl.table.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: tbl_
 
   ddl.table.partition.forbid:
     enabled: true

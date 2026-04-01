@@ -67,6 +67,72 @@ deltascope config show-default
 
 > **元数据感知模式（Metadata-aware mode）说明**：部分规则需要连接数据库以获取实时 schema 信息。这类规则在纯离线审计时会自动跳过（no-op），不产生任何 finding，保证离线审计的安全性。
 
+### Structured Naming Governance（结构化命名治理）
+
+DeltaScope 在现有基于正则的 `pattern` 规则之外，补充了结构化命名治理模型。
+
+- 当你需要一个统一的正则门槛时，使用 `*.name.pattern.require`，例如 `^[A-Za-z0-9_]+$`。
+- 当你需要明确的命名语义时，使用下列 naming governance 规则，例如 `prefix`、`suffix`、`contains`。
+- 这两层能力是互补关系。structured naming governance 不是 `pattern` 规则的替代品。
+- `contains` 采用 OR 语义。只要命中任意一个已配置 token，就视为通过。
+- naming finding 只针对显式命名对象产生；未命名对象和隐式对象会被跳过。
+
+所有 naming governance 规则都遵循同一结构：
+
+```yaml
+rules:
+  <rule-id>:
+    enabled: true
+    level: warning
+    params:
+      prefix: "..."
+      suffix: "..."
+      contains: ["...", "..."]
+```
+
+实际使用时，只配置与该 rule ID 对应的参数即可。空值会让内置规则保持 inert（启用但不生效）。
+
+| 目标对象 | Rule ID |
+|----------|---------|
+| 表名 | `ddl.table.name.prefix.require`, `ddl.table.name.suffix.require`, `ddl.table.name.contains.require` |
+| 列名 | `ddl.column.name.prefix.require`, `ddl.column.name.suffix.require`, `ddl.column.name.contains.require` |
+| 唯一索引名 | `ddl.index.unique.prefix.require`, `ddl.index.unique.suffix.require`, `ddl.index.unique.contains.require` |
+| 普通二级索引名 | `ddl.index.secondary.prefix.require`, `ddl.index.secondary.suffix.require`, `ddl.index.secondary.contains.require` |
+| 全文索引名 | `ddl.index.fulltext.prefix.require`, `ddl.index.fulltext.suffix.require`, `ddl.index.fulltext.contains.require` |
+| 主键约束名 | `ddl.constraint.primary_key.name.prefix.require`, `ddl.constraint.primary_key.name.suffix.require`, `ddl.constraint.primary_key.name.contains.require` |
+| 唯一键约束名 | `ddl.constraint.unique_key.name.prefix.require`, `ddl.constraint.unique_key.name.suffix.require`, `ddl.constraint.unique_key.name.contains.require` |
+| 外键约束名 | `ddl.constraint.foreign_key.name.prefix.require`, `ddl.constraint.foreign_key.name.suffix.require`, `ddl.constraint.foreign_key.name.contains.require` |
+| CHECK 约束名 | `ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require` |
+
+代表性配置示例：
+
+```yaml
+rules:
+  ddl.table.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: "tbl_"
+
+  ddl.column.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix: "_id"
+
+  ddl.index.secondary.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: "idx_"
+
+  ddl.constraint.foreign_key.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: ["user", "account"] # OR 语义
+```
+
 ---
 
 ## DDL：建表规则（Create Table Rules）

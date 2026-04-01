@@ -58,6 +58,72 @@ Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.com
 
 ## Rule Configuration Reference
 
+### Structured Naming Governance
+
+DeltaScope ships a structured naming governance model alongside the existing regex-based `pattern` rules.
+
+- Use `*.name.pattern.require` when you want a single regex gate such as `^[A-Za-z0-9_]+$`.
+- Use the naming governance rules below when you want explicit semantic checks like `prefix`, `suffix`, or `contains`.
+- These two layers are complementary. Naming governance is not a replacement for `pattern`.
+- `contains` uses OR semantics. Any configured token match passes the rule.
+- Naming findings are emitted only for explicitly named objects. Unnamed or implicit objects are skipped.
+
+All naming governance rules follow the same shape:
+
+```yaml
+rules:
+  <rule-id>:
+    enabled: true
+    level: warning
+    params:
+      prefix: "..."
+      suffix: "..."
+      contains: ["...", "..."]
+```
+
+Configure only the parameter that matches the rule ID. Empty values keep the shipped rule inert.
+
+| Target | Rule IDs |
+|--------|----------|
+| Table name | `ddl.table.name.prefix.require`, `ddl.table.name.suffix.require`, `ddl.table.name.contains.require` |
+| Column name | `ddl.column.name.prefix.require`, `ddl.column.name.suffix.require`, `ddl.column.name.contains.require` |
+| Unique index name | `ddl.index.unique.prefix.require`, `ddl.index.unique.suffix.require`, `ddl.index.unique.contains.require` |
+| Secondary index name | `ddl.index.secondary.prefix.require`, `ddl.index.secondary.suffix.require`, `ddl.index.secondary.contains.require` |
+| Fulltext index name | `ddl.index.fulltext.prefix.require`, `ddl.index.fulltext.suffix.require`, `ddl.index.fulltext.contains.require` |
+| Primary key constraint name | `ddl.constraint.primary_key.name.prefix.require`, `ddl.constraint.primary_key.name.suffix.require`, `ddl.constraint.primary_key.name.contains.require` |
+| Unique key constraint name | `ddl.constraint.unique_key.name.prefix.require`, `ddl.constraint.unique_key.name.suffix.require`, `ddl.constraint.unique_key.name.contains.require` |
+| Foreign key constraint name | `ddl.constraint.foreign_key.name.prefix.require`, `ddl.constraint.foreign_key.name.suffix.require`, `ddl.constraint.foreign_key.name.contains.require` |
+| Check constraint name | `ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require` |
+
+Representative config:
+
+```yaml
+rules:
+  ddl.table.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: "tbl_"
+
+  ddl.column.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix: "_id"
+
+  ddl.index.secondary.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: "idx_"
+
+  ddl.constraint.foreign_key.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: ["user", "account"] # OR semantics
+```
+
 ### DDL: Create Table Rules
 
 ---

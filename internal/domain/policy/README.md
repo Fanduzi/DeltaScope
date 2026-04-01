@@ -24,6 +24,8 @@ Policy model for rule configuration and future audit settings.
 - The default alter policy also enables explicit nullability/default/auto_increment change forbids; the `change_column` variants act as follow-on guards when the coarse `ddl.alter.change_column.forbid` gate is intentionally relaxed.
 - The default policy also enables shipped alter-added index prefix checks for unique, secondary, and fulltext indexes.
 - The default create-table policy now enables identifier pattern and reserved-keyword checks for table, column, and secondary-index names.
+- The default policy also ships structured naming governance for table, column, index, and constraint names via `prefix`, `suffix`, and `contains`; empty shipped values keep the optional checks inert until a team fills them in.
+- Structured naming governance complements the existing `pattern` and `keyword` rules instead of replacing those harder lexical guards.
 - The default create-table type-family policy keeps `timestamp` forbidden, keeps `char` length capped, and enforces charset/collation allowlists plus pair-coherence checks.
 - Blob/text, json, and bit forbids are shipped in the default template but remain relaxed by default via `forbid: false` until a team intentionally tightens them.
 - The default create-table index policy now also enables left-prefix and unique-overlap redundant-index findings on top of exact duplicate detection.
