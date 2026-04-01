@@ -88,6 +88,46 @@ rules:
 	}
 }
 
+func TestAuditSQLTriggersNamingGovernanceFromConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "deltascope.yaml")
+	content := []byte(`
+rules:
+  ddl.table.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix: tbl_
+`)
+	if err := os.WriteFile(path, content, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:        "create table users (id bigint, primary key (id)) comment='users';",
+		Dialect:    spec.DialectMySQL,
+		ConfigPath: path,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+
+	if len(result.Statements) != 1 || len(result.Statements[0].Findings) == 0 {
+		t.Fatalf("expected naming findings, got %#v", result.Statements)
+	}
+
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.name.prefix.require" && finding.Message == `table name "users" must start with "tbl_"` {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected naming rule finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
 func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "delete from users; update accounts set active = 0",

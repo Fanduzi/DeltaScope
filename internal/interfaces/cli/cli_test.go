@@ -153,6 +153,38 @@ func TestAuditCommandSupportsConfigOverride(t *testing.T) {
 	}
 }
 
+func TestAuditCommandRendersNamingGovernanceFinding(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "policy.yaml")
+	config := "rules:\n  ddl.table.name.prefix.require:\n    enabled: true\n    level: warning\n    params:\n      prefix: tbl_\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create table users (id bigint, primary key (id)) comment='users'", "--config", configPath, "--quiet"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for warning findings with default threshold, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "ddl.table.name.prefix.require") {
+		t.Fatalf("expected naming rule id in user-visible output, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), `table name "users" must start with "tbl_"`) {
+		t.Fatalf("expected naming message in user-visible output, got %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+}
+
 func TestAuditCommandTreatsMissingConfigAsUserError(t *testing.T) {
 	stderr := &strings.Builder{}
 
