@@ -4,6 +4,8 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **Offline** rules fire on SQL text alone — no database connection required. **Metadata-aware** rules additionally consume live schema or instance facts when a metadata provider is configured; without metadata they are silently skipped.
 
+**Pattern legality checks** such as `*.name.pattern.require` and `*.name.keyword.forbid` enforce lexical validity. **Structured naming governance** such as `prefix`, `suffix`, and `contains` enforces team naming conventions. These are complementary layers, not replacements for one another.
+
 ---
 
 ## DDL: Create Table
@@ -13,6 +15,9 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.table.name.max_length` | Table name exceeds the maximum allowed length | ✓ | ✗ | warning |
+| `ddl.table.name.prefix.require` | Table name does not start with the required structured naming prefix | ✓ | ✗ | warning |
+| `ddl.table.name.suffix.require` | Table name does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.table.name.contains.require` | Table name does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
 | `ddl.table.name.pattern.require` | Table name does not match the required naming pattern | ✓ | ✗ | warning |
 | `ddl.table.name.keyword.forbid` | Table name is a reserved SQL keyword | ✓ | ✗ | blocker |
 | `ddl.table.comment.require` | Table is missing a COMMENT clause | ✓ | ✗ | warning |
@@ -41,6 +46,9 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.column.name.max_length` | Column name exceeds the maximum allowed length | ✓ | ✗ | warning |
+| `ddl.column.name.prefix.require` | Column name does not start with the required structured naming prefix | ✓ | ✗ | warning |
+| `ddl.column.name.suffix.require` | Column name does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.column.name.contains.require` | Column name does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
 | `ddl.column.name.pattern.require` | Column name does not match the required naming pattern | ✓ | ✗ | warning |
 | `ddl.column.name.keyword.forbid` | Column name is a reserved SQL keyword | ✓ | ✗ | blocker |
 | `ddl.column.comment.require` | Column is missing a COMMENT clause | ✓ | ✗ | warning |
@@ -64,12 +72,37 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 | `ddl.index.total.max_count` | Table has more indexes than the allowed maximum | ✓ | ✗ | warning |
 | `ddl.index.columns.max_count` | An index spans more columns than the allowed maximum | ✓ | ✗ | warning |
 | `ddl.index.unique.prefix.require` | Unique index name does not start with the required prefix | ✓ | ✗ | warning |
+| `ddl.index.unique.suffix.require` | Unique index name does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.index.unique.contains.require` | Unique index name does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
 | `ddl.index.secondary.prefix.require` | Secondary (non-unique) index name does not start with the required prefix | ✓ | ✗ | warning |
+| `ddl.index.secondary.suffix.require` | Secondary (non-unique) index name does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.index.secondary.contains.require` | Secondary (non-unique) index name does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
 | `ddl.index.fulltext.prefix.require` | Fulltext index name does not start with the required prefix | ✓ | ✗ | warning |
+| `ddl.index.fulltext.suffix.require` | Fulltext index name does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.index.fulltext.contains.require` | Fulltext index name does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
 | `ddl.index.duplicate.forbid` | Two or more indexes cover the exact same set of columns | ✓ | ✗ | warning |
 | `ddl.index.redundant_left_prefix.forbid` | An index is a left-prefix subset of another index, making it redundant | ✓ | ✗ | warning |
 | `ddl.index.redundant_unique_overlap.forbid` | A non-unique index is made redundant by an overlapping unique index | ✓ | ✗ | warning |
 | `ddl.index.key_length.max_bytes.require` | Index key length exceeds the InnoDB limit given the instance's `innodb_large_prefix` setting | ✗ | ✓ | warning |
+
+### Constraint-Level Checks
+
+Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped.
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.constraint.primary_key.name.prefix.require` | Explicitly named primary key constraint does not start with the required structured naming prefix | ✓ | ✗ | warning |
+| `ddl.constraint.primary_key.name.suffix.require` | Explicitly named primary key constraint does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.constraint.primary_key.name.contains.require` | Explicitly named primary key constraint does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
+| `ddl.constraint.unique_key.name.prefix.require` | Explicitly named unique key constraint does not start with the required structured naming prefix | ✓ | ✗ | warning |
+| `ddl.constraint.unique_key.name.suffix.require` | Explicitly named unique key constraint does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.constraint.unique_key.name.contains.require` | Explicitly named unique key constraint does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
+| `ddl.constraint.foreign_key.name.prefix.require` | Explicitly named foreign key constraint does not start with the required structured naming prefix | ✓ | ✗ | warning |
+| `ddl.constraint.foreign_key.name.suffix.require` | Explicitly named foreign key constraint does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.constraint.foreign_key.name.contains.require` | Explicitly named foreign key constraint does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
+| `ddl.constraint.check.name.prefix.require` | Explicitly named check constraint does not start with the required structured naming prefix | ✓ | ✗ | warning |
+| `ddl.constraint.check.name.suffix.require` | Explicitly named check constraint does not end with the required structured naming suffix | ✓ | ✗ | warning |
+| `ddl.constraint.check.name.contains.require` | Explicitly named check constraint does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
 
 ### Other Create Table Checks
 

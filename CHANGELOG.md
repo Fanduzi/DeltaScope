@@ -8,6 +8,10 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+### Added
+
+- Structured naming governance coverage for `CREATE TABLE` objects is now documented end-to-end across table, column, index, and constraint names, including `prefix`, `suffix`, and `contains` checks as a complementary layer to existing pattern legality rules
+
 ## [v0.11.1] - 2026-03-31
 
 ### Changed

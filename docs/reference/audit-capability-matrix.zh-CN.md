@@ -4,6 +4,8 @@
 
 **离线（Offline）** 规则仅依赖 SQL 文本即可触发，无需数据库连接。**元数据感知（Metadata）** 规则在配置了元数据提供者时，会额外读取实时的 Schema 或实例信息；未配置元数据提供者时，这些规则将被静默跳过。
 
+**Pattern legality checks**（例如 `*.name.pattern.require`、`*.name.keyword.forbid`）用于约束词法合法性。**Structured naming governance**（例如 `prefix`、`suffix`、`contains`）用于约束团队命名约定。这两层能力互补，不互相替代。
+
 ---
 
 ## DDL：CREATE TABLE
@@ -13,6 +15,9 @@
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
 | `ddl.table.name.max_length` | 表名超过允许的最大长度 | ✓ | ✗ | warning |
+| `ddl.table.name.prefix.require` | 表名未以要求的 structured naming 前缀开头 | ✓ | ✗ | warning |
+| `ddl.table.name.suffix.require` | 表名未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.table.name.contains.require` | 表名未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
 | `ddl.table.name.pattern.require` | 表名不符合要求的命名规范 | ✓ | ✗ | warning |
 | `ddl.table.name.keyword.forbid` | 表名是 SQL 保留关键字 | ✓ | ✗ | blocker |
 | `ddl.table.comment.require` | 表缺少 COMMENT 子句 | ✓ | ✗ | warning |
@@ -41,6 +46,9 @@
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
 | `ddl.column.name.max_length` | 列名超过允许的最大长度 | ✓ | ✗ | warning |
+| `ddl.column.name.prefix.require` | 列名未以要求的 structured naming 前缀开头 | ✓ | ✗ | warning |
+| `ddl.column.name.suffix.require` | 列名未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.column.name.contains.require` | 列名未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
 | `ddl.column.name.pattern.require` | 列名不符合要求的命名规范 | ✓ | ✗ | warning |
 | `ddl.column.name.keyword.forbid` | 列名是 SQL 保留关键字 | ✓ | ✗ | blocker |
 | `ddl.column.comment.require` | 列缺少 COMMENT 子句 | ✓ | ✗ | warning |
@@ -64,12 +72,37 @@
 | `ddl.index.total.max_count` | 表的索引数量超过允许的最大值 | ✓ | ✗ | warning |
 | `ddl.index.columns.max_count` | 某个索引包含的列数超过允许的最大值 | ✓ | ✗ | warning |
 | `ddl.index.unique.prefix.require` | 唯一索引名未以要求的前缀开头 | ✓ | ✗ | warning |
+| `ddl.index.unique.suffix.require` | 唯一索引名未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.index.unique.contains.require` | 唯一索引名未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
 | `ddl.index.secondary.prefix.require` | 普通（非唯一）索引名未以要求的前缀开头 | ✓ | ✗ | warning |
+| `ddl.index.secondary.suffix.require` | 普通（非唯一）索引名未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.index.secondary.contains.require` | 普通（非唯一）索引名未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
 | `ddl.index.fulltext.prefix.require` | 全文索引名未以要求的前缀开头 | ✓ | ✗ | warning |
+| `ddl.index.fulltext.suffix.require` | 全文索引名未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.index.fulltext.contains.require` | 全文索引名未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
 | `ddl.index.duplicate.forbid` | 两个或多个索引覆盖完全相同的列集合 | ✓ | ✗ | warning |
 | `ddl.index.redundant_left_prefix.forbid` | 某个索引是另一个索引的左前缀子集，因此冗余 | ✓ | ✗ | warning |
 | `ddl.index.redundant_unique_overlap.forbid` | 某个非唯一索引被重叠的唯一索引覆盖，因此冗余 | ✓ | ✗ | warning |
 | `ddl.index.key_length.max_bytes.require` | 根据实例的 `innodb_large_prefix` 设置，索引键长度超过 InnoDB 限制 | ✗ | ✓ | warning |
+
+### 约束级检查
+
+约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.constraint.primary_key.name.prefix.require` | 显式命名的主键约束未以要求的 structured naming 前缀开头 | ✓ | ✗ | warning |
+| `ddl.constraint.primary_key.name.suffix.require` | 显式命名的主键约束未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.constraint.primary_key.name.contains.require` | 显式命名的主键约束未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
+| `ddl.constraint.unique_key.name.prefix.require` | 显式命名的唯一键约束未以要求的 structured naming 前缀开头 | ✓ | ✗ | warning |
+| `ddl.constraint.unique_key.name.suffix.require` | 显式命名的唯一键约束未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.constraint.unique_key.name.contains.require` | 显式命名的唯一键约束未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
+| `ddl.constraint.foreign_key.name.prefix.require` | 显式命名的外键约束未以要求的 structured naming 前缀开头 | ✓ | ✗ | warning |
+| `ddl.constraint.foreign_key.name.suffix.require` | 显式命名的外键约束未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.constraint.foreign_key.name.contains.require` | 显式命名的外键约束未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
+| `ddl.constraint.check.name.prefix.require` | 显式命名的 CHECK 约束未以要求的 structured naming 前缀开头 | ✓ | ✗ | warning |
+| `ddl.constraint.check.name.suffix.require` | 显式命名的 CHECK 约束未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
+| `ddl.constraint.check.name.contains.require` | 显式命名的 CHECK 约束未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
 
 ### 其他 CREATE TABLE 检查
 
