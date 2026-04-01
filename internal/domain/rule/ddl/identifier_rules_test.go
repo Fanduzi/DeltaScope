@@ -421,6 +421,72 @@ func TestRegisterSkipsForeignKeyConstraintNamingWhenForeignKeysAreForbidden(t *t
 	}
 }
 
+func TestImplicitPrimaryKeyConstraintNamingIsSkipped(t *testing.T) {
+	statementRule, err := newNamingPrefixRule("ddl.constraint.primary_key.name.prefix.require", "primary key constraint", rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"prefix": "pk_"},
+	}, selectPrimaryKeyConstraintNames)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(statementWithConstraints(nil, nil))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected implicit primary key name to be skipped, got %+v", findings)
+	}
+}
+
+func TestForeignKeyConstraintNamingRulesAreSuppressedWhenForeignKeysAreForbidden(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Policy{
+		Rules: map[string]policy.RulePolicy{
+			ruleIDTableForeignKeyForbid: {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params:  map[string]any{"forbid": true},
+			},
+			"ddl.constraint.foreign_key.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"prefix": "fk_"},
+			},
+			"ddl.constraint.foreign_key.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"suffix": "_fk"},
+			},
+			"ddl.constraint.foreign_key.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"contains": []string{"tenant", "account"}},
+			},
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(statementWithConstraints(nil, nil, spec.Constraint{
+		Type:    "foreign_key",
+		Name:    "orders_user_ref",
+		Columns: []string{"user_id"},
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected only the forbid finding, got %+v", findings)
+	}
+	if findings[0].RuleID != ruleIDTableForeignKeyForbid {
+		t.Fatalf("expected foreign key forbid finding only, got %+v", findings)
+	}
+}
+
 func statementWithNamedObjects(tableName string, columns []spec.Column, indexes []spec.Index) spec.Statement {
 	if len(columns) == 0 {
 		columns = []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true, DefaultValue: "1"}}
