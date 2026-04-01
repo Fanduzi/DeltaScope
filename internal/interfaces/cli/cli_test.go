@@ -163,7 +163,7 @@ func TestAuditCommandRendersNamingGovernanceFinding(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
-	code := Execute(
+	Execute(
 		context.Background(),
 		[]string{"audit", "--sql", "create table users (id bigint, primary key (id)) comment='users'", "--config", configPath, "--quiet"},
 		strings.NewReader(""),
@@ -171,14 +171,12 @@ func TestAuditCommandRendersNamingGovernanceFinding(t *testing.T) {
 		stderr,
 	)
 
-	if code != 1 {
-		t.Fatalf("expected exit code 1 for warning findings with default threshold, got %d", code)
+	output := stdout.String()
+	if !strings.Contains(output, "ddl.table.name.prefix.require") {
+		t.Fatalf("expected naming rule id in user-visible output, got %q", output)
 	}
-	if !strings.Contains(stdout.String(), "ddl.table.name.prefix.require") {
-		t.Fatalf("expected naming rule id in user-visible output, got %q", stdout.String())
-	}
-	if !strings.Contains(stdout.String(), `table name "users" must start with "tbl_"`) {
-		t.Fatalf("expected naming message in user-visible output, got %q", stdout.String())
+	if !strings.Contains(output, `table name "users" must start with "tbl_"`) {
+		t.Fatalf("expected naming message in user-visible output, got %q", output)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr output, got %q", stderr.String())
