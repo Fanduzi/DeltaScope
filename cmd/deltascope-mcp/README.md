@@ -16,7 +16,7 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 - The exposed MCP surface includes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.
 - `connection_ref` reads `~/.config/deltascope/connections.yaml` by default and can be overridden with `-connections-path`.
 - After startup, stdout is reserved for MCP stdio protocol traffic.
-- `-version` prints only the semantic version string and defaults to `v0.10.0` in source builds.
+- `-version` prints only the semantic version string and defaults to `v0.11.1` in source builds.
 
 ## Update Rule
 

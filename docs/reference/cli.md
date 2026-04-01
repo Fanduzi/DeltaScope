@@ -19,6 +19,8 @@ These flags apply to all subcommands.
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
 | `--version` | bool | false | Print only the semantic version string and exit. |
 
+Cobra also exposes a built-in `--help` flag on every command.
+
 ---
 
 ## deltascope audit
@@ -241,6 +243,12 @@ Commands for discovering, inspecting, and searching the registered rule set.
 
 List all registered rules. Combine filters freely.
 
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--kind` | string | (none) | Filter to `ddl` or `dml` rules. |
+| `--level` | string | (none) | Filter to `blocker`, `warning`, or `notice`. |
+| `--enabled-only` | bool | false | Show only rules enabled in the shipped default policy. |
+
 ```bash
 # All rules
 deltascope rules list
@@ -350,6 +358,10 @@ explicitly set. Edit it to customize your policy.
 
 Validates a config file for YAML syntax correctness and valid rule IDs. Useful as a pre-commit check
 or in CI.
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--file` | string | (none) | Path to the YAML config file to lint. Required. |
 
 ```bash
 deltascope config lint --file ./deltascope.yaml

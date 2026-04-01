@@ -17,6 +17,8 @@
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
 | `--version` | bool | false | 仅打印语义化版本字符串后退出。 |
 
+Cobra 还会为每个命令提供内建的 `--help` 标志。
+
 ---
 
 ## deltascope audit
@@ -232,6 +234,12 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
 
 列出所有已注册规则，可自由组合过滤条件。
 
+| 标志 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `--kind` | string | （无） | 过滤为 `ddl` 或 `dml` 规则。 |
+| `--level` | string | （无） | 过滤为 `blocker`、`warning` 或 `notice`。 |
+| `--enabled-only` | bool | false | 仅显示默认内置策略中启用的规则。 |
+
 ```bash
 # 所有规则
 deltascope rules list
@@ -339,6 +347,10 @@ deltascope config init > deltascope.yaml
 ### config lint
 
 验证配置文件的 YAML 语法正确性和规则 ID 有效性。适合用作预提交检查或 CI 步骤。
+
+| 标志 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `--file` | string | （无） | 要校验的 YAML 配置文件路径。必填。 |
 
 ```bash
 deltascope config lint --file ./deltascope.yaml
