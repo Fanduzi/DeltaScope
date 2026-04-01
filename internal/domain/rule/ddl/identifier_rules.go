@@ -188,6 +188,7 @@ func (r namingRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
 			continue
 		}
 		findings = append(findings, rule.Finding{
+			RuleID:     r.ruleID,
 			Level:      r.level,
 			Message:    r.message(subject.name),
 			Suggestion: r.suggestion,
@@ -274,6 +275,52 @@ func selectIndexNames(statement spec.Statement) []identifierSubject {
 	subjects := make([]identifierSubject, 0, len(statement.DDL.Indexes))
 	for _, index := range statement.DDL.Indexes {
 		subjects = append(subjects, identifierSubject{kind: "index", name: index.Name})
+	}
+	return subjects
+}
+
+func selectPrimaryKeyConstraintNames(statement spec.Statement) []identifierSubject {
+	if statement.DDL == nil || statement.DDL.PrimaryKey == nil {
+		return nil
+	}
+	if strings.TrimSpace(statement.DDL.PrimaryKey.Name) == "" || strings.EqualFold(strings.TrimSpace(statement.DDL.PrimaryKey.Name), "primary") {
+		return nil
+	}
+	return []identifierSubject{{kind: "constraint.primary_key", name: statement.DDL.PrimaryKey.Name}}
+}
+
+func selectUniqueConstraintNames(statement spec.Statement) []identifierSubject {
+	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+		return nil
+	}
+	subjects := make([]identifierSubject, 0)
+	for _, index := range statement.DDL.Indexes {
+		if index.Kind != spec.IndexKindUnique || strings.TrimSpace(index.Name) == "" {
+			continue
+		}
+		subjects = append(subjects, identifierSubject{kind: "constraint.unique_key", name: index.Name})
+	}
+	return subjects
+}
+
+func selectForeignKeyConstraintNames(statement spec.Statement) []identifierSubject {
+	return selectConstraintNamesByType(statement, "foreign_key", "constraint.foreign_key")
+}
+
+func selectCheckConstraintNames(statement spec.Statement) []identifierSubject {
+	return selectConstraintNamesByType(statement, "check", "constraint.check")
+}
+
+func selectConstraintNamesByType(statement spec.Statement, constraintType, kind string) []identifierSubject {
+	if statement.DDL == nil || len(statement.DDL.Constraints) == 0 {
+		return nil
+	}
+	subjects := make([]identifierSubject, 0)
+	for _, constraint := range statement.DDL.Constraints {
+		if constraint.Type != constraintType || strings.TrimSpace(constraint.Name) == "" {
+			continue
+		}
+		subjects = append(subjects, identifierSubject{kind: kind, name: constraint.Name})
 	}
 	return subjects
 }

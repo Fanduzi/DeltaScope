@@ -711,6 +711,8 @@ func constraintTypeName(tp ast.ConstraintType) string {
 		return "unique"
 	case ast.ConstraintForeignKey:
 		return "foreign_key"
+	case ast.ConstraintCheck:
+		return "check"
 	default:
 		return fmt.Sprintf("constraint_%d", tp)
 	}

@@ -96,6 +96,50 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	}
 }
 
+func TestExtractMapsConstraintNamesForNamingGovernance(t *testing.T) {
+	parsed, err := Parse("create table orders (id bigint, user_id bigint, email varchar(64), amount bigint, constraint pk_orders primary key (id), constraint uk_orders_user unique key (user_id), unique key (email), constraint fk_orders_user foreign key (user_id) references users(id), constraint chk_orders_amount check (amount > 0), check (amount < 1000)) comment='orders';", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+
+	stmt := statements[0]
+	if stmt.DDL == nil {
+		t.Fatalf("expected ddl metadata")
+	}
+	if stmt.DDL.PrimaryKey == nil {
+		t.Fatalf("expected primary key metadata")
+	}
+	if stmt.DDL.PrimaryKey.Name != "pk_orders" {
+		t.Fatalf("expected named primary key pk_orders, got %q", stmt.DDL.PrimaryKey.Name)
+	}
+	if len(stmt.DDL.Indexes) != 2 {
+		t.Fatalf("expected 2 unique indexes, got %d", len(stmt.DDL.Indexes))
+	}
+	if stmt.DDL.Indexes[0].Kind != spec.IndexKindUnique || stmt.DDL.Indexes[0].Name != "uk_orders_user" {
+		t.Fatalf("expected named unique key uk_orders_user, got %+v", stmt.DDL.Indexes[0])
+	}
+	if stmt.DDL.Indexes[1].Kind != spec.IndexKindUnique || stmt.DDL.Indexes[1].Name != "" {
+		t.Fatalf("expected unnamed unique key to stay unnamed, got %+v", stmt.DDL.Indexes[1])
+	}
+	if len(stmt.DDL.Constraints) != 3 {
+		t.Fatalf("expected 3 non-index constraints, got %d", len(stmt.DDL.Constraints))
+	}
+	if stmt.DDL.Constraints[0].Type != "foreign_key" || stmt.DDL.Constraints[0].Name != "fk_orders_user" {
+		t.Fatalf("expected named foreign key fk_orders_user, got %+v", stmt.DDL.Constraints[0])
+	}
+	if stmt.DDL.Constraints[1].Type != "check" || stmt.DDL.Constraints[1].Name != "chk_orders_amount" {
+		t.Fatalf("expected named check constraint chk_orders_amount, got %+v", stmt.DDL.Constraints[1])
+	}
+	if stmt.DDL.Constraints[2].Type != "check" || stmt.DDL.Constraints[2].Name != "" {
+		t.Fatalf("expected unnamed check constraint to stay unnamed, got %+v", stmt.DDL.Constraints[2])
+	}
+}
+
 func TestExtractPreservesBacktickedKeywordsAndUnnamedIndexes(t *testing.T) {
 	parsed, err := Parse("create table `select` (`from` bigint unsigned not null auto_increment comment 'pk', `group` varchar(32) comment 'group', primary key (`from`), key (`group`), key `order` (`group`)) comment='keyword table';", spec.DialectMySQL)
 	if err != nil {

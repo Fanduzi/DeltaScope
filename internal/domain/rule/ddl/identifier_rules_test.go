@@ -126,8 +126,8 @@ func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
 
 func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
 	tests := []struct {
-		name        string
-		build       func(t *testing.T) rule.StatementRule
+		name         string
+		build        func(t *testing.T) rule.StatementRule
 		statement    spec.Statement
 		wantCount    int
 		wantMessage  string
@@ -277,6 +277,150 @@ func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
 	}
 }
 
+func TestConstraintNamingRulesEvaluateExplicitNamesOnly(t *testing.T) {
+	tests := []struct {
+		name       string
+		build      func(t *testing.T) rule.StatementRule
+		statement  spec.Statement
+		wantCount  int
+		wantRuleID string
+	}{
+		{
+			name: "primary key prefix checks explicit names only",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingPrefixRule("ddl.constraint.primary_key.name.prefix.require", "primary key constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": "pk_"},
+				}, selectPrimaryKeyConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement: statementWithConstraints(
+				&spec.Index{Name: "orders_pk", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+				nil,
+			),
+			wantCount:  1,
+			wantRuleID: "ddl.constraint.primary_key.name.prefix.require",
+		},
+		{
+			name: "unique key contains passes on positive match",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingContainsRule("ddl.constraint.unique_key.name.contains.require", "unique key constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"user", "account"}},
+				}, selectUniqueConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement: statementWithConstraints(
+				nil,
+				[]spec.Index{{Name: "uk_user_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}}},
+			),
+			wantCount: 0,
+		},
+		{
+			name: "foreign key suffix checks explicit names only",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingSuffixRule("ddl.constraint.foreign_key.name.suffix.require", "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": "_fk"},
+				}, selectForeignKeyConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement:  statementWithConstraints(nil, nil, spec.Constraint{Type: "foreign_key", Name: "fk_orders_user"}),
+			wantCount:  1,
+			wantRuleID: "ddl.constraint.foreign_key.name.suffix.require",
+		},
+		{
+			name: "check constraint skips unnamed objects",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingContainsRule("ddl.constraint.check.name.contains.require", "check constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"amount", "price"}},
+				}, selectCheckConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement: statementWithConstraints(nil, nil, spec.Constraint{Type: "check", Name: ""}),
+			wantCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule := tt.build(t)
+
+			findings, err := statementRule.Evaluate(tt.statement)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != tt.wantCount {
+				t.Fatalf("expected %d findings, got %d", tt.wantCount, len(findings))
+			}
+			if tt.wantCount == 0 {
+				return
+			}
+			if findings[0].RuleID != tt.wantRuleID {
+				t.Fatalf("expected rule id %q, got %q", tt.wantRuleID, findings[0].RuleID)
+			}
+		})
+	}
+}
+
+func TestRegisterSkipsForeignKeyConstraintNamingWhenForeignKeysAreForbidden(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Policy{
+		Rules: map[string]policy.RulePolicy{
+			ruleIDTableForeignKeyForbid: {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params:  map[string]any{"forbid": true},
+			},
+			"ddl.constraint.foreign_key.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"prefix": "fk_"},
+			},
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(statementWithConstraints(nil, nil, spec.Constraint{
+		Type:    "foreign_key",
+		Name:    "orders_user_ref",
+		Columns: []string{"user_id"},
+	}))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDTableForeignKeyForbid {
+		t.Fatalf("expected foreign key forbid finding only, got %+v", findings)
+	}
+}
+
 func statementWithNamedObjects(tableName string, columns []spec.Column, indexes []spec.Index) spec.Statement {
 	if len(columns) == 0 {
 		columns = []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true, DefaultValue: "1"}}
@@ -292,6 +436,25 @@ func statementWithNamedObjects(tableName string, columns []spec.Column, indexes 
 				Name:    "primary",
 				Columns: []string{"id"},
 			},
+		},
+	}
+}
+
+func statementWithConstraints(primaryKey *spec.Index, indexes []spec.Index, constraints ...spec.Constraint) spec.Statement {
+	if primaryKey == nil {
+		primaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}}
+	}
+	if len(indexes) == 0 {
+		indexes = nil
+	}
+	return spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Table:       &spec.Table{Name: "orders", Comment: "'orders'"},
+			Columns:     []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true, DefaultValue: "1"}},
+			PrimaryKey:  primaryKey,
+			Indexes:     indexes,
+			Constraints: constraints,
 		},
 	}
 }

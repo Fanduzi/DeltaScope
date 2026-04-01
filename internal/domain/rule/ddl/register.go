@@ -79,6 +79,42 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDIndexNameKeywordForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newIdentifierKeywordRule(ruleIDIndexNameKeywordForbid, "index", rule.LevelBlocker, cfg, selectIndexNames)
 		}},
+		{ruleID: ruleIDConstraintPrimaryKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingPrefixRule(ruleIDConstraintPrimaryKeyNamePrefixRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintPrimaryKeyNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingSuffixRule(ruleIDConstraintPrimaryKeyNameSuffixRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintPrimaryKeyNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingContainsRule(ruleIDConstraintPrimaryKeyNameContainsRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintUniqueKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingPrefixRule(ruleIDConstraintUniqueKeyNamePrefixRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintUniqueKeyNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingSuffixRule(ruleIDConstraintUniqueKeyNameSuffixRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintUniqueKeyNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingContainsRule(ruleIDConstraintUniqueKeyNameContainsRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintForeignKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintForeignKeyNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingSuffixRule(ruleIDConstraintForeignKeyNameSuffixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintForeignKeyNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingContainsRule(ruleIDConstraintForeignKeyNameContainsRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintCheckNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintCheckNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingSuffixRule(ruleIDConstraintCheckNameSuffixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames)
+		}},
+		{ruleID: ruleIDConstraintCheckNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newNamingContainsRule(ruleIDConstraintCheckNameContainsRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames)
+		}},
 		{ruleID: ruleIDColumnVarcharMaxLength, construct: newColumnVarcharMaxLengthRule},
 		{ruleID: ruleIDColumnDefaultRequire, construct: newColumnDefaultRequiredRule},
 		{ruleID: ruleIDColumnNotNullRequire, construct: newColumnNotNullRequiredRule},
@@ -328,6 +364,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		if !ok || !ruleCfg.Enabled {
 			continue
 		}
+		if suppressesForeignKeyConstraintNaming(cfg, factory.ruleID) {
+			continue
+		}
 
 		statementRule, err := factory.construct(ruleCfg)
 		if err != nil {
@@ -363,4 +402,22 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 	}
 
 	return nil
+}
+
+func suppressesForeignKeyConstraintNaming(cfg policy.Policy, ruleID string) bool {
+	switch ruleID {
+	case ruleIDConstraintForeignKeyNamePrefixRequire, ruleIDConstraintForeignKeyNameSuffixRequire, ruleIDConstraintForeignKeyNameContainsRequire:
+	default:
+		return false
+	}
+
+	forbidCfg, ok := cfg.Rules[ruleIDTableForeignKeyForbid]
+	if !ok || !forbidCfg.Enabled {
+		return false
+	}
+	forbid, err := boolParam(ruleIDTableForeignKeyForbid, forbidCfg, "forbid", true)
+	if err != nil {
+		return false
+	}
+	return forbid
 }

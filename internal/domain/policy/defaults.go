@@ -347,6 +347,90 @@ func Default() Policy {
 					"contains": []string{},
 				},
 			},
+			"ddl.constraint.primary_key.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"prefix": "",
+				},
+			},
+			"ddl.constraint.primary_key.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.constraint.primary_key.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
+			"ddl.constraint.unique_key.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"prefix": "",
+				},
+			},
+			"ddl.constraint.unique_key.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.constraint.unique_key.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
+			"ddl.constraint.foreign_key.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"prefix": "",
+				},
+			},
+			"ddl.constraint.foreign_key.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.constraint.foreign_key.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
+			"ddl.constraint.check.name.prefix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"prefix": "",
+				},
+			},
+			"ddl.constraint.check.name.suffix.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"suffix": "",
+				},
+			},
+			"ddl.constraint.check.name.contains.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"contains": []string{},
+				},
+			},
 			"ddl.index.duplicate.forbid": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -428,14 +512,14 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"forbid":            true,
+					"forbid": true,
 				},
 			},
 			"ddl.alter.add_index.redundant_unique_overlap.forbid": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"forbid":            true,
+					"forbid": true,
 				},
 			},
 			"ddl.alter.add_index.unique.prefix.require": {
@@ -552,7 +636,7 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"required":          true,
+					"required": true,
 				},
 			},
 			"ddl.alter.modify_column.explicit_nullability_change.forbid": {
@@ -615,7 +699,7 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required":          true,
+					"required": true,
 				},
 			},
 			"ddl.table.charset.allowlist": {
@@ -637,7 +721,7 @@ func Default() Policy {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{
-					"required":          true,
+					"required": true,
 				},
 			},
 			"ddl.table.auto_increment.init_value.require": {
@@ -692,20 +776,18 @@ func Default() Policy {
 			"ddl.table.drop.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.table.drop.adaptive_hash.warn": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.table.drop.rows.max_count": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"limit":             100,
+					"limit": 100,
 				},
 			},
 			"ddl.table.truncate.forbid": {
@@ -718,20 +800,18 @@ func Default() Policy {
 			"ddl.table.truncate.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.table.truncate.adaptive_hash.warn": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.table.truncate.rows.max_count": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
 				Params: map[string]any{
-					"limit":             100,
+					"limit": 100,
 				},
 			},
 			"ddl.table.denylist.forbid": {
@@ -760,68 +840,57 @@ func Default() Policy {
 			"ddl.table.exists.create.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.table.exists.alter.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.add_column.exists.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.drop_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.modify_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.change_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.rename_column.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.add_index.exists.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.drop_index.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.rename_index.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"ddl.alter.drop_primary_key.exists.require": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
-				Params: map[string]any{
-				},
+				Params:  map[string]any{},
 			},
 			"dml.where.require": {
 				Enabled: true,
