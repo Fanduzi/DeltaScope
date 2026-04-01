@@ -14,7 +14,7 @@ stages:
 
 # ── Variables ─────────────────────────────────────────────────────────────────
 variables:
-  DELTASCOPE_VERSION: "v0.11.0"   # Pin to a release tag, or set to "latest"
+  DELTASCOPE_VERSION: "v0.12.0"   # Pin to a release tag, or set to "latest"
   DELTASCOPE_FAIL_ON: "blocker"   # blocker | warning | notice | none
   DELTASCOPE_FILES: "migrations/*.sql"  # Glob relative to repository root
 
@@ -170,7 +170,7 @@ sql-audit:
 # sql-audit-custom-policy:
 #   extends: sql-audit
 #   variables:
-#     DELTASCOPE_VERSION: "v0.11.0"
+#     DELTASCOPE_VERSION: "v0.12.0"
 #     DELTASCOPE_FAIL_ON: "warning"
 #   script:
 #     - |

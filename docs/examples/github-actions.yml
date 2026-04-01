@@ -36,13 +36,13 @@ jobs:
 
       - name: Run DeltaScope SQL audit
         id: deltascope
-        uses: Fanduzi/DeltaScope@v0.11.0
+        uses: Fanduzi/DeltaScope@v0.12.0
         with:
           # Glob pattern relative to the repository root.
           files: 'migrations/*.sql'
 
           # Pin to a specific release for reproducible builds, or use 'latest'.
-          version: 'v0.11.0'
+          version: 'v0.12.0'
 
           # Exit with a non-zero code if any finding at this level or above exists.
           # Valid values: blocker | warning | notice | none

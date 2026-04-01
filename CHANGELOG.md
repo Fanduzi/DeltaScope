@@ -8,9 +8,18 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.12.0] - 2026-04-02
+
 ### Added
 
-- Release-facing docs now describe structured naming governance as a complementary layer to existing pattern legality rules for `CREATE TABLE` table, column, index, and explicitly named constraint objects, including `prefix`, `suffix`, and `contains`; foreign key naming governance only applies when foreign keys are allowed by policy, and is suppressed by the shipped default `ddl.table.foreign_key.forbid` baseline
+- Structured naming governance for `CREATE TABLE` table, column, index, and explicitly named constraint objects, with configurable `prefix`, `suffix`, and `contains` requirements
+- Reusable naming configuration helpers and rule primitives used across table, column, index, and constraint governance checks
+- Application-layer and CLI end-to-end coverage for config-driven naming governance findings
+
+### Changed
+
+- Release-facing docs, examples, and landing content now present naming governance as the latest shipped milestone and align versioned install snippets to `v0.12.0`
+- Foreign key naming governance stays policy-aware: it only applies when foreign keys are allowed by policy and remains suppressed by the shipped default `ddl.table.foreign_key.forbid` baseline
 
 ## [v0.11.1] - 2026-03-31
 

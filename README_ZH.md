@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.11.1/install.sh | \
-  DELTASCOPE_VERSION=v0.11.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.12.0/install.sh | \
+  DELTASCOPE_VERSION=v0.12.0 sh
 ```
 
 发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
@@ -50,7 +50,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.11.1/install.
 deltascope audit --sql "delete from users"
 ```
 
-示例输出：
+示例摘录：
 
 ```text
 Verdict: reject
@@ -60,16 +60,16 @@ Warnings: 0
 Notices: 0
 
 Statement 1: DELETE
-- [blocker] dml.where.require: DELETE or UPDATE must include a WHERE clause
+- [blocker] dml.where.require: UPDATE and DELETE statements must include a WHERE clause
 ```
 
 审核 `CREATE TABLE` 语句：
 
 ```bash
-deltascope audit --sql "create table users (id bigint unsigned not null auto_increment, primary key (id), name varchar(255) not null comment 'user name') comment='user table'"
+deltascope audit --sql "create table tbl_users (id bigint unsigned not null auto_increment comment 'id', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='users' engine=InnoDB default charset=utf8mb4"
 ```
 
-示例输出：
+示例摘录：
 
 ```text
 Verdict: review
@@ -79,7 +79,7 @@ Warnings: 1
 Notices: 0
 
 Statement 1: CREATE TABLE
-- [warning] ddl.column.comment.require: column `id` must have a comment
+- [warning] ddl.column.default.require: column "id" should define a default value
 ```
 
 审核 SQL 文件：
@@ -92,7 +92,7 @@ deltascope audit --file ./migrations/20260328_add_column.sql
 
 ```bash
 deltascope audit \
-  --sql "alter table users drop column age" \
+  --sql "create table tbl_users (id bigint unsigned not null auto_increment comment 'id', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='users' engine=InnoDB default charset=utf8mb4" \
   --format json \
   --fail-on warning
 ```
@@ -103,23 +103,17 @@ deltascope audit \
 {
   "verdict": "review",
   "summary": {
+    "statements": 1,
     "blockers": 0,
     "warnings": 1,
     "notices": 0
   },
-  "statements": [
-    {
-      "index": 1,
-      "kind": "ALTER TABLE",
-      "findings": [
-        {
-          "level": "warning",
-          "rule_id": "ddl.alter.drop.column",
-          "message": "dropping column `age` is destructive and cannot be undone"
-        }
-      ]
-    }
-  ]
+  "statements": [ ... ],
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
 }
 ```
 

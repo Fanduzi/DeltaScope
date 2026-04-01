@@ -554,12 +554,12 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.11.0 — latest release</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.12.0 — latest release</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL &amp; TiDB DDL &amp; DML
 before it ships</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.
-Use the same offline-first audit engine in migration review, CI pipelines, HTTP services, and AI-assisted SQL workflows.</p>
+Use the same offline-first audit engine in migration review, CI pipelines, HTTP services, and AI-assisted SQL workflows, with configurable naming governance for schema objects.</p>
         <div class="hero-actions animate-fade-up" style="animation-delay:0.28s;">
           <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero.ctaPrimary">Install DeltaScope</a>
           <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
@@ -755,12 +755,12 @@ The goal is simple: catch risky changes early, keep policy consistent, and avoid
               </tr>
               <tr>
                 <td class="level-warning">review</td>
-                <td data-i18n="severity.table.review">No blockers, ≥ 1 warning or notice</td>
+                <td data-i18n="severity.table.review">No blockers, ≥ 1 warning</td>
                 <td><code class="mono">1</code> <span data-i18n="severity.table.reviewNote">(when --fail-on warning)</span></td>
               </tr>
               <tr>
                 <td class="level-notice">pass</td>
-                <td data-i18n="severity.table.pass">No findings at any level</td>
+                <td data-i18n="severity.table.pass">No blockers or warnings; notice-only results still pass</td>
                 <td><code class="mono">0</code></td>
               </tr>
             </tbody>
@@ -789,7 +789,7 @@ The goal is simple: catch risky changes early, keep policy consistent, and avoid
               <td><code class="mono">dml.where.require</code></td>
               <td>DML</td>
               <td><span class="level-blocker">blocker</span></td>
-              <td data-i18n="rules.rows.where">DELETE or UPDATE must include a WHERE clause</td>
+              <td data-i18n="rules.rows.where">UPDATE and DELETE statements must include a WHERE clause</td>
             </tr>
             <tr>
               <td><code class="mono">dml.limit.forbid</code></td>
@@ -814,6 +814,12 @@ The goal is simple: catch risky changes early, keep policy consistent, and avoid
               <td>DDL</td>
               <td><span class="level-warning">warning</span></td>
               <td data-i18n="rules.rows.tableComment">Tables must have a comment</td>
+            </tr>
+            <tr>
+              <td><code class="mono">ddl.table.name.prefix.require</code></td>
+              <td>DDL</td>
+              <td><span class="level-warning">warning</span></td>
+              <td data-i18n="rules.rows.namingPrefix">Tables can be required to start with a configured prefix</td>
             </tr>
             <tr>
               <td><code class="mono">ddl.alter.drop_column.forbid</code></td>
@@ -897,32 +903,33 @@ Statements: 1
 Blockers: 1  Warnings: 0  Notices: 0
 
 Statement 1: DELETE
-  <span class="level-blocker">[blocker]</span> dml.where.require: DELETE or UPDATE must include a WHERE clause</code>
+  <span class="level-blocker">[blocker]</span> dml.where.require: UPDATE and DELETE statements must include a WHERE clause</code>
         </div>
 
         <div class="code-block reveal" style="margin-top: 16px;">
-          <code data-i18n="examples.ddl"><span class="c"># ── DDL: review a migration before rollout ──</span>
-<span class="prompt">$</span> deltascope audit --file <span class="s">"./migrations/20260322.sql"</span>
+          <code data-i18n="examples.ddl"><span class="c"># ── DDL: review a CREATE TABLE definition ──</span>
+<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment 'id', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='users' engine=InnoDB default charset=utf8mb4"</span>
 
 Verdict: review
 Statements: 1
 Blockers: 0  Warnings: 1  Notices: 0
 
 Statement 1: CREATE TABLE
-  <span class="level-warning">[warning]</span> ddl.column.comment.require: column <span class="s">`id`</span> must have a comment</code>
+  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value</code>
         </div>
 
         <div class="code-block reveal" style="margin-top: 16px;">
           <code data-i18n="examples.ci"><span class="c"># ── CI / JSON output ──</span>
 <span class="prompt">$</span> deltascope audit <span class="t">\</span>
-  --sql <span class="s">"alter table users drop column age"</span> <span class="t">\</span>
+  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment 'id', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='users' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\</span>
   --format json <span class="t">\</span>
   --fail-on warning
 
 <span class="c">{</span>
   <span class="s">"verdict"</span>: <span class="s">"review"</span>,
-  <span class="s">"summary"</span>: <span class="t">{ "blockers": 0, "warnings": 1, "notices": 0 }</span>,
-  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>
+  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,
+  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,
+  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>
 <span class="c">}</span></code>
         </div>
       </div>
@@ -963,30 +970,35 @@ Statement 1: CREATE TABLE
       <div class="container">
         <p class="section-label" data-i18n="releases.label">Releases</p>
         <h2 class="section-title" data-i18n="releases.title">Shipping steadily across CLI, HTTP, MCP, and library workflows</h2>
-        <p class="section-sub" data-i18n="releases.sub">Recent releases show the product getting more usable in real delivery paths: CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.</p>
+        <p class="section-sub" data-i18n="releases.sub">Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.</p>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
           <div class="reveal">
             <div class="timeline">
               <div class="timeline-item">
+                <div class="timeline-date">2026-04-02</div>
+                <div class="timeline-version">v0.12.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-changes" data-i18n="releases.items.v012">Structured naming governance for table, column, index, and explicit constraint names, plus config examples and end-to-end coverage.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-31</div>
+                <div class="timeline-version">v0.11.1</div>
+                <div class="timeline-changes" data-i18n="releases.items.v0111">Homebrew-first install guidance, a safer installer flow, interactive stdin hints, and aligned CLI output docs.</div>
+              </div>
+              <div class="timeline-item">
                 <div class="timeline-date">2026-03-30</div>
-                <div class="timeline-version">v0.11.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
-                <div class="timeline-changes" data-i18n="releases.items.v011">GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-29</div>
-                <div class="timeline-version">v0.10.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v010">HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-28</div>
-                <div class="timeline-version">v0.9.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v09">Homebrew distribution and Claude Code skill support for agent-driven review.</div>
+                <div class="timeline-version">v0.11.0</div>
+                <div class="timeline-changes" data-i18n="releases.items.v0110">GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.</div>
               </div>
             </div>
           </div>
           <div class="reveal">
             <div class="timeline" style="padding-left:32px;">
+              <div class="timeline-item">
+                <div class="timeline-date">2026-03-29</div>
+                <div class="timeline-version">v0.10.0</div>
+                <div class="timeline-changes" data-i18n="releases.items.v010">HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.</div>
+              </div>
               <div class="timeline-item">
                 <div class="timeline-date">2026-03-27</div>
                 <div class="timeline-version">v0.7.0</div>
@@ -996,11 +1008,6 @@ Statement 1: CREATE TABLE
                 <div class="timeline-date">2026-03-25</div>
                 <div class="timeline-version">v0.6.x</div>
                 <div class="timeline-changes" data-i18n="releases.items.v06">Richer explanations in audit results, including why, risk, suggestion, and metadata notes.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-21</div>
-                <div class="timeline-version">v0.5.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v05">First release with CLI, HTTP, offline DDL/DML rules, and the public Go API.</div>
               </div>
             </div>
           </div>
@@ -1042,7 +1049,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.11.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.12.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1086,9 +1093,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: 'Install'
         },
         hero: {
-          badge: 'v0.11.0 — latest release',
+          badge: 'v0.12.0 — latest release',
           title: 'Audit risky MySQL & TiDB DDL & DML\nbefore it ships',
-          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.',
+          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.\nThe latest release also adds configurable naming governance for schema objects.',
           ctaPrimary: 'Install DeltaScope',
           ctaSecondary: 'See Real Workflows',
           badgeAgent: 'Agent Ready'
@@ -1127,9 +1134,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
             exit: 'Exit Code (CLI)',
             reject: '≥ 1 blocker finding',
             rejectNote: '(when --fail-on blocker)',
-            review: 'No blockers, ≥ 1 warning or notice',
+            review: 'No blockers, ≥ 1 warning',
             reviewNote: '(when --fail-on warning)',
-            pass: 'No findings at any level'
+            pass: 'No blockers or warnings; notice-only results still pass'
           }
         },
         workflow: {
@@ -1164,11 +1171,12 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           sub: 'Stable dotted rule IDs let teams inspect, tune, and discuss the same checks across CLI, CI, services, and agent workflows.',
           table: { id: 'Rule ID', area: 'Area', level: 'Default Level', desc: 'Description' },
           rows: {
-            where: 'DELETE or UPDATE must include a WHERE clause',
+            where: 'UPDATE and DELETE statements must include a WHERE clause',
             limit: 'UPDATE and DELETE statements must not include LIMIT',
             subquery: 'UPDATE and DELETE statements must not include subqueries',
             columnComment: 'Columns must have a comment',
             tableComment: 'Tables must have a comment',
+            namingPrefix: 'Tables can be required to start with a configured prefix',
             dropColumn: 'ALTER TABLE drop column is forbidden',
             mergeAlter: 'Multiple ALTER TABLE statements on the same table should be merged',
             indexLength: 'Index key length must stay within InnoDB instance limits'
@@ -1190,9 +1198,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           label: 'Usage Examples',
           title: 'Two examples are enough to explain the product',
           sub: 'One human-readable pair for DML and DDL, plus one machine-readable CI output block to show how the same audit contract scales into automation.',
-          dml: '<span class="c"># ── DML: reject an unsafe DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: DELETE or UPDATE must include a WHERE clause',
-          ddl: '<span class="c"># ── DDL: review a migration before rollout ──</span>\n<span class="prompt">$</span> deltascope audit --file <span class="s">"./migrations/20260322.sql"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.comment.require: column <span class="s">`id`</span> must have a comment',
-          ci: '<span class="c"># ── CI / JSON output ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"alter table users drop column age"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>\n<span class="c">}</span>'
+          dml: '<span class="c"># ── DML: reject an unsafe DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: UPDATE and DELETE statements must include a WHERE clause',
+          ddl: '<span class="c"># ── DDL: review a CREATE TABLE definition ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value',
+          ci: '<span class="c"># ── CI / JSON output ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,\n  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>\n<span class="c">}</span>'
         },
         trust: {
           label: 'Trust Signals',
@@ -1208,10 +1216,12 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         releases: {
           label: 'Releases',
           title: 'Shipping steadily across CLI, HTTP, MCP, and library workflows',
-          sub: 'Recent releases show the product getting more usable in real delivery paths: CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.',
+          sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.',
           latest: 'latest',
           items: {
-            v011: 'GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.',
+            v012: 'Structured naming governance for table, column, index, and explicit constraint names, plus config examples and end-to-end coverage.',
+            v0111: 'Homebrew-first install guidance, a safer installer flow, interactive stdin hints, and aligned CLI output docs.',
+            v0110: 'GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.',
             v010: 'HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.',
             v09: 'Homebrew distribution and Claude Code skill support for agent-driven review.',
             v07: 'Official MCP stdio server with audit_sql, describe_rule, list_rules, and get_capabilities.',
@@ -1251,9 +1261,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: '安装'
         },
         hero: {
-          badge: 'v0.11.0 —— 最新版本',
+          badge: 'v0.12.0 —— 最新版本',
           title: '在上线前审计高风险 MySQL 与 TiDB DDL / DML',
-          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。',
+          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。\n最新版本还增加了可配置的 schema object 命名治理。',
           ctaPrimary: '安装 DeltaScope',
           ctaSecondary: '查看真实场景',
           badgeAgent: '支持 Agent'
@@ -1292,9 +1302,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
             exit: 'CLI 退出码',
             reject: '≥ 1 条 blocker finding',
             rejectNote: '（当 --fail-on blocker）',
-            review: '无 blocker，但存在 ≥ 1 条 warning 或 notice',
+            review: '无 blocker，但存在 ≥ 1 条 warning',
             reviewNote: '（当 --fail-on warning）',
-            pass: '所有级别都无 finding'
+            pass: '没有 blocker 或 warning；只有 notice 时也仍然是 pass'
           }
         },
         workflow: {
@@ -1329,11 +1339,12 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           sub: '稳定的点式 rule ID 让团队可以在 CLI、CI、服务端和 agent 工作流中讨论同一条规则。',
           table: { id: '规则 ID', area: '领域', level: '默认级别', desc: '说明' },
           rows: {
-            where: 'DELETE 或 UPDATE 必须包含 WHERE 子句',
+            where: 'UPDATE 和 DELETE 语句必须包含 WHERE 子句',
             limit: 'UPDATE 和 DELETE 不允许包含 LIMIT',
             subquery: 'UPDATE 和 DELETE 不允许包含子查询',
             columnComment: '列必须带注释',
             tableComment: '表必须带注释',
+            namingPrefix: '表名可被要求以指定前缀开头',
             dropColumn: '禁止执行 ALTER TABLE drop column',
             mergeAlter: '针对同一张表的多个 ALTER TABLE 应合并',
             indexLength: '索引键长度必须在 InnoDB 实例限制内'
@@ -1355,9 +1366,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           label: '使用示例',
           title: '两个例子已经足够解释这个产品',
           sub: '一个面向人的示例组覆盖 DML 和 DDL，再加一个面向机器的 CI 输出块，展示同一套审计契约如何延伸到自动化。',
-          dml: '<span class="c"># ── DML：拦下危险 DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: DELETE or UPDATE must include a WHERE clause',
-          ddl: '<span class="c"># ── DDL：在发布前审查迁移 ──</span>\n<span class="prompt">$</span> deltascope audit --file <span class="s">"./migrations/20260322.sql"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.comment.require: column <span class="s">`id`</span> must have a comment',
-          ci: '<span class="c"># ── CI / JSON 输出 ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"alter table users drop column age"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>\n<span class="c">}</span>'
+          dml: '<span class="c"># ── DML：拦下危险 DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: UPDATE and DELETE statements must include a WHERE clause',
+          ddl: '<span class="c"># ── DDL：审查一条 CREATE TABLE 定义 ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value',
+          ci: '<span class="c"># ── CI / JSON 输出 ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,\n  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>\n<span class="c">}</span>'
         },
         trust: {
           label: '信任信号',
@@ -1373,10 +1384,12 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         releases: {
           label: '发布',
           title: '围绕 CLI、HTTP、MCP 与库接入持续稳步推进',
-          sub: '最近几个版本主要在真实交付路径上增强可用性：CI 集成、HTTP 可用性、MCP 工具接入，以及更完整的审计结果契约。',
+          sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入，以及更完整的审计结果契约。',
           latest: '最新',
           items: {
-            v011: '增加 GitHub Actions composite action、GitLab CI 示例、/readyz、结构化 JSON access log，以及优雅退出。',
+            v012: '增加表、列、索引和显式约束名的结构化 naming governance，并补齐配置示例与端到端覆盖。',
+            v0111: '增加 Homebrew-first 安装指引、更安全的 installer 流程、交互式 stdin 提示，以及对齐后的 CLI 输出文档。',
+            v0110: '增加 GitHub Actions composite action、GitLab CI 示例、/readyz、结构化 JSON access log，以及优雅退出。',
             v010: '增加 HTTP adapter、API key 鉴权、限流和 Prometheus 指标。',
             v09: '增加 Homebrew 分发和 Claude Code skill 支持。',
             v07: '发布官方 MCP stdio 服务，提供 audit_sql、describe_rule、list_rules 和 get_capabilities。',

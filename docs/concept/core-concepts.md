@@ -53,8 +53,8 @@ The verdict is the aggregated outcome for the entire audit request. It is comput
 | Verdict | Condition |
 |---|---|
 | `reject` | At least one finding with level `blocker` is present |
-| `review` | No blockers, but at least one finding with level `warning` or `notice` is present |
-| `pass` | No findings of any level |
+| `review` | No blockers are present, but at least one finding with level `warning` is present |
+| `pass` | No blockers or warnings are present; notice-only results also remain `pass` |
 
 The verdict reflects the request as a whole, not individual statements. A single blocker in any statement produces a `reject` verdict regardless of how many other statements pass cleanly.
 

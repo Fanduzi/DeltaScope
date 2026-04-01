@@ -53,8 +53,8 @@ JSON 格式的发现示例：
 | 裁定 | 条件 |
 |---|---|
 | `reject` | 存在至少一条级别为 `blocker` 的发现 |
-| `review` | 无 blocker，但存在至少一条级别为 `warning` 或 `notice` 的发现 |
-| `pass` | 无任何级别的发现 |
+| `review` | 无 blocker，但存在至少一条级别为 `warning` 的发现 |
+| `pass` | 不存在 blocker 或 warning；只有 `notice` 的结果也仍然是 `pass` |
 
 裁定反映的是整个请求的结果，而非单条语句的结果。任意语句中只要有一个 blocker，无论其他语句是否全部通过，最终裁定均为 `reject`。
 
