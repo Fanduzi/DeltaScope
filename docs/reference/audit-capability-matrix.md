@@ -71,6 +71,8 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.index.total.max_count` | Table has more indexes than the allowed maximum | ✓ | ✗ | warning |
 | `ddl.index.columns.max_count` | An index spans more columns than the allowed maximum | ✓ | ✗ | warning |
+| `ddl.index.name.pattern.require` | Index name does not match the required lexical naming pattern | ✓ | ✗ | warning |
+| `ddl.index.name.keyword.forbid` | Index name is a reserved SQL keyword | ✓ | ✗ | blocker |
 | `ddl.index.unique.prefix.require` | Unique index name does not start with the required prefix | ✓ | ✗ | warning |
 | `ddl.index.unique.suffix.require` | Unique index name does not end with the required structured naming suffix | ✓ | ✗ | warning |
 | `ddl.index.unique.contains.require` | Unique index name does not contain any configured structured naming token (OR semantics) | ✓ | ✗ | warning |
@@ -87,7 +89,7 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 ### Constraint-Level Checks
 
-Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped.
+Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped. Foreign key naming rules are only relevant when foreign keys are allowed by policy; under the shipped default baseline, `ddl.table.foreign_key.forbid` suppresses foreign key naming checks.
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|

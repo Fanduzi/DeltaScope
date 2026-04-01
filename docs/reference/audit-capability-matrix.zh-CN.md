@@ -71,6 +71,8 @@
 |---------|---------|:----:|:------:|---------|
 | `ddl.index.total.max_count` | 表的索引数量超过允许的最大值 | ✓ | ✗ | warning |
 | `ddl.index.columns.max_count` | 某个索引包含的列数超过允许的最大值 | ✓ | ✗ | warning |
+| `ddl.index.name.pattern.require` | 索引名不符合要求的词法命名模式 | ✓ | ✗ | warning |
+| `ddl.index.name.keyword.forbid` | 索引名是 SQL 保留关键字 | ✓ | ✗ | blocker |
 | `ddl.index.unique.prefix.require` | 唯一索引名未以要求的前缀开头 | ✓ | ✗ | warning |
 | `ddl.index.unique.suffix.require` | 唯一索引名未以要求的 structured naming 后缀结尾 | ✓ | ✗ | warning |
 | `ddl.index.unique.contains.require` | 唯一索引名未包含任一已配置的 structured naming token（OR 语义） | ✓ | ✗ | warning |
@@ -87,7 +89,7 @@
 
 ### 约束级检查
 
-约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。
+约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|

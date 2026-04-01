@@ -10,7 +10,7 @@ Release target: `TBD`
 
 ### Added
 
-- Structured naming governance coverage for `CREATE TABLE` objects is now documented end-to-end across table, column, index, and constraint names, including `prefix`, `suffix`, and `contains` checks as a complementary layer to existing pattern legality rules
+- Release-facing docs now describe structured naming governance as a complementary layer to existing pattern legality rules for `CREATE TABLE` table, column, index, and explicitly named constraint objects, including `prefix`, `suffix`, and `contains`; foreign key naming governance only applies when foreign keys are allowed by policy, and is suppressed by the shipped default `ddl.table.foreign_key.forbid` baseline
 
 ## [v0.11.1] - 2026-03-31
 
