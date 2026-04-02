@@ -508,6 +508,13 @@ func handleAudit(
 }
 
 func mapAuditError(err error) (status int, code string) {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return http.StatusGatewayTimeout, "request_timeout"
+	case errors.Is(err, context.Canceled):
+		return http.StatusRequestTimeout, "request_canceled"
+	}
+
 	var prepErr *auditmeta.Error
 	if errors.As(err, &prepErr) {
 		switch prepErr.Kind {
@@ -521,24 +528,27 @@ func mapAuditError(err error) (status int, code string) {
 	}
 
 	switch {
-	case errors.Is(err, context.DeadlineExceeded):
-		return http.StatusGatewayTimeout, "request_timeout"
-	case errors.Is(err, context.Canceled):
-		return http.StatusRequestTimeout, "request_canceled"
 	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
 		return http.StatusBadRequest, "bad_request"
-	case strings.Contains(err.Error(), "password source"),
-		strings.Contains(err.Error(), "password env"),
-		strings.Contains(err.Error(), "read password file:"),
-		strings.Contains(err.Error(), "connection must include at least one non-password field"),
-		strings.Contains(err.Error(), "connection must include host/user, socket/user, or connection_ref"),
-		strings.Contains(err.Error(), "connection socket cannot be combined"):
+	case isDirectConnectionInputError(err):
 		return http.StatusBadRequest, "connection_invalid"
 	case strings.Contains(err.Error(), "load policy:"):
 		return http.StatusInternalServerError, "config_invalid"
 	default:
 		return http.StatusBadRequest, "bad_request"
 	}
+}
+
+func isDirectConnectionInputError(err error) bool {
+	message := err.Error()
+	switch message {
+	case "connection password sources are mutually exclusive",
+		"connection must include at least one non-password field",
+		"connection must include host/user, socket/user, or connection_ref",
+		"connection socket cannot be combined with host/port TCP options":
+		return true
+	}
+	return strings.HasPrefix(message, `password env "`) || strings.HasPrefix(message, "read password file:")
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

@@ -7,6 +7,8 @@ package httpapi
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -124,5 +126,44 @@ func TestExecuteAuditRequestReturnsMetadataAwareContextForDirectConnection(t *te
 	}
 	if !client.closed {
 		t.Fatalf("expected metadata client close to be called")
+	}
+}
+
+func TestExecuteAuditRequestReturnsConfigErrorBeforeMetadataPreparation(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "policy.yaml")
+	if err := os.WriteFile(configPath, []byte("rules:\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if _, err := NewHandler(configPath, "test-build"); err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	if err := os.Remove(configPath); err != nil {
+		t.Fatalf("remove config: %v", err)
+	}
+
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		t.Fatalf("prepareHTTPMetadataAudit should not be called when config reload fails")
+		return nil, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host: "127.0.0.1",
+			User: "root",
+		},
+	}, configPath, func(context.Context, deltascope.Request) (deltascope.Result, error) {
+		t.Fatalf("auditFn should not be called when config reload fails")
+		return deltascope.Result{}, nil
+	})
+	if err == nil {
+		t.Fatalf("expected config error")
+	}
+	status, code := mapAuditError(err)
+	if status != 500 || code != "config_invalid" {
+		t.Fatalf("expected config_invalid, got status=%d code=%s err=%v", status, code, err)
 	}
 }

@@ -7,15 +7,18 @@ package httpapi
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 var prepareHTTPMetadataAudit = auditmeta.Prepare
+var loadHTTPPolicy = apppolicy.Load
 
 type auditRunContext struct {
 	Mode           string `json:"mode,omitempty"`
@@ -79,6 +82,9 @@ func executeMetadataAwareAudit(
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
 ) (auditResponse, error) {
+	if err := reloadHTTPPolicy(configPath); err != nil {
+		return auditResponse{}, err
+	}
 	if err := ifaceconn.ValidateConnectionInput(*request.Connection); err != nil {
 		return auditResponse{}, err
 	}
@@ -136,6 +142,16 @@ func executeMetadataAwareAudit(
 			MetadataSource: "direct",
 		},
 	}, nil
+}
+
+func reloadHTTPPolicy(configPath string) error {
+	if strings.TrimSpace(configPath) == "" {
+		return nil
+	}
+	if _, err := loadHTTPPolicy(configPath); err != nil {
+		return fmt.Errorf("load policy: %w", err)
+	}
+	return nil
 }
 
 func resolveHTTPAuditDialect(raw string) (deltascope.Dialect, string) {

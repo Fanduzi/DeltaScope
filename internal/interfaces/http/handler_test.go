@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -466,10 +467,32 @@ func TestMapAuditErrorTimeout(t *testing.T) {
 	}
 }
 
+func TestMapAuditErrorWrappedTimeout(t *testing.T) {
+	status, code := mapAuditError(&auditmeta.Error{
+		Kind:    auditmeta.ErrorConnectionOpen,
+		Message: "open metadata connection: context deadline exceeded",
+		Err:     context.DeadlineExceeded,
+	})
+	if status != http.StatusGatewayTimeout || code != "request_timeout" {
+		t.Fatalf("unexpected wrapped timeout mapping: status=%d code=%s", status, code)
+	}
+}
+
 func TestMapAuditErrorCanceled(t *testing.T) {
 	status, code := mapAuditError(context.Canceled)
 	if status != http.StatusRequestTimeout || code != "request_canceled" {
 		t.Fatalf("unexpected canceled mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorWrappedCanceled(t *testing.T) {
+	status, code := mapAuditError(&auditmeta.Error{
+		Kind:    auditmeta.ErrorDialectDetect,
+		Message: "detect dialect: context canceled",
+		Err:     context.Canceled,
+	})
+	if status != http.StatusRequestTimeout || code != "request_canceled" {
+		t.Fatalf("unexpected wrapped canceled mapping: status=%d code=%s", status, code)
 	}
 }
 
@@ -491,6 +514,20 @@ func TestMapAuditErrorConnectionOpen(t *testing.T) {
 	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorConnectionOpen, Message: "open metadata connection: boom"})
 	if status != http.StatusBadGateway || code != "connection_failed" {
 		t.Fatalf("unexpected connection open mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorConnectionValidation(t *testing.T) {
+	status, code := mapAuditError(errors.New("connection must include at least one non-password field"))
+	if status != http.StatusBadRequest || code != "connection_invalid" {
+		t.Fatalf("unexpected connection validation mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorPasswordEnv(t *testing.T) {
+	status, code := mapAuditError(errors.New(`password env "DB_PASS" is not set`))
+	if status != http.StatusBadRequest || code != "connection_invalid" {
+		t.Fatalf("unexpected password env mapping: status=%d code=%s", status, code)
 	}
 }
 
