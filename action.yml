@@ -1,7 +1,7 @@
 # action.yml — DeltaScope GitHub Actions Composite Action
 # input: SQL migration files, fail-on severity level, DeltaScope version, optional PR comment token
 # output: annotated audit results written to GITHUB_STEP_SUMMARY; non-zero exit on threshold breach
-# pos: composite action entrypoint consumed by caller workflows via `uses: Fanduzi/deltascope@v0.13.0`
+# pos: composite action entrypoint consumed by caller workflows via `uses: Fanduzi/deltascope@v0.13.1`
 # note: if this file changes, update docs/examples/github-actions.yml and this header.
 name: 'DeltaScope SQL Audit'
 description: 'Offline SQL audit for MySQL/TiDB migrations — runs deltascope CLI, annotates the step summary, and optionally comments on pull requests.'
@@ -13,7 +13,7 @@ branding:
 
 inputs:
   version:
-    description: 'DeltaScope release tag to download (e.g. v0.13.0). Defaults to latest.'
+    description: 'DeltaScope release tag to download (e.g. v0.13.1). Defaults to latest.'
     required: false
     default: 'latest'
   files:

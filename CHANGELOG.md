@@ -8,6 +8,16 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.13.1] - 2026-04-02
+
+### Fixed
+
+- Landing page inline i18n script no longer embeds unescaped SQL single quotes in the DDL / CI examples, which previously caused a browser-side `Unexpected string` syntax error and prevented the page JavaScript from loading
+
+### Changed
+
+- Release-facing docs, examples, landing content, and source-build defaults now align with `v0.13.1`
+
 ## [v0.13.0] - 2026-04-02
 
 ### Added

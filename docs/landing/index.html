@@ -554,7 +554,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.13.0 — latest release</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.13.1 — latest release</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL &amp; TiDB DDL &amp; DML
 before it ships</h1>
@@ -977,7 +977,12 @@ Statement 1: CREATE TABLE
             <div class="timeline">
               <div class="timeline-item">
                 <div class="timeline-date">2026-04-02</div>
-                <div class="timeline-version">v0.13.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-version">v0.13.1 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-changes" data-i18n="releases.items.v0131">Landing page JavaScript hotfix: escaped SQL examples so the localized homepage script loads correctly again.</div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-date">2026-04-02</div>
+                <div class="timeline-version">v0.13.0</div>
                 <div class="timeline-changes" data-i18n="releases.items.v013">HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.</div>
               </div>
               <div class="timeline-item">
@@ -1054,7 +1059,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.13.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.13.1.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1098,9 +1103,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: 'Install'
         },
         hero: {
-          badge: 'v0.13.0 — latest release',
+          badge: 'v0.13.1 — latest release',
           title: 'Audit risky MySQL & TiDB DDL & DML\nbefore it ships',
-          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.\nThe latest release adds HTTP metadata-aware audit for direct MySQL and TiDB connections.',
+          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.\nThe latest release is a landing-page hotfix that restores the localized homepage script after a JavaScript syntax regression.',
           ctaPrimary: 'Install DeltaScope',
           ctaSecondary: 'See Real Workflows',
           badgeAgent: 'Agent Ready'
@@ -1204,8 +1209,8 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           title: 'Two examples are enough to explain the product',
           sub: 'One human-readable pair for DML and DDL, plus one machine-readable CI output block to show how the same audit contract scales into automation.',
           dml: '<span class="c"># ── DML: reject an unsafe DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: UPDATE and DELETE statements must include a WHERE clause',
-          ddl: '<span class="c"># ── DDL: review a CREATE TABLE definition ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value',
-          ci: '<span class="c"># ── CI / JSON output ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,\n  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>\n<span class="c">}</span>'
+          ddl: '<span class="c"># ── DDL: review a CREATE TABLE definition ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment \'id\', created_at datetime not null default current_timestamp comment \'created\', updated_at datetime not null default current_timestamp on update current_timestamp comment \'updated\', primary key (id)) comment=\'users\' engine=InnoDB default charset=utf8mb4"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value',
+          ci: '<span class="c"># ── CI / JSON output ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment \'id\', created_at datetime not null default current_timestamp comment \'created\', updated_at datetime not null default current_timestamp on update current_timestamp comment \'updated\', primary key (id)) comment=\'users\' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,\n  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>\n<span class="c">}</span>'
         },
         trust: {
           label: 'Trust Signals',
@@ -1224,6 +1229,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.',
           latest: 'latest',
           items: {
+            v0131: 'Landing page JavaScript hotfix: escaped SQL examples so the localized homepage script loads correctly again.',
             v013: 'HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.',
             v012: 'Structured naming governance for table, column, index, and explicit constraint names, plus config examples and end-to-end coverage.',
             v0111: 'Homebrew-first install guidance, a safer installer flow, interactive stdin hints, and aligned CLI output docs.',
@@ -1267,9 +1273,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: '安装'
         },
         hero: {
-          badge: 'v0.13.0 —— 最新版本',
+          badge: 'v0.13.1 —— 最新版本',
           title: '在上线前审计高风险 MySQL 与 TiDB DDL / DML',
-          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。\n最新版本增加了面向 direct MySQL / TiDB 连接的 HTTP metadata-aware 审核。',
+          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。\n最新版本是一个 landing page 热修复，修正了本地化首页脚本的 JavaScript 语法回归。',
           ctaPrimary: '安装 DeltaScope',
           ctaSecondary: '查看真实场景',
           badgeAgent: '支持 Agent'
@@ -1373,8 +1379,8 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           title: '两个例子已经足够解释这个产品',
           sub: '一个面向人的示例组覆盖 DML 和 DDL，再加一个面向机器的 CI 输出块，展示同一套审计契约如何延伸到自动化。',
           dml: '<span class="c"># ── DML：拦下危险 DELETE ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"delete from users"</span>\n\nVerdict: reject\nStatements: 1\nBlockers: 1  Warnings: 0  Notices: 0\n\nStatement 1: DELETE\n  <span class="level-blocker">[blocker]</span> dml.where.require: UPDATE and DELETE statements must include a WHERE clause',
-          ddl: '<span class="c"># ── DDL：审查一条 CREATE TABLE 定义 ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value',
-          ci: '<span class="c"># ── CI / JSON 输出 ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment ''id'', created_at datetime not null default current_timestamp comment ''created'', updated_at datetime not null default current_timestamp on update current_timestamp comment ''updated'', primary key (id)) comment=''users'' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,\n  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>\n<span class="c">}</span>'
+          ddl: '<span class="c"># ── DDL：审查一条 CREATE TABLE 定义 ──</span>\n<span class="prompt">$</span> deltascope audit --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment \'id\', created_at datetime not null default current_timestamp comment \'created\', updated_at datetime not null default current_timestamp on update current_timestamp comment \'updated\', primary key (id)) comment=\'users\' engine=InnoDB default charset=utf8mb4"</span>\n\nVerdict: review\nStatements: 1\nBlockers: 0  Warnings: 1  Notices: 0\n\nStatement 1: CREATE TABLE\n  <span class="level-warning">[warning]</span> ddl.column.default.require: column <span class="s">"id"</span> should define a default value',
+          ci: '<span class="c"># ── CI / JSON 输出 ──</span>\n<span class="prompt">$</span> deltascope audit <span class="t">\\</span>\n  --sql <span class="s">"create table tbl_users (id bigint unsigned not null auto_increment comment \'id\', created_at datetime not null default current_timestamp comment \'created\', updated_at datetime not null default current_timestamp on update current_timestamp comment \'updated\', primary key (id)) comment=\'users\' engine=InnoDB default charset=utf8mb4"</span> <span class="t">\\</span>\n  --format json <span class="t">\\</span>\n  --fail-on warning\n\n<span class="c">{</span>\n  <span class="s">"verdict"</span>: <span class="s">"review"</span>,\n  <span class="s">"summary"</span>: <span class="t">{ "statements": 1, "blockers": 0, "warnings": 1, "notices": 0 }</span>,\n  <span class="s">"statements"</span>: <span class="t">[ ... ]</span>,\n  <span class="s">"context"</span>: <span class="t">{ "mode": "offline", "dialect": "mysql", "dialect_source": "default" }</span>\n<span class="c">}</span>'
         },
         trust: {
           label: '信任信号',
@@ -1393,6 +1399,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入，以及更完整的审计结果契约。',
           latest: '最新',
           items: {
+            v0131: '修复 landing page JavaScript：转义 SQL 示例，恢复本地化首页脚本的正常加载。',
             v013: '增加基于 direct connection 的 HTTP metadata-aware 审核、共享连接辅助层，以及面向 MySQL / TiDB real server 的端到端覆盖。',
             v012: '增加表、列、索引和显式约束名的结构化 naming governance，并补齐配置示例与端到端覆盖。',
             v0111: '增加 Homebrew-first 安装指引、更安全的 installer 流程、交互式 stdin 提示，以及对齐后的 CLI 输出文档。',
