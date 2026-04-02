@@ -8,6 +8,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net"
@@ -22,8 +23,7 @@ import (
 
 func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	ctx := context.Background()
-	baseURL, stop := startHTTPServer(t)
-	t.Cleanup(stop)
+	baseURL := startHTTPServer(t)
 
 	payload := map[string]any{
 		"sql": "create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'",
@@ -43,13 +43,18 @@ func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	if got := contextValue["dialect"]; got != "mysql" {
 		t.Fatalf("unexpected dialect: %#v", got)
 	}
+	if got := contextValue["schema"]; got != "app" {
+		t.Fatalf("unexpected schema: %#v", got)
+	}
+	if got := contextValue["metadata_source"]; got != "direct" {
+		t.Fatalf("unexpected metadata source: %#v", got)
+	}
 	assertFindingPresent(t, body, "ddl.table.exists.create.forbid")
 }
 
 func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	ctx := context.Background()
-	baseURL, stop := startHTTPServer(t)
-	t.Cleanup(stop)
+	baseURL := startHTTPServer(t)
 
 	payload := map[string]any{
 		"sql": "delete from orders where id = 1",
@@ -68,42 +73,40 @@ func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	if got := contextValue["dialect"]; got != "tidb" {
 		t.Fatalf("unexpected dialect: %#v", got)
 	}
+	if got := contextValue["schema"]; got != "app" {
+		t.Fatalf("unexpected schema: %#v", got)
+	}
+	if got := contextValue["metadata_source"]; got != "direct" {
+		t.Fatalf("unexpected metadata source: %#v", got)
+	}
 }
 
-func startHTTPServer(t *testing.T) (string, func()) {
+func startHTTPServer(t *testing.T) string {
 	t.Helper()
 
 	listenAddr := freeTCPAddr(t)
 	cmd := createHTTPServerCommand(t, listenAddr)
+	harness := &httpServerHarness{
+		cmd:  cmd,
+		done: make(chan struct{}),
+	}
+	cmd.Stdout = &harness.stdout
+	cmd.Stderr = &harness.stderr
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("start http server: %v", err)
+		t.Fatalf("start http server: %v\nstdout:\n%s\nstderr:\n%s", err, harness.stdout.String(), harness.stderr.String())
 	}
+	go func() {
+		harness.waitErr = cmd.Wait()
+		close(harness.done)
+	}()
+	t.Cleanup(func() {
+		stopHTTPServer(t, harness)
+	})
 
 	baseURL := "http://" + listenAddr
-	waitForHealthz(t, baseURL)
-
-	stopped := false
-	return baseURL, func() {
-		if stopped {
-			return
-		}
-		stopped = true
-		if cmd.Process == nil {
-			return
-		}
-		_ = cmd.Process.Signal(os.Interrupt)
-		done := make(chan error, 1)
-		go func() {
-			done <- cmd.Wait()
-		}()
-		select {
-		case <-time.After(15 * time.Second):
-			_ = cmd.Process.Kill()
-			<-done
-		case <-done:
-		}
-	}
+	waitForHealthz(t, baseURL, harness)
+	return baseURL
 }
 
 func createHTTPServerCommand(t *testing.T, listenAddr string) *exec.Cmd {
@@ -130,6 +133,50 @@ func buildHTTPServerBinary(t *testing.T) string {
 		t.Fatalf("build http server binary: %v\n%s", err, string(output))
 	}
 	return binaryPath
+}
+
+type httpServerHarness struct {
+	cmd     *exec.Cmd
+	stdout  bytes.Buffer
+	stderr  bytes.Buffer
+	done    chan struct{}
+	waitErr error
+}
+
+func stopHTTPServer(t *testing.T, h *httpServerHarness) {
+	t.Helper()
+
+	if h == nil || h.cmd == nil || h.cmd.Process == nil {
+		return
+	}
+
+	select {
+	case <-h.done:
+		if h.waitErr != nil {
+			t.Errorf("http server exited before cleanup: %v\nstdout:\n%s\nstderr:\n%s", h.waitErr, h.stdout.String(), h.stderr.String())
+		} else {
+			t.Errorf("http server exited before cleanup unexpectedly\nstdout:\n%s\nstderr:\n%s", h.stdout.String(), h.stderr.String())
+		}
+		return
+	default:
+	}
+
+	if err := h.cmd.Process.Signal(os.Interrupt); err != nil && !strings.Contains(err.Error(), "process already finished") {
+		t.Errorf("signal http server: %v\nstdout:\n%s\nstderr:\n%s", err, h.stdout.String(), h.stderr.String())
+	}
+
+	select {
+	case <-h.done:
+		if h.waitErr != nil {
+			t.Errorf("wait http server: %v\nstdout:\n%s\nstderr:\n%s", h.waitErr, h.stdout.String(), h.stderr.String())
+		}
+	case <-time.After(15 * time.Second):
+		if h.cmd.Process != nil {
+			_ = h.cmd.Process.Kill()
+		}
+		<-h.done
+		t.Errorf("force-killed http server after timeout: %v\nstdout:\n%s\nstderr:\n%s", h.waitErr, h.stdout.String(), h.stderr.String())
+	}
 }
 
 func findModuleRoot(t *testing.T) string {
@@ -162,12 +209,20 @@ func freeTCPAddr(t *testing.T) string {
 	return ln.Addr().String()
 }
 
-func waitForHealthz(t *testing.T, baseURL string) {
+func waitForHealthz(t *testing.T, baseURL string, h *httpServerHarness) {
 	t.Helper()
 
 	client := &http.Client{Timeout: 500 * time.Millisecond}
 	deadline := time.Now().Add(45 * time.Second)
 	for time.Now().Before(deadline) {
+		select {
+		case <-h.done:
+			if h.waitErr != nil {
+				t.Fatalf("server exited before /healthz became ready: %v\nstdout:\n%s\nstderr:\n%s", h.waitErr, h.stdout.String(), h.stderr.String())
+			}
+			t.Fatalf("server exited before /healthz became ready\nstdout:\n%s\nstderr:\n%s", h.stdout.String(), h.stderr.String())
+		default:
+		}
 		req, err := http.NewRequest(http.MethodGet, baseURL+"/healthz", nil)
 		if err != nil {
 			t.Fatalf("build health request: %v", err)
@@ -181,7 +236,7 @@ func waitForHealthz(t *testing.T, baseURL string) {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	t.Fatalf("server at %s did not become healthy", baseURL)
+	t.Fatalf("server at %s did not become healthy\nstdout:\n%s\nstderr:\n%s", baseURL, h.stdout.String(), h.stderr.String())
 }
 
 func postAuditRequest(t *testing.T, ctx context.Context, baseURL string, payload map[string]any) map[string]any {
