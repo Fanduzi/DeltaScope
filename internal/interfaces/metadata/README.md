@@ -12,7 +12,10 @@ Shared direct-connection helpers for metadata-aware interface adapters.
 ## Exports
 
 - `ConnectionInput`
+- `ErrorKind`
+- `ConnectionInputError`
 - `ResolveConnectionOptions`
+- `IsConnectionInputError(err)`
 - `ValidateConnectionInput(input)`
 - `ResolvePassword(input, options)`
 - `ExpandHome(path)`

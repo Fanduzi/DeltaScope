@@ -530,25 +530,13 @@ func mapAuditError(err error) (status int, code string) {
 	switch {
 	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
 		return http.StatusBadRequest, "bad_request"
-	case isDirectConnectionInputError(err):
+	case ifaceconn.IsConnectionInputError(err):
 		return http.StatusBadRequest, "connection_invalid"
 	case strings.Contains(err.Error(), "load policy:"):
 		return http.StatusInternalServerError, "config_invalid"
 	default:
 		return http.StatusBadRequest, "bad_request"
 	}
-}
-
-func isDirectConnectionInputError(err error) bool {
-	message := err.Error()
-	switch message {
-	case "connection password sources are mutually exclusive",
-		"connection must include at least one non-password field",
-		"connection must include host/user, socket/user, or connection_ref",
-		"connection socket cannot be combined with host/port TCP options":
-		return true
-	}
-	return strings.HasPrefix(message, `password env "`) || strings.HasPrefix(message, "read password file:")
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

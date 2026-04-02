@@ -22,6 +22,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -518,16 +519,29 @@ func TestMapAuditErrorConnectionOpen(t *testing.T) {
 }
 
 func TestMapAuditErrorConnectionValidation(t *testing.T) {
-	status, code := mapAuditError(errors.New("connection must include at least one non-password field"))
+	status, code := mapAuditError(&ifaceconn.ConnectionInputError{
+		Kind:    ifaceconn.ErrorKindValidation,
+		Message: "connection must include at least one non-password field",
+	})
 	if status != http.StatusBadRequest || code != "connection_invalid" {
 		t.Fatalf("unexpected connection validation mapping: status=%d code=%s", status, code)
 	}
 }
 
 func TestMapAuditErrorPasswordEnv(t *testing.T) {
-	status, code := mapAuditError(errors.New(`password env "DB_PASS" is not set`))
+	status, code := mapAuditError(&ifaceconn.ConnectionInputError{
+		Kind:    ifaceconn.ErrorKindPasswordLookup,
+		Message: `password env "DB_PASS" is not set`,
+	})
 	if status != http.StatusBadRequest || code != "connection_invalid" {
 		t.Fatalf("unexpected password env mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorPlainTextConnectionMessageFallsBackToBadRequest(t *testing.T) {
+	status, code := mapAuditError(errors.New("connection must include at least one non-password field"))
+	if status != http.StatusBadRequest || code != "bad_request" {
+		t.Fatalf("expected plain text connection message to avoid special classification: status=%d code=%s", status, code)
 	}
 }
 

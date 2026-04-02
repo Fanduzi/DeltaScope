@@ -13,6 +13,36 @@ import (
 	"strings"
 )
 
+// ErrorKind classifies shared direct-connection input failures.
+type ErrorKind string
+
+const (
+	ErrorKindValidation     ErrorKind = "validation"
+	ErrorKindPasswordSource ErrorKind = "password_source"
+	ErrorKindPasswordLookup ErrorKind = "password_lookup"
+)
+
+// ConnectionInputError preserves the user-facing message while exposing adapter-safe classification.
+type ConnectionInputError struct {
+	Kind    ErrorKind
+	Message string
+	Err     error
+}
+
+func (e *ConnectionInputError) Error() string {
+	return e.Message
+}
+
+func (e *ConnectionInputError) Unwrap() error {
+	return e.Err
+}
+
+// IsConnectionInputError reports whether err is a shared direct-connection input failure.
+func IsConnectionInputError(err error) bool {
+	var inputErr *ConnectionInputError
+	return errors.As(err, &inputErr)
+}
+
 // ConnectionInput describes one direct metadata-aware connection input.
 type ConnectionInput struct {
 	Host         string `json:"host,omitempty" yaml:"host"`
@@ -40,16 +70,16 @@ func ValidateConnectionInput(input ConnectionInput) error {
 		strings.TrimSpace(input.User) == "" &&
 		strings.TrimSpace(input.Schema) == "" &&
 		strings.TrimSpace(input.Dialect) == "" {
-		return errors.New("connection must include at least one non-password field")
+		return newConnectionInputError(ErrorKindValidation, "connection must include at least one non-password field", nil)
 	}
 	if strings.TrimSpace(input.Socket) == "" && (strings.TrimSpace(input.Host) == "" || strings.TrimSpace(input.User) == "") {
-		return errors.New("connection must include host/user, socket/user, or connection_ref")
+		return newConnectionInputError(ErrorKindValidation, "connection must include host/user, socket/user, or connection_ref", nil)
 	}
 	if strings.TrimSpace(input.Socket) != "" && strings.TrimSpace(input.User) == "" {
-		return errors.New("connection must include host/user, socket/user, or connection_ref")
+		return newConnectionInputError(ErrorKindValidation, "connection must include host/user, socket/user, or connection_ref", nil)
 	}
 	if strings.TrimSpace(input.Socket) != "" && (strings.TrimSpace(input.Host) != "" || input.Port != 0) {
-		return errors.New("connection socket cannot be combined with host/port TCP options")
+		return newConnectionInputError(ErrorKindValidation, "connection socket cannot be combined with host/port TCP options", nil)
 	}
 	return nil
 }
@@ -67,7 +97,7 @@ func ResolvePassword(input ConnectionInput, options ResolveConnectionOptions) (s
 		count++
 	}
 	if count > 1 {
-		return "", errors.New("connection password sources are mutually exclusive")
+		return "", newConnectionInputError(ErrorKindPasswordSource, "connection password sources are mutually exclusive", nil)
 	}
 
 	switch {
@@ -81,17 +111,25 @@ func ResolvePassword(input ConnectionInput, options ResolveConnectionOptions) (s
 		key := strings.TrimSpace(input.PasswordEnv)
 		value, ok := lookup(key)
 		if !ok {
-			return "", fmt.Errorf("password env %q is not set", key)
+			return "", newConnectionInputError(ErrorKindPasswordLookup, fmt.Sprintf("password env %q is not set", key), nil)
 		}
 		return value, nil
 	case strings.TrimSpace(input.PasswordFile) != "":
 		data, err := readFileWithHome(input.PasswordFile, options)
 		if err != nil {
-			return "", fmt.Errorf("read password file: %w", err)
+			return "", newConnectionInputError(ErrorKindPasswordLookup, fmt.Sprintf("read password file: %v", err), err)
 		}
 		return strings.TrimSpace(string(data)), nil
 	default:
 		return "", nil
+	}
+}
+
+func newConnectionInputError(kind ErrorKind, message string, err error) error {
+	return &ConnectionInputError{
+		Kind:    kind,
+		Message: message,
+		Err:     err,
 	}
 }
 

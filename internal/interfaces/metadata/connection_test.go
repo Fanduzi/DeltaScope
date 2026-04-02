@@ -6,6 +6,7 @@
 package metadata
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -20,6 +21,13 @@ func TestValidateConnectionInputRejectsEmptyConnection(t *testing.T) {
 	if got := err.Error(); got != "connection must include at least one non-password field" {
 		t.Fatalf("unexpected error: %q", got)
 	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindValidation {
+		t.Fatalf("expected typed validation error, got %#v", err)
+	}
+	if !IsConnectionInputError(err) {
+		t.Fatalf("expected IsConnectionInputError to recognize typed validation error")
+	}
 }
 
 func TestValidateConnectionInputRejectsHostWithoutUser(t *testing.T) {
@@ -33,6 +41,10 @@ func TestValidateConnectionInputRejectsHostWithoutUser(t *testing.T) {
 	}
 	if got := err.Error(); got != "connection must include host/user, socket/user, or connection_ref" {
 		t.Fatalf("unexpected error: %q", got)
+	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindValidation {
+		t.Fatalf("expected typed validation error, got %#v", err)
 	}
 }
 
@@ -51,6 +63,10 @@ func TestValidateConnectionInputRejectsSocketMixedWithHostOrPort(t *testing.T) {
 	if got := err.Error(); got != "connection socket cannot be combined with host/port TCP options" {
 		t.Fatalf("unexpected error: %q", got)
 	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindValidation {
+		t.Fatalf("expected typed validation error, got %#v", err)
+	}
 }
 
 func TestResolvePasswordRejectsMultipleSources(t *testing.T) {
@@ -65,6 +81,10 @@ func TestResolvePasswordRejectsMultipleSources(t *testing.T) {
 	}
 	if got := err.Error(); got != "connection password sources are mutually exclusive" {
 		t.Fatalf("unexpected error: %q", got)
+	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindPasswordSource {
+		t.Fatalf("expected typed password-source error, got %#v", err)
 	}
 }
 
@@ -128,5 +148,17 @@ func TestResolvePasswordReturnsMissingEnvError(t *testing.T) {
 	}
 	if got := err.Error(); got != "password env \"DB_PASSWORD\" is not set" {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindPasswordLookup {
+		t.Fatalf("expected typed password-lookup error, got %#v", err)
+	}
+}
+
+func TestIsConnectionInputErrorRejectsPlainTextMatch(t *testing.T) {
+	t.Parallel()
+
+	if IsConnectionInputError(errors.New("connection must include at least one non-password field")) {
+		t.Fatalf("expected plain text error to be rejected without shared type")
 	}
 }
