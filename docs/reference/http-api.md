@@ -112,7 +112,7 @@ curl http://127.0.0.1:8083/metrics
 
 ### POST /v1/audit
 
-Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with an optional `connection` block.
+Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with an optional inline `connection` block. HTTP requests do not support `connection_ref`.
 
 #### Request
 
@@ -120,7 +120,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 |-------|------|----------|-------------|
 | `sql` | string | Yes | One or more SQL statements to audit |
 | `dialect` | string | No | `mysql` or `tidb`. Defaults to `mysql` when omitted. |
-| `schema` | string | No | Optional schema name used by offline and metadata-aware audits |
+| `schema` | string | No | Optional schema name used by offline and metadata-aware audits. When both top-level `schema` and `connection.schema` are supplied, the top-level value takes precedence. |
 | `connection` | object | No | Optional direct metadata-aware connection input |
 
 ##### `connection`
@@ -131,7 +131,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 | `port` | int | No | Database port for TCP connections |
 | `socket` | string | No | Unix socket path for socket connections |
 | `user` | string | No | Database user |
-| `schema` | string | No | Schema to audit against when using direct metadata-aware input |
+| `schema` | string | No | Schema to audit against when using direct metadata-aware input; ignored when the top-level `schema` field is present |
 | `dialect` | string | No | `mysql` or `tidb`; used as the requested dialect for metadata-aware requests |
 | `password` | string | No | Inline password value |
 | `password_env` | string | No | Environment variable name that contains the password |
@@ -291,7 +291,7 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, contains more than one JSON object, or exceeds the 1 MiB request-body limit |
 | 400 | `bad_request` | `sql` field is empty, or `dialect` value is unrecognized |
-| 400 | `connection_invalid` | `connection` block is malformed, missing required host/user or socket/user pairing, or uses mutually exclusive connection/password inputs |
+| 400 | `connection_invalid` | `connection` block is malformed, missing required host/user or socket/user pairing, uses mutually exclusive connection/password inputs, or hits schema-hint-required / ambiguous schema inference during metadata-aware execution |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information from the live database |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |

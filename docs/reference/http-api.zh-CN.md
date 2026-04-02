@@ -112,7 +112,7 @@ curl http://127.0.0.1:8083/metrics
 
 ### POST /v1/audit
 
-审计一条或多条 SQL 语句。请求体必须是单个 JSON 对象。
+审计一条或多条 SQL 语句。请求体必须是单个 JSON 对象。HTTP 适配层同时支持离线 JSON 审计请求和带内联 `connection` 块的元数据感知请求；HTTP 请求不支持 `connection_ref`。
 
 #### 请求
 
@@ -120,10 +120,63 @@ curl http://127.0.0.1:8083/metrics
 |------|------|------|------|
 | `sql` | string | 是 | 待审计的一条或多条 SQL 语句 |
 | `dialect` | string | 否 | `mysql` 或 `tidb`，省略时默认为 `mysql` |
+| `schema` | string | 否 | 离线审计和元数据感知审计都可使用的可选 schema 名称；如果同时提供顶层 `schema` 和 `connection.schema`，以顶层值为准 |
+| `connection` | object | 否 | 直接传入的元数据感知连接配置 |
+
+##### `connection`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `host` | string | 否 | TCP 连接使用的数据库主机 |
+| `port` | int | 否 | TCP 连接使用的数据库端口 |
+| `socket` | string | 否 | Unix socket 连接使用的 socket 路径 |
+| `user` | string | 否 | 数据库用户名 |
+| `schema` | string | 否 | 使用直接元数据感知输入时的 schema；如果顶层 `schema` 存在，则该字段会被忽略 |
+| `dialect` | string | 否 | `mysql` 或 `tidb`；元数据感知请求中用于声明期望方言 |
+| `password` | string | 否 | 内联密码值 |
+| `password_env` | string | 否 | 包含密码的环境变量名 |
+| `password_file` | string | 否 | 包含密码的文件路径 |
+
+> `password`、`password_env` 和 `password_file` 互斥，单次请求最多只能提供其中一个。
+>
+> 使用 `host` + `user` 建立 TCP 连接，或使用 `socket` + `user` 建立 Unix socket 连接。不要把 `socket` 和 `host` / `port` 一起使用。
 
 > **注意：** 服务器启用了 `DisallowUnknownFields`。传入上述列表之外的额外字段将返回 `400 invalid_json` 错误。
 >
 > **请求体大小限制：** `POST /v1/audit` 最多接受 1 MiB 的请求体。超过该大小时，HTTP 适配层会在 JSON 解码前直接拒绝，并返回 `400 invalid_json`。
+
+#### 元数据感知示例
+
+请求：
+
+```json
+{
+  "sql": "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL COMMENT 'order status'",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "schema": "app",
+    "dialect": "mysql",
+    "password_env": "DELTASCOPE_DB_PASSWORD"
+  }
+}
+```
+
+响应片段：
+
+```json
+{
+  "context": {
+    "mode": "metadata-aware",
+    "dialect": "mysql",
+    "dialect_source": "detected",
+    "schema": "app",
+    "schema_source": "request",
+    "metadata_source": "direct"
+  }
+}
+```
 
 #### 成功响应（200）
 
@@ -238,6 +291,8 @@ curl http://127.0.0.1:8083/metrics
 |-------------|--------|----------|
 | 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段、包含多个 JSON 对象，或超过 1 MiB 请求体大小限制 |
 | 400 | `bad_request` | `sql` 字段为空，或 `dialect` 值无法识别 |
+| 400 | `connection_invalid` | `connection` 块格式无效、缺少 `host/user` 或 `socket/user` 组合、使用了互斥的连接 / 密码输入，或者在元数据感知执行中触发了 schema-hint-required / schema 推断不明确的场景 |
+| 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法从实时数据库解析 schema 信息 |
 | 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
 | 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |
 | 429 | `rate_limited` | 请求超过当前限流阈值 |
@@ -305,6 +360,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | `statements` | array | 各语句的审计结果；为空时省略 |
 | `global_findings` | array | 来自全局规则（跨语句检查）的发现；为空时省略 |
 | `explanation` | object | 可选的聚合级解释对象，包含 `summary` 和 `reasons`。当审计产生一条或多条 finding 时，内置 HTTP 审计流程会填充该字段 |
+| `context` | object | 附加的请求上下文，描述 `mode`、`dialect`、`dialect_source`、`schema`、`schema_source` 和 `metadata_source` |
 
 ### StatementResult
 
