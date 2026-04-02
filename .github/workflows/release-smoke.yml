@@ -35,3 +35,17 @@ jobs:
           distribution: goreleaser
           version: "~> v2"
           args: check
+
+      - name: Verify Linux binaries are statically linked
+        run: |
+          set -euo pipefail
+
+          mkdir -p bin
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/deltascope-linux-amd64 ./cmd/deltascope
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/deltascope-server-linux-amd64 ./cmd/deltascope-server
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/deltascope-mcp-linux-amd64 ./cmd/deltascope-mcp
+
+          file bin/deltascope-linux-amd64 bin/deltascope-server-linux-amd64 bin/deltascope-mcp-linux-amd64 | tee /tmp/deltascope-file-output.txt
+          grep -q "bin/deltascope-linux-amd64:.*statically linked" /tmp/deltascope-file-output.txt
+          grep -q "bin/deltascope-server-linux-amd64:.*statically linked" /tmp/deltascope-file-output.txt
+          grep -q "bin/deltascope-mcp-linux-amd64:.*statically linked" /tmp/deltascope-file-output.txt
