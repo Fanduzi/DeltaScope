@@ -172,7 +172,7 @@ curl http://127.0.0.1:8083/metrics
     "dialect": "mysql",
     "dialect_source": "detected",
     "schema": "app",
-    "schema_source": "request",
+    "schema_source": "connection",
     "metadata_source": "direct"
   }
 }

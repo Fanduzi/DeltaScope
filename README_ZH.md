@@ -249,7 +249,7 @@ make test-e2e-cli  # 端到端测试（需要 Docker）
 deltascope-server --port 8080
 ```
 
-`POST /v1/audit` 同时支持离线 JSON 审核请求和带可选 `connection` 块的元数据感知请求。HTTP 响应会保留公开的审核结果主体，并额外返回 `context` 块。完整协议见 [HTTP API 参考](docs/reference/http-api.md)。
+`POST /v1/audit` 同时支持离线 JSON 审核请求和带可选 `connection` 块的元数据感知请求。HTTP 响应会保留公开的审核结果主体，并额外返回 `context` 块。完整协议见 [HTTP API 参考](docs/reference/http-api.zh-CN.md)。
 
 ## Library 用法
 
