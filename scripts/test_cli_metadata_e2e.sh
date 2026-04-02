@@ -69,7 +69,7 @@ build_cli() {
   CLI_BIN="${TMP_DIR}/deltascope"
   (
     cd "${ROOT_DIR}"
-    go build -o "${CLI_BIN}" ./cmd/deltascope
+    CGO_ENABLED=0 go build -o "${CLI_BIN}" ./cmd/deltascope
   )
 }
 

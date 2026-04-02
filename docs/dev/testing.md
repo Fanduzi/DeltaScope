@@ -14,6 +14,7 @@ make build-mcp
 
 `make build` produces `bin/deltascope`, `bin/deltascope-server`, and `bin/deltascope-mcp`.
 `make build-linux` produces `bin/deltascope-linux-amd64`, `bin/deltascope-server-linux-amd64`, and `bin/deltascope-mcp-linux-amd64`.
+Both targets now build with `CGO_ENABLED=0` by default so local artifacts match the release pipeline's portable Linux binaries.
 
 ## Metadata E2E
 
