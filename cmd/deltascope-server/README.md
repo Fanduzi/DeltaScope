@@ -1,12 +1,13 @@
 # DeltaScope Server Command
 
-HTTP service entrypoint for exposing the offline DeltaScope audit engine over JSON APIs.
+HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over JSON APIs.
 
 ## Files
 
 | File | Responsibility |
 |------|---------------|
 | main.go | Parses process flags and starts the HTTP service |
+| main_e2e_test.go | Runs Docker-backed metadata-aware HTTP e2e coverage against the real server binary |
 
 ## Notes
 

@@ -1,4 +1,4 @@
-.PHONY: test build build-cli build-server build-mcp build-linux test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb
+.PHONY: test build build-cli build-server build-mcp build-linux test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
 
 BUILD_DIR ?= bin
 
@@ -38,3 +38,9 @@ test-e2e-mcp-mysql:
 
 test-e2e-mcp-tidb:
 	./scripts/test_mcp_metadata_e2e.sh tidb
+
+test-e2e-http-mysql:
+	./scripts/test_http_metadata_e2e.sh mysql
+
+test-e2e-http-tidb:
+	./scripts/test_http_metadata_e2e.sh tidb
