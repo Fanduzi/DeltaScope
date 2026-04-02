@@ -14,21 +14,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
-
-const runAsHTTPServer = "_DELTASCOPE_SERVER_RUN_AS_SERVER"
-
-func TestMain(m *testing.M) {
-	if os.Getenv(runAsHTTPServer) != "" {
-		os.Unsetenv(runAsHTTPServer)
-		main()
-		os.Exit(0)
-	}
-	os.Exit(m.Run())
-}
 
 func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	ctx := context.Background()
@@ -119,14 +109,46 @@ func startHTTPServer(t *testing.T) (string, func()) {
 func createHTTPServerCommand(t *testing.T, listenAddr string) *exec.Cmd {
 	t.Helper()
 
-	exe, err := os.Executable()
-	if err != nil {
-		t.Fatalf("resolve test executable: %v", err)
-	}
-
-	cmd := exec.Command(exe, "-listen", listenAddr)
-	cmd.Env = append(os.Environ(), runAsHTTPServer+"=1")
+	binaryPath := buildHTTPServerBinary(t)
+	cmd := exec.Command(binaryPath, "-listen", listenAddr)
+	cmd.Env = os.Environ()
 	return cmd
+}
+
+func buildHTTPServerBinary(t *testing.T) string {
+	t.Helper()
+
+	moduleRoot := findModuleRoot(t)
+	outDir := t.TempDir()
+	binaryPath := filepath.Join(outDir, "deltascope-server")
+
+	cmd := exec.Command("go", "build", "-o", binaryPath, "./cmd/deltascope-server")
+	cmd.Dir = moduleRoot
+	cmd.Env = os.Environ()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("build http server binary: %v\n%s", err, string(output))
+	}
+	return binaryPath
+}
+
+func findModuleRoot(t *testing.T) string {
+	t.Helper()
+
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("resolve working directory: %v", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("could not locate module root from working directory")
+		}
+		dir = parent
+	}
 }
 
 func freeTCPAddr(t *testing.T) string {
