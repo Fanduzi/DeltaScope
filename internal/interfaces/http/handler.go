@@ -24,13 +24,17 @@ import (
 	"golang.org/x/time/rate"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 type auditRequest struct {
-	SQL     string             `json:"sql"`
-	Dialect deltascope.Dialect `json:"dialect,omitempty"`
+	SQL        string                     `json:"sql"`
+	Dialect    deltascope.Dialect         `json:"dialect,omitempty"`
+	Schema     string                     `json:"schema,omitempty"`
+	Connection *ifaceconn.ConnectionInput `json:"connection,omitempty"`
 }
 
 type errorEnvelope struct {
@@ -474,28 +478,24 @@ func handleAudit(
 	}
 
 	type auditOutput struct {
-		result deltascope.Result
-		err    error
+		response auditResponse
+		err      error
 	}
 	resultChan := make(chan auditOutput, 1)
 	go func() {
-		result, err := auditFn(r.Context(), deltascope.Request{
-			SQL:        request.SQL,
-			Dialect:    request.Dialect,
-			ConfigPath: configPath,
-		})
-		resultChan <- auditOutput{result: result, err: err}
+		response, err := executeAuditRequest(r.Context(), request, configPath, auditFn)
+		resultChan <- auditOutput{response: response, err: err}
 	}()
 
 	var (
-		result deltascope.Result
-		err    error
+		response auditResponse
+		err      error
 	)
 	select {
 	case <-r.Context().Done():
 		err = r.Context().Err()
 	case out := <-resultChan:
-		result = out.result
+		response = out.response
 		err = out.err
 	}
 	if err != nil {
@@ -504,10 +504,22 @@ func handleAudit(
 		return
 	}
 
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, http.StatusOK, response)
 }
 
 func mapAuditError(err error) (status int, code string) {
+	var prepErr *auditmeta.Error
+	if errors.As(err, &prepErr) {
+		switch prepErr.Kind {
+		case auditmeta.ErrorInvalidSQL, auditmeta.ErrorDialectMismatch:
+			return http.StatusBadRequest, "bad_request"
+		case auditmeta.ErrorSchemaHintRequired:
+			return http.StatusBadRequest, "connection_invalid"
+		case auditmeta.ErrorSchemaLookupFailed, auditmeta.ErrorConnectionOpen, auditmeta.ErrorDialectDetect:
+			return http.StatusBadGateway, "connection_failed"
+		}
+	}
+
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
 		return http.StatusGatewayTimeout, "request_timeout"
@@ -515,6 +527,13 @@ func mapAuditError(err error) (status int, code string) {
 		return http.StatusRequestTimeout, "request_canceled"
 	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
 		return http.StatusBadRequest, "bad_request"
+	case strings.Contains(err.Error(), "password source"),
+		strings.Contains(err.Error(), "password env"),
+		strings.Contains(err.Error(), "read password file:"),
+		strings.Contains(err.Error(), "connection must include at least one non-password field"),
+		strings.Contains(err.Error(), "connection must include host/user, socket/user, or connection_ref"),
+		strings.Contains(err.Error(), "connection socket cannot be combined"):
+		return http.StatusBadRequest, "connection_invalid"
 	case strings.Contains(err.Error(), "load policy:"):
 		return http.StatusInternalServerError, "config_invalid"
 	default:

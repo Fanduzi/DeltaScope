@@ -22,7 +22,7 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
 
 ## Dependencies
 
-- Upstream: `internal/interfaces/cli`, `internal/interfaces/mcp`
+- Upstream: `internal/interfaces/cli`, `internal/interfaces/http`, `internal/interfaces/mcp`
 - Downstream: `internal/application/audit`, `internal/domain/spec`, `internal/infrastructure/metadata/mysql`
 
 ## Update Rule

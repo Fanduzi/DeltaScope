@@ -19,6 +19,8 @@ import (
 	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -81,6 +83,67 @@ func TestHandlerAuditReturnsJSONResult(t *testing.T) {
 	}
 	if payload["verdict"] == "" {
 		t.Fatalf("expected verdict in response, got %+v", payload)
+	}
+	contextValue, ok := payload["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", payload["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
+	}
+}
+
+func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		if request.Connection.Host != "127.0.0.1" || request.Connection.User != "root" || request.Connection.Password != "secret" {
+			t.Fatalf("unexpected connection config: %#v", request.Connection)
+		}
+		return &auditmeta.PreparedAudit{
+			Client:        &metadataAuditTestClient{},
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	handler, err := NewHandler("", "test-build", WithAuditFunc(func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
+		if request.Schema != "app" {
+			t.Fatalf("expected schema app, got %#v", request.Schema)
+		}
+		if request.MetadataProvider == nil {
+			t.Fatalf("expected metadata provider")
+		}
+		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
+	}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","connection":{"host":"127.0.0.1","port":3306,"user":"root","password":"secret","schema":"app"}}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	contextValue, ok := payload["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", payload["context"])
+	}
+	if contextValue["mode"] != "metadata-aware" {
+		t.Fatalf("expected metadata-aware mode, got %#v", contextValue["mode"])
+	}
+	if contextValue["metadata_source"] != "direct" {
+		t.Fatalf("expected direct metadata source, got %#v", contextValue["metadata_source"])
 	}
 }
 
@@ -414,6 +477,20 @@ func TestMapAuditErrorEmptySQL(t *testing.T) {
 	status, code := mapAuditError(appaudit.ErrEmptySQL)
 	if status != http.StatusBadRequest || code != "bad_request" {
 		t.Fatalf("unexpected bad request mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorSchemaHintRequired(t *testing.T) {
+	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorSchemaHintRequired, Message: "set schema"})
+	if status != http.StatusBadRequest || code != "connection_invalid" {
+		t.Fatalf("unexpected schema hint mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorConnectionOpen(t *testing.T) {
+	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorConnectionOpen, Message: "open metadata connection: boom"})
+	if status != http.StatusBadGateway || code != "connection_failed" {
+		t.Fatalf("unexpected connection open mapping: status=%d code=%s", status, code)
 	}
 }
 

@@ -1,0 +1,187 @@
+// Package httpapi exposes the HTTP adapter for DeltaScope.
+// input: parsed HTTP audit requests, shared metadata-preparation helpers, and public audit execution functions
+// output: additive HTTP audit context plus offline or metadata-aware audit execution results
+// pos: HTTP adapter glue between request-scoped metadata inputs and the public DeltaScope audit API
+// note: if this file changes, update this header and module README.md.
+package httpapi
+
+import (
+	"context"
+	"strings"
+
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
+	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
+)
+
+var prepareHTTPMetadataAudit = auditmeta.Prepare
+
+type auditRunContext struct {
+	Mode           string `json:"mode,omitempty"`
+	Dialect        string `json:"dialect,omitempty"`
+	DialectSource  string `json:"dialect_source,omitempty"`
+	Schema         string `json:"schema,omitempty"`
+	SchemaSource   string `json:"schema_source,omitempty"`
+	MetadataSource string `json:"metadata_source,omitempty"`
+}
+
+type auditResponse struct {
+	deltascope.Result
+	Context *auditRunContext `json:"context,omitempty"`
+}
+
+func executeAuditRequest(
+	ctx context.Context,
+	request auditRequest,
+	configPath string,
+	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+) (auditResponse, error) {
+	if request.Connection == nil {
+		return executeOfflineAudit(ctx, request, configPath, auditFn)
+	}
+	return executeMetadataAwareAudit(ctx, request, configPath, auditFn)
+}
+
+func executeOfflineAudit(
+	ctx context.Context,
+	request auditRequest,
+	configPath string,
+	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+) (auditResponse, error) {
+	dialect, dialectSource := resolveHTTPAuditDialect(string(request.Dialect))
+	schema, schemaSource := resolveRequestSchema(request)
+	result, err := auditFn(ctx, deltascope.Request{
+		SQL:        request.SQL,
+		Dialect:    dialect,
+		ConfigPath: configPath,
+		Schema:     schema,
+	})
+	if err != nil {
+		return auditResponse{}, err
+	}
+	return auditResponse{
+		Result: result,
+		Context: &auditRunContext{
+			Mode:           "offline",
+			Dialect:        string(dialect),
+			DialectSource:  dialectSource,
+			Schema:         schema,
+			SchemaSource:   schemaSource,
+			MetadataSource: "none",
+		},
+	}, nil
+}
+
+func executeMetadataAwareAudit(
+	ctx context.Context,
+	request auditRequest,
+	configPath string,
+	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+) (auditResponse, error) {
+	if err := ifaceconn.ValidateConnectionInput(*request.Connection); err != nil {
+		return auditResponse{}, err
+	}
+
+	password, err := ifaceconn.ResolvePassword(*request.Connection, ifaceconn.ResolveConnectionOptions{})
+	if err != nil {
+		return auditResponse{}, err
+	}
+
+	requestedDialect := strings.TrimSpace(string(request.Dialect))
+	if requestedDialect == "" {
+		requestedDialect = strings.TrimSpace(request.Connection.Dialect)
+	}
+	requestedPublicDialect, _ := resolveHTTPAuditDialect(requestedDialect)
+	schema, schemaSource := resolveRequestSchema(request)
+
+	prepared, err := prepareHTTPMetadataAudit(ctx, auditmeta.Request{
+		SQL: request.SQL,
+		Connection: auditmeta.ConnectionConfig{
+			Host:     strings.TrimSpace(request.Connection.Host),
+			Port:     request.Connection.Port,
+			Socket:   strings.TrimSpace(request.Connection.Socket),
+			User:     strings.TrimSpace(request.Connection.User),
+			Password: password,
+		},
+		RequestedDialect:     toMetadataDialect(requestedPublicDialect),
+		ExplicitDialect:      requestedDialect != "",
+		ExplicitSchema:       schema,
+		ExplicitSchemaSource: schemaSource,
+		SchemaHint:           "schema",
+	})
+	if err != nil {
+		return auditResponse{}, err
+	}
+	defer prepared.Client.Close()
+
+	result, err := auditFn(ctx, deltascope.Request{
+		SQL:              request.SQL,
+		Dialect:          deltascope.Dialect(prepared.Dialect),
+		ConfigPath:       configPath,
+		Schema:           prepared.Schema,
+		MetadataProvider: publicMetadataProvider{client: prepared.Client},
+	})
+	if err != nil {
+		return auditResponse{}, err
+	}
+	return auditResponse{
+		Result: result,
+		Context: &auditRunContext{
+			Mode:           "metadata-aware",
+			Dialect:        string(prepared.Dialect),
+			DialectSource:  prepared.DialectSource,
+			Schema:         prepared.Schema,
+			SchemaSource:   prepared.SchemaSource,
+			MetadataSource: "direct",
+		},
+	}, nil
+}
+
+func resolveHTTPAuditDialect(raw string) (deltascope.Dialect, string) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "mysql":
+		if strings.TrimSpace(raw) == "" {
+			return deltascope.DialectMySQL, "default"
+		}
+		return deltascope.DialectMySQL, "request"
+	case "tidb":
+		return deltascope.DialectTiDB, "request"
+	default:
+		return deltascope.Dialect(strings.ToLower(strings.TrimSpace(raw))), "request"
+	}
+}
+
+func resolveRequestSchema(request auditRequest) (string, string) {
+	switch {
+	case strings.TrimSpace(request.Schema) != "":
+		return strings.TrimSpace(request.Schema), "request"
+	case request.Connection != nil && strings.TrimSpace(request.Connection.Schema) != "":
+		return strings.TrimSpace(request.Connection.Schema), "connection"
+	default:
+		return "", ""
+	}
+}
+
+func toMetadataDialect(dialect deltascope.Dialect) spec.Dialect {
+	switch dialect {
+	case deltascope.DialectTiDB:
+		return spec.DialectTiDB
+	case deltascope.DialectMySQL, "":
+		return spec.DialectMySQL
+	default:
+		return spec.Dialect(dialect)
+	}
+}
+
+type publicMetadataProvider struct {
+	client auditmeta.Client
+}
+
+func (p publicMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect deltascope.Dialect, schema string) (*deltascope.InstanceFacts, error) {
+	return p.client.LoadInstanceFacts(ctx, toMetadataDialect(dialect), schema)
+}
+
+func (p publicMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect deltascope.Dialect, schema string, table string) (*deltascope.TableSnapshot, error) {
+	return p.client.LoadTableSnapshot(ctx, toMetadataDialect(dialect), schema, table)
+}
