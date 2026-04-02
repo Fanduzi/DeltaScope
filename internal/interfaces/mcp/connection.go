@@ -9,9 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"go.yaml.in/yaml/v3"
 )
 
@@ -39,18 +39,7 @@ type AuditSQLParams struct {
 	Connection    *ConnectionInput `json:"connection,omitempty"`
 }
 
-// ConnectionInput describes one direct or referenced metadata-aware connection.
-type ConnectionInput struct {
-	Host         string `json:"host,omitempty" yaml:"host"`
-	Port         int    `json:"port,omitempty" yaml:"port"`
-	Socket       string `json:"socket,omitempty" yaml:"socket"`
-	User         string `json:"user,omitempty" yaml:"user"`
-	Schema       string `json:"schema,omitempty" yaml:"schema"`
-	Dialect      string `json:"dialect,omitempty" yaml:"dialect"`
-	Password     string `json:"password,omitempty" yaml:"password"`
-	PasswordEnv  string `json:"password_env,omitempty" yaml:"password_env"`
-	PasswordFile string `json:"password_file,omitempty" yaml:"password_file"`
-}
+type ConnectionInput = ifaceconn.ConnectionInput
 
 // ResolvedConnection is the normalized metadata-aware connection used by MCP audit flows.
 type ResolvedConnection struct {
@@ -87,8 +76,6 @@ func ResolveAuditConnection(params AuditSQLParams, options ResolveConnectionOpti
 		return ResolvedConnection{Source: MetadataSourceNone}, nil
 	}
 
-	var input ConnectionInput
-	var source MetadataSource
 	switch {
 	case strings.TrimSpace(params.ConnectionRef) != "":
 		refName := strings.TrimSpace(params.ConnectionRef)
@@ -96,26 +83,25 @@ func ResolveAuditConnection(params AuditSQLParams, options ResolveConnectionOpti
 		if configPath == "" {
 			configPath = DefaultConnectionsPath
 		}
-		config, err := loadConnectionConfig(refName, options)
+		input, err := loadConnectionConfig(refName, options)
 		if err != nil {
 			return ResolvedConnection{}, err
 		}
-		input = config
-		source = MetadataSourceConnectionRef
-		return buildResolvedConnection(input, source, refName, configPath, options)
+		return buildResolvedConnection(input, MetadataSourceConnectionRef, refName, configPath, options)
 	default:
-		input = *params.Connection
-		source = MetadataSourceDirect
+		return buildResolvedConnection(*params.Connection, MetadataSourceDirect, "", "", options)
 	}
-	return buildResolvedConnection(input, source, "", "", options)
 }
 
 func buildResolvedConnection(input ConnectionInput, source MetadataSource, refName string, refPath string, options ResolveConnectionOptions) (ResolvedConnection, error) {
-	if err := validateConnectionInput(input); err != nil {
+	if err := ifaceconn.ValidateConnectionInput(input); err != nil {
 		return ResolvedConnection{}, err
 	}
 
-	password, err := resolvePassword(input, options)
+	password, err := ifaceconn.ResolvePassword(input, ifaceconn.ResolveConnectionOptions{
+		LookupEnv: options.LookupEnv,
+		ReadFile:  options.ReadFile,
+	})
 	if err != nil {
 		return ResolvedConnection{}, err
 	}
@@ -133,27 +119,6 @@ func buildResolvedConnection(input ConnectionInput, source MetadataSource, refNa
 		Dialect:  strings.TrimSpace(input.Dialect),
 		Password: password,
 	}, nil
-}
-
-func validateConnectionInput(input ConnectionInput) error {
-	if strings.TrimSpace(input.Host) == "" &&
-		input.Port == 0 &&
-		strings.TrimSpace(input.Socket) == "" &&
-		strings.TrimSpace(input.User) == "" &&
-		strings.TrimSpace(input.Schema) == "" &&
-		strings.TrimSpace(input.Dialect) == "" {
-		return errors.New("connection must include at least one non-password field")
-	}
-	if strings.TrimSpace(input.Socket) == "" && (strings.TrimSpace(input.Host) == "" || strings.TrimSpace(input.User) == "") {
-		return errors.New("connection must include host/user, socket/user, or connection_ref")
-	}
-	if strings.TrimSpace(input.Socket) != "" && strings.TrimSpace(input.User) == "" {
-		return errors.New("connection must include host/user, socket/user, or connection_ref")
-	}
-	if strings.TrimSpace(input.Socket) != "" && (strings.TrimSpace(input.Host) != "" || input.Port != 0) {
-		return errors.New("connection socket cannot be combined with host/port TCP options")
-	}
-	return nil
 }
 
 func loadConnectionConfig(name string, options ResolveConnectionOptions) (ConnectionInput, error) {
@@ -183,7 +148,7 @@ func readConnectionFile(path string, options ResolveConnectionOptions) ([]byte, 
 	if readFile == nil {
 		readFile = os.ReadFile
 	}
-	expanded, err := expandHome(path)
+	expanded, err := ifaceconn.ExpandHome(path)
 	if err != nil {
 		return nil, err
 	}
@@ -192,73 +157,4 @@ func readConnectionFile(path string, options ResolveConnectionOptions) ([]byte, 
 		return nil, fmt.Errorf("read connections config: %w", err)
 	}
 	return data, nil
-}
-
-func resolvePassword(input ConnectionInput, options ResolveConnectionOptions) (string, error) {
-	count := 0
-	if strings.TrimSpace(input.Password) != "" {
-		count++
-	}
-	if strings.TrimSpace(input.PasswordEnv) != "" {
-		count++
-	}
-	if strings.TrimSpace(input.PasswordFile) != "" {
-		count++
-	}
-	if count > 1 {
-		return "", errors.New("connection password sources are mutually exclusive")
-	}
-
-	switch {
-	case strings.TrimSpace(input.Password) != "":
-		return input.Password, nil
-	case strings.TrimSpace(input.PasswordEnv) != "":
-		lookup := options.LookupEnv
-		if lookup == nil {
-			lookup = os.LookupEnv
-		}
-		value, ok := lookup(strings.TrimSpace(input.PasswordEnv))
-		if !ok {
-			return "", fmt.Errorf("password env %q is not set", strings.TrimSpace(input.PasswordEnv))
-		}
-		return value, nil
-	case strings.TrimSpace(input.PasswordFile) != "":
-		data, err := readPasswordFile(input.PasswordFile, options)
-		if err != nil {
-			return "", fmt.Errorf("read password file: %w", err)
-		}
-		return strings.TrimSpace(string(data)), nil
-	default:
-		return "", nil
-	}
-}
-
-func readPasswordFile(path string, options ResolveConnectionOptions) ([]byte, error) {
-	readFile := options.ReadFile
-	if readFile == nil {
-		readFile = os.ReadFile
-	}
-	expanded, err := expandHome(path)
-	if err != nil {
-		return nil, err
-	}
-	data, err := readFile(expanded)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func expandHome(path string) (string, error) {
-	if path == "" || path[0] != '~' {
-		return path, nil
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home dir: %w", err)
-	}
-	if path == "~" {
-		return home, nil
-	}
-	return filepath.Join(home, strings.TrimPrefix(path, "~/")), nil
 }

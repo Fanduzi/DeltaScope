@@ -7,7 +7,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | File | Responsibility |
 |------|---------------|
 | `audit_tool.go` | Implements the MCP `audit_sql` tool on top of the shared DeltaScope audit path |
-| `connection.go` | Validates and resolves direct and referenced metadata-aware connection inputs |
+| `connection.go` | Resolves `connection_ref` inputs, delegates direct connection validation/password lookup to `internal/interfaces/metadata`, and assembles MCP connection state |
 | `connection_test.go` | Verifies MCP connection normalization and safety rules |
 | `output_schema.go` | Publishes explicit success output schemas for official MCP tools |
 | `rule_tools.go` | Builds structured payloads for MCP rule-discovery tools |
@@ -25,14 +25,14 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 
 ## Notes
 
-- The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, and metadata-preparation logic.
+- The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, metadata-preparation, and direct-connection helper logic.
 - The current scope supports stdio MCP bootstrap, offline audit, metadata-aware audit context, and rule-discovery tools.
 - `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, audit result fields, connection inputs, and stable structured error codes.
 
 ## Dependencies
 
 - Upstream: `cmd/deltascope-mcp`
-- Downstream: shared audit and rule-catalog layers under `pkg/deltascope` and `internal/...`
+- Downstream: shared audit/rule-catalog layers under `pkg/deltascope`, metadata helpers under `internal/interfaces/metadata`, and other `internal/...` adapter layers
 
 ## Update Rule
 
