@@ -8,6 +8,20 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.13.0] - 2026-04-02
+
+### Added
+
+- HTTP `POST /v1/audit` now supports metadata-aware execution through direct `connection` inputs, including additive `context` fields that report resolved dialect, schema, and metadata source
+- Shared `internal/interfaces/metadata` helpers now normalize direct connection validation and password resolution across HTTP and MCP adapters
+- Docker-backed HTTP metadata e2e coverage now exercises real `deltascope-server` binaries against MySQL and TiDB fixtures
+
+### Changed
+
+- Release-facing docs, examples, landing content, and source-build defaults now align with `v0.13.0`
+- HTTP metadata-aware requests snapshot the policy config per request so preparation and final audit read the same policy bytes
+- HTTP API docs now describe direct credential lookup failures (`password_env`, `password_file`) under the stable `connection_invalid` error contract
+
 ## [v0.12.0] - 2026-04-02
 
 ### Added
