@@ -112,7 +112,7 @@ curl http://127.0.0.1:8083/metrics
 
 ### POST /v1/audit
 
-Audits one or more SQL statements. The request body must be a single JSON object.
+Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with an optional `connection` block.
 
 #### Request
 
@@ -120,10 +120,63 @@ Audits one or more SQL statements. The request body must be a single JSON object
 |-------|------|----------|-------------|
 | `sql` | string | Yes | One or more SQL statements to audit |
 | `dialect` | string | No | `mysql` or `tidb`. Defaults to `mysql` when omitted. |
+| `schema` | string | No | Optional schema name used by offline and metadata-aware audits |
+| `connection` | object | No | Optional direct metadata-aware connection input |
+
+##### `connection`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `host` | string | No | Database host for TCP connections |
+| `port` | int | No | Database port for TCP connections |
+| `socket` | string | No | Unix socket path for socket connections |
+| `user` | string | No | Database user |
+| `schema` | string | No | Schema to audit against when using direct metadata-aware input |
+| `dialect` | string | No | `mysql` or `tidb`; used as the requested dialect for metadata-aware requests |
+| `password` | string | No | Inline password value |
+| `password_env` | string | No | Environment variable name that contains the password |
+| `password_file` | string | No | File path that contains the password |
+
+> `password`, `password_env`, and `password_file` are mutually exclusive. Set at most one of them in a single request.
+>
+> Use `host` with `user` for TCP connections, or `socket` with `user` for Unix socket connections. Do not combine `socket` with `host` or `port`.
 
 > **Note:** The server uses `DisallowUnknownFields`. Sending extra fields that are not listed above returns a `400 invalid_json` error.
 >
 > **Body size limit:** `POST /v1/audit` accepts request bodies up to 1 MiB. Larger bodies are rejected with `400 invalid_json` because the HTTP adapter enforces the limit before JSON decoding.
+
+#### Metadata-Aware Example
+
+Request:
+
+```json
+{
+  "sql": "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL COMMENT 'order status'",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "schema": "app",
+    "dialect": "mysql",
+    "password_env": "DELTASCOPE_DB_PASSWORD"
+  }
+}
+```
+
+Response fragment:
+
+```json
+{
+  "context": {
+    "mode": "metadata-aware",
+    "dialect": "mysql",
+    "dialect_source": "detected",
+    "schema": "app",
+    "schema_source": "connection",
+    "metadata_source": "direct"
+  }
+}
+```
 
 #### Successful Response (200)
 
@@ -238,6 +291,8 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, contains more than one JSON object, or exceeds the 1 MiB request-body limit |
 | 400 | `bad_request` | `sql` field is empty, or `dialect` value is unrecognized |
+| 400 | `connection_invalid` | `connection` block is malformed, missing required host/user or socket/user pairing, or uses mutually exclusive connection/password inputs |
+| 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information from the live database |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |
 | 429 | `rate_limited` | Request exceeded configured rate limit |
@@ -305,6 +360,7 @@ The top-level response object returned by `POST /v1/audit`.
 | `statements` | array | Per-statement results; omitted when empty |
 | `global_findings` | array | Findings from global rules (cross-statement checks); omitted when empty |
 | `explanation` | object | Optional aggregate explanation object with `summary` and `reasons`. The built-in HTTP audit flow now populates it whenever the audit produces one or more findings |
+| `context` | object | Additive request context describing `mode`, `dialect`, `dialect_source`, `schema`, `schema_source`, and `metadata_source` |
 
 ### StatementResult
 

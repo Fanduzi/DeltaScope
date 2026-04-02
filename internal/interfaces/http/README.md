@@ -29,7 +29,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 - `/metrics` is exposed in Prometheus format by default and can be disabled via middleware config.
 - Default middleware chain is request-id -> recovery -> timeout -> metrics -> auth -> rate-limit -> access log.
 - Config hot-reload is achieved by re-reading the configured policy path on each audit request, so file updates take effect without restarting the server.
-- Current scope supports offline HTTP audit and metadata-aware audit through direct request-scoped connection inputs.
+- Current scope supports offline HTTP audit and metadata-aware audit through direct request-scoped `connection` inputs.
 - Responses preserve the public DeltaScope result body and add a `context` block describing mode, dialect/schema provenance, and metadata source.
 
 ## Dependencies

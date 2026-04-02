@@ -238,6 +238,8 @@ Endpoints:
 - `GET /version`
 - `POST /v1/audit`
 
+`POST /v1/audit` supports both offline JSON audit requests and metadata-aware requests with an optional `connection` block. The HTTP response keeps the public audit result body and adds a `context` block. See the full contract in [HTTP API reference](docs/reference/http-api.md).
+
 ## Library Usage
 
 ```go
