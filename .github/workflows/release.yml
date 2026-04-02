@@ -67,14 +67,14 @@ jobs:
           echo "COMBINED_RELEASE_NOTES_FILE=$COMBINED_NOTES_FILE" >> "$GITHUB_ENV"
 
       - name: Run GoReleaser check
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
           args: check
 
       - name: Publish release assets
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
