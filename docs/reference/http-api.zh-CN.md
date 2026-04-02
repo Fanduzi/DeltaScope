@@ -291,7 +291,7 @@ curl http://127.0.0.1:8083/metrics
 |-------------|--------|----------|
 | 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段、包含多个 JSON 对象，或超过 1 MiB 请求体大小限制 |
 | 400 | `bad_request` | `sql` 字段为空，或 `dialect` 值无法识别 |
-| 400 | `connection_invalid` | `connection` 块格式无效、缺少 `host/user` 或 `socket/user` 组合、使用了互斥的连接 / 密码输入，或者在元数据感知执行中触发了 schema-hint-required / schema 推断不明确的场景 |
+| 400 | `connection_invalid` | `connection` 块格式无效、缺少 `host/user` 或 `socket/user` 组合、使用了互斥的连接 / 密码输入、无法解析 `password_env` / `password_file`，或者在元数据感知执行中触发了 schema-hint-required / schema 推断不明确的场景 |
 | 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法从实时数据库解析 schema 信息 |
 | 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
 | 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -165,5 +166,130 @@ func TestExecuteAuditRequestReturnsConfigErrorBeforeMetadataPreparation(t *testi
 	status, code := mapAuditError(err)
 	if status != 500 || code != "config_invalid" {
 		t.Fatalf("expected config_invalid, got status=%d code=%s err=%v", status, code, err)
+	}
+}
+
+func TestExecuteAuditRequestUsesConfigSnapshotForMetadataAwareAudit(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "policy.yaml")
+	if err := os.WriteFile(configPath, []byte("rules:\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	previous := prepareHTTPMetadataAudit
+	client := &metadataAuditTestClient{}
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		if err := os.WriteFile(configPath, []byte("rules:\n  select:\n    require_where: nope\n"), 0o600); err != nil {
+			t.Fatalf("mutate config: %v", err)
+		}
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	var capturedConfigPath string
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host:     "127.0.0.1",
+			Port:     3306,
+			User:     "root",
+			Password: "secret",
+			Schema:   "app",
+		},
+	}, configPath, func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
+		capturedConfigPath = request.ConfigPath
+		if capturedConfigPath == configPath {
+			t.Fatalf("expected metadata-aware audit to use config snapshot path")
+		}
+		if _, err := loadHTTPPolicy(capturedConfigPath); err != nil {
+			t.Fatalf("expected snapshot config to remain loadable, got %v", err)
+		}
+		if _, err := loadHTTPPolicy(configPath); err == nil {
+			t.Fatalf("expected original config mutation to make source path invalid")
+		}
+		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
+	})
+	if err != nil {
+		t.Fatalf("execute audit request: %v", err)
+	}
+	if !client.closed {
+		t.Fatalf("expected metadata client close to be called")
+	}
+	if capturedConfigPath == "" {
+		t.Fatalf("expected captured config snapshot path")
+	}
+	if _, err := os.Stat(capturedConfigPath); !os.IsNotExist(err) {
+		t.Fatalf("expected config snapshot cleanup, got err=%v", err)
+	}
+}
+
+func TestExecuteAuditRequestValidatesSnapshotInsteadOfSourcePolicyPath(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "policy.yaml")
+	if err := os.WriteFile(configPath, []byte("rules:\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	previousPrepare := prepareHTTPMetadataAudit
+	client := &metadataAuditTestClient{}
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previousPrepare })
+
+	previousLoad := loadHTTPPolicy
+	validatedSourcePath := false
+	loadHTTPPolicy = func(path string) (domainpolicy.Policy, error) {
+		if path == configPath {
+			validatedSourcePath = true
+			if err := os.WriteFile(configPath, []byte("rules:\n  select:\n    require_where: nope\n"), 0o600); err != nil {
+				t.Fatalf("mutate config during validation: %v", err)
+			}
+			return domainpolicy.Default(), nil
+		}
+		return previousLoad(path)
+	}
+	t.Cleanup(func() { loadHTTPPolicy = previousLoad })
+
+	var capturedConfigPath string
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host:     "127.0.0.1",
+			Port:     3306,
+			User:     "root",
+			Password: "secret",
+			Schema:   "app",
+		},
+	}, configPath, func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
+		capturedConfigPath = request.ConfigPath
+		if _, err := previousLoad(capturedConfigPath); err != nil {
+			t.Fatalf("expected snapshot config to stay valid, got %v", err)
+		}
+		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
+	})
+	if err != nil {
+		t.Fatalf("execute audit request: %v", err)
+	}
+	if validatedSourcePath {
+		t.Fatalf("expected snapshot validation to avoid source policy path")
+	}
+	if !client.closed {
+		t.Fatalf("expected metadata client close to be called")
+	}
+	if capturedConfigPath == "" {
+		t.Fatalf("expected captured config snapshot path")
 	}
 }

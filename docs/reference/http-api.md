@@ -291,7 +291,7 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, contains more than one JSON object, or exceeds the 1 MiB request-body limit |
 | 400 | `bad_request` | `sql` field is empty, or `dialect` value is unrecognized |
-| 400 | `connection_invalid` | `connection` block is malformed, missing required host/user or socket/user pairing, uses mutually exclusive connection/password inputs, or hits schema-hint-required / ambiguous schema inference during metadata-aware execution |
+| 400 | `connection_invalid` | `connection` block is malformed, missing required host/user or socket/user pairing, uses mutually exclusive connection/password inputs, fails to resolve `password_env` / `password_file`, or hits schema-hint-required / ambiguous schema inference during metadata-aware execution |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information from the live database |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |

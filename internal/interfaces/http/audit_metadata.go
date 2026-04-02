@@ -8,6 +8,7 @@ package httpapi
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -82,9 +83,12 @@ func executeMetadataAwareAudit(
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
 ) (auditResponse, error) {
-	if err := reloadHTTPPolicy(configPath); err != nil {
+	configSnapshotPath, cleanupConfigSnapshot, err := snapshotHTTPPolicy(configPath)
+	if err != nil {
 		return auditResponse{}, err
 	}
+	defer cleanupConfigSnapshot()
+
 	if err := ifaceconn.ValidateConnectionInput(*request.Connection); err != nil {
 		return auditResponse{}, err
 	}
@@ -124,7 +128,7 @@ func executeMetadataAwareAudit(
 	result, err := auditFn(ctx, deltascope.Request{
 		SQL:              request.SQL,
 		Dialect:          deltascope.Dialect(prepared.Dialect),
-		ConfigPath:       configPath,
+		ConfigPath:       configSnapshotPath,
 		Schema:           prepared.Schema,
 		MetadataProvider: publicMetadataProvider{client: prepared.Client},
 	})
@@ -144,14 +148,41 @@ func executeMetadataAwareAudit(
 	}, nil
 }
 
-func reloadHTTPPolicy(configPath string) error {
+func snapshotHTTPPolicy(configPath string) (string, func(), error) {
 	if strings.TrimSpace(configPath) == "" {
-		return nil
+		return "", func() {}, nil
 	}
-	if _, err := loadHTTPPolicy(configPath); err != nil {
-		return fmt.Errorf("load policy: %w", err)
+
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return "", func() {}, fmt.Errorf("load policy: %w", err)
 	}
-	return nil
+
+	tempFile, err := os.CreateTemp("", "deltascope-http-policy-*.yaml")
+	if err != nil {
+		return "", func() {}, fmt.Errorf("load policy: %w", err)
+	}
+	tempPath := tempFile.Name()
+	cleanup := func() {
+		_ = os.Remove(tempPath)
+	}
+
+	if _, err := tempFile.Write(content); err != nil {
+		_ = tempFile.Close()
+		cleanup()
+		return "", func() {}, fmt.Errorf("load policy: %w", err)
+	}
+	if err := tempFile.Close(); err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("load policy: %w", err)
+	}
+
+	if _, err := loadHTTPPolicy(tempPath); err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("load policy: %w", err)
+	}
+
+	return tempPath, cleanup, nil
 }
 
 func resolveHTTPAuditDialect(raw string) (deltascope.Dialect, string) {
