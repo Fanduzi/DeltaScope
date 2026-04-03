@@ -554,7 +554,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.14.0 — latest release</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.14.1 — latest release</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL &amp; TiDB DDL &amp; DML
 before it ships</h1>
@@ -976,8 +976,13 @@ Statement 1: CREATE TABLE
           <div class="reveal">
             <div class="timeline">
               <div class="timeline-item">
+                <div class="timeline-date">2026-04-04</div>
+                <div class="timeline-version">v0.14.1 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-changes" data-i18n="releases.items.v0141">HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.</div>
+              </div>
+              <div class="timeline-item">
                 <div class="timeline-date">2026-04-03</div>
-                <div class="timeline-version">v0.14.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-version">v0.14.0</div>
                 <div class="timeline-changes" data-i18n="releases.items.v0140">Conservative DML impact estimation across shape-only and metadata-aware audit paths, plus count and ratio thresholds in CLI, HTTP, MCP, and the Go library.</div>
               </div>
               <div class="timeline-item">
@@ -1059,7 +1064,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.14.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.14.1.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1103,9 +1108,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: 'Install'
         },
         hero: {
-          badge: 'v0.14.0 — latest release',
+          badge: 'v0.14.1 — latest release',
           title: 'Audit risky MySQL & TiDB DDL & DML\nbefore it ships',
-          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.\nThe latest release adds conservative DML impact estimation across shape-only and metadata-aware audit paths.',
+          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.\nThe latest patch adds HTTP discovery endpoints and safer CLI secret inputs while keeping the audit contract stable.',
           ctaPrimary: 'Install DeltaScope',
           ctaSecondary: 'See Real Workflows',
           badgeAgent: 'Agent Ready'
@@ -1229,6 +1234,8 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.',
           latest: 'latest',
           items: {
+            v0141: 'HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.',
+            v0140: 'Conservative DML impact estimation across shape-only and metadata-aware audit paths, plus count and ratio thresholds in CLI, HTTP, MCP, and the Go library.',
             v0131: 'Landing page JavaScript hotfix: escaped SQL examples so the localized homepage script loads correctly again.',
             v013: 'HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.',
             v012: 'Structured naming governance for table, column, index, and explicit constraint names, plus config examples and end-to-end coverage.',
@@ -1273,9 +1280,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: '安装'
         },
         hero: {
-          badge: 'v0.14.0 —— 最新版本',
+          badge: 'v0.14.1 —— 最新版本',
           title: '在上线前审计高风险 MySQL 与 TiDB DDL / DML',
-          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。\n最新版本新增了保守的 DML 影响范围估计能力，覆盖离线与 metadata-aware 审计路径。',
+          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。\n最新补丁补齐了 HTTP discovery 端点和更安全的 CLI secret 输入，同时保持审计契约稳定。',
           ctaPrimary: '安装 DeltaScope',
           ctaSecondary: '查看真实场景',
           badgeAgent: '支持 Agent'
@@ -1399,6 +1406,8 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入，以及更完整的审计结果契约。',
           latest: '最新',
           items: {
+            v0141: 'HTTP 增加 capabilities 与规则目录端点，CLI 增加 password-env 与 password-file 输入，同时补齐支持版本与发布元数据。',
+            v0140: '增加保守的 DML 影响范围估计，覆盖 shape-only 与 metadata-aware 审计路径，并在 CLI、HTTP、MCP 和 Go 库中暴露数量与比例阈值。',
             v0131: '修复 landing page JavaScript：转义 SQL 示例，恢复本地化首页脚本的正常加载。',
             v013: '增加基于 direct connection 的 HTTP metadata-aware 审核、共享连接辅助层，以及面向 MySQL / TiDB real server 的端到端覆盖。',
             v012: '增加表、列、索引和显式约束名的结构化 naming governance，并补齐配置示例与端到端覆盖。',

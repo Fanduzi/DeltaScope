@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.14.0/install.sh | \
-  DELTASCOPE_VERSION=v0.14.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.14.1/install.sh | \
+  DELTASCOPE_VERSION=v0.14.1 sh
 ```
 
 发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
