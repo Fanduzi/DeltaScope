@@ -34,8 +34,8 @@ stdin, making it easy to pipe SQL through the tool.
 
 | Flag | Description |
 |------|-------------|
-| `--sql <text>` | Inline SQL text to audit |
-| `--file <path>` | Path to a `.sql` file to audit |
+| `--sql` | Inline SQL text to audit. Value: `<text>` |
+| `--file` | Path to a `.sql` file to audit. Value: `<path>` |
 | _(none)_ | Read SQL from stdin |
 
 Examples:
