@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP request binding and response mapping.
 // input: synthetic HTTP requests against the DeltaScope HTTP adapter
-// output: focused coverage for health, version, audit success, and structured error responses
+// output: focused coverage for health, version, rule/capability discovery, audit success, and structured error responses
 // pos: interface adapter test coverage for the HTTP service surface
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -61,6 +61,164 @@ func TestHandlerVersion(t *testing.T) {
 	}
 	if !bytes.Contains(rec.Body.Bytes(), []byte("test-build")) {
 		t.Fatalf("expected version payload, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerRulesListReturnsCatalogJSON(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/rules", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	rules, ok := payload["rules"].([]any)
+	if !ok || len(rules) == 0 {
+		t.Fatalf("expected non-empty rules array, got %#v", payload["rules"])
+	}
+	if count, ok := payload["count"].(float64); !ok || int(count) != len(rules) {
+		t.Fatalf("expected count to match rules length, got %#v", payload["count"])
+	}
+	firstRule, ok := rules[0].(map[string]any)
+	if !ok || firstRule["rule_id"] == "" {
+		t.Fatalf("expected first rule object with rule_id, got %#v", rules[0])
+	}
+}
+
+func TestHandlerRulesSearchFiltersByQuery(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/rules?query=where", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload["query"] != "where" {
+		t.Fatalf("expected query echo, got %#v", payload["query"])
+	}
+	rules, ok := payload["rules"].([]any)
+	if !ok || len(rules) == 0 {
+		t.Fatalf("expected filtered rules array, got %#v", payload["rules"])
+	}
+	for _, item := range rules {
+		ruleValue, ok := item.(map[string]any)
+		if !ok {
+			t.Fatalf("expected rule object, got %#v", item)
+		}
+		text := strings.ToLower(ruleValue["rule_id"].(string) + " " + ruleValue["summary"].(string) + " " + ruleValue["description"].(string))
+		if !strings.Contains(text, "where") {
+			t.Fatalf("expected filtered rule to match query, got %#v", ruleValue)
+		}
+	}
+}
+
+func TestHandlerRuleShowReturnsOneRule(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/rules/dml.where.require", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload["rule_id"] != "dml.where.require" {
+		t.Fatalf("expected requested rule_id, got %#v", payload["rule_id"])
+	}
+	if payload["summary"] == "" {
+		t.Fatalf("expected rule summary, got %#v", payload)
+	}
+}
+
+func TestHandlerRuleShowReturnsNotFoundForUnknownRule(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/rules/not.real.rule", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"not_found"`)) {
+		t.Fatalf("expected not_found error code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerCapabilitiesReturnsSurfaceSummary(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/capabilities", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload["transport"] != "http" {
+		t.Fatalf("expected http transport, got %#v", payload["transport"])
+	}
+	endpoints, ok := payload["endpoints"].([]any)
+	if !ok || len(endpoints) == 0 {
+		t.Fatalf("expected endpoints array, got %#v", payload["endpoints"])
+	}
+	expected := map[string]bool{
+		"POST /v1/audit":          false,
+		"GET /v1/rules":           false,
+		"GET /v1/rules/{rule_id}": false,
+		"GET /v1/capabilities":    false,
+	}
+	for _, item := range endpoints {
+		value, ok := item.(string)
+		if ok {
+			if _, exists := expected[value]; exists {
+				expected[value] = true
+			}
+		}
+	}
+	for endpoint, seen := range expected {
+		if !seen {
+			t.Fatalf("expected endpoint %q in capabilities payload, got %#v", endpoint, endpoints)
+		}
 	}
 }
 

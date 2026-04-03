@@ -12,19 +12,21 @@ import (
 )
 
 type cliOptions struct {
-	ConfigPath  string
-	Dialect     string
-	Format      string
-	FailOn      string
-	Quiet       bool
-	Host        string
-	Port        int
-	User        string
-	Password    string
-	AskPassword bool
-	Schema      string
-	Socket      string
-	ShowVersion bool
+	ConfigPath   string
+	Dialect      string
+	Format       string
+	FailOn       string
+	Quiet        bool
+	Host         string
+	Port         int
+	User         string
+	Password     string
+	PasswordEnv  string
+	PasswordFile string
+	AskPassword  bool
+	Schema       string
+	Socket       string
+	ShowVersion  bool
 }
 
 func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writer) *cobra.Command {

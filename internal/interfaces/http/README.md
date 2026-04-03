@@ -8,8 +8,9 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 |------|---------------|
 | audit_metadata.go | Executes one HTTP audit request through offline or direct metadata-aware flows and adds adapter context to the JSON response |
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
-| handler.go | Binds Gin HTTP requests to the public audit API, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
+| handler.go | Binds Gin HTTP requests to the public audit/rule/capability APIs, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
 | handler_test.go | Verifies HTTP request binding, error mapping, and JSON response shape |
+| rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata |
 | server.go | Assembles the HTTP handler and long-running server wiring |
 
 ## Exports
@@ -29,12 +30,12 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 - `/metrics` is exposed in Prometheus format by default and can be disabled via middleware config.
 - Default middleware chain is request-id -> recovery -> timeout -> metrics -> auth -> rate-limit -> access log.
 - Config hot-reload is achieved by re-reading the configured policy path on each audit request, so file updates take effect without restarting the server.
-- Current scope supports offline HTTP audit and metadata-aware audit through direct request-scoped `connection` inputs.
+- Current scope supports offline and metadata-aware audit plus HTTP-native rule discovery and capability discovery.
 - Responses preserve the public DeltaScope result body and add a `context` block describing mode, dialect/schema provenance, and metadata source.
 
 ## Dependencies
 - Upstream: `cmd/deltascope-server`
-- Downstream: `pkg/deltascope`, `internal/application/policy`
+- Downstream: `pkg/deltascope`, `internal/application/policy`, `internal/domain/rule/catalog`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

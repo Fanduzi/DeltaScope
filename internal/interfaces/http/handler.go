@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: HTTP requests carrying SQL audit payloads plus service-level config/version wiring
-// output: JSON audit, health, readiness, version, structured error responses, and structured access log lines
+// output: JSON audit, rule-catalog, capability, health, readiness, version, structured error responses, and structured access log lines
 // pos: interface adapter between net/http and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -163,6 +163,15 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 	})
 	router.GET("/version", func(c *gin.Context) {
 		writeJSON(c.Writer, http.StatusOK, map[string]string{"version": version})
+	})
+	router.GET("/v1/rules", func(c *gin.Context) {
+		handleListRules(c.Writer, c.Request)
+	})
+	router.GET("/v1/rules/:rule_id", func(c *gin.Context) {
+		handleDescribeRule(c.Writer, c.Param("rule_id"))
+	})
+	router.GET("/v1/capabilities", func(c *gin.Context) {
+		handleCapabilities(c.Writer)
 	})
 	router.POST("/v1/audit", func(c *gin.Context) {
 		handleAudit(c.Writer, c.Request, configPath, options.auditFn)

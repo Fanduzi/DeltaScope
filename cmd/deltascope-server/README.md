@@ -13,6 +13,7 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 
 - This command is intentionally thin and delegates HTTP wiring to `internal/interfaces/http`.
 - `POST /v1/audit` accepts offline requests and direct metadata-aware connection inputs.
+- `GET /v1/rules`, `GET /v1/rules/{rule_id}`, and `GET /v1/capabilities` expose rule discovery and HTTP contract metadata.
 - `-auth-enabled`, `-auth-keys`, and `-auth-allow-paths` configure optional `X-API-Key` protection.
 - `-rate-limit-enabled`, `-rate-limit-rps`, `-rate-limit-burst`, and `-rate-limit-key` configure optional request throttling.
 - `-trusted-proxies` controls which proxy CIDRs are trusted for client IP extraction (empty means trust none).

@@ -8,7 +8,7 @@ Security fixes are currently planned for the latest released tag and the active 
 
 ```text
 Version     Supported
-v0.6.x      yes
+v0.14.x     yes
 main        yes
 older tags  no
 ```
@@ -25,7 +25,7 @@ Report security issues by contacting the maintainer privately through one of the
 When reporting, include:
 
 - affected DeltaScope version or commit
-- deployment shape: library, CLI, or HTTP service
+- deployment shape: library, CLI, HTTP service, or MCP server
 - reproduction steps or proof of concept
 - impact assessment
 - whether credentials, SQL text, or metadata access are required

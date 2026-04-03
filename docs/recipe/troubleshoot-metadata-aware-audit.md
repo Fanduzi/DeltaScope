@@ -1,6 +1,6 @@
 # Troubleshoot Metadata-Aware Audit
 
-Use this guide when `deltascope audit` works offline but metadata-aware mode fails or behaves unexpectedly. Metadata-aware mode activates automatically when any connection flag (`--host`, `--port`, `--user`, `--password`, `--ask-password`, `--schema`, `--socket`) is supplied.
+Use this guide when `deltascope audit` works offline but metadata-aware mode fails or behaves unexpectedly. Metadata-aware mode activates automatically when any connection flag (`--host`, `--port`, `--user`, `--password`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, `--socket`) is supplied.
 
 ## Required MySQL Permissions
 
@@ -78,7 +78,7 @@ Checklist:
 
 - `--host` and `--port` point to the correct instance.
 - `--user` is spelled correctly (case-sensitive on some systems).
-- Password method: use `--ask-password` for interactive use; use `--password "$VAR"` for scripted use. Never hardcode passwords in command lines.
+- Password method: use `--ask-password` for interactive use; use `--password-env VAR_NAME` or `--password-file /path/to/file` for scripted use. Avoid plaintext `--password` in production and never hardcode passwords in shell commands.
 - The MySQL/TiDB port (default `3306`) is open and reachable from the machine running DeltaScope.
 - The user account is not restricted to a specific host (check `mysql.user.Host`).
 

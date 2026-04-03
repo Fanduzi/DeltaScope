@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags, SQL text from flags/files/stdin, password prompt dependencies, and application audit services
-// output: rendered audit results, connection-option validation, and exit-code mapping for CLI audit invocations
+// input: audit command flags, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
+// output: rendered audit results, connection-option validation, password resolution, and exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -20,6 +20,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/term"
@@ -122,6 +123,8 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.Password, "password", "p", "", "database password for metadata-aware audit")
+	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for metadata-aware audit")
+	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for metadata-aware audit")
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
 	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for metadata-aware audit")
@@ -129,30 +132,34 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 }
 
 type auditConnectionOptions struct {
-	Host     string
-	Port     int
-	PortSet  bool
-	User     string
-	Password string
-	Schema   string
-	Socket   string
+	Host         string
+	Port         int
+	PortSet      bool
+	User         string
+	Password     string
+	PasswordEnv  string
+	PasswordFile string
+	Schema       string
+	Socket       string
 }
 
 var passwordPrompt = promptPassword
 
 func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditConnectionOptions, error) {
 	resolved := auditConnectionOptions{
-		Host:     strings.TrimSpace(options.Host),
-		Port:     options.Port,
-		PortSet:  cmd.Flags().Changed("port"),
-		User:     strings.TrimSpace(options.User),
-		Password: options.Password,
-		Schema:   strings.TrimSpace(options.Schema),
-		Socket:   strings.TrimSpace(options.Socket),
+		Host:         strings.TrimSpace(options.Host),
+		Port:         options.Port,
+		PortSet:      cmd.Flags().Changed("port"),
+		User:         strings.TrimSpace(options.User),
+		Password:     options.Password,
+		PasswordEnv:  strings.TrimSpace(options.PasswordEnv),
+		PasswordFile: strings.TrimSpace(options.PasswordFile),
+		Schema:       strings.TrimSpace(options.Schema),
+		Socket:       strings.TrimSpace(options.Socket),
 	}
 
-	if options.AskPassword && strings.TrimSpace(options.Password) != "" {
-		return auditConnectionOptions{}, newUserError("--password and --ask-password are mutually exclusive")
+	if options.AskPassword && hasConfiguredPasswordSource(resolved) {
+		return auditConnectionOptions{}, newUserError("--password, --password-env, --password-file, and --ask-password are mutually exclusive")
 	}
 	if resolved.Socket != "" && (resolved.Host != "" || resolved.PortSet) {
 		return auditConnectionOptions{}, newUserError("--socket cannot be combined with host/port TCP options")
@@ -163,9 +170,23 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 			return auditConnectionOptions{}, newUserError(fmt.Sprintf("prompt password: %v", err))
 		}
 		resolved.Password = password
+		return resolved, nil
 	}
 
+	password, err := ifaceconn.ResolvePassword(ifaceconn.ConnectionInput{
+		Password:     resolved.Password,
+		PasswordEnv:  resolved.PasswordEnv,
+		PasswordFile: resolved.PasswordFile,
+	}, ifaceconn.ResolveConnectionOptions{})
+	if err != nil {
+		return auditConnectionOptions{}, newUserError(err.Error())
+	}
+	resolved.Password = password
 	return resolved, nil
+}
+
+func hasConfiguredPasswordSource(options auditConnectionOptions) bool {
+	return strings.TrimSpace(options.Password) != "" || options.PasswordEnv != "" || options.PasswordFile != ""
 }
 
 func (o auditConnectionOptions) Enabled() bool {

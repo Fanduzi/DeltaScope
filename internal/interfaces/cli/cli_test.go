@@ -437,6 +437,88 @@ func TestAuditCommandPromptsForPasswordWhenAskPasswordIsSet(t *testing.T) {
 	}
 }
 
+func TestAuditCommandResolvesPasswordFromEnv(t *testing.T) {
+	previousClientFactory := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previousClientFactory })
+
+	t.Setenv("DELTASCOPE_DB_PASSWORD", "secret-from-env")
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "-u", "root", "--password-env", "DELTASCOPE_DB_PASSWORD"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	if client.options.Password != "secret-from-env" {
+		t.Fatalf("expected env password to reach metadata client, got %q", client.options.Password)
+	}
+}
+
+func TestAuditCommandResolvesPasswordFromFile(t *testing.T) {
+	previousClientFactory := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previousClientFactory })
+
+	passwordPath := filepath.Join(t.TempDir(), "db-password.txt")
+	if err := os.WriteFile(passwordPath, []byte("secret-from-file\n"), 0o600); err != nil {
+		t.Fatalf("write password file: %v", err)
+	}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "-u", "root", "--password-file", passwordPath},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	if client.options.Password != "secret-from-file" {
+		t.Fatalf("expected file password to be trimmed before reaching metadata client, got %q", client.options.Password)
+	}
+}
+
+func TestAuditCommandRejectsAskPasswordWithPasswordEnv(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "-u", "root", "--password-env", "DELTASCOPE_DB_PASSWORD", "--ask-password"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "mutually exclusive") {
+		t.Fatalf("expected mutual exclusion error, got %q", stderr.String())
+	}
+}
+
 func TestAuditCommandCanReadSQLFromStdinWhilePromptingPasswordSeparately(t *testing.T) {
 	previousClientFactory := newMetadataClient
 	client := &fakeMetadataClient{
@@ -699,7 +781,7 @@ func TestCapabilitiesPrintsStableSummary(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, expected := range []string{"dialects:", "mysql", "tidb", "modes:", "offline", "metadata-aware", "surfaces:", "cli", "http"} {
+	for _, expected := range []string{"dialects:", "mysql", "tidb", "modes:", "offline", "metadata-aware", "surfaces:", "cli", "http", "mcp", "go-api"} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected capabilities output to contain %q, got %q", expected, output)
 		}

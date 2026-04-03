@@ -1,6 +1,6 @@
 # Audit SQL With Metadata
 
-Use metadata-aware mode when current schema state or instance configuration matters. Metadata-aware mode activates automatically when any connection flag is provided (`--host`, `--port`, `--user`, `--password`, `--ask-password`, `--schema`, or `--socket`).
+Use metadata-aware mode when current schema state or instance configuration matters. Metadata-aware mode activates automatically when any connection flag is provided (`--host`, `--port`, `--user`, `--password`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, or `--socket`).
 
 In this mode DeltaScope connects to the target database before evaluating rules, attaches a `TableSnapshot` (current column list, indexes, row estimates) and `InstanceFacts` (version, key configuration variables) to each statement, and then runs the full rule set — including rules that require live schema context.
 
@@ -33,7 +33,7 @@ deltascope audit \
   --schema app
 ```
 
-`--ask-password` prompts for the password interactively so it never appears in shell history or process listings. Alternatively, pass `--password` for scripted environments where the secret is injected via an environment variable:
+`--ask-password` prompts for the password interactively so it never appears in shell history or process listings. For scripted environments, prefer `--password-env` or `--password-file` so the secret does not appear in process arguments:
 
 ```bash
 deltascope audit \
@@ -41,7 +41,19 @@ deltascope audit \
   --host 127.0.0.1 \
   --port 3306 \
   --user deltascope \
-  --password "$DELTASCOPE_PASSWORD" \
+  --password-env DELTASCOPE_PASSWORD \
+  --schema app
+```
+
+Or load the password from a file:
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'email address'" \
+  --host 127.0.0.1 \
+  --port 3306 \
+  --user deltascope \
+  --password-file ~/.config/deltascope/mysql-password.txt \
   --schema app
 ```
 

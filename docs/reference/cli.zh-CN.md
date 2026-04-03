@@ -61,7 +61,9 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | `--port` | `-P` | `3306` | 端口号 |
 | `--user` | `-u` | （无） | 数据库用户名 |
 | `--password` | `-p` | （无） | 命令行密码（生产环境中应避免使用——会出现在 shell 历史记录中） |
-| `--ask-password` | | false | 交互式密码提示。与 `--password` 互斥。 |
+| `--password-env` | | （无） | 包含数据库密码的环境变量名 |
+| `--password-file` | | （无） | 包含数据库密码的文件路径 |
+| `--ask-password` | | false | 交互式密码提示。与 `--password`、`--password-env` 和 `--password-file` 互斥。 |
 | `--schema` | `-D` | （无） | 用于解析无限定表名的默认 schema |
 | `--socket` | `-S` | （无） | Unix socket 路径。与 `--host`/`--port` 互斥。 |
 
@@ -83,7 +85,7 @@ deltascope audit \
 # 使用 Unix socket
 deltascope audit \
   --socket /var/run/mysqld/mysqld.sock \
-  --user dba --password secret \
+  --user dba --password-env DELTASCOPE_DB_PASSWORD \
   --schema mydb \
   --sql "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL DEFAULT 0"
 ```

@@ -1,6 +1,6 @@
 # 携带元数据审计 SQL
 
-当当前 Schema 状态或实例配置信息对审计结果有影响时，请使用元数据感知模式。只要提供任意连接参数（`--host`、`--port`、`--user`、`--password`、`--ask-password`、`--schema` 或 `--socket`），元数据感知模式即自动激活。
+当当前 Schema 状态或实例配置信息对审计结果有影响时，请使用元数据感知模式。只要提供任意连接参数（`--host`、`--port`、`--user`、`--password`、`--password-env`、`--password-file`、`--ask-password`、`--schema` 或 `--socket`），元数据感知模式即自动激活。
 
 在此模式下，DeltaScope 在执行规则评估前先连接目标数据库，为每条语句附加 `TableSnapshot`（当前列列表、索引、行数估算）和 `InstanceFacts`（版本号、关键配置变量），再运行完整规则集——包括需要实时 Schema 上下文的规则。
 
@@ -33,7 +33,7 @@ deltascope audit \
   --schema app
 ```
 
-`--ask-password` 以交互方式提示输入密码，避免密码出现在 shell 历史或进程列表中。对于脚本环境，可通过环境变量注入密码：
+`--ask-password` 以交互方式提示输入密码，避免密码出现在 shell 历史或进程列表中。对于脚本环境，优先使用 `--password-env` 或 `--password-file`，避免密码出现在进程参数中：
 
 ```bash
 deltascope audit \
@@ -41,7 +41,19 @@ deltascope audit \
   --host 127.0.0.1 \
   --port 3306 \
   --user deltascope \
-  --password "$DELTASCOPE_PASSWORD" \
+  --password-env DELTASCOPE_PASSWORD \
+  --schema app
+```
+
+也可以从文件读取密码：
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'email address'" \
+  --host 127.0.0.1 \
+  --port 3306 \
+  --user deltascope \
+  --password-file ~/.config/deltascope/mysql-password.txt \
   --schema app
 ```
 

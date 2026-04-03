@@ -66,7 +66,9 @@ instance variables) and attaches them to each statement before rule evaluation.
 | `--port` | `-P` | `3306` | Port number |
 | `--user` | `-u` | (none) | Database user |
 | `--password` | `-p` | (none) | Password on the command line (avoid in production — it appears in shell history) |
-| `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password`. |
+| `--password-env` | | (none) | Environment variable that contains the database password |
+| `--password-file` | | (none) | File path that contains the database password |
+| `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password`, `--password-env`, and `--password-file`. |
 | `--schema` | `-D` | (none) | Default schema for unqualified table name resolution |
 | `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port`. |
 
@@ -90,7 +92,7 @@ deltascope audit \
 # Use a Unix socket
 deltascope audit \
   --socket /var/run/mysqld/mysqld.sock \
-  --user dba --password secret \
+  --user dba --password-env DELTASCOPE_DB_PASSWORD \
   --schema mydb \
   --sql "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL DEFAULT 0"
 ```

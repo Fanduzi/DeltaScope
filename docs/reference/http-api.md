@@ -33,7 +33,7 @@ deltascope-server -listen 127.0.0.1:8083
 # With a custom policy config
 deltascope-server -listen 127.0.0.1:8083 -config ./deltascope.yaml
 
-# Enable API-key auth (protects /v1/audit)
+# Enable API-key auth (protects `/v1/*` endpoints unless explicitly allowed)
 deltascope-server \
   -listen 127.0.0.1:8083 \
   -auth-enabled \
@@ -107,6 +107,86 @@ curl http://127.0.0.1:8083/metrics
 # TYPE deltascope_http_requests_total counter
 ...
 ```
+
+---
+
+### GET /v1/capabilities
+
+Returns a machine-readable summary of the HTTP adapter surface.
+
+**Request:**
+
+```bash
+curl http://127.0.0.1:8083/v1/capabilities
+```
+
+**Response (200):**
+
+```json
+{
+  "transport": "http",
+  "endpoints": [
+    "POST /v1/audit",
+    "GET /v1/rules",
+    "GET /v1/rules/{rule_id}",
+    "GET /v1/capabilities"
+  ],
+  "audit_modes": ["offline", "metadata-aware"],
+  "dialects": ["mysql", "tidb"]
+}
+```
+
+---
+
+### GET /v1/rules
+
+Returns the shipped rule catalog in stable JSON form. Pass `query` to filter by rule id, summary, description, or statement kind.
+
+**Requests:**
+
+```bash
+curl http://127.0.0.1:8083/v1/rules
+curl 'http://127.0.0.1:8083/v1/rules?query=where'
+```
+
+**Response fragment (200):**
+
+```json
+{
+  "query": "where",
+  "count": 1,
+  "rules": [
+    {
+      "rule_id": "dml.where.require",
+      "summary": "Require Dml Where Require"
+    }
+  ]
+}
+```
+
+---
+
+### GET /v1/rules/{rule_id}
+
+Returns the full shipped catalog entry for one rule id.
+
+**Request:**
+
+```bash
+curl http://127.0.0.1:8083/v1/rules/dml.where.require
+```
+
+**Response fragment (200):**
+
+```json
+{
+  "rule_id": "dml.where.require",
+  "summary": "Require Dml Where Require",
+  "description": "Require Dml Where Require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule."
+}
+```
+
+If the rule id does not exist, the adapter returns `404 not_found`.
 
 ---
 

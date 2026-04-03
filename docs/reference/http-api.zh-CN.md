@@ -33,7 +33,7 @@ deltascope-server -listen 127.0.0.1:8083
 # 指定自定义策略配置
 deltascope-server -listen 127.0.0.1:8083 -config ./deltascope.yaml
 
-# 开启 API Key 认证（保护 /v1/audit）
+# 开启 API Key 认证（默认保护所有 `/v1/*` 路径，除非显式放行）
 deltascope-server \
   -listen 127.0.0.1:8083 \
   -auth-enabled \
@@ -107,6 +107,86 @@ curl http://127.0.0.1:8083/metrics
 # TYPE deltascope_http_requests_total counter
 ...
 ```
+
+---
+
+### GET /v1/capabilities
+
+返回 HTTP 适配层的机器可读能力摘要。
+
+**请求：**
+
+```bash
+curl http://127.0.0.1:8083/v1/capabilities
+```
+
+**响应（200）：**
+
+```json
+{
+  "transport": "http",
+  "endpoints": [
+    "POST /v1/audit",
+    "GET /v1/rules",
+    "GET /v1/rules/{rule_id}",
+    "GET /v1/capabilities"
+  ],
+  "audit_modes": ["offline", "metadata-aware"],
+  "dialects": ["mysql", "tidb"]
+}
+```
+
+---
+
+### GET /v1/rules
+
+返回当前随附的规则目录 JSON。可通过 `query` 按 `rule_id`、摘要、描述或语句类型做过滤。
+
+**请求：**
+
+```bash
+curl http://127.0.0.1:8083/v1/rules
+curl 'http://127.0.0.1:8083/v1/rules?query=where'
+```
+
+**响应片段（200）：**
+
+```json
+{
+  "query": "where",
+  "count": 1,
+  "rules": [
+    {
+      "rule_id": "dml.where.require",
+      "summary": "Require Dml Where Require"
+    }
+  ]
+}
+```
+
+---
+
+### GET /v1/rules/{rule_id}
+
+返回单条规则的完整目录条目。
+
+**请求：**
+
+```bash
+curl http://127.0.0.1:8083/v1/rules/dml.where.require
+```
+
+**响应片段（200）：**
+
+```json
+{
+  "rule_id": "dml.where.require",
+  "summary": "Require Dml Where Require",
+  "description": "Require Dml Where Require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule."
+}
+```
+
+如果规则不存在，适配层返回 `404 not_found`。
 
 ---
 
