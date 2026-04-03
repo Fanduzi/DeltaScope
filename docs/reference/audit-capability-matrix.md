@@ -6,6 +6,12 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **Pattern legality checks** such as `*.name.pattern.require` and `*.name.keyword.forbid` enforce lexical validity. **Structured naming governance** such as `prefix`, `suffix`, and `contains` enforces team naming conventions. These are complementary layers, not replacements for one another.
 
+## Capability Status
+
+| Capability | Status | Notes |
+|------------|--------|-------|
+| affected-row threshold | covered | the audit flow computes conservative statement-level impact estimates through shape and metadata-aware facts, and `dml.impact.estimate` / `dml.impact.rows.max_count` / `dml.impact.ratio.max_percent` consume or report that shared payload |
+
 ---
 
 ## DDL: Create Table
@@ -207,6 +213,14 @@ These rules require a live table snapshot and are skipped in offline mode.
 | `dml.join.on.require` | JOIN does not have an ON condition | ✓ | ✗ | blocker |
 | `dml.replace.forbid` | REPLACE INTO statement is not permitted | ✓ | ✗ | blocker |
 
+### Impact Estimation
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `dml.impact.estimate` | Surface the precomputed conservative statement-level `impact` estimate for `UPDATE` and `DELETE` in rule output | ✓ | ✓ | notice |
+| `dml.impact.rows.max_count` | Conservative estimated affected-row count exceeds the configured threshold | ✓ | ✓ | warning |
+| `dml.impact.ratio.max_percent` | Conservative estimated affected-row ratio exceeds the configured threshold | ✓ | ✓ | warning |
+
 ### INSERT Restrictions
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
@@ -246,3 +260,4 @@ When a metadata provider is configured, DeltaScope loads live facts from the tar
 | Primary key shape | Primary key existence check before DROP PRIMARY KEY |
 | Table options (engine, charset, row format) | Table option compatibility check on ALTER TABLE |
 | `table_rows` | Row count safety threshold on DROP TABLE and TRUNCATE TABLE |
+| Index cardinality and `table_rows` | Metadata-aware refinement of conservative DML impact estimation |

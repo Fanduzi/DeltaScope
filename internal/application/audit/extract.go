@@ -13,6 +13,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/opcode"
 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 )
 
@@ -59,6 +60,9 @@ func extractStatement(dialect spec.Dialect, warnings []string, parsed ParsedStat
 		statement.DML = extractDelete(node)
 	default:
 		statement.Warnings = append(statement.Warnings, fmt.Sprintf("unsupported parsed statement kind %q", parsed.Kind))
+	}
+	if statement.DML != nil {
+		statement.DML.Impact = estimateStatementImpact(statement)
 	}
 
 	return statement, nil
@@ -238,29 +242,47 @@ func extractInsert(stmt *ast.InsertStmt) *spec.DML {
 
 func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
+	tables := extractMutationTables(join)
+	hasSubquery := nodeHasSubquery(stmt)
+	isSingleTable := len(tables) == 1 && !joinExists(join)
+	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.Where, join, isSingleTable)
 	return &spec.DML{
-		Operation:   spec.DMLOperationUpdate,
-		Tables:      extractMutationTables(join),
-		HasWhere:    stmt.Where != nil,
-		HasLimit:    stmt.Limit != nil,
-		HasOrderBy:  stmt.Order != nil,
-		HasSubquery: nodeHasSubquery(stmt),
-		HasJoin:     joinExists(join),
-		HasJoinOn:   joinHasOn(join),
+		Operation:      spec.DMLOperationUpdate,
+		Tables:         tables,
+		HasWhere:       stmt.Where != nil,
+		HasLimit:       stmt.Limit != nil,
+		HasOrderBy:     stmt.Order != nil,
+		HasSubquery:    hasSubquery,
+		HasJoin:        joinExists(join),
+		HasJoinOn:      joinHasOn(join),
+		PredicateShape: shape,
+		LookupColumns:  lookupColumns,
+		MatchedKeyName: matchedKeyName,
+		MatchedKeyKind: matchedKeyKind,
+		IsSingleTable:  isSingleTable,
 	}
 }
 
 func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
+	tables := extractMutationTables(join)
+	hasSubquery := nodeHasSubquery(stmt)
+	isSingleTable := len(tables) == 1 && !joinExists(join)
+	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.Where, join, isSingleTable)
 	return &spec.DML{
-		Operation:   spec.DMLOperationDelete,
-		Tables:      extractMutationTables(join),
-		HasWhere:    stmt.Where != nil,
-		HasLimit:    stmt.Limit != nil,
-		HasOrderBy:  stmt.Order != nil,
-		HasSubquery: nodeHasSubquery(stmt),
-		HasJoin:     joinExists(join),
-		HasJoinOn:   joinHasOn(join),
+		Operation:      spec.DMLOperationDelete,
+		Tables:         tables,
+		HasWhere:       stmt.Where != nil,
+		HasLimit:       stmt.Limit != nil,
+		HasOrderBy:     stmt.Order != nil,
+		HasSubquery:    hasSubquery,
+		HasJoin:        joinExists(join),
+		HasJoinOn:      joinHasOn(join),
+		PredicateShape: shape,
+		LookupColumns:  lookupColumns,
+		MatchedKeyName: matchedKeyName,
+		MatchedKeyKind: matchedKeyKind,
+		IsSingleTable:  isSingleTable,
 	}
 }
 
@@ -643,6 +665,68 @@ func joinExists(join *ast.Join) bool {
 		return false
 	}
 	return join.Right != nil
+}
+
+func extractMutationPredicateShape(where ast.ExprNode, join *ast.Join, isSingleTable bool) (spec.PredicateShape, []string, string, spec.IndexKind) {
+	switch {
+	case joinExists(join):
+		return spec.PredicateShapeJoin, nil, "", spec.IndexKindUnknown
+	case where == nil:
+		return spec.PredicateShapeMissingWhere, nil, "", spec.IndexKindUnknown
+	case nodeHasSubquery(where):
+		return spec.PredicateShapeSubquery, nil, "", spec.IndexKindUnknown
+	case predicateIsIDLiteralEquality(where, isSingleTable):
+		return spec.PredicateShapeUniqueEquality, []string{"id"}, "PRIMARY", spec.IndexKindPrimary
+	default:
+		return spec.PredicateShapeUnknown, nil, "", spec.IndexKindUnknown
+	}
+}
+
+func predicateIsIDLiteralEquality(where ast.ExprNode, isSingleTable bool) bool {
+	if !isSingleTable {
+		return false
+	}
+
+	predicate, ok := unwrapParenthesesExpr(where).(*ast.BinaryOperationExpr)
+	if !ok || predicate.Op != opcode.EQ {
+		return false
+	}
+
+	left := unwrapParenthesesExpr(predicate.L)
+	right := unwrapParenthesesExpr(predicate.R)
+	return (exprIsIDColumnRef(left) && exprIsLiteralValue(right)) ||
+		(exprIsIDColumnRef(right) && exprIsLiteralValue(left))
+}
+
+func unwrapParenthesesExpr(expr ast.ExprNode) ast.ExprNode {
+	current := expr
+	for {
+		grouped, ok := current.(*ast.ParenthesesExpr)
+		if !ok || grouped == nil {
+			return current
+		}
+		current = grouped.Expr
+	}
+}
+
+func exprIsIDColumnRef(expr ast.ExprNode) bool {
+	column, ok := unwrapParenthesesExpr(expr).(*ast.ColumnNameExpr)
+	return ok && column != nil && column.Name != nil && strings.EqualFold(column.Name.Name.L, "id")
+}
+
+func exprIsLiteralValue(expr ast.ExprNode) bool {
+	switch typed := unwrapParenthesesExpr(expr).(type) {
+	case nil:
+		return false
+	case ast.ValueExpr:
+		return true
+	case ast.ParamMarkerExpr:
+		return true
+	case *ast.UnaryOperationExpr:
+		return exprIsLiteralValue(typed.V)
+	default:
+		return false
+	}
 }
 
 func nodeHasSubquery(node ast.Node) bool {

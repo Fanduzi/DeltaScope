@@ -120,7 +120,7 @@ result, err := deltascope.Audit(ctx, deltascope.Request{
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **DeltaScope** (3613 symbols, 7990 relationships, 198 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **feature-dml-impact-estimation** (3905 symbols, 8858 relationships, 213 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -136,7 +136,7 @@ This project is indexed by GitNexus as **DeltaScope** (3613 symbols, 7990 relati
 
 1. `gitnexus_query({query: "<error or symptom>"})` — find execution flows related to the issue
 2. `gitnexus_context({name: "<suspect function>"})` — see all callers, callees, and process participation
-3. `READ gitnexus://repo/DeltaScope/process/{processName}` — trace the full execution flow step by step
+3. `READ gitnexus://repo/feature-dml-impact-estimation/process/{processName}` — trace the full execution flow step by step
 4. For regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})` — see what your branch changed
 
 ## When Refactoring
@@ -175,10 +175,10 @@ This project is indexed by GitNexus as **DeltaScope** (3613 symbols, 7990 relati
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/DeltaScope/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/DeltaScope/clusters` | All functional areas |
-| `gitnexus://repo/DeltaScope/processes` | All execution flows |
-| `gitnexus://repo/DeltaScope/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/feature-dml-impact-estimation/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/feature-dml-impact-estimation/clusters` | All functional areas |
+| `gitnexus://repo/feature-dml-impact-estimation/processes` | All execution flows |
+| `gitnexus://repo/feature-dml-impact-estimation/process/{name}` | Step-by-step execution trace |
 
 ## Self-Check Before Finishing
 

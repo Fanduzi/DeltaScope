@@ -93,6 +93,34 @@ func TestHandlerAuditReturnsJSONResult(t *testing.T) {
 	if contextValue["mode"] != "offline" {
 		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
 	}
+	statements, ok := payload["statements"].([]any)
+	if !ok || len(statements) == 0 {
+		t.Fatalf("expected statements array, got %#v", payload["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected first statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact object, got %#v", statement["impact"])
+	}
+	if impact["risk_level"] != "high" {
+		t.Fatalf("expected high risk level, got %#v", impact["risk_level"])
+	}
+	if impact["confidence"] != "high" {
+		t.Fatalf("expected high confidence, got %#v", impact["confidence"])
+	}
+	if impact["source"] != "shape" {
+		t.Fatalf("expected shape source, got %#v", impact["source"])
+	}
+	if ratio, ok := impact["estimated_ratio"].(float64); !ok || ratio != 1 {
+		t.Fatalf("expected estimated_ratio 1, got %#v", impact["estimated_ratio"])
+	}
+	reasonCodes, ok := impact["reason_codes"].([]any)
+	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "missing_where" {
+		t.Fatalf("expected missing_where reason code, got %#v", impact["reason_codes"])
+	}
 }
 
 func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T) {
@@ -215,6 +243,52 @@ func TestWriteJSONSerializesFindingExplanationMetadataFields(t *testing.T) {
 	}
 	assertExplanationFieldString(t, metadata, "status")
 	assertExplanationFieldString(t, metadata, "note")
+}
+
+func TestWriteJSONSerializesStatementImpact(t *testing.T) {
+	estimatedRows := int64(12)
+	estimatedRatio := 0.25
+
+	rec := httptest.NewRecorder()
+	writeJSON(rec, http.StatusOK, deltascope.Result{
+		Statements: []deltascope.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Impact: &deltascope.Impact{
+				EstimatedRows:  &estimatedRows,
+				EstimatedRatio: &estimatedRatio,
+				RiskLevel:      deltascope.ImpactRiskMedium,
+				Confidence:     deltascope.ImpactConfidenceHigh,
+				Source:         deltascope.ImpactSourceMetadata,
+				ReasonCodes:    []string{"indexed_range"},
+			},
+		}},
+	})
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	statements, ok := payload["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", payload["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok || impact["risk_level"] != "medium" || impact["confidence"] != "high" || impact["source"] != "metadata" {
+		t.Fatalf("expected statement impact object, got %#v", statement["impact"])
+	}
+	if rows, ok := impact["estimated_rows"].(float64); !ok || rows != 12 {
+		t.Fatalf("expected estimated_rows 12, got %#v", impact["estimated_rows"])
+	}
+	reasonCodes, ok := impact["reason_codes"].([]any)
+	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "indexed_range" {
+		t.Fatalf("expected indexed_range reason code, got %#v", impact["reason_codes"])
+	}
 }
 
 func TestWriteJSONOmitsFindingExplanationWhenAbsent(t *testing.T) {

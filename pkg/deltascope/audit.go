@@ -96,6 +96,41 @@ type Explanation struct {
 	Reasons []string `json:"reasons,omitempty"`
 }
 
+// ImpactSource identifies the public origin of a statement-level DML impact estimate.
+type ImpactSource string
+
+// ImpactRisk identifies the public conservative risk bucket for a DML statement.
+type ImpactRisk string
+
+// ImpactConfidence identifies the public estimate-confidence bucket.
+type ImpactConfidence string
+
+const (
+	ImpactSourceShape    ImpactSource = "shape"
+	ImpactSourceMetadata ImpactSource = "metadata"
+	ImpactSourcePlan     ImpactSource = "plan"
+
+	ImpactRiskLow     ImpactRisk = "low"
+	ImpactRiskMedium  ImpactRisk = "medium"
+	ImpactRiskHigh    ImpactRisk = "high"
+	ImpactRiskUnknown ImpactRisk = "unknown"
+
+	ImpactConfidenceLow    ImpactConfidence = "low"
+	ImpactConfidenceMedium ImpactConfidence = "medium"
+	ImpactConfidenceHigh   ImpactConfidence = "high"
+)
+
+// Impact is the stable public statement-level DML impact estimate shape.
+type Impact struct {
+	EstimatedRows  *int64           `json:"estimated_rows,omitempty"`
+	EstimatedRatio *float64         `json:"estimated_ratio,omitempty"`
+	RiskLevel      ImpactRisk       `json:"risk_level,omitempty"`
+	Confidence     ImpactConfidence `json:"confidence,omitempty"`
+	Source         ImpactSource     `json:"source,omitempty"`
+	ReasonCodes    []string         `json:"reason_codes,omitempty"`
+	Notes          []string         `json:"notes,omitempty"`
+}
+
 // ExplanationMetadata describes how metadata availability affected a public finding explanation.
 type ExplanationMetadata struct {
 	Status string `json:"status,omitempty"`
@@ -131,6 +166,7 @@ type StatementResult struct {
 	RawSQL        string       `json:"raw_sql,omitempty"`
 	NormalizedSQL string       `json:"normalized_sql,omitempty"`
 	Findings      []Finding    `json:"findings,omitempty"`
+	Impact        *Impact      `json:"impact,omitempty"`
 	Explanation   *Explanation `json:"explanation,omitempty"`
 }
 
@@ -190,6 +226,7 @@ func fromDomainResult(result report.Result) Result {
 			RawSQL:        stmt.RawSQL,
 			NormalizedSQL: stmt.NormalizedSQL,
 			Findings:      fromDomainFindings(stmt.Findings),
+			Impact:        fromDomainImpact(stmt.Impact),
 			Explanation:   fromDomainExplanation(stmt.Explanation),
 		})
 	}
@@ -229,6 +266,21 @@ func fromDomainExplanation(explanation *report.Explanation) *Explanation {
 	return &Explanation{
 		Summary: explanation.Summary,
 		Reasons: append([]string(nil), explanation.Reasons...),
+	}
+}
+
+func fromDomainImpact(impact *report.Impact) *Impact {
+	if impact == nil {
+		return nil
+	}
+	return &Impact{
+		EstimatedRows:  cloneInt64Ptr(impact.EstimatedRows),
+		EstimatedRatio: cloneFloat64Ptr(impact.EstimatedRatio),
+		RiskLevel:      ImpactRisk(impact.RiskLevel),
+		Confidence:     ImpactConfidence(impact.Confidence),
+		Source:         ImpactSource(impact.Source),
+		ReasonCodes:    append([]string(nil), impact.ReasonCodes...),
+		Notes:          append([]string(nil), impact.Notes...),
 	}
 }
 
@@ -278,6 +330,22 @@ func cloneMetadataValue(value any) any {
 	default:
 		return value
 	}
+}
+
+func cloneInt64Ptr(value *int64) *int64 {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
+}
+
+func cloneFloat64Ptr(value *float64) *float64 {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
 }
 
 func cloneInstanceFacts(in *spec.InstanceFacts) *spec.InstanceFacts {
@@ -331,6 +399,7 @@ func cloneIndex(in *spec.Index) *spec.Index {
 	}
 	out := *in
 	out.Columns = append([]string(nil), in.Columns...)
+	out.Cardinality = cloneInt64Ptr(in.Cardinality)
 	return &out
 }
 

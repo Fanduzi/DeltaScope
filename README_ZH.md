@@ -117,6 +117,27 @@ deltascope audit \
 }
 ```
 
+## DML 影响估算
+
+对于 `DELETE FROM users WHERE id = 42` 这类选择性较强的 DML，DeltaScope 可能会在该语句结果上附加一个 `impact` 对象。这个对象以保守估算为原则，包含 `estimated_rows`、`estimated_ratio`、`risk_level`、`confidence`、`source`、`reason_codes`，以及可选的 `notes`。
+
+```json
+{
+  "raw_sql": "DELETE FROM users WHERE id = 42",
+  "impact": {
+    "estimated_rows": 1,
+    "estimated_ratio": 0.0001,
+    "risk_level": "low",
+    "confidence": "high",
+    "source": "metadata",
+    "reason_codes": ["pk_equality"],
+    "notes": ["refined with table statistics"]
+  }
+}
+```
+
+离线模式只使用 SQL 形状做估算。metadata-aware 模式可以基于只读表统计信息进一步收敛估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。
+
 metadata-aware 审核（需要数据库连接）：
 
 ```bash
@@ -140,7 +161,7 @@ SQL 错误在落库前发现代价极低，落库后代价极高。DeltaScope �
 - 建表治理：标识符、注释、主键、审计列、字符集/排序规则、索引、表选项。
 - 改表治理：破坏性操作、兼容性检查、存在性校验、合并建议。
 - 对象生命周期检查：`CREATE VIEW`、`DROP TABLE`、`TRUNCATE TABLE`。
-- DML 保护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、JOIN 条件、批量写入模式、黑名单对象。
+- DML 保护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、JOIN 条件、批量写入模式、黑名单对象，以及保守的影响行数估算。
 - 稳定产品接口：`deltascope` CLI、`deltascope-server`、`deltascope-mcp`、`pkg/deltascope`。
 - `deltascope-mcp` 是官方 MCP stdio 服务，暴露 `audit_sql`、`describe_rule`、`list_rules`、`get_capabilities`。
 

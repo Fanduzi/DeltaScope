@@ -65,6 +65,42 @@ func intParam(ruleID string, cfg policy.RulePolicy, key string, fallback int) (i
 	}
 }
 
+func floatParam(ruleID string, cfg policy.RulePolicy, key string, fallback float64) (float64, error) {
+	value, ok := cfg.Params[key]
+	if !ok {
+		return fallback, nil
+	}
+
+	switch typed := value.(type) {
+	case float64:
+		return typed, nil
+	case float32:
+		return float64(typed), nil
+	case int:
+		return float64(typed), nil
+	case int8:
+		return float64(typed), nil
+	case int16:
+		return float64(typed), nil
+	case int32:
+		return float64(typed), nil
+	case int64:
+		return float64(typed), nil
+	case uint:
+		return float64(typed), nil
+	case uint8:
+		return float64(typed), nil
+	case uint16:
+		return float64(typed), nil
+	case uint32:
+		return float64(typed), nil
+	case uint64:
+		return float64(typed), nil
+	default:
+		return 0, fmt.Errorf("rule %s param %q must be numeric, got %T", ruleID, key, value)
+	}
+}
+
 func stringSliceParam(ruleID string, cfg policy.RulePolicy, key string, fallback []string) ([]string, error) {
 	value, ok := cfg.Params[key]
 	if !ok {

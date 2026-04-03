@@ -179,6 +179,51 @@ func TestAuditSQLUsesTopLevelMetadataRequestFields(t *testing.T) {
 	}
 }
 
+func TestAuditSQLMetadataRefinesStatementImpact(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			PrimaryKey: &spec.Index{
+				Name:    "PRIMARY",
+				Kind:    spec.IndexKindPrimary,
+				Columns: []string{"id"},
+			},
+			Options: map[string]string{
+				"table_rows": "100",
+			},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "update users set active = 0 where id = 42",
+		Dialect:          spec.DialectMySQL,
+		Schema:           "app",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql with metadata refinement: %v", err)
+	}
+
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", result.Statements)
+	}
+
+	impact := result.Statements[0].Impact
+	if impact == nil {
+		t.Fatalf("expected statement impact, got %#v", result.Statements[0])
+	}
+	if impact.Source != report.ImpactSourceMetadata {
+		t.Fatalf("expected metadata-backed impact source, got %#v", impact)
+	}
+	if impact.EstimatedRows == nil || *impact.EstimatedRows != 1 {
+		t.Fatalf("expected one estimated row, got %#v", impact)
+	}
+	if impact.EstimatedRatio == nil || *impact.EstimatedRatio != 0.01 {
+		t.Fatalf("expected estimated ratio 0.01, got %#v", impact)
+	}
+}
+
 func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.T) {
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{

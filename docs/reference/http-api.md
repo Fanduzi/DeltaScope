@@ -182,6 +182,8 @@ Response fragment:
 
 A `200` response is returned for every valid audit request, regardless of whether the SQL passes or fails. The `verdict` field in the body conveys the audit outcome. Statement-scoped findings include `statement_kind`, and findings from statements beyond index `0` also include `statement_index`. Finding `explanation` objects are included in the current audit response shape; shipped catalog-backed rules usually include richer structured fields, while uncatalogued rules fall back to a minimal explanation that only populates `summary` from the finding message and `suggestion` from the finding suggestion.
 
+When DeltaScope audits `UPDATE` or `DELETE`, a statement result may also include an additive `impact` object with conservative DML impact estimation.
+
 **Reject example — findings present:**
 
 ```json
@@ -374,6 +376,42 @@ One entry in the `statements` array, representing the audit outcome for a single
 | `normalized_sql` | string | Whitespace-normalized SQL; omitted when not available |
 | `findings` | array | Findings for this statement; omitted when empty |
 | `explanation` | object | Optional statement-level explanation object with `summary` and `reasons`. The built-in HTTP audit flow now populates it whenever that statement produces one or more findings |
+| `impact` | object | Optional conservative DML impact estimate for `UPDATE` and `DELETE` statements |
+
+### DML Impact Estimation
+
+When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to each statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.
+
+```json
+{
+  "raw_sql": "DELETE FROM users WHERE id = 42",
+  "impact": {
+    "estimated_rows": 1,
+    "estimated_ratio": 0.0001,
+    "risk_level": "low",
+    "confidence": "high",
+    "source": "metadata",
+    "reason_codes": ["pk_equality"],
+    "notes": ["refined with table statistics"]
+  }
+}
+```
+
+Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`. The payload itself is attached in the audit flow before rule evaluation.
+
+### Impact
+
+The statement-level `impact` object uses the following fields.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `estimated_rows` | int | Conservative estimated affected-row count when DeltaScope can derive one |
+| `estimated_ratio` | number | Conservative estimated affected-row ratio relative to the target table when DeltaScope can derive one |
+| `risk_level` | string | `low`, `medium`, `high`, or `unknown` |
+| `confidence` | string | Relative confidence in the estimate, such as `low`, `medium`, or `high` |
+| `source` | string | Estimate origin, such as SQL shape only or metadata-refined output |
+| `reason_codes` | array | Stable reason tokens that explain the estimate path, such as `pk_equality` |
+| `notes` | array | Optional free-form notes that clarify refinements, caveats, or missing metadata |
 
 ### Finding
 

@@ -650,6 +650,186 @@ func TestExtractMapsUpdate(t *testing.T) {
 	}
 }
 
+func TestExtractMapsDMLPredicateShape(t *testing.T) {
+	t.Run("id equality extracts unique-equality shape", func(t *testing.T) {
+		parsed, err := Parse("update users set status = 1 where id = 42;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata to be populated")
+		}
+		if stmt.DML.PredicateShape != spec.PredicateShapeUniqueEquality {
+			t.Fatalf("expected predicate shape %q, got %q", spec.PredicateShapeUniqueEquality, stmt.DML.PredicateShape)
+		}
+		if !stmt.DML.IsSingleTable {
+			t.Fatalf("expected single-table fact to be attached")
+		}
+		if len(stmt.DML.LookupColumns) != 1 || stmt.DML.LookupColumns[0] != "id" {
+			t.Fatalf("expected lookup columns [id], got %#v", stmt.DML.LookupColumns)
+		}
+		if stmt.DML.MatchedKeyName != "PRIMARY" {
+			t.Fatalf("expected matched key PRIMARY, got %#v", stmt.DML)
+		}
+		if stmt.DML.MatchedKeyKind != spec.IndexKindPrimary {
+			t.Fatalf("expected matched key kind %q, got %#v", spec.IndexKindPrimary, stmt.DML)
+		}
+		if stmt.DML.Impact == nil {
+			t.Fatalf("expected dml impact to be attached")
+		}
+		if stmt.DML.Impact.EstimatedRows == nil || *stmt.DML.Impact.EstimatedRows != 1 {
+			t.Fatalf("expected estimated rows 1, got %#v", stmt.DML.Impact)
+		}
+		if stmt.DML.Impact.RiskLevel != spec.ImpactRiskLow {
+			t.Fatalf("expected low-risk impact, got %#v", stmt.DML.Impact)
+		}
+		if stmt.DML.Impact.Confidence != spec.ImpactConfidenceHigh {
+			t.Fatalf("expected high-confidence impact, got %#v", stmt.DML.Impact)
+		}
+		if len(stmt.DML.Impact.ReasonCodes) != 1 || stmt.DML.Impact.ReasonCodes[0] != "pk_equality" {
+			t.Fatalf("expected pk_equality reason code, got %#v", stmt.DML.Impact)
+		}
+		if len(stmt.DML.Impact.Notes) == 0 {
+			t.Fatalf("expected note for pk equality impact, got %#v", stmt.DML.Impact)
+		}
+	})
+
+	t.Run("delete without where attaches missing-where impact", func(t *testing.T) {
+		parsed, err := Parse("delete from users;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata to be populated")
+		}
+		if stmt.DML.PredicateShape != spec.PredicateShapeMissingWhere {
+			t.Fatalf("expected predicate shape %q, got %q", spec.PredicateShapeMissingWhere, stmt.DML.PredicateShape)
+		}
+		if stmt.DML.Impact == nil {
+			t.Fatalf("expected dml impact to be attached")
+		}
+		if stmt.DML.Impact.EstimatedRatio == nil || *stmt.DML.Impact.EstimatedRatio != 1.0 {
+			t.Fatalf("expected estimated ratio 1.0, got %#v", stmt.DML.Impact)
+		}
+		if stmt.DML.Impact.RiskLevel != spec.ImpactRiskHigh {
+			t.Fatalf("expected high-risk impact, got %#v", stmt.DML.Impact)
+		}
+		if stmt.DML.Impact.Confidence != spec.ImpactConfidenceHigh {
+			t.Fatalf("expected high-confidence impact, got %#v", stmt.DML.Impact)
+		}
+		if stmt.DML.Impact.Source != spec.ImpactSourceShape {
+			t.Fatalf("expected shape-only impact source, got %#v", stmt.DML.Impact)
+		}
+		if len(stmt.DML.Impact.ReasonCodes) != 1 || stmt.DML.Impact.ReasonCodes[0] != string(spec.PredicateShapeMissingWhere) {
+			t.Fatalf("expected missing_where reason code, got %#v", stmt.DML.Impact)
+		}
+		if len(stmt.DML.Impact.Notes) == 0 {
+			t.Fatalf("expected note for missing_where impact, got %#v", stmt.DML.Impact)
+		}
+	})
+
+	t.Run("generic equality stays unknown", func(t *testing.T) {
+		parsed, err := Parse("update users set score = score + 1 where status = 1;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata to be populated")
+		}
+		if stmt.DML.PredicateShape != spec.PredicateShapeUnknown {
+			t.Fatalf("expected predicate shape %q, got %q", spec.PredicateShapeUnknown, stmt.DML.PredicateShape)
+		}
+		if stmt.DML.Impact == nil {
+			t.Fatalf("expected dml impact to be attached")
+		}
+		if stmt.DML.Impact.RiskLevel != spec.ImpactRiskUnknown {
+			t.Fatalf("expected unknown risk impact, got %#v", stmt.DML.Impact)
+		}
+	})
+
+	t.Run("delete join shape", func(t *testing.T) {
+		parsed, err := Parse("delete u from users u join orders o on o.user_id = u.id where o.status = 'pending';", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata to be populated")
+		}
+		if stmt.DML.PredicateShape != spec.PredicateShapeJoin {
+			t.Fatalf("expected predicate shape %q, got %q", spec.PredicateShapeJoin, stmt.DML.PredicateShape)
+		}
+		if stmt.DML.Impact == nil {
+			t.Fatalf("expected dml impact to be attached")
+		}
+		if stmt.DML.Impact.RiskLevel != spec.ImpactRiskHigh {
+			t.Fatalf("expected join shape to attach high-risk impact, got %#v", stmt.DML.Impact)
+		}
+		if stmt.DML.Impact.Confidence != spec.ImpactConfidenceLow {
+			t.Fatalf("expected join shape to attach low-confidence impact, got %#v", stmt.DML.Impact)
+		}
+		if len(stmt.DML.Impact.Notes) == 0 {
+			t.Fatalf("expected note for join impact, got %#v", stmt.DML.Impact)
+		}
+	})
+
+	t.Run("subquery outside where stays unknown", func(t *testing.T) {
+		parsed, err := Parse("update users set manager_id = (select id from admins limit 1) where status = 1;", spec.DialectMySQL)
+		if err != nil {
+			t.Fatalf("parse: %v", err)
+		}
+
+		statements, err := Extract(parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+
+		stmt := statements[0]
+		if stmt.DML == nil {
+			t.Fatalf("expected dml metadata to be populated")
+		}
+		if !stmt.DML.HasSubquery {
+			t.Fatalf("expected statement-level subquery fact to remain true")
+		}
+		if stmt.DML.PredicateShape != spec.PredicateShapeUnknown {
+			t.Fatalf("expected predicate shape %q, got %q", spec.PredicateShapeUnknown, stmt.DML.PredicateShape)
+		}
+		if stmt.DML.Impact == nil {
+			t.Fatalf("expected dml impact to be attached")
+		}
+		if stmt.DML.Impact.RiskLevel != spec.ImpactRiskUnknown {
+			t.Fatalf("expected unknown risk impact, got %#v", stmt.DML.Impact)
+		}
+	})
+}
+
 func TestExtractMapsDelete(t *testing.T) {
 	parsed, err := Parse("delete from users where id = 1 limit 1;", spec.DialectMySQL)
 	if err != nil {

@@ -84,6 +84,31 @@ func TestAggregatePreservesStatementExplanation(t *testing.T) {
 	}
 }
 
+func TestAggregatePreservesStatementImpact(t *testing.T) {
+	result := Aggregate([]StatementResult{{
+		Index: 0,
+		Kind:  "dml",
+		Impact: &Impact{
+			EstimatedRows:  ptrInt64(1),
+			EstimatedRatio: ptrFloat64(0.01),
+			RiskLevel:      ImpactRiskLow,
+			Confidence:     ImpactConfidenceHigh,
+			Source:         ImpactSourceShape,
+			ReasonCodes:    []string{"pk_equality"},
+		},
+	}}, nil)
+
+	if result.Statements[0].Impact == nil {
+		t.Fatal("expected statement impact to be preserved")
+	}
+	if result.Statements[0].Impact.RiskLevel != ImpactRiskLow {
+		t.Fatalf("expected statement impact risk level to be preserved, got %#v", result.Statements[0].Impact)
+	}
+	if result.Verdict != VerdictPass {
+		t.Fatalf("expected verdict %q, got %q", VerdictPass, result.Verdict)
+	}
+}
+
 func TestAggregatePreservesVerdictSemanticsWithExplanation(t *testing.T) {
 	result := Aggregate([]StatementResult{{
 		Index: 0,
@@ -193,4 +218,12 @@ func TestAggregateKeepsDistinctReasonsWhenMessagesMatch(t *testing.T) {
 	if len(result.Explanation.Reasons) != 2 {
 		t.Fatalf("expected one reason per finding even when messages match, got %#v", result.Explanation)
 	}
+}
+
+func ptrInt64(value int64) *int64 {
+	return &value
+}
+
+func ptrFloat64(value float64) *float64 {
+	return &value
 }

@@ -5,7 +5,10 @@
 // note: if this file changes, update this header and module README.md.
 package spec
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func TestStatementKindAndDialectTypes(t *testing.T) {
 	stmt := Statement{
@@ -131,4 +134,166 @@ func TestDDLTracksExplicitNamesForNamingGovernanceTargets(t *testing.T) {
 	if stmt.DDL.Constraints[1].Type != "check" || stmt.DDL.Constraints[1].Name != "chk_orders_amount" {
 		t.Fatalf("expected named check constraint metadata, got %+v", stmt.DDL.Constraints[1])
 	}
+}
+
+func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) {
+	stmt := Statement{
+		Kind:    KindDML,
+		Dialect: DialectMySQL,
+		DML: &DML{
+			Operation:      DMLOperationUpdate,
+			HasWhere:       true,
+			PredicateShape: PredicateShapeUniqueEquality,
+			LookupColumns:  []string{"id"},
+			MatchedKeyName: "PRIMARY",
+			MatchedKeyKind: IndexKindPrimary,
+			IsSingleTable:  true,
+			Impact: &ImpactEstimate{
+				EstimatedRows:  ptrInt64(1),
+				EstimatedRatio: ptrFloat64(0.01),
+				RiskLevel:      ImpactRiskLow,
+				Confidence:     ImpactConfidenceHigh,
+				Source:         ImpactSourceShape,
+				ReasonCodes:    []string{"pk_equality"},
+				Notes:          []string{"shape only"},
+			},
+		},
+		Metadata: &Metadata{
+			TargetTable: &TableSnapshot{
+				Exists: true,
+				Table:  &Table{Name: "users"},
+				PrimaryKey: &Index{
+					Name:        "PRIMARY",
+					Kind:        IndexKindPrimary,
+					Columns:     []string{"id"},
+					Cardinality: ptrInt64(1000),
+				},
+				Indexes: []Index{{
+					Name:        "idx_users_email",
+					Kind:        IndexKindSecondary,
+					Columns:     []string{"email"},
+					Cardinality: ptrInt64(250),
+				}, {
+					Name:        "idx_users_zero",
+					Kind:        IndexKindSecondary,
+					Columns:     []string{"tenant_id"},
+					Cardinality: ptrInt64(0),
+				}, {
+					Name:    "idx_users_unknown",
+					Kind:    IndexKindSecondary,
+					Columns: []string{"created_at"},
+				}},
+			},
+		},
+	}
+
+	data, err := json.Marshal(stmt)
+	if err != nil {
+		t.Fatalf("marshal statement: %v", err)
+	}
+
+	var roundTrip Statement
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal statement: %v", err)
+	}
+
+	if roundTrip.DML == nil || roundTrip.DML.Impact == nil {
+		t.Fatalf("expected dml impact to round-trip, got %#v", roundTrip.DML)
+	}
+	if roundTrip.DML.PredicateShape != PredicateShapeUniqueEquality {
+		t.Fatalf("expected predicate shape to round-trip, got %q", roundTrip.DML.PredicateShape)
+	}
+	if roundTrip.DML.Impact.Source != ImpactSourceShape {
+		t.Fatalf("expected impact source to round-trip, got %#v", roundTrip.DML.Impact)
+	}
+	if roundTrip.Metadata == nil || roundTrip.Metadata.TargetTable == nil || roundTrip.Metadata.TargetTable.PrimaryKey == nil {
+		t.Fatalf("expected metadata target table primary key, got %#v", roundTrip.Metadata)
+	}
+	if roundTrip.Metadata.TargetTable.PrimaryKey.Cardinality == nil || *roundTrip.Metadata.TargetTable.PrimaryKey.Cardinality != 1000 {
+		t.Fatalf("expected primary key cardinality to round-trip, got %#v", roundTrip.Metadata.TargetTable.PrimaryKey)
+	}
+	if len(roundTrip.Metadata.TargetTable.Indexes) != 3 {
+		t.Fatalf("expected index cardinality to round-trip, got %#v", roundTrip.Metadata.TargetTable.Indexes)
+	}
+	if roundTrip.Metadata.TargetTable.Indexes[0].Cardinality == nil || *roundTrip.Metadata.TargetTable.Indexes[0].Cardinality != 250 {
+		t.Fatalf("expected present cardinality to round-trip, got %#v", roundTrip.Metadata.TargetTable.Indexes[0])
+	}
+	if roundTrip.Metadata.TargetTable.Indexes[1].Cardinality == nil || *roundTrip.Metadata.TargetTable.Indexes[1].Cardinality != 0 {
+		t.Fatalf("expected explicit zero cardinality to round-trip, got %#v", roundTrip.Metadata.TargetTable.Indexes[1])
+	}
+	if roundTrip.Metadata.TargetTable.Indexes[2].Cardinality != nil {
+		t.Fatalf("expected unknown cardinality to remain absent, got %#v", roundTrip.Metadata.TargetTable.Indexes[2])
+	}
+
+	var richPayload map[string]any
+	if err := json.Unmarshal(data, &richPayload); err != nil {
+		t.Fatalf("unmarshal rich payload: %v", err)
+	}
+	metadataPayload, ok := richPayload["metadata"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected metadata payload, got %#v", richPayload)
+	}
+	targetTablePayload, ok := metadataPayload["target_table"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected target_table payload, got %#v", metadataPayload)
+	}
+	primaryKeyPayload, ok := targetTablePayload["primary_key"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected primary_key payload, got %#v", targetTablePayload)
+	}
+	if got := primaryKeyPayload["cardinality"]; got != float64(1000) {
+		t.Fatalf("expected primary key cardinality json value 1000, got %#v", got)
+	}
+	indexesPayload, ok := targetTablePayload["indexes"].([]any)
+	if !ok || len(indexesPayload) != 3 {
+		t.Fatalf("expected indexes payload, got %#v", targetTablePayload["indexes"])
+	}
+	firstIndex, _ := indexesPayload[0].(map[string]any)
+	secondIndex, _ := indexesPayload[1].(map[string]any)
+	thirdIndex, _ := indexesPayload[2].(map[string]any)
+	if got := firstIndex["cardinality"]; got != float64(250) {
+		t.Fatalf("expected first index cardinality json value 250, got %#v", got)
+	}
+	if got := secondIndex["cardinality"]; got != float64(0) {
+		t.Fatalf("expected explicit zero cardinality json value 0, got %#v", got)
+	}
+	if _, ok := thirdIndex["cardinality"]; ok {
+		t.Fatalf("expected unknown cardinality to be omitted from json, got %#v", thirdIndex)
+	}
+
+	zero := Statement{
+		Kind:    KindDML,
+		Dialect: DialectMySQL,
+		DML: &DML{
+			Operation: DMLOperationDelete,
+		},
+	}
+
+	data, err = json.Marshal(zero)
+	if err != nil {
+		t.Fatalf("marshal zero statement: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal zero payload: %v", err)
+	}
+	dmlPayload, ok := payload["dml"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected dml payload, got %#v", payload)
+	}
+	if _, ok := dmlPayload["predicate_shape"]; ok {
+		t.Fatalf("expected zero predicate_shape to omit from json, got %#v", dmlPayload)
+	}
+	if _, ok := dmlPayload["impact"]; ok {
+		t.Fatalf("expected zero impact to omit from json, got %#v", dmlPayload)
+	}
+}
+
+func ptrInt64(value int64) *int64 {
+	return &value
+}
+
+func ptrFloat64(value float64) *float64 {
+	return &value
 }

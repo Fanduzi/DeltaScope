@@ -200,6 +200,29 @@ CLI JSON always includes a top-level `context` object. In offline mode it report
 }
 ```
 
+### DML Impact Estimation
+
+When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to each statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.
+
+```json
+{
+  "raw_sql": "DELETE FROM users WHERE id = 42",
+  "impact": {
+    "estimated_rows": 1,
+    "estimated_ratio": 0.0001,
+    "risk_level": "low",
+    "confidence": "high",
+    "source": "metadata",
+    "reason_codes": ["pk_equality"],
+    "notes": ["refined with table statistics"]
+  }
+}
+```
+
+Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
+
+Threshold rules `dml.impact.rows.max_count` and `dml.impact.ratio.max_percent` consume this additive statement-level payload when it is available. The payload itself is attached in the audit flow before rule evaluation.
+
 #### Metadata-Aware JSON Output
 
 When metadata-aware mode is active, the JSON response includes an additional `context` field
@@ -221,7 +244,7 @@ describing how dialect and schema were resolved.
 ```
 
 `dialect_source` values: `"default"` (offline default), `"flag"` (from `--dialect`), or `"detected"` (from a live instance in metadata-aware mode).
-`schema_source` values: `"flag"` (from `--schema`), `"inferred"` (unique match), or `"qualified"` (SQL-level qualifier).
+For CLI metadata-aware audits, `schema_source` values are `"flag"` (from `--schema`) or `"inferred"` (unique match across accessible schemas). When schema inference is unnecessary or unavailable, the field may be omitted instead of emitting an extra source value.
 
 #### Quiet Mode
 
@@ -276,6 +299,8 @@ RULE ID                              LEVEL    KIND  SUMMARY
 -----------------------------------  -------  ----  ----------------------------------------------
 ddl.table.comment.require           warning  ddl   Require DDL table comment require
 ddl.table.row_size.max_bytes.require  blocker  ddl   Require DDL table row size max bytes require
+dml.impact.rows.max_count           warning  dml   Require DML impact rows max count
+dml.impact.ratio.max_percent        warning  dml   Require DML impact ratio max percent
 dml.limit.forbid                    warning  dml   Forbid DML limit forbid
 dml.where.require                   blocker  dml   Require DML where require
 ```

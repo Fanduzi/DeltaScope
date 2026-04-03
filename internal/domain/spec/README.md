@@ -10,6 +10,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
+| dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
 | dml.go | Defines DML-oriented specification types, including operation metadata and extracted target tables for rule applicability |
 
 ## Exports
@@ -27,6 +28,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Constraint`
 - `Index`
 - `IndexKind`
+- `ImpactSource`
+- `ImpactRisk`
+- `ImpactConfidence`
+- `PredicateShape`
+- `ImpactEstimate`
 - `AlterColumnChange`
 - `AlterColumn`
 - `AlterIndex`
@@ -65,7 +71,16 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `Column.Name` for column-level rules
   - `PrimaryKey.Name` plus `PrimaryKey.Kind`
   - `Indexes[].Name` plus `Indexes[].Kind` for unique, secondary, and fulltext index rules
+  - `PrimaryKey.Cardinality` plus `Indexes[].Cardinality` for additive metadata-aware selectivity hints, where `nil` means unknown and a present `0` remains distinguishable at the JSON boundary
   - `Constraints[].Name` plus `Constraints[].Type` for non-index constraints such as foreign keys and checks when extraction provides explicit names
+- `DML` now preserves additive impact-estimation facts without changing existing rule inputs:
+  - `PredicateShape` for parser-neutral predicate classification
+  - `LookupColumns` for normalized lookup-column tracking
+  - `MatchedKeyName` and `MatchedKeyKind` for the best matching index hint
+  - `IsSingleTable` to distinguish single-table from join or multi-target mutations
+  - `Impact` for the final conservative estimate payload with `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional notes
+  - offline mode derives the initial estimate from SQL shape only
+  - metadata-aware mode may refine that estimate with read-only table statistics without executing the DML
 - `Alter` now has room for richer normalized payloads:
   - `Name` is the canonical subject identifier:
     - existing-object actions use the pre-change name

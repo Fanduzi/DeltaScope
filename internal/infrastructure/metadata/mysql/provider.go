@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts, dialect detection, schema discovery, and table snapshots for application-level audit enrichment
+// output: normalized instance facts, dialect detection, schema discovery, and table snapshots with preserved index cardinality for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -266,7 +266,7 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 
 func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
-		select index_name, non_unique, index_type, column_name
+		select index_name, non_unique, index_type, column_name, cardinality
 		from information_schema.statistics
 		where table_schema = ? and table_name = ?
 		order by index_name, seq_in_index
@@ -282,20 +282,16 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 	for rows.Next() {
 		var name, indexType, columnName string
 		var nonUnique int
-		if err := rows.Scan(&name, &nonUnique, &indexType, &columnName); err != nil {
+		var cardinality sql.NullInt64
+		if err := rows.Scan(&name, &nonUnique, &indexType, &columnName, &cardinality); err != nil {
 			return fmt.Errorf("scan table index: %w", err)
 		}
 
-		index, ok := indexes[name]
-		if !ok {
-			index = &spec.Index{
-				Name: name,
-				Kind: classifyIndex(name, nonUnique, indexType),
-			}
-			indexes[name] = index
-			order = append(order, name)
+		var cardinalityValue *int64
+		if cardinality.Valid {
+			cardinalityValue = ptrInt64(cardinality.Int64)
 		}
-		index.Columns = append(index.Columns, columnName)
+		accumulateIndexRow(indexes, &order, name, nonUnique, indexType, columnName, cardinalityValue)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("iterate table indexes: %w", err)
@@ -310,6 +306,26 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 		snapshot.Indexes = append(snapshot.Indexes, *index)
 	}
 	return nil
+}
+
+func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name string, nonUnique int, indexType string, columnName string, cardinality *int64) {
+	index, ok := indexes[name]
+	if !ok {
+		index = &spec.Index{
+			Name: name,
+			Kind: classifyIndex(name, nonUnique, indexType),
+		}
+		indexes[name] = index
+		*order = append(*order, name)
+	}
+
+	index.Columns = append(index.Columns, columnName)
+	if cardinality == nil {
+		return
+	}
+	if index.Cardinality == nil || *cardinality > *index.Cardinality {
+		index.Cardinality = ptrInt64(*cardinality)
+	}
 }
 
 func normalizeOnOff(value string) bool {
@@ -367,4 +383,8 @@ func detectDialectFromVersion(version string) spec.Dialect {
 		return spec.DialectTiDB
 	}
 	return spec.DialectMySQL
+}
+
+func ptrInt64(value int64) *int64 {
+	return &value
 }

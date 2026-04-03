@@ -10,9 +10,11 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 | config.go | Parses policy params for DML rule constructors |
 | denylist_rules.go | Implements DML table denylist checks against protected schemas or tables |
 | mutation_rules.go | Implements WHERE, LIMIT, ORDER BY, subquery, and JOIN ... ON rules |
+| impact_rules.go | Implements additive statement-level impact estimation plus row-count / ratio thresholds |
 | insert_rules.go | Implements insert row-count, replace, insert-select, and on-duplicate rules |
 | register.go | Registers enabled DML rules into the shared registry |
 | mutation_rules_test.go | Verifies update/delete rule behavior |
+| impact_rules_test.go | Verifies impact estimate threshold and registration behavior |
 | insert_rules_test.go | Verifies insert-family rule behavior |
 | register_test.go | Verifies policy-backed DML rule registration and deterministic ordering |
 
@@ -27,6 +29,9 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 ## Rule IDs
 
 - `dml.where.require`
+- `dml.impact.estimate`
+- `dml.impact.rows.max_count`
+- `dml.impact.ratio.max_percent`
 - `dml.limit.forbid`
 - `dml.order_by.forbid`
 - `dml.subquery.forbid`
@@ -43,6 +48,15 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 - matches by `schemas`, `tables`, or `qualified_tables`
 - evaluates every extracted DML target table from the parser-neutral spec
 - stays inert by default because the shipped policy keeps those lists empty
+
+## Impact Output Surface
+
+- the audit flow attaches a conservative statement-level `impact` object for `UPDATE` and `DELETE` before rule evaluation
+- `dml.impact.estimate` reports that precomputed estimate as rule output; it does not control whether the payload exists
+- the additive payload includes `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`
+- offline mode uses SQL shape only
+- metadata-aware mode may refine the estimate with read-only table statistics
+- `dml.impact.rows.max_count` and `dml.impact.ratio.max_percent` evaluate that shared `impact` payload without changing existing rule inputs
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

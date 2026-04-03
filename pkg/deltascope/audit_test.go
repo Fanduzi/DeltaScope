@@ -212,6 +212,69 @@ func TestFromDomainResultMapsStatementExplanation(t *testing.T) {
 	}
 }
 
+func TestFromDomainResultMapsStatementImpact(t *testing.T) {
+	domainRows := ptrInt64(12)
+	domainRatio := ptrFloat64(0.25)
+	domainReasonCodes := []string{"indexed_range"}
+	domainNotes := []string{"metadata refined"}
+
+	public := fromDomainResult(report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Impact: &report.Impact{
+				EstimatedRows:  domainRows,
+				EstimatedRatio: domainRatio,
+				RiskLevel:      report.ImpactRiskHigh,
+				Confidence:     report.ImpactConfidenceMedium,
+				Source:         report.ImpactSourceMetadata,
+				ReasonCodes:    domainReasonCodes,
+				Notes:          domainNotes,
+			},
+		}},
+	})
+
+	if len(public.Statements) != 1 {
+		t.Fatalf("expected one statement, got %d", len(public.Statements))
+	}
+	if public.Statements[0].Impact == nil {
+		t.Fatal("expected statement impact to be mapped")
+	}
+	if public.Statements[0].Impact.Source != ImpactSourceMetadata {
+		t.Fatalf("expected statement impact source to be preserved, got %#v", public.Statements[0].Impact)
+	}
+	if public.Statements[0].Impact.EstimatedRows == nil || *public.Statements[0].Impact.EstimatedRows != 12 {
+		t.Fatalf("expected statement impact estimated rows to be preserved, got %#v", public.Statements[0].Impact)
+	}
+	if public.Statements[0].Impact.EstimatedRatio == nil || *public.Statements[0].Impact.EstimatedRatio != 0.25 {
+		t.Fatalf("expected statement impact estimated ratio to be preserved, got %#v", public.Statements[0].Impact)
+	}
+	if len(public.Statements[0].Impact.ReasonCodes) != 1 || public.Statements[0].Impact.ReasonCodes[0] != "indexed_range" {
+		t.Fatalf("expected statement impact reason codes to be preserved, got %#v", public.Statements[0].Impact)
+	}
+	if len(public.Statements[0].Impact.Notes) != 1 || public.Statements[0].Impact.Notes[0] != "metadata refined" {
+		t.Fatalf("expected statement impact notes to be preserved, got %#v", public.Statements[0].Impact)
+	}
+
+	*public.Statements[0].Impact.EstimatedRows = 99
+	*public.Statements[0].Impact.EstimatedRatio = 0.75
+	public.Statements[0].Impact.ReasonCodes[0] = "mutated_reason"
+	public.Statements[0].Impact.Notes[0] = "mutated_note"
+
+	if *domainRows != 12 {
+		t.Fatalf("expected estimated rows pointer to be defensive copied, got %d", *domainRows)
+	}
+	if *domainRatio != 0.25 {
+		t.Fatalf("expected estimated ratio pointer to be defensive copied, got %v", *domainRatio)
+	}
+	if domainReasonCodes[0] != "indexed_range" {
+		t.Fatalf("expected reason codes slice to be defensive copied, got %#v", domainReasonCodes)
+	}
+	if domainNotes[0] != "metadata refined" {
+		t.Fatalf("expected notes slice to be defensive copied, got %#v", domainNotes)
+	}
+}
+
 func TestAuditBuildsAggregateExplanations(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL: "update users set name = 'delta';",
@@ -280,9 +343,9 @@ func TestFromDomainResultDeepCopiesFindingMetadata(t *testing.T) {
 			Index: 0,
 			Kind:  "dml",
 			Findings: []rule.Finding{{
-				RuleID:  "dml.where.require",
-				Level:   rule.LevelBlocker,
-				Message: "where clause required",
+				RuleID:   "dml.where.require",
+				Level:    rule.LevelBlocker,
+				Message:  "where clause required",
 				Metadata: domainMetadata,
 			}},
 		}},
@@ -338,6 +401,8 @@ func TestFromDomainResultDeepCopiesNestedFindingMetadata(t *testing.T) {
 }
 
 func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
+	primaryCardinality := ptrInt64(1000)
+	secondaryCardinality := ptrInt64(250)
 	instance := &InstanceFacts{
 		Version:                "8.0.36",
 		DefaultCharset:         "utf8mb4",
@@ -347,13 +412,13 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 		Schema:     "app",
 		Exists:     true,
 		Table:      &Table{Name: "users"},
-		PrimaryKey: &Index{Name: "PRIMARY", Columns: []string{"id"}},
+		PrimaryKey: &Index{Name: "PRIMARY", Columns: []string{"id"}, Cardinality: primaryCardinality},
 		Columns: []Column{
 			{Name: "id", Type: "bigint"},
 		},
-		Indexes: []Index{{Name: "idx_email", Columns: []string{"email"}}},
+		Indexes:     []Index{{Name: "idx_email", Columns: []string{"email"}, Cardinality: secondaryCardinality}},
 		Constraints: []Constraint{{Name: "fk_team", Columns: []string{"team_id"}}},
-		Options: map[string]string{"engine": "InnoDB"},
+		Options:     map[string]string{"engine": "InnoDB"},
 	}
 	provider := publicMetadataProvider{provider: &fakeMetadataProvider{instance: instance, snapshot: snapshot}}
 
@@ -374,6 +439,9 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	mappedSnapshot.Constraints[0].Columns[0] = "mutated_team"
 	mappedSnapshot.Options["engine"] = "MyISAM"
 
+	*snapshot.PrimaryKey.Cardinality = 2000
+	*snapshot.Indexes[0].Cardinality = 500
+
 	if instance.DefaultCharset != "utf8mb4" {
 		t.Fatalf("expected cloned instance facts, got %#v", instance)
 	}
@@ -386,8 +454,14 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	if snapshot.PrimaryKey == nil || len(snapshot.PrimaryKey.Columns) != 1 || snapshot.PrimaryKey.Columns[0] != "id" {
 		t.Fatalf("expected cloned primary key columns, got %#v", snapshot.PrimaryKey)
 	}
+	if mappedSnapshot.PrimaryKey == nil || mappedSnapshot.PrimaryKey.Cardinality == nil || *mappedSnapshot.PrimaryKey.Cardinality != 1000 {
+		t.Fatalf("expected cloned primary key cardinality pointer, got %#v", mappedSnapshot.PrimaryKey)
+	}
 	if len(snapshot.Indexes) != 1 || len(snapshot.Indexes[0].Columns) != 1 || snapshot.Indexes[0].Columns[0] != "email" {
 		t.Fatalf("expected cloned index columns, got %#v", snapshot.Indexes)
+	}
+	if len(mappedSnapshot.Indexes) != 1 || mappedSnapshot.Indexes[0].Cardinality == nil || *mappedSnapshot.Indexes[0].Cardinality != 250 {
+		t.Fatalf("expected cloned secondary index cardinality pointer, got %#v", mappedSnapshot.Indexes)
 	}
 	if len(snapshot.Constraints) != 1 || len(snapshot.Constraints[0].Columns) != 1 || snapshot.Constraints[0].Columns[0] != "team_id" {
 		t.Fatalf("expected cloned constraint columns, got %#v", snapshot.Constraints)
@@ -395,4 +469,12 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	if snapshot.Options["engine"] != "InnoDB" {
 		t.Fatalf("expected cloned options map, got %#v", snapshot.Options)
 	}
+}
+
+func ptrInt64(value int64) *int64 {
+	return &value
+}
+
+func ptrFloat64(value float64) *float64 {
+	return &value
 }

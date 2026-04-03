@@ -18,6 +18,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 	}{
 		{ruleID: ruleIDTableDenylistForbid, construct: newTableDenylistRule},
 		{ruleID: ruleIDWhereRequire, construct: newWhereRequiredRule},
+		{ruleID: ruleIDImpactEstimate, construct: newImpactEstimateRule},
+		{ruleID: ruleIDImpactRowsMaxCount, construct: newImpactRowsMaxCountRule},
+		{ruleID: ruleIDImpactRatioMaxPercent, construct: newImpactRatioMaxPercentRule},
 		{ruleID: ruleIDLimitForbid, construct: newLimitForbiddenRule},
 		{ruleID: ruleIDOrderByForbid, construct: newOrderByForbiddenRule},
 		{ruleID: ruleIDSubqueryForbid, construct: newSubqueryForbiddenRule},

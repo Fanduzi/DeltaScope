@@ -47,6 +47,34 @@ func TestAuditCommandSupportsSQLJSONOutput(t *testing.T) {
 	if decoded["verdict"] != "reject" {
 		t.Fatalf("expected verdict reject, got %#v", decoded["verdict"])
 	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) == 0 {
+		t.Fatalf("expected statements array, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected first statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact object, got %#v", statement["impact"])
+	}
+	if impact["risk_level"] != "high" {
+		t.Fatalf("expected high risk level, got %#v", impact["risk_level"])
+	}
+	if impact["confidence"] != "high" {
+		t.Fatalf("expected high confidence, got %#v", impact["confidence"])
+	}
+	if impact["source"] != "shape" {
+		t.Fatalf("expected shape source, got %#v", impact["source"])
+	}
+	if ratio, ok := impact["estimated_ratio"].(float64); !ok || ratio != 1 {
+		t.Fatalf("expected estimated_ratio 1, got %#v", impact["estimated_ratio"])
+	}
+	reasonCodes, ok := impact["reason_codes"].([]any)
+	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "missing_where" {
+		t.Fatalf("expected missing_where reason code, got %#v", impact["reason_codes"])
+	}
 }
 
 func TestAuditCommandSupportsFileInput(t *testing.T) {
@@ -885,6 +913,53 @@ func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
 	statementReasons, ok := statementExplanation["reasons"].([]any)
 	if !ok || len(statementReasons) != 1 || statementReasons[0] != "where clause required" {
 		t.Fatalf("expected statement explanation reasons, got %#v", statementExplanation["reasons"])
+	}
+}
+
+func TestRenderJSONResultIncludesStatementImpact(t *testing.T) {
+	estimatedRows := int64(12)
+	estimatedRatio := 0.25
+
+	output, err := renderJSONResult(report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Impact: &report.Impact{
+				EstimatedRows:  &estimatedRows,
+				EstimatedRatio: &estimatedRatio,
+				RiskLevel:      report.ImpactRiskMedium,
+				Confidence:     report.ImpactConfidenceHigh,
+				Source:         report.ImpactSourceMetadata,
+				ReasonCodes:    []string{"indexed_range"},
+			},
+		}},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal rendered json: %v\noutput=%s", err, string(output))
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok || impact["risk_level"] != "medium" || impact["confidence"] != "high" || impact["source"] != "metadata" {
+		t.Fatalf("expected statement impact object, got %#v", statement["impact"])
+	}
+	if rows, ok := impact["estimated_rows"].(float64); !ok || rows != 12 {
+		t.Fatalf("expected estimated_rows 12, got %#v", impact["estimated_rows"])
+	}
+	reasonCodes, ok := impact["reason_codes"].([]any)
+	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "indexed_range" {
+		t.Fatalf("expected indexed_range reason code, got %#v", impact["reason_codes"])
 	}
 }
 

@@ -7,6 +7,8 @@ package markdown
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"slices"
 	"strings"
 
@@ -36,6 +38,7 @@ func Render(result report.Result) ([]byte, error) {
 		}
 		builder.WriteString("\n")
 		writeAggregateExplanation(&builder, 3, "Explanation", statement.Explanation)
+		writeImpact(&builder, statement.Impact)
 
 		if len(statement.Findings) == 0 {
 			builder.WriteString("No findings.\n\n")
@@ -57,6 +60,43 @@ func Render(result report.Result) ([]byte, error) {
 	}
 
 	return []byte(builder.String()), nil
+}
+
+func writeImpact(builder *strings.Builder, impact *report.Impact) {
+	if impact == nil {
+		return
+	}
+
+	builder.WriteString("### Impact\n\n")
+	if impact.EstimatedRows != nil {
+		builder.WriteString(fmt.Sprintf("- `estimated_rows`: `%d`\n", *impact.EstimatedRows))
+	}
+	if impact.EstimatedRatio != nil {
+		builder.WriteString(fmt.Sprintf("- `estimated_ratio`: `%s`\n", formatImpactRatio(*impact.EstimatedRatio)))
+	}
+	if impact.RiskLevel != "" {
+		builder.WriteString(fmt.Sprintf("- `risk_level`: `%s`\n", impact.RiskLevel))
+	}
+	if impact.Confidence != "" {
+		builder.WriteString(fmt.Sprintf("- `confidence`: `%s`\n", impact.Confidence))
+	}
+	if impact.Source != "" {
+		builder.WriteString(fmt.Sprintf("- `source`: `%s`\n", impact.Source))
+	}
+	for _, code := range impact.ReasonCodes {
+		builder.WriteString(fmt.Sprintf("- `reason_code`: `%s`\n", code))
+	}
+	builder.WriteString("\n")
+}
+
+func formatImpactRatio(ratio float64) string {
+	if ratio == 0 {
+		return "0.0000"
+	}
+	if math.Abs(ratio) < 0.0001 {
+		return strconv.FormatFloat(ratio, 'g', -1, 64)
+	}
+	return fmt.Sprintf("%.4f", ratio)
 }
 
 func inlineCodeSpan(value string) string {

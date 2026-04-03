@@ -87,6 +87,41 @@ func TestNewServerPublishesOutputSchemasForCoreTools(t *testing.T) {
 			}
 		}
 	}
+
+	auditTool := tools["audit_sql"]
+	auditSchema, ok := auditTool.OutputSchema.(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql output schema type = %T", auditTool.OutputSchema)
+	}
+	properties, ok := auditSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql schema missing properties: %#v", auditTool.OutputSchema)
+	}
+	statements, ok := properties["statements"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql schema missing statements property: %#v", properties)
+	}
+	items, ok := statements["items"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql schema statements missing items: %#v", statements)
+	}
+	statementProps, ok := items["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql schema statement items missing properties: %#v", items)
+	}
+	impactSchema, ok := statementProps["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql schema missing impact property: %#v", statementProps)
+	}
+	impactProps, ok := impactSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql schema impact object missing properties: %#v", impactSchema)
+	}
+	for _, prop := range []string{"estimated_rows", "estimated_ratio", "risk_level", "confidence", "source", "reason_codes"} {
+		if _, ok := impactProps[prop]; !ok {
+			t.Fatalf("audit_sql schema impact missing property %q: %#v", prop, impactProps)
+		}
+	}
 }
 
 func TestAuditSQLToolReturnsOfflineAuditResultWithContext(t *testing.T) {
@@ -135,11 +170,95 @@ func TestAuditSQLToolReturnsOfflineAuditResultWithContext(t *testing.T) {
 	if contextValue["metadata_source"] != "none" {
 		t.Fatalf("expected none metadata source, got %#v", contextValue["metadata_source"])
 	}
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) == 0 {
+		t.Fatalf("expected statements array, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact object, got %#v", statement["impact"])
+	}
+	if impact["risk_level"] != "high" {
+		t.Fatalf("expected high risk level, got %#v", impact["risk_level"])
+	}
+	if impact["confidence"] != "high" {
+		t.Fatalf("expected high confidence, got %#v", impact["confidence"])
+	}
+	if impact["source"] != "shape" {
+		t.Fatalf("expected shape source, got %#v", impact["source"])
+	}
+	if ratio, ok := impact["estimated_ratio"].(float64); !ok || ratio != 1 {
+		t.Fatalf("expected estimated_ratio 1, got %#v", impact["estimated_ratio"])
+	}
+	reasonCodes, ok := impact["reason_codes"].([]any)
+	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "missing_where" {
+		t.Fatalf("expected missing_where reason code, got %#v", impact["reason_codes"])
+	}
 
 	for _, key := range []string{"summary", "statements", "explanation"} {
 		if _, ok := body[key]; !ok {
 			t.Fatalf("expected key %q in body: %#v", key, maps.Keys(body))
 		}
+	}
+}
+
+func TestAuditSQLToolReturnsStatementImpact(t *testing.T) {
+	t.Parallel()
+
+	server := NewServer(Config{Version: "test-version"})
+
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "audit_sql",
+		Arguments: map[string]any{"sql": "delete from users"},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+
+	body, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured map result, got %T", result.StructuredContent)
+	}
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) == 0 {
+		t.Fatalf("expected statements array, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact object, got %#v", statement["impact"])
+	}
+	if impact["risk_level"] != "high" {
+		t.Fatalf("expected high risk level, got %#v", impact["risk_level"])
+	}
+	if impact["confidence"] != "high" {
+		t.Fatalf("expected high confidence, got %#v", impact["confidence"])
+	}
+	if impact["source"] != "shape" {
+		t.Fatalf("expected shape source, got %#v", impact["source"])
+	}
+	if ratio, ok := impact["estimated_ratio"].(float64); !ok || ratio != 1 {
+		t.Fatalf("expected estimated_ratio 1, got %#v", impact["estimated_ratio"])
+	}
+	reasonCodes, ok := impact["reason_codes"].([]any)
+	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "missing_where" {
+		t.Fatalf("expected missing_where reason code, got %#v", impact["reason_codes"])
 	}
 }
 

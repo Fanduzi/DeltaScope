@@ -77,6 +77,7 @@ type StatementResult struct {
     NormalizedSQL string       `json:"normalized_sql,omitempty"`
     Findings      []Finding    `json:"findings,omitempty"`
     Explanation   *Explanation `json:"explanation,omitempty"` // emitted when this statement produces findings
+    Impact        *Impact      `json:"impact,omitempty"`      // emitted for UPDATE/DELETE when DeltaScope can derive a conservative estimate
 }
 ```
 
@@ -88,6 +89,52 @@ type StatementResult struct {
 | `NormalizedSQL` | Whitespace-normalized form of the SQL; may be empty. |
 | `Findings` | Rule findings for this statement. May be omitted from JSON when empty. |
 | `Explanation` | Optional shared explanation for the statement-level result. The built-in audit flow populates it whenever the statement produces one or more findings. |
+| `Impact` | Optional conservative DML impact estimate for `UPDATE` and `DELETE` statements. |
+
+### DML Impact Estimation
+
+When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to each statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.
+
+```json
+{
+  "raw_sql": "DELETE FROM users WHERE id = 42",
+  "impact": {
+    "estimated_rows": 1,
+    "estimated_ratio": 0.0001,
+    "risk_level": "low",
+    "confidence": "high",
+    "source": "metadata",
+    "reason_codes": ["pk_equality"],
+    "notes": ["refined with table statistics"]
+  }
+}
+```
+
+Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`. The payload itself is attached in the audit flow before rule evaluation.
+
+### Impact
+
+```go
+type Impact struct {
+    EstimatedRows  *int64            `json:"estimated_rows,omitempty"`
+    EstimatedRatio *float64          `json:"estimated_ratio,omitempty"`
+    RiskLevel      ImpactRisk        `json:"risk_level,omitempty"`
+    Confidence     ImpactConfidence  `json:"confidence,omitempty"`
+    Source         ImpactSource      `json:"source,omitempty"`
+    ReasonCodes    []string          `json:"reason_codes,omitempty"`
+    Notes          []string          `json:"notes,omitempty"`
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `EstimatedRows` | Conservative estimated affected-row count when DeltaScope can derive one. |
+| `EstimatedRatio` | Conservative estimated affected-row ratio relative to the target table when DeltaScope can derive one. |
+| `RiskLevel` | `ImpactRiskLow`, `ImpactRiskMedium`, `ImpactRiskHigh`, or `ImpactRiskUnknown`. |
+| `Confidence` | `ImpactConfidenceLow`, `ImpactConfidenceMedium`, or `ImpactConfidenceHigh`. |
+| `Source` | Estimate origin, typically SQL shape only or metadata-refined output. |
+| `ReasonCodes` | Stable reason tokens that explain the estimate path, such as `pk_equality`. |
+| `Notes` | Optional free-form notes that clarify refinements, caveats, or missing metadata. |
 
 ### Finding
 
@@ -176,6 +223,37 @@ const (
     VerdictPass   Verdict = "pass"
     VerdictReview Verdict = "review"
     VerdictReject Verdict = "reject"
+)
+```
+
+### ImpactSource
+
+```go
+const (
+    ImpactSourceShape    ImpactSource = "shape"
+    ImpactSourceMetadata ImpactSource = "metadata"
+    ImpactSourcePlan     ImpactSource = "plan"
+)
+```
+
+### ImpactRisk
+
+```go
+const (
+    ImpactRiskLow     ImpactRisk = "low"
+    ImpactRiskMedium  ImpactRisk = "medium"
+    ImpactRiskHigh    ImpactRisk = "high"
+    ImpactRiskUnknown ImpactRisk = "unknown"
+)
+```
+
+### ImpactConfidence
+
+```go
+const (
+    ImpactConfidenceLow    ImpactConfidence = "low"
+    ImpactConfidenceMedium ImpactConfidence = "medium"
+    ImpactConfidenceHigh   ImpactConfidence = "high"
 )
 ```
 

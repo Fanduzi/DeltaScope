@@ -69,6 +69,68 @@ func TestRenderIncludesGlobalFindings(t *testing.T) {
 	assertContains(t, string(rendered), "`batch.warning`")
 }
 
+func TestRenderIncludesStatementImpact(t *testing.T) {
+	estimatedRows := int64(12)
+	estimatedRatio := 0.25
+
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReview,
+		Summary: report.Summary{
+			Statements: 1,
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Impact: &report.Impact{
+				EstimatedRows:  &estimatedRows,
+				EstimatedRatio: &estimatedRatio,
+				RiskLevel:      report.ImpactRiskMedium,
+				Confidence:     report.ImpactConfidenceHigh,
+				Source:         report.ImpactSourceMetadata,
+				ReasonCodes:    []string{"indexed_range"},
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "### Impact")
+	assertContains(t, output, "`estimated_rows`: `12`")
+	assertContains(t, output, "`estimated_ratio`: `0.2500`")
+	assertContains(t, output, "`risk_level`: `medium`")
+	assertContains(t, output, "`source`: `metadata`")
+}
+
+func TestRenderPreservesTinyNonZeroImpactRatioPrecision(t *testing.T) {
+	estimatedRatio := 0.000000001
+
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReview,
+		Summary: report.Summary{
+			Statements: 1,
+		},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Impact: &report.Impact{
+				EstimatedRatio: &estimatedRatio,
+				RiskLevel:      report.ImpactRiskLow,
+				Confidence:     report.ImpactConfidenceHigh,
+				Source:         report.ImpactSourceShape,
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "`estimated_ratio`: `1e-09`")
+	assertNotContains(t, output, "`estimated_ratio`: `0.0000`")
+}
+
 func TestRenderIncludesAggregateExplanations(t *testing.T) {
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,

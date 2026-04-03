@@ -119,6 +119,27 @@ Example JSON shape:
 }
 ```
 
+## DML Impact Estimation
+
+For a selective DML such as `DELETE FROM users WHERE id = 42`, DeltaScope may add an `impact` object to the statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.
+
+```json
+{
+  "raw_sql": "DELETE FROM users WHERE id = 42",
+  "impact": {
+    "estimated_rows": 1,
+    "estimated_ratio": 0.0001,
+    "risk_level": "low",
+    "confidence": "high",
+    "source": "metadata",
+    "reason_codes": ["pk_equality"],
+    "notes": ["refined with table statistics"]
+  }
+}
+```
+
+Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
+
 Audit with live metadata (instance-aware rules):
 
 ```bash
@@ -142,7 +163,7 @@ SQL mistakes are cheap to catch before they run and expensive after. DeltaScope 
 - Create-table governance across identifiers, comments, primary keys, audit columns, charset/collation, indexes, and table options.
 - Alter-table governance for destructive actions, compatibility checks, existence validation, and merge guidance.
 - Object-lifecycle checks for `CREATE VIEW`, `DROP TABLE`, and `TRUNCATE TABLE`.
-- DML protections for `WHERE`, `LIMIT`, `ORDER BY`, subqueries, join conditions, bulk insert patterns, and denylisted objects.
+- DML protections for `WHERE`, `LIMIT`, `ORDER BY`, subqueries, join conditions, bulk insert patterns, denylisted objects, and conservative affected-row impact estimation.
 - Stable product surfaces: `deltascope` CLI, `deltascope-server`, `deltascope-mcp`, and `pkg/deltascope`.
 - `deltascope-mcp` is the official MCP stdio server and exposes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.
 

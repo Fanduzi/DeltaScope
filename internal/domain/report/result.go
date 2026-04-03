@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 // Verdict describes the final audit outcome.
@@ -27,6 +28,41 @@ type Explanation struct {
 	Reasons []string `json:"reasons,omitempty"`
 }
 
+// ImpactSource mirrors the shared DML impact source contract on report outputs.
+type ImpactSource = spec.ImpactSource
+
+// ImpactRisk mirrors the shared DML impact risk contract on report outputs.
+type ImpactRisk = spec.ImpactRisk
+
+// ImpactConfidence mirrors the shared DML impact confidence contract on report outputs.
+type ImpactConfidence = spec.ImpactConfidence
+
+const (
+	ImpactSourceShape    = spec.ImpactSourceShape
+	ImpactSourceMetadata = spec.ImpactSourceMetadata
+	ImpactSourcePlan     = spec.ImpactSourcePlan
+
+	ImpactRiskLow     = spec.ImpactRiskLow
+	ImpactRiskMedium  = spec.ImpactRiskMedium
+	ImpactRiskHigh    = spec.ImpactRiskHigh
+	ImpactRiskUnknown = spec.ImpactRiskUnknown
+
+	ImpactConfidenceLow    = spec.ImpactConfidenceLow
+	ImpactConfidenceMedium = spec.ImpactConfidenceMedium
+	ImpactConfidenceHigh   = spec.ImpactConfidenceHigh
+)
+
+// Impact captures the additive statement-level DML impact estimate exposed on results.
+type Impact struct {
+	EstimatedRows  *int64           `json:"estimated_rows,omitempty"`
+	EstimatedRatio *float64         `json:"estimated_ratio,omitempty"`
+	RiskLevel      ImpactRisk       `json:"risk_level,omitempty"`
+	Confidence     ImpactConfidence `json:"confidence,omitempty"`
+	Source         ImpactSource     `json:"source,omitempty"`
+	ReasonCodes    []string         `json:"reason_codes,omitempty"`
+	Notes          []string         `json:"notes,omitempty"`
+}
+
 // StatementResult stores findings for a single SQL statement.
 type StatementResult struct {
 	Index         int            `json:"index"`
@@ -34,6 +70,7 @@ type StatementResult struct {
 	RawSQL        string         `json:"raw_sql,omitempty"`
 	NormalizedSQL string         `json:"normalized_sql,omitempty"`
 	Findings      []rule.Finding `json:"findings,omitempty"`
+	Impact        *Impact        `json:"impact,omitempty"`
 	Explanation   *Explanation   `json:"explanation,omitempty"`
 }
 
