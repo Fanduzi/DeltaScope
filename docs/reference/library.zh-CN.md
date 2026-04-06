@@ -25,7 +25,7 @@ func Audit(ctx context.Context, request Request) (Result, error)
 ```go
 type Request struct {
     SQL              string            // 待审计的 SQL 文本（必填）
-    Dialect          Dialect           // "mysql" 或 "tidb"（默认："mysql"）
+    Dialect          Dialect           // "mysql"、"tidb" 或 "postgresql"（默认："mysql"）
     ConfigPath       string            // YAML 策略配置文件路径（可选）
     Schema           string            // 表名解析时使用的默认 Schema（可选）
     MetadataProvider MetadataProvider  // 实时元数据来源（可选）
@@ -35,7 +35,7 @@ type Request struct {
 | 字段 | 必填 | 说明 |
 |------|------|------|
 | `SQL` | 是 | 待审计的一条或多条 SQL 语句。 |
-| `Dialect` | 否 | `DialectMySQL` 或 `DialectTiDB`。传入零值（`""`）时默认为 `DialectMySQL`。 |
+| `Dialect` | 否 | `DialectMySQL`、`DialectTiDB` 或 `DialectPostgreSQL`。传入零值（`""`）时默认为 `DialectMySQL`。PostgreSQL 请求需要使用 PG-capable 构建（例如通过 `-tags postgresql` 构建，或使用 `deltascope-pg`）。 |
 | `ConfigPath` | 否 | YAML 策略配置文件的路径。为空时使用内置默认策略。 |
 | `Schema` | 否 | 元数据增强阶段用于解析非限定表名的默认 Schema 名称。 |
 | `MetadataProvider` | 否 | 提供实时实例信息和表快照。为 `nil` 时，审计在离线模式下运行。 |
@@ -166,6 +166,7 @@ type Location struct {
 const (
     DialectMySQL Dialect = "mysql"
     DialectTiDB  Dialect = "tidb"
+    DialectPostgreSQL Dialect = "postgresql"
 )
 ```
 
@@ -304,7 +305,7 @@ case deltascope.VerdictPass:
 | 条件 | 原因 |
 |------|------|
 | SQL 为空 | `Request.SQL` 是空字符串 |
-| 未知方言 | `Request.Dialect` 不是 `"mysql"` 或 `"tidb"` |
+| 未知方言 | `Request.Dialect` 不是 `"mysql"`、`"tidb"` 或 `"postgresql"` |
 | 配置加载失败 | `Request.ConfigPath` 指向的文件无法读取，或包含无效的 YAML |
 
 以上错误条件对应 CLI 退出码 `2`。运行时或内部故障对应退出码 `3`。

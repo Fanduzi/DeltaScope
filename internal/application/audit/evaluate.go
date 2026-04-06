@@ -14,36 +14,52 @@ import (
 // EvaluateStatements applies registered rules and aggregates their findings into a report result.
 func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (report.Result, error) {
 	statementResults := make([]report.StatementResult, 0, len(statements))
+	unsupported := make([]spec.UnsupportedDetail, 0)
+	supportedStatements := make([]spec.Statement, 0, len(statements))
 
 	for idx, statement := range statements {
+		if statement.Unsupported != nil {
+			item := *statement.Unsupported
+			item.Index = idx
+			if item.SQL == "" {
+				item.SQL = statement.RawSQL
+			}
+			unsupported = append(unsupported, item)
+			continue
+		}
+
 		findings, err := registry.EvaluateStatement(statement)
 		if err != nil {
 			return report.Result{}, err
 		}
 
+		resultIndex := len(statementResults)
 		for i := range findings {
-			findings[i].StatementIndex = idx
+			findings[i].StatementIndex = resultIndex
 			findings[i].StatementKind = statement.Kind.String()
 		}
 		findings = enrichFindings(findings, &statement)
 
 		statementResults = append(statementResults, report.StatementResult{
-			Index:         idx,
+			Index:         resultIndex,
 			Kind:          statement.Kind.String(),
 			RawSQL:        statement.RawSQL,
 			NormalizedSQL: statement.NormalizedSQL,
 			Findings:      findings,
 			Impact:        reportImpact(statement),
 		})
+		supportedStatements = append(supportedStatements, statement)
 	}
 
-	globalFindings, err := registry.EvaluateGlobal(statements)
+	globalFindings, err := registry.EvaluateGlobal(supportedStatements)
 	if err != nil {
 		return report.Result{}, err
 	}
 	globalFindings = enrichFindings(globalFindings, nil)
 
-	return report.Aggregate(statementResults, globalFindings), nil
+	result := report.Aggregate(statementResults, globalFindings)
+	result.Unsupported = unsupported
+	return result, nil
 }
 
 func reportImpact(statement spec.Statement) *report.Impact {

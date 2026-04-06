@@ -1,5 +1,7 @@
 version: 2
 
+# Phase 7 Slice 4 note: this GoReleaser config still owns only the pure-Go public artifact set.
+# The single approved PG v1 public artifact, `deltascope-pg`, is packaged and uploaded by release workflow helper steps outside GoReleaser.
 project_name: deltascope
 
 builds:

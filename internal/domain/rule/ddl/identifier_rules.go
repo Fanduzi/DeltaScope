@@ -233,7 +233,7 @@ func (r identifierKeywordRule) Evaluate(statement spec.Statement) ([]rule.Findin
 
 	findings := make([]rule.Finding, 0)
 	for _, subject := range r.selects(statement) {
-		if !isReservedKeyword(subject.name) {
+		if !isReservedKeyword(r.ruleID, statement.Dialect, subject.name) {
 			continue
 		}
 		findings = append(findings, rule.Finding{
@@ -373,12 +373,21 @@ func (r namingRule) metadata(statement spec.Statement, subject identifierSubject
 	return metadata
 }
 
-func isReservedKeyword(name string) bool {
-	normalized := strings.ToUpper(strings.TrimSpace(strings.Trim(name, "`")))
+func isReservedKeyword(ruleID string, dialect spec.Dialect, name string) bool {
+	normalized := strings.ToUpper(strings.TrimSpace(strings.Trim(name, "`\"")))
 	if normalized == "" {
 		return false
 	}
-	_, ok := reservedKeywords[normalized]
+	if _, ok := reservedKeywords[normalized]; ok {
+		return true
+	}
+	if dialect != spec.DialectPostgreSQL {
+		return false
+	}
+	if ruleID != ruleIDTableNameKeywordForbid && ruleID != ruleIDColumnNameKeywordForbid && ruleID != ruleIDIndexNameKeywordForbid {
+		return false
+	}
+	_, ok := postgreSQLReservedKeywords[normalized]
 	return ok
 }
 

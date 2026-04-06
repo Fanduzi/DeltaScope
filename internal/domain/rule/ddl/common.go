@@ -99,6 +99,15 @@ const (
 	ruleIDAlterAddIndexFulltextPrefixRequire                 = "ddl.alter.add_index.fulltext.prefix.require"
 	ruleIDAlterAddIndexFulltextSuffixRequire                 = "ddl.alter.add_index.fulltext.suffix.require"
 	ruleIDAlterAddIndexFulltextContainsRequire               = "ddl.alter.add_index.fulltext.contains.require"
+	ruleIDAlterSetDataTypeForbid                             = "ddl.alter.set_data_type.forbid"
+	ruleIDAlterSetDefaultForbid                              = "ddl.alter.set_default.forbid"
+	ruleIDAlterDropDefaultForbid                             = "ddl.alter.drop_default.forbid"
+	ruleIDAlterSetNotNullForbid                              = "ddl.alter.set_not_null.forbid"
+	ruleIDAlterDropNotNullForbid                             = "ddl.alter.drop_not_null.forbid"
+	ruleIDAlterSetDefaultExplicitDefaultChangeForbid         = "ddl.alter.set_default.explicit_default_change.forbid"
+	ruleIDAlterDropDefaultExplicitDefaultChangeForbid        = "ddl.alter.drop_default.explicit_default_change.forbid"
+	ruleIDAlterSetNotNullExplicitNullabilityChangeForbid     = "ddl.alter.set_not_null.explicit_nullability_change.forbid"
+	ruleIDAlterDropNotNullExplicitNullabilityChangeForbid    = "ddl.alter.drop_not_null.explicit_nullability_change.forbid"
 	ruleIDTableCommentMaxLength                              = "ddl.table.comment.max_length"
 	ruleIDTableEngineAllowlist                               = "ddl.table.engine.allowlist"
 	ruleIDTableCharsetAllowlist                              = "ddl.table.charset.allowlist"
@@ -176,6 +185,10 @@ func appliesToAlterTable(statement spec.Statement) bool {
 	default:
 		return false
 	}
+}
+
+func appliesToStandaloneDDLAction(statement spec.Statement, action string) bool {
+	return len(matchingStandaloneDDLActions(statement, action)) > 0
 }
 
 func appliesToCreateView(statement spec.Statement) bool {
@@ -274,6 +287,28 @@ func primaryKeyColumnSpecs(statement spec.Statement) []spec.Column {
 
 func matchingAlterActions(statement spec.Statement, actions ...string) []spec.Alter {
 	if !appliesToAlterTable(statement) || len(actions) == 0 {
+		return nil
+	}
+
+	matched := make([]spec.Alter, 0)
+	for _, alter := range statement.DDL.Alter {
+		if containsFold(actions, alter.Action) {
+			matched = append(matched, alter)
+		}
+	}
+	return matched
+}
+
+func matchingStandaloneDDLActions(statement spec.Statement, actions ...string) []spec.Alter {
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table != nil || len(statement.DDL.Alter) == 0 || len(actions) == 0 {
+		return nil
+	}
+	switch statement.DDL.Operation {
+	case spec.DDLOperationDropIndex:
+		if !containsFold(actions, "drop_index") {
+			return nil
+		}
+	default:
 		return nil
 	}
 

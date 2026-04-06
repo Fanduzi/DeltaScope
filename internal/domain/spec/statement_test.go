@@ -22,6 +22,9 @@ func TestStatementKindAndDialectTypes(t *testing.T) {
 	if stmt.Dialect != DialectMySQL {
 		t.Fatalf("expected dialect %q, got %q", DialectMySQL, stmt.Dialect)
 	}
+	if DialectPostgreSQL != Dialect("postgresql") {
+		t.Fatalf("expected postgresql dialect constant, got %q", DialectPostgreSQL)
+	}
 }
 
 func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {

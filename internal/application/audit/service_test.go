@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -37,6 +38,133 @@ func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ spec.Diale
 		return nil, f.err
 	}
 	return f.snapshot, nil
+}
+
+func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
+	_, err := AuditSQL(context.Background(), Request{
+		SQL:     "select 1;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err == nil {
+		t.Fatal("expected postgresql parse stub error")
+	}
+	if err == ErrUnknownDialect {
+		t.Fatal("expected postgresql dialect to pass validation")
+	}
+}
+
+func TestAuditSQLMySQLPGMismatchReturnsHintedError(t *testing.T) {
+	_, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users (name) values ('alice') returning id;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("expected dialect mismatch hint, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "postgresql") {
+		t.Fatalf("expected postgresql hint, got %v", err)
+	}
+}
+
+func TestAuditSQLTiDBPGMismatchReturnsHintedError(t *testing.T) {
+	_, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users (name) values ('alice') returning id;",
+		Dialect: spec.DialectTiDB,
+	})
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("expected dialect mismatch hint, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "postgresql") {
+		t.Fatalf("expected postgresql hint, got %v", err)
+	}
+}
+
+func TestAuditSQLPostgreSQLPathDoesNotUseMismatchHint(t *testing.T) {
+	_, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users (name) values ('alice') returning id;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil && strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("did not expect dialect mismatch hint on postgresql path, got %v", err)
+	}
+}
+
+func TestAuditSQLMySQLParseablePGMismatchAddsGlobalNotice(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id serial primary key);",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.GlobalFindings) != 1 {
+		t.Fatalf("expected 1 global advisory finding, got %#v", result.GlobalFindings)
+	}
+	finding := result.GlobalFindings[0]
+	if finding.Level != "notice" {
+		t.Fatalf("expected notice-level advisory, got %#v", finding)
+	}
+	if !strings.Contains(strings.ToLower(finding.Message), "dialect mismatch") {
+		t.Fatalf("expected dialect mismatch advisory, got %#v", finding)
+	}
+	if !strings.Contains(finding.Message, "postgresql") {
+		t.Fatalf("expected postgresql target in advisory, got %#v", finding)
+	}
+	if result.Summary.Notices != 1 {
+		t.Fatalf("expected summary notice count 1, got %#v", result.Summary)
+	}
+}
+
+func TestAuditSQLTiDBParseablePGMismatchAddsGlobalNotice(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id serial primary key);",
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.GlobalFindings) != 1 {
+		t.Fatalf("expected 1 global advisory finding, got %#v", result.GlobalFindings)
+	}
+	if result.GlobalFindings[0].Level != "notice" {
+		t.Fatalf("expected notice-level advisory, got %#v", result.GlobalFindings[0])
+	}
+}
+
+func TestAuditSQLPostgreSQLParseablePGSyntaxDoesNotAddMismatchNotice(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id serial primary key);",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil && strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("did not expect dialect mismatch advisory on postgresql path, got %v", err)
+	}
+	for _, finding := range result.GlobalFindings {
+		if strings.Contains(strings.ToLower(finding.Message), "dialect mismatch") {
+			t.Fatalf("did not expect dialect mismatch advisory on postgresql path, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditSQLMySQLNormalSQLDoesNotAddMismatchNotice(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id bigint primary key) comment='users';",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	for _, finding := range result.GlobalFindings {
+		if strings.Contains(strings.ToLower(finding.Message), "dialect mismatch") {
+			t.Fatalf("did not expect mismatch advisory for normal mysql sql, got %#v", finding)
+		}
+	}
 }
 
 func TestAuditSQLUsesDefaultPolicy(t *testing.T) {

@@ -33,3 +33,23 @@ func TestParserReturnsErrorForInvalidSQL(t *testing.T) {
 		t.Fatal("expected parse error, got nil")
 	}
 }
+
+func TestWrapStatementsReturnsExtractorBackedResults(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create table t1 (id bigint); update t1 set id = 2 where id = 1;")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	wrapped := WrapStatements(result.Statements, result.Warnings)
+	if len(wrapped) != 2 {
+		t.Fatalf("expected 2 wrapped statements, got %d", len(wrapped))
+	}
+	if wrapped[0].RawSQL == "" || wrapped[1].RawSQL == "" {
+		t.Fatalf("expected raw SQL to be preserved")
+	}
+	if wrapped[0].Extractor == nil || wrapped[1].Extractor == nil {
+		t.Fatalf("expected wrapped statements to carry extractors")
+	}
+}

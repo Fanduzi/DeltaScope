@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎，同时通过专用的 PG-capable CLI 构建 `deltascope-pg` 提供 PostgreSQL 支持。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,15 +32,15 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.14.1/install.sh | \
-  DELTASCOPE_VERSION=v0.14.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.sh | \
+  DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
-发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+核心发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ### Release Contract
 
-每个 tag 产出的 archive 命名格式为 `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。installer script、Homebrew Cask 和 npm MCP launcher 均从 GitHub Release assets 解析对应平台的二进制。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
+每个 tag 都会产出核心 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。installer script、Homebrew Cask 和 npm MCP launcher 均从 GitHub Release assets 解析这些平台二进制。PostgreSQL 支持会额外以 `deltascope-pg_<version>_linux_amd64.tar.gz` 作为唯一 public PG v1 artifact 发布；其中只包含 PG-capable CLI，不会被通用 installer、Homebrew Cask 或 npm MCP launcher 自动安装。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
 
 ## 快速开始
 

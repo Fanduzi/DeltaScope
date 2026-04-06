@@ -7,6 +7,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/spf13/cobra"
@@ -15,10 +16,14 @@ import (
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Print the DeltaScope logo and build version",
+		Short: "Print the DeltaScope logo, build version, and supported dialects",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\n%s\n", publicapi.Logo, Version)
+			_, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\n%s\n", publicapi.Logo, renderVersionLine())
 			return err
 		},
 	}
+}
+
+func renderVersionLine() string {
+	return fmt.Sprintf("deltascope %s (%s)", Version, strings.Join(supportedDialects(), ", "))
 }

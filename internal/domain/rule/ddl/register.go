@@ -242,6 +242,21 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterModifyColumnForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterModifyColumnForbid, "modify_column", "modify column", rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDAlterSetDataTypeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterSetDataTypeForbid, "set_data_type", "set data type", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
+		{ruleID: ruleIDAlterSetDefaultForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterSetDefaultForbid, "set_default", "set default", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
+		{ruleID: ruleIDAlterDropDefaultForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropDefaultForbid, "drop_default", "drop default", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
+		{ruleID: ruleIDAlterSetNotNullForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterSetNotNullForbid, "set_not_null", "set not null", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
+		{ruleID: ruleIDAlterDropNotNullForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropNotNullForbid, "drop_not_null", "drop not null", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
 		{ruleID: ruleIDAlterModifyColumnTargetTypeFamilyAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterTargetTypeFamilyRule(ruleIDAlterModifyColumnTargetTypeFamilyAllowlist, "modify_column", "modify column", rule.LevelBlocker, defaultConservativeAlterTypeFamilies, cfg)
 		}},
@@ -266,6 +281,22 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		}},
 		{ruleID: ruleIDAlterChangeColumnExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitDefaultChangeForbid, "change_column", "change column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+		}},
+
+		// PG-native explicit default change semantic rules (action-space isolated).
+		{ruleID: ruleIDAlterSetDefaultExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterSetDefaultExplicitDefaultChangeForbid, "set_default", "set default", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+		}},
+		{ruleID: ruleIDAlterDropDefaultExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterDropDefaultExplicitDefaultChangeForbid, "drop_default", "drop default", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+		}},
+
+		// PG-native explicit nullability change semantic rules (action-space isolated).
+		{ruleID: ruleIDAlterSetNotNullExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterSetNotNullExplicitNullabilityChangeForbid, "set_not_null", "set not null", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+		}},
+		{ruleID: ruleIDAlterDropNotNullExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterDropNotNullExplicitNullabilityChangeForbid, "drop_not_null", "drop not null", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
 		{ruleID: ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, "modify_column", "modify column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)

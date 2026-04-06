@@ -124,6 +124,147 @@ func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
 	}
 }
 
+func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
+	tests := []struct {
+		name      string
+		ruleID    string
+		subject   string
+		statement spec.Statement
+		selects   func(spec.Statement) []identifierSubject
+	}{
+		{
+			name:   "postgresql table keyword",
+			ruleID: ruleIDTableNameKeywordForbid,
+			subject: "table",
+			statement: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationCreateTable,
+					Table:     &spec.Table{Name: "user"},
+				},
+			},
+			selects: selectTableName,
+		},
+		{
+			name:   "postgresql column keyword",
+			ruleID: ruleIDColumnNameKeywordForbid,
+			subject: "column",
+			statement: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationCreateTable,
+					Table:     &spec.Table{Name: "accounts"},
+					Columns:   []spec.Column{{Name: "select", Type: "text"}},
+				},
+			},
+			selects: selectColumnNames,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newIdentifierKeywordRule(tt.ruleID, tt.subject, rule.LevelBlocker, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params:  map[string]any{"forbid": true},
+			}, tt.selects)
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			findings, err := statementRule.Evaluate(tt.statement)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+		})
+	}
+}
+
+func TestIdentifierKeywordRuleFindsSharedReservedKeywordsForPostgreSQL(t *testing.T) {
+	statementRule, err := newIdentifierKeywordRule(ruleIDTableNameKeywordForbid, "table", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	}, selectTableName)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "from"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for shared reserved keyword, got %d", len(findings))
+	}
+}
+
+func TestIdentifierKeywordRuleFindsPostgreSQLIndexReservedKeywords(t *testing.T) {
+	statementRule, err := newIdentifierKeywordRule(ruleIDIndexNameKeywordForbid, "index", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	}, selectIndexNames)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "accounts"},
+			Columns:   []spec.Column{{Name: "id", Type: "bigint"}},
+			Indexes:   []spec.Index{{Name: "user", Kind: spec.IndexKindSecondary, Columns: []string{"id"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for PostgreSQL index keyword, got %d", len(findings))
+	}
+}
+
+func TestIdentifierKeywordRuleDoesNotFlagSafePostgreSQLNames(t *testing.T) {
+	statementRule, err := newIdentifierKeywordRule(ruleIDTableNameKeywordForbid, "table", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	}, selectTableName)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "accounts"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings for safe PostgreSQL table name, got %d", len(findings))
+	}
+}
+
 func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
 	tests := []struct {
 		name         string

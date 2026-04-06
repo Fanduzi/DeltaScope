@@ -13,7 +13,7 @@ These flags apply to all subcommands.
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--config` | string | (none) | Path to YAML policy config file. When omitted, `policy.Default()` is used. |
-| `--dialect` | string | `mysql` | SQL dialect: `mysql` or `tidb`. Controls parser mode and dialect-specific rules. In metadata-aware mode, dialect is auto-detected from the live instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
+| `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable build such as `deltascope-pg`. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
 | `--format` | string | `markdown` | Output format: `markdown` (human-readable) or `json` (stable machine-readable contract). |
 | `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
@@ -58,7 +58,8 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 Supplying any one of the following flags activates metadata-aware mode. DeltaScope connects to the
 specified MySQL or TiDB instance to retrieve live schema facts (table structure, index definitions,
-instance variables) and attaches them to each statement before rule evaluation.
+instance variables) and attaches them to each statement before rule evaluation. PostgreSQL support
+is currently offline-only and does not use these connection flags.
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|

@@ -209,6 +209,34 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 	}
 }
 
+func TestAppliesToStandaloneDDLAction(t *testing.T) {
+	statement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationDropIndex,
+			Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_users_email"}},
+		},
+	}
+	if !appliesToStandaloneDDLAction(statement, "drop_index") {
+		t.Fatal("expected standalone drop_index path to apply")
+	}
+	if appliesToStandaloneDDLAction(statement, "drop_column") {
+		t.Fatal("expected non-matching action to stay false")
+	}
+
+	alterTableStatement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_users_email"}},
+		},
+	}
+	if appliesToStandaloneDDLAction(alterTableStatement, "drop_index") {
+		t.Fatal("expected alter-table operation to stay false for standalone helper")
+	}
+}
+
 func TestNamingConfigParsesStructuredRequirements(t *testing.T) {
 	t.Parallel()
 

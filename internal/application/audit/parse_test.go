@@ -7,6 +7,7 @@ package audit
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -36,5 +37,54 @@ func TestParseReturnsApplicationOwnedStatements(t *testing.T) {
 	}
 	if result.Statements[0].RawSQL == "" {
 		t.Fatalf("expected RawSQL to be populated")
+	}
+	if result.Statements[0].Extractor == nil {
+		t.Fatalf("expected parsed statement to expose a StatementExtractor")
+	}
+}
+
+func TestParseRejectsUnknownDialect(t *testing.T) {
+	_, err := Parse("select 1;", spec.Dialect("sqlite"))
+	if err == nil {
+		t.Fatal("expected unsupported dialect error")
+	}
+	if !strings.Contains(err.Error(), "unsupported dialect") {
+		t.Fatalf("expected unsupported dialect message, got %v", err)
+	}
+}
+
+func TestParseMySQLPGMismatchHintOnParseError(t *testing.T) {
+	_, err := Parse("insert into users (name) values ('alice') returning id;", spec.DialectMySQL)
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("expected dialect mismatch hint, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "postgresql") {
+		t.Fatalf("expected postgresql hint, got %v", err)
+	}
+}
+
+func TestParseTiDBPGMismatchHintOnParseError(t *testing.T) {
+	_, err := Parse("insert into users (name) values ('alice') returning id;", spec.DialectTiDB)
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("expected dialect mismatch hint, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "postgresql") {
+		t.Fatalf("expected postgresql hint, got %v", err)
+	}
+}
+
+func TestParseMySQLSyntaxErrorDoesNotReportPGMismatch(t *testing.T) {
+	_, err := Parse("select from users where;", spec.DialectMySQL)
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("did not expect dialect mismatch hint, got %v", err)
 	}
 }

@@ -16,5 +16,9 @@ Parser adapter namespace for external SQL parser integrations.
 - Upstream: `internal/application/audit`
 - Downstream: parser-specific adapter modules
 
+## Notes
+- `tidb` remains the pure-Go parser adapter for MySQL and TiDB.
+- `postgresql` is the Phase 3 build-tagged adapter namespace for PostgreSQL parser wiring.
+
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

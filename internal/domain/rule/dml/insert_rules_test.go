@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestInsertRowsMaxCountRuleFindsOversizedBatch(t *testing.T) {
@@ -101,5 +102,59 @@ func TestOnDuplicateForbiddenRuleFindsOnDuplicate(t *testing.T) {
 	}
 	if findings[0].Message != "INSERT ... ON DUPLICATE KEY UPDATE is forbidden" {
 		t.Fatalf("unexpected message %q", findings[0].Message)
+	}
+}
+
+func TestInsertSelectForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T) {
+	ruleUnderTest, err := newInsertSelectForbiddenRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("construct rule: %v", err)
+	}
+
+	findings, err := ruleUnderTest.Evaluate(spec.Statement{
+		Kind:    spec.KindDML,
+		Dialect: spec.DialectPostgreSQL,
+		DML: &spec.DML{
+			Operation:      spec.DMLOperationInsert,
+			IsInsertSelect: false,
+			HasOnDuplicate: false,
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings, got %d", len(findings))
+	}
+}
+
+func TestOnDuplicateForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T) {
+	ruleUnderTest, err := newOnDuplicateForbiddenRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("construct rule: %v", err)
+	}
+
+	findings, err := ruleUnderTest.Evaluate(spec.Statement{
+		Kind:    spec.KindDML,
+		Dialect: spec.DialectPostgreSQL,
+		DML: &spec.DML{
+			Operation:      spec.DMLOperationInsert,
+			IsInsertSelect: false,
+			HasOnDuplicate: false,
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings, got %d", len(findings))
 	}
 }

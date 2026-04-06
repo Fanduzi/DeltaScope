@@ -296,6 +296,7 @@ func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
 			t.Fatalf("expected truncate target users, got %q", stmt.DDL.Table.Name)
 		}
 	})
+
 }
 
 func TestExtractMapsDMLTargetTables(t *testing.T) {
@@ -901,6 +902,7 @@ func TestExtractMapsInsertSelect(t *testing.T) {
 		t.Fatalf("expected insert-select metadata to be populated")
 	}
 }
+
 
 func TestExtractLeavesUnknownStatementsAvailableForLaterLayers(t *testing.T) {
 	parsed, err := Parse("select 1;", spec.DialectMySQL)

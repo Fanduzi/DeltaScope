@@ -8,6 +8,7 @@ package tidbparser
 import (
 	"fmt"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
@@ -49,3 +50,5 @@ func (p *Parser) Parse(sql string) (Result, error) {
 
 	return result, nil
 }
+
+var _ spec.StatementExtractor = tidbExtractor{}

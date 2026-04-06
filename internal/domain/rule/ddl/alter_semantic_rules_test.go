@@ -860,6 +860,231 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 	}
 }
 
+// --- Phase 5 Slice E: PG explicit default change semantic rules ---
+
+func TestPGSetDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
+		"set_default",
+		"set default",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "set_default",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				OldName: "status",
+				Change:  &spec.AlterColumnChange{TouchesDefault: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterSetDefaultExplicitDefaultChangeForbid {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterSetDefaultExplicitDefaultChangeForbid, findings[0].RuleID)
+	}
+}
+
+func TestPGDropDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterDropDefaultExplicitDefaultChangeForbid,
+		"drop_default",
+		"drop default",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "drop_default",
+			Name:   "email",
+			Column: &spec.AlterColumn{
+				OldName: "email",
+				Change:  &spec.AlterColumnChange{TouchesDefault: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterDropDefaultExplicitDefaultChangeForbid {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterDropDefaultExplicitDefaultChangeForbid, findings[0].RuleID)
+	}
+}
+
+func TestPGSetDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
+		"set_default",
+		"set default",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "set_default",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				OldName: "status",
+				Change:  &spec.AlterColumnChange{TouchesDefault: false},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings when TouchesDefault=false, got %d", len(findings))
+	}
+}
+
+func TestPGDropDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterDropDefaultExplicitDefaultChangeForbid,
+		"drop_default",
+		"drop default",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "drop_default",
+			Name:   "email",
+			Column: &spec.AlterColumn{
+				OldName: "email",
+				Change:  &spec.AlterColumnChange{TouchesDefault: false},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings when TouchesDefault=false, got %d", len(findings))
+	}
+}
+
+func TestPGExplicitDefaultChangeRule_SkipsWhenForbidFalse(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
+		"set_default",
+		"set default",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": false},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "set_default",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				OldName: "status",
+				Change:  &spec.AlterColumnChange{TouchesDefault: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings when forbid:false, got %d", len(findings))
+	}
+}
+
+func TestPGExplicitDefaultChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
+		"set_default",
+		"set default",
+		"explicit_default_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitDefault,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	// MySQL modify_column action — set_default rule must not match
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "modify_column",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				OldName: "status",
+				Change:  &spec.AlterColumnChange{TouchesDefault: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for MySQL modify_column action, got %d", len(findings))
+	}
+}
+
 func TestAlterRegisterAddsAlterAddedIndexLifecycleRulesWhenEnabled(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
@@ -922,5 +1147,230 @@ func TestAlterRegisterAddsAlterAddedIndexLifecycleRulesWhenEnabled(t *testing.T)
 		if findings[i].RuleID != want {
 			t.Fatalf("expected finding %d to use rule %q, got %q", i, want, findings[i].RuleID)
 		}
+	}
+}
+
+// --- Phase 5 Slice F: PG explicit nullability change semantic rules ---
+
+func TestPGSetNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
+		"set_not_null",
+		"set not null",
+		"explicit_nullability_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitNullability,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "set_not_null",
+			Name:   "email",
+			Column: &spec.AlterColumn{
+				OldName: "email",
+				Change:  &spec.AlterColumnChange{TouchesNullability: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterSetNotNullExplicitNullabilityChangeForbid {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterSetNotNullExplicitNullabilityChangeForbid, findings[0].RuleID)
+	}
+}
+
+func TestPGDropNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid,
+		"drop_not_null",
+		"drop not null",
+		"explicit_nullability_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitNullability,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "drop_not_null",
+			Name:   "phone",
+			Column: &spec.AlterColumn{
+				OldName: "phone",
+				Change:  &spec.AlterColumnChange{TouchesNullability: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterDropNotNullExplicitNullabilityChangeForbid {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterDropNotNullExplicitNullabilityChangeForbid, findings[0].RuleID)
+	}
+}
+
+func TestPGSetNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFalse(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
+		"set_not_null",
+		"set not null",
+		"explicit_nullability_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitNullability,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "set_not_null",
+			Name:   "email",
+			Column: &spec.AlterColumn{
+				OldName: "email",
+				Change:  &spec.AlterColumnChange{TouchesNullability: false},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings when TouchesNullability=false, got %d", len(findings))
+	}
+}
+
+func TestPGDropNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFalse(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid,
+		"drop_not_null",
+		"drop not null",
+		"explicit_nullability_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitNullability,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "drop_not_null",
+			Name:   "phone",
+			Column: &spec.AlterColumn{
+				OldName: "phone",
+				Change:  &spec.AlterColumnChange{TouchesNullability: false},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings when TouchesNullability=false, got %d", len(findings))
+	}
+}
+
+func TestPGExplicitNullabilityChangeRule_SkipsWhenForbidFalse(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
+		"set_not_null",
+		"set not null",
+		"explicit_nullability_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitNullability,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": false},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "set_not_null",
+			Name:   "email",
+			Column: &spec.AlterColumn{
+				OldName: "email",
+				Change:  &spec.AlterColumnChange{TouchesNullability: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings when forbid:false, got %d", len(findings))
+	}
+}
+
+func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.T) {
+	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
+		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
+		"set_not_null",
+		"set not null",
+		"explicit_nullability_change",
+		rule.LevelBlocker,
+		alterTouchesExplicitNullability,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{"forbid": true},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	// MySQL modify_column action — set_not_null rule must not match
+	findings, err := statementRule.Evaluate(alterStatement(
+		spec.Alter{
+			Action: "modify_column",
+			Name:   "email",
+			Column: &spec.AlterColumn{
+				OldName: "email",
+				Change:  &spec.AlterColumnChange{TouchesNullability: true},
+			},
+		},
+	))
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for MySQL modify_column action, got %d", len(findings))
 	}
 }

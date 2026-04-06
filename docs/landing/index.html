@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DeltaScope — Audit Risky MySQL &amp; TiDB DDL &amp; DML Before It Ships</title>
-  <meta name="description" content="DeltaScope helps teams catch risky MySQL and TiDB DDL and DML before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine." />
+  <title>DeltaScope — Audit Risky MySQL, TiDB, and PostgreSQL SQL Before It Ships</title>
+  <meta name="description" content="DeltaScope helps teams catch risky MySQL, TiDB, and PostgreSQL SQL before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -554,7 +554,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.14.1 — latest release</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.15.0 — latest release</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL &amp; TiDB DDL &amp; DML
 before it ships</h1>
@@ -976,8 +976,13 @@ Statement 1: CREATE TABLE
           <div class="reveal">
             <div class="timeline">
               <div class="timeline-item">
+                <div class="timeline-date">2026-04-06</div>
+                <div class="timeline-version">v0.15.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-changes" data-i18n="releases.items.v0150">PostgreSQL foundation landed with a dedicated `deltascope-pg` release artifact, Linux/manylinux release validation, and additive CLI / Go API support for PG-capable builds.</div>
+              </div>
+              <div class="timeline-item">
                 <div class="timeline-date">2026-04-04</div>
-                <div class="timeline-version">v0.14.1 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-version">v0.14.1</div>
                 <div class="timeline-changes" data-i18n="releases.items.v0141">HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.</div>
               </div>
               <div class="timeline-item">
@@ -1051,7 +1056,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL and TiDB.
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL and TiDB, with PostgreSQL available through the dedicated PG-capable CLI build.
 Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
@@ -1064,7 +1069,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.14.1.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.15.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1097,7 +1102,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
     const translations = {
       en: {
         title: 'DeltaScope — Audit Risky MySQL & TiDB DDL & DML Before It Ships',
-        metaDescription: 'DeltaScope helps teams catch risky MySQL and TiDB DDL and DML before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine.',
+        metaDescription: 'DeltaScope helps teams catch risky MySQL, TiDB, and PostgreSQL SQL before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine.',
         nav: {
           why: 'Why',
           scenarios: 'Scenarios',
@@ -1108,9 +1113,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: 'Install'
         },
         hero: {
-          badge: 'v0.14.1 — latest release',
-          title: 'Audit risky MySQL & TiDB DDL & DML\nbefore it ships',
-          sub: 'DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.\nOn macOS, install with Homebrew. On Linux and other environments, use the install script.\nThe latest patch adds HTTP discovery endpoints and safer CLI secret inputs while keeping the audit contract stable.',
+          badge: 'v0.15.0 — latest release',
+          title: 'Audit risky MySQL, TiDB, and PostgreSQL SQL\nbefore it ships',
+          sub: 'DeltaScope now ships PostgreSQL foundation support through the dedicated PG-capable CLI artifact `deltascope-pg`.\nUse the core DeltaScope release for MySQL and TiDB, or the PG artifact when you need offline PostgreSQL audit coverage.\nThe latest release adds PostgreSQL parsing, extraction, rule wiring, Linux validation, and a dedicated PG release path without breaking the core contract.',
           ctaPrimary: 'Install DeltaScope',
           ctaSecondary: 'See Real Workflows',
           badgeAgent: 'Agent Ready'
@@ -1231,9 +1236,10 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         releases: {
           label: 'Releases',
           title: 'Shipping steadily across CLI, HTTP, MCP, and library workflows',
-          sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.',
+          sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, DML impact estimation, and now a dedicated PostgreSQL foundation release path.',
           latest: 'latest',
           items: {
+            v0150: 'PostgreSQL foundation landed with a dedicated `deltascope-pg` release artifact, Linux/manylinux release validation, and additive CLI / Go API support for PG-capable builds.',
             v0141: 'HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.',
             v0140: 'Conservative DML impact estimation across shape-only and metadata-aware audit paths, plus count and ratio thresholds in CLI, HTTP, MCP, and the Go library.',
             v0131: 'Landing page JavaScript hotfix: escaped SQL examples so the localized homepage script loads correctly again.',
@@ -1255,7 +1261,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL and TiDB.\nBuilt for migration review, CI gates, and AI-assisted SQL workflows.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL and TiDB, with PostgreSQL available through the dedicated PG-capable CLI build.\nBuilt for migration review, CI gates, and AI-assisted SQL workflows.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
@@ -1268,8 +1274,8 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         }
       },
       'zh-CN': {
-        title: 'DeltaScope —— 在上线前审计高风险 MySQL 与 TiDB DDL / DML',
-        metaDescription: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现高风险的 MySQL 与 TiDB DDL / DML。可用于迁移审查、CI 门禁和 AI 生成 SQL 变更的审计。',
+        title: 'DeltaScope —— 在上线前审计高风险 MySQL、TiDB 与 PostgreSQL SQL',
+        metaDescription: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现高风险的 MySQL、TiDB 与 PostgreSQL SQL。可用于迁移审查、CI 门禁和 AI 生成 SQL 变更的审计。',
         nav: {
           why: '为什么',
           scenarios: '场景',
@@ -1280,9 +1286,9 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           install: '安装'
         },
         hero: {
-          badge: 'v0.14.1 —— 最新版本',
-          title: '在上线前审计高风险 MySQL 与 TiDB DDL / DML',
-          sub: 'DeltaScope 帮助团队在变更真正到达数据库之前，发现危险的 DDL 与 DML。\nmacOS 上使用 Homebrew 安装；Linux 和其他环境使用安装脚本。\n最新补丁补齐了 HTTP discovery 端点和更安全的 CLI secret 输入，同时保持审计契约稳定。',
+          badge: 'v0.15.0 —— 最新版本',
+          title: '在上线前审计高风险 MySQL、TiDB 与 PostgreSQL SQL',
+          sub: 'DeltaScope 现在通过专用的 PG-capable CLI artifact `deltascope-pg` 提供 PostgreSQL foundation 支持。\nMySQL/TiDB 继续走核心 DeltaScope 发布路径；需要 PostgreSQL 离线审计时使用 PG artifact。\n这个版本补齐了 PostgreSQL 的解析、提取、规则接线、Linux 验证和独立发布路径，同时保持核心契约不破坏。',
           ctaPrimary: '安装 DeltaScope',
           ctaSecondary: '查看真实场景',
           badgeAgent: '支持 Agent'
@@ -1403,9 +1409,10 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
         releases: {
           label: '发布',
           title: '围绕 CLI、HTTP、MCP 与库接入持续稳步推进',
-          sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入，以及更完整的审计结果契约。',
+          sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入、DML 影响估算，以及这次专用的 PostgreSQL foundation 发布路径。',
           latest: '最新',
           items: {
+            v0150: 'PostgreSQL foundation 正式落地：新增专用 `deltascope-pg` 发布产物、Linux/manylinux 验证链，以及面向 PG-capable 构建的 CLI / Go API additive 支持。',
             v0141: 'HTTP 增加 capabilities 与规则目录端点，CLI 增加 password-env 与 password-file 输入，同时补齐支持版本与发布元数据。',
             v0140: '增加保守的 DML 影响范围估计，覆盖 shape-only 与 metadata-aware 审计路径，并在 CLI、HTTP、MCP 和 Go 库中暴露数量与比例阈值。',
             v0131: '修复 landing page JavaScript：转义 SQL 示例，恢复本地化首页脚本的正常加载。',
@@ -1427,7 +1434,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL 与 TiDB 的离线优先 DDL / DML 审计引擎。\n适用于迁移审查、CI 门禁和 AI 辅助 SQL 工作流。',
+          brand: '面向 MySQL 与 TiDB 的离线优先 DDL / DML 审计引擎，并通过专用的 PG-capable CLI 构建提供 PostgreSQL 支持。\n适用于迁移审查、CI 门禁和 AI 辅助 SQL 工作流。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',

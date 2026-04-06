@@ -7,6 +7,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -27,11 +28,10 @@ func newCapabilitiesCmd(exitCode *int) *cobra.Command {
 }
 
 func renderCapabilities() string {
-	return `deltascope capabilities
+	return fmt.Sprintf(`deltascope capabilities
 
 dialects:
-- mysql
-- tidb
+%s
 
 inputs:
 - --sql
@@ -57,5 +57,17 @@ surfaces:
 - http
 - mcp
 - go-api
-`
+`, renderCapabilityDialects())
+}
+
+func renderCapabilityDialects() string {
+	return strings.Join(prefixedLines("- ", supportedDialects()), "\n")
+}
+
+func prefixedLines(prefix string, values []string) []string {
+	lines := make([]string, len(values))
+	for index, value := range values {
+		lines[index] = prefix + value
+	}
+	return lines
 }

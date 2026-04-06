@@ -144,6 +144,50 @@ func TestColumnCollationAllowlistRuleFindsUnsupportedCollation(t *testing.T) {
 	}
 }
 
+func TestColumnCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	statementRule, err := newColumnValueAllowlistRule(ruleIDColumnCharsetAllowlist, "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []string{"utf8", "utf8mb4"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "latin1", Collation: "latin1_swedish_ci", Comment: "'nickname'"})
+	statement.Dialect = spec.DialectPostgreSQL
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected PostgreSQL charset rule to be skipped, got %d findings", len(findings))
+	}
+}
+
+func TestColumnCollationAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	statementRule, err := newColumnValueAllowlistRule(ruleIDColumnCollationAllowlist, "collation", []string{"utf8mb4_general_ci", "utf8mb4_bin"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []string{"utf8mb4_general_ci", "utf8mb4_bin"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "utf8mb4", Collation: "utf8mb4_unicode_ci", Comment: "'nickname'"})
+	statement.Dialect = spec.DialectPostgreSQL
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected PostgreSQL collation rule to be skipped, got %d findings", len(findings))
+	}
+}
+
 func TestColumnCharsetCollationMatchRuleFindsPartialAndMismatchedPairs(t *testing.T) {
 	statementRule, err := newColumnCharsetCollationMatchRule(policy.RulePolicy{
 		Enabled: true,

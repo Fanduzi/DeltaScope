@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -17,7 +17,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | identifier_rules.go | Implements create-table identifier-pattern, reserved-keyword, and reusable naming-governance primitives for prefix/suffix/contains checks |
 | index_rules.go | Implements create-table index count, prefix, suffix, contains, and duplicate-index rules |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
-| alter_rules.go | Implements action-level ALTER TABLE restriction rules |
+| alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
@@ -208,6 +208,7 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 
 - applicability checks for selected alter actions
 - locating matching alter records by action
+- matching closed-switch standalone DDL action payloads such as PostgreSQL `DROP INDEX`
 - extracting target column and index definitions
 - extracting explicit statement-local column change facts
 - checking whether nullability/default/auto-increment changes are explicitly requested

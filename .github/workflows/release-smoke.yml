@@ -49,3 +49,46 @@ jobs:
           grep -q "bin/deltascope-linux-amd64:.*statically linked" /tmp/deltascope-file-output.txt
           grep -q "bin/deltascope-server-linux-amd64:.*statically linked" /tmp/deltascope-file-output.txt
           grep -q "bin/deltascope-mcp-linux-amd64:.*statically linked" /tmp/deltascope-file-output.txt
+
+  linux-pg-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Verify Linux PG CLI smoke lane
+        run: make smoke-pg-cli-linux
+
+  linux-pg-manylinux-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Verify manylinux glibc baseline for deltascope-pg
+        run: make smoke-pg-cli-manylinux-baseline
+
+      - name: Verify public PG CLI release package shape
+        run: |
+          set -euo pipefail
+          make package-pg-cli-release VERSION=v0.0.0-dev
+          test -f dist/deltascope-pg_v0.0.0-dev_linux_amd64.tar.gz
+          test -f dist/deltascope-pg_v0.0.0-dev_linux_amd64_checksums.txt
+          test ! -e dist/deltascope-server-pg_v0.0.0-dev_linux_amd64.tar.gz
+          test ! -e dist/deltascope-mcp-pg_v0.0.0-dev_linux_amd64.tar.gz

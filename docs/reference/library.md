@@ -25,7 +25,7 @@ func Audit(ctx context.Context, request Request) (Result, error)
 ```go
 type Request struct {
     SQL              string            // SQL text to audit (required)
-    Dialect          Dialect           // "mysql" or "tidb" (default: "mysql")
+    Dialect          Dialect           // "mysql", "tidb", or "postgresql" (default: "mysql")
     ConfigPath       string            // path to YAML policy config (optional)
     Schema           string            // default schema for table resolution (optional)
     MetadataProvider MetadataProvider  // live metadata source (optional)
@@ -35,7 +35,7 @@ type Request struct {
 | Field | Required | Description |
 |-------|----------|-------------|
 | `SQL` | Yes | One or more SQL statements to audit. |
-| `Dialect` | No | `DialectMySQL` or `DialectTiDB`. Defaults to `DialectMySQL` when the zero value (`""`) is provided. |
+| `Dialect` | No | `DialectMySQL`, `DialectTiDB`, or `DialectPostgreSQL`. Defaults to `DialectMySQL` when the zero value (`""`) is provided. PostgreSQL requests require a PG-capable build (for example, building with `-tags postgresql` or using `deltascope-pg`). |
 | `ConfigPath` | No | Path to a YAML policy config file. When empty, the built-in default policy is used. |
 | `Schema` | No | Default schema name used to resolve unqualified table references during metadata enrichment. |
 | `MetadataProvider` | No | Supplies live instance facts and table snapshots. When `nil`, the audit runs in offline mode. |
@@ -213,6 +213,7 @@ type Location struct {
 const (
     DialectMySQL Dialect = "mysql"
     DialectTiDB  Dialect = "tidb"
+    DialectPostgreSQL Dialect = "postgresql"
 )
 ```
 

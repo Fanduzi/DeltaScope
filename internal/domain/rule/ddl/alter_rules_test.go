@@ -58,6 +58,44 @@ func TestForbiddenAlterActionRuleSkipsAllowedPolicies(t *testing.T) {
 	}
 }
 
+func TestForbiddenAlterActionRuleHandlesStandaloneDropIndexWithoutTable(t *testing.T) {
+	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterDropIndexForbid, "drop_index", "drop index", rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationDropIndex,
+			Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_users_email"}},
+		},
+	}
+
+	if !statementRule.AppliesTo(statement) {
+		t.Fatal("expected standalone drop index statement to apply")
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["table"] != nil {
+		t.Fatalf("expected standalone finding metadata not to fake table, got %+v", findings[0].Metadata)
+	}
+	if findings[0].Metadata["name"] != "idx_users_email" {
+		t.Fatalf("expected standalone finding metadata name idx_users_email, got %+v", findings[0].Metadata)
+	}
+}
+
 func alterStatement(alters ...spec.Alter) spec.Statement {
 	return spec.Statement{
 		Kind: spec.KindDDL,

@@ -6,16 +6,17 @@
 package audit
 
 import (
+	"fmt"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	tidbparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb"
-	"github.com/pingcap/tidb/pkg/parser/ast"
 )
 
 // ParsedStatement keeps application-facing statement metadata while hiding parser nodes.
 type ParsedStatement struct {
-	Kind   spec.Kind `json:"kind"`
-	RawSQL string    `json:"raw_sql"`
-	node   ast.StmtNode
+	Kind      spec.Kind               `json:"kind"`
+	RawSQL    string                  `json:"raw_sql"`
+	Extractor spec.StatementExtractor `json:"-"`
 }
 
 // ParsedSQL is the application-owned parsing result used by later extraction steps.
@@ -25,10 +26,24 @@ type ParsedSQL struct {
 	Warnings   []string         `json:"warnings,omitempty"`
 }
 
-// Parse delegates SQL parsing to the TiDB-backed parser adapter for supported v1 dialects.
+// Parse delegates SQL parsing to the dialect-specific parser adapter.
 func Parse(sql string, dialect spec.Dialect) (ParsedSQL, error) {
+	switch dialect {
+	case spec.DialectMySQL, spec.DialectTiDB:
+		return parseTiDB(sql, dialect)
+	case spec.DialectPostgreSQL:
+		return parsePostgreSQL(sql)
+	default:
+		return ParsedSQL{}, fmt.Errorf("unsupported dialect: %s", dialect)
+	}
+}
+
+func parseTiDB(sql string, dialect spec.Dialect) (ParsedSQL, error) {
 	result, err := tidbparser.New().Parse(sql)
 	if err != nil {
+		if token, ok := possiblePostgreSQLMismatch(sql); ok {
+			return ParsedSQL{}, formatPossiblePostgreSQLMismatchError(err, string(dialect), token)
+		}
 		return ParsedSQL{}, err
 	}
 
@@ -38,33 +53,13 @@ func Parse(sql string, dialect spec.Dialect) (ParsedSQL, error) {
 		Warnings:   append([]string(nil), result.Warnings...),
 	}
 
-	for _, stmt := range result.Statements {
+	for _, stmt := range tidbparser.WrapStatements(result.Statements, result.Warnings) {
 		parsed.Statements = append(parsed.Statements, ParsedStatement{
-			Kind:   classify(stmt),
-			RawSQL: stmt.Text(),
-			node:   stmt,
+			Kind:      stmt.Kind,
+			RawSQL:    stmt.RawSQL,
+			Extractor: stmt.Extractor,
 		})
 	}
 
 	return parsed, nil
-}
-
-func classify(stmt ast.StmtNode) spec.Kind {
-	switch stmt.(type) {
-	case *ast.CreateTableStmt,
-		*ast.CreateViewStmt,
-		*ast.CreateIndexStmt,
-		*ast.AlterTableStmt,
-		*ast.DropTableStmt,
-		*ast.DropIndexStmt,
-		*ast.RenameTableStmt,
-		*ast.TruncateTableStmt:
-		return spec.KindDDL
-	case *ast.InsertStmt,
-		*ast.UpdateStmt,
-		*ast.DeleteStmt:
-		return spec.KindDML
-	default:
-		return spec.KindUnknown
-	}
 }

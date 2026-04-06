@@ -6,7 +6,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 | File | Responsibility |
 |------|---------------|
-| statement.go | Defines the top-level normalized statement model |
+| statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
@@ -16,8 +16,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 ## Exports
 
 - `Statement`
+- `UnsupportedDetail`
+- `StatementExtractor`
 - `Kind`
 - `Dialect`
+  Includes `DialectPostgreSQL` for PostgreSQL routing support
 - `Metadata`
 - `InstanceFacts`
 - `TableSnapshot`
@@ -42,6 +45,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 ## Notes
 
+- `Statement` may now carry optional metadata-aware context through `Metadata` and an additive `Unsupported` payload for recognized-but-unsupported statements so mixed PostgreSQL results can preserve supported statements while surfacing structured unsupported details.
+- `UnsupportedDetail` carries the unsupported statement index, feature name, original SQL, and reason so CLI/API surfaces can render machine-readable partial-support outcomes.
 - `Statement` may now carry optional metadata-aware context through `Metadata`:
   - `Schema` for request-level schema context even when no provider is attached
   - `Instance` for normalized server-level facts such as version and InnoDB defaults
@@ -65,7 +70,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `CREATE TABLE ... LIKE`
   - `CREATE TABLE ... AS SELECT`
   - partitioned tables
-- `DDL.Operation` now distinguishes `create_table`, `create_view`, `alter_table`, `drop_table`, `drop_view`, and `truncate_table` so lifecycle rules do not rely on structural guesswork.
+- `DDL.Operation` now distinguishes `create_table`, `create_view`, `alter_table`, `drop_table`, `drop_index`, `drop_view`, and `truncate_table` so lifecycle rules do not rely on structural guesswork.
 - `DDL` preserves explicit naming-governance subjects directly on the normalized model:
   - `Table.Name` for table-level rules
   - `Column.Name` for column-level rules
@@ -81,7 +86,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `Impact` for the final conservative estimate payload with `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional notes
   - offline mode derives the initial estimate from SQL shape only
   - metadata-aware mode may refine that estimate with read-only table statistics without executing the DML
-- `Alter` now has room for richer normalized payloads:
+- `Alter` now has room for richer normalized payloads and may also carry standalone DDL action subjects, such as PostgreSQL `DROP INDEX`, when no table object exists:
   - `Name` is the canonical subject identifier:
     - existing-object actions use the pre-change name
     - pure-add actions use the created object name

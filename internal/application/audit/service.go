@@ -24,7 +24,9 @@ var (
 	// ErrEmptySQL indicates the request did not include auditable SQL text.
 	ErrEmptySQL = errors.New("audit SQL must not be empty")
 	// ErrUnknownDialect indicates the request did not specify a supported dialect.
-	ErrUnknownDialect = errors.New("audit dialect must be mysql or tidb")
+	ErrUnknownDialect = errors.New("audit dialect must be mysql, tidb, or postgresql")
+	// ErrUnsupportedStatement indicates at least one parsed statement is recognized but unsupported.
+	ErrUnsupportedStatement = errors.New("audit includes unsupported statements")
 )
 
 // Request describes one application-level audit invocation.
@@ -58,7 +60,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	if strings.TrimSpace(request.SQL) == "" {
 		return report.Result{}, ErrEmptySQL
 	}
-	if request.Dialect != spec.DialectMySQL && request.Dialect != spec.DialectTiDB {
+	if request.Dialect != spec.DialectMySQL && request.Dialect != spec.DialectTiDB && request.Dialect != spec.DialectPostgreSQL {
 		return report.Result{}, ErrUnknownDialect
 	}
 
@@ -100,7 +102,21 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	return EvaluateStatements(registry, statements)
+	result, err := EvaluateStatements(registry, statements)
+	if err != nil {
+		return report.Result{}, err
+	}
+	if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
+		if token, ok := possiblePostgreSQLMismatch(request.SQL); ok {
+			result.GlobalFindings = append(result.GlobalFindings, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
+			result = report.Aggregate(result.Statements, result.GlobalFindings)
+			result.Unsupported = append([]spec.UnsupportedDetail(nil), result.Unsupported...)
+		}
+	}
+	if len(result.Unsupported) > 0 {
+		return result, fmt.Errorf("%w: %d item(s)", ErrUnsupportedStatement, len(result.Unsupported))
+	}
+	return result, nil
 }
 
 func metadataRequestFor(request Request) *MetadataRequest {

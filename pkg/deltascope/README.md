@@ -9,7 +9,7 @@ Stable public package surface for library consumers.
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | version.go | Publishes the default semantic version and canonical ASCII logo |
-| audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement input, and metadata-aware request plumbing |
+| audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement input, PostgreSQL request routing, and metadata-aware request plumbing |
 
 ## Exports
 
@@ -34,6 +34,7 @@ Stable public package surface for library consumers.
 - `Summary`
 - `Location`
 - `Dialect`
+  Includes `DialectPostgreSQL` for PostgreSQL request routing support
 - `Verdict`
 - `DefaultVersion`
 - `Logo`
@@ -42,9 +43,11 @@ Stable public package surface for library consumers.
 
 - `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.
 - `Result` and `StatementResult` expose an optional `Explanation` field for additive shared result context without changing verdict semantics. The built-in audit flow populates these aggregate fields whenever findings are present.
+- `Result` now also exposes an `Unsupported` array so library consumers can inspect structured partial-support PostgreSQL outcomes.
+- `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
-- `DefaultVersion` is now `v0.14.1`, which matches the source-build baseline used by the CLI, HTTP server, and official MCP server release artifacts.
-- The public package surface stays stable in `v0.14.1`; this patch release keeps the exported `pkg/deltascope` contract intact while aligning HTTP discovery endpoints, CLI credential inputs, and release metadata.
+- `DefaultVersion` is now `v0.15.0`, which matches the source-build baseline used by the CLI, HTTP server, official MCP server release artifacts, and the dedicated PostgreSQL CLI release path.
+- The public package surface stays stable in `v0.15.0`; this release adds PostgreSQL request routing and release-surface alignment while keeping the exported `pkg/deltascope` contract additive.
 
 ## Dependencies
 - Upstream: external library consumers

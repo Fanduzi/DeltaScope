@@ -6,6 +6,7 @@
 package cli
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -39,7 +40,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 
 	rootCmd := &cobra.Command{
 		Use:           "deltascope",
-		Short:         "Offline SQL review for MySQL and TiDB",
+		Short:         rootCommandShort(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -60,7 +61,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if options.ShowVersion {
-				_, err := cmd.OutOrStdout().Write([]byte(Version + "\n"))
+				_, err := fmt.Fprintln(cmd.OutOrStdout(), renderVersionLine())
 				return err
 			}
 			*exitCode = exitUser
@@ -73,11 +74,11 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 	rootCmd.SetErr(stderr)
 
 	rootCmd.PersistentFlags().StringVar(&options.ConfigPath, "config", "", "path to YAML policy config")
-	rootCmd.PersistentFlags().StringVar(&options.Dialect, "dialect", options.Dialect, "SQL dialect: mysql or tidb")
+	rootCmd.PersistentFlags().StringVar(&options.Dialect, "dialect", options.Dialect, dialectFlagDescription())
 	rootCmd.PersistentFlags().StringVar(&options.Format, "format", options.Format, "output format: markdown or json")
 	rootCmd.PersistentFlags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
 	rootCmd.PersistentFlags().BoolVar(&options.Quiet, "quiet", false, "suppress non-result chatter")
-	rootCmd.Flags().BoolVar(&options.ShowVersion, "version", false, "print the DeltaScope build version")
+	rootCmd.Flags().BoolVar(&options.ShowVersion, "version", false, "print the DeltaScope build version and supported dialects")
 
 	rootCmd.AddCommand(newAuditCmd(options, exitCode))
 	rootCmd.AddCommand(newRulesCmd(exitCode))

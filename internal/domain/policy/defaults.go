@@ -602,6 +602,42 @@ func Default() Policy {
 					"forbid": false,
 				},
 			},
+			// PG-native alter action forbid rules (PostgreSQL-only).
+			"ddl.alter.set_data_type.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.set_default.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.drop_default.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.set_not_null.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.drop_not_null.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -675,6 +711,35 @@ func Default() Policy {
 				},
 			},
 			"ddl.alter.change_column.explicit_auto_increment_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+
+			"ddl.alter.set_default.explicit_default_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.drop_default.explicit_default_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.set_not_null.explicit_nullability_change.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.drop_not_null.explicit_nullability_change.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
 				Params: map[string]any{

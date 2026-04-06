@@ -90,7 +90,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				Schema:           schema,
 				MetadataProvider: metadataProvider,
 			})
-			if err != nil {
+			if err != nil && !errors.Is(err, appaudit.ErrUnsupportedStatement) {
 				return mapAuditError(exitCode, err)
 			}
 
@@ -247,6 +247,8 @@ func parseDialect(value string) spec.Dialect {
 		return spec.DialectMySQL
 	case "tidb":
 		return spec.DialectTiDB
+	case "postgresql":
+		return spec.DialectPostgreSQL
 	default:
 		return spec.Dialect(strings.ToLower(strings.TrimSpace(value)))
 	}
@@ -281,18 +283,24 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 	if err != nil {
 		return nil, err
 	}
-	if runContext == nil || runContext.Mode != "metadata-aware" {
-		return body, nil
-	}
+
 	var b strings.Builder
-	b.WriteString("## Audit Context\n")
-	fmt.Fprintf(&b, "- Mode: `%s`\n", runContext.Mode)
-	fmt.Fprintf(&b, "- Dialect: `%s` (%s)\n", runContext.Dialect, runContext.DialectSource)
-	if runContext.Schema != "" {
-		fmt.Fprintf(&b, "- Schema: `%s` (%s)\n", runContext.Schema, runContext.SchemaSource)
+	if runContext != nil && runContext.Mode == "metadata-aware" {
+		b.WriteString("## Audit Context\n")
+		fmt.Fprintf(&b, "- Mode: `%s`\n", runContext.Mode)
+		fmt.Fprintf(&b, "- Dialect: `%s` (%s)\n", runContext.Dialect, runContext.DialectSource)
+		if runContext.Schema != "" {
+			fmt.Fprintf(&b, "- Schema: `%s` (%s)\n", runContext.Schema, runContext.SchemaSource)
+		}
+		b.WriteString("\n")
 	}
-	b.WriteString("\n")
 	b.Write(body)
+	if len(result.Unsupported) > 0 {
+		b.WriteString("\n\n## Unsupported Statements\n")
+		for _, item := range result.Unsupported {
+			fmt.Fprintf(&b, "- Statement %d: `%s` — %s\n", item.Index+1, item.Feature, item.Reason)
+		}
+	}
 	return []byte(b.String()), nil
 }
 
@@ -317,6 +325,9 @@ func renderQuietResult(result report.Result) []byte {
 	for _, finding := range result.GlobalFindings {
 		lines = append(lines, formatQuietFinding(finding))
 	}
+	for _, item := range result.Unsupported {
+		lines = append(lines, fmt.Sprintf("[unsupported] %s: %s", item.Feature, item.Reason))
+	}
 	if len(lines) == 0 {
 		return []byte("pass")
 	}
@@ -328,6 +339,9 @@ func formatQuietFinding(finding rule.Finding) string {
 }
 
 func exitCodeForResult(result report.Result, threshold string) int {
+	if len(result.Unsupported) > 0 {
+		return exitAudit
+	}
 	switch threshold {
 	case "none":
 		return exitOK
@@ -354,13 +368,15 @@ func mapAuditError(exitCode *int, err error) error {
 	switch {
 	case errors.As(err, &inputErr):
 		*exitCode = exitUser
-	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
+	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect), errors.Is(err, appaudit.ErrUnsupportedStatement):
 		*exitCode = exitUser
 	case errors.As(err, &fileNotFoundErr), errors.As(err, &configParseErr):
 		*exitCode = exitUser
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		*exitCode = exitInternal
 	case strings.Contains(err.Error(), "parse sql:"):
+		*exitCode = exitUser
+	case strings.Contains(err.Error(), "PG-capable build"):
 		*exitCode = exitUser
 	case strings.Contains(err.Error(), "load policy:"):
 		*exitCode = exitUser

@@ -249,6 +249,114 @@ func TestAuditCommandRejectsUnknownFailOnValue(t *testing.T) {
 	}
 }
 
+func TestAuditCommandMySQLPGMismatchShowsDialectHintOnStderr(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "insert into users (name) values ('alice') returning id;", "--dialect", "mysql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for user-facing parse error, got %d", code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout output on parse error, got %q", stdout.String())
+	}
+	if !strings.Contains(strings.ToLower(stderr.String()), "dialect mismatch") {
+		t.Fatalf("expected dialect mismatch hint on stderr, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "postgresql") {
+		t.Fatalf("expected postgresql hint on stderr, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandPostgreSQLPathDoesNotShowMismatchHint(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "insert into users (name) values ('alice') returning id;", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if strings.Contains(strings.ToLower(stderr.String()), "dialect mismatch") {
+		t.Fatalf("did not expect dialect mismatch hint on postgresql path, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandMySQLParseablePGMismatchShowsAdvisoryFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create table users (id serial primary key);", "--dialect", "mysql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 1 {
+		t.Fatalf("expected notice-level audit failure via existing fail-on behavior, got %d", code)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected success-path advisory to stay on stdout, got %q", stderr.String())
+	}
+	if !strings.Contains(strings.ToLower(stdout.String()), "dialect mismatch") {
+		t.Fatalf("expected advisory finding in stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "postgresql") {
+		t.Fatalf("expected postgresql target in advisory output, got %q", stdout.String())
+	}
+}
+
+func TestAuditCommandPostgreSQLParseablePGSyntaxDoesNotShowMismatchAdvisory(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create table users (id serial primary key);", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code == 0 {
+		t.Fatalf("expected current postgresql path to remain non-success in this lane")
+	}
+	if strings.Contains(strings.ToLower(stdout.String()), "dialect mismatch") || strings.Contains(strings.ToLower(stderr.String()), "dialect mismatch") {
+		t.Fatalf("did not expect mismatch advisory on postgresql path, stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
+func TestAuditCommandMySQLNormalSQLDoesNotShowMismatchAdvisory(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create table users (id bigint primary key) comment='users';", "--dialect", "mysql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code == 2 {
+		t.Fatalf("did not expect parse-error path, stderr=%q", stderr.String())
+	}
+	if strings.Contains(strings.ToLower(stdout.String()), "dialect mismatch") {
+		t.Fatalf("did not expect advisory for normal mysql sql, got %q", stdout.String())
+	}
+}
+
 func TestAuditCommandQuietMarkdownOmitsFullReportWrapper(t *testing.T) {
 	stdout := &strings.Builder{}
 
@@ -1045,6 +1153,69 @@ func TestRenderJSONResultIncludesStatementImpact(t *testing.T) {
 	}
 }
 
+func TestRenderMarkdownResultIncludesUnsupportedStatements(t *testing.T) {
+	output, err := renderMarkdownResult(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{Statements: 2},
+		Unsupported: []spec.UnsupportedDetail{{
+			Index:   1,
+			Feature: "select",
+			Reason:  "postgresql statement type is not in the approved v1 subset",
+		}},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render markdown: %v", err)
+	}
+	if !strings.Contains(string(output), "## Unsupported Statements") {
+		t.Fatalf("expected unsupported markdown section, got %q", string(output))
+	}
+	if !strings.Contains(string(output), "Statement 2") || !strings.Contains(string(output), "select") {
+		t.Fatalf("expected unsupported statement details, got %q", string(output))
+	}
+}
+
+func TestRenderJSONResultIncludesUnsupportedStatements(t *testing.T) {
+	output, err := renderJSONResult(report.Result{
+		Statements: []report.StatementResult{{Index: 0, Kind: "dml"}},
+		Unsupported: []spec.UnsupportedDetail{{
+			Index:   1,
+			Feature: "select",
+			SQL:     "select 1",
+			Reason:  "postgresql statement type is not in the approved v1 subset",
+		}},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal rendered json: %v\noutput=%s", err, string(output))
+	}
+	unsupported, ok := decoded["unsupported"].([]any)
+	if !ok || len(unsupported) != 1 {
+		t.Fatalf("expected one unsupported item, got %#v", decoded["unsupported"])
+	}
+	item, ok := unsupported[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected unsupported object, got %#v", unsupported[0])
+	}
+	if item["feature"] != "select" || item["reason"] == "" {
+		t.Fatalf("expected unsupported feature and reason, got %#v", item)
+	}
+}
+
+func TestExitCodeForResultReturnsAuditFailureWhenUnsupportedExists(t *testing.T) {
+	code := exitCodeForResult(report.Result{
+		Verdict:     report.VerdictPass,
+		Summary:     report.Summary{Statements: 1},
+		Unsupported: []spec.UnsupportedDetail{{Feature: "select", Reason: "not supported"}},
+	}, "blocker")
+	if code != exitAudit {
+		t.Fatalf("expected unsupported statements to force audit exit code, got %d", code)
+	}
+}
+
 func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version
@@ -1062,11 +1233,14 @@ func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "____") {
-		t.Fatalf("expected logo output, got %q", stdout.String())
+	output := stdout.String()
+	if !strings.Contains(output, "____") {
+		t.Fatalf("expected logo output, got %q", output)
 	}
-	if !strings.HasSuffix(strings.TrimSpace(stdout.String()), "test-build") {
-		t.Fatalf("expected version suffix test-build, got %q", stdout.String())
+	for _, expected := range []string{"deltascope", "test-build", "mysql", "tidb"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected version output to contain %q, got %q", expected, output)
+		}
 	}
 }
 
@@ -1087,7 +1261,10 @@ func TestRootVersionFlagPrintsVersionOnly(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if strings.TrimSpace(stdout.String()) != "test-build" {
-		t.Fatalf("expected plain version output test-build, got %q", stdout.String())
+	output := strings.TrimSpace(stdout.String())
+	for _, expected := range []string{"deltascope", "test-build", "mysql", "tidb"} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected root version output to contain %q, got %q", expected, output)
+		}
 	}
 }

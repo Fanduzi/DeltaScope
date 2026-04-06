@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -119,6 +120,39 @@ func TestAuditReturnsGroupedMultiStatementResults(t *testing.T) {
 	}
 	if result.Statements[1].Findings[0].StatementIndex != 1 {
 		t.Fatalf("expected second statement finding index 1, got %d", result.Statements[1].Findings[0].StatementIndex)
+	}
+}
+
+func TestAuditSupportsPostgreSQLDialectMapping(t *testing.T) {
+	_, err := Audit(context.Background(), Request{
+		SQL:     "select 1;",
+		Dialect: DialectPostgreSQL,
+	})
+	if err == nil {
+		t.Fatal("expected postgresql parse stub error")
+	}
+	if err == appaudit.ErrUnknownDialect {
+		t.Fatal("expected postgresql to map through public API")
+	}
+}
+
+func TestAuditMySQLParseablePGMismatchPreservesGlobalNoticeFinding(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "create table users (id serial primary key);",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.GlobalFindings) != 1 {
+		t.Fatalf("expected 1 global advisory finding, got %#v", result.GlobalFindings)
+	}
+	finding := result.GlobalFindings[0]
+	if finding.Level != LevelNotice {
+		t.Fatalf("expected notice-level advisory, got %#v", finding)
+	}
+	if finding.Message == "" || finding.RuleID == "" {
+		t.Fatalf("expected stable advisory finding shape, got %#v", finding)
 	}
 }
 

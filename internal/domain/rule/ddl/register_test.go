@@ -203,6 +203,40 @@ func TestRegisterAddsEnabledAlterRulesInDeterministicOrder(t *testing.T) {
 	}
 }
 
+func TestRegisterAddsStandalonePostgreSQLDropIndexRule(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+	cfg.Rules["ddl.alter.drop_index.forbid"] = policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"forbid": true,
+		},
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationDropIndex,
+			Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_users_email"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != "ddl.alter.drop_index.forbid" {
+		t.Fatalf("expected standalone drop index to reuse existing rule id, got %q", findings[0].RuleID)
+	}
+}
+
 func TestRegisterAddsEnabledTableOptionRulesInDeterministicOrder(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
@@ -376,5 +410,488 @@ func TestRegisterRejectsInvalidDDLRuleConfig(t *testing.T) {
 
 	if err := Register(registry, cfg); err == nil {
 		t.Fatal("expected invalid config to be rejected")
+	}
+}
+
+func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	// Enable the 5 PG-native alter action forbid rules
+	pgRules := []string{
+		"ddl.alter.set_data_type.forbid",
+		"ddl.alter.set_default.forbid",
+		"ddl.alter.drop_default.forbid",
+		"ddl.alter.set_not_null.forbid",
+		"ddl.alter.drop_not_null.forbid",
+	}
+	for _, ruleID := range pgRules {
+		cfg.Rules[ruleID] = policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{"forbid": true},
+		}
+	}
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	// Test PostgreSQL dialect: all 5 rules should fire
+	t.Run("postgresql_fires_all_five_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{
+				Table: &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{Action: "set_data_type", Name: "status"},
+					{Action: "set_default", Name: "created_at"},
+					{Action: "drop_default", Name: "updated_at"},
+					{Action: "set_not_null", Name: "email"},
+					{Action: "drop_not_null", Name: "phone"},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+
+		if len(findings) != 5 {
+			t.Fatalf("expected 5 findings for PostgreSQL, got %d: %v", len(findings), findings)
+		}
+
+		wantIDs := []string{
+			"ddl.alter.set_data_type.forbid",
+			"ddl.alter.set_default.forbid",
+			"ddl.alter.drop_default.forbid",
+			"ddl.alter.set_not_null.forbid",
+			"ddl.alter.drop_not_null.forbid",
+		}
+		for i, want := range wantIDs {
+			if findings[i].RuleID != want {
+				t.Fatalf("expected finding %d to use rule %q, got %q", i, want, findings[i].RuleID)
+			}
+		}
+	})
+
+	// Test MySQL dialect: none of the 5 PG-native rules should fire
+	t.Run("mysql_skips_pg_native_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectMySQL,
+			DDL: &spec.DDL{
+				Table: &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{Action: "set_data_type", Name: "status"},
+					{Action: "set_default", Name: "created_at"},
+					{Action: "drop_default", Name: "updated_at"},
+					{Action: "set_not_null", Name: "email"},
+					{Action: "drop_not_null", Name: "phone"},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+
+		// Filter findings to check if any PG-native rules fired
+		pgNativeRuleIDs := map[string]bool{
+			"ddl.alter.set_data_type.forbid": true,
+			"ddl.alter.set_default.forbid":   true,
+			"ddl.alter.drop_default.forbid":  true,
+			"ddl.alter.set_not_null.forbid":  true,
+			"ddl.alter.drop_not_null.forbid": true,
+		}
+		for _, finding := range findings {
+			if pgNativeRuleIDs[finding.RuleID] {
+				t.Fatalf("expected PG-native rule %q not to fire for MySQL dialect", finding.RuleID)
+			}
+		}
+	})
+
+	// Test TiDB dialect: none of the 5 PG-native rules should fire
+	t.Run("tidb_skips_pg_native_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectTiDB,
+			DDL: &spec.DDL{
+				Table: &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{Action: "set_data_type", Name: "status"},
+					{Action: "set_default", Name: "created_at"},
+					{Action: "drop_default", Name: "updated_at"},
+					{Action: "set_not_null", Name: "email"},
+					{Action: "drop_not_null", Name: "phone"},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+
+		pgNativeRuleIDs := map[string]bool{
+			"ddl.alter.set_data_type.forbid": true,
+			"ddl.alter.set_default.forbid":   true,
+			"ddl.alter.drop_default.forbid":  true,
+			"ddl.alter.set_not_null.forbid":  true,
+			"ddl.alter.drop_not_null.forbid": true,
+		}
+		for _, finding := range findings {
+			if pgNativeRuleIDs[finding.RuleID] {
+				t.Fatalf("expected PG-native rule %q not to fire for TiDB dialect", finding.RuleID)
+			}
+		}
+	})
+}
+
+func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	pgSemanticRuleIDs := map[string]bool{
+		ruleIDAlterSetDefaultExplicitDefaultChangeForbid:  true,
+		ruleIDAlterDropDefaultExplicitDefaultChangeForbid: true,
+	}
+
+	t.Run("postgresql_fires_explicit_default_change_semantic_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{
+						Action: "set_default",
+						Name:   "status",
+						Column: &spec.AlterColumn{
+							OldName: "status",
+							Change:  &spec.AlterColumnChange{TouchesDefault: true},
+						},
+					},
+					{
+						Action: "drop_default",
+						Name:   "email",
+						Column: &spec.AlterColumn{
+							OldName: "email",
+							Change:  &spec.AlterColumnChange{TouchesDefault: true},
+						},
+					},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+
+		setDefaultCount := 0
+		dropDefaultCount := 0
+		for _, f := range findings {
+			if f.RuleID == ruleIDAlterSetDefaultExplicitDefaultChangeForbid {
+				setDefaultCount++
+			}
+			if f.RuleID == ruleIDAlterDropDefaultExplicitDefaultChangeForbid {
+				dropDefaultCount++
+			}
+		}
+		if setDefaultCount != 1 {
+			t.Fatalf("expected 1 set_default explicit_default_change finding, got %d", setDefaultCount)
+		}
+		if dropDefaultCount != 1 {
+			t.Fatalf("expected 1 drop_default explicit_default_change finding, got %d", dropDefaultCount)
+		}
+	})
+
+	t.Run("mysql_modify_column_does_not_trigger_pg_semantic_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectMySQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{
+						Action: "modify_column",
+						Name:   "status",
+						Column: &spec.AlterColumn{
+							OldName:    "status",
+							Definition: &spec.Column{Name: "status"},
+							Change:     &spec.AlterColumnChange{TouchesDefault: true},
+						},
+					},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		for _, f := range findings {
+			if pgSemanticRuleIDs[f.RuleID] {
+				t.Fatalf("expected PG-native semantic rule %q not to fire for MySQL modify_column", f.RuleID)
+			}
+		}
+	})
+
+	t.Run("tidb_modify_column_does_not_trigger_pg_semantic_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectTiDB,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{
+						Action: "modify_column",
+						Name:   "status",
+						Column: &spec.AlterColumn{
+							OldName:    "status",
+							Definition: &spec.Column{Name: "status"},
+							Change:     &spec.AlterColumnChange{TouchesDefault: true},
+						},
+					},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		for _, f := range findings {
+			if pgSemanticRuleIDs[f.RuleID] {
+				t.Fatalf("expected PG-native semantic rule %q not to fire for TiDB modify_column", f.RuleID)
+			}
+		}
+	})
+}
+
+func TestRegisterPGExplicitDefaultChangeDoesNotBreakExistingMySQLRules(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectMySQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{
+					Action: "modify_column",
+					Name:   "status",
+					Column: &spec.AlterColumn{
+						OldName:    "status",
+						Definition: &spec.Column{Name: "status", Type: "varchar(32)"},
+						Change:     &spec.AlterColumnChange{TouchesDefault: true},
+					},
+				},
+			},
+		},
+	}
+
+	findings, err := registry.EvaluateStatement(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	mysqlExplicitDefaultFound := false
+	for _, f := range findings {
+		if f.RuleID == ruleIDAlterModifyColumnExplicitDefaultChangeForbid {
+			mysqlExplicitDefaultFound = true
+		}
+	}
+	if !mysqlExplicitDefaultFound {
+		t.Fatal("expected existing MySQL modify_column explicit_default_change rule to still fire")
+	}
+}
+func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	pgNullabilityRuleIDs := map[string]bool{
+		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid:  true,
+		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid: true,
+	}
+
+	t.Run("postgresql_fires_explicit_nullability_change_semantic_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{
+						Action: "set_not_null",
+						Name:   "email",
+						Column: &spec.AlterColumn{
+							OldName: "email",
+							Change:  &spec.AlterColumnChange{TouchesNullability: true},
+						},
+					},
+					{
+						Action: "drop_not_null",
+						Name:   "phone",
+						Column: &spec.AlterColumn{
+							OldName: "phone",
+							Change:  &spec.AlterColumnChange{TouchesNullability: true},
+						},
+					},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+
+		setNotNullCount := 0
+		dropNotNullCount := 0
+		for _, f := range findings {
+			if f.RuleID == ruleIDAlterSetNotNullExplicitNullabilityChangeForbid {
+				setNotNullCount++
+			}
+			if f.RuleID == ruleIDAlterDropNotNullExplicitNullabilityChangeForbid {
+				dropNotNullCount++
+			}
+		}
+		if setNotNullCount != 1 {
+			t.Fatalf("expected 1 set_not_null explicit_nullability_change finding, got %d", setNotNullCount)
+		}
+		if dropNotNullCount != 1 {
+			t.Fatalf("expected 1 drop_not_null explicit_nullability_change finding, got %d", dropNotNullCount)
+		}
+	})
+
+	t.Run("mysql_modify_column_does_not_trigger_pg_nullability_semantic_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectMySQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{
+						Action: "modify_column",
+						Name:   "email",
+						Column: &spec.AlterColumn{
+							OldName:    "email",
+							Definition: &spec.Column{Name: "email"},
+							Change:     &spec.AlterColumnChange{TouchesNullability: true},
+						},
+					},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		for _, f := range findings {
+			if pgNullabilityRuleIDs[f.RuleID] {
+				t.Fatalf("expected PG-native semantic rule %q not to fire for MySQL modify_column", f.RuleID)
+			}
+		}
+	})
+
+	t.Run("tidb_modify_column_does_not_trigger_pg_nullability_semantic_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectTiDB,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{
+					{
+						Action: "modify_column",
+						Name:   "email",
+						Column: &spec.AlterColumn{
+							OldName:    "email",
+							Definition: &spec.Column{Name: "email"},
+							Change:     &spec.AlterColumnChange{TouchesNullability: true},
+						},
+					},
+				},
+			},
+		}
+
+		findings, err := registry.EvaluateStatement(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		for _, f := range findings {
+			if pgNullabilityRuleIDs[f.RuleID] {
+				t.Fatalf("expected PG-native semantic rule %q not to fire for TiDB modify_column", f.RuleID)
+			}
+		}
+	})
+}
+
+func TestRegisterPGExplicitNullabilityChangeDoesNotBreakExistingMySQLRules(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectMySQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{
+					Action: "modify_column",
+					Name:   "email",
+					Column: &spec.AlterColumn{
+						OldName:    "email",
+						Definition: &spec.Column{Name: "email", Type: "varchar(32)"},
+						Change:     &spec.AlterColumnChange{TouchesNullability: true},
+					},
+				},
+			},
+		},
+	}
+
+	findings, err := registry.EvaluateStatement(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+
+	mysqlNullabilityFound := false
+	for _, f := range findings {
+		if f.RuleID == ruleIDAlterModifyColumnExplicitNullabilityChangeForbid {
+			mysqlNullabilityFound = true
+		}
+	}
+	if !mysqlNullabilityFound {
+		t.Fatal("expected existing MySQL modify_column explicit_nullability_change rule to still fire")
 	}
 }

@@ -13,9 +13,11 @@ CLI adapter layer for the DeltaScope application.
 | rules.go | Implements `rules list`, `rules show`, and `rules search` on top of the shipped rule catalog, including ASCII table rendering for list/search output |
 | config.go | Implements the `config` command group, including `lint` and `show-default` validation/inspection flows |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
-| capabilities.go | Implements the `capabilities` summary command for human/agent discovery of shipped dialects, modes, inputs, outputs, and public surfaces (`cli`, `http`, `mcp`, `go-api`) |
-| version.go | Implements the `version` subcommand with ASCII logo plus build-version output |
-| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, audit context output, and explanation rendering in Markdown/JSON results |
+| capabilities.go | Implements the `capabilities` summary command and shared rendering helpers for human/agent discovery of shipped dialects, modes, inputs, outputs, and public surfaces (`cli`, `http`, `mcp`, `go-api`) |
+| capability_surface.go | Defines the pure-Go build capability surface and root CLI wording |
+| capability_surface_pg.go | Defines the PostgreSQL-tagged build capability surface and root CLI wording |
+| version.go | Implements the `version` subcommand with ASCII logo plus build-version and supported-dialect output |
+| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, and explanation rendering in Markdown/JSON results |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, and create-table partial behavior |
 
 ## Exports
@@ -28,8 +30,8 @@ CLI adapter layer for the DeltaScope application.
 - Downstream: `bufio`, `database/sql`, `internal/application/audit`, `internal/application/auditmeta`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `internal/interfaces/metadata`, `github.com/spf13/cobra`, `golang.org/x/term`
 
 ## Notes
-- `deltascope --version` prints only the semantic version for scripts.
-- `deltascope version` prints the ASCII logo plus the semantic version for humans.
+- `deltascope --version` prints the build version plus compiled dialect surface.
+- `deltascope version` prints the ASCII logo plus the build version and compiled dialect surface.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

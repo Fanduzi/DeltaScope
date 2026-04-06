@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL and TiDB, with PostgreSQL available through the dedicated PG-capable CLI build `deltascope-pg`. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,15 +34,15 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.14.1/install.sh | \
-  DELTASCOPE_VERSION=v0.14.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.sh | \
+  DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
-The published archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
+The published core archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ### Release Contract
 
-Every tag produces archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve platform binaries from GitHub Release assets. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
+Every tag produces core archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve those platform binaries from GitHub Release assets. PostgreSQL support is published separately as the dedicated public v1 artifact `deltascope-pg_<version>_linux_amd64.tar.gz`; it contains only the PG-capable CLI binary and is not installed by the generic installer, Homebrew Cask, or npm MCP launcher. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
 
 ## Quick Start
 

@@ -7,12 +7,13 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	Operation     DDLOperation      `json:"operation,omitempty"`
-	Table         *Table            `json:"table,omitempty"`
-	Columns       []Column          `json:"columns,omitempty"`
-	PrimaryKey    *Index            `json:"primary_key,omitempty"`
-	Indexes       []Index           `json:"indexes,omitempty"`
-	Constraints   []Constraint      `json:"constraints,omitempty"`
+	Operation   DDLOperation `json:"operation,omitempty"`
+	Table       *Table       `json:"table,omitempty"`
+	Columns     []Column     `json:"columns,omitempty"`
+	PrimaryKey  *Index       `json:"primary_key,omitempty"`
+	Indexes     []Index      `json:"indexes,omitempty"`
+	Constraints []Constraint `json:"constraints,omitempty"`
+	// Alter also carries standalone DDL action payloads when no table object exists.
 	Alter         []Alter           `json:"alter,omitempty"`
 	Options       map[string]string `json:"options,omitempty"`
 	HasReferTable bool              `json:"has_refer_table,omitempty"`
@@ -30,6 +31,7 @@ const (
 	DDLOperationCreateView    DDLOperation = "create_view"
 	DDLOperationAlterTable    DDLOperation = "alter_table"
 	DDLOperationDropTable     DDLOperation = "drop_table"
+	DDLOperationDropIndex     DDLOperation = "drop_index"
 	DDLOperationDropView      DDLOperation = "drop_view"
 	DDLOperationTruncateTable DDLOperation = "truncate_table"
 )

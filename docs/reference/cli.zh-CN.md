@@ -11,7 +11,7 @@
 | 标志 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `--config` | string | （无） | YAML 策略配置文件路径。省略时使用 `policy.Default()`。 |
-| `--dialect` | string | `mysql` | SQL 方言：`mysql` 或 `tidb`。控制解析器模式和方言特定规则。在元数据感知模式下，方言从实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
+| `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable 构建，例如 `deltascope-pg`。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
 | `--format` | string | `markdown` | 输出格式：`markdown`（人类可读）或 `json`（稳定的机器可读契约）。 |
 | `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
@@ -53,7 +53,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 ### 连接标志（元数据感知模式）
 
-提供以下任意一个标志即可激活元数据感知模式。DeltaScope 将连接至指定的 MySQL 或 TiDB 实例，获取实时 schema 信息（表结构、索引定义、实例变量），并在规则评估前将其附加到每条语句。
+提供以下任意一个标志即可激活元数据感知模式。DeltaScope 将连接至指定的 MySQL 或 TiDB 实例，获取实时 schema 信息（表结构、索引定义、实例变量），并在规则评估前将其附加到每条语句。当前 PostgreSQL 支持仍然只覆盖离线模式，不使用这些连接标志。
 
 | 标志 | 简写 | 默认值 | 描述 |
 |------|------|--------|------|

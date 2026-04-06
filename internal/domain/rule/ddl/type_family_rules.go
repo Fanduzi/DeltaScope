@@ -137,6 +137,9 @@ func newColumnValueAllowlistRule(ruleID, field string, fallback []string, fallba
 func (r columnCharsetAllowlistRule) ID() string { return r.ruleID }
 
 func (r columnCharsetAllowlistRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect == spec.DialectPostgreSQL {
+		return false
+	}
 	return len(r.allowed) > 0 && appliesToCreateTableColumns(statement)
 }
 

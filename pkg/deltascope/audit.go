@@ -7,6 +7,8 @@ package deltascope
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -18,9 +20,12 @@ import (
 type Dialect string
 
 const (
-	DialectMySQL Dialect = "mysql"
-	DialectTiDB  Dialect = "tidb"
+	DialectMySQL      Dialect = "mysql"
+	DialectTiDB       Dialect = "tidb"
+	DialectPostgreSQL Dialect = "postgresql"
 )
+
+var ErrUnsupportedStatement = errors.New("deltascope audit includes unsupported statements")
 
 // Verdict identifies the final public audit outcome.
 type Verdict string
@@ -172,11 +177,12 @@ type StatementResult struct {
 
 // Result is the stable public audit output.
 type Result struct {
-	Verdict        Verdict           `json:"verdict"`
-	Summary        Summary           `json:"summary"`
-	Statements     []StatementResult `json:"statements,omitempty"`
-	GlobalFindings []Finding         `json:"global_findings,omitempty"`
-	Explanation    *Explanation      `json:"explanation,omitempty"`
+	Verdict        Verdict                   `json:"verdict"`
+	Summary        Summary                   `json:"summary"`
+	Statements     []StatementResult         `json:"statements,omitempty"`
+	GlobalFindings []Finding                 `json:"global_findings,omitempty"`
+	Unsupported    []spec.UnsupportedDetail  `json:"unsupported,omitempty"`
+	Explanation    *Explanation              `json:"explanation,omitempty"`
 }
 
 // Audit executes the stable public audit flow.
@@ -192,17 +198,23 @@ func Audit(ctx context.Context, request Request) (Result, error) {
 	}
 
 	result, err := appaudit.AuditSQL(ctx, appRequest)
+	publicResult := fromDomainResult(result)
 	if err != nil {
+		if errors.Is(err, appaudit.ErrUnsupportedStatement) {
+			return publicResult, fmt.Errorf("%w: %v", ErrUnsupportedStatement, err)
+		}
 		return Result{}, err
 	}
 
-	return fromDomainResult(result), nil
+	return publicResult, nil
 }
 
 func toDomainDialect(dialect Dialect) spec.Dialect {
 	switch dialect {
 	case DialectTiDB:
 		return spec.DialectTiDB
+	case DialectPostgreSQL:
+		return spec.DialectPostgreSQL
 	case DialectMySQL, "":
 		return spec.DialectMySQL
 	default:
@@ -216,6 +228,7 @@ func fromDomainResult(result report.Result) Result {
 		Summary:        Summary(result.Summary),
 		Statements:     make([]StatementResult, 0, len(result.Statements)),
 		GlobalFindings: make([]Finding, 0, len(result.GlobalFindings)),
+		Unsupported:    append([]spec.UnsupportedDetail(nil), result.Unsupported...),
 		Explanation:    fromDomainExplanation(result.Explanation),
 	}
 

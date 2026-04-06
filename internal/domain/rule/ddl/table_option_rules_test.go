@@ -95,6 +95,76 @@ func TestTableRowFormatAllowlistRuleFindsDisallowedRowFormat(t *testing.T) {
 	}
 }
 
+func TestTableEngineAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	statementRule, err := newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []any{"InnoDB"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Options["engine"] = "MyISAM"
+	})
+	statement.Dialect = spec.DialectPostgreSQL
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected PostgreSQL engine rule to be skipped, got %d findings", len(findings))
+	}
+}
+
+func TestTableRowFormatAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	statementRule, err := newTableOptionAllowlistRule(ruleIDTableRowFormatAllowlist, "row_format", "row format", []string{"DYNAMIC"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []any{"DYNAMIC"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := tableOptionStatement(func(ddl *spec.DDL) {
+		ddl.Options["row_format"] = "COMPACT"
+	})
+	statement.Dialect = spec.DialectPostgreSQL
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected PostgreSQL row_format rule to be skipped, got %d findings", len(findings))
+	}
+}
+
+func TestTableCharsetAllowlistRuleStillAppliesToPostgreSQL(t *testing.T) {
+	statementRule, err := newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"values": []any{"utf8mb4"}},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := tableOptionStatement(nil)
+	statement.Dialect = spec.DialectPostgreSQL
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected PostgreSQL table charset rule to still apply, got %d findings", len(findings))
+	}
+}
+
 func TestTableAutoIncrementInitValueRuleFindsNonDefaultSeed(t *testing.T) {
 	statementRule, err := newTableAutoIncrementInitValueRule(policy.RulePolicy{
 		Enabled: true,

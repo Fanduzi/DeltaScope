@@ -8,6 +8,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/jsonschema-go v0.4.2
 	github.com/modelcontextprotocol/go-sdk v1.4.1
+	github.com/pganalyze/pg_query_go/v6 v6.2.2
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260319162650-7d7a2372f4ec
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/cobra v1.9.1
