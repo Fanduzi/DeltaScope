@@ -43,7 +43,7 @@ smoke-pg-cli-manylinux-baseline:
 # Release validation closure: verify the actual Linux amd64 PG GoReleaser archive inside a Linux container.
 # This keeps Linux CGO truth on the Linux/container path and avoids pretending a Darwin host can validate it.
 verify-pg-linux-release-archive:
-	set -euo pipefail; \
+	set -eu; \
 	rm -rf dist; \
 	docker run --rm \
 		--platform $(PG_MANYLINUX_PLATFORM) \
