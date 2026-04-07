@@ -1,4 +1,4 @@
-.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
+.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -29,6 +29,15 @@ smoke-pg-cli: build-cli-pg
 	./$(BUILD_DIR)/deltascope capabilities
 	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
 	./$(BUILD_DIR)/deltascope-pg --version >/dev/null
+
+# Host-native PG-capable smoke for the unified surfaces.
+# This is the portable baseline used by non-Linux smoke lanes before release-matrix convergence.
+smoke-pg-host-surfaces: build
+	./$(BUILD_DIR)/deltascope --version
+	./$(BUILD_DIR)/deltascope capabilities
+	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
+	./$(BUILD_DIR)/deltascope-server --version
+	./$(BUILD_DIR)/deltascope-mcp --version
 
 # Phase 7 Slice 2 keeps the Linux PG smoke lane aligned with the local CLI smoke path.
 # This validates an Ubuntu/Linux CGO build environment only; it is not a manylinux/glibc release guarantee.

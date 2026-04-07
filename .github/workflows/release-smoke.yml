@@ -70,6 +70,40 @@ jobs:
       - name: Verify tagged PostgreSQL HTTP and MCP surfaces
         run: CGO_ENABLED=1 go test -tags postgresql ./internal/interfaces/http ./internal/interfaces/mcp
 
+  macos-arm64-pg-smoke:
+    runs-on: macos-15
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Verify native macOS arm64 PG-capable surface smoke
+        run: make smoke-pg-host-surfaces
+
+  macos-amd64-pg-smoke:
+    runs-on: macos-15-intel
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Verify native macOS amd64 PG-capable surface smoke
+        run: make smoke-pg-host-surfaces
+
   linux-pg-manylinux-baseline:
     runs-on: ubuntu-latest
     timeout-minutes: 30
