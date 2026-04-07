@@ -60,7 +60,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.
 
 **PostgreSQL-capable CLI:**
 
-Download `deltascope-pg_v0.15.0_linux_amd64.tar.gz` from the GitHub Release assets when you need PostgreSQL offline audit support.
+Download `deltascope-pg_0.15.0_linux_amd64.tar.gz` from the GitHub Release assets when you need PostgreSQL offline audit support.
 
 ## Compatibility
 

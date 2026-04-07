@@ -556,21 +556,25 @@
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
           <span class="tag tag-new" data-i18n="hero.badge">v0.15.0 — latest release</span>
         </div>
-        <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL &amp; TiDB DDL &amp; DML
+        <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL, TiDB, and PostgreSQL SQL
 before it ships</h1>
-        <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope helps teams catch dangerous DDL and DML before changes reach a database.
-Use the same offline-first audit engine in migration review, CI pipelines, HTTP services, and AI-assisted SQL workflows, with configurable naming governance for schema objects.</p>
+        <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope now ships PostgreSQL foundation support through the dedicated PG-capable CLI artifact `deltascope-pg`.
+Use the core DeltaScope release for MySQL and TiDB, or the PG artifact when you need offline PostgreSQL audit coverage.
+The latest release adds PostgreSQL parsing, extraction, rule wiring, Linux validation, and a dedicated PG release path without breaking the core contract.</p>
         <div class="hero-actions animate-fade-up" style="animation-delay:0.28s;">
           <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero.ctaPrimary">Install DeltaScope</a>
           <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
         </div>
         <div class="hero-code animate-fade-up" style="animation-delay:0.36s;">
-          <code><span class="c"># macOS</span>
+          <code><span class="c"># macOS core CLI</span>
 <span class="prompt">$</span> brew tap Fanduzi/deltascope
 <span class="prompt">$</span> brew install --cask deltascope
 
-<span class="c"># Linux / other environments</span>
-<span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh</code>
+<span class="c"># Linux / other core environments</span>
+<span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
+
+<span class="c"># PostgreSQL offline audit</span>
+<span class="prompt">$</span> curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.15.0/deltascope-pg_0.15.0_linux_amd64.tar.gz</code>
         </div>
         <div class="badge-row animate-fade-up" style="justify-content:center; margin-top:20px; animation-delay:0.44s;">
           <span class="tag tag-go">Go 1.26</span>
@@ -1101,7 +1105,7 @@ Built for migration review, CI gates, and AI-assisted SQL workflows.</p>
   <script>
     const translations = {
       en: {
-        title: 'DeltaScope — Audit Risky MySQL & TiDB DDL & DML Before It Ships',
+        title: 'DeltaScope — Audit Risky MySQL, TiDB, and PostgreSQL SQL Before It Ships',
         metaDescription: 'DeltaScope helps teams catch risky MySQL, TiDB, and PostgreSQL SQL before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine.',
         nav: {
           why: 'Why',

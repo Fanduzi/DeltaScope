@@ -77,6 +77,7 @@ type StatementResult struct {
     NormalizedSQL string       `json:"normalized_sql,omitempty"`
     Findings      []Finding    `json:"findings,omitempty"`
     Explanation   *Explanation `json:"explanation,omitempty"` // 该语句产生 finding 时输出
+    Impact        *Impact      `json:"impact,omitempty"`      // DeltaScope 能为 UPDATE/DELETE 给出保守估计时输出
 }
 ```
 
@@ -88,6 +89,52 @@ type StatementResult struct {
 | `NormalizedSQL` | 空白符规范化后的 SQL，可能为空字符串。 |
 | `Findings` | 该语句的规则发现。为空时 JSON 中可能省略该字段。 |
 | `Explanation` | 可选的语句级共享解释。内置审计流程在该语句产生一条或多条 finding 时会填充它。 |
+| `Impact` | `UPDATE` / `DELETE` 语句的可选保守影响估计。 |
+
+### DML 影响估算
+
+当 DeltaScope 审计 `UPDATE` 或 `DELETE` 时，可能会在每条语句结果上附加一个 `impact` 对象。这个对象以保守估算为原则，包含 `estimated_rows`、`estimated_ratio`、`risk_level`、`confidence`、`source`、`reason_codes`，以及可选的 `notes`。
+
+```json
+{
+  "raw_sql": "DELETE FROM users WHERE id = 42",
+  "impact": {
+    "estimated_rows": 1,
+    "estimated_ratio": 0.0001,
+    "risk_level": "low",
+    "confidence": "high",
+    "source": "metadata",
+    "reason_codes": ["pk_equality"],
+    "notes": ["refined with table statistics"]
+  }
+}
+```
+
+离线模式只使用 SQL 形状做估算。元数据感知模式可以基于只读表统计信息进一步收敛估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。这个 payload 会在规则评估前附加到语句结果上。
+
+### Impact
+
+```go
+type Impact struct {
+    EstimatedRows  *int64            `json:"estimated_rows,omitempty"`
+    EstimatedRatio *float64          `json:"estimated_ratio,omitempty"`
+    RiskLevel      ImpactRisk        `json:"risk_level,omitempty"`
+    Confidence     ImpactConfidence  `json:"confidence,omitempty"`
+    Source         ImpactSource      `json:"source,omitempty"`
+    ReasonCodes    []string          `json:"reason_codes,omitempty"`
+    Notes          []string          `json:"notes,omitempty"`
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `EstimatedRows` | DeltaScope 能推导出时的保守影响行数估计。 |
+| `EstimatedRatio` | DeltaScope 能推导出时，相对于目标表的保守影响比例估计。 |
+| `RiskLevel` | `ImpactRiskLow`、`ImpactRiskMedium`、`ImpactRiskHigh` 或 `ImpactRiskUnknown`。 |
+| `Confidence` | `ImpactConfidenceLow`、`ImpactConfidenceMedium` 或 `ImpactConfidenceHigh`。 |
+| `Source` | 估算来源，通常是仅基于 SQL 形状，或在此基础上结合元数据。 |
+| `ReasonCodes` | 稳定的原因码，用于说明估算路径，例如 `pk_equality`。 |
+| `Notes` | 可选说明，用于补充细化过程、注意事项或元数据缺失。 |
 
 ### Finding
 
@@ -185,6 +232,37 @@ const (
 | `VerdictPass` | 所有语句均通过，且没有 warning 或 blocker 级别的发现。 |
 | `VerdictReview` | 存在一条或多条 warning 级别的发现，且没有 blocker。 |
 | `VerdictReject` | 存在一条或多条 blocker 级别的发现。 |
+
+### ImpactSource
+
+```go
+const (
+    ImpactSourceShape    ImpactSource = "shape"
+    ImpactSourceMetadata ImpactSource = "metadata"
+    ImpactSourcePlan     ImpactSource = "plan"
+)
+```
+
+### ImpactRisk
+
+```go
+const (
+    ImpactRiskLow     ImpactRisk = "low"
+    ImpactRiskMedium  ImpactRisk = "medium"
+    ImpactRiskHigh    ImpactRisk = "high"
+    ImpactRiskUnknown ImpactRisk = "unknown"
+)
+```
+
+### ImpactConfidence
+
+```go
+const (
+    ImpactConfidenceLow    ImpactConfidence = "low"
+    ImpactConfidenceMedium ImpactConfidence = "medium"
+    ImpactConfidenceHigh   ImpactConfidence = "high"
+)
+```
 
 ### Level
 

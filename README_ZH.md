@@ -36,6 +36,12 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.
   DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
+如果你需要 PostgreSQL 离线审计，请直接下载专用的 PG-capable CLI artifact：
+
+```bash
+curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.15.0/deltascope-pg_0.15.0_linux_amd64.tar.gz
+```
+
 核心发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ### Release Contract

@@ -38,6 +38,12 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.
   DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
+Need PostgreSQL offline audit support? Download the dedicated PG-capable CLI artifact directly:
+
+```bash
+curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.15.0/deltascope-pg_0.15.0_linux_amd64.tar.gz
+```
+
 The published core archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ### Release Contract
