@@ -976,86 +976,35 @@ Statement 1: CREATE TABLE
     <section id="changelog" class="reveal">
       <div class="container">
         <p class="section-label" data-i18n="releases.label">Releases</p>
-        <h2 class="section-title" data-i18n="releases.title">Shipping steadily across CLI, HTTP, MCP, and library workflows</h2>
-        <p class="section-sub" data-i18n="releases.sub">Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, and a more complete audit contract.</p>
+        <h2 class="section-title" data-i18n="releases.title">Latest release and major milestones</h2>
+        <p class="section-sub" data-i18n="releases.sub">You do not need the full changelog here. The latest release tells you what is current; the milestone releases tell you how DeltaScope reached its current CLI, HTTP, MCP, and PostgreSQL product shape.</p>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px;">
-          <div class="reveal">
-            <div class="timeline">
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-07</div>
-                <div class="timeline-version">v0.16.3 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
-                <div class="timeline-changes" data-i18n="releases.items.v0163">Patch release: fixed file ownership in the containerized PostgreSQL archive smoke so the subsequent GoReleaser publish step can clean `dist/` and complete without changing the unified PostgreSQL product contract.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-07</div>
-                <div class="timeline-version">v0.16.2</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0162">Patch release: fixed VCS stamping in the containerized GoReleaser PostgreSQL smoke build so the Linux amd64 release-archive verification can complete without changing the unified PostgreSQL product contract.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-07</div>
-                <div class="timeline-version">v0.16.1</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0161">Patch release: fixed the shell compatibility bug in the Linux amd64 PostgreSQL archive smoke wrapper so the tag-driven release workflow can complete without changing the unified PostgreSQL product contract.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-07</div>
-                <div class="timeline-version">v0.16.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0160">PostgreSQL surface unification brought offline PG support onto the main `deltascope`, `deltascope-server`, and `deltascope-mcp` product surfaces, aligned docs/install story, and closed Linux amd64 release validation around the converged main archive.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-06</div>
-                <div class="timeline-version">v0.15.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0150">PostgreSQL foundation landed with Linux/manylinux release validation, converged Linux amd64 PG-capable main assets for `deltascope`, `deltascope-server`, and `deltascope-mcp`, and `deltascope-pg` retained only as a compatibility artifact.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-04</div>
-                <div class="timeline-version">v0.14.1</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0141">HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-03</div>
-                <div class="timeline-version">v0.14.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0140">Conservative DML impact estimation across shape-only and metadata-aware audit paths, plus count and ratio thresholds in CLI, HTTP, MCP, and the Go library.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-02</div>
-                <div class="timeline-version">v0.13.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v013">HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-04-02</div>
-                <div class="timeline-version">v0.12.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v012">Structured naming governance for table, column, index, and explicit constraint names, plus config examples and end-to-end coverage.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-31</div>
-                <div class="timeline-version">v0.11.1</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0111">Homebrew-first install guidance, a safer installer flow, interactive stdin hints, and aligned CLI output docs.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-30</div>
-                <div class="timeline-version">v0.11.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v0110">GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.</div>
-              </div>
+        <div class="reveal" style="max-width:860px; margin:0 auto;">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-date">2026-04-07</div>
+              <div class="timeline-version">v0.16.3 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+              <div class="timeline-changes" data-i18n="releases.items.v0163">Current release: carries the unified PostgreSQL product surface and folds in the release-pipeline hotfixes needed to publish it cleanly.</div>
             </div>
-          </div>
-          <div class="reveal">
-            <div class="timeline" style="padding-left:32px;">
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-29</div>
-                <div class="timeline-version">v0.10.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v010">HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-27</div>
-                <div class="timeline-version">v0.7.0</div>
-                <div class="timeline-changes" data-i18n="releases.items.v07">Official MCP stdio server with audit_sql, describe_rule, list_rules, and get_capabilities.</div>
-              </div>
-              <div class="timeline-item">
-                <div class="timeline-date">2026-03-25</div>
-                <div class="timeline-version">v0.6.x</div>
-                <div class="timeline-changes" data-i18n="releases.items.v06">Richer explanations in audit results, including why, risk, suggestion, and metadata notes.</div>
-              </div>
+            <div class="timeline-item">
+              <div class="timeline-date">2026-04-07</div>
+              <div class="timeline-version">v0.16.0</div>
+              <div class="timeline-changes" data-i18n="releases.items.v0160">PostgreSQL surface unification brought offline PG support onto the main `deltascope`, `deltascope-server`, and `deltascope-mcp` product surfaces, aligned docs/install story, and closed Linux amd64 release validation around the converged main archive.</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-date">2026-04-06</div>
+              <div class="timeline-version">v0.15.0</div>
+              <div class="timeline-changes" data-i18n="releases.items.v0150">PostgreSQL foundation landed with Linux/manylinux release validation and additive PG-capable support across the converged Linux amd64 `deltascope`, `deltascope-server`, and `deltascope-mcp` assets, while `deltascope-pg` remains as a compatibility artifact.</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-date">2026-04-02</div>
+              <div class="timeline-version">v0.13.0</div>
+              <div class="timeline-changes" data-i18n="releases.items.v013">HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-date">2026-03-27</div>
+              <div class="timeline-version">v0.7.0</div>
+              <div class="timeline-changes" data-i18n="releases.items.v07">Official MCP stdio server with audit_sql, describe_rule, list_rules, and get_capabilities.</div>
             </div>
           </div>
         </div>
@@ -1262,27 +1211,15 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
         },
         releases: {
           label: 'Releases',
-          title: 'Shipping steadily across CLI, HTTP, MCP, and library workflows',
-          sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, DML impact estimation, and now a converged Linux amd64 PostgreSQL release lane for the main product surfaces.',
+          title: 'Latest release and major milestones',
+          sub: 'You do not need the full changelog here. The latest release tells you what is current; the milestone releases tell you how DeltaScope reached its current CLI, HTTP, MCP, and PostgreSQL product shape.',
           latest: 'latest',
           items: {
-            v0163: 'Patch release: fixed file ownership in the containerized PostgreSQL archive smoke so the subsequent GoReleaser publish step can clean `dist/` and complete without changing the unified PostgreSQL product contract.',
-            v0162: 'Patch release: fixed VCS stamping in the containerized GoReleaser PostgreSQL smoke build so the Linux amd64 release-archive verification can complete without changing the unified PostgreSQL product contract.',
-            v0161: 'Patch release: fixed the shell compatibility bug in the Linux amd64 PostgreSQL archive smoke wrapper so the tag-driven release workflow can complete without changing the unified PostgreSQL product contract.',
+            v0163: 'Current release: carries the unified PostgreSQL product surface and folds in the release-pipeline hotfixes needed to publish it cleanly.',
             v0160: 'PostgreSQL surface unification brought offline PG support onto the main `deltascope`, `deltascope-server`, and `deltascope-mcp` product surfaces, aligned docs/install story, and closed Linux amd64 release validation around the converged main archive.',
             v0150: 'PostgreSQL foundation landed with Linux/manylinux release validation and additive PG-capable support across the converged Linux amd64 `deltascope`, `deltascope-server`, and `deltascope-mcp` assets, while `deltascope-pg` remains as a compatibility artifact.',
-            v0141: 'HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.',
-            v0140: 'Conservative DML impact estimation across shape-only and metadata-aware audit paths, plus count and ratio thresholds in CLI, HTTP, MCP, and the Go library.',
-            v0131: 'Landing page JavaScript hotfix: escaped SQL examples so the localized homepage script loads correctly again.',
             v013: 'HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.',
-            v012: 'Structured naming governance for table, column, index, and explicit constraint names, plus config examples and end-to-end coverage.',
-            v0111: 'Homebrew-first install guidance, a safer installer flow, interactive stdin hints, and aligned CLI output docs.',
-            v0110: 'GitHub Actions composite action, GitLab CI examples, /readyz endpoint, structured JSON access logs, and graceful shutdown.',
-            v010: 'HTTP adapter, API-key auth, rate limiting, and Prometheus metrics support.',
-            v09: 'Homebrew distribution and Claude Code skill support for agent-driven review.',
             v07: 'Official MCP stdio server with audit_sql, describe_rule, list_rules, and get_capabilities.',
-            v06: 'Richer explanations in audit results, including why, risk, suggestion, and metadata notes.',
-            v05: 'First release with CLI, HTTP, offline DDL/DML rules, and the public Go API.'
           }
         },
         cta: {
@@ -1439,27 +1376,15 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
         },
         releases: {
           label: '发布',
-          title: '围绕 CLI、HTTP、MCP 与库接入持续稳步推进',
-          sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入、DML 影响估算，以及这次面向主产品面的 Linux amd64 PostgreSQL 收敛发布路径。',
+          title: '当前版本与关键里程碑',
+          sub: '这里不需要完整 changelog。最新版本告诉你现在能用什么，关键里程碑版本则说明 DeltaScope 是如何演进到今天这套 CLI、HTTP、MCP 与 PostgreSQL 产品面的。',
           latest: '最新',
           items: {
-            v0163: 'Patch 版本：修复容器化 PostgreSQL archive smoke 的文件属主问题，让后续 GoReleaser publish 步骤能够清理 `dist/` 并完整跑通，同时不改变已统一的 PostgreSQL 产品契约。',
-            v0162: 'Patch 版本：修复容器化 GoReleaser PostgreSQL smoke 构建中的 VCS stamping 问题，让 Linux amd64 release archive 验证能完整跑通，同时不改变已统一的 PostgreSQL 产品契约。',
-            v0161: 'Patch 版本：修复 Linux amd64 PostgreSQL archive smoke wrapper 的 shell 兼容性问题，让 tag 驱动的 release workflow 能完整跑通，同时不改变已统一的 PostgreSQL 产品契约。',
+            v0163: '当前版本：包含已统一的 PostgreSQL 产品面，并收拢了为稳定发布这套能力所需的 release pipeline hotfix。',
             v0160: 'PostgreSQL surface unification 已落地：把 PostgreSQL offline 审计正式统一到 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 主产品面，同时完成 docs/install story 对齐，并把 Linux amd64 主 archive 的发布验证闭环补齐。',
             v0150: 'PostgreSQL foundation 正式落地：基于 Linux/manylinux 验证链，把 Linux amd64 的 `deltascope`、`deltascope-server`、`deltascope-mcp` 主资产收敛为 PG-capable，同时把 `deltascope-pg` 降为兼容 artifact。',
-            v0141: 'HTTP 增加 capabilities 与规则目录端点，CLI 增加 password-env 与 password-file 输入，同时补齐支持版本与发布元数据。',
-            v0140: '增加保守的 DML 影响范围估计，覆盖 shape-only 与 metadata-aware 审计路径，并在 CLI、HTTP、MCP 和 Go 库中暴露数量与比例阈值。',
-            v0131: '修复 landing page JavaScript：转义 SQL 示例，恢复本地化首页脚本的正常加载。',
             v013: '增加基于 direct connection 的 HTTP metadata-aware 审核、共享连接辅助层，以及面向 MySQL / TiDB real server 的端到端覆盖。',
-            v012: '增加表、列、索引和显式约束名的结构化 naming governance，并补齐配置示例与端到端覆盖。',
-            v0111: '增加 Homebrew-first 安装指引、更安全的 installer 流程、交互式 stdin 提示，以及对齐后的 CLI 输出文档。',
-            v0110: '增加 GitHub Actions composite action、GitLab CI 示例、/readyz、结构化 JSON access log，以及优雅退出。',
-            v010: '增加 HTTP adapter、API key 鉴权、限流和 Prometheus 指标。',
-            v09: '增加 Homebrew 分发和 Claude Code skill 支持。',
             v07: '发布官方 MCP stdio 服务，提供 audit_sql、describe_rule、list_rules 和 get_capabilities。',
-            v06: '增强审计结果说明，包括 why、risk、suggestion 和元数据说明。',
-            v05: '首次发布 CLI、HTTP、离线 DDL / DML 规则以及公共 Go API。'
           }
         },
         cta: {
