@@ -50,17 +50,20 @@ verify-pg-host-release-archive:
 	arch="$$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
 	archive="$$(ls dist/deltascope_*_"$$os"_"$$arch".tar.gz | head -n 1)"; \
 	checksum="$$(ls dist/deltascope_*_"$$os"_"$$arch"_checksums.txt | head -n 1)"; \
+	archive_contents="$$(mktemp)"; \
+	trap 'rm -f "$$archive_contents"' EXIT; \
 	test -n "$$archive"; \
 	test -n "$$checksum"; \
 	test -f "$$archive"; \
 	test -f "$$checksum"; \
-	tar -tzf "$$archive" | grep -q '^deltascope$$'; \
-	tar -tzf "$$archive" | grep -q '^deltascope-server$$'; \
-	tar -tzf "$$archive" | grep -q '^deltascope-mcp$$'; \
-	tar -tzf "$$archive" | grep -q '^README.md$$'; \
-	tar -tzf "$$archive" | grep -q '^README_ZH.md$$'; \
-	tar -tzf "$$archive" | grep -q '^CHANGELOG.md$$'; \
-	tar -tzf "$$archive" | grep -q '^SECURITY.md$$'; \
+	tar -tzf "$$archive" > "$$archive_contents"; \
+	grep -q '^deltascope$$' "$$archive_contents"; \
+	grep -q '^deltascope-server$$' "$$archive_contents"; \
+	grep -q '^deltascope-mcp$$' "$$archive_contents"; \
+	grep -q '^README.md$$' "$$archive_contents"; \
+	grep -q '^README_ZH.md$$' "$$archive_contents"; \
+	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
+	grep -q '^SECURITY.md$$' "$$archive_contents"; \
 	grep -q "  $$(basename "$$archive")$$" "$$checksum"
 
 # Phase 7 Slice 2 keeps the Linux PG smoke lane aligned with the local CLI smoke path.
@@ -89,17 +92,20 @@ verify-pg-linux-release-archive:
 		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
 	archive="$$(ls dist/deltascope_*_linux_amd64.tar.gz | head -n 1)"; \
 	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
+	archive_contents="$$(mktemp)"; \
+	trap 'rm -f "$$archive_contents"' EXIT; \
 	test -n "$$archive"; \
 	test -n "$$checksum"; \
 	test -f "$$archive"; \
 	test -f "$$checksum"; \
-	tar -tzf "$$archive" | grep -q '^deltascope$$'; \
-	tar -tzf "$$archive" | grep -q '^deltascope-server$$'; \
-	tar -tzf "$$archive" | grep -q '^deltascope-mcp$$'; \
-	tar -tzf "$$archive" | grep -q '^README.md$$'; \
-	tar -tzf "$$archive" | grep -q '^README_ZH.md$$'; \
-	tar -tzf "$$archive" | grep -q '^CHANGELOG.md$$'; \
-	tar -tzf "$$archive" | grep -q '^SECURITY.md$$'; \
+	tar -tzf "$$archive" > "$$archive_contents"; \
+	grep -q '^deltascope$$' "$$archive_contents"; \
+	grep -q '^deltascope-server$$' "$$archive_contents"; \
+	grep -q '^deltascope-mcp$$' "$$archive_contents"; \
+	grep -q '^README.md$$' "$$archive_contents"; \
+	grep -q '^README_ZH.md$$' "$$archive_contents"; \
+	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
+	grep -q '^SECURITY.md$$' "$$archive_contents"; \
 	grep -q "  $$(basename "$$archive")$$" "$$checksum"
 
 # Phase 7 Slice 4 packages only the approved public PG v1 artifact after the manylinux/glibc gate passes.

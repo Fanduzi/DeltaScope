@@ -127,7 +127,8 @@ jobs:
           make package-pg-cli-release VERSION=v0.0.0-dev
           test -f dist/deltascope-pg_0.0.0-dev_linux_amd64.tar.gz
           test -f dist/deltascope-pg_0.0.0-dev_linux_amd64_checksums.txt
-          tar -tzf dist/deltascope-pg_0.0.0-dev_linux_amd64.tar.gz | grep -q '^deltascope-pg$'
+          tar -tzf dist/deltascope-pg_0.0.0-dev_linux_amd64.tar.gz > /tmp/deltascope-pg-archive-list.txt
+          grep -q '^deltascope-pg$' /tmp/deltascope-pg-archive-list.txt
 
       - name: Verify converged Linux amd64 PG release archive shape
         run: make verify-pg-linux-release-archive
