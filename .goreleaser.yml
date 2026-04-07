@@ -1,9 +1,10 @@
 version: 2
 
-# Release matrix note: GoReleaser now publishes a PG-capable main archive for Linux amd64,
-# where the CI manylinux/glibc gate can verify CGO output. Darwin and Linux arm64 stay on the
-# pure-Go archive path until they have an equivalent PG release baseline. The `deltascope-pg`
-# upload remains a transitional compatibility artifact for existing Linux amd64 users.
+# Release matrix note: GoReleaser publishes the Linux release assets, including the PG-capable
+# main archive for Linux amd64. Darwin main archives are packaged natively in the release
+# workflow so they can carry PostgreSQL offline support without pretending Linux CGO can
+# cross-build them. The `deltascope-pg` upload remains a transitional compatibility artifact
+# for existing Linux amd64 users.
 project_name: deltascope
 
 builds:
@@ -13,7 +14,6 @@ builds:
     env:
       - CGO_ENABLED=0
     goos:
-      - darwin
       - linux
     goarch:
       - amd64
@@ -27,7 +27,6 @@ builds:
     env:
       - CGO_ENABLED=0
     goos:
-      - darwin
       - linux
     goarch:
       - amd64
@@ -41,7 +40,6 @@ builds:
     env:
       - CGO_ENABLED=0
     goos:
-      - darwin
       - linux
     goarch:
       - amd64
@@ -113,26 +111,6 @@ archives:
 
 checksum:
   name_template: "deltascope_{{ .RawVersion }}_checksums.txt"
-
-homebrew_casks:
-  - name: deltascope
-    ids:
-      - default-pure
-    binaries:
-      - deltascope
-    repository:
-      owner: Fanduzi
-      name: homebrew-deltascope
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    homepage: "https://github.com/Fanduzi/DeltaScope"
-    description: "Offline SQL review for MySQL and TiDB"
-    license: "Apache-2.0"
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/deltascope"]
-          end
 
 changelog:
   disable: true

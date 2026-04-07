@@ -1,4 +1,4 @@
-.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline verify-pg-host-release-archive verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
+.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -40,13 +40,16 @@ smoke-pg-host-surfaces: build
 	./$(BUILD_DIR)/deltascope-mcp --version
 
 # Host-native archive packaging truth for future darwin/linux-arm release convergence.
-verify-pg-host-release-archive: smoke-pg-host-surfaces
+package-host-release-archive: smoke-pg-host-surfaces
 	rm -rf dist
-	VERSION=v0.0.0-dev BUILD_DIR=$(BUILD_DIR) DIST_DIR=dist bash ./scripts/package_host_release_archive.sh
+	VERSION=$(VERSION) BUILD_DIR=$(BUILD_DIR) DIST_DIR=dist bash ./scripts/package_host_release_archive.sh
+
+verify-pg-host-release-archive:
+	$(MAKE) package-host-release-archive VERSION=v0.0.0-dev BUILD_DIR=$(BUILD_DIR)
 	os="$$(uname -s | tr '[:upper:]' '[:lower:]')"; \
 	arch="$$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
 	archive="$$(ls dist/deltascope_*_"$$os"_"$$arch".tar.gz | head -n 1)"; \
-	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
+	checksum="$$(ls dist/deltascope_*_"$$os"_"$$arch"_checksums.txt | head -n 1)"; \
 	test -n "$$archive"; \
 	test -n "$$checksum"; \
 	test -f "$$archive"; \

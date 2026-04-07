@@ -52,7 +52,7 @@ main() {
   arch="$(detect_arch)"
   archive_basename="deltascope_${RAW_VERSION}_${os}_${arch}.tar.gz"
   archive_path="${ROOT_DIR}/${DIST_DIR}/${archive_basename}"
-  checksum_basename="deltascope_${RAW_VERSION}_checksums.txt"
+  checksum_basename="deltascope_${RAW_VERSION}_${os}_${arch}_checksums.txt"
   checksum_path="${ROOT_DIR}/${DIST_DIR}/${checksum_basename}"
 
   [[ -f "${ROOT_DIR}/${BUILD_DIR}/deltascope" ]] || fail "missing binary: ${ROOT_DIR}/${BUILD_DIR}/deltascope"

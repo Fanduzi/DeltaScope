@@ -10,9 +10,7 @@ permissions:
   id-token: write
 
 jobs:
-  # Phase 7 Slice 1 note: keep this workflow on the existing pure-Go public release path.
-  # Public PG v1 artifact verification is limited to local/CI smoke for `deltascope-pg` only here.
-  release:
+  release-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -88,7 +86,6 @@ jobs:
           args: release --clean --release-notes ${{ env.RELEASE_NOTES_FILE }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
       - name: Build and package transitional PG CLI compatibility artifact
         run: |
@@ -109,6 +106,142 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit "${GITHUB_REF_NAME}" --notes-file "${COMBINED_RELEASE_NOTES_FILE}"
+
+  release-macos-arm64:
+    needs: release-linux
+    runs-on: macos-15
+    timeout-minutes: 30
+    outputs:
+      sha256: ${{ steps.package.outputs.sha256 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Build native macOS arm64 PG-capable archive
+        id: package
+        run: |
+          set -euo pipefail
+          make package-host-release-archive VERSION="${GITHUB_REF_NAME}"
+          VERSION_NO_V="${GITHUB_REF_NAME#v}"
+          CHECKSUM_FILE="dist/deltascope_${VERSION_NO_V}_darwin_arm64_checksums.txt"
+          SHA256="$(awk '/  deltascope_'"${VERSION_NO_V}"'_darwin_arm64.tar.gz$/ {print $1}' "$CHECKSUM_FILE")"
+          test -n "${SHA256}"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload native macOS arm64 archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/deltascope_${GITHUB_REF_NAME#v}_darwin_arm64.tar.gz \
+            dist/deltascope_${GITHUB_REF_NAME#v}_darwin_arm64_checksums.txt \
+            --clobber
+
+  release-macos-amd64:
+    needs: release-linux
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    outputs:
+      sha256: ${{ steps.package.outputs.sha256 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Build native macOS amd64 PG-capable archive
+        id: package
+        run: |
+          set -euo pipefail
+          make package-host-release-archive VERSION="${GITHUB_REF_NAME}"
+          VERSION_NO_V="${GITHUB_REF_NAME#v}"
+          CHECKSUM_FILE="dist/deltascope_${VERSION_NO_V}_darwin_amd64_checksums.txt"
+          SHA256="$(awk '/  deltascope_'"${VERSION_NO_V}"'_darwin_amd64.tar.gz$/ {print $1}' "$CHECKSUM_FILE")"
+          test -n "${SHA256}"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload native macOS amd64 archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/deltascope_${GITHUB_REF_NAME#v}_darwin_amd64.tar.gz \
+            dist/deltascope_${GITHUB_REF_NAME#v}_darwin_amd64_checksums.txt \
+            --clobber
+
+  publish-homebrew-cask:
+    needs:
+      - release-linux
+      - release-macos-arm64
+      - release-macos-amd64
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Render Homebrew cask
+        env:
+          VERSION: ${{ github.ref_name }}
+          DARWIN_ARM64_SHA256: ${{ needs.release-macos-arm64.outputs.sha256 }}
+          DARWIN_AMD64_SHA256: ${{ needs.release-macos-amd64.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/homebrew-deltascope/Casks"
+          bash ./scripts/render_homebrew_cask.sh > "${RUNNER_TEMP}/homebrew-deltascope/Casks/deltascope.rb"
+
+      - name: Publish Homebrew cask
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAP_DIR="${RUNNER_TEMP}/homebrew-deltascope-repo"
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/Fanduzi/homebrew-deltascope.git" "${TAP_DIR}"
+          cp "${RUNNER_TEMP}/homebrew-deltascope/Casks/deltascope.rb" "${TAP_DIR}/Casks/deltascope.rb"
+          cd "${TAP_DIR}"
+          if git diff --quiet -- Casks/deltascope.rb; then
+            echo "Homebrew cask already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/deltascope.rb
+          git commit -m "Update deltascope cask for ${GITHUB_REF_NAME}"
+          git push origin HEAD:main
+
+  publish-mcp-launcher-package:
+    needs:
+      - release-linux
+      - release-macos-arm64
+      - release-macos-amd64
+      - publish-homebrew-cask
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Publish MCP launcher package
         env:
