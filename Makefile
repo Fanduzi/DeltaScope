@@ -1,4 +1,4 @@
-.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
+.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline verify-pg-host-release-archive verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -38,6 +38,27 @@ smoke-pg-host-surfaces: build
 	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
 	./$(BUILD_DIR)/deltascope-server --version
 	./$(BUILD_DIR)/deltascope-mcp --version
+
+# Host-native archive packaging truth for future darwin/linux-arm release convergence.
+verify-pg-host-release-archive: smoke-pg-host-surfaces
+	rm -rf dist
+	VERSION=v0.0.0-dev BUILD_DIR=$(BUILD_DIR) DIST_DIR=dist bash ./scripts/package_host_release_archive.sh
+	os="$$(uname -s | tr '[:upper:]' '[:lower:]')"; \
+	arch="$$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
+	archive="$$(ls dist/deltascope_*_"$$os"_"$$arch".tar.gz | head -n 1)"; \
+	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
+	test -n "$$archive"; \
+	test -n "$$checksum"; \
+	test -f "$$archive"; \
+	test -f "$$checksum"; \
+	tar -tzf "$$archive" | grep -q '^deltascope$$'; \
+	tar -tzf "$$archive" | grep -q '^deltascope-server$$'; \
+	tar -tzf "$$archive" | grep -q '^deltascope-mcp$$'; \
+	tar -tzf "$$archive" | grep -q '^README.md$$'; \
+	tar -tzf "$$archive" | grep -q '^README_ZH.md$$'; \
+	tar -tzf "$$archive" | grep -q '^CHANGELOG.md$$'; \
+	tar -tzf "$$archive" | grep -q '^SECURITY.md$$'; \
+	grep -q "  $$(basename "$$archive")$$" "$$checksum"
 
 # Phase 7 Slice 2 keeps the Linux PG smoke lane aligned with the local CLI smoke path.
 # This validates an Ubuntu/Linux CGO build environment only; it is not a manylinux/glibc release guarantee.

@@ -84,8 +84,8 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
-      - name: Verify native macOS arm64 PG-capable surface smoke
-        run: make smoke-pg-host-surfaces
+      - name: Verify native macOS arm64 PG-capable main archive shape
+        run: make verify-pg-host-release-archive
 
   macos-amd64-pg-smoke:
     runs-on: macos-15-intel
@@ -101,8 +101,8 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
-      - name: Verify native macOS amd64 PG-capable surface smoke
-        run: make smoke-pg-host-surfaces
+      - name: Verify native macOS amd64 PG-capable main archive shape
+        run: make verify-pg-host-release-archive
 
   linux-pg-manylinux-baseline:
     runs-on: ubuntu-latest
