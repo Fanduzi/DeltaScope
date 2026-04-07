@@ -83,3 +83,56 @@ test("downloadAndExtractBinary rejects checksum mismatches", async () => {
     /checksum mismatch/i
   );
 });
+
+test("downloadAndExtractBinary falls back from platform checksums to the generic checksums file", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "deltascope-mcp-download-"));
+  const fixtureDir = path.join(tempDir, "fixture");
+  const archivePath = path.join(tempDir, "deltascope_0.17.0_darwin_arm64.tar.gz");
+  const destinationPath = path.join(tempDir, "cache", "deltascope-mcp");
+  await fs.mkdir(fixtureDir, { recursive: true });
+  await fs.writeFile(path.join(fixtureDir, "deltascope-mcp"), "#!/bin/sh\necho launcher-ok\n", { mode: 0o755 });
+
+  const tarResult = spawnSync("tar", ["-czf", archivePath, "-C", fixtureDir, "deltascope-mcp"], {
+    stdio: "pipe"
+  });
+  assert.equal(tarResult.status, 0, tarResult.stderr.toString());
+
+  const archiveBuffer = await fs.readFile(archivePath);
+  const archiveSha = crypto.createHash("sha256").update(archiveBuffer).digest("hex");
+  const fetchedURLs = [];
+  const extractedPath = await downloadAndExtractBinary({
+    archiveURL: "https://example.com/deltascope_0.17.0_darwin_arm64.tar.gz",
+    checksumsURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.17.0/deltascope_0.17.0_darwin_arm64_checksums.txt",
+    checksumsURLs: [
+      "https://github.com/Fanduzi/DeltaScope/releases/download/v0.17.0/deltascope_0.17.0_darwin_arm64_checksums.txt",
+      "https://github.com/Fanduzi/DeltaScope/releases/download/v0.17.0/deltascope_0.17.0_checksums.txt"
+    ],
+    archiveName: "deltascope_0.17.0_darwin_arm64.tar.gz",
+    destinationPath,
+    fetchImpl: async (url) => {
+      fetchedURLs.push(url);
+      if (url.endsWith(".tar.gz")) {
+        return {
+          ok: true,
+          arrayBuffer: async () => archiveBuffer
+        };
+      }
+      if (url.endsWith("_darwin_arm64_checksums.txt")) {
+        return {
+          ok: false,
+          text: async () => ""
+        };
+      }
+      return {
+        ok: true,
+        text: async () => `${archiveSha}  deltascope_0.17.0_darwin_arm64.tar.gz\n`
+      };
+    }
+  });
+
+  assert.equal(extractedPath.archiveChecksum, archiveSha);
+  assert.deepEqual(fetchedURLs.slice(1), [
+    "https://github.com/Fanduzi/DeltaScope/releases/download/v0.17.0/deltascope_0.17.0_darwin_arm64_checksums.txt",
+    "https://github.com/Fanduzi/DeltaScope/releases/download/v0.17.0/deltascope_0.17.0_checksums.txt"
+  ]);
+});

@@ -43,8 +43,11 @@ export function resolveArchiveName({ version, os, arch }) {
   return `deltascope_${version.replace(/^v/, "")}_${os}_${arch}.tar.gz`;
 }
 
-export function resolveChecksumsName({ version }) {
+export function resolveChecksumsName({ version, os = "", arch = "" }) {
   const rawVersion = version.replace(/^v/, "");
+  if (os && arch) {
+    return `deltascope_${rawVersion}_${os}_${arch}_checksums.txt`;
+  }
   return `deltascope_${rawVersion}_checksums.txt`;
 }
 
@@ -61,6 +64,6 @@ export function resolveArchiveURL({
   return `https://github.com/${repo}/releases/download/${version}/${resolveArchiveName({ version, os, arch })}`;
 }
 
-export function resolveChecksumsURL({ repo = "Fanduzi/DeltaScope", version }) {
-  return `https://github.com/${repo}/releases/download/${version}/${resolveChecksumsName({ version })}`;
+export function resolveChecksumsURL({ repo = "Fanduzi/DeltaScope", version, os = "", arch = "" }) {
+  return `https://github.com/${repo}/releases/download/${version}/${resolveChecksumsName({ version, os, arch })}`;
 }

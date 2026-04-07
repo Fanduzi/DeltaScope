@@ -58,6 +58,10 @@ test("resolveArchiveName and resolveArchiveURL follow the release contract", () 
     "deltascope_0.7.0_checksums.txt",
   );
   assert.equal(
+    resolveChecksumsName({ version: "v0.17.0", os: "darwin", arch: "arm64" }),
+    "deltascope_0.17.0_darwin_arm64_checksums.txt",
+  );
+  assert.equal(
     resolveChecksumsName({ version: "v0.16.0" }),
     "deltascope_0.16.0_checksums.txt",
   );
@@ -85,6 +89,15 @@ test("resolveArchiveName and resolveArchiveURL follow the release contract", () 
       version: "v0.7.0",
     }),
     "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt",
+  );
+  assert.equal(
+    resolveChecksumsURL({
+      repo: "Fanduzi/DeltaScope",
+      version: "v0.17.0",
+      os: "darwin",
+      arch: "arm64",
+    }),
+    "https://github.com/Fanduzi/DeltaScope/releases/download/v0.17.0/deltascope_0.17.0_darwin_arm64_checksums.txt",
   );
   assert.equal(
     resolveChecksumsURL({

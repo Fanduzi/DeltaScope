@@ -44,6 +44,7 @@ function parseChecksums(text) {
 export async function downloadAndExtractBinary({
   archiveURL,
   checksumsURL,
+  checksumsURLs = [],
   archiveName,
   destinationPath,
   fetchImpl = globalThis.fetch
@@ -52,33 +53,51 @@ export async function downloadAndExtractBinary({
     throw new Error("fetch implementation is required");
   }
 
-  const [archiveResponse, checksumsResponse] = await Promise.all([
-    fetchImpl(archiveURL),
-    fetchImpl(checksumsURL)
-  ]);
+  const requestedChecksumsURLs = [
+    ...checksumsURLs,
+    ...(checksumsURL ? [checksumsURL] : [])
+  ].filter(Boolean);
+  const uniqueChecksumsURLs = [...new Set(requestedChecksumsURLs)];
+  if (uniqueChecksumsURLs.length === 0) {
+    throw new Error("at least one checksums URL is required");
+  }
+
+  const archiveResponse = await fetchImpl(archiveURL);
 
   if (!archiveResponse.ok) {
     throw new Error(`failed to download ${archiveURL}`);
-  }
-  if (!checksumsResponse.ok) {
-    throw new Error(`failed to download ${checksumsURL}`);
   }
 
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "deltascope-mcp-archive-"));
   const archivePath = path.join(tempDir, "archive.tar.gz");
   const extractDir = path.join(tempDir, "extract");
   const archiveBuffer = Buffer.from(await archiveResponse.arrayBuffer());
-  const checksums = parseChecksums(await checksumsResponse.text());
-  const expectedChecksum = checksums.get(archiveName);
   const actualChecksum = sha256(archiveBuffer);
 
+  const resolveExpectedChecksum = async () => {
+    let lastError = new Error(`missing checksum for ${archiveName}`);
+    for (const candidateURL of uniqueChecksumsURLs) {
+      const checksumsResponse = await fetchImpl(candidateURL);
+      if (!checksumsResponse.ok) {
+        lastError = new Error(`failed to download ${candidateURL}`);
+        continue;
+      }
+      const checksums = parseChecksums(await checksumsResponse.text());
+      const expectedChecksum = checksums.get(archiveName);
+      if (!expectedChecksum) {
+        lastError = new Error(`missing checksum for ${archiveName}`);
+        continue;
+      }
+      if (actualChecksum !== expectedChecksum) {
+        throw new Error(`checksum mismatch for ${archiveName}`);
+      }
+      return expectedChecksum;
+    }
+    throw lastError;
+  };
+
   try {
-    if (!expectedChecksum) {
-      throw new Error(`missing checksum for ${archiveName}`);
-    }
-    if (actualChecksum !== expectedChecksum) {
-      throw new Error(`checksum mismatch for ${archiveName}`);
-    }
+    const expectedChecksum = await resolveExpectedChecksum();
     await fs.mkdir(extractDir, { recursive: true });
     await fs.writeFile(archivePath, archiveBuffer);
     await runTar(["-xzf", archivePath, "-C", extractDir]);

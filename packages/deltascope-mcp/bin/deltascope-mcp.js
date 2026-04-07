@@ -37,6 +37,12 @@ const archiveName = resolveArchiveName({
   arch: platform.arch,
 });
 const checksumsURL = resolveChecksumsURL({ version });
+const preferredChecksumsURL = resolveChecksumsURL({
+  version,
+  os: platform.os,
+  arch: platform.arch,
+});
+const checksumsURLs = [...new Set([preferredChecksumsURL, checksumsURL])];
 
 function log(message) {
   process.stderr.write(`[deltascope-mcp-launcher] ${message}\n`);
@@ -54,11 +60,16 @@ const binaryPath = await ensureExecutable({
     (async () => {
       log(`cache miss; downloading ${archiveURL}`);
       log(`cache target ${destinationPath}`);
-      log(`verifying archive against ${checksumsURL}`);
+      log(
+        checksumsURLs.length > 1
+          ? `verifying archive against ${checksumsURLs[0]} (fallback ${checksumsURLs[1]})`
+          : `verifying archive against ${checksumsURLs[0]}`,
+      );
       try {
         const result = await downloadAndExtractBinary({
           archiveURL,
-          checksumsURL,
+          checksumsURL: preferredChecksumsURL,
+          checksumsURLs,
           archiveName,
           destinationPath,
         });
