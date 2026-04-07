@@ -47,11 +47,13 @@ verify-pg-linux-release-archive:
 	rm -rf dist; \
 	docker run --rm \
 		--platform $(PG_MANYLINUX_PLATFORM) \
+		--user "$$(id -u):$$(id -g)" \
 		-v "$$(pwd):/work" \
 		-w /work \
 		-e GO_VERSION="$(GO_VERSION)" \
+		-e HOME=/tmp/deltascope-home \
 		$(PG_MANYLINUX_IMAGE) \
-		bash -lc 'set -euo pipefail; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /usr/local/go; tar -C /usr/local -xzf "/tmp/$${GO_TARBALL}"; export PATH="/usr/local/go/bin:/root/go/bin:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
+		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
 	archive="$$(ls dist/deltascope_*_linux_amd64.tar.gz | head -n 1)"; \
 	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
 	test -n "$$archive"; \
