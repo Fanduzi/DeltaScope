@@ -46,8 +46,8 @@ Stable public package surface for library consumers.
 - `Result` now also exposes an `Unsupported` array so library consumers can inspect structured partial-support PostgreSQL outcomes.
 - `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
-- `DefaultVersion` is now `v0.15.0`, which matches the source-build baseline used by the CLI, HTTP server, official MCP server release artifacts, and the dedicated PostgreSQL CLI release path.
-- The public package surface stays stable in `v0.15.0`; this release adds PostgreSQL request routing and release-surface alignment while keeping the exported `pkg/deltascope` contract additive.
+- `DefaultVersion` is now `v0.16.0`, which matches the unified DeltaScope product surfaces and the current release baseline for source builds.
+- The public package surface stays stable in `v0.16.0`; this release keeps the exported `pkg/deltascope` contract additive while aligning the public product story around unified PostgreSQL offline support on the converged Linux amd64 main assets.
 
 ## Dependencies
 - Upstream: external library consumers

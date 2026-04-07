@@ -554,7 +554,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.15.0 — latest release</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.16.0 — latest release</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL, TiDB, and PostgreSQL SQL
 before it ships</h1>
@@ -577,7 +577,7 @@ On released assets, Linux amd64 now ships those three binaries as PG-capable for
 <span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 
 <span class="c"># Transitional CLI compatibility artifact</span>
-<span class="prompt">$</span> curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.15.0/deltascope-pg_0.15.0_linux_amd64.tar.gz</code>
+<span class="prompt">$</span> curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.16.0/deltascope-pg_0.16.0_linux_amd64.tar.gz</code>
         </div>
         <div class="badge-row animate-fade-up" style="justify-content:center; margin-top:20px; animation-delay:0.44s;">
           <span class="tag tag-go">Go 1.26</span>
@@ -983,8 +983,13 @@ Statement 1: CREATE TABLE
           <div class="reveal">
             <div class="timeline">
               <div class="timeline-item">
+                <div class="timeline-date">2026-04-07</div>
+                <div class="timeline-version">v0.16.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-changes" data-i18n="releases.items.v0160">PostgreSQL surface unification brought offline PG support onto the main `deltascope`, `deltascope-server`, and `deltascope-mcp` product surfaces, aligned docs/install story, and closed Linux amd64 release validation around the converged main archive.</div>
+              </div>
+              <div class="timeline-item">
                 <div class="timeline-date">2026-04-06</div>
-                <div class="timeline-version">v0.15.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+                <div class="timeline-version">v0.15.0</div>
                 <div class="timeline-changes" data-i18n="releases.items.v0150">PostgreSQL foundation landed with Linux/manylinux release validation, converged Linux amd64 PG-capable main assets for `deltascope`, `deltascope-server`, and `deltascope-mcp`, and `deltascope-pg` retained only as a compatibility artifact.</div>
               </div>
               <div class="timeline-item">
@@ -1076,7 +1081,7 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.15.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.16.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1120,7 +1125,7 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
           install: 'Install'
         },
         hero: {
-          badge: 'v0.15.0 — latest release',
+          badge: 'v0.16.0 — latest release',
           title: 'Audit risky MySQL, TiDB, and PostgreSQL SQL\nbefore it ships',
           sub: 'DeltaScope now exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.\nOn released assets, Linux amd64 now ships those three binaries as PG-capable for PostgreSQL offline audit, while other published platforms stay on the current pure-Go matrix until equivalent release baselines are verified.\n`deltascope-pg` remains available only as a transitional CLI compatibility artifact.',
           ctaPrimary: 'Install DeltaScope',
@@ -1246,6 +1251,7 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
           sub: 'Recent releases show the product getting more usable in real delivery paths: naming governance for schema objects, CI integration, HTTP readiness, MCP tooling, DML impact estimation, and now a converged Linux amd64 PostgreSQL release lane for the main product surfaces.',
           latest: 'latest',
           items: {
+            v0160: 'PostgreSQL surface unification brought offline PG support onto the main `deltascope`, `deltascope-server`, and `deltascope-mcp` product surfaces, aligned docs/install story, and closed Linux amd64 release validation around the converged main archive.',
             v0150: 'PostgreSQL foundation landed with Linux/manylinux release validation and additive PG-capable support across the converged Linux amd64 `deltascope`, `deltascope-server`, and `deltascope-mcp` assets, while `deltascope-pg` remains as a compatibility artifact.',
             v0141: 'HTTP now exposes capabilities and rule-catalog endpoints, the CLI adds password-env and password-file inputs, and support metadata was brought up to date for the shipped release contract.',
             v0140: 'Conservative DML impact estimation across shape-only and metadata-aware audit paths, plus count and ratio thresholds in CLI, HTTP, MCP, and the Go library.',
@@ -1293,7 +1299,7 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
           install: '安装'
         },
         hero: {
-          badge: 'v0.15.0 —— 最新版本',
+          badge: 'v0.16.0 —— 最新版本',
           title: '在上线前审计高风险 MySQL、TiDB 与 PostgreSQL SQL',
           sub: 'DeltaScope 现在已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 这三个主产品面。\n在公开 release 中，Linux amd64 已将这三条主二进制收敛为 PG-capable，可提供 PostgreSQL offline；其它已发布平台在对应发布基线验证完成前，仍保持当前 pure-Go matrix。\n`deltascope-pg` 仅作为 CLI 兼容/过渡 artifact 保留。',
           ctaPrimary: '安装 DeltaScope',
@@ -1419,6 +1425,7 @@ Linux amd64 release assets now converge on the unified `deltascope` / `deltascop
           sub: '最近几个版本主要在真实交付路径上增强可用性：schema object 命名治理、CI 集成、HTTP 可用性、MCP 工具接入、DML 影响估算，以及这次面向主产品面的 Linux amd64 PostgreSQL 收敛发布路径。',
           latest: '最新',
           items: {
+            v0160: 'PostgreSQL surface unification 已落地：把 PostgreSQL offline 审计正式统一到 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 主产品面，同时完成 docs/install story 对齐，并把 Linux amd64 主 archive 的发布验证闭环补齐。',
             v0150: 'PostgreSQL foundation 正式落地：基于 Linux/manylinux 验证链，把 Linux amd64 的 `deltascope`、`deltascope-server`、`deltascope-mcp` 主资产收敛为 PG-capable，同时把 `deltascope-pg` 降为兼容 artifact。',
             v0141: 'HTTP 增加 capabilities 与规则目录端点，CLI 增加 password-env 与 password-file 输入，同时补齐支持版本与发布元数据。',
             v0140: '增加保守的 DML 影响范围估计，覆盖 shape-only 与 metadata-aware 审计路径，并在 CLI、HTTP、MCP 和 Go 库中暴露数量与比例阈值。',
