@@ -35,7 +35,7 @@ type Request struct {
 | Field | Required | Description |
 |-------|----------|-------------|
 | `SQL` | Yes | One or more SQL statements to audit. |
-| `Dialect` | No | `DialectMySQL`, `DialectTiDB`, or `DialectPostgreSQL`. Defaults to `DialectMySQL` when the zero value (`""`) is provided. PostgreSQL requests require a PG-capable build. On public releases, the converged `linux/amd64` main archive is PG-capable; `deltascope-pg` remains available only as a transitional CLI compatibility artifact. |
+| `Dialect` | No | `DialectMySQL`, `DialectTiDB`, or `DialectPostgreSQL`. Defaults to `DialectMySQL` when the zero value (`""`) is provided. PostgreSQL requests require a PG-capable build. Starting with the `v0.17.0` public release line, the supported macOS and Linux main archives are PG-capable, so PostgreSQL offline API usage follows the same main product path as MySQL and TiDB. A legacy `deltascope-pg` compatibility download may remain available during the transition for older CLI-only workflows. |
 | `ConfigPath` | No | Path to a YAML policy config file. When empty, the built-in default policy is used. |
 | `Schema` | No | Default schema name used to resolve unqualified table references during metadata enrichment. |
 | `MetadataProvider` | No | Supplies live instance facts and table snapshots. When `nil`, the audit runs in offline mode. |

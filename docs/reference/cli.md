@@ -13,7 +13,7 @@ These flags apply to all subcommands.
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--config` | string | (none) | Path to YAML policy config file. When omitted, `policy.Default()` is used. |
-| `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable DeltaScope binary. On public releases, the converged Linux amd64 `deltascope` archive is PG-capable; `deltascope-pg` remains as a compatibility alias for that same offline CLI surface. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
+| `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable DeltaScope binary. Starting with the `v0.17.0` public release line, the supported macOS and Linux `deltascope` archives are PG-capable, so PostgreSQL offline audit uses the normal main CLI path. A legacy `deltascope-pg` download may remain available during the transition for older CLI-only workflows. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
 | `--format` | string | `markdown` | Output format: `markdown` (human-readable) or `json` (stable machine-readable contract). |
 | `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |

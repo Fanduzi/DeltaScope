@@ -11,7 +11,7 @@
 | 标志 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `--config` | string | （无） | YAML 策略配置文件路径。省略时使用 `policy.Default()`。 |
-| `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable DeltaScope 二进制。在公开 release 中，已收敛的 Linux amd64 `deltascope` 主 archive 直接提供该能力；`deltascope-pg` 仅作为同一离线 CLI 能力面的兼容别名保留。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
+| `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable DeltaScope 二进制。从 `v0.17.0` 公开 release 开始，受支持的 macOS 和 Linux `deltascope` 主 archive 都直接提供该能力，因此 PostgreSQL offline 审计走的就是正常主 CLI 路径。迁移期内，`deltascope-pg` 仍可能作为旧 CLI-only 工作流的兼容下载短暂保留。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
 | `--format` | string | `markdown` | 输出格式：`markdown`（人类可读）或 `json`（稳定的机器可读契约）。 |
 | `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
