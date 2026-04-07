@@ -183,6 +183,38 @@ jobs:
             dist/deltascope_${GITHUB_REF_NAME#v}_darwin_amd64_checksums.txt \
             --clobber
 
+  release-linux-arm64:
+    needs: release-linux
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Build Linux arm64 PG-capable archive
+        run: |
+          set -euo pipefail
+          make package-pg-linux-release-archive-arm64 VERSION="${GITHUB_REF_NAME}"
+
+      - name: Upload Linux arm64 PG-capable archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/deltascope_${GITHUB_REF_NAME#v}_linux_arm64.tar.gz \
+            dist/deltascope_${GITHUB_REF_NAME#v}_linux_arm64_checksums.txt \
+            --clobber
+
   publish-homebrew-cask:
     needs:
       - release-linux
@@ -227,6 +259,7 @@ jobs:
   publish-mcp-launcher-package:
     needs:
       - release-linux
+      - release-linux-arm64
       - release-macos-arm64
       - release-macos-amd64
       - publish-homebrew-cask

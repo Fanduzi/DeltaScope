@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # input: local git checkout, Docker daemon, manylinux image, and the PostgreSQL build tag
 # output: repeatable Linux PG-capable builds for the converged primary binaries plus automated glibc baseline verification
-# pos: reusable manylinux/glibc verification gate for the Linux amd64 converged release lane and transitional PG CLI artifact
+# pos: reusable manylinux/glibc verification gate for the converged Linux PG release lanes and optional transitional PG CLI artifact
 # note: if this file changes, update this header and module README.md.
 
 set -euo pipefail
@@ -11,6 +11,9 @@ BUILD_DIR="${BUILD_DIR:-bin}"
 BASELINE="${PG_GLIBC_BASELINE:-GLIBC_2.17}"
 MANYLINUX_IMAGE="${PG_MANYLINUX_IMAGE:-quay.io/pypa/manylinux2014_x86_64}"
 MANYLINUX_PLATFORM="${PG_MANYLINUX_PLATFORM:-linux/amd64}"
+TARGET_ARCH="${PG_TARGET_ARCH:-amd64}"
+GO_TARBALL_ARCH="${PG_GO_TARBALL_ARCH:-${TARGET_ARCH}}"
+TRANSITIONAL_ALIAS="${PG_TRANSITIONAL_ALIAS:-0}"
 GO_VERSION="${GO_VERSION:-$(go env GOVERSION | sed 's/^go//')}"
 
 log() {
@@ -60,33 +63,39 @@ main() {
 
   mkdir -p "${ROOT_DIR}/${BUILD_DIR}"
 
-  log "building converged Linux amd64 PG-capable binaries in ${MANYLINUX_IMAGE} (${MANYLINUX_PLATFORM})"
+  log "building converged Linux ${TARGET_ARCH} PG-capable binaries in ${MANYLINUX_IMAGE} (${MANYLINUX_PLATFORM})"
   docker run --rm \
     --platform "${MANYLINUX_PLATFORM}" \
     -v "${ROOT_DIR}:/src" \
     -w /src \
     -e GO_VERSION="${GO_VERSION}" \
     -e BUILD_DIR="${BUILD_DIR}" \
+    -e TARGET_ARCH="${TARGET_ARCH}" \
+    -e GO_TARBALL_ARCH="${GO_TARBALL_ARCH}" \
     "${MANYLINUX_IMAGE}" \
     bash -lc '
       set -euo pipefail
-      GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz"
+      GO_TARBALL="go${GO_VERSION}.linux-${GO_TARBALL_ARCH}.tar.gz"
       curl -fsSLo "/tmp/${GO_TARBALL}" "https://go.dev/dl/${GO_TARBALL}"
       rm -rf /usr/local/go
       tar -C /usr/local -xzf "/tmp/${GO_TARBALL}"
       export PATH="/usr/local/go/bin:${PATH}"
       mkdir -p "${BUILD_DIR}"
-      CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-linux-amd64-pg" ./cmd/deltascope
-      CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-server-linux-amd64-pg" ./cmd/deltascope-server
-      CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-mcp-linux-amd64-pg" ./cmd/deltascope-mcp
+      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg" ./cmd/deltascope
+      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-server-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-server
+      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-mcp-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-mcp
     '
 
-  cp "${ROOT_DIR}/${BUILD_DIR}/deltascope-linux-amd64-pg" "${ROOT_DIR}/${BUILD_DIR}/deltascope-pg-manylinux-amd64"
+  if [[ "${TRANSITIONAL_ALIAS}" = "1" ]]; then
+    cp "${ROOT_DIR}/${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg" "${ROOT_DIR}/${BUILD_DIR}/deltascope-pg-manylinux-${TARGET_ARCH}"
+  fi
 
-  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-linux-amd64-pg"
-  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-server-linux-amd64-pg"
-  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-mcp-linux-amd64-pg"
-  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-pg-manylinux-amd64"
+  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg"
+  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-server-linux-${TARGET_ARCH}-pg"
+  verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-mcp-linux-${TARGET_ARCH}-pg"
+  if [[ "${TRANSITIONAL_ALIAS}" = "1" ]]; then
+    verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-pg-manylinux-${TARGET_ARCH}"
+  fi
 }
 
 main "$@"

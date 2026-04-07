@@ -13,6 +13,7 @@ BINARIES="${DELTASCOPE_BINARIES:-}"
 INSTALL_DIR_SET="${DELTASCOPE_INSTALL_DIR:+1}"
 BINARIES_SET="${DELTASCOPE_BINARIES:+1}"
 PG_CAPABLE_LINUX_AMD64_VERSION="v0.16.3"
+PG_CAPABLE_LINUX_ARM64_VERSION="v0.17.0"
 PG_CAPABLE_DARWIN_VERSION="v0.17.0"
 
 log() {
@@ -149,6 +150,9 @@ supports_mcp_binary() {
 
 supports_pg_capable_main_archive() {
   if [ "${OS}" = "linux" ] && [ "${ARCH}" = "amd64" ] && version_gte "${VERSION}" "${PG_CAPABLE_LINUX_AMD64_VERSION}"; then
+    return 0
+  fi
+  if [ "${OS}" = "linux" ] && [ "${ARCH}" = "arm64" ] && version_gte "${VERSION}" "${PG_CAPABLE_LINUX_ARM64_VERSION}"; then
     return 0
   fi
   [ "${OS}" = "darwin" ] && version_gte "${VERSION}" "${PG_CAPABLE_DARWIN_VERSION}"

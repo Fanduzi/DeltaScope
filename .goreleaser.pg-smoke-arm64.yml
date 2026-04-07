@@ -1,52 +1,50 @@
 version: 2
-
-# Release matrix note: GoReleaser publishes the Linux amd64 PG-capable main archive. Linux arm64
-# and Darwin main archives are packaged natively in the release workflow so they can carry
-# PostgreSQL offline support without pretending Linux CGO can cross-build them. The
-# `deltascope-pg` upload remains a transitional compatibility artifact for existing Linux amd64 users.
 project_name: deltascope
 
 builds:
-  - id: deltascope-linux-amd64-pg
+  - id: deltascope-linux-arm64-pg
     binary: deltascope
     main: ./cmd/deltascope
     env:
       - CGO_ENABLED=1
     flags:
       - -tags=postgresql
+      - -buildvcs=false
     goos:
       - linux
     goarch:
-      - amd64
-  - id: deltascope-server-linux-amd64-pg
+      - arm64
+  - id: deltascope-server-linux-arm64-pg
     binary: deltascope-server
     main: ./cmd/deltascope-server
     env:
       - CGO_ENABLED=1
     flags:
       - -tags=postgresql
+      - -buildvcs=false
     goos:
       - linux
     goarch:
-      - amd64
-  - id: deltascope-mcp-linux-amd64-pg
+      - arm64
+  - id: deltascope-mcp-linux-arm64-pg
     binary: deltascope-mcp
     main: ./cmd/deltascope-mcp
     env:
       - CGO_ENABLED=1
     flags:
       - -tags=postgresql
+      - -buildvcs=false
     goos:
       - linux
     goarch:
-      - amd64
+      - arm64
 
 archives:
-  - id: default-linux-amd64-pg
+  - id: default-linux-arm64-pg
     ids:
-      - deltascope-linux-amd64-pg
-      - deltascope-server-linux-amd64-pg
-      - deltascope-mcp-linux-amd64-pg
+      - deltascope-linux-arm64-pg
+      - deltascope-server-linux-arm64-pg
+      - deltascope-mcp-linux-arm64-pg
     formats:
       - tar.gz
     name_template: "{{ .ProjectName }}_{{ .RawVersion }}_{{ .Os }}_{{ .Arch }}"
@@ -58,6 +56,3 @@ archives:
 
 checksum:
   name_template: "deltascope_{{ .RawVersion }}_checksums.txt"
-
-changelog:
-  disable: true

@@ -1,4 +1,4 @@
-.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
+.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-arm64 package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -74,7 +74,10 @@ smoke-pg-cli-linux: smoke-pg-cli
 # Phase 7 Slice 3 adds a reusable manylinux/glibc baseline gate for the only public PG v1 artifact.
 # This verifies `deltascope-pg` inside a controlled Linux container and fails if the glibc baseline drifts above the approved threshold.
 smoke-pg-cli-manylinux-baseline:
-	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=$(PG_MANYLINUX_IMAGE) PG_MANYLINUX_PLATFORM=$(PG_MANYLINUX_PLATFORM) bash ./scripts/verify_pg_manylinux_baseline.sh
+	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=$(PG_MANYLINUX_IMAGE) PG_MANYLINUX_PLATFORM=$(PG_MANYLINUX_PLATFORM) PG_TARGET_ARCH=amd64 PG_GO_TARBALL_ARCH=amd64 PG_TRANSITIONAL_ALIAS=1 bash ./scripts/verify_pg_manylinux_baseline.sh
+
+smoke-pg-cli-manylinux-baseline-arm64:
+	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=quay.io/pypa/manylinux2014_aarch64 PG_MANYLINUX_PLATFORM=linux/arm64 PG_TARGET_ARCH=arm64 PG_GO_TARBALL_ARCH=arm64 PG_TRANSITIONAL_ALIAS=0 bash ./scripts/verify_pg_manylinux_baseline.sh
 
 # Release validation closure: verify the actual Linux amd64 PG GoReleaser archive inside a Linux container.
 # This keeps Linux CGO truth on the Linux/container path and avoids pretending a Darwin host can validate it.
@@ -107,6 +110,62 @@ verify-pg-linux-release-archive:
 	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
 	grep -q '^SECURITY.md$$' "$$archive_contents"; \
 	grep -q "  $$(basename "$$archive")$$" "$$checksum"
+
+verify-pg-linux-release-archive-arm64:
+	set -eu; \
+	rm -rf dist; \
+	docker run --rm \
+		--platform linux/arm64 \
+		--user "$$(id -u):$$(id -g)" \
+		-v "$$(pwd):/work" \
+		-w /work \
+		-e GO_VERSION="$(GO_VERSION)" \
+		-e HOME=/tmp/deltascope-home \
+		quay.io/pypa/manylinux2014_aarch64 \
+		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin; GO_TARBALL="go$${GO_VERSION}.linux-arm64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke-arm64.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
+	archive="$$(ls dist/deltascope_*_linux_arm64.tar.gz | head -n 1)"; \
+	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
+	archive_contents="$$(mktemp)"; \
+	trap 'rm -f "$$archive_contents"' EXIT; \
+	test -n "$$archive"; \
+	test -n "$$checksum"; \
+	test -f "$$archive"; \
+	test -f "$$checksum"; \
+	tar -tzf "$$archive" > "$$archive_contents"; \
+	grep -q '^deltascope$$' "$$archive_contents"; \
+	grep -q '^deltascope-server$$' "$$archive_contents"; \
+	grep -q '^deltascope-mcp$$' "$$archive_contents"; \
+	grep -q '^README.md$$' "$$archive_contents"; \
+	grep -q '^README_ZH.md$$' "$$archive_contents"; \
+	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
+	grep -q '^SECURITY.md$$' "$$archive_contents"; \
+	grep -q "  $$(basename "$$archive")$$" "$$checksum"
+
+package-pg-linux-release-archive-arm64:
+	set -eu; \
+	host_worktree="$$(pwd)"; \
+	rm -rf dist; \
+	mkdir -p dist; \
+	docker run --rm \
+		--platform linux/arm64 \
+		--user "$$(id -u):$$(id -g)" \
+		-v "$$host_worktree:/work" \
+		-v "$$host_worktree/dist:/out" \
+		-w /work \
+		-e GO_VERSION="$(GO_VERSION)" \
+		-e RELEASE_VERSION="$(VERSION)" \
+		-e HOME=/tmp/deltascope-home \
+		quay.io/pypa/manylinux2014_aarch64 \
+		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin /tmp/release-src; GO_TARBALL="go$${GO_VERSION}.linux-arm64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; tar --exclude=.git -C /work -cf - . | tar -C /tmp/release-src -xf -; cd /tmp/release-src; git init -q; git config user.name "release-bot"; git config user.email "release-bot@example.com"; git remote add origin https://github.com/Fanduzi/DeltaScope.git; git add .; git commit -qm "release snapshot"; git tag "$$RELEASE_VERSION"; goreleaser release --config .goreleaser.pg-smoke-arm64.yml --clean --skip=publish --skip=announce --skip=sign --skip=sbom; cp dist/deltascope_*_linux_arm64.tar.gz /out/; cp dist/deltascope_*_checksums.txt /out/'; \
+	archive="$$(ls dist/deltascope_*_linux_arm64.tar.gz | head -n 1)"; \
+	archive_base="$$(basename "$$archive")"; \
+	prefix="$${archive_base%_linux_arm64.tar.gz}"; \
+	generic_checksum="dist/$${prefix}_checksums.txt"; \
+	platform_checksum="dist/$${prefix}_linux_arm64_checksums.txt"; \
+	test -f "$$archive"; \
+	test -f "$$generic_checksum"; \
+	mv "$$generic_checksum" "$$platform_checksum"; \
+	grep -q "  $${archive_base}$$" "$$platform_checksum"
 
 # Phase 7 Slice 4 packages only the approved public PG v1 artifact after the manylinux/glibc gate passes.
 # `deltascope-server-pg` and `deltascope-mcp-pg` are intentionally excluded from this public release path.

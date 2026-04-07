@@ -132,3 +132,23 @@ jobs:
 
       - name: Verify converged Linux amd64 PG release archive shape
         run: make verify-pg-linux-release-archive
+
+  linux-arm64-pg-manylinux-baseline:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Verify manylinux glibc baseline for converged Linux arm64 binaries
+        run: make smoke-pg-cli-manylinux-baseline-arm64
+
+      - name: Verify converged Linux arm64 PG release archive shape
+        run: make verify-pg-linux-release-archive-arm64
