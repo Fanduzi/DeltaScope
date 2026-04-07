@@ -4,7 +4,7 @@ Release date: 2026-04-06
 
 ## Overview
 
-DeltaScope `v0.15.0` is the PostgreSQL foundation release. It extends DeltaScope from a MySQL/TiDB-only audit story into a multi-dialect product with a dedicated PostgreSQL-capable CLI path, while keeping the existing core release contract stable.
+DeltaScope `v0.15.0` is the PostgreSQL foundation release. It extends DeltaScope from a MySQL/TiDB-only audit story into a multi-dialect product, and converges the public Linux amd64 main assets onto PG-capable `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries for PostgreSQL offline audit while keeping the broader release matrix honest per platform.
 
 ## What's Changed
 
@@ -17,15 +17,15 @@ This release adds the first production PostgreSQL foundation path across the aud
 - PostgreSQL-aware DDL rule registration and semantic checks
 - CLI, Go API, and audit-surface capability exposure for PG-capable builds
 
-The current PostgreSQL contract is intentionally narrow and explicit: it is an offline-first, CLI-first foundation rather than a full parity release across every existing product surface.
+The current PostgreSQL contract is intentionally narrow and explicit: PostgreSQL support is offline-first, and public release convergence currently applies to the Linux amd64 main assets only rather than every published platform.
 
-### Dedicated Public PG Artifact
+### Public Release Shape
 
-PostgreSQL is published through a dedicated public v1 artifact:
+PostgreSQL offline support is now published on the Linux amd64 main release assets:
 
-- `deltascope-pg_<version>_linux_amd64.tar.gz`
+- `deltascope_<version>_linux_amd64.tar.gz`
 
-This archive contains the PG-capable CLI only. It does **not** publish `deltascope-server-pg` or `deltascope-mcp-pg`, and it does not change the existing installer, Homebrew Cask, or npm MCP launcher contract for the core DeltaScope binaries.
+That main archive contains PG-capable `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. `deltascope-pg_<version>_linux_amd64.tar.gz` remains available only as a transitional CLI compatibility artifact, and does not redefine the main product surface.
 
 ### Linux Release Validation For PG
 
@@ -35,9 +35,10 @@ The PostgreSQL release path now includes layered validation:
 - Linux/Ubuntu smoke
 - manylinux2014 build validation
 - glibc baseline gate
-- dedicated packaging and upload wiring for `deltascope-pg`
+- main Linux amd64 PG archive shape verification
+- transitional `deltascope-pg` compatibility packaging and upload wiring
 
-This keeps the PG release boundary auditable without expanding the core pure-Go release path.
+This keeps the PG release boundary auditable while letting the Linux amd64 main assets carry the converged PostgreSQL offline story.
 
 ### Post-Milestone Correctness And Test Cleanup
 
@@ -58,10 +59,10 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.
   DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
-**PostgreSQL-capable CLI:**
+**PostgreSQL offline support:**
 
-Download `deltascope-pg_0.15.0_linux_amd64.tar.gz` from the GitHub Release assets when you need PostgreSQL offline audit support.
+On `linux/amd64`, install the normal DeltaScope release and use the main archive binaries for PostgreSQL offline audit. `deltascope-pg_0.15.0_linux_amd64.tar.gz` remains available only for transitional CLI compatibility workflows.
 
 ## Compatibility
 
-No breaking changes to the existing MySQL/TiDB core surfaces. `v0.15.0` adds PostgreSQL foundation support through a dedicated PG-capable CLI artifact and additive public API routing. `drop_primary_key` remains deferred until DeltaScope has a metadata-aware PostgreSQL constraint-classification path.
+No breaking changes to the existing MySQL/TiDB core surfaces. `v0.15.0` adds PostgreSQL foundation support through the converged Linux amd64 main assets plus additive public API routing, while retaining `deltascope-pg` only as a transitional CLI compatibility artifact. `drop_primary_key` remains deferred until DeltaScope has a metadata-aware PostgreSQL constraint-classification path.

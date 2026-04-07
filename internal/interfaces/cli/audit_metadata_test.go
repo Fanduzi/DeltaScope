@@ -206,6 +206,35 @@ func TestAuditCommandRejectsDialectMismatchInMetadataMode(t *testing.T) {
 	}
 }
 
+func TestAuditCommandRejectsPostgreSQLMetadataAwareMode(t *testing.T) {
+	previous := newMetadataClient
+	opened := false
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		opened = true
+		return &fakeMetadataClient{detectDialect: spec.DialectMySQL}, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "select 1", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(strings.ToLower(stderr.String()), "offline") || !strings.Contains(strings.ToLower(stderr.String()), "postgresql") {
+		t.Fatalf("expected explicit postgresql offline-only guidance, got %q", stderr.String())
+	}
+	if opened {
+		t.Fatalf("did not expect metadata client to open for postgresql metadata-aware request")
+	}
+}
+
 func TestAuditCommandUsesQualifiedSchemaWithoutInference(t *testing.T) {
 	previous := newMetadataClient
 	client := &fakeMetadataClient{

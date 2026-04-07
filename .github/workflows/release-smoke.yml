@@ -67,6 +67,9 @@ jobs:
       - name: Verify Linux PG CLI smoke lane
         run: make smoke-pg-cli-linux
 
+      - name: Verify tagged PostgreSQL HTTP and MCP surfaces
+        run: CGO_ENABLED=1 go test -tags postgresql ./internal/interfaces/http ./internal/interfaces/mcp
+
   linux-pg-manylinux-baseline:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -81,14 +84,16 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
-      - name: Verify manylinux glibc baseline for deltascope-pg
+      - name: Verify manylinux glibc baseline for converged Linux amd64 binaries
         run: make smoke-pg-cli-manylinux-baseline
 
-      - name: Verify public PG CLI release package shape
+      - name: Verify transitional PG CLI release package shape
         run: |
           set -euo pipefail
           make package-pg-cli-release VERSION=v0.0.0-dev
-          test -f dist/deltascope-pg_v0.0.0-dev_linux_amd64.tar.gz
-          test -f dist/deltascope-pg_v0.0.0-dev_linux_amd64_checksums.txt
-          test ! -e dist/deltascope-server-pg_v0.0.0-dev_linux_amd64.tar.gz
-          test ! -e dist/deltascope-mcp-pg_v0.0.0-dev_linux_amd64.tar.gz
+          test -f dist/deltascope-pg_0.0.0-dev_linux_amd64.tar.gz
+          test -f dist/deltascope-pg_0.0.0-dev_linux_amd64_checksums.txt
+          tar -tzf dist/deltascope-pg_0.0.0-dev_linux_amd64.tar.gz | grep -q '^deltascope-pg$'
+
+      - name: Verify converged Linux amd64 PG release archive shape
+        run: make verify-pg-linux-release-archive

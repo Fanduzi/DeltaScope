@@ -220,6 +220,20 @@ func TestHandlerCapabilitiesReturnsSurfaceSummary(t *testing.T) {
 			t.Fatalf("expected endpoint %q in capabilities payload, got %#v", endpoint, endpoints)
 		}
 	}
+	dialects, ok := payload["dialects"].([]any)
+	if !ok {
+		t.Fatalf("expected dialects array, got %#v", payload["dialects"])
+	}
+	foundPostgreSQL := false
+	for _, item := range dialects {
+		if item == "postgresql" {
+			foundPostgreSQL = true
+			break
+		}
+	}
+	if !foundPostgreSQL {
+		t.Fatalf("expected capabilities payload to include postgresql, got %#v", dialects)
+	}
 }
 
 func TestHandlerAuditReturnsJSONResult(t *testing.T) {
@@ -332,6 +346,51 @@ func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T
 	}
 	if contextValue["metadata_source"] != "direct" {
 		t.Fatalf("expected direct metadata source, got %#v", contextValue["metadata_source"])
+	}
+}
+
+func TestHandlerAuditAcceptsPostgreSQLOfflineRequests(t *testing.T) {
+	var captured deltascope.Request
+
+	handler, err := NewHandler("", "test-build", WithAuditFunc(func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
+		captured = request
+		return deltascope.Result{Verdict: deltascope.VerdictPass}, nil
+	}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"drop index idx_name;","dialect":"postgresql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if captured.Dialect != deltascope.DialectPostgreSQL {
+		t.Fatalf("expected postgresql dialect in public audit request, got %#v", captured.Dialect)
+	}
+	if captured.MetadataProvider != nil {
+		t.Fatalf("expected offline postgresql request to avoid metadata provider")
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	contextValue, ok := payload["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", payload["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
+	}
+	if contextValue["dialect"] != "postgresql" {
+		t.Fatalf("expected postgresql dialect in context, got %#v", contextValue["dialect"])
+	}
+	if contextValue["metadata_source"] != "none" {
+		t.Fatalf("expected metadata source none, got %#v", contextValue["metadata_source"])
 	}
 }
 

@@ -8,6 +8,16 @@ This package does not implement DeltaScope MCP tools itself. It downloads the ma
 
 The launcher verifies the downloaded archive against the official DeltaScope release checksums before it updates the local cache.
 
+## Supported Audit Surface
+
+The launched `deltascope-mcp` server exposes a unified `audit_sql` surface for:
+
+- MySQL offline audit
+- TiDB offline audit
+- PostgreSQL offline audit on PG-capable release binaries
+
+Connection-backed metadata-aware audit remains limited to MySQL/TiDB-compatible instances. PostgreSQL requests must stay offline-only on the MCP surface.
+
 ## Version Contract
 
 - npm package version should track the DeltaScope release version it boots

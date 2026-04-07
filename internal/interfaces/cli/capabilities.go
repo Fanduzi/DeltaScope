@@ -28,9 +28,17 @@ func newCapabilitiesCmd(exitCode *int) *cobra.Command {
 }
 
 func renderCapabilities() string {
+	buildNoteSection := ""
+	if note := capabilityBuildNote(); note != "" {
+		buildNoteSection = fmt.Sprintf("\nbuild notes:\n- %s\n", note)
+	}
+
 	return fmt.Sprintf(`deltascope capabilities
 
-dialects:
+available in this build:
+%s
+
+product dialects:
 %s
 
 inputs:
@@ -57,11 +65,11 @@ surfaces:
 - http
 - mcp
 - go-api
-`, renderCapabilityDialects())
+%s`, renderCapabilityDialects(supportedDialects()), renderCapabilityDialects(productDialects()), buildNoteSection)
 }
 
-func renderCapabilityDialects() string {
-	return strings.Join(prefixedLines("- ", supportedDialects()), "\n")
+func renderCapabilityDialects(values []string) string {
+	return strings.Join(prefixedLines("- ", values), "\n")
 }
 
 func prefixedLines(prefix string, values []string) []string {

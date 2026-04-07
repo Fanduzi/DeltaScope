@@ -14,7 +14,10 @@ func TestParseReturnsUnsupportedErrorForPostgreSQLWithoutBuildTag(t *testing.T) 
 	if err == nil {
 		t.Fatal("expected unsupported postgresql error")
 	}
-	if !strings.Contains(err.Error(), "PG-capable build") {
-		t.Fatalf("expected PG-capable build error message, got %v", err)
+	if !strings.Contains(err.Error(), "PG-capable DeltaScope build") {
+		t.Fatalf("expected unified PG-capable build guidance, got %v", err)
+	}
+	if strings.Contains(err.Error(), "deltascope-pg") {
+		t.Fatalf("did not expect legacy deltascope-pg guidance, got %v", err)
 	}
 }

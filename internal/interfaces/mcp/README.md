@@ -26,8 +26,9 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 ## Notes
 
 - The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, metadata-preparation, and direct-connection helper logic.
-- The current scope supports stdio MCP bootstrap, offline audit, metadata-aware audit context, and rule-discovery tools.
-- `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, audit result fields, connection inputs, and stable structured error codes.
+- The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances.
+- PostgreSQL is intentionally offline-only on this surface; connection-backed MCP audit requests must return an explicit unsupported error rather than silently downgrading.
+- `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, dialect support, audit result fields, connection inputs, and stable structured error codes.
 
 ## Dependencies
 

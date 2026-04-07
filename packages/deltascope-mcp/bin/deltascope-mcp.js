@@ -4,37 +4,39 @@ import fs from "node:fs/promises";
 import process from "node:process";
 
 import { downloadAndExtractBinary } from "../lib/download.js";
-import { ensureExecutable, formatBootstrapContext, spawnBinary } from "../lib/launcher.js";
+import {
+  ensureExecutable,
+  formatBootstrapContext,
+  spawnBinary,
+} from "../lib/launcher.js";
 import {
   resolveArchiveName,
   resolveArchiveURL,
   resolveChecksumsURL,
   resolveDeltaScopeVersion,
-  resolvePlatform
+  resolvePlatform,
 } from "../lib/releases.js";
 
 const packageJson = JSON.parse(
-  await fs.readFile(new URL("../package.json", import.meta.url), "utf8")
+  await fs.readFile(new URL("../package.json", import.meta.url), "utf8"),
 );
 const version = resolveDeltaScopeVersion({
   packageVersion: packageJson.version,
-  envVersion: process.env.DELTASCOPE_MCP_VERSION ?? ""
+  envVersion: process.env.DELTASCOPE_MCP_VERSION ?? "",
 });
 const platform = resolvePlatform();
 const archiveURL = resolveArchiveURL({
   baseURL: process.env.DELTASCOPE_MCP_BASE_URL ?? "",
   version,
   os: platform.os,
-  arch: platform.arch
+  arch: platform.arch,
 });
 const archiveName = resolveArchiveName({
   version,
   os: platform.os,
-  arch: platform.arch
+  arch: platform.arch,
 });
-const checksumsURL = resolveChecksumsURL({
-  version
-});
+const checksumsURL = resolveChecksumsURL({ version });
 
 function log(message) {
   process.stderr.write(`[deltascope-mcp-launcher] ${message}\n`);
@@ -58,27 +60,31 @@ const binaryPath = await ensureExecutable({
           archiveURL,
           checksumsURL,
           archiveName,
-          destinationPath
+          destinationPath,
         });
-        log(`downloaded archive and staged native binary for ${destinationPath}`);
+        log(
+          `downloaded archive and staged native binary for ${destinationPath}`,
+        );
         return result;
       } catch (error) {
-        process.stderr.write(`${formatBootstrapContext({
-          version,
-          platform,
-          archiveURL,
-          destinationPath
-        })}\n`);
+        process.stderr.write(
+          `${formatBootstrapContext({
+            version,
+            platform,
+            archiveURL,
+            destinationPath,
+          })}\n`,
+        );
         throw error;
       }
-    })()
+    })(),
 });
 
 log(`launching native binary ${binaryPath}`);
 
 const child = spawnBinary(binaryPath, process.argv.slice(2), {
   stdio: "inherit",
-  env: process.env
+  env: process.env,
 });
 
 child.on("error", (error) => {

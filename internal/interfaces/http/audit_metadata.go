@@ -103,6 +103,9 @@ func executeMetadataAwareAudit(
 		requestedDialect = strings.TrimSpace(request.Connection.Dialect)
 	}
 	requestedPublicDialect, _ := resolveHTTPAuditDialect(requestedDialect)
+	if requestedPublicDialect == deltascope.DialectPostgreSQL {
+		return auditResponse{}, fmt.Errorf("PostgreSQL metadata-aware audit is not yet supported; use offline mode without connection inputs")
+	}
 	schema, schemaSource := resolveRequestSchema(request)
 
 	prepared, err := prepareHTTPMetadataAudit(ctx, auditmeta.Request{
@@ -194,6 +197,8 @@ func resolveHTTPAuditDialect(raw string) (deltascope.Dialect, string) {
 		return deltascope.DialectMySQL, "request"
 	case "tidb":
 		return deltascope.DialectTiDB, "request"
+	case "postgresql":
+		return deltascope.DialectPostgreSQL, "request"
 	default:
 		return deltascope.Dialect(strings.ToLower(strings.TrimSpace(raw))), "request"
 	}

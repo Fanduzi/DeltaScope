@@ -14,7 +14,8 @@ make build-mcp
 
 `make build` produces `bin/deltascope`, `bin/deltascope-server`, and `bin/deltascope-mcp`.
 `make build-linux` produces `bin/deltascope-linux-amd64`, `bin/deltascope-server-linux-amd64`, and `bin/deltascope-mcp-linux-amd64`.
-Both targets now build with `CGO_ENABLED=0` by default so local artifacts match the release pipeline's portable Linux binaries.
+Local `make build` now produces PostgreSQL-capable `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries by building with `CGO_ENABLED=1` and `-tags postgresql`.
+`make build-linux` remains on the portable `CGO_ENABLED=0` path until the public release matrix converges on unified PostgreSQL-capable artifacts.
 
 ## Metadata E2E
 

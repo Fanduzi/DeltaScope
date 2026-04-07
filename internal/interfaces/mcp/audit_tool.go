@@ -60,6 +60,8 @@ func resolvePublicDialect(raw string) (publicapi.Dialect, string) {
 		return publicapi.DialectMySQL, "request"
 	case "tidb":
 		return publicapi.DialectTiDB, "request"
+	case "postgresql":
+		return publicapi.DialectPostgreSQL, "request"
 	default:
 		return publicapi.Dialect(strings.ToLower(strings.TrimSpace(raw))), "request"
 	}
@@ -89,6 +91,10 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 	requestedDialect := strings.TrimSpace(input.Dialect)
 	if requestedDialect == "" {
 		requestedDialect = strings.TrimSpace(connection.Dialect)
+	}
+	if strings.EqualFold(strings.TrimSpace(requestedDialect), string(publicapi.DialectPostgreSQL)) {
+		toolResult, toolErr := toolError("bad_request", "PostgreSQL metadata-aware audit is not yet supported; use offline mode without connection inputs")
+		return toolResult, nil, toolErr
 	}
 	if err := validateSupportedAuditDialect(requestedDialect); err != nil {
 		toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())

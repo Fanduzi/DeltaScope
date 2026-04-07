@@ -9,6 +9,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -226,6 +227,37 @@ func TestExecuteAuditRequestUsesConfigSnapshotForMetadataAwareAudit(t *testing.T
 	}
 	if _, err := os.Stat(capturedConfigPath); !os.IsNotExist(err) {
 		t.Fatalf("expected config snapshot cleanup, got err=%v", err)
+	}
+}
+
+func TestExecuteAuditRequestRejectsPostgreSQLMetadataAwareMode(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	called := false
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		called = true
+		return nil, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "select 1",
+		Dialect: deltascope.DialectPostgreSQL,
+		Connection: &ifaceconn.ConnectionInput{
+			Host: "127.0.0.1",
+			User: "root",
+		},
+	}, "", func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
+		t.Fatalf("auditFn should not be called for unsupported postgresql metadata-aware request")
+		return deltascope.Result{}, nil
+	})
+	if err == nil {
+		t.Fatalf("expected postgresql metadata-aware unsupported error")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "postgresql") || !strings.Contains(strings.ToLower(err.Error()), "offline") {
+		t.Fatalf("expected explicit postgresql offline-only error, got %v", err)
+	}
+	if called {
+		t.Fatalf("did not expect prepareHTTPMetadataAudit to be called")
 	}
 }
 

@@ -35,7 +35,7 @@ type Request struct {
 | 字段 | 必填 | 说明 |
 |------|------|------|
 | `SQL` | 是 | 待审计的一条或多条 SQL 语句。 |
-| `Dialect` | 否 | `DialectMySQL`、`DialectTiDB` 或 `DialectPostgreSQL`。传入零值（`""`）时默认为 `DialectMySQL`。PostgreSQL 请求需要使用 PG-capable 构建（例如通过 `-tags postgresql` 构建，或使用 `deltascope-pg`）。 |
+| `Dialect` | 否 | `DialectMySQL`、`DialectTiDB` 或 `DialectPostgreSQL`。传入零值（`""`）时默认为 `DialectMySQL`。PostgreSQL 请求需要使用 PG-capable 构建。在公开 release 中，已收敛的 `linux/amd64` 主 archive 已直接提供该能力；`deltascope-pg` 仅继续作为 CLI 兼容/过渡 artifact 保留。 |
 | `ConfigPath` | 否 | YAML 策略配置文件的路径。为空时使用内置默认策略。 |
 | `Schema` | 否 | 元数据增强阶段用于解析非限定表名的默认 Schema 名称。 |
 | `MetadataProvider` | 否 | 提供实时实例信息和表快照。为 `nil` 时，审计在离线模式下运行。 |

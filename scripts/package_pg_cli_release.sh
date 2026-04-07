@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# input: a verified manylinux-built deltascope-pg binary, release version, and repository docs included in public archives
-# output: stable public-release packaging for the single approved PG v1 artifact plus checksum sidecar
-# pos: Phase 7 Slice 4 packaging helper for the public deltascope-pg release path only
+# input: a verified manylinux-built PG-capable CLI compatibility binary, release version, and repository docs included in public archives
+# output: stable public-release packaging for the transitional deltascope-pg compatibility artifact plus checksum sidecar
+# pos: compatibility packaging helper for the Linux amd64 deltascope-pg transition path
 # note: if this file changes, update this header and module README.md.
 
 set -euo pipefail

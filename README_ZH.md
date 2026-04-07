@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL 和 TiDB 的离线优先 SQL 审核引擎，同时通过专用的 PG-capable CLI 构建 `deltascope-pg` 提供 PostgreSQL 支持。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。当前主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；在公开 release 中，PostgreSQL 离线支持已先在 `linux/amd64` 主 archive 上完成收敛，而其它已发布平台仍保持现有 pure-Go matrix，直到对应的 PG-capable 发布基线被验证。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -36,17 +36,17 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.
   DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
-如果你需要 PostgreSQL 离线审计，请直接下载专用的 PG-capable CLI artifact：
+如果你需要 PostgreSQL 离线审计：
 
-```bash
-curl -LO https://github.com/Fanduzi/DeltaScope/releases/download/v0.15.0/deltascope-pg_0.15.0_linux_amd64.tar.gz
-```
+- 在 `linux/amd64` 上，主 release archive 已直接提供 PG-capable 的 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。
+- `deltascope-pg_<version>_linux_amd64.tar.gz` 继续保留，但仅作为兼容/过渡下载，方便旧 CLI-only 流程迁移。
+- 其它已发布平台的主 archive 目前仍保持现有 pure-Go matrix。
 
 核心发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ### Release Contract
 
-每个 tag 都会产出核心 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。installer script、Homebrew Cask 和 npm MCP launcher 均从 GitHub Release assets 解析这些平台二进制。PostgreSQL 支持会额外以 `deltascope-pg_<version>_linux_amd64.tar.gz` 作为唯一 public PG v1 artifact 发布；其中只包含 PG-capable CLI，不会被通用 installer、Homebrew Cask 或 npm MCP launcher 自动安装。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
+每个 tag 都会产出核心 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。其中 `linux/amd64` 的主 archive 现在是 PG-capable，可在三条主二进制上提供 PostgreSQL offline；当前已发布的 `darwin/*` 和 `linux/arm64` 主 archive 仍保持 pure-Go，不提前宣传 PostgreSQL 支持。installer script 与 npm MCP launcher 都解析各平台自己的主 archive，所以 PostgreSQL 叙事按平台如实成立，而不是全平台夸大。`deltascope-pg_<version>_linux_amd64.tar.gz` 继续保留，但角色已经降为面向旧 CLI 用户的兼容/过渡 artifact，不再是主产品叙事中心。Homebrew Cask 仍与当前 macOS pure-Go archive 对齐，直到 macOS 的 PG-capable 发布基线可验证。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
 
 ## 快速开始
 

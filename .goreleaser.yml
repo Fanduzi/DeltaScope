@@ -1,11 +1,13 @@
 version: 2
 
-# Phase 7 Slice 4 note: this GoReleaser config still owns only the pure-Go public artifact set.
-# The single approved PG v1 public artifact, `deltascope-pg`, is packaged and uploaded by release workflow helper steps outside GoReleaser.
+# Release matrix note: GoReleaser now publishes a PG-capable main archive for Linux amd64,
+# where the CI manylinux/glibc gate can verify CGO output. Darwin and Linux arm64 stay on the
+# pure-Go archive path until they have an equivalent PG release baseline. The `deltascope-pg`
+# upload remains a transitional compatibility artifact for existing Linux amd64 users.
 project_name: deltascope
 
 builds:
-  - id: deltascope
+  - id: deltascope-pure
     binary: deltascope
     main: ./cmd/deltascope
     env:
@@ -16,7 +18,10 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: deltascope-server
+    ignore:
+      - goos: linux
+        goarch: amd64
+  - id: deltascope-server-pure
     binary: deltascope-server
     main: ./cmd/deltascope-server
     env:
@@ -27,7 +32,10 @@ builds:
     goarch:
       - amd64
       - arm64
-  - id: deltascope-mcp
+    ignore:
+      - goos: linux
+        goarch: amd64
+  - id: deltascope-mcp-pure
     binary: deltascope-mcp
     main: ./cmd/deltascope-mcp
     env:
@@ -38,13 +46,62 @@ builds:
     goarch:
       - amd64
       - arm64
+    ignore:
+      - goos: linux
+        goarch: amd64
+  - id: deltascope-linux-amd64-pg
+    binary: deltascope
+    main: ./cmd/deltascope
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=postgresql
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: deltascope-server-linux-amd64-pg
+    binary: deltascope-server
+    main: ./cmd/deltascope-server
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=postgresql
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: deltascope-mcp-linux-amd64-pg
+    binary: deltascope-mcp
+    main: ./cmd/deltascope-mcp
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=postgresql
+    goos:
+      - linux
+    goarch:
+      - amd64
 
 archives:
-  - id: default
+  - id: default-pure
     ids:
-      - deltascope
-      - deltascope-server
-      - deltascope-mcp
+      - deltascope-pure
+      - deltascope-server-pure
+      - deltascope-mcp-pure
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .RawVersion }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - README_ZH.md
+      - CHANGELOG.md
+      - SECURITY.md
+  - id: default-linux-amd64-pg
+    ids:
+      - deltascope-linux-amd64-pg
+      - deltascope-server-linux-amd64-pg
+      - deltascope-mcp-linux-amd64-pg
     formats:
       - tar.gz
     name_template: "{{ .ProjectName }}_{{ .RawVersion }}_{{ .Os }}_{{ .Arch }}"
@@ -60,7 +117,7 @@ checksum:
 homebrew_casks:
   - name: deltascope
     ids:
-      - default
+      - default-pure
     binaries:
       - deltascope
     repository:

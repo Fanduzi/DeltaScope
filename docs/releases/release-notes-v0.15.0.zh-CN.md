@@ -4,7 +4,7 @@
 
 ## 概览
 
-DeltaScope `v0.15.0` 是 PostgreSQL foundation 版本。它把 DeltaScope 从原先只覆盖 MySQL/TiDB 的审计产品，推进到具备专用 PostgreSQL-capable CLI 路径的多方言产品，同时保持现有核心发布契约不变。
+DeltaScope `v0.15.0` 是 PostgreSQL foundation 版本。它把 DeltaScope 从原先只覆盖 MySQL/TiDB 的审计产品，推进到多方言产品，并把公开的 Linux amd64 主资产收敛为支持 PostgreSQL offline 的 PG-capable `deltascope`、`deltascope-server` 与 `deltascope-mcp`，同时保持各平台发布矩阵的边界表述真实可验证。
 
 ## 更新内容
 
@@ -17,15 +17,15 @@ DeltaScope `v0.15.0` 是 PostgreSQL foundation 版本。它把 DeltaScope 从原
 - PostgreSQL-aware 的 DDL 规则注册与语义检查
 - 在 PG-capable 构建下暴露 CLI、Go API 和 audit surface 的 PostgreSQL 能力
 
-当前 PostgreSQL 契约是刻意收窄的：它是一个 offline-first、CLI-first 的 foundation 支持，而不是所有既有产品面都已经达成完整 parity。
+当前 PostgreSQL 契约是刻意收窄的：它保持 offline-first，公开 release 的收敛目前只覆盖 Linux amd64 主资产，而不是所有已发布平台都已完成完整 parity。
 
-### 专用 Public PG Artifact
+### Public Release Shape
 
-PostgreSQL 通过一个专用的 public v1 artifact 发布：
+PostgreSQL offline 现在直接发布在 Linux amd64 的主 release asset 上：
 
-- `deltascope-pg_<version>_linux_amd64.tar.gz`
+- `deltascope_<version>_linux_amd64.tar.gz`
 
-这个 archive 只包含 PG-capable CLI。它**不会**发布 `deltascope-server-pg` 或 `deltascope-mcp-pg`，也不会改变现有 installer、Homebrew Cask 或 npm MCP launcher 对核心 DeltaScope 二进制的安装契约。
+这个主 archive 内包含 PG-capable 的 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。`deltascope-pg_<version>_linux_amd64.tar.gz` 继续保留，但只作为 CLI 兼容/过渡 artifact，不再重新定义主产品面。
 
 ### 面向 PG 的 Linux 发布验证
 
@@ -35,9 +35,10 @@ PostgreSQL 发布路径现在具备分层验证：
 - Linux/Ubuntu smoke
 - manylinux2014 构建验证
 - glibc baseline gate
-- 针对 `deltascope-pg` 的专用打包与上传接线
+- Linux amd64 主 PG archive 形状验证
+- 过渡 `deltascope-pg` 兼容 artifact 的打包与上传接线
 
-这样可以在不扩张现有 pure-Go 发布路径的前提下，把 PG 发布边界保持为可审计状态。
+这样可以把 PG 发布边界保持为可审计状态，同时让 Linux amd64 主资产承担已经收敛的 PostgreSQL offline 叙事。
 
 ### 里程碑后正确性与测试清理
 
@@ -58,10 +59,10 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.15.0/install.
   DELTASCOPE_VERSION=v0.15.0 sh
 ```
 
-**PostgreSQL-capable CLI：**
+**PostgreSQL 离线支持：**
 
-如果需要 PostgreSQL 离线审计支持，请从 GitHub Release assets 下载 `deltascope-pg_0.15.0_linux_amd64.tar.gz`。
+在 `linux/amd64` 上，直接安装正常的 DeltaScope release 并使用主 archive 内的二进制即可进行 PostgreSQL offline 审计。`deltascope-pg_0.15.0_linux_amd64.tar.gz` 仅继续保留给过渡中的 CLI 兼容工作流使用。
 
 ## 兼容性
 
-现有 MySQL/TiDB 核心产品面没有破坏性变更。`v0.15.0` 通过专用 PG-capable CLI artifact 和 additive public API routing 引入 PostgreSQL foundation 支持。`drop_primary_key` 仍然 deferred，等待后续 metadata-aware PostgreSQL constraint-classification 能力。
+现有 MySQL/TiDB 核心产品面没有破坏性变更。`v0.15.0` 通过已收敛的 Linux amd64 主资产和 additive public API routing 引入 PostgreSQL foundation 支持，同时把 `deltascope-pg` 保留为过渡中的 CLI 兼容 artifact。`drop_primary_key` 仍然 deferred，等待后续 metadata-aware PostgreSQL constraint-classification 能力。

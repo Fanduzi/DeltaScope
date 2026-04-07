@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestPureGoCapabilitiesOmitPostgreSQL(t *testing.T) {
+func TestPureGoCapabilitiesAdvertiseUnifiedProductSurface(t *testing.T) {
 	stdout := &strings.Builder{}
 	code := Execute(
 		context.Background(),
@@ -22,13 +22,17 @@ func TestPureGoCapabilitiesOmitPostgreSQL(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, expected := range []string{"mysql", "tidb"} {
+	for _, expected := range []string{
+		"available in this build:",
+		"product dialects:",
+		"mysql",
+		"tidb",
+		"postgresql",
+		"postgresql requires a PG-capable build",
+	} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected pure-Go capabilities output to contain %q, got %q", expected, output)
 		}
-	}
-	if strings.Contains(output, "postgresql") {
-		t.Fatalf("expected pure-Go capabilities output to omit postgresql, got %q", output)
 	}
 }
 
@@ -105,15 +109,9 @@ func TestPureGoRootHelpWordingMatchesCapabilitySurface(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, expected := range []string{"MySQL", "TiDB"} {
+	for _, expected := range []string{"MySQL", "TiDB", "PostgreSQL", "postgresql requires a PG-capable build"} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected pure-Go help output to contain %q, got %q", expected, output)
 		}
-	}
-	if strings.Contains(output, "PostgreSQL") {
-		t.Fatalf("expected pure-Go help output to omit PostgreSQL, got %q", output)
-	}
-	if strings.Contains(output, "postgresql") {
-		t.Fatalf("expected pure-Go dialect flag help to omit postgresql, got %q", output)
 	}
 }

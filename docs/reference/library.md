@@ -35,7 +35,7 @@ type Request struct {
 | Field | Required | Description |
 |-------|----------|-------------|
 | `SQL` | Yes | One or more SQL statements to audit. |
-| `Dialect` | No | `DialectMySQL`, `DialectTiDB`, or `DialectPostgreSQL`. Defaults to `DialectMySQL` when the zero value (`""`) is provided. PostgreSQL requests require a PG-capable build (for example, building with `-tags postgresql` or using `deltascope-pg`). |
+| `Dialect` | No | `DialectMySQL`, `DialectTiDB`, or `DialectPostgreSQL`. Defaults to `DialectMySQL` when the zero value (`""`) is provided. PostgreSQL requests require a PG-capable build. On public releases, the converged `linux/amd64` main archive is PG-capable; `deltascope-pg` remains available only as a transitional CLI compatibility artifact. |
 | `ConfigPath` | No | Path to a YAML policy config file. When empty, the built-in default policy is used. |
 | `Schema` | No | Default schema name used to resolve unqualified table references during metadata enrichment. |
 | `MetadataProvider` | No | Supplies live instance facts and table snapshots. When `nil`, the audit runs in offline mode. |
@@ -383,7 +383,7 @@ case deltascope.VerdictPass:
 | Condition | Cause |
 |-----------|-------|
 | Empty SQL | `Request.SQL` is an empty string |
-| Unknown dialect | `Request.Dialect` is not `"mysql"` or `"tidb"` |
+| Unknown dialect | `Request.Dialect` is not `"mysql"`, `"tidb"`, or `"postgresql"` |
 | Config load failure | `Request.ConfigPath` points to a file that cannot be read or contains invalid YAML |
 
 These error conditions correspond to CLI exit code `2`. Runtime or internal failures correspond to exit code `3`.

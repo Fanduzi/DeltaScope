@@ -22,10 +22,13 @@ func TestTaggedCapabilitiesIncludePostgreSQL(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, expected := range []string{"mysql", "tidb", "postgresql"} {
+	for _, expected := range []string{"available in this build:", "product dialects:", "mysql", "tidb", "postgresql"} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected tagged capabilities output to contain %q, got %q", expected, output)
 		}
+	}
+	if strings.Contains(output, "requires a PG-capable build") {
+		t.Fatalf("did not expect tagged capabilities output to mention PG-capable build, got %q", output)
 	}
 }
 
@@ -97,5 +100,8 @@ func TestTaggedRootHelpWordingMatchesCapabilitySurface(t *testing.T) {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected tagged help output to contain %q, got %q", expected, output)
 		}
+	}
+	if strings.Contains(output, "requires a PG-capable build") {
+		t.Fatalf("did not expect tagged help output to mention PG-capable build, got %q", output)
 	}
 }

@@ -1,0 +1,55 @@
+version: 2
+project_name: deltascope
+
+builds:
+  - id: deltascope-linux-amd64-pg
+    binary: deltascope
+    main: ./cmd/deltascope
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=postgresql
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: deltascope-server-linux-amd64-pg
+    binary: deltascope-server
+    main: ./cmd/deltascope-server
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=postgresql
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: deltascope-mcp-linux-amd64-pg
+    binary: deltascope-mcp
+    main: ./cmd/deltascope-mcp
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -tags=postgresql
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+archives:
+  - id: default-linux-amd64-pg
+    ids:
+      - deltascope-linux-amd64-pg
+      - deltascope-server-linux-amd64-pg
+      - deltascope-mcp-linux-amd64-pg
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .RawVersion }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - README_ZH.md
+      - CHANGELOG.md
+      - SECURITY.md
+
+checksum:
+  name_template: "deltascope_{{ .RawVersion }}_checksums.txt"

@@ -69,6 +69,10 @@ func (c mysqlMetadataClient) Close() error {
 }
 
 func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) (metadataClient, spec.Dialect, string, *auditRunContext, error) {
+	if requestedDialect == spec.DialectPostgreSQL {
+		return nil, "", "", nil, newUserError("PostgreSQL metadata-aware audit is not yet supported; use offline mode without connection flags")
+	}
+
 	prepared, err := auditmeta.Prepare(ctx, auditmeta.Request{
 		SQL:                  sqlText,
 		Connection:           toAuditMetaConnection(options),

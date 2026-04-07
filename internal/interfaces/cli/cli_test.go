@@ -910,7 +910,15 @@ func TestAuditHelpIncludesOfflineAndMetadataAwareExamples(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, expected := range []string{"Offline example", "Metadata-aware example", "--host", "--ask-password", "--schema"} {
+	for _, expected := range []string{
+		"Offline example",
+		"Metadata-aware example",
+		"--host",
+		"--ask-password",
+		"--schema",
+		"PostgreSQL is currently offline-only",
+		"MySQL/TiDB-compatible instances",
+	} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected help output to contain %q, got %q", expected, output)
 		}

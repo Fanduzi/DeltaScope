@@ -1,7 +1,11 @@
 import os from "node:os";
 
-export function resolvePlatform({ platform = os.platform(), arch = os.arch() } = {}) {
-  const resolvedPlatform = platform === "darwin" || platform === "linux" ? platform : null;
+export function resolvePlatform({
+  platform = os.platform(),
+  arch = os.arch(),
+} = {}) {
+  const resolvedPlatform =
+    platform === "darwin" || platform === "linux" ? platform : null;
   if (resolvedPlatform === null) {
     throw new Error(`unsupported platform: ${platform}`);
   }
@@ -40,10 +44,16 @@ export function resolveArchiveName({ version, os, arch }) {
 }
 
 export function resolveChecksumsName({ version }) {
-  return `deltascope_${version.replace(/^v/, "")}_checksums.txt`;
+  const rawVersion = version.replace(/^v/, "");
+  return `deltascope_${rawVersion}_checksums.txt`;
 }
 
-export function resolveArchiveURL({ repo = "Fanduzi/DeltaScope", version, os, arch }) {
+export function resolveArchiveURL({
+  repo = "Fanduzi/DeltaScope",
+  version,
+  os,
+  arch,
+}) {
   const baseURL = arguments[0].baseURL ?? "";
   if (baseURL) {
     return `${baseURL.replace(/\/$/, "")}/${version}/${resolveArchiveName({ version, os, arch })}`;

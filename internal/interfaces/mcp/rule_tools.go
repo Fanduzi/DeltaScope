@@ -91,7 +91,7 @@ func capabilitiesPayload(connectionsPath string) capabilitiesResponse {
 			"get_capabilities",
 		},
 		AuditModes: []string{"offline", "metadata-aware"},
-		Dialects:   []string{"mysql", "tidb"},
+		Dialects:   []string{"mysql", "tidb", "postgresql"},
 		TopLevelInputs: []string{
 			"sql",
 			"dialect",
@@ -110,7 +110,7 @@ func capabilitiesPayload(connectionsPath string) capabilitiesResponse {
 			"connection.password_env",
 			"connection.password_file",
 		},
-		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set"},
+		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set", "postgresql is currently offline-only; connection inputs require a MySQL/TiDB-compatible instance"},
 		ConnectionRefPath:         connectionsPath,
 		ConnectionRefOverrideFlag: "-connections-path",
 		ResultFields:              []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},

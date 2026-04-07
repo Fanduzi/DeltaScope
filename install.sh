@@ -12,6 +12,7 @@ INSTALL_DIR="${DELTASCOPE_INSTALL_DIR:-/usr/local/bin}"
 BINARIES="${DELTASCOPE_BINARIES:-}"
 INSTALL_DIR_SET="${DELTASCOPE_INSTALL_DIR:+1}"
 BINARIES_SET="${DELTASCOPE_BINARIES:+1}"
+PG_CAPABLE_LINUX_AMD64_VERSION="v0.16.0"
 
 log() {
   printf '%s\n' "$*"
@@ -145,6 +146,10 @@ supports_mcp_binary() {
   version_gte "${VERSION}" "v0.7.0"
 }
 
+supports_pg_capable_main_archive() {
+  [ "${OS}" = "linux" ] && [ "${ARCH}" = "amd64" ] && version_gte "${VERSION}" "${PG_CAPABLE_LINUX_AMD64_VERSION}"
+}
+
 prompt_binaries() {
   log "Select binaries to install:"
   log "  1) deltascope"
@@ -192,6 +197,11 @@ summarize_install() {
   log "Platform: ${OS}/${ARCH}"
   log "Binaries: ${BINARIES}"
   log "Install dir: ${INSTALL_DIR}"
+  if supports_pg_capable_main_archive; then
+    log "PostgreSQL offline: supported on this platform via the main release archive"
+  else
+    log "PostgreSQL offline: not shipped via this platform's main archive"
+  fi
 }
 
 install_one() {

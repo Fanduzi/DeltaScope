@@ -1,4 +1,4 @@
-.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
+.PHONY: test build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline verify-pg-linux-release-archive package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -6,6 +6,7 @@ PG_SMOKE_SQL ?= CREATE TABLE users (id serial primary key);
 PG_GLIBC_BASELINE ?= GLIBC_2.17
 PG_MANYLINUX_IMAGE ?= quay.io/pypa/manylinux2014_x86_64
 PG_MANYLINUX_PLATFORM ?= linux/amd64
+GO_VERSION ?= $(shell go env GOVERSION | sed 's/^go//')
 
 test:
 	go test ./...
@@ -14,18 +15,20 @@ build: build-cli build-server build-mcp
 
 build-cli:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=$(CGO_ENABLED) go build -o $(BUILD_DIR)/deltascope ./cmd/deltascope
+	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope ./cmd/deltascope
 
-# Phase 7 Slice 1 keeps the public PG artifact boundary locked to the CLI only.
-# deltascope-server-pg and deltascope-mcp-pg stay out of the public release path here.
-build-cli-pg:
-	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope-pg ./cmd/deltascope
+# Transitional Package 1.4 policy:
+# - `deltascope` is the primary PG-capable CLI entrypoint for local/unified builds.
+# - `deltascope-pg` remains as a compatibility alias while the public release/install story is still converging.
+# - deltascope-server-pg and deltascope-mcp-pg stay out of the public release path here.
+build-cli-pg: build-cli
+	cp ./$(BUILD_DIR)/deltascope ./$(BUILD_DIR)/deltascope-pg
 
 smoke-pg-cli: build-cli-pg
-	./$(BUILD_DIR)/deltascope-pg --version
-	./$(BUILD_DIR)/deltascope-pg capabilities
-	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope-pg audit --dialect postgresql --format json --fail-on none
+	./$(BUILD_DIR)/deltascope --version
+	./$(BUILD_DIR)/deltascope capabilities
+	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
+	./$(BUILD_DIR)/deltascope-pg --version >/dev/null
 
 # Phase 7 Slice 2 keeps the Linux PG smoke lane aligned with the local CLI smoke path.
 # This validates an Ubuntu/Linux CGO build environment only; it is not a manylinux/glibc release guarantee.
@@ -37,6 +40,33 @@ smoke-pg-cli-linux: smoke-pg-cli
 smoke-pg-cli-manylinux-baseline:
 	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=$(PG_MANYLINUX_IMAGE) PG_MANYLINUX_PLATFORM=$(PG_MANYLINUX_PLATFORM) bash ./scripts/verify_pg_manylinux_baseline.sh
 
+# Release validation closure: verify the actual Linux amd64 PG GoReleaser archive inside a Linux container.
+# This keeps Linux CGO truth on the Linux/container path and avoids pretending a Darwin host can validate it.
+verify-pg-linux-release-archive:
+	set -euo pipefail; \
+	rm -rf dist; \
+	docker run --rm \
+		--platform $(PG_MANYLINUX_PLATFORM) \
+		-v "$$(pwd):/work" \
+		-w /work \
+		-e GO_VERSION="$(GO_VERSION)" \
+		$(PG_MANYLINUX_IMAGE) \
+		bash -lc 'set -euo pipefail; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /usr/local/go; tar -C /usr/local -xzf "/tmp/$${GO_TARBALL}"; export PATH="/usr/local/go/bin:/root/go/bin:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
+	archive="$$(ls dist/deltascope_*_linux_amd64.tar.gz | head -n 1)"; \
+	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
+	test -n "$$archive"; \
+	test -n "$$checksum"; \
+	test -f "$$archive"; \
+	test -f "$$checksum"; \
+	tar -tzf "$$archive" | grep -q '^deltascope$$'; \
+	tar -tzf "$$archive" | grep -q '^deltascope-server$$'; \
+	tar -tzf "$$archive" | grep -q '^deltascope-mcp$$'; \
+	tar -tzf "$$archive" | grep -q '^README.md$$'; \
+	tar -tzf "$$archive" | grep -q '^README_ZH.md$$'; \
+	tar -tzf "$$archive" | grep -q '^CHANGELOG.md$$'; \
+	tar -tzf "$$archive" | grep -q '^SECURITY.md$$'; \
+	grep -q "  $$(basename "$$archive")$$" "$$checksum"
+
 # Phase 7 Slice 4 packages only the approved public PG v1 artifact after the manylinux/glibc gate passes.
 # `deltascope-server-pg` and `deltascope-mcp-pg` are intentionally excluded from this public release path.
 package-pg-cli-release: smoke-pg-cli-manylinux-baseline
@@ -44,11 +74,11 @@ package-pg-cli-release: smoke-pg-cli-manylinux-baseline
 
 build-server:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=$(CGO_ENABLED) go build -o $(BUILD_DIR)/deltascope-server ./cmd/deltascope-server
+	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope-server ./cmd/deltascope-server
 
 build-mcp:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=$(CGO_ENABLED) go build -o $(BUILD_DIR)/deltascope-mcp ./cmd/deltascope-mcp
+	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope-mcp ./cmd/deltascope-mcp
 
 build-linux:
 	mkdir -p $(BUILD_DIR)

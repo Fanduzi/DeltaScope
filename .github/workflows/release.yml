@@ -38,13 +38,16 @@ jobs:
         run: |
           set -euo pipefail
           go test ./...
-          CGO_ENABLED=1 go test -tags postgresql ./internal/application/audit ./internal/interfaces/cli ./pkg/deltascope
+          CGO_ENABLED=1 go test -tags postgresql ./internal/application/audit ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
           npm test --prefix packages/deltascope-mcp
 
       - name: Verify MCP launcher package contract
         run: |
           test "$(node -p "require('./packages/deltascope-mcp/package.json').version")" = "${GITHUB_REF_NAME#v}"
           (cd packages/deltascope-mcp && npm pack --dry-run)
+
+      - name: Verify converged Linux amd64 PG release archive shape
+        run: make verify-pg-linux-release-archive
 
       - name: Resolve release note paths
         run: |
@@ -77,7 +80,7 @@ jobs:
           version: "~> v2"
           args: check
 
-      - name: Publish pure-Go release assets
+      - name: Publish converged release assets
         uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
@@ -87,12 +90,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
 
-      - name: Build and package public PG CLI release artifact
+      - name: Build and package transitional PG CLI compatibility artifact
         run: |
           set -euo pipefail
           make package-pg-cli-release VERSION="${GITHUB_REF_NAME}"
 
-      - name: Upload public PG CLI release artifact
+      - name: Upload transitional PG CLI compatibility artifact
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

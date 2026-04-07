@@ -7,9 +7,13 @@ func supportedDialects() []string {
 }
 
 func rootCommandShort() string {
-	return "Offline SQL review for MySQL and TiDB"
+	return unifiedRootCommandShort()
 }
 
 func dialectFlagDescription() string {
-	return "SQL dialect: mysql or tidb"
+	return dialectFlagPrefix() + " (postgresql requires a PG-capable build)"
+}
+
+func capabilityBuildNote() string {
+	return "postgresql requires a PG-capable build"
 }
