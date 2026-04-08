@@ -129,6 +129,18 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.drop_not_null.explicit_nullability_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.drop_not_null.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.alter.merge.mysql.require:
     enabled: true
     level: warning
@@ -206,6 +218,36 @@ rules:
       forbid: true
 
   ddl.alter.rename_table.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.set_data_type.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.set_default.explicit_default_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.set_default.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.set_not_null.explicit_nullability_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.set_not_null.forbid:
     enabled: true
     level: blocker
     params:
@@ -630,6 +672,29 @@ rules:
     level: blocker
     params:
       forbid: true
+
+  ddl.view.drop.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  dml.impact.estimate:
+    enabled: true
+    level: notice
+    params:
+
+  dml.impact.rows.max_count:
+    enabled: true
+    level: warning
+    params:
+      limit: 1000
+
+  dml.impact.ratio.max_percent:
+    enabled: true
+    level: warning
+    params:
+      limit: 10
 
   dml.insert.on_duplicate.forbid:
     enabled: true

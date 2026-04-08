@@ -138,14 +138,16 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 			Table: &spec.Table{Name: "users"},
 			Alter: []spec.Alter{
 				{Action: "drop_index", Name: "missing_idx"},
-				{Action: "drop_primary_key"},
+				{Action: "drop_constraint", Name: "USERS_PKEY"},
 			},
 		},
 		Metadata: &spec.Metadata{
 			TargetTable: &spec.TableSnapshot{
-				Exists:  true,
-				Table:   &spec.Table{Name: "users"},
-				Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
+				Exists:      true,
+				Table:       &spec.Table{Name: "users"},
+				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
+				Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey"}},
+				Indexes:     []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
 			},
 		},
 	}
@@ -162,8 +164,97 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("evaluate primary-key rule: %v", err)
 	}
+	if len(pkFindings) != 0 {
+		t.Fatalf("expected no primary-key existence finding while primary key exists, got %d", len(pkFindings))
+	}
+
+	explicitDropPrimaryKey := statement
+	explicitDropPrimaryKey.DDL = &spec.DDL{
+		Table: &spec.Table{Name: "users"},
+		Alter: []spec.Alter{{Action: "drop_primary_key", Name: "users_pkey"}},
+	}
+	explicitDropPrimaryKey.Metadata = &spec.Metadata{
+		TargetTable: &spec.TableSnapshot{
+			Exists:  true,
+			Table:   &spec.Table{Name: "users"},
+			Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
+		},
+	}
+	pkFindings, err = pkRule.Evaluate(explicitDropPrimaryKey)
+	if err != nil {
+		t.Fatalf("evaluate explicit drop primary key rule without primary key: %v", err)
+	}
 	if len(pkFindings) != 1 {
 		t.Fatalf("expected one primary-key existence finding, got %d", len(pkFindings))
+	}
+}
+
+func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
+	indexRule, err := newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{},
+	}, alterObjectName, snapshotHasIndex)
+	if err != nil {
+		t.Fatalf("new rename-index existence rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter: []spec.Alter{{Action: "rename_index", Name: "missing_idx", Options: map[string]string{"new_name": "idx_new"}}},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists:  true,
+				Table:   &spec.Table{Name: "users"},
+				Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
+			},
+		},
+	}
+
+	findings, err := indexRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate standalone rename-index rule: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected one standalone rename-index existence finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["table"] != "users" {
+		t.Fatalf("expected snapshot table name fallback, got %#v", findings[0].Metadata)
+	}
+}
+
+func TestAlterPrimaryKeyExistenceRuleFallsBackToPrimaryKeyIndexName(t *testing.T) {
+	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("new primary-key existence rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Table: &spec.Table{Name: "users"},
+			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists:     true,
+				Table:      &spec.Table{Name: "users"},
+				PrimaryKey: &spec.Index{Name: "users_pkey", Kind: spec.IndexKindPrimary},
+			},
+		},
+	}
+
+	findings, err := pkRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate primary-key fallback rule: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no finding when fallback primary key name matches, got %d", len(findings))
 	}
 }
 

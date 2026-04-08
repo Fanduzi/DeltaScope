@@ -831,6 +831,13 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.view.drop.forbid": {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			"ddl.table.drop.forbid": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
