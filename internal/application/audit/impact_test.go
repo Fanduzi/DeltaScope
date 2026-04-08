@@ -6,6 +6,8 @@
 package audit
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -323,4 +325,198 @@ func TestAttachImpactEstimatesKeepsShapeOnlyImpactOffline(t *testing.T) {
 	if impact.EstimatedRatio == nil || *impact.EstimatedRatio != 1.0 {
 		t.Fatalf("expected full-table ratio, got %#v", impact)
 	}
+}
+
+func TestAttachImpactEstimatesUsesPlanEstimateWhenAvailable(t *testing.T) {
+	provider := &planEstimateProviderStub{
+		estimate: &spec.ImpactEstimate{
+			EstimatedRows: ptrInt64(7),
+			RiskLevel:     spec.ImpactRiskMedium,
+			Confidence:    spec.ImpactConfidenceMedium,
+			Source:        spec.ImpactSourcePlan,
+			ReasonCodes:   []string{"explain_rows"},
+		},
+	}
+	statements := []spec.Statement{{
+		Kind:   spec.KindDML,
+		RawSQL: "update users set active = false where id = 42",
+		DML: &spec.DML{
+			Operation:      spec.DMLOperationUpdate,
+			HasWhere:       true,
+			PredicateShape: spec.PredicateShapeUniqueEquality,
+		},
+	}}
+
+	statements = attachImpactEstimatesWithPlanner(context.Background(), provider, statements)
+
+	impact := statements[0].DML.Impact
+	if impact == nil {
+		t.Fatalf("expected impact estimate")
+	}
+	if impact.Source != spec.ImpactSourcePlan {
+		t.Fatalf("expected plan-backed source, got %#v", impact)
+	}
+	if impact.EstimatedRows == nil || *impact.EstimatedRows != 7 {
+		t.Fatalf("expected planner estimated rows 7, got %#v", impact)
+	}
+	if provider.calls != 1 {
+		t.Fatalf("expected one planner call, got %d", provider.calls)
+	}
+}
+
+func TestAttachImpactEstimatesPlannerEstimateCanBeRefinedWithMetadata(t *testing.T) {
+	provider := &planEstimateProviderStub{
+		estimate: &spec.ImpactEstimate{
+			EstimatedRows: ptrInt64(7),
+			RiskLevel:     spec.ImpactRiskMedium,
+			Confidence:    spec.ImpactConfidenceMedium,
+			Source:        spec.ImpactSourcePlan,
+			ReasonCodes:   []string{"explain_rows"},
+			Notes:         []string{"plain EXPLAIN planner rows estimate"},
+		},
+	}
+	statements := []spec.Statement{{
+		Kind:   spec.KindDML,
+		RawSQL: "update users set active = false where id = 42",
+		DML: &spec.DML{
+			Operation:      spec.DMLOperationUpdate,
+			HasWhere:       true,
+			PredicateShape: spec.PredicateShapeUniqueEquality,
+			LookupColumns:  []string{"id"},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists: true,
+				Table:  &spec.Table{Name: "users"},
+				PrimaryKey: &spec.Index{
+					Name:    "PRIMARY",
+					Kind:    spec.IndexKindPrimary,
+					Columns: []string{"id"},
+				},
+				Options: map[string]string{
+					"table_rows": "100",
+				},
+			},
+		},
+	}}
+
+	statements = attachImpactEstimatesWithPlanner(context.Background(), provider, statements)
+
+	impact := statements[0].DML.Impact
+	if impact == nil {
+		t.Fatalf("expected impact estimate")
+	}
+	if impact.Source != spec.ImpactSourcePlan {
+		t.Fatalf("expected planner source to remain authoritative, got %#v", impact)
+	}
+	if impact.EstimatedRows == nil || *impact.EstimatedRows != 7 {
+		t.Fatalf("expected planner estimated rows 7, got %#v", impact)
+	}
+	if impact.EstimatedRatio == nil || *impact.EstimatedRatio != 0.07 {
+		t.Fatalf("expected metadata-refined ratio 0.07, got %#v", impact)
+	}
+}
+
+func TestAttachImpactEstimatesSkipsUnsupportedStatementKindsForPlanner(t *testing.T) {
+	provider := &planEstimateProviderStub{}
+	statements := []spec.Statement{{
+		Kind:   spec.KindDDL,
+		RawSQL: "create table users (id bigint primary key)",
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "users"},
+		},
+	}}
+
+	statements = attachImpactEstimatesWithPlanner(context.Background(), provider, statements)
+
+	if statements[0].DML != nil {
+		t.Fatalf("expected no dml payload, got %#v", statements[0])
+	}
+	if provider.calls != 0 {
+		t.Fatalf("expected planner to skip unsupported statement kinds, got %d calls", provider.calls)
+	}
+}
+
+func TestAttachImpactEstimatesFallsBackWhenPlanEstimateFails(t *testing.T) {
+	provider := &planEstimateProviderStub{err: errors.New("planner unavailable")}
+	statements := []spec.Statement{{
+		Kind:   spec.KindDML,
+		RawSQL: "delete from users",
+		DML: &spec.DML{
+			Operation:      spec.DMLOperationDelete,
+			HasWhere:       false,
+			PredicateShape: spec.PredicateShapeMissingWhere,
+		},
+	}}
+
+	statements = attachImpactEstimatesWithPlanner(context.Background(), provider, statements)
+
+	impact := statements[0].DML.Impact
+	if impact == nil {
+		t.Fatalf("expected fallback impact estimate")
+	}
+	if impact.Source != spec.ImpactSourceShape {
+		t.Fatalf("expected fallback to shape source, got %#v", impact)
+	}
+	if impact.EstimatedRatio == nil || *impact.EstimatedRatio != 1.0 {
+		t.Fatalf("expected shape fallback full-table ratio, got %#v", impact)
+	}
+}
+
+func TestAttachImpactEstimatesPlannerRatioIsClampedToOne(t *testing.T) {
+	provider := &planEstimateProviderStub{
+		estimate: &spec.ImpactEstimate{
+			EstimatedRows: ptrInt64(500),
+			RiskLevel:     spec.ImpactRiskHigh,
+			Confidence:    spec.ImpactConfidenceMedium,
+			Source:        spec.ImpactSourcePlan,
+		},
+	}
+	statements := []spec.Statement{{
+		Kind:   spec.KindDML,
+		RawSQL: "update users set active = false where tenant_id = 42",
+		DML: &spec.DML{
+			Operation:      spec.DMLOperationUpdate,
+			HasWhere:       true,
+			PredicateShape: spec.PredicateShapeUniqueEquality,
+			LookupColumns:  []string{"id"},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists: true,
+				Table:  &spec.Table{Name: "users"},
+				PrimaryKey: &spec.Index{
+					Name:    "PRIMARY",
+					Kind:    spec.IndexKindPrimary,
+					Columns: []string{"id"},
+				},
+				Options: map[string]string{"table_rows": "100"},
+			},
+		},
+	}}
+
+	statements = attachImpactEstimatesWithPlanner(context.Background(), provider, statements)
+
+	impact := statements[0].DML.Impact
+	if impact == nil || impact.EstimatedRatio == nil {
+		t.Fatalf("expected refined impact ratio, got %#v", impact)
+	}
+	if *impact.EstimatedRatio != 1.0 {
+		t.Fatalf("expected ratio to clamp at 1.0, got %#v", impact)
+	}
+}
+
+type planEstimateProviderStub struct {
+	estimate *spec.ImpactEstimate
+	err      error
+	calls    int
+}
+
+func (s *planEstimateProviderStub) LoadPlanEstimate(_ context.Context, _ spec.Statement) (*spec.ImpactEstimate, error) {
+	s.calls++
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.estimate, nil
 }

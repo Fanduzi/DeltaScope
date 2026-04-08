@@ -37,3 +37,293 @@ func TestAuditSQLReturnsMixedSupportedAndUnsupportedPostgreSQLResults(t *testing
 		t.Fatalf("expected unsupported statement index 1, got %#v", result.Unsupported[0])
 	}
 }
+
+func TestAuditSQLPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists:      true,
+			Table:       &spec.Table{Name: "users"},
+			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter table users drop constraint users_pkey;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table metadata call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop primary key finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "email"},
+			},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter table users rename column missing_email to email;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table metadata call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.rename_column.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rename-column existence finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "email"},
+			},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter table users drop column missing_email;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table metadata call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_column.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop-column existence finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists: false,
+			Table:  &spec.Table{Name: "users"},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter table users rename to users_archive;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table metadata call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.exists.alter.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected alter-table existence finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "alter table users alter column created_at set default now(), alter column updated_at drop default, alter column email set not null, alter column phone drop not null;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	counts := map[string]int{}
+	for _, finding := range result.Statements[0].Findings {
+		counts[finding.RuleID]++
+	}
+	if len(result.Statements[0].Findings) != 8 {
+		t.Fatalf("expected exactly 8 alter-column findings, got %#v", result.Statements[0].Findings)
+	}
+	if counts["ddl.alter.set_default.explicit_default_change.forbid"] != 1 {
+		t.Fatalf("expected set_default semantic finding, got %#v", result.Statements[0].Findings)
+	}
+	if counts["ddl.alter.drop_default.explicit_default_change.forbid"] != 1 {
+		t.Fatalf("expected drop_default semantic finding, got %#v", result.Statements[0].Findings)
+	}
+	if counts["ddl.alter.set_not_null.explicit_nullability_change.forbid"] != 1 {
+		t.Fatalf("expected set_not_null semantic finding, got %#v", result.Statements[0].Findings)
+	}
+	if counts["ddl.alter.drop_not_null.explicit_nullability_change.forbid"] != 1 {
+		t.Fatalf("expected drop_not_null semantic finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "alter table users alter column status type bigint;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if len(result.Statements[0].Findings) != 1 {
+		t.Fatalf("expected exactly 1 set_data_type finding, got %#v", result.Statements[0].Findings)
+	}
+	if result.Statements[0].Findings[0].RuleID != "ddl.alter.set_data_type.forbid" {
+		t.Fatalf("expected set_data_type forbid finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "alter index idx_old rename to idx_new;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if len(result.Statements[0].Findings) != 1 {
+		t.Fatalf("expected exactly 1 rename_index finding, got %#v", result.Statements[0].Findings)
+	}
+	if result.Statements[0].Findings[0].RuleID != "ddl.alter.rename_index.forbid" {
+		t.Fatalf("expected rename_index forbid finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		indexTable: "users",
+		snapshot: &spec.TableSnapshot{
+			Exists:  true,
+			Table:   &spec.Table{Name: "users"},
+			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
+		},
+	}
+
+	_, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter index missing_idx rename to idx_new;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(provider.indexCalls) != 1 || provider.indexCalls[0] != "missing_idx" {
+		t.Fatalf("expected one index-owner resolution for missing_idx, got %#v", provider.indexCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table metadata call for users, got %#v", provider.tableCalls)
+	}
+}
+
+func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		indexTable: "users",
+		snapshot: &spec.TableSnapshot{
+			Exists:  true,
+			Table:   &spec.Table{Name: "users"},
+			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "drop index missing_idx;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(provider.indexCalls) != 1 || provider.indexCalls[0] != "missing_idx" {
+		t.Fatalf("expected one index-owner resolution for missing_idx, got %#v", provider.indexCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table metadata call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_index.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop_index existence finding, got %#v", result.Statements[0].Findings)
+	}
+}
