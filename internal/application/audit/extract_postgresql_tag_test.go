@@ -47,3 +47,61 @@ func TestExtractMapsPostgreSQLDropIndex(t *testing.T) {
 		t.Fatalf("expected alter name idx_name, got %q", stmt.DDL.Alter[0].Name)
 	}
 }
+
+func TestExtractMapsPostgreSQLRenameIndex(t *testing.T) {
+	parsed, err := Parse("alter index idx_old rename to idx_new;", spec.DialectPostgreSQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(statements))
+	}
+
+	stmt := statements[0]
+	if stmt.DDL == nil {
+		t.Fatalf("expected ddl rename-index metadata")
+	}
+	if stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected operation %q, got %q", spec.DDLOperationAlterTable, stmt.DDL.Operation)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter payload, got %d", len(stmt.DDL.Alter))
+	}
+	if stmt.DDL.Alter[0].Action != "rename_index" {
+		t.Fatalf("expected alter action rename_index, got %q", stmt.DDL.Alter[0].Action)
+	}
+	if stmt.DDL.Alter[0].Name != "idx_old" {
+		t.Fatalf("expected old index name idx_old, got %q", stmt.DDL.Alter[0].Name)
+	}
+	if stmt.DDL.Alter[0].Options["new_name"] != "idx_new" {
+		t.Fatalf("expected new index name idx_new, got %#v", stmt.DDL.Alter[0].Options)
+	}
+}
+
+func TestExtractPreservesPostgreSQLRenameIndexSchema(t *testing.T) {
+	parsed, err := Parse("alter index accounting.idx_old rename to idx_new;", spec.DialectPostgreSQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+
+	statements, err := Extract(parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(statements))
+	}
+
+	stmt := statements[0]
+	if stmt.DDL == nil || len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter payload, got %#v", stmt)
+	}
+	if stmt.DDL.Alter[0].Options["schema"] != "accounting" {
+		t.Fatalf("expected preserved index schema, got %#v", stmt.DDL.Alter[0].Options)
+	}
+}

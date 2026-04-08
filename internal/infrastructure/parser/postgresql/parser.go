@@ -70,6 +70,7 @@ func statementSQL(sql string, location int32, length int32) string {
 func classify(node *pg_query.Node) spec.Kind {
 	switch node.GetNode().(type) {
 	case *pg_query.Node_CreateStmt,
+		*pg_query.Node_ViewStmt,
 		*pg_query.Node_AlterTableStmt,
 		*pg_query.Node_RenameStmt,
 		*pg_query.Node_DropStmt,

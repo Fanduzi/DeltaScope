@@ -7,6 +7,8 @@ package auditmeta
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
+	postgresqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql"
 )
 
 // Client describes the metadata-aware capabilities required before audit execution.
@@ -31,6 +34,7 @@ type ConnectionConfig struct {
 	Socket   string
 	User     string
 	Password string
+	Dialect  spec.Dialect
 }
 
 // Request describes one shared metadata-aware audit preparation request.
@@ -61,8 +65,12 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 		openClient = openMySQLClient
 	}
 
-	client, err := openClient(request.Connection)
+	client, detectedDialect, err := prepareClientAndDialect(ctx, request.Connection, request.ExplicitDialect, openClient)
 	if err != nil {
+		var typedErr *Error
+		if errors.As(err, &typedErr) && typedErr.Kind == ErrorDialectDetect {
+			return nil, err
+		}
 		return nil, newConnectionOpenError(err)
 	}
 
@@ -73,10 +81,6 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 		}
 	}()
 
-	detectedDialect, err := client.DetectDialect(ctx)
-	if err != nil {
-		return nil, newDialectDetectError(err)
-	}
 	if request.ExplicitDialect && request.RequestedDialect != detectedDialect {
 		return nil, newDialectMismatchError(string(detectedDialect), string(request.RequestedDialect))
 	}
@@ -94,6 +98,42 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 		DialectSource: "detected",
 		SchemaSource:  schemaSource,
 	}, nil
+}
+
+func prepareClientAndDialect(ctx context.Context, config ConnectionConfig, explicitDialect bool, openClient func(ConnectionConfig) (Client, error)) (Client, spec.Dialect, error) {
+	client, err := openPreparedClient(config, openClient)
+	if err != nil {
+		return nil, "", err
+	}
+	resolvedClient, resolvedDialect, err := detectClientDialect(ctx, client)
+	if err == nil {
+		return resolvedClient, resolvedDialect, nil
+	}
+	if explicitDialect || config.Dialect != "" {
+		return nil, "", err
+	}
+	_ = client.Close()
+
+	fallback := config
+	fallback.Dialect = spec.DialectPostgreSQL
+	postgresClient, openErr := openClient(fallback)
+	if openErr != nil {
+		return nil, "", err
+	}
+	resolvedClient, resolvedDialect, detectErr := detectClientDialect(ctx, postgresClient)
+	if detectErr != nil {
+		_ = postgresClient.Close()
+		return nil, "", detectErr
+	}
+	return resolvedClient, resolvedDialect, nil
+}
+
+func detectClientDialect(ctx context.Context, client Client) (Client, spec.Dialect, error) {
+	detectedDialect, err := client.DetectDialect(ctx)
+	if err != nil {
+		return nil, "", newDialectDetectError(err)
+	}
+	return client, detectedDialect, nil
 }
 
 func resolveSchema(ctx context.Context, client Client, sqlText string, dialect spec.Dialect, explicitSchema string, explicitSource string, hint string) (string, string, error) {
@@ -162,7 +202,42 @@ func explicitSchemaSource(value string) string {
 	return strings.TrimSpace(value)
 }
 
+func openPreparedClient(config ConnectionConfig, openClient func(ConnectionConfig) (Client, error)) (Client, error) {
+	client, err := openClient(config)
+	if err == nil {
+		return client, nil
+	}
+	if config.Dialect != "" {
+		return nil, err
+	}
+
+	fallback := config
+	fallback.Dialect = spec.DialectPostgreSQL
+	postgresClient, postgresErr := openClient(fallback)
+	if postgresErr == nil {
+		return postgresClient, nil
+	}
+	return nil, err
+}
+
 func openMySQLClient(config ConnectionConfig) (Client, error) {
+	if config.Dialect == spec.DialectPostgreSQL {
+		db, err := postgresqlmeta.OpenDB(postgresqlmeta.ConnectionConfig{
+			Host:     config.Host,
+			Port:     config.Port,
+			Socket:   config.Socket,
+			User:     config.User,
+			Password: config.Password,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return postgresqlClient{
+			db:       db,
+			provider: postgresqlmeta.NewProvider(db),
+		}, nil
+	}
+
 	db, err := mysqlmeta.OpenDB(mysqlmeta.ConnectionConfig{
 		Host:     config.Host,
 		Port:     config.Port,
@@ -177,4 +252,37 @@ func openMySQLClient(config ConnectionConfig) (Client, error) {
 		db:       db,
 		provider: mysqlmeta.NewProvider(db),
 	}, nil
+}
+
+ type postgresqlClient struct {
+	db       *sql.DB
+	provider *postgresqlmeta.Provider
+}
+
+func (c postgresqlClient) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	return c.provider.LoadInstanceFacts(ctx, dialect, schema)
+}
+
+func (c postgresqlClient) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+	return c.provider.LoadTableSnapshot(ctx, dialect, schema, table)
+}
+
+func (c postgresqlClient) DetectDialect(ctx context.Context) (spec.Dialect, error) {
+	return c.provider.DetectDialect(ctx)
+}
+
+func (c postgresqlClient) FindSchemasForTable(ctx context.Context, table string) ([]string, error) {
+	return c.provider.FindSchemasForTable(ctx, table)
+}
+
+func (c postgresqlClient) ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	return c.provider.ResolveTableForIndex(ctx, dialect, schema, index)
+}
+
+func (c postgresqlClient) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
+	return c.provider.LoadPlanEstimate(ctx, statement)
+}
+
+func (c postgresqlClient) Close() error {
+	return c.db.Close()
 }

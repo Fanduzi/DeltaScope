@@ -7,6 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/jsonschema-go v0.4.2
+	github.com/jackc/pgx/v5 v5.9.1
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/pganalyze/pg_query_go/v6 v6.2.2
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260319162650-7d7a2372f4ec
@@ -34,6 +35,9 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect

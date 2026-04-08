@@ -11,6 +11,8 @@ import (
 	"context"
 	"testing"
 
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -61,3 +63,798 @@ func TestAuditSQLToolAcceptsPostgreSQLOfflineRequests(t *testing.T) {
 		t.Fatalf("expected none metadata source, got %#v", contextValue["metadata_source"])
 	}
 }
+
+type mcpMetadataAuditTestClient struct {
+	closed        bool
+	detectDialect spec.Dialect
+	planCalls     int
+	tableCalls    []string
+	indexCalls    []string
+	indexSchemas  []string
+	indexDialects []spec.Dialect
+	indexTable    string
+	snapshot      *spec.TableSnapshot
+}
+
+func (c *mcpMetadataAuditTestClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
+	return &spec.InstanceFacts{Version: "PostgreSQL 16.3"}, nil
+}
+
+func (c *mcpMetadataAuditTestClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, table string) (*spec.TableSnapshot, error) {
+	c.tableCalls = append(c.tableCalls, table)
+	if c.snapshot != nil {
+		return c.snapshot, nil
+	}
+	return &spec.TableSnapshot{Exists: true}, nil
+}
+
+func (c *mcpMetadataAuditTestClient) DetectDialect(context.Context) (spec.Dialect, error) {
+	if c.detectDialect == "" {
+		return spec.DialectPostgreSQL, nil
+	}
+	return c.detectDialect, nil
+}
+
+func (c *mcpMetadataAuditTestClient) FindSchemasForTable(context.Context, string) ([]string, error) {
+	return []string{"public"}, nil
+}
+
+func (c *mcpMetadataAuditTestClient) ResolveTableForIndex(_ context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	c.indexCalls = append(c.indexCalls, index)
+	c.indexDialects = append(c.indexDialects, dialect)
+	c.indexSchemas = append(c.indexSchemas, schema)
+	return c.indexTable, nil
+}
+
+func (c *mcpMetadataAuditTestClient) Close() error {
+	c.closed = true
+	return nil
+}
+
+func (c *mcpMetadataAuditTestClient) LoadPlanEstimate(context.Context, spec.Statement) (*spec.ImpactEstimate, error) {
+	c.planCalls++
+	rows := int64(7)
+	ratio := 0.07
+	return &spec.ImpactEstimate{
+		EstimatedRows:  &rows,
+		EstimatedRatio: &ratio,
+		RiskLevel:      spec.ImpactRiskMedium,
+		Confidence:     spec.ImpactConfidenceHigh,
+		Source:         spec.ImpactSourcePlan,
+		ReasonCodes:    []string{"planner_estimate"},
+	}, nil
+}
+
+func TestAuditSQLToolSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		if request.Connection.Dialect != spec.DialectPostgreSQL {
+			t.Fatalf("expected postgresql dialect hint to flow into shared prepare, got %#v", request.Connection)
+		}
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "inferred",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "delete from public.users where id = 1",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host": "127.0.0.1",
+				"user": "root",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected successful result, got protocol error: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got %#v", result.StructuredContent)
+	}
+	body := result.StructuredContent.(map[string]any)
+	contextBody := body["context"].(map[string]any)
+	if contextBody["mode"] != "metadata-aware" {
+		t.Fatalf("expected metadata-aware mode, got %#v", contextBody)
+	}
+	if contextBody["dialect"] != "postgresql" {
+		t.Fatalf("expected postgresql dialect context, got %#v", contextBody)
+	}
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact, got %#v", statement["impact"])
+	}
+	if impact["source"] != "plan" {
+		t.Fatalf("expected planner impact source, got %#v", impact)
+	}
+	if rows, ok := impact["estimated_rows"].(float64); !ok || rows != 7 {
+		t.Fatalf("expected estimated_rows 7, got %#v", impact["estimated_rows"])
+	}
+	if client.planCalls != 1 {
+		t.Fatalf("expected one planner call, got %d", client.planCalls)
+	}
+	if !client.closed {
+		t.Fatalf("expected metadata client close to be called")
+	}
+}
+
+func TestAuditSQLToolPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "inferred",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "update public.users set name = 'x' where id = 1",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host": "127.0.0.1",
+				"user": "root",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected successful result, got protocol error: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got %#v", result.StructuredContent)
+	}
+	if client.planCalls != 1 {
+		t.Fatalf("expected one planner call, got %d", client.planCalls)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact, got %#v", statement["impact"])
+	}
+	if impact["source"] != "plan" {
+		t.Fatalf("expected planner impact source, got %#v", impact)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLMetadataAwareINSERTDoesNotTriggerPlanEstimation(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "inferred",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "insert into public.users (id, name) values (1, 'alice')",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host": "127.0.0.1",
+				"user": "root",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected successful result, got protocol error: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got %#v", result.StructuredContent)
+	}
+	if client.planCalls != 0 {
+		t.Fatalf("expected no planner calls for INSERT, got %d", client.planCalls)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+}
+
+func TestAuditSQLToolPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists:      true,
+			Table:       &spec.Table{Name: "users"},
+			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
+		},
+	}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users drop constraint users_pkey;",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host":   "127.0.0.1",
+				"user":   "root",
+				"schema": "public",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.alter.drop_primary_key.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop primary key finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "email"},
+			},
+		},
+	}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users rename column missing_email to email;",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host":   "127.0.0.1",
+				"user":   "root",
+				"schema": "public",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.alter.rename_column.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rename-column existence finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "email"},
+			},
+		},
+	}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users drop column missing_email;",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host":   "127.0.0.1",
+				"user":   "root",
+				"schema": "public",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.alter.drop_column.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop-column existence finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
+	previous := prepareMetadataAudit
+	client := &mcpMetadataAuditTestClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists: false,
+			Table:  &spec.Table{Name: "users"},
+		},
+	}
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectPostgreSQL,
+			Schema:        "public",
+			DialectSource: "request",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users rename to users_archive;",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host":   "127.0.0.1",
+				"user":   "root",
+				"schema": "public",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.table.exists.alter.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected alter-table existence finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users alter column created_at set default now(), alter column updated_at drop default, alter column email set not null, alter column phone drop not null;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	counts := map[string]int{}
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		ruleID, _ := finding["rule_id"].(string)
+		counts[ruleID]++
+	}
+	if len(findings) != 8 {
+		t.Fatalf("expected exactly 8 alter-column findings, got %#v", findings)
+	}
+	if counts["ddl.alter.set_default.explicit_default_change.forbid"] != 1 {
+		t.Fatalf("expected set_default semantic finding, got %#v", findings)
+	}
+	if counts["ddl.alter.drop_default.explicit_default_change.forbid"] != 1 {
+		t.Fatalf("expected drop_default semantic finding, got %#v", findings)
+	}
+	if counts["ddl.alter.set_not_null.explicit_nullability_change.forbid"] != 1 {
+		t.Fatalf("expected set_not_null semantic finding, got %#v", findings)
+	}
+	if counts["ddl.alter.drop_not_null.explicit_nullability_change.forbid"] != 1 {
+		t.Fatalf("expected drop_not_null semantic finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users alter column status type bigint;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 set_data_type finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.alter.set_data_type.forbid" {
+		t.Fatalf("expected set_data_type forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter index idx_old rename to idx_new;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 rename_index finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.alter.rename_index.forbid" {
+		t.Fatalf("expected rename_index forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLCreateViewMapsToForbidRule(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "create view public.active_users as select id from public.users;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	contextValue, ok := body["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context map, got %#v", body["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
+	}
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 create_view finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.view.create.forbid" {
+		t.Fatalf("expected create_view forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLDropViewMapsToForbidRule(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "drop view if exists public.active_users;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	contextValue, ok := body["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context map, got %#v", body["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
+	}
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 drop_view finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.view.drop.forbid" {
+		t.Fatalf("expected drop_view forbid finding, got %#v", findings)
+	}
+}
+
+

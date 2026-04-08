@@ -21,11 +21,17 @@ type fakeMetadataClient struct {
 	findSchemaCalls    []string
 	findSchemaErr      error
 	instanceCalls      []string
+	indexCalls         []string
+	indexSchemas       []string
+	indexDialects      []spec.Dialect
+	indexTable         string
+	planCalls          int
 	tableSnapshotCalls []struct {
 		Schema string
 		Table  string
 	}
-	closed bool
+	snapshot *spec.TableSnapshot
+	closed   bool
 }
 
 func (f *fakeMetadataClient) LoadInstanceFacts(_ context.Context, _ spec.Dialect, schema string) (*spec.InstanceFacts, error) {
@@ -38,6 +44,9 @@ func (f *fakeMetadataClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect
 		Schema string
 		Table  string
 	}{Schema: schema, Table: table})
+	if f.snapshot != nil {
+		return f.snapshot, nil
+	}
 	return &spec.TableSnapshot{Schema: schema, Exists: true, Table: &spec.Table{Name: table}}, nil
 }
 
@@ -53,9 +62,30 @@ func (f *fakeMetadataClient) FindSchemasForTable(_ context.Context, table string
 	return f.schemasByTable[strings.ToLower(table)], nil
 }
 
+func (f *fakeMetadataClient) ResolveTableForIndex(_ context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	f.indexCalls = append(f.indexCalls, index)
+	f.indexDialects = append(f.indexDialects, dialect)
+	f.indexSchemas = append(f.indexSchemas, schema)
+	return f.indexTable, nil
+}
+
 func (f *fakeMetadataClient) Close() error {
 	f.closed = true
 	return nil
+}
+
+func (f *fakeMetadataClient) LoadPlanEstimate(context.Context, spec.Statement) (*spec.ImpactEstimate, error) {
+	f.planCalls++
+	rows := int64(7)
+	ratio := 0.07
+	return &spec.ImpactEstimate{
+		EstimatedRows:  &rows,
+		EstimatedRatio: &ratio,
+		RiskLevel:      spec.ImpactRiskMedium,
+		Confidence:     spec.ImpactConfidenceHigh,
+		Source:         spec.ImpactSourcePlan,
+		ReasonCodes:    []string{"planner_estimate"},
+	}, nil
 }
 
 func TestAuditCommandUsesMetadataAwareProviderForTCPConnection(t *testing.T) {
@@ -203,35 +233,6 @@ func TestAuditCommandRejectsDialectMismatchInMetadataMode(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "detected dialect") {
 		t.Fatalf("expected dialect mismatch error, got %q", stderr.String())
-	}
-}
-
-func TestAuditCommandRejectsPostgreSQLMetadataAwareMode(t *testing.T) {
-	previous := newMetadataClient
-	opened := false
-	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
-		opened = true
-		return &fakeMetadataClient{detectDialect: spec.DialectMySQL}, nil
-	}
-	t.Cleanup(func() { newMetadataClient = previous })
-
-	stderr := &strings.Builder{}
-	code := Execute(
-		context.Background(),
-		[]string{"audit", "--sql", "select 1", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql"},
-		strings.NewReader(""),
-		&strings.Builder{},
-		stderr,
-	)
-
-	if code != 2 {
-		t.Fatalf("expected user error exit code 2, got %d", code)
-	}
-	if !strings.Contains(strings.ToLower(stderr.String()), "offline") || !strings.Contains(strings.ToLower(stderr.String()), "postgresql") {
-		t.Fatalf("expected explicit postgresql offline-only guidance, got %q", stderr.String())
-	}
-	if opened {
-		t.Fatalf("did not expect metadata client to open for postgresql metadata-aware request")
 	}
 }
 

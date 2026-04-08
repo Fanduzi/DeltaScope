@@ -350,6 +350,55 @@ func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 	}
 }
 
+func TestAlterRenameIndexRuleFindsStandaloneForbiddenRename(t *testing.T) {
+	statementRule, err := newForbiddenAlterRenameRule(
+		ruleIDAlterRenameIndexForbid,
+		"rename_index",
+		"rename index",
+		rule.LevelBlocker,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"forbid": true,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter: []spec.Alter{{Action: "rename_index", Name: "idx_old", Options: map[string]string{"new_name": "idx_new"}}},
+		},
+	}
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDAlterRenameIndexForbid {
+		t.Fatalf("expected rule id %q, got %q", ruleIDAlterRenameIndexForbid, findings[0].RuleID)
+	}
+	if got := findings[0].Metadata["old_name"]; got != "idx_old" {
+		t.Fatalf("expected old_name metadata idx_old, got %#v", got)
+	}
+	if got := findings[0].Metadata["new_name"]; got != "idx_new" {
+		t.Fatalf("expected new_name metadata idx_new, got %#v", got)
+	}
+	if _, ok := findings[0].Metadata["table"]; ok {
+		t.Fatalf("expected standalone rename metadata to omit table, got %#v", findings[0].Metadata)
+	}
+	if findings[0].Message != "DDL rename index from \"idx_old\" to \"idx_new\" is forbidden" {
+		t.Fatalf("expected standalone rename message, got %q", findings[0].Message)
+	}
+}
+
 func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
 	tests := []struct {
 		name       string

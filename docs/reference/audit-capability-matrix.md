@@ -6,6 +6,14 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **Pattern legality checks** such as `*.name.pattern.require` and `*.name.keyword.forbid` enforce lexical validity. **Structured naming governance** such as `prefix`, `suffix`, and `contains` enforces team naming conventions. These are complementary layers, not replacements for one another.
 
+## Supported Dialects for Metadata-Aware Audit
+
+| Dialect | Metadata Sources | Notes |
+|---------|-----------------|-------|
+| MySQL | `information_schema`, `performance_schema.global_variables`, `InnoDB` stats | Full support. Engine, row-format, adaptive-hash, and InnoDB-specific rules apply. |
+| TiDB | `information_schema`, `performance_schema` (optional) | Same sources as MySQL. `performance_schema` is optional — DeltaScope falls back gracefully. |
+| PostgreSQL | `pg_catalog`, `pg_constraint`, `pg_indexes`, `EXPLAIN` (read-only) | Supported for metadata-aware audit. MySQL-specific features (InnoDB, adaptive hash, row format) are not applicable. PG-specific: `ALTER TABLE … DROP CONSTRAINT` maps to primary-key detection; DML impact estimation uses the PostgreSQL planner via `EXPLAIN` for `UPDATE`/`DELETE`. |
+
 ## Capability Status
 
 | Capability | Status | Notes |
@@ -261,3 +269,23 @@ When a metadata provider is configured, DeltaScope loads live facts from the tar
 | Table options (engine, charset, row format) | Table option compatibility check on ALTER TABLE |
 | `table_rows` | Row count safety threshold on DROP TABLE and TRUNCATE TABLE |
 | Index cardinality and `table_rows` | Metadata-aware refinement of conservative DML impact estimation |
+
+### Dialect-Specific Considerations
+
+**MySQL / TiDB only:**
+
+| Feature | Rules Affected |
+|---------|---------------|
+| `innodb_large_prefix` | `ddl.index.key_length.max_bytes.require` — index key length limit depends on this setting |
+| `innodb_default_row_format` | `ddl.table.row_size.max_bytes.require` — row size estimation uses the instance row format |
+| `innodb_adaptive_hash_index` | `ddl.table.drop.adaptive_hash`, `ddl.table.truncate.adaptive_hash` — latency-spike cautions |
+| Engine / row-format checks | `ddl.table.engine.allowlist`, `ddl.table.row_format.allowlist` — MySQL storage engine governance |
+
+These rules fire only for MySQL and TiDB targets. For PostgreSQL, they are not applicable and will not appear in findings.
+
+**PostgreSQL only:**
+
+| Feature | Rules Affected |
+|---------|---------------|
+| `EXPLAIN`-based planner estimation | `dml.impact.estimate` and downstream impact rules may use the PostgreSQL planner to refine `UPDATE`/`DELETE` row estimates. This is a read-only `EXPLAIN` — DeltaScope does not execute `EXPLAIN ANALYZE`. |
+| `DROP CONSTRAINT` → primary key mapping | `ALTER TABLE … DROP CONSTRAINT` that targets the primary key is recognized and triggers `ddl.alter.drop_primary_key.forbid` and `ddl.alter.primary_key.drop.exists`. |

@@ -36,6 +36,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 	switch node := e.node.GetNode().(type) {
 	case *pg_query.Node_CreateStmt:
 		return extractCreateStmt(statement, node.CreateStmt), nil
+	case *pg_query.Node_ViewStmt:
+		return extractViewStmt(statement, node.ViewStmt), nil
 	case *pg_query.Node_AlterTableStmt:
 		return extractAlterTableStmt(statement, node.AlterTableStmt), nil
 	case *pg_query.Node_RenameStmt:
@@ -84,6 +86,34 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 	}
 
 	statement.DDL = ddl
+	return statement
+}
+
+func extractViewStmt(statement spec.Statement, stmt *pg_query.ViewStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_view", "postgresql create view statement payload is missing")
+	}
+	if stmt.GetReplace() {
+		return unsupportedStatement(statement, "create_view", "postgresql create or replace view is unsupported in v1")
+	}
+	if len(stmt.GetOptions()) > 0 {
+		return unsupportedStatement(statement, "create_view", "postgresql create view options are unsupported in v1")
+	}
+	if stmt.GetWithCheckOption() != pg_query.ViewCheckOption_NO_CHECK_OPTION {
+		return unsupportedStatement(statement, "create_view", "postgresql create view check options are unsupported in v1")
+	}
+	view := stmt.GetView()
+	if view == nil {
+		return unsupportedStatement(statement, "create_view", "postgresql create view target is missing")
+	}
+	if persistence := view.GetRelpersistence(); persistence != "" && persistence != "p" {
+		return unsupportedStatement(statement, "create_view", "postgresql temporary view variants are unsupported in v1")
+	}
+	statement.DDL = &spec.DDL{
+		Operation: spec.DDLOperationCreateView,
+		Table:     tableFromRangeVar(view),
+		HasSelect: stmt.GetQuery() != nil,
+	}
 	return statement
 }
 
@@ -150,6 +180,20 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Alter:     []spec.Alter{{Action: "rename_table", Name: table.Name, Options: map[string]string{"new_name": stmt.GetNewname()}}},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_INDEX:
+		options := map[string]string{"new_name": stmt.GetNewname()}
+		if table != nil && strings.TrimSpace(table.Schema) != "" {
+			options["schema"] = strings.TrimSpace(table.Schema)
+		}
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter: []spec.Alter{{
+				Action:  "rename_index",
+				Name:    table.Name,
+				Options: options,
+			}},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "rename", "postgresql rename target is not in the approved v1 subset")
 	}
@@ -162,10 +206,24 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 	switch stmt.GetRemoveType() {
 	case pg_query.ObjectType_OBJECT_TABLE:
 		statement.DDL = &spec.DDL{Operation: spec.DDLOperationDropTable, Table: tableFromObjectName(stmt.GetObjects())}
+	case pg_query.ObjectType_OBJECT_VIEW:
+		if len(stmt.GetObjects()) != 1 {
+			return unsupportedStatement(statement, "drop", "postgresql multi-target drop view is unsupported in v1")
+		}
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationDropView,
+			Table:     tableFromObjectName(stmt.GetObjects()),
+			Options:   map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())},
+		}
 	case pg_query.ObjectType_OBJECT_INDEX:
+		options := map[string]string{}
+		indexTable := tableFromObjectName(stmt.GetObjects())
+		if indexTable != nil && strings.TrimSpace(indexTable.Schema) != "" {
+			options["schema"] = strings.TrimSpace(indexTable.Schema)
+		}
 		statement.DDL = &spec.DDL{
 			Operation: spec.DDLOperationDropIndex,
-			Alter:     []spec.Alter{{Action: "drop_index", Name: objectNameFromObjectName(stmt.GetObjects())}},
+			Alter:     []spec.Alter{{Action: "drop_index", Name: objectNameFromObjectName(stmt.GetObjects()), Options: options}},
 		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
@@ -249,11 +307,11 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	case pg_query.AlterTableType_AT_DropConstraint:
 		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName()}, true, nil
 	case pg_query.AlterTableType_AT_AlterColumnType:
-		typeName := cmd.GetDef().GetTypeName()
-		if typeName == nil {
+		column := cmd.GetDef().GetColumnDef()
+		if column == nil || column.GetTypeName() == nil {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alter_column_type", Reason: "postgresql alter column type payload is missing"}
 		}
-		return spec.Alter{Action: "set_data_type", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), Type: typeNameString(typeName)}}}, true, nil
+		return spec.Alter{Action: "set_data_type", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), Type: typeNameString(column.GetTypeName())}}}, true, nil
 	case pg_query.AlterTableType_AT_ColumnDefault:
 		action := "set_default"
 		if cmd.GetDef() == nil {

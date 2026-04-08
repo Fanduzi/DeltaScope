@@ -491,51 +491,6 @@ func TestAuditSQLToolRejectsUnsupportedDialectBeforeMetadataSetup(t *testing.T) 
 	}
 }
 
-func TestAuditSQLToolRejectsPostgreSQLMetadataAwareMode(t *testing.T) {
-	previous := prepareMetadataAudit
-	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		t.Fatal("expected postgresql metadata-aware mode to fail before metadata setup")
-		return nil, nil
-	}
-	t.Cleanup(func() { prepareMetadataAudit = previous })
-
-	server := NewServer(Config{Version: "test-version"})
-	session, err := connectClientSession(context.Background(), server)
-	if err != nil {
-		t.Fatalf("connect session: %v", err)
-	}
-	t.Cleanup(func() { _ = session.Close() })
-
-	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
-		Name: "audit_sql",
-		Arguments: map[string]any{
-			"sql":     "select 1",
-			"dialect": "postgresql",
-			"connection": map[string]any{
-				"host": "127.0.0.1",
-				"user": "root",
-			},
-		},
-	})
-	if err != nil {
-		t.Fatalf("expected tool error result, got protocol error: %v", err)
-	}
-	if !result.IsError {
-		t.Fatal("expected tool error result")
-	}
-	body := result.StructuredContent.(map[string]any)
-	if body["code"] != "bad_request" {
-		t.Fatalf("unexpected error code: %#v", body["code"])
-	}
-	message, ok := body["message"].(string)
-	if !ok {
-		t.Fatalf("expected error message, got %#v", body["message"])
-	}
-	if !strings.Contains(strings.ToLower(message), "postgresql") || !strings.Contains(strings.ToLower(message), "offline") {
-		t.Fatalf("expected explicit postgresql offline-only error, got %q", message)
-	}
-}
-
 func TestAuditSQLToolReturnsStructuredErrorForConflictingConnectionInputs(t *testing.T) {
 	server := NewServer(Config{Version: "test-version"})
 	session, err := connectClientSession(context.Background(), server)
@@ -866,6 +821,10 @@ func (metadataOnlyClient) DetectDialect(context.Context) (spec.Dialect, error) {
 
 func (metadataOnlyClient) FindSchemasForTable(context.Context, string) ([]string, error) {
 	return nil, nil
+}
+
+func (metadataOnlyClient) ResolveTableForIndex(context.Context, spec.Dialect, string, string) (string, error) {
+	return "", nil
 }
 
 func (metadataOnlyClient) Close() error { return nil }

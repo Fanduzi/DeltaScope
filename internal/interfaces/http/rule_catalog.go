@@ -126,7 +126,7 @@ func httpCapabilitiesPayload() httpCapabilitiesResponse {
 			"connection.password_env",
 			"connection.password_file",
 		},
-		InputRules:        []string{"connection.password, connection.password_env, and connection.password_file are mutually exclusive", "top-level schema overrides connection.schema when both are set", "top-level dialect overrides connection.dialect when both are set", "postgresql is currently offline-only; connection inputs require a MySQL/TiDB-compatible instance"},
+		InputRules:        []string{"connection.password, connection.password_env, and connection.password_file are mutually exclusive", "top-level schema overrides connection.schema when both are set", "top-level dialect overrides connection.dialect when both are set", "connection inputs support mysql, tidb, and postgresql metadata-aware audit"},
 		ResultFields:      []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},
 		ContextFields:     []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"},
 		StructuredErrors:  []string{"invalid_json", "bad_request", "connection_invalid", "connection_failed", "config_invalid", "auth_required", "auth_invalid", "rate_limited", "request_timeout", "request_canceled", "internal_error", "not_found"},

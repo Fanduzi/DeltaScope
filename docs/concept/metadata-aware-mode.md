@@ -14,8 +14,8 @@ Connection flags that activate the mode:
 
 | Flag | Purpose |
 |---|---|
-| `--host` | MySQL/TiDB host address |
-| `--port` | Port number (default: 3306) |
+| `--host` | Database host address |
+| `--port` | Port number (default: 3306 for MySQL/TiDB, 5432 for PostgreSQL) |
 | `--user` | Database user |
 | `--password` | Password (passed on command line) |
 | `--ask-password` | Prompt for password interactively |
@@ -30,18 +30,24 @@ deltascope audit --host db.example.com --user readonly --ask-password migration.
 
 # With explicit schema and socket
 deltascope audit --socket /var/run/mysqld/mysqld.sock --user auditor --schema app migration.sql
+
+# PostgreSQL with metadata-aware mode
+deltascope audit --host 127.0.0.1 --port 5432 --user readonly --ask-password \
+  --dialect postgresql --schema public migration.sql
 ```
 
 ---
 
 ## Dialect Auto-Detection
 
-When connected to a live instance, DeltaScope automatically detects the dialect by querying the `tidb_version()` system variable:
+When connected to a live MySQL or TiDB instance, DeltaScope automatically detects the dialect by querying the `tidb_version()` system variable:
 
 - **Success** (variable exists and returns a value): dialect is detected as **TiDB**
 - **Failure** (variable not found or returns an error): dialect is detected as **MySQL**
 
-If you pass `--dialect` explicitly and it conflicts with the auto-detected dialect, the audit fails with exit code 2. To avoid conflicts, omit `--dialect` when connecting to a live instance and let auto-detection handle it.
+For PostgreSQL connections, pass `--dialect postgresql` explicitly. DeltaScope does not auto-detect PostgreSQL — the dialect must be stated because the wire protocol and system catalogs differ from MySQL.
+
+If you pass `--dialect` explicitly and it conflicts with the auto-detected dialect, the audit fails with exit code 2. To avoid conflicts, omit `--dialect` when connecting to a MySQL/TiDB instance and let auto-detection handle it.
 
 ---
 
@@ -65,7 +71,9 @@ If the target table is not found in any schema (and the rule requires an existin
 
 ### Instance Facts
 
-Instance facts describe the MySQL or TiDB instance configuration and are loaded once per audit session. They are attached to every statement in the batch.
+Instance facts describe the database configuration and are loaded once per audit session. They are attached to every statement in the batch.
+
+**MySQL/TiDB facts:**
 
 | Fact | Description |
 |---|---|
@@ -75,16 +83,39 @@ Instance facts describe the MySQL or TiDB instance configuration and are loaded 
 | `innodb_default_row_format` | Default InnoDB row format (`DYNAMIC`, `COMPACT`, etc.) |
 | `innodb_adaptive_hash_index` | Whether adaptive hash index is enabled (`ON`/`OFF`) |
 
+**PostgreSQL facts:**
+
+| Fact | Description |
+|---|---|
+| Version string | PostgreSQL version reported by `version()` |
+
+PostgreSQL loads a smaller set of instance facts because many MySQL-specific settings (InnoDB variables, character set defaults) do not apply.
+
 ### Table Snapshot
 
-A table snapshot is the current definition of the target table, loaded from `information_schema`. It is attached to statements that reference a specific table.
+A table snapshot is the current definition of the target table. It is attached to statements that reference a specific table.
+
+**MySQL/TiDB** loads snapshots from `information_schema`. **PostgreSQL** loads snapshots from `information_schema` columns plus `pg_constraint` and `pg_indexes` system catalogs.
 
 A snapshot includes:
 
 - **Column definitions**: name, data type, nullability, default value, comment
-- **Index definitions**: index name, type (BTREE/HASH/FULLTEXT), uniqueness, indexed columns
+- **Index definitions**: index name, type (primary/secondary/unique), indexed columns
 - **Primary key state**: whether a primary key exists and which columns it covers
-- **Table options**: storage engine, character set, row format, table comment, and other CREATE TABLE options
+- **Constraints**: name, type (primary key, unique, check), columns
+- **Table options**: storage engine, character set, row format, table comment (MySQL/TiDB only)
+
+### Plan Estimate (PostgreSQL)
+
+When connected to a PostgreSQL instance, DeltaScope uses plain `EXPLAIN` (not `EXPLAIN ANALYZE`) to estimate row impact for `UPDATE` and `DELETE` statements. The estimate includes:
+
+- **Estimated rows**: planner's expected row count
+- **Estimated ratio**: estimated rows divided by total table rows
+- **Risk level**: low / medium / high
+- **Confidence**: low / medium / high
+- **Source**: `plan`
+
+`INSERT` statements are intentionally excluded from planner estimation. DeltaScope never executes `EXPLAIN ANALYZE` — only the read-only planning step.
 
 ---
 
@@ -96,11 +127,13 @@ The following checks become active only when the relevant facts are loaded:
 |---|---|
 | Column/index/table existence checks (e.g., the column being added does not already exist) | Table snapshot |
 | ALTER TABLE type compatibility (new type must be compatible with existing column type) | Table snapshot |
-| Row-size estimation (projected row size must not exceed InnoDB row size limits) | Table snapshot + instance facts |
-| Index key-length estimation (index key must fit within instance-defined limits) | Table snapshot + instance facts |
+| Row-size estimation (projected row size must not exceed InnoDB row size limits) | Table snapshot + instance facts (MySQL/TiDB only) |
+| Index key-length estimation (index key must fit within instance-defined limits) | Table snapshot + instance facts (MySQL/TiDB only) |
 | Drop/truncate row-count caution (warns when `table_rows` in `information_schema` is large) | Table snapshot |
-| Adaptive-hash index warning | `innodb_adaptive_hash_index` instance fact |
-| Table option compatibility (e.g., charset change against current schema charset) | Table snapshot + instance facts |
+| Adaptive-hash index warning | `innodb_adaptive_hash_index` instance fact (MySQL/TiDB only) |
+| Table option compatibility (e.g., charset change against current schema charset) | Table snapshot + instance facts (MySQL/TiDB only) |
+| Drop constraint → primary key recognition (PostgreSQL `DROP CONSTRAINT` mapped to PK drop when metadata confirms) | Table snapshot (PostgreSQL) |
+| DML impact estimation via planner (PostgreSQL `EXPLAIN`) | Live PostgreSQL connection |
 
 ---
 
@@ -116,12 +149,22 @@ The following checks become active only when the relevant facts are loaded:
 
 The database user supplied via `--user` needs the following minimum permissions:
 
+**MySQL/TiDB:**
+
 ```sql
 -- Read schema metadata
 GRANT SELECT ON information_schema.* TO 'auditor'@'%';
 
 -- Read InnoDB instance configuration variables
 GRANT SELECT ON performance_schema.global_variables TO 'auditor'@'%';
+```
+
+**PostgreSQL:**
+
+```sql
+-- Read schema metadata and system catalogs
+GRANT USAGE ON SCHEMA public TO auditor;
+-- SELECT on information_schema and pg_catalog is available by default
 ```
 
 No write permissions are required. DeltaScope never modifies the target database.
@@ -160,8 +203,8 @@ Field meanings:
 | Field | Values | Description |
 |---|---|---|
 | `mode` | `offline`, `metadata-aware` | Whether metadata enrichment was active |
-| `dialect` | `mysql`, `tidb` | Dialect used for evaluation |
-| `dialect_source` | `detected`, `explicit` | Whether dialect came from auto-detection or `--dialect` flag |
+| `dialect` | `mysql`, `tidb`, `postgresql` | Dialect used for evaluation |
+| `dialect_source` | `detected`, `request`, `flag`, `default` | Whether dialect came from auto-detection, request, flag, or default |
 | `schema` | schema name | The resolved default schema |
 | `schema_source` | `flag`, `inferred`, `qualified` | How the schema was determined |
 

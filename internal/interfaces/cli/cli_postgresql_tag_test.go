@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestAuditCommandRendersPartialJSONForMixedUnsupportedPostgreSQL(t *testing.T) {
@@ -126,3 +128,714 @@ func TestAuditCommandPostgreSQLInsertSelectOnConflictKeepsInsertSelectRuleOnly(t
 		t.Fatalf("expected stderr not to contain MySQL-specific duplicate-key text, got %q", stderr.String())
 	}
 }
+
+func TestAuditCommandSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectPostgreSQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from public.users where id = 1", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected metadata-aware postgresql path to succeed, got %d", code)
+	}
+	if client.options.Dialect != string(spec.DialectPostgreSQL) {
+		t.Fatalf("expected postgresql dialect to flow into opener, got %#v", client.options)
+	}
+	if len(client.findSchemaCalls) != 0 {
+		t.Fatalf("expected qualified schema to skip inference, got %#v", client.findSchemaCalls)
+	}
+	if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "public" {
+		t.Fatalf("expected public schema instance lookup, got %#v", client.instanceCalls)
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "public" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected public.users snapshot lookup, got %#v", client.tableSnapshotCalls)
+	}
+	if !client.closed {
+		t.Fatalf("expected metadata client close to be called")
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataAwareDELETETriggersPlanEstimation(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectPostgreSQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from public.users where id = 1", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected metadata-aware postgresql path to succeed, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if client.planCalls != 1 {
+		t.Fatalf("expected one plan estimation call, got %d", client.planCalls)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact, got %#v", statement["impact"])
+	}
+	if impact["source"] != "plan" {
+		t.Fatalf("expected planner impact source, got %#v", impact)
+	}
+	if rows, ok := impact["estimated_rows"].(float64); !ok || rows != 7 {
+		t.Fatalf("expected estimated_rows 7, got %#v", impact["estimated_rows"])
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectPostgreSQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "update public.users set name = 'x' where id = 1", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected metadata-aware postgresql path to succeed, got %d", code)
+	}
+	if client.planCalls != 1 {
+		t.Fatalf("expected one plan estimation call, got %d", client.planCalls)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	impact, ok := statement["impact"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement impact, got %#v", statement["impact"])
+	}
+	if impact["source"] != "plan" {
+		t.Fatalf("expected planner impact source, got %#v", impact)
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataAwareINSERTDoesNotTriggerPlanEstimation(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectPostgreSQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "insert into public.users (id, name) values (1, 'alice')", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected metadata-aware postgresql path to succeed, got %d", code)
+	}
+	if client.planCalls != 0 {
+		t.Fatalf("expected no planner calls for INSERT, got %d", client.planCalls)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists:      true,
+			Schema:      "public",
+			Table:       &spec.Table{Name: "users"},
+			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users drop constraint users_pkey;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "drop primary key") {
+		t.Fatalf("expected primary-key drop finding in stdout, got %q", stdout.String())
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "public" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected public.users snapshot lookup, got %#v", client.tableSnapshotCalls)
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Schema: "public",
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "email"},
+			},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users rename column missing_email to email;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "does not exist on table \"users\"") {
+		t.Fatalf("expected rename-column existence finding in stdout, got %q", stdout.String())
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "public" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected public.users snapshot lookup, got %#v", client.tableSnapshotCalls)
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Schema: "public",
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "email"},
+			},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users drop column missing_email;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "does not exist on table \"users\"") {
+		t.Fatalf("expected drop-column existence finding in stdout, got %q", stdout.String())
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "public" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected public.users snapshot lookup, got %#v", client.tableSnapshotCalls)
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect: spec.DialectPostgreSQL,
+		snapshot: &spec.TableSnapshot{
+			Exists: false,
+			Schema: "public",
+			Table:  &spec.Table{Name: "users"},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users rename to users_archive;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "table \"users\" does not exist in the target schema") {
+		t.Fatalf("expected alter-table existence finding in stdout, got %q", stdout.String())
+	}
+	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "public" || client.tableSnapshotCalls[0].Table != "users" {
+		t.Fatalf("expected public.users snapshot lookup, got %#v", client.tableSnapshotCalls)
+	}
+}
+
+func TestAuditCommandPostgreSQLAlterColumnActionsRenderSemanticFindings(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users alter column created_at set default now(), alter column updated_at drop default, alter column email set not null, alter column phone drop not null;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	counts := map[string]int{}
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		ruleID, _ := finding["rule_id"].(string)
+		counts[ruleID]++
+	}
+	if len(findings) != 8 {
+		t.Fatalf("expected exactly 8 alter-column findings, got %#v", findings)
+	}
+	if counts["ddl.alter.set_default.explicit_default_change.forbid"] != 1 {
+		t.Fatalf("expected set_default semantic finding, got %#v", findings)
+	}
+	if counts["ddl.alter.drop_default.explicit_default_change.forbid"] != 1 {
+		t.Fatalf("expected drop_default semantic finding, got %#v", findings)
+	}
+	if counts["ddl.alter.set_not_null.explicit_nullability_change.forbid"] != 1 {
+		t.Fatalf("expected set_not_null semantic finding, got %#v", findings)
+	}
+	if counts["ddl.alter.drop_not_null.explicit_nullability_change.forbid"] != 1 {
+		t.Fatalf("expected drop_not_null semantic finding, got %#v", findings)
+	}
+}
+
+func TestAuditCommandPostgreSQLSetDataTypeRendersForbidFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users alter column status type bigint;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitOK, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 set_data_type finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.alter.set_data_type.forbid" {
+		t.Fatalf("expected set_data_type forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditCommandPostgreSQLRenameIndexRendersForbidFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter index idx_old rename to idx_new;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 rename_index finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.alter.rename_index.forbid" {
+		t.Fatalf("expected rename_index forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditCommandPostgreSQLCreateViewRendersForbidFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create view public.active_users as select id from public.users;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 create_view finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.view.create.forbid" {
+		t.Fatalf("expected create_view forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditCommandPostgreSQLDropViewRendersForbidFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "drop view if exists public.active_users;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected exactly 1 drop_view finding, got %#v", findings)
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != "ddl.view.drop.forbid" {
+		t.Fatalf("expected drop_view forbid finding, got %#v", findings)
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataRenameIndexRendersExistenceFinding(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect: spec.DialectPostgreSQL,
+		indexTable:    "users",
+		snapshot: &spec.TableSnapshot{
+			Exists:  true,
+			Schema:  "public",
+			Table:   &spec.Table{Name: "users"},
+			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter index missing_idx rename to idx_new;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	contextValue, ok := decoded["context"].(map[string]any)
+	if !ok || contextValue["mode"] != "metadata-aware" {
+		t.Fatalf("expected metadata-aware context, got %#v", decoded["context"])
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, raw := range findings {
+		finding, ok := raw.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.alter.rename_index.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected rename_index existence finding, got %#v", findings)
+	}
+	if len(client.indexCalls) != 1 || client.indexCalls[0] != "missing_idx" {
+		t.Fatalf("expected one index-owner resolution, got %#v", client.indexCalls)
+	}
+	if len(client.indexSchemas) != 1 || client.indexSchemas[0] != "public" {
+		t.Fatalf("expected public schema for index-owner resolution, got %#v", client.indexSchemas)
+	}
+	if len(client.indexDialects) != 1 || client.indexDialects[0] != spec.DialectPostgreSQL {
+		t.Fatalf("expected postgresql dialect for index-owner resolution, got %#v", client.indexDialects)
+	}
+}
+
+func TestAuditCommandPostgreSQLMetadataDropIndexRendersExistenceFinding(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect: spec.DialectPostgreSQL,
+		indexTable:    "users",
+		snapshot: &spec.TableSnapshot{
+			Exists:  true,
+			Schema:  "public",
+			Table:   &spec.Table{Name: "users"},
+			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "drop index missing_idx;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	contextValue, ok := decoded["context"].(map[string]any)
+	if !ok || contextValue["mode"] != "metadata-aware" {
+		t.Fatalf("expected metadata-aware context, got %#v", decoded["context"])
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, raw := range findings {
+		finding, ok := raw.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.alter.drop_index.exists.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop_index existence finding, got %#v", findings)
+	}
+}
+

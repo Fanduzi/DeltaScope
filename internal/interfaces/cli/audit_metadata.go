@@ -12,6 +12,7 @@ import (
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
+	postgresqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql"
 )
 
 type metadataClient = auditmeta.Client
@@ -27,6 +28,23 @@ type auditRunContext struct {
 }
 
 func openMetadataClient(options auditConnectionOptions) (metadataClient, error) {
+	if options.Dialect == string(spec.DialectPostgreSQL) {
+		db, err := postgresqlmeta.OpenDB(postgresqlmeta.ConnectionConfig{
+			Host:     options.Host,
+			Port:     options.Port,
+			Socket:   options.Socket,
+			User:     options.User,
+			Password: options.Password,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return postgresqlMetadataClient{
+			db:       db,
+			provider: postgresqlmeta.NewProvider(db),
+		}, nil
+	}
+
 	db, err := mysqlmeta.OpenDB(mysqlmeta.ConnectionConfig{
 		Host:     options.Host,
 		Port:     options.Port,
@@ -64,18 +82,51 @@ func (c mysqlMetadataClient) FindSchemasForTable(ctx context.Context, table stri
 	return c.provider.FindSchemasForTable(ctx, table)
 }
 
+func (c mysqlMetadataClient) ResolveTableForIndex(context.Context, spec.Dialect, string, string) (string, error) {
+	return "", nil
+}
+
 func (c mysqlMetadataClient) Close() error {
 	return c.db.Close()
 }
 
-func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) (metadataClient, spec.Dialect, string, *auditRunContext, error) {
-	if requestedDialect == spec.DialectPostgreSQL {
-		return nil, "", "", nil, newUserError("PostgreSQL metadata-aware audit is not yet supported; use offline mode without connection flags")
-	}
+type postgresqlMetadataClient struct {
+	db       *sql.DB
+	provider *postgresqlmeta.Provider
+}
 
+func (c postgresqlMetadataClient) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	return c.provider.LoadInstanceFacts(ctx, dialect, schema)
+}
+
+func (c postgresqlMetadataClient) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+	return c.provider.LoadTableSnapshot(ctx, dialect, schema, table)
+}
+
+func (c postgresqlMetadataClient) DetectDialect(ctx context.Context) (spec.Dialect, error) {
+	return c.provider.DetectDialect(ctx)
+}
+
+func (c postgresqlMetadataClient) FindSchemasForTable(ctx context.Context, table string) ([]string, error) {
+	return c.provider.FindSchemasForTable(ctx, table)
+}
+
+func (c postgresqlMetadataClient) ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	return c.provider.ResolveTableForIndex(ctx, dialect, schema, index)
+}
+
+func (c postgresqlMetadataClient) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
+	return c.provider.LoadPlanEstimate(ctx, statement)
+}
+
+func (c postgresqlMetadataClient) Close() error {
+	return c.db.Close()
+}
+
+func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) (metadataClient, spec.Dialect, string, *auditRunContext, error) {
 	prepared, err := auditmeta.Prepare(ctx, auditmeta.Request{
 		SQL:                  sqlText,
-		Connection:           toAuditMetaConnection(options),
+		Connection:           toAuditMetaConnection(options, requestedDialect, explicitDialect),
 		RequestedDialect:     requestedDialect,
 		ExplicitDialect:      explicitDialect,
 		ExplicitSchema:       options.Schema,
@@ -87,6 +138,7 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 				Socket:   config.Socket,
 				User:     config.User,
 				Password: config.Password,
+				Dialect:  string(config.Dialect),
 			})
 		},
 	})
@@ -103,12 +155,16 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 	}, nil
 }
 
-func toAuditMetaConnection(options auditConnectionOptions) auditmeta.ConnectionConfig {
-	return auditmeta.ConnectionConfig{
+func toAuditMetaConnection(options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) auditmeta.ConnectionConfig {
+	connection := auditmeta.ConnectionConfig{
 		Host:     options.Host,
 		Port:     options.Port,
 		Socket:   options.Socket,
 		User:     options.User,
 		Password: options.Password,
 	}
+	if explicitDialect {
+		connection.Dialect = requestedDialect
+	}
+	return connection
 }

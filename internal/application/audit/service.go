@@ -95,7 +95,11 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	if err := ctx.Err(); err != nil {
 		return report.Result{}, err
 	}
-	statements = attachImpactEstimates(statements)
+	if planner, ok := planEstimatorFor(request).(PlanEstimator); ok {
+		statements = attachImpactEstimatesWithPlanner(ctx, planner, statements)
+	} else {
+		statements = attachImpactEstimates(statements)
+	}
 
 	registry, err := buildRegistry(policyCfg)
 	if err != nil {
@@ -127,6 +131,16 @@ func metadataRequestFor(request Request) *MetadataRequest {
 		}
 	}
 	return request.Metadata
+}
+
+func planEstimatorFor(request Request) any {
+	if request.MetadataProvider != nil {
+		return request.MetadataProvider
+	}
+	if request.Metadata != nil {
+		return request.Metadata.Provider
+	}
+	return nil
 }
 
 func buildRegistry(cfg domainpolicy.Policy) (*rule.Registry, error) {

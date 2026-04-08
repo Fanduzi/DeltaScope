@@ -128,3 +128,226 @@ func TestParserSupportsApprovedPostgreSQLAlterTableWhitelist(t *testing.T) {
 		t.Fatalf("expected supported alter table to omit unsupported detail, got %#v", statement.Unsupported)
 	}
 }
+
+func TestParserPreservesDropConstraintActionForPostgreSQL(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("alter table public.users drop constraint users_pkey;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.DDL == nil || len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %#v", statement)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "drop_constraint" {
+		t.Fatalf("expected drop_constraint action, got %#v", alter)
+	}
+	if alter.Name != "users_pkey" {
+		t.Fatalf("expected preserved constraint name, got %#v", alter)
+	}
+}
+
+func TestParserPreservesSetDataTypeActionForPostgreSQL(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("alter table users alter column status type bigint;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported alter column type, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %#v", statement)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_data_type" {
+		t.Fatalf("expected set_data_type action, got %#v", alter)
+	}
+	if alter.Column == nil || alter.Column.OldName != "status" || alter.Column.Definition == nil || alter.Column.Definition.Type == "" {
+		t.Fatalf("expected preserved alter-column type payload, got %#v", alter.Column)
+	}
+}
+
+func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create view public.active_users as select id from public.users;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create view, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil {
+		t.Fatalf("expected ddl payload, got %#v", statement)
+	}
+	if statement.DDL.Operation != spec.DDLOperationCreateView {
+		t.Fatalf("expected create view operation, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Schema != "public" || statement.DDL.Table.Name != "active_users" {
+		t.Fatalf("expected qualified view target, got %#v", statement.DDL.Table)
+	}
+	if !statement.DDL.HasSelect {
+		t.Fatalf("expected create view to preserve select shape, got %#v", statement.DDL)
+	}
+}
+
+func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create or replace view public.active_users as select id from public.users;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown, got %#v", statement)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_view" {
+		t.Fatalf("expected unsupported create_view detail, got %#v", statement.Unsupported)
+	}
+}
+
+func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create temporary view public.active_users as select id from public.users;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown, got %#v", statement)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_view" {
+		t.Fatalf("expected unsupported create_view detail, got %#v", statement.Unsupported)
+	}
+}
+
+func TestParserSupportsPostgreSQLDropView(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("drop view if exists public.active_users;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported drop view, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil {
+		t.Fatalf("expected ddl payload, got %#v", statement)
+	}
+	if statement.DDL.Operation != spec.DDLOperationDropView {
+		t.Fatalf("expected drop view operation, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Schema != "public" || statement.DDL.Table.Name != "active_users" {
+		t.Fatalf("expected qualified view target, got %#v", statement.DDL.Table)
+	}
+	if statement.DDL.Options["if_exists"] != "true" {
+		t.Fatalf("expected if_exists option, got %#v", statement.DDL.Options)
+	}
+}
+
+func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("drop view public.active_users, public.disabled_users;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported == nil {
+		t.Fatalf("expected multi-target drop view to stay unsupported, got %#v", statement)
+	}
+	if statement.Unsupported.Feature != "drop" {
+		t.Fatalf("expected unsupported feature drop, got %#v", statement.Unsupported)
+	}
+}
+
+func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("alter index idx_old rename to idx_new;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported rename index, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %#v", statement)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "rename_index" {
+		t.Fatalf("expected rename_index action, got %#v", alter)
+	}
+	if alter.Name != "idx_old" {
+		t.Fatalf("expected old index name idx_old, got %#v", alter)
+	}
+	if alter.Options["new_name"] != "idx_new" {
+		t.Fatalf("expected new index name idx_new, got %#v", alter)
+	}
+}

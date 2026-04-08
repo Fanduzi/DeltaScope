@@ -102,7 +102,7 @@ func TestGetCapabilitiesToolReturnsKnownSummary(t *testing.T) {
 		Dialects:                  []string{"mysql", "tidb", "postgresql"},
 		TopLevelInputs:            []string{"sql", "dialect", "config_path", "connection_ref", "connection"},
 		ConnectionInputs:          []string{"connection.host", "connection.port", "connection.socket", "connection.user", "connection.schema", "connection.dialect", "connection.password", "connection.password_env", "connection.password_file"},
-		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set", "postgresql is currently offline-only; connection inputs require a MySQL/TiDB-compatible instance"},
+		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set", "connection inputs support mysql, tidb, and postgresql metadata-aware audit"},
 		ConnectionRefPath:         "~/.config/deltascope/connections.yaml",
 		ConnectionRefOverrideFlag: "-connections-path",
 		ResultFields:              []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},

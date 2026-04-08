@@ -6,6 +6,7 @@
 package audit
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,10 @@ import (
 )
 
 func attachImpactEstimates(statements []spec.Statement) []spec.Statement {
+	return attachImpactEstimatesWithPlanner(context.Background(), nil, statements)
+}
+
+func attachImpactEstimatesWithPlanner(ctx context.Context, planner PlanEstimator, statements []spec.Statement) []spec.Statement {
 	if len(statements) == 0 {
 		return statements
 	}
@@ -25,7 +30,13 @@ func attachImpactEstimates(statements []spec.Statement) []spec.Statement {
 		}
 
 		dml := *statement.DML
-		dml.Impact = estimateStatementImpact(statement)
+		impact := estimateStatementImpact(statement)
+		if planner != nil && supportsPlannerImpact(statement) {
+			if planned, err := planner.LoadPlanEstimate(ctx, statement); err == nil && planned != nil {
+				impact = refineImpactEstimateWithMetadata(statement, cloneImpactEstimate(planned))
+			}
+		}
+		dml.Impact = impact
 		attached[i].DML = &dml
 	}
 
@@ -94,15 +105,17 @@ func refineImpactEstimateWithMetadata(statement spec.Statement, estimate *spec.I
 
 	if statement.DML != nil && statement.DML.PredicateShape == spec.PredicateShapeUniqueEquality && metadataConfirmsPrimaryKeyID(statement) {
 		refined := cloneImpactEstimate(estimate)
-		refined.EstimatedRows = ptrInt64(1)
-		refined.RiskLevel = spec.ImpactRiskLow
-		refined.Confidence = spec.ImpactConfidenceHigh
-		refined.Source = spec.ImpactSourceMetadata
-		refined.ReasonCodes = []string{"pk_equality"}
-		refined.Notes = []string{"metadata confirmed PRIMARY(id) for the target table"}
+		if estimate.Source != spec.ImpactSourcePlan {
+			refined.EstimatedRows = ptrInt64(1)
+			refined.RiskLevel = spec.ImpactRiskLow
+			refined.Confidence = spec.ImpactConfidenceHigh
+			refined.Source = spec.ImpactSourceMetadata
+			refined.ReasonCodes = []string{"pk_equality"}
+			refined.Notes = []string{"metadata confirmed PRIMARY(id) for the target table"}
+		}
 
 		if ratio, ok := estimateRatioFromTableRows(statement.Metadata.TargetTable); ok {
-			refined.EstimatedRatio = ptrFloat64(ratio)
+			refined.EstimatedRatio = ptrFloat64(rowsToRatio(refined.EstimatedRows, ratio))
 			refined.Notes = append(refined.Notes, "table_rows metadata refined the affected-row ratio")
 		}
 
@@ -110,7 +123,13 @@ func refineImpactEstimateWithMetadata(statement spec.Statement, estimate *spec.I
 	}
 
 	refined := cloneImpactEstimate(estimate)
-	refined.Source = spec.ImpactSourceMetadata
+	if ratio, ok := estimateRatioFromTableRows(statement.Metadata.TargetTable); ok {
+		refined.EstimatedRatio = ptrFloat64(rowsToRatio(refined.EstimatedRows, ratio))
+		refined.Notes = append(refined.Notes, "table_rows metadata refined the affected-row ratio")
+	}
+	if refined.Source != spec.ImpactSourcePlan {
+		refined.Source = spec.ImpactSourceMetadata
+	}
 	return refined
 }
 
@@ -145,6 +164,32 @@ func estimateRatioFromTableRows(snapshot *spec.TableSnapshot) (float64, bool) {
 	}
 
 	return 1 / float64(rows), true
+}
+
+func rowsToRatio(estimatedRows *int64, singleRowRatio float64) float64 {
+	if estimatedRows == nil {
+		return singleRowRatio
+	}
+	if *estimatedRows <= 0 {
+		return 0
+	}
+	ratio := float64(*estimatedRows) * singleRowRatio
+	if ratio > 1 {
+		return 1
+	}
+	return ratio
+}
+
+func supportsPlannerImpact(statement spec.Statement) bool {
+	if statement.DML == nil {
+		return false
+	}
+	switch statement.DML.Operation {
+	case spec.DMLOperationUpdate, spec.DMLOperationDelete:
+		return true
+	default:
+		return false
+	}
 }
 
 func cloneImpactEstimate(estimate *spec.ImpactEstimate) *spec.ImpactEstimate {

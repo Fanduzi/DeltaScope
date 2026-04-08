@@ -19,8 +19,14 @@ import (
 type fakeMetadataProvider struct {
 	instanceCalls int
 	tableCalls    []string
+	plannerCalls  int
+	indexCalls    []string
+	indexSchemas  []string
+	indexDialects []spec.Dialect
+	indexTable    string
 	instance      *spec.InstanceFacts
 	snapshot      *spec.TableSnapshot
+	planner       *spec.ImpactEstimate
 	err           error
 }
 
@@ -38,6 +44,24 @@ func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ spec.Diale
 		return nil, f.err
 	}
 	return f.snapshot, nil
+}
+
+func (f *fakeMetadataProvider) LoadPlanEstimate(_ context.Context, _ spec.Statement) (*spec.ImpactEstimate, error) {
+	f.plannerCalls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.planner, nil
+}
+
+func (f *fakeMetadataProvider) ResolveTableForIndex(_ context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	f.indexCalls = append(f.indexCalls, index)
+	f.indexDialects = append(f.indexDialects, dialect)
+	f.indexSchemas = append(f.indexSchemas, schema)
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.indexTable, nil
 }
 
 func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
@@ -352,6 +376,58 @@ func TestAuditSQLMetadataRefinesStatementImpact(t *testing.T) {
 	}
 }
 
+func TestAuditSQLMetadataRequestProviderAppliesPlannerEstimate(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			PrimaryKey: &spec.Index{
+				Name:    "PRIMARY",
+				Kind:    spec.IndexKindPrimary,
+				Columns: []string{"id"},
+			},
+			Options: map[string]string{
+				"table_rows": "100",
+			},
+		},
+		planner: &spec.ImpactEstimate{
+			EstimatedRows: ptrInt64(7),
+			RiskLevel:     spec.ImpactRiskMedium,
+			Confidence:    spec.ImpactConfidenceMedium,
+			Source:        spec.ImpactSourcePlan,
+			ReasonCodes:   []string{"explain_rows"},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "update users set active = 0 where id = 42",
+		Dialect: spec.DialectMySQL,
+		Metadata: &MetadataRequest{
+			Schema:   "app",
+			Provider: provider,
+		},
+	})
+	if err != nil {
+		t.Fatalf("audit sql with metadata request planner: %v", err)
+	}
+	if provider.plannerCalls != 1 {
+		t.Fatalf("expected one planner call, got %d", provider.plannerCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", result.Statements)
+	}
+	impact := result.Statements[0].Impact
+	if impact == nil || impact.Source != report.ImpactSourcePlan {
+		t.Fatalf("expected plan-backed impact, got %#v", impact)
+	}
+	if impact.EstimatedRows == nil || *impact.EstimatedRows != 7 {
+		t.Fatalf("expected planner estimated rows 7, got %#v", impact)
+	}
+	if impact.EstimatedRatio == nil || *impact.EstimatedRatio != 0.07 {
+		t.Fatalf("expected metadata-refined ratio 0.07, got %#v", impact)
+	}
+}
+
 func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.T) {
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{
@@ -373,7 +449,8 @@ func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
 			DDL: &spec.DDL{
-				Table: &spec.Table{Name: "users"},
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
 			},
 		},
 	}
@@ -401,6 +478,88 @@ func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.
 	if enriched[0].Metadata.TargetTable == nil || !enriched[0].Metadata.TargetTable.Exists {
 		t.Fatalf("expected table snapshot metadata to be attached")
 	}
+}
+
+func TestEnrichStatementsWithMetadataResolvesStandaloneIndexOwnerWhenAvailable(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		instance:   &spec.InstanceFacts{Version: "16.2"},
+		indexTable: "users",
+		snapshot:   &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
+	}
+
+	statements := []spec.Statement{{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter:     []spec.Alter{{Action: "rename_index", Name: "missing_idx", Options: map[string]string{"new_name": "idx_new"}}},
+		},
+	}}
+
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
+		Schema:   "public",
+		Provider: provider,
+	}, statements)
+	if err != nil {
+		t.Fatalf("enrich standalone index statements: %v", err)
+	}
+	if len(provider.indexCalls) != 1 || provider.indexCalls[0] != "missing_idx" {
+		t.Fatalf("expected one index-owner lookup, got %#v", provider.indexCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one resolved table snapshot load, got %#v", provider.tableCalls)
+	}
+	if enriched[0].Metadata == nil || enriched[0].Metadata.TargetTable == nil || enriched[0].Metadata.TargetTable.Table == nil || enriched[0].Metadata.TargetTable.Table.Name != "users" {
+		t.Fatalf("expected resolved target table metadata, got %#v", enriched[0].Metadata)
+	}
+}
+
+func TestEnrichStatementsWithMetadataSkipsStandaloneIndexOwnerWithoutResolver(t *testing.T) {
+	provider := metadataOnlyProvider{
+		instance: &spec.InstanceFacts{Version: "16.2"},
+	}
+
+	statements := []spec.Statement{{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter:     []spec.Alter{{Action: "rename_index", Name: "missing_idx", Options: map[string]string{"new_name": "idx_new"}}},
+		},
+	}}
+
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
+		Schema:   "public",
+		Provider: provider,
+	}, statements)
+	if err != nil {
+		t.Fatalf("enrich standalone index statements without resolver: %v", err)
+	}
+	if enriched[0].Metadata == nil || enriched[0].Metadata.Schema != "public" || enriched[0].Metadata.Instance == nil {
+		t.Fatalf("expected schema and instance metadata, got %#v", enriched[0].Metadata)
+	}
+	if enriched[0].Metadata.TargetTable != nil {
+		t.Fatalf("expected no target table without resolver, got %#v", enriched[0].Metadata)
+	}
+}
+
+type metadataOnlyProvider struct {
+	instance *spec.InstanceFacts
+	err      error
+}
+
+func (p metadataOnlyProvider) LoadInstanceFacts(_ context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	return p.instance, nil
+}
+
+func (p metadataOnlyProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, _ string) (*spec.TableSnapshot, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	return nil, nil
 }
 
 func TestEnrichStatementsWithMetadataPreservesSchemaContextWithoutProvider(t *testing.T) {

@@ -72,6 +72,11 @@ type MetadataProvider interface {
 	LoadTableSnapshot(ctx context.Context, dialect Dialect, schema string, table string) (*TableSnapshot, error)
 }
 
+// PlanEstimateProvider optionally supplies planner-backed DML impact estimates.
+type PlanEstimateProvider interface {
+	LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error)
+}
+
 // Request describes one public audit invocation.
 type Request struct {
 	SQL              string
@@ -451,6 +456,10 @@ type publicMetadataProvider struct {
 	provider MetadataProvider
 }
 
+type internalIndexOwnerResolver interface {
+	ResolveTableForIndex(ctx context.Context, dialect Dialect, schema string, index string) (string, error)
+}
+
 func (p publicMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
 	if p.provider == nil {
 		return nil, nil
@@ -471,4 +480,38 @@ func (p publicMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect s
 		return nil, err
 	}
 	return cloneTableSnapshot(snapshot), nil
+}
+
+func (p publicMetadataProvider) ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	if p.provider == nil {
+		return "", nil
+	}
+	resolver, ok := p.provider.(internalIndexOwnerResolver)
+	if !ok {
+		return "", nil
+	}
+	return resolver.ResolveTableForIndex(ctx, Dialect(dialect), schema, index)
+}
+
+func (p publicMetadataProvider) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
+	if p.provider == nil {
+		return nil, nil
+	}
+	provider, ok := p.provider.(PlanEstimateProvider)
+	if !ok {
+		return nil, nil
+	}
+	estimate, err := provider.LoadPlanEstimate(ctx, statement)
+	if err != nil {
+		return nil, err
+	}
+	if estimate == nil {
+		return nil, nil
+	}
+	cloned := *estimate
+	cloned.EstimatedRows = cloneInt64Ptr(estimate.EstimatedRows)
+	cloned.EstimatedRatio = cloneFloat64Ptr(estimate.EstimatedRatio)
+	cloned.ReasonCodes = append([]string(nil), estimate.ReasonCodes...)
+	cloned.Notes = append([]string(nil), estimate.Notes...)
+	return &cloned, nil
 }

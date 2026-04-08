@@ -957,8 +957,8 @@ func TestAuditHelpIncludesOfflineAndMetadataAwareExamples(t *testing.T) {
 		"--host",
 		"--ask-password",
 		"--schema",
-		"PostgreSQL is currently offline-only",
-		"MySQL/TiDB-compatible instances",
+		"postgresql connections",
+		"auto-detects the dialect",
 	} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected help output to contain %q, got %q", expected, output)

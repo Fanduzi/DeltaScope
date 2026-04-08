@@ -146,6 +146,22 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 		t.Fatalf("expected rename index idx_old->idx_new, got ok=%t old=%q new=%q", ok, oldName, newName)
 	}
 
+	standaloneRenameIndex := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter: []spec.Alter{{Action: "rename_index", Name: "idx_old", Options: map[string]string{"new_name": "idx_new"}}},
+		},
+	}
+	matchedRename := matchingRenameActions(standaloneRenameIndex, "rename_index")
+	if len(matchedRename) != 1 {
+		t.Fatalf("expected 1 standalone rename match, got %d", len(matchedRename))
+	}
+	oldName, newName, ok = alterRenameNames(matchedRename[0])
+	if !ok || oldName != "idx_old" || newName != "idx_new" {
+		t.Fatalf("expected standalone rename index idx_old->idx_new, got ok=%t old=%q new=%q", ok, oldName, newName)
+	}
+
 	modifyColumn := matchingAlterActions(statement, "modify_column")
 	if len(modifyColumn) != 1 {
 		t.Fatalf("expected 1 modify_column alter, got %d", len(modifyColumn))
@@ -210,18 +226,37 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 }
 
 func TestAppliesToStandaloneDDLAction(t *testing.T) {
-	statement := spec.Statement{
+	dropIndexStatement := spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationDropIndex,
 			Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_users_email"}},
 		},
 	}
-	if !appliesToStandaloneDDLAction(statement, "drop_index") {
+	if !appliesToStandaloneDDLAction(dropIndexStatement, "drop_index") {
 		t.Fatal("expected standalone drop_index path to apply")
 	}
-	if appliesToStandaloneDDLAction(statement, "drop_column") {
+	if appliesToStandaloneDDLAction(dropIndexStatement, "drop_column") {
 		t.Fatal("expected non-matching action to stay false")
+	}
+	matches := matchingStandaloneDDLActions(dropIndexStatement, "drop_index")
+	if len(matches) != 1 {
+		t.Fatalf("expected one standalone drop index match, got %d", len(matches))
+	}
+
+	renameIndexStatement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Alter:     []spec.Alter{{Action: "rename_index", Name: "idx_users_email", Options: map[string]string{"new_name": "idx_users_email_new"}}},
+		},
+	}
+	if !appliesToStandaloneDDLAction(renameIndexStatement, "rename_index") {
+		t.Fatal("expected standalone rename_index path to apply")
+	}
+	matches = matchingStandaloneDDLActions(renameIndexStatement, "rename_index")
+	if len(matches) != 1 {
+		t.Fatalf("expected one standalone rename index match, got %d", len(matches))
 	}
 
 	alterTableStatement := spec.Statement{

@@ -7,6 +7,7 @@ package ddl
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -99,7 +100,7 @@ func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel st
 func (r alterObjectExistenceRule) ID() string { return r.ruleID }
 
 func (r alterObjectExistenceRule) AppliesTo(statement spec.Statement) bool {
-	return len(r.actions) > 0 && appliesToAlterActions(statement, r.actions...)
+	return len(r.actions) > 0 && len(matchingAlterObjectActions(statement, r.actions...)) > 0
 }
 
 func (r alterObjectExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -112,7 +113,8 @@ func (r alterObjectExistenceRule) Evaluate(statement spec.Statement) ([]rule.Fin
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, r.actions...) {
+	tableName := metadataTargetTableName(statement, snapshot)
+	for _, alter := range matchingAlterObjectActions(statement, r.actions...) {
 		name := r.selectName(alter)
 		if name == "" {
 			continue
@@ -121,10 +123,10 @@ func (r alterObjectExistenceRule) Evaluate(statement spec.Statement) ([]rule.Fin
 		if r.forbidIfExists && exists {
 			findings = append(findings, rule.Finding{
 				Level:      r.level,
-				Message:    fmt.Sprintf("%s %q already exists on table %q", r.objectLabel, name, statement.DDL.Table.Name),
+				Message:    fmt.Sprintf("%s %q already exists on table %q", r.objectLabel, name, tableName),
 				Suggestion: fmt.Sprintf("pick a different %s name or remove the duplicate add operation", r.objectLabel),
 				Metadata: map[string]any{
-					"table":  statement.DDL.Table.Name,
+					"table":  tableName,
 					"action": alter.Action,
 					"name":   name,
 					"exists": true,
@@ -135,10 +137,10 @@ func (r alterObjectExistenceRule) Evaluate(statement spec.Statement) ([]rule.Fin
 		if !r.forbidIfExists && !exists {
 			findings = append(findings, rule.Finding{
 				Level:      r.level,
-				Message:    fmt.Sprintf("%s %q does not exist on table %q", r.objectLabel, name, statement.DDL.Table.Name),
+				Message:    fmt.Sprintf("%s %q does not exist on table %q", r.objectLabel, name, tableName),
 				Suggestion: fmt.Sprintf("fix the %s name or refresh metadata before auditing this change", r.objectLabel),
 				Metadata: map[string]any{
-					"table":  statement.DDL.Table.Name,
+					"table":  tableName,
 					"action": alter.Action,
 					"name":   name,
 					"exists": false,
@@ -164,7 +166,7 @@ func newAlterPrimaryKeyExistenceRule(ruleID string, fallbackLevel rule.Level, cf
 func (r alterPrimaryKeyExistenceRule) ID() string { return r.ruleID }
 
 func (r alterPrimaryKeyExistenceRule) AppliesTo(statement spec.Statement) bool {
-	return appliesToAlterActions(statement, "drop_primary_key")
+	return len(matchingDropPrimaryKeyActions(statement)) > 0
 }
 
 func (r alterPrimaryKeyExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -185,6 +187,57 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(statement spec.Statement) ([]rule
 			"exists": false,
 		},
 	}}, nil
+}
+
+func matchingAlterObjectActions(statement spec.Statement, actions ...string) []spec.Alter {
+	matched := matchingAlterActions(statement, actions...)
+	if len(matched) > 0 {
+		return matched
+	}
+	return matchingStandaloneDDLActions(statement, actions...)
+}
+
+func metadataTargetTableName(statement spec.Statement, snapshot *spec.TableSnapshot) string {
+	if statement.DDL != nil && statement.DDL.Table != nil && statement.DDL.Table.Name != "" {
+		return statement.DDL.Table.Name
+	}
+	if snapshot != nil && snapshot.Table != nil && snapshot.Table.Name != "" {
+		return snapshot.Table.Name
+	}
+	return ""
+}
+
+func matchingDropPrimaryKeyActions(statement spec.Statement) []spec.Alter {
+	matches := matchingAlterActions(statement, "drop_primary_key")
+	if len(matches) > 0 {
+		return matches
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil {
+		return nil
+	}
+	constraintName := primaryKeyConstraintName(snapshot)
+	if constraintName == "" {
+		return nil
+	}
+	for _, alter := range matchingAlterActions(statement, "drop_constraint") {
+		if alter.Name != "" && strings.EqualFold(alter.Name, constraintName) {
+			matches = append(matches, spec.Alter{Action: "drop_primary_key", Name: alter.Name})
+		}
+	}
+	return matches
+}
+
+func primaryKeyConstraintName(snapshot *spec.TableSnapshot) string {
+	for _, constraint := range snapshot.Constraints {
+		if constraint.Type == "primary_key" && constraint.Name != "" {
+			return constraint.Name
+		}
+	}
+	if snapshot.PrimaryKey != nil {
+		return snapshot.PrimaryKey.Name
+	}
+	return ""
 }
 
 func alterObjectName(alter spec.Alter) string {

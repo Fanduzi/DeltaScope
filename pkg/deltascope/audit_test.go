@@ -20,6 +20,10 @@ import (
 type fakeMetadataProvider struct {
 	instanceCalls int
 	tableCalls    []string
+	indexCalls    []string
+	indexSchemas  []string
+	indexDialects []Dialect
+	indexTable    string
 	instance      *InstanceFacts
 	snapshot      *TableSnapshot
 	err           error
@@ -39,6 +43,16 @@ func (f *fakeMetadataProvider) LoadTableSnapshot(_ context.Context, _ Dialect, _
 		return nil, f.err
 	}
 	return f.snapshot, nil
+}
+
+func (f *fakeMetadataProvider) ResolveTableForIndex(_ context.Context, dialect Dialect, schema string, index string) (string, error) {
+	f.indexCalls = append(f.indexCalls, index)
+	f.indexDialects = append(f.indexDialects, dialect)
+	f.indexSchemas = append(f.indexSchemas, schema)
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.indexTable, nil
 }
 
 func TestAuditUsesDefaultPolicy(t *testing.T) {

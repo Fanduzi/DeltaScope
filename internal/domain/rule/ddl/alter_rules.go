@@ -71,7 +71,7 @@ func (r forbiddenAlterActionRule) Evaluate(statement spec.Statement) ([]rule.Fin
 	}
 
 	findings := make([]rule.Finding, 0)
-	alters := matchingAlterActions(statement, r.action)
+	alters := matchingForbiddenAlterActions(statement, r.action)
 	standalone := statement.DDL.Table == nil
 	if standalone {
 		alters = matchingStandaloneDDLActions(statement, r.action)
@@ -104,4 +104,11 @@ func (r forbiddenAlterActionRule) Evaluate(statement spec.Statement) ([]rule.Fin
 		})
 	}
 	return findings, nil
+}
+
+func matchingForbiddenAlterActions(statement spec.Statement, action string) []spec.Alter {
+	if action == "drop_primary_key" {
+		return matchingDropPrimaryKeyActions(statement)
+	}
+	return matchingAlterActions(statement, action)
 }

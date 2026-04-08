@@ -55,6 +55,12 @@ func collectTargetTables(sqlText string, dialect spec.Dialect) ([]schemaTarget, 
 
 func statementTarget(statement spec.Statement) (string, string, bool) {
 	if statement.DDL != nil && statement.DDL.Table != nil {
+		switch statement.DDL.Operation {
+		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable:
+			// approved table-backed metadata targets
+		default:
+			return "", "", false
+		}
 		schema := strings.TrimSpace(statement.DDL.Table.Schema)
 		name := strings.TrimSpace(statement.DDL.Table.Name)
 		if name == "" {

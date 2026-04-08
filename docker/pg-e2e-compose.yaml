@@ -1,0 +1,18 @@
+services:
+  postgresql:
+    image: postgres:17
+    container_name: deltascope-pg-e2e
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: postgres
+    ports:
+      - "5500:5432"
+    volumes:
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s

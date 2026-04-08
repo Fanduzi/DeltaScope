@@ -18,6 +18,16 @@ type MetadataProvider interface {
 	LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error)
 }
 
+// IndexOwnerResolver optionally resolves standalone index statements back to owning tables.
+type IndexOwnerResolver interface {
+	ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error)
+}
+
+// PlanEstimator optionally loads planner-backed DML impact estimates.
+type PlanEstimator interface {
+	LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error)
+}
+
 // MetadataRequest describes one optional metadata-aware audit invocation.
 type MetadataRequest struct {
 	Schema   string
@@ -53,7 +63,10 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 		enriched[i] = statement
 		metadata := &spec.Metadata{Schema: request.Schema, Instance: instanceFacts}
 
-		tableName := targetTableName(statement)
+		tableName, err := metadataTargetTableName(ctx, dialect, request, statement)
+		if err != nil {
+			return nil, err
+		}
 		if tableName != "" {
 			key := strings.ToLower(tableName)
 			snapshot, ok := snapshots[key]
@@ -77,10 +90,55 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 
 func targetTableName(statement spec.Statement) string {
 	if statement.DDL != nil && statement.DDL.Table != nil {
-		return strings.TrimSpace(statement.DDL.Table.Name)
+		switch statement.DDL.Operation {
+		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable:
+			return strings.TrimSpace(statement.DDL.Table.Name)
+		default:
+			return ""
+		}
 	}
 	if statement.DML != nil && len(statement.DML.Tables) > 0 {
 		return strings.TrimSpace(statement.DML.Tables[0].Name)
 	}
 	return ""
+}
+
+func metadataTargetTableName(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statement spec.Statement) (string, error) {
+	tableName := targetTableName(statement)
+	if tableName != "" {
+		return tableName, nil
+	}
+	if request == nil || request.Provider == nil || statement.DDL == nil || len(statement.DDL.Alter) == 0 {
+		return "", nil
+	}
+	resolver, ok := request.Provider.(IndexOwnerResolver)
+	if !ok {
+		return "", nil
+	}
+	for _, alter := range statement.DDL.Alter {
+		switch alter.Action {
+		case "rename_index", "drop_index":
+			if strings.TrimSpace(alter.Name) == "" {
+				continue
+			}
+			schema := indexStatementSchema(request, alter)
+			if schema == "" {
+				continue
+			}
+			return resolver.ResolveTableForIndex(ctx, dialect, schema, alter.Name)
+		}
+	}
+	return "", nil
+}
+
+func indexStatementSchema(request *MetadataRequest, alter spec.Alter) string {
+	if alter.Options != nil {
+		if schema := strings.TrimSpace(alter.Options["schema"]); schema != "" {
+			return schema
+		}
+	}
+	if request == nil {
+		return ""
+	}
+	return strings.TrimSpace(request.Schema)
 }

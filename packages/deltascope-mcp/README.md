@@ -16,7 +16,7 @@ The launched `deltascope-mcp` server exposes a unified `audit_sql` surface for:
 - TiDB offline audit
 - PostgreSQL offline audit on the main PG-capable release binaries across the supported macOS and Linux platforms
 
-Connection-backed metadata-aware audit remains limited to MySQL/TiDB-compatible instances. PostgreSQL requests must stay offline-only on the MCP surface.
+Connection-backed metadata-aware audit supports MySQL/TiDB-compatible instances and PostgreSQL on the main PG-capable release binaries across the supported macOS and Linux platforms.
 
 ## Version Contract
 

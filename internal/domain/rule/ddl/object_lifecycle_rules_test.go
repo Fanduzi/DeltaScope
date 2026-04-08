@@ -46,6 +46,13 @@ func TestDropAndTruncateRules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new drop-table rule: %v", err)
 	}
+	dropViewRule, err := newForbiddenDDLOperationRule(ruleIDViewDropForbid, spec.DDLOperationDropView, "drop view", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new drop-view rule: %v", err)
+	}
 	truncateRule, err := newForbiddenDDLOperationRule(ruleIDTableTruncateForbid, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"forbid": true},
@@ -64,6 +71,18 @@ func TestDropAndTruncateRules(t *testing.T) {
 	}
 	if len(dropFindings) != 1 {
 		t.Fatalf("expected one drop-table finding, got %d", len(dropFindings))
+	}
+
+	dropViewStmt := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL:  &spec.DDL{Operation: spec.DDLOperationDropView, Table: &spec.Table{Name: "active_users"}},
+	}
+	dropViewFindings, err := dropViewRule.Evaluate(dropViewStmt)
+	if err != nil {
+		t.Fatalf("evaluate drop-view rule: %v", err)
+	}
+	if len(dropViewFindings) != 1 {
+		t.Fatalf("expected one drop-view finding, got %d", len(dropViewFindings))
 	}
 
 	truncateStmt := spec.Statement{

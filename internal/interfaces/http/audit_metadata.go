@@ -98,14 +98,11 @@ func executeMetadataAwareAudit(
 		return auditResponse{}, err
 	}
 
-	requestedDialect := strings.TrimSpace(string(request.Dialect))
-	if requestedDialect == "" {
-		requestedDialect = strings.TrimSpace(request.Connection.Dialect)
+	explicitDialectValue := strings.TrimSpace(string(request.Dialect))
+	if explicitDialectValue == "" {
+		explicitDialectValue = strings.TrimSpace(request.Connection.Dialect)
 	}
-	requestedPublicDialect, _ := resolveHTTPAuditDialect(requestedDialect)
-	if requestedPublicDialect == deltascope.DialectPostgreSQL {
-		return auditResponse{}, fmt.Errorf("PostgreSQL metadata-aware audit is not yet supported; use offline mode without connection inputs")
-	}
+	requestedPublicDialect, _ := resolveHTTPAuditDialect(explicitDialectValue)
 	schema, schemaSource := resolveRequestSchema(request)
 
 	prepared, err := prepareHTTPMetadataAudit(ctx, auditmeta.Request{
@@ -116,9 +113,10 @@ func executeMetadataAwareAudit(
 			Socket:   strings.TrimSpace(request.Connection.Socket),
 			User:     strings.TrimSpace(request.Connection.User),
 			Password: password,
+			Dialect:  func() spec.Dialect { if explicitDialectValue != "" { return toMetadataDialect(requestedPublicDialect) }; return "" }(),
 		},
 		RequestedDialect:     toMetadataDialect(requestedPublicDialect),
-		ExplicitDialect:      requestedDialect != "",
+		ExplicitDialect:      explicitDialectValue != "",
 		ExplicitSchema:       schema,
 		ExplicitSchemaSource: schemaSource,
 		SchemaHint:           "schema",
@@ -230,10 +228,32 @@ type publicMetadataProvider struct {
 	client auditmeta.Client
 }
 
+type internalIndexOwnerResolver interface {
+	ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error)
+}
+
 func (p publicMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect deltascope.Dialect, schema string) (*deltascope.InstanceFacts, error) {
 	return p.client.LoadInstanceFacts(ctx, toMetadataDialect(dialect), schema)
 }
 
 func (p publicMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect deltascope.Dialect, schema string, table string) (*deltascope.TableSnapshot, error) {
 	return p.client.LoadTableSnapshot(ctx, toMetadataDialect(dialect), schema, table)
+}
+
+func (p publicMetadataProvider) ResolveTableForIndex(ctx context.Context, dialect deltascope.Dialect, schema string, index string) (string, error) {
+	resolver, ok := p.client.(internalIndexOwnerResolver)
+	if !ok {
+		return "", nil
+	}
+	return resolver.ResolveTableForIndex(ctx, toMetadataDialect(dialect), schema, index)
+}
+
+func (p publicMetadataProvider) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
+	provider, ok := p.client.(interface {
+		LoadPlanEstimate(context.Context, spec.Statement) (*spec.ImpactEstimate, error)
+	})
+	if !ok {
+		return nil, nil
+	}
+	return provider.LoadPlanEstimate(ctx, statement)
 }

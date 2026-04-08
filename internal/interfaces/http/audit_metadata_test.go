@@ -9,7 +9,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -20,23 +19,44 @@ import (
 )
 
 type metadataAuditTestClient struct {
-	closed bool
+	closed        bool
+	detectDialect spec.Dialect
+	tableCalls    []string
+	indexCalls    []string
+	indexSchemas  []string
+	indexDialects []spec.Dialect
+	indexTable    string
+	snapshot      *spec.TableSnapshot
 }
 
 func (c *metadataAuditTestClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
 	return &spec.InstanceFacts{Version: "8.0.36"}, nil
 }
 
-func (c *metadataAuditTestClient) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
+func (c *metadataAuditTestClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, table string) (*spec.TableSnapshot, error) {
+	c.tableCalls = append(c.tableCalls, table)
+	if c.snapshot != nil {
+		return c.snapshot, nil
+	}
 	return &spec.TableSnapshot{Exists: true}, nil
 }
 
 func (c *metadataAuditTestClient) DetectDialect(context.Context) (spec.Dialect, error) {
-	return spec.DialectMySQL, nil
+	if c.detectDialect == "" {
+		return spec.DialectMySQL, nil
+	}
+	return c.detectDialect, nil
 }
 
 func (c *metadataAuditTestClient) FindSchemasForTable(context.Context, string) ([]string, error) {
 	return []string{"app"}, nil
+}
+
+func (c *metadataAuditTestClient) ResolveTableForIndex(_ context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	c.indexCalls = append(c.indexCalls, index)
+	c.indexDialects = append(c.indexDialects, dialect)
+	c.indexSchemas = append(c.indexSchemas, schema)
+	return c.indexTable, nil
 }
 
 func (c *metadataAuditTestClient) Close() error {
@@ -227,37 +247,6 @@ func TestExecuteAuditRequestUsesConfigSnapshotForMetadataAwareAudit(t *testing.T
 	}
 	if _, err := os.Stat(capturedConfigPath); !os.IsNotExist(err) {
 		t.Fatalf("expected config snapshot cleanup, got err=%v", err)
-	}
-}
-
-func TestExecuteAuditRequestRejectsPostgreSQLMetadataAwareMode(t *testing.T) {
-	previous := prepareHTTPMetadataAudit
-	called := false
-	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		called = true
-		return nil, nil
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
-
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "select 1",
-		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1",
-			User: "root",
-		},
-	}, "", func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
-		t.Fatalf("auditFn should not be called for unsupported postgresql metadata-aware request")
-		return deltascope.Result{}, nil
-	})
-	if err == nil {
-		t.Fatalf("expected postgresql metadata-aware unsupported error")
-	}
-	if !strings.Contains(strings.ToLower(err.Error()), "postgresql") || !strings.Contains(strings.ToLower(err.Error()), "offline") {
-		t.Fatalf("expected explicit postgresql offline-only error, got %v", err)
-	}
-	if called {
-		t.Fatalf("did not expect prepareHTTPMetadataAudit to be called")
 	}
 }
 
