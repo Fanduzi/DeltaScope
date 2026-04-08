@@ -18,6 +18,11 @@ type mysqlClient struct {
 	provider *mysqlmeta.Provider
 }
 
+// OpenClient opens a shared metadata client for the requested dialect.
+func OpenClient(config ConnectionConfig) (Client, error) {
+	return openMySQLClient(config)
+}
+
 func (c mysqlClient) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
 	return c.provider.LoadInstanceFacts(ctx, dialect, schema)
 }
