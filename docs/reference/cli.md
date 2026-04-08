@@ -57,14 +57,13 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 ### Connection Flags (Metadata-Aware Mode)
 
 Supplying any one of the following flags activates metadata-aware mode. DeltaScope connects to the
-specified MySQL or TiDB instance to retrieve live schema facts (table structure, index definitions,
-instance variables) and attaches them to each statement before rule evaluation. PostgreSQL support
-is currently offline-only and does not use these connection flags.
+specified MySQL, TiDB, or PostgreSQL instance to retrieve live schema facts (table structure, index
+definitions, instance variables) and attaches them to each statement before rule evaluation.
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--host` | `-h` | (none) | MySQL/TiDB host address |
-| `--port` | `-P` | `3306` | Port number |
+| `--host` | `-h` | (none) | Database host address |
+| `--port` | `-P` | `3306` | Port number (default 3306 for MySQL/TiDB, 5432 for PostgreSQL) |
 | `--user` | `-u` | (none) | Database user |
 | `--password` | `-p` | (none) | Password on the command line (avoid in production — it appears in shell history) |
 | `--password-env` | | (none) | Environment variable that contains the database password |
@@ -75,8 +74,9 @@ is currently offline-only and does not use these connection flags.
 
 **Behavior in metadata-aware mode:**
 
-- Dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
+- For MySQL/TiDB: dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
   also set explicitly and conflicts, the command exits with code 2.
+- For PostgreSQL: pass `--dialect postgresql` explicitly. Auto-detection is not supported for PostgreSQL.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
 
@@ -96,6 +96,13 @@ deltascope audit \
   --user dba --password-env DELTASCOPE_DB_PASSWORD \
   --schema mydb \
   --sql "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL DEFAULT 0"
+
+# Connect to a PostgreSQL instance
+deltascope audit \
+  --host 127.0.0.1 --port 5432 \
+  --user readonly --ask-password \
+  --dialect postgresql --schema public \
+  --file ./migration.sql
 ```
 
 ### Output Formats
@@ -222,7 +229,7 @@ When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to ea
 }
 ```
 
-Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
+Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics (MySQL/TiDB) or via the PostgreSQL query planner (`EXPLAIN`). DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
 
 Threshold rules `dml.impact.rows.max_count` and `dml.impact.ratio.max_percent` consume this additive statement-level payload when it is available. The payload itself is attached in the audit flow before rule evaluation.
 

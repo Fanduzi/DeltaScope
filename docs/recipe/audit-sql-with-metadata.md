@@ -21,6 +21,14 @@ GRANT SELECT ON performance_schema.global_variables TO 'deltascope'@'%';
 
 TiDB uses the same `information_schema` structure. The `performance_schema.global_variables` grant is optional for TiDB — DeltaScope falls back gracefully when it is unavailable.
 
+For PostgreSQL, the user needs `USAGE` on the target schema and default access to `pg_catalog` (available to all roles by default):
+
+```sql
+-- PostgreSQL: grant USAGE on the target schema
+GRANT USAGE ON SCHEMA app TO deltascope;
+-- pg_catalog access is granted to PUBLIC by default; no additional grant is needed.
+```
+
 ## Connecting via TCP
 
 ```bash
@@ -55,6 +63,34 @@ deltascope audit \
   --user deltascope \
   --password-file ~/.config/deltascope/mysql-password.txt \
   --schema app
+```
+
+### PostgreSQL Connection
+
+Use `--dialect postgresql` and the PostgreSQL port (default `5432`) when connecting to a PostgreSQL instance. `--schema` maps to the PostgreSQL schema (default `public`):
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT ''" \
+  --dialect postgresql \
+  --host 127.0.0.1 \
+  --port 5432 \
+  --user deltascope \
+  --ask-password \
+  --schema public
+```
+
+For scripted use, prefer `--password-env` or `--password-file`:
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT ''" \
+  --dialect postgresql \
+  --host 127.0.0.1 \
+  --port 5432 \
+  --user deltascope \
+  --password-env DELTASCOPE_PASSWORD \
+  --schema public
 ```
 
 ## Connecting via Unix Socket
@@ -152,6 +188,13 @@ Fix by adding `--schema app` or by qualifying the table name in SQL: `ALTER TABL
 - **`innodb_adaptive_hash_index`**: Always treated as inactive for TiDB targets. Rules that depend on this variable behave accordingly.
 - **Merge-alter rules**: `ddl.alter.merge.mysql.require` is enabled in the shipped policy; `ddl.alter.merge.tidb.require` is disabled by default (`required: false`). Adjust in your config if needed.
 - **`performance_schema.global_variables`**: DeltaScope falls back gracefully when this view is unavailable on TiDB. Instance facts that depend on it may be absent, but the audit proceeds.
+
+## PostgreSQL Notes
+
+- **`--dialect postgresql` is required**: Unlike MySQL/TiDB, DeltaScope does not auto-detect PostgreSQL at connection time. You must pass `--dialect postgresql` explicitly.
+- **Schema defaults to `public`**: When `--schema` is omitted, DeltaScope uses `public` as the default PostgreSQL schema. Pass `--schema` explicitly if your tables live in a different schema.
+- **MySQL-specific rules are not applicable**: Rules that reference InnoDB features (engine allowlists, row format, adaptive hash index, `innodb_large_prefix`) are skipped for PostgreSQL targets.
+- **DML impact estimation uses `EXPLAIN`**: For `UPDATE` and `DELETE` statements, DeltaScope issues a read-only `EXPLAIN` against the PostgreSQL planner to refine row estimates. It does not execute `EXPLAIN ANALYZE` and never runs the actual DML. `INSERT` statements do not trigger planner estimation.
 
 ## Metadata-Aware vs Offline Output
 

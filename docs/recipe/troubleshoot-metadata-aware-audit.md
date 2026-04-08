@@ -21,6 +21,23 @@ FLUSH PRIVILEGES;
 
 **TiDB:** The same `information_schema` grants apply. `performance_schema.global_variables` is optional — DeltaScope falls back gracefully when it is unavailable. No additional per-database or per-table grants are required.
 
+## Required PostgreSQL Permissions
+
+DeltaScope only reads metadata — it never writes to your database.
+
+| Permission | Why it is needed |
+|------------|-----------------|
+| `USAGE ON SCHEMA <schema>` | Access to the target schema for table and column lookups |
+| Default `pg_catalog` access (granted to `PUBLIC`) | System catalog queries: table existence, columns, constraints, indexes |
+
+Grant USAGE on the target schema:
+
+```sql
+GRANT USAGE ON SCHEMA app TO deltascope;
+```
+
+`pg_catalog` access is available to all roles by default. No additional grants are needed unless your environment revokes default `PUBLIC` privileges.
+
 ## Common Symptoms and Fixes
 
 ### "schema inference is ambiguous; pass --schema"
@@ -125,6 +142,25 @@ exit code: 2
 
 Only pass `--dialect` in offline mode when you want to override the default without a connection.
 
+### Missing `--dialect` for PostgreSQL
+
+```text
+Error: dialect conflict: connected instance appears to be PostgreSQL but --dialect is not set
+exit code: 2
+```
+
+Or you may get MySQL-oriented errors because DeltaScope defaulted to the MySQL parser.
+
+**Fix:** Always pass `--dialect postgresql` when connecting to a PostgreSQL instance. Unlike MySQL/TiDB, DeltaScope does not auto-detect PostgreSQL at connection time.
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255)" \
+  --dialect postgresql \
+  --host 127.0.0.1 --port 5432 --user deltascope --ask-password \
+  --schema public
+```
+
 ### Output Looks Different From Offline
 
 This is expected. Metadata-aware mode activates additional rules that require live schema context. For example, a column-existence check only fires when DeltaScope can read the current column list.
@@ -160,6 +196,15 @@ Metadata-backed rules (those with `Metadata: true` in `deltascope rules show` ou
 - **`ddl.alter.merge.tidb.require`**: Disabled by default in the shipped policy (`required: false`). Enable it in your config if your TiDB version supports online DDL merge.
 - **`tidb_version()` detection**: Runs automatically at connection time. The result is recorded in `context.dialect_source: "detected"`. You do not need to pass `--dialect tidb`.
 - **`performance_schema.global_variables`**: DeltaScope falls back gracefully when this view is unavailable on TiDB. Instance facts that depend on it may be absent, but the audit proceeds normally.
+
+## PostgreSQL-Specific Notes
+
+- **`--dialect postgresql` is mandatory**: DeltaScope does not auto-detect PostgreSQL at connection time. If you omit `--dialect` when connecting to PostgreSQL, the audit defaults to the MySQL parser and will likely produce parse errors or incorrect results.
+- **`EXPLAIN` is read-only**: DeltaScope uses the PostgreSQL planner via `EXPLAIN` (not `EXPLAIN ANALYZE`) to refine DML impact estimates for `UPDATE` and `DELETE`. This is a read-only operation — it does not execute the statement and does not require write permissions.
+- **`INSERT` does not trigger planner estimation**: The `EXPLAIN` path is only used for `UPDATE` and `DELETE`. For `INSERT`, impact estimation relies on SQL shape analysis alone.
+- **Connection failures**: PostgreSQL default port is `5432` (not `3306`). Verify `--port` matches your PostgreSQL instance. Also confirm the user has `USAGE` on the target schema.
+- **Permission errors for `pg_catalog`**: If your environment revokes default `PUBLIC` privileges on `pg_catalog`, DeltaScope cannot read table metadata. Restore access with `GRANT USAGE ON SCHEMA pg_catalog TO deltascope;`.
+- **MySQL-specific rules are skipped**: Rules that reference InnoDB features (engine allowlists, row format, adaptive hash index, `innodb_large_prefix`) do not fire for PostgreSQL targets. This is expected behavior, not a configuration issue.
 
 ## Verifying Metadata Mode Is Active
 

@@ -132,7 +132,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "GET /v1/capabilities"
   ],
   "audit_modes": ["offline", "metadata-aware"],
-  "dialects": ["mysql", "tidb"]
+  "dialects": ["mysql", "tidb", "postgresql"]
 }
 ```
 
@@ -199,7 +199,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `sql` | string | Yes | One or more SQL statements to audit |
-| `dialect` | string | No | `mysql` or `tidb`. Defaults to `mysql` when omitted. |
+| `dialect` | string | No | `mysql`, `tidb`, or `postgresql`. Defaults to `mysql` when omitted. PostgreSQL requires a PG-capable server binary. |
 | `schema` | string | No | Optional schema name used by offline and metadata-aware audits. When both top-level `schema` and `connection.schema` are supplied, the top-level value takes precedence. |
 | `connection` | object | No | Optional direct metadata-aware connection input |
 
@@ -212,7 +212,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 | `socket` | string | No | Unix socket path for socket connections |
 | `user` | string | No | Database user |
 | `schema` | string | No | Schema to audit against when using direct metadata-aware input; ignored when the top-level `schema` field is present |
-| `dialect` | string | No | `mysql` or `tidb`; used as the requested dialect for metadata-aware requests |
+| `dialect` | string | No | `mysql`, `tidb`, or `postgresql`; used as the requested dialect for metadata-aware requests |
 | `password` | string | No | Inline password value |
 | `password_env` | string | No | Environment variable name that contains the password |
 | `password_file` | string | No | File path that contains the password |
@@ -227,7 +227,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 
 #### Metadata-Aware Example
 
-Request:
+Request (MySQL):
 
 ```json
 {
@@ -239,6 +239,21 @@ Request:
     "schema": "app",
     "dialect": "mysql",
     "password_env": "DELTASCOPE_DB_PASSWORD"
+  }
+}
+```
+
+Request (PostgreSQL):
+
+```json
+{
+  "sql": "ALTER TABLE orders DROP CONSTRAINT orders_pkey",
+  "dialect": "postgresql",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "readonly",
+    "schema": "public"
   }
 }
 ```

@@ -110,7 +110,7 @@ When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to ea
 }
 ```
 
-Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`. The payload itself is attached in the audit flow before rule evaluation.
+Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. For PostgreSQL, `UPDATE` and `DELETE` estimates may be further refined via a read-only `EXPLAIN` query against the PostgreSQL planner; `INSERT` does not trigger planner estimation. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`. The payload itself is attached in the audit flow before rule evaluation.
 
 ### Impact
 
@@ -336,6 +336,22 @@ if err != nil {
 }
 ```
 
+### With PostgreSQL Metadata Provider
+
+```go
+result, err := deltascope.Audit(ctx, deltascope.Request{
+    SQL:              sql,
+    Dialect:          deltascope.DialectPostgreSQL,
+    Schema:           "public",
+    MetadataProvider: myProvider,
+})
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+> **Note:** PostgreSQL requests require a PG-capable build. Starting with the `v0.17.0` release line, the standard macOS and Linux archives include PostgreSQL support. When using the public Go library (`pkg/deltascope`), ensure your binary is built with the PostgreSQL metadata adapter dependency.
+
 ---
 
 ## MetadataProvider Interface
@@ -349,8 +365,8 @@ type MetadataProvider interface {
 
 Implement `MetadataProvider` to supply live schema and instance facts from a database connection. Pass the implementation in `Request.MetadataProvider` to enable metadata-aware rules.
 
-- `LoadInstanceFacts` is called once per audit request and returns server-level configuration values such as the default charset, InnoDB row format, and adaptive hash index setting.
-- `LoadTableSnapshot` is called for each table referenced in the SQL and returns a normalized snapshot of the current table definition, including columns, indexes, and table options.
+- `LoadInstanceFacts` is called once per audit request and returns server-level configuration values such as the default charset, InnoDB row format, and adaptive hash index setting (MySQL/TiDB). For PostgreSQL, instance facts are populated from `pg_catalog` and InnoDB-specific fields are not applicable.
+- `LoadTableSnapshot` is called for each table referenced in the SQL and returns a normalized snapshot of the current table definition, including columns, indexes, and table options. For PostgreSQL, snapshots are built from `pg_catalog`, `pg_constraint`, and `pg_indexes`.
 
 When `MetadataProvider` is `nil`, all metadata-aware rules are skipped and the audit runs in offline mode. Offline audits are always safe to run without a database connection.
 

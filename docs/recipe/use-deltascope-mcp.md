@@ -104,11 +104,28 @@ Use direct connection when the client can send metadata inline with the request 
 }
 ```
 
+### PostgreSQL Direct Connection
+
+```json
+{
+  "sql": "delete from users where id = 1",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "deltascope",
+    "schema": "public",
+    "dialect": "postgresql",
+    "password_env": "DELTASCOPE_PASSWORD"
+  }
+}
+```
+
 Notes:
 
 - `connection` and `connection_ref` are mutually exclusive.
 - If both `dialect` and `connection.dialect` are present, the top-level `dialect` wins.
 - Use direct connection for one-off audits or when the MCP client already knows the live target details.
+- **PostgreSQL requires `dialect: "postgresql"`** — unlike MySQL/TiDB, the dialect is not auto-detected. Always include it explicitly in the connection block or as a top-level field.
 
 ## `connection_ref`
 
@@ -134,6 +151,13 @@ connections:
     schema: app
     dialect: mysql
     password_env: PROD_DB_PASSWORD
+  pg_readonly:
+    host: 10.0.0.20
+    port: 5432
+    user: audit_bot
+    schema: public
+    dialect: postgresql
+    password_env: PG_DB_PASSWORD
 ```
 
 Use `connection_ref` when:
