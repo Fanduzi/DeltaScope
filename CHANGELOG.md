@@ -8,6 +8,23 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 Release target: `TBD`
 
+## [v0.18.0] - 2026-04-09
+
+### Added
+
+- PostgreSQL metadata-aware audit: DeltaScope can now connect to a live PostgreSQL 12+ instance to retrieve schema metadata, run `EXPLAIN` for DML impact estimation, and evaluate rules against real database state
+- Transport parity: CLI, HTTP (`POST /v1/audit`), and MCP (`audit_sql`) all support PostgreSQL metadata-aware audit with `--dialect postgresql` or `"dialect": "postgresql"`
+- PostgreSQL schema resolution: qualified table names in SQL are parsed automatically; unqualified names resolve via `--schema` flag or unique-match inference across accessible schemas
+- PostgreSQL DML impact estimation via `EXPLAIN` (read-only, conservative, never executes the DML)
+- PostgreSQL metadata-aware rules: `ddl.alter.drop_primary_key.forbid` detects `DROP CONSTRAINT` on primary keys via `pg_constraint` mapping, `ddl.alter.rename_column.exists.require` verifies column existence, `ddl.alter.rename_index.forbid` flags index renames, `ddl.alter.drop_column.exists.require` verifies column existence, `ddl.table.exists.create.forbid` checks table existence
+- PostgreSQL metadata provider (`internal/infrastructure/metadata/postgresql`) with `pgx/v5` driver for schema introspection and planner queries
+- Full E2E test suites for all three transports against PostgreSQL 17: CLI (9 shell-based cases), HTTP (9 Go subtests), MCP (9 Go subtests)
+
+### Changed
+
+- Documentation updated across all reference, concept, recipe, and landing pages to reflect PostgreSQL metadata-aware support
+- `pgx/v5` promoted from indirect to direct dependency in `go.mod`
+
 ## [v0.13.1] - 2026-04-02
 
 ### Fixed

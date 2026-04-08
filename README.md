@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; starting with the `v0.17.0` release line, PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; starting with the `v0.18.0` release line, PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,20 +34,20 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.17.0/install.sh | \
-  DELTASCOPE_VERSION=v0.17.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.18.0/install.sh | \
+  DELTASCOPE_VERSION=v0.18.0 sh
 ```
 
 Need PostgreSQL offline audit support?
 
-- Starting with `v0.17.0`, install the normal DeltaScope main archive on supported macOS and Linux platforms; no separate PG-only installer is required.
+- Starting with `v0.18.0`, install the normal DeltaScope main archive on supported macOS and Linux platforms; no separate PG-only installer is required.
 - `deltascope-pg_<version>_linux_amd64.tar.gz` remains available only as a legacy compatibility download for older CLI-only workflows during the transition.
 
 The published core archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ### Release Contract
 
-Every tag produces core archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. Starting with `v0.17.0`, the supported `darwin/amd64`, `darwin/arm64`, `linux/amd64`, and `linux/arm64` main archives are PG-capable and support PostgreSQL offline across all three binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve those platform-specific main archives from GitHub Release assets. `deltascope-pg_<version>_linux_amd64.tar.gz` may still appear as a legacy compatibility download during the transition, but it is no longer part of the primary install story. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
+Every tag produces core archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. Starting with `v0.18.0`, the supported `darwin/amd64`, `darwin/arm64`, `linux/amd64`, and `linux/arm64` main archives are PG-capable and support PostgreSQL offline across all three binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve those platform-specific main archives from GitHub Release assets. `deltascope-pg_<version>_linux_amd64.tar.gz` may still appear as a legacy compatibility download during the transition, but it is no longer part of the primary install story. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
 
 ## Quick Start
 
