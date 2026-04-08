@@ -330,6 +330,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDViewCreateForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenDDLOperationRule(ruleIDViewCreateForbid, spec.DDLOperationCreateView, "create view", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDViewDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenDDLOperationRule(ruleIDViewDropForbid, spec.DDLOperationDropView, "drop view", rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDTableDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenDDLOperationRule(ruleIDTableDropForbid, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, cfg)
 		}},

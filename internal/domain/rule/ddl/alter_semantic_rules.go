@@ -1,7 +1,7 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: parser-neutral alter-table Statement specs with richer rename, add-index, target-type, and explicit-change detail
-// output: findings for semantic alter rename, explicit-change, alter-added index lifecycle, and conservative target-type-family checks
-// pos: DDL semantic alter rule implementations layered above action-level forbids
+// input: parser-neutral alter Statement specs with richer rename, add-index, target-type, and explicit-change detail
+// output: findings for semantic alter rename, standalone rename-index forbids, alter-added index lifecycle, and conservative target-type-family checks
+// pos: DDL semantic alter rule implementations layered above action-level forbids and shared rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -41,7 +41,7 @@ func newForbiddenAlterRenameRule(ruleID, action, label string, fallbackLevel rul
 func (r forbiddenAlterRenameRule) ID() string { return r.ruleID }
 
 func (r forbiddenAlterRenameRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToAlterActions(statement, r.action)
+	return r.forbid && len(matchingRenameActions(statement, r.action)) > 0
 }
 
 func (r forbiddenAlterRenameRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -50,23 +50,30 @@ func (r forbiddenAlterRenameRule) Evaluate(statement spec.Statement) ([]rule.Fin
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, r.action) {
+	for _, alter := range matchingRenameActions(statement, r.action) {
 		oldName, newName, ok := alterRenameNames(alter)
 		if !ok {
 			continue
 		}
+		metadata := map[string]any{
+			"action":   alter.Action,
+			"name":     alter.Name,
+			"old_name": oldName,
+			"new_name": newName,
+		}
+		if statement.DDL != nil && statement.DDL.Table != nil && statement.DDL.Table.Name != "" {
+			metadata["table"] = statement.DDL.Table.Name
+		}
+		message := fmt.Sprintf("ALTER TABLE %s from %q to %q is forbidden", r.label, oldName, newName)
+		if statement.DDL == nil || statement.DDL.Table == nil {
+			message = fmt.Sprintf("DDL %s from %q to %q is forbidden", r.label, oldName, newName)
+		}
 		findings = append(findings, rule.Finding{
 			RuleID:     r.ruleID,
 			Level:      r.level,
-			Message:    fmt.Sprintf("ALTER TABLE %s from %q to %q is forbidden", r.label, oldName, newName),
+			Message:    message,
 			Suggestion: fmt.Sprintf("keep the existing %s name or relax the policy intentionally", r.label),
-			Metadata: map[string]any{
-				"table":    statement.DDL.Table.Name,
-				"action":   alter.Action,
-				"name":     alter.Name,
-				"old_name": oldName,
-				"new_name": newName,
-			},
+			Metadata:   metadata,
 		})
 	}
 	return findings, nil

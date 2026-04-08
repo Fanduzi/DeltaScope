@@ -96,6 +96,84 @@ func TestForbiddenAlterActionRuleHandlesStandaloneDropIndexWithoutTable(t *testi
 	}
 }
 
+func TestForbiddenAlterActionRuleMapsPostgreSQLDropConstraintPrimaryKeySemantically(t *testing.T) {
+	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterDropPrimaryKeyForbid, "drop_primary_key", "drop primary key", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Table: &spec.Table{Name: "users"},
+			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists:      true,
+				Table:       &spec.Table{Name: "users"},
+				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
+				Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey"}},
+			},
+		},
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %#v", findings)
+	}
+	if findings[0].Metadata["action"] != "drop_primary_key" {
+		t.Fatalf("expected semantic primary-key action metadata, got %+v", findings[0].Metadata)
+	}
+	if findings[0].Metadata["name"] != "users_pkey" {
+		t.Fatalf("expected preserved constraint name, got %+v", findings[0].Metadata)
+	}
+}
+
+func TestForbiddenAlterActionRuleDoesNotMapNonPrimaryConstraintToDropPrimaryKey(t *testing.T) {
+	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterDropPrimaryKeyForbid, "drop_primary_key", "drop primary key", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelBlocker,
+		Params:  map[string]any{"forbid": true},
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Table: &spec.Table{Name: "users"},
+			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists:      true,
+				Table:       &spec.Table{Name: "users"},
+				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
+				Constraints: []spec.Constraint{{Type: "unique", Name: "users_pkey"}},
+			},
+		},
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings for non-primary constraint drop, got %#v", findings)
+	}
+}
+
 func alterStatement(alters ...spec.Alter) spec.Statement {
 	return spec.Statement{
 		Kind: spec.KindDDL,

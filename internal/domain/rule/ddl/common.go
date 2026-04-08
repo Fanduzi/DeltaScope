@@ -1,7 +1,7 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs emitted by application extraction
-// output: reusable DDL rule predicates and rule identifier constants
-// pos: DDL rule common helpers shared across concrete rules
+// input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
+// output: reusable DDL rule predicates and rule identifier constants plus shared rename matching helpers
+// pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -138,6 +138,7 @@ const (
 	ruleIDAlterChangeColumnCompatibilityRequire              = "ddl.alter.change_column.compatibility.require"
 	ruleIDAlterTableOptionCompatibilityRequire               = "ddl.alter.table_option.compatibility.require"
 	ruleIDViewCreateForbid                                   = "ddl.view.create.forbid"
+	ruleIDViewDropForbid                                     = "ddl.view.drop.forbid"
 	ruleIDTableDropForbid                                    = "ddl.table.drop.forbid"
 	ruleIDTableDropExistsRequire                             = "ddl.table.drop.exists.require"
 	ruleIDTableDropAdaptiveHashWarn                          = "ddl.table.drop.adaptive_hash.warn"
@@ -308,6 +309,10 @@ func matchingStandaloneDDLActions(statement spec.Statement, actions ...string) [
 		if !containsFold(actions, "drop_index") {
 			return nil
 		}
+	case spec.DDLOperationAlterTable:
+		if !containsFold(actions, "rename_index") {
+			return nil
+		}
 	default:
 		return nil
 	}
@@ -342,12 +347,26 @@ func alterIndexDefinition(alter spec.Alter) (*spec.Index, bool) {
 	return alter.Index.Definition, true
 }
 
+func matchingRenameActions(statement spec.Statement, action string) []spec.Alter {
+	matched := matchingAlterActions(statement, action)
+	if len(matched) > 0 {
+		return matched
+	}
+	return matchingStandaloneDDLActions(statement, action)
+}
+
 func alterRenameNames(alter spec.Alter) (oldName, newName string, ok bool) {
 	switch {
 	case alter.Column != nil && alter.Column.OldName != "" && alter.Column.Definition != nil && alter.Column.Definition.Name != "":
 		return alter.Column.OldName, alter.Column.Definition.Name, true
 	case alter.Index != nil && alter.Index.OldName != "" && alter.Index.Definition != nil && alter.Index.Definition.Name != "":
 		return alter.Index.OldName, alter.Index.Definition.Name, true
+	case strings.TrimSpace(alter.Name) != "":
+		newName, ok := alterOptionValue(alter, "new_name")
+		if !ok || strings.TrimSpace(newName) == "" {
+			return "", "", false
+		}
+		return alter.Name, newName, true
 	default:
 		return "", "", false
 	}

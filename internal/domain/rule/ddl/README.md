@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -208,7 +208,7 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 
 - applicability checks for selected alter actions
 - locating matching alter records by action
-- matching closed-switch standalone DDL action payloads such as PostgreSQL `DROP INDEX`
+- matching closed-switch standalone DDL action payloads such as PostgreSQL `DROP INDEX` and standalone `ALTER INDEX ... RENAME TO ...`
 - extracting target column and index definitions
 - extracting explicit statement-local column change facts
 - checking whether nullability/default/auto-increment changes are explicitly requested
