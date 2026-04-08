@@ -88,19 +88,15 @@ func auditSQLOffline(ctx context.Context, input AuditSQLParams) (*sdkmcp.CallToo
 }
 
 func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection ResolvedConnection) (*sdkmcp.CallToolResult, any, error) {
-	requestedDialect := strings.TrimSpace(input.Dialect)
-	if requestedDialect == "" {
-		requestedDialect = strings.TrimSpace(connection.Dialect)
+	explicitDialectValue := strings.TrimSpace(input.Dialect)
+	if explicitDialectValue == "" {
+		explicitDialectValue = strings.TrimSpace(connection.Dialect)
 	}
-	if strings.EqualFold(strings.TrimSpace(requestedDialect), string(publicapi.DialectPostgreSQL)) {
-		toolResult, toolErr := toolError("bad_request", "PostgreSQL metadata-aware audit is not yet supported; use offline mode without connection inputs")
-		return toolResult, nil, toolErr
-	}
-	if err := validateSupportedAuditDialect(requestedDialect); err != nil {
+	if err := validateSupportedAuditDialect(explicitDialectValue); err != nil {
 		toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())
 		return toolResult, nil, toolErr
 	}
-	dialect, _ := resolvePublicDialect(requestedDialect)
+	dialect, _ := resolvePublicDialect(explicitDialectValue)
 
 	prepared, err := prepareMetadataAudit(ctx, auditmeta.Request{
 		SQL: input.SQL,
@@ -110,9 +106,10 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 			Socket:   connection.Socket,
 			User:     connection.User,
 			Password: connection.Password,
+			Dialect:  func() spec.Dialect { if explicitDialectValue != "" { return toDomainDialect(dialect) }; return "" }(),
 		},
 		RequestedDialect:     toDomainDialect(dialect),
-		ExplicitDialect:      requestedDialect != "",
+		ExplicitDialect:      explicitDialectValue != "",
 		ExplicitSchema:       connection.Schema,
 		ExplicitSchemaSource: metadataSchemaSource(connection),
 		SchemaHint:           metadataSchemaHint(connection),
@@ -186,7 +183,7 @@ func validateSupportedAuditDialect(raw string) error {
 		return nil
 	}
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "mysql", "tidb":
+	case "mysql", "tidb", "postgresql":
 		return nil
 	default:
 		return appaudit.ErrUnknownDialect
@@ -197,10 +194,32 @@ type publicMetadataProvider struct {
 	client auditmeta.Client
 }
 
+type internalIndexOwnerResolver interface {
+	ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error)
+}
+
 func (p publicMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect publicapi.Dialect, schema string) (*publicapi.InstanceFacts, error) {
 	return p.client.LoadInstanceFacts(ctx, toDomainDialect(dialect), schema)
 }
 
 func (p publicMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect publicapi.Dialect, schema string, table string) (*publicapi.TableSnapshot, error) {
 	return p.client.LoadTableSnapshot(ctx, toDomainDialect(dialect), schema, table)
+}
+
+func (p publicMetadataProvider) ResolveTableForIndex(ctx context.Context, dialect publicapi.Dialect, schema string, index string) (string, error) {
+	resolver, ok := p.client.(internalIndexOwnerResolver)
+	if !ok {
+		return "", nil
+	}
+	return resolver.ResolveTableForIndex(ctx, toDomainDialect(dialect), schema, index)
+}
+
+func (p publicMetadataProvider) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
+	provider, ok := p.client.(interface {
+		LoadPlanEstimate(context.Context, spec.Statement) (*spec.ImpactEstimate, error)
+	})
+	if !ok {
+		return nil, nil
+	}
+	return provider.LoadPlanEstimate(ctx, statement)
 }

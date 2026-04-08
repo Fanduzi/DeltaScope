@@ -44,8 +44,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 		Use:   "audit",
 		Short: "Audit SQL from flags, files, or stdin",
 		Long: "Audit SQL in offline mode or enrich the same audit engine with live metadata.\n" +
-			"When connection flags are present, DeltaScope uses metadata-aware mode for MySQL/TiDB-compatible instances, auto-detects the dialect, and infers schema when possible.\n" +
-			"PostgreSQL is currently offline-only and does not support metadata-aware audit through connection flags.",
+			"When connection flags are present, DeltaScope uses metadata-aware mode, auto-detects the dialect, and infers schema when possible for mysql, tidb, and postgresql connections.",
 		Example: "Offline example:\n" +
 			"  deltascope audit --sql \"delete from users\" --dialect mysql\n" +
 			"  deltascope audit --sql \"drop index idx_name;\" --dialect postgresql\n\n" +
@@ -143,6 +142,7 @@ type auditConnectionOptions struct {
 	PasswordFile string
 	Schema       string
 	Socket       string
+	Dialect      string
 }
 
 var passwordPrompt = promptPassword
