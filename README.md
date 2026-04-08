@@ -34,8 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.16.3/install.sh | \
-  DELTASCOPE_VERSION=v0.16.3 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.17.0/install.sh | \
+  DELTASCOPE_VERSION=v0.17.0 sh
 ```
 
 Need PostgreSQL offline audit support?

@@ -554,7 +554,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.16.3 — latest release</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.17.0 — latest release</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL, TiDB, and PostgreSQL SQL
 before it ships</h1>
@@ -977,9 +977,9 @@ Statement 1: CREATE TABLE
         <div class="reveal" style="max-width:860px; margin:0 auto;">
           <div class="timeline">
             <div class="timeline-item">
-              <div class="timeline-date">2026-04-07</div>
-              <div class="timeline-version">v0.16.3 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
-              <div class="timeline-changes" data-i18n="releases.items.v0163">Current release: carries the unified PostgreSQL product surface and folds in the release-pipeline hotfixes needed to publish it cleanly.</div>
+              <div class="timeline-date">2026-04-08</div>
+              <div class="timeline-version">v0.17.0 <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.latest">latest</span></div>
+              <div class="timeline-changes" data-i18n="releases.items.v0170">Cross-platform PG-capable release convergence makes the supported macOS and Linux main archives the default PostgreSQL offline path across `deltascope`, `deltascope-server`, and `deltascope-mcp`, while keeping `deltascope-pg` only as a legacy compatibility download.</div>
             </div>
             <div class="timeline-item">
               <div class="timeline-date">2026-04-07</div>
@@ -1040,7 +1040,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.16.3.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.17.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest">Latest Release Notes</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1084,7 +1084,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: 'Install'
         },
         hero: {
-          badge: 'v0.16.3 — latest release',
+          badge: 'v0.17.0 — latest release',
           title: 'Audit risky MySQL, TiDB, and PostgreSQL SQL\nbefore it ships',
           sub: 'DeltaScope now exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.\nStarting with the v0.17.0 release line, the supported macOS and Linux main archives ship those three binaries as PG-capable for PostgreSQL offline audit.\n`deltascope-pg` is no longer part of the primary install story and only remains as a temporary compatibility download for older CLI-only workflows.',
           ctaPrimary: 'Install DeltaScope',
@@ -1211,6 +1211,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           latest: 'latest',
           items: {
             v0163: 'Current release: carries the unified PostgreSQL product surface and folds in the release-pipeline hotfixes needed to publish it cleanly.',
+            v0170: 'Cross-platform PG-capable release convergence makes the supported macOS and Linux main archives the default PostgreSQL offline path across `deltascope`, `deltascope-server`, and `deltascope-mcp`, while keeping `deltascope-pg` only as a legacy compatibility download.',
             v0160: 'PostgreSQL surface unification brought offline PG support onto the main `deltascope`, `deltascope-server`, and `deltascope-mcp` product surfaces, aligned docs/install story, and closed Linux amd64 release validation around the converged main archive.',
             v0150: 'PostgreSQL foundation landed with Linux/manylinux release validation and additive PG-capable support across the converged Linux amd64 `deltascope`, `deltascope-server`, and `deltascope-mcp` assets, while `deltascope-pg` remains as a compatibility artifact.',
             v013: 'HTTP metadata-aware audit via direct connections, shared connection helpers, and real-server MySQL/TiDB end-to-end coverage.',
@@ -1249,7 +1250,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: '安装'
         },
         hero: {
-          badge: 'v0.16.3 —— 最新版本',
+          badge: 'v0.17.0 —— 最新版本',
           title: '在上线前审计高风险 MySQL、TiDB 与 PostgreSQL SQL',
           sub: 'DeltaScope 现在已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 这三个主产品面。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux 主 archive 都会直接提供 PG-capable 的三条主二进制，用于 PostgreSQL offline。\n`deltascope-pg` 不再属于主安装故事，只会作为旧 CLI-only 工作流的临时兼容下载保留。',
           ctaPrimary: '安装 DeltaScope',
@@ -1375,7 +1376,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           sub: '这里不需要完整 changelog。最新版本告诉你现在能用什么，关键里程碑版本则说明 DeltaScope 是如何演进到今天这套 CLI、HTTP、MCP 与 PostgreSQL 产品面的。',
           latest: '最新',
           items: {
-            v0163: '当前版本：包含已统一的 PostgreSQL 产品面，并收拢了为稳定发布这套能力所需的 release pipeline hotfix。',
+            v0170: '跨平台 PG-capable release convergence 让受支持的 macOS 和 Linux 主 archive 成为 `deltascope`、`deltascope-server`、`deltascope-mcp` 三条主产品面的 PostgreSQL offline 默认路径；`deltascope-pg` 只作为旧流程兼容下载保留。',
             v0160: 'PostgreSQL surface unification 已落地：把 PostgreSQL offline 审计正式统一到 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 主产品面，同时完成 docs/install story 对齐，并把 Linux amd64 主 archive 的发布验证闭环补齐。',
             v0150: 'PostgreSQL foundation 正式落地：基于 Linux/manylinux 验证链，把 Linux amd64 的 `deltascope`、`deltascope-server`、`deltascope-mcp` 主资产收敛为 PG-capable，同时把 `deltascope-pg` 降为兼容 artifact。',
             v013: '增加基于 direct connection 的 HTTP metadata-aware 审核、共享连接辅助层，以及面向 MySQL / TiDB real server 的端到端覆盖。',
