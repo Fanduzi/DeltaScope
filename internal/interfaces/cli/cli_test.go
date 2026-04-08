@@ -15,11 +15,18 @@ import (
 	"strings"
 	"testing"
 
+	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	viperconfig "github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper"
 )
+
+type failingWriter struct{}
+
+func (failingWriter) Write(_ []byte) (int, error) {
+	return 0, errors.New("write failed")
+}
 
 func TestAuditCommandSupportsSQLJSONOutput(t *testing.T) {
 	stdout := &strings.Builder{}
@@ -129,6 +136,40 @@ func TestResolveAuditSQLPrintsInteractiveStdinHint(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Waiting for SQL from stdin. Press Ctrl+D to finish.") {
 		t.Fatalf("expected stdin waiting hint, got %q", stderr.String())
+	}
+}
+
+func TestResolveAuditSQLRejectsConflictingOrEmptyInput(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.sql")
+	if err := os.WriteFile(path, []byte("   \n"), 0o644); err != nil {
+		t.Fatalf("write sql file: %v", err)
+	}
+
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "delete from users", path, io.Discard, false); err == nil {
+		t.Fatal("expected conflict error when both --sql and --file are provided")
+	}
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "", path, io.Discard, false); err == nil {
+		t.Fatal("expected empty file input to be rejected")
+	}
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader("   "), "", "", io.Discard, false); err == nil {
+		t.Fatal("expected empty stdin input to be rejected")
+	}
+}
+
+func TestParseDialectNormalizesKnownAndUnknownValues(t *testing.T) {
+	tests := map[string]spec.Dialect{
+		"":            spec.DialectMySQL,
+		"mysql":       spec.DialectMySQL,
+		" TIDB ":      spec.DialectTiDB,
+		"PostgreSQL":  spec.DialectPostgreSQL,
+		"ClickHouse":  spec.Dialect("clickhouse"),
+	}
+
+	for input, want := range tests {
+		if got := parseDialect(input); got != want {
+			t.Fatalf("parseDialect(%q) = %q, want %q", input, got, want)
+		}
 	}
 }
 
@@ -1213,6 +1254,45 @@ func TestRenderJSONResultIncludesUnsupportedStatements(t *testing.T) {
 	}
 }
 
+func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
+	result := report.Result{
+		GlobalFindings: []rule.Finding{{
+			RuleID:  "global.rule",
+			Level:   rule.LevelWarning,
+			Message: "pay attention",
+		}},
+	}
+
+	quietOutput, err := renderResult("markdown", true, result, nil)
+	if err != nil {
+		t.Fatalf("render quiet result: %v", err)
+	}
+	if string(quietOutput) != "[warning] global.rule: pay attention" {
+		t.Fatalf("expected quiet finding output, got %q", string(quietOutput))
+	}
+
+	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"})
+	if err != nil {
+		t.Fatalf("render json result: %v", err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(jsonOutput, &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v", err)
+	}
+	contextPayload, ok := decoded["context"].(map[string]any)
+	if !ok || contextPayload["dialect"] != "postgresql" {
+		t.Fatalf("expected json context payload, got %#v", decoded["context"])
+	}
+
+	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil)
+	if err != nil {
+		t.Fatalf("render fallback markdown result: %v", err)
+	}
+	if !strings.Contains(string(markdownOutput), "# DeltaScope Audit Result") {
+		t.Fatalf("expected unknown format to fall back to markdown, got %q", string(markdownOutput))
+	}
+}
+
 func TestExitCodeForResultReturnsAuditFailureWhenUnsupportedExists(t *testing.T) {
 	code := exitCodeForResult(report.Result{
 		Verdict:     report.VerdictPass,
@@ -1221,6 +1301,175 @@ func TestExitCodeForResultReturnsAuditFailureWhenUnsupportedExists(t *testing.T)
 	}, "blocker")
 	if code != exitAudit {
 		t.Fatalf("expected unsupported statements to force audit exit code, got %d", code)
+	}
+}
+
+func TestExitCodeForResultRespectsThresholds(t *testing.T) {
+	tests := []struct {
+		name      string
+		threshold string
+		summary    report.Summary
+		want      int
+	}{
+		{name: "none ignores findings", threshold: "none", summary: report.Summary{Notices: 1, Warnings: 1, Blockers: 1}, want: exitOK},
+		{name: "notice trips on notice", threshold: "notice", summary: report.Summary{Notices: 1}, want: exitAudit},
+		{name: "warning trips on warning", threshold: "warning", summary: report.Summary{Warnings: 1}, want: exitAudit},
+		{name: "blocker trips on blocker", threshold: "blocker", summary: report.Summary{Blockers: 1}, want: exitAudit},
+		{name: "blocker ignores warning", threshold: "blocker", summary: report.Summary{Warnings: 1}, want: exitOK},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := exitCodeForResult(report.Result{Summary: tc.summary}, tc.threshold); got != tc.want {
+				t.Fatalf("exitCodeForResult(%+v, %q) = %d, want %d", tc.summary, tc.threshold, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestMapAuditErrorClassifiesKnownCases(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "user error", err: newUserError("bad input"), want: exitUser},
+		{name: "empty sql", err: appaudit.ErrEmptySQL, want: exitUser},
+		{name: "unknown dialect", err: appaudit.ErrUnknownDialect, want: exitUser},
+		{name: "unsupported statement", err: appaudit.ErrUnsupportedStatement, want: exitUser},
+		{name: "parse sql string match", err: errors.New("parse sql: syntax error"), want: exitUser},
+		{name: "pg capable build hint", err: errors.New("requires PG-capable build"), want: exitUser},
+		{name: "load policy string match", err: errors.New("load policy: bad config"), want: exitUser},
+		{name: "context canceled", err: context.Canceled, want: exitInternal},
+		{name: "generic error", err: errors.New("boom"), want: exitInternal},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			code := 0
+			if got := mapAuditError(&code, tc.err); !errors.Is(got, tc.err) && got.Error() != tc.err.Error() {
+				t.Fatalf("expected original error to be returned, got %v want %v", got, tc.err)
+			}
+			if code != tc.want {
+				t.Fatalf("expected exit code %d, got %d", tc.want, code)
+			}
+		})
+	}
+}
+
+func TestCapabilitiesCommandReturnsInternalOnWriteFailure(t *testing.T) {
+	exitCode := 0
+	cmd := newCapabilitiesCmd(&exitCode)
+	cmd.SetOut(failingWriter{})
+	cmd.SetArgs(nil)
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected capabilities command to surface writer error")
+	}
+	if exitCode != exitInternal {
+		t.Fatalf("expected internal exit code on writer failure, got %d", exitCode)
+	}
+}
+
+func TestConfigAndRuleCommandHelpersHandleValidationAndWriteFailures(t *testing.T) {
+	t.Run("config lint requires file", func(t *testing.T) {
+		exitCode := 0
+		cmd := newConfigLintCmd(&exitCode)
+		cmd.SetArgs(nil)
+
+		err := cmd.Execute()
+		if err == nil || !strings.Contains(err.Error(), "requires --file") {
+			t.Fatalf("expected missing --file error, got %v", err)
+		}
+		if exitCode != exitUser {
+			t.Fatalf("expected user exit code, got %d", exitCode)
+		}
+	})
+
+	t.Run("config show-default write failure", func(t *testing.T) {
+		exitCode := 0
+		cmd := newConfigShowDefaultCmd(&exitCode)
+		cmd.SetOut(failingWriter{})
+		cmd.SetArgs(nil)
+
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatal("expected write failure from config show-default")
+		}
+		if exitCode != exitInternal {
+			t.Fatalf("expected internal exit code, got %d", exitCode)
+		}
+	})
+
+	t.Run("config init write failure", func(t *testing.T) {
+		exitCode := 0
+		cmd := newConfigInitCmd(&exitCode)
+		cmd.SetOut(failingWriter{})
+		cmd.SetArgs(nil)
+
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatal("expected write failure from config init")
+		}
+		if exitCode != exitInternal {
+			t.Fatalf("expected internal exit code, got %d", exitCode)
+		}
+	})
+
+	t.Run("rules show unknown rule", func(t *testing.T) {
+		exitCode := 0
+		cmd := newRulesShowCmd(&exitCode)
+		cmd.SetArgs([]string{"made.up.rule"})
+
+		err := cmd.Execute()
+		if err == nil || !strings.Contains(err.Error(), "unknown rule") {
+			t.Fatalf("expected unknown rule error, got %v", err)
+		}
+		if exitCode != exitUser {
+			t.Fatalf("expected user exit code, got %d", exitCode)
+		}
+	})
+
+	t.Run("rules list invalid filters", func(t *testing.T) {
+		exitCode := 0
+		cmd := newRulesListCmd(&exitCode)
+		cmd.SetArgs([]string{"--kind", "bad"})
+
+		err := cmd.Execute()
+		if err == nil || !strings.Contains(err.Error(), "--kind") {
+			t.Fatalf("expected invalid kind error, got %v", err)
+		}
+		if exitCode != exitUser {
+			t.Fatalf("expected user exit code, got %d", exitCode)
+		}
+	})
+}
+
+func TestParamTypeMatchesCoversSupportedShapes(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     any
+		def     any
+		matches bool
+	}{
+		{name: "string slice from any slice", raw: []any{"a", "b"}, def: []string{}, matches: true},
+		{name: "string slice from typed slice", raw: []string{"a"}, def: []string{}, matches: true},
+		{name: "string slice rejects mixed items", raw: []any{"a", 1}, def: []string{}, matches: false},
+		{name: "int accepts int64", raw: int64(1), def: int(0), matches: true},
+		{name: "int rejects string", raw: "1", def: int(0), matches: false},
+		{name: "bool accepts bool", raw: true, def: false, matches: true},
+		{name: "string accepts string", raw: "x", def: "", matches: true},
+		{name: "default reflect path", raw: 1.5, def: 0.0, matches: true},
+		{name: "default reflect path mismatch", raw: 1, def: 0.0, matches: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := paramTypeMatches(tc.raw, tc.def); got != tc.matches {
+				t.Fatalf("paramTypeMatches(%T, %T) = %t, want %t", tc.raw, tc.def, got, tc.matches)
+			}
+		})
 	}
 }
 

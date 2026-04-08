@@ -10,6 +10,24 @@ import (
 	"testing"
 )
 
+func TestKindAndDialectStringReturnUnderlyingValue(t *testing.T) {
+	if got := KindDDL.String(); got != "ddl" {
+		t.Fatalf("expected ddl string, got %q", got)
+	}
+	if got := KindDML.String(); got != "dml" {
+		t.Fatalf("expected dml string, got %q", got)
+	}
+	if got := DialectMySQL.String(); got != "mysql" {
+		t.Fatalf("expected mysql string, got %q", got)
+	}
+	if got := DialectTiDB.String(); got != "tidb" {
+		t.Fatalf("expected tidb string, got %q", got)
+	}
+	if got := DialectPostgreSQL.String(); got != "postgresql" {
+		t.Fatalf("expected postgresql string, got %q", got)
+	}
+}
+
 func TestStatementKindAndDialectTypes(t *testing.T) {
 	stmt := Statement{
 		Kind:    KindDDL,
@@ -70,6 +88,12 @@ func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {
 	}
 	if !stmt.Metadata.TargetTable.HasPrimaryKey() {
 		t.Fatalf("expected primary key presence to be reported")
+	}
+	if stmt.Metadata.TargetTable.FindColumn("   ") != nil {
+		t.Fatal("expected blank column lookup to return nil")
+	}
+	if stmt.Metadata.TargetTable.FindIndex("") != nil {
+		t.Fatal("expected blank index lookup to return nil")
 	}
 }
 
