@@ -551,12 +551,20 @@ func TestAuditCommandPostgreSQLSetDataTypeRendersForbidFinding(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected findings array, got %#v", statement["findings"])
 	}
-	if len(findings) != 1 {
-		t.Fatalf("expected exactly 1 set_data_type finding, got %#v", findings)
+	counts := make(map[string]int)
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			t.Fatalf("expected finding object, got %#v", item)
+		}
+		ruleID, _ := finding["rule_id"].(string)
+		counts[ruleID]++
 	}
-	finding, ok := findings[0].(map[string]any)
-	if !ok || finding["rule_id"] != "ddl.alter.set_data_type.forbid" {
+	if counts["ddl.alter.set_data_type.forbid"] != 1 {
 		t.Fatalf("expected set_data_type forbid finding, got %#v", findings)
+	}
+	if counts["ddl.pg.alter.set_data_type.rewrite.warn"] != 1 {
+		t.Fatalf("expected pg set_data_type rewrite warning, got %#v", findings)
 	}
 }
 
@@ -838,4 +846,3 @@ func TestAuditCommandPostgreSQLMetadataDropIndexRendersExistenceFinding(t *testi
 		t.Fatalf("expected drop_index existence finding, got %#v", findings)
 	}
 }
-

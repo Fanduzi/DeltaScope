@@ -447,11 +447,15 @@ func TestExecuteAuditRequestPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) 
 	if len(response.Statements) != 1 {
 		t.Fatalf("expected one statement result, got %#v", response.Statements)
 	}
-	if len(response.Statements[0].Findings) != 1 {
-		t.Fatalf("expected exactly 1 set_data_type finding, got %#v", response.Statements[0].Findings)
+	counts := make(map[string]int)
+	for _, finding := range response.Statements[0].Findings {
+		counts[finding.RuleID]++
 	}
-	if response.Statements[0].Findings[0].RuleID != "ddl.alter.set_data_type.forbid" {
+	if counts["ddl.alter.set_data_type.forbid"] != 1 {
 		t.Fatalf("expected set_data_type forbid finding, got %#v", response.Statements[0].Findings)
+	}
+	if counts["ddl.pg.alter.set_data_type.rewrite.warn"] != 1 {
+		t.Fatalf("expected pg set_data_type rewrite warning, got %#v", response.Statements[0].Findings)
 	}
 }
 
@@ -658,4 +662,3 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 		t.Fatalf("expected drop-index existence finding, got %#v", response.Statements[0].Findings)
 	}
 }
-

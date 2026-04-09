@@ -536,10 +536,14 @@ func TestAuditPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
 	if len(result.Statements) != 1 {
 		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
 	}
-	if len(result.Statements[0].Findings) != 1 {
-		t.Fatalf("expected exactly 1 set_data_type finding, got %#v", result.Statements[0].Findings)
+	counts := make(map[string]int)
+	for _, finding := range result.Statements[0].Findings {
+		counts[finding.RuleID]++
 	}
-	if result.Statements[0].Findings[0].RuleID != "ddl.alter.set_data_type.forbid" {
+	if counts["ddl.alter.set_data_type.forbid"] != 1 {
 		t.Fatalf("expected set_data_type forbid finding, got %#v", result.Statements[0].Findings)
+	}
+	if counts["ddl.pg.alter.set_data_type.rewrite.warn"] != 1 {
+		t.Fatalf("expected pg set_data_type rewrite warning, got %#v", result.Statements[0].Findings)
 	}
 }

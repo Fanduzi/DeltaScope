@@ -35,9 +35,7 @@ jobs:
       - name: Run release test gates
         run: |
           set -euo pipefail
-          go test ./...
-          CGO_ENABLED=1 go test -tags postgresql ./internal/application/audit ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
-          npm test --prefix packages/deltascope-mcp
+          make release-test-gates
 
       - name: Verify MCP launcher package contract
         run: |
