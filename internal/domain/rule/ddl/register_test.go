@@ -437,7 +437,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	// Test PostgreSQL dialect: all 5 rules should fire
+	// Test PostgreSQL dialect: all 5 forbid rules + 1 migration-safety rule should fire
 	t.Run("postgresql_fires_all_five_rules", func(t *testing.T) {
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
@@ -459,8 +459,8 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 			t.Fatalf("evaluate: %v", err)
 		}
 
-		if len(findings) != 5 {
-			t.Fatalf("expected 5 findings for PostgreSQL, got %d: %v", len(findings), findings)
+		if len(findings) != 6 {
+			t.Fatalf("expected 6 findings for PostgreSQL, got %d: %v", len(findings), findings)
 		}
 
 		wantIDs := []string{

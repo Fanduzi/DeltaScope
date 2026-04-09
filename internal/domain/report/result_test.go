@@ -220,6 +220,35 @@ func TestAggregateKeepsDistinctReasonsWhenMessagesMatch(t *testing.T) {
 	}
 }
 
+func TestAggregatePreservesRuleSummary(t *testing.T) {
+	summary := &RuleSummary{
+		Loaded:     50,
+		Applicable: 46,
+		Skipped: []rule.SkippedRule{
+			{RuleID: "ddl.pg.create_index.concurrently.require", Reason: rule.SkipReasonDialectMismatch},
+		},
+	}
+
+	result := Aggregate(nil, nil)
+	result.RuleSummary = summary
+
+	if result.RuleSummary == nil {
+		t.Fatal("expected rule summary to be preserved")
+	}
+	if result.RuleSummary.Loaded != 50 {
+		t.Fatalf("expected loaded 50, got %d", result.RuleSummary.Loaded)
+	}
+	if result.RuleSummary.Applicable != 46 {
+		t.Fatalf("expected applicable 46, got %d", result.RuleSummary.Applicable)
+	}
+	if len(result.RuleSummary.Skipped) != 1 {
+		t.Fatalf("expected 1 skipped, got %d", len(result.RuleSummary.Skipped))
+	}
+	if result.RuleSummary.Skipped[0].Reason != rule.SkipReasonDialectMismatch {
+		t.Fatalf("expected dialect_mismatch, got %s", result.RuleSummary.Skipped[0].Reason)
+	}
+}
+
 func ptrInt64(value int64) *int64 {
 	return &value
 }

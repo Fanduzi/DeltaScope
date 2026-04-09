@@ -32,6 +32,7 @@ const (
 	DDLOperationAlterTable    DDLOperation = "alter_table"
 	DDLOperationDropTable     DDLOperation = "drop_table"
 	DDLOperationDropIndex     DDLOperation = "drop_index"
+	DDLOperationCreateIndex   DDLOperation = "create_index"
 	DDLOperationDropView      DDLOperation = "drop_view"
 	DDLOperationTruncateTable DDLOperation = "truncate_table"
 )

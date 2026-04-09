@@ -679,6 +679,22 @@ rules:
     params:
       forbid: true
 
+  ddl.pg.create_index.concurrently.require:
+    enabled: true
+    level: warning
+
+  ddl.pg.alter.add_column.non_null_default.rewrite.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.alter.add_check.not_valid.require:
+    enabled: true
+    level: warning
+
+  ddl.pg.alter.set_data_type.rewrite.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

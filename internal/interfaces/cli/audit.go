@@ -19,7 +19,9 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -267,6 +269,10 @@ func renderResult(format string, quiet bool, result report.Result, runContext *a
 	switch format {
 	case "json":
 		return renderJSONResult(result, runContext)
+	case "github-actions":
+		return githubactions.Render(result)
+	case "sarif":
+		return sarif.Render(result)
 	case "markdown":
 		if quiet {
 			return renderQuietResult(result), nil
@@ -329,6 +335,12 @@ func renderQuietResult(result report.Result) []byte {
 	}
 	for _, item := range result.Unsupported {
 		lines = append(lines, fmt.Sprintf("[unsupported] %s: %s", item.Feature, item.Reason))
+	}
+	if result.RuleSummary != nil {
+		lines = append(lines, fmt.Sprintf("[summary] loaded=%d applicable=%d skipped=%d",
+			result.RuleSummary.Loaded,
+			result.RuleSummary.Applicable,
+			len(result.RuleSummary.Skipped)))
 	}
 	if len(lines) == 0 {
 		return []byte("pass")

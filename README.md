@@ -124,6 +124,18 @@ Example JSON shape:
 }
 ```
 
+Audit a PostgreSQL migration with CI-native output:
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+Generate SARIF output for GitHub Code Scanning:
+
+```bash
+deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```
+
 ## DML Impact Estimation
 
 For a selective DML such as `DELETE FROM users WHERE id = 42`, DeltaScope may add an `impact` object to the statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.

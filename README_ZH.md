@@ -122,6 +122,18 @@ deltascope audit \
 }
 ```
 
+审核 PostgreSQL 迁移脚本并输出 CI 注解：
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+生成 SARIF 报告用于 GitHub Code Scanning：
+
+```bash
+deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```
+
 ## DML 影响估算
 
 对于 `DELETE FROM users WHERE id = 42` 这类选择性较强的 DML，DeltaScope 可能会在该语句结果上附加一个 `impact` 对象。这个对象以保守估算为原则，包含 `estimated_rows`、`estimated_ratio`、`risk_level`、`confidence`、`source`、`reason_codes`，以及可选的 `notes`。

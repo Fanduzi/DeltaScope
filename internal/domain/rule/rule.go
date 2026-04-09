@@ -50,6 +50,27 @@ type Location struct {
 	Column int `json:"column,omitempty"`
 }
 
+// SkipReason describes why a loaded rule did not apply to a statement.
+type SkipReason string
+
+const (
+	// SkipReasonDialectMismatch indicates the rule targets a different dialect.
+	SkipReasonDialectMismatch SkipReason = "dialect_mismatch"
+)
+
+// SkippedRule records one loaded rule that did not apply to a specific statement.
+type SkippedRule struct {
+	RuleID string     `json:"rule_id"`
+	Reason SkipReason `json:"reason"`
+}
+
+// StatementEvaluation holds the result of evaluating all statement rules against one statement.
+type StatementEvaluation struct {
+	Findings       []Finding     `json:"findings,omitempty"`
+	Skipped        []SkippedRule `json:"skipped,omitempty"`
+	AppliedRuleIDs []string      `json:"-"` // all rules where AppliesTo() returned true
+}
+
 var (
 	// ErrEmptyRuleID indicates a rule was registered without an ID.
 	ErrEmptyRuleID = errors.New("rule ID must not be empty")

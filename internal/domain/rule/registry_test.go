@@ -212,6 +212,111 @@ func TestRegistryRejectsMismatchedFindingRuleID(t *testing.T) {
 	}
 }
 
+type testDialectStatementRule struct {
+	id      string
+	dialect spec.Dialect
+	level   rule.Level
+	message string
+}
+
+func (r testDialectStatementRule) ID() string { return r.id }
+func (r testDialectStatementRule) AppliesTo(stmt spec.Statement) bool {
+	return stmt.Dialect == r.dialect
+}
+func (r testDialectStatementRule) Evaluate(stmt spec.Statement) ([]rule.Finding, error) {
+	return []rule.Finding{{RuleID: r.id, Level: r.level, Message: r.message}}, nil
+}
+
+func TestRegistryEvaluateStatementDetailedTracksSkippedRules(t *testing.T) {
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(testDialectStatementRule{
+		id: "ddl.pg.test_rule", dialect: spec.DialectPostgreSQL,
+		level: rule.LevelWarning, message: "pg warning",
+	}); err != nil {
+		t.Fatalf("register pg rule: %v", err)
+	}
+	if err := registry.RegisterStatement(testDialectStatementRule{
+		id: "ddl.mysql.test_rule", dialect: spec.DialectMySQL,
+		level: rule.LevelWarning, message: "mysql warning",
+	}); err != nil {
+		t.Fatalf("register mysql rule: %v", err)
+	}
+
+	eval, err := registry.EvaluateStatementDetailed(spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("evaluate detailed: %v", err)
+	}
+
+	if len(eval.Findings) != 1 {
+		t.Fatalf("expected 1 finding from mysql rule, got %d", len(eval.Findings))
+	}
+	if eval.Findings[0].RuleID != "ddl.mysql.test_rule" {
+		t.Fatalf("expected mysql finding, got %s", eval.Findings[0].RuleID)
+	}
+
+	if len(eval.Skipped) != 1 {
+		t.Fatalf("expected 1 skipped rule, got %d", len(eval.Skipped))
+	}
+	if eval.Skipped[0].RuleID != "ddl.pg.test_rule" {
+		t.Fatalf("expected pg rule skipped, got %s", eval.Skipped[0].RuleID)
+	}
+	if eval.Skipped[0].Reason != rule.SkipReasonDialectMismatch {
+		t.Fatalf("expected dialect_mismatch reason, got %s", eval.Skipped[0].Reason)
+	}
+}
+
+func TestEvaluateStatementDetailedPreservesFindings(t *testing.T) {
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(testStatementRule{
+		id:      "dml.where.require",
+		kind:    spec.KindDML,
+		level:   rule.LevelBlocker,
+		message: "where clause required",
+	}); err != nil {
+		t.Fatalf("register statement rule: %v", err)
+	}
+
+	eval, err := registry.EvaluateStatementDetailed(spec.Statement{
+		Kind: spec.KindDML,
+	})
+	if err != nil {
+		t.Fatalf("evaluate detailed: %v", err)
+	}
+
+	if len(eval.Findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(eval.Findings))
+	}
+	if eval.Findings[0].RuleID != "dml.where.require" {
+		t.Fatalf("expected rule ID stamped, got %s", eval.Findings[0].RuleID)
+	}
+	if len(eval.Skipped) != 0 {
+		t.Fatalf("expected 0 skipped for matching rule, got %d", len(eval.Skipped))
+	}
+}
+
+func TestRegistryLoadedStatementRuleCount(t *testing.T) {
+	registry := rule.NewRegistry()
+	if registry.LoadedStatementRuleCount() != 0 {
+		t.Fatalf("expected 0 loaded rules, got %d", registry.LoadedStatementRuleCount())
+	}
+	if err := registry.RegisterStatement(testStatementRule{
+		id: "rule.one", kind: spec.KindDDL, level: rule.LevelWarning, message: "one",
+	}); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	if err := registry.RegisterStatement(testStatementRule{
+		id: "rule.two", kind: spec.KindDML, level: rule.LevelBlocker, message: "two",
+	}); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	if registry.LoadedStatementRuleCount() != 2 {
+		t.Fatalf("expected 2 loaded rules, got %d", registry.LoadedStatementRuleCount())
+	}
+}
+
 type badMismatchedRule struct {
 	inner         testStatementRule
 	findingRuleID string

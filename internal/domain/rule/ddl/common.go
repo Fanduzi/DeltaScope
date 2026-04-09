@@ -150,6 +150,10 @@ const (
 	ruleIDAlterMergeMySQLRequire                             = "ddl.alter.merge.mysql.require"
 	ruleIDAlterMergeTiDBRequire                              = "ddl.alter.merge.tidb.require"
 	ruleIDTableDenylistForbid                                = "ddl.table.denylist.forbid"
+	ruleIDPGCreateIndexConcurrentlyRequire                   = "ddl.pg.create_index.concurrently.require"
+	ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn          = "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
+	ruleIDPGAlterAddCheckNotValidRequire                     = "ddl.pg.alter.add_check.not_valid.require"
+	ruleIDPGAlterSetDataTypeRewriteWarn                      = "ddl.pg.alter.set_data_type.rewrite.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

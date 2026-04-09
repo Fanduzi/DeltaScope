@@ -313,3 +313,26 @@ echo "Audit result: $VERDICT"
 - [ ] 在 CI 中使用 `--format json`，使发现以结构化数据形式出现在日志中。
 - [ ] 在代码仓库中保留至少一个迁移示例文件，以便开发者在本地重现相同的审计结果。
 - [ ] 对多文件迁移目录，按迁移顺序（字母序或版本排序）遍历文件，以保证 CI 运行具有确定性。跨语句的 `merge-alter` 发现只有在相关语句被放进同一次 DeltaScope 审计时才会被检测到。
+
+## PostgreSQL 迁移安全
+
+审计 PostgreSQL 迁移时，DeltaScope 会额外应用一组迁移安全规则，用于防范常见的全表重写、长时间持锁或生产事故模式：
+
+| 规则 ID | 捕获的问题 | 安全模式 |
+|---------|-----------|---------|
+| `ddl.pg.create_index.concurrently.require` | 不带 `CONCURRENTLY` 的 `CREATE INDEX` | 使用 `CREATE INDEX CONCURRENTLY` |
+| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 带有 volatile 默认值的 `ADD COLUMN … NOT NULL DEFAULT` | 先添加可为空的列，回填后再加上 NOT NULL |
+| `ddl.pg.alter.add_check.not_valid.require` | 不带 `NOT VALID` 的 `ADD CHECK (…)` | 使用 `ADD CHECK (…) NOT VALID` |
+| `ddl.pg.alter.set_data_type.rewrite.warn` | `ALTER COLUMN … TYPE …` 可能重写表 | 使用"添加新列 → 回填 → 删除旧列"模式 |
+
+示例：使用 CI 内联注解审计 PostgreSQL 迁移文件：
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+生成 SARIF 报告用于 GitHub Code Scanning：
+
+```bash
+deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```

@@ -137,6 +137,46 @@ audit-sql:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 ```
 
+## GitHub Actions 原生注解
+
+使用 `--format github-actions` 生成 CI 内联注解，渲染在 GitHub Actions 工作流日志中：
+
+```yaml
+      - name: Audit SQL migrations (annotations)
+        run: |
+          deltascope audit \
+            --file ./sql/changes.sql \
+            --format github-actions \
+            --fail-on blocker
+```
+
+## SARIF 输出用于 GitHub Code Scanning
+
+使用 `--format sarif` 生成 SARIF 2.1.0 输出，集成 GitHub Code Scanning：
+
+```yaml
+      - name: Audit SQL migrations (SARIF)
+        run: |
+          deltascope audit \
+            --file ./sql/changes.sql \
+            --format sarif \
+            --fail-on blocker > deltascope.sarif
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: deltascope.sarif
+```
+
+## CI 中的 PostgreSQL 迁移安全审计
+
+在 CI 中使用迁移安全规则审计 PostgreSQL 迁移文件：
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations.sql --format sarif > deltascope.sarif
+```
+
 ## --fail-on 策略说明
 
 | 设置 | 退出码 1 的触发条件 | 适用场景 |

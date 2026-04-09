@@ -579,6 +579,34 @@ func TestEnrichStatementsWithMetadataPreservesSchemaContextWithoutProvider(t *te
 	}
 }
 
+func TestAuditIncludesRuleSummary(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id bigint primary key) comment='users';",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+
+	if result.RuleSummary == nil {
+		t.Fatal("expected rule summary on result")
+	}
+	if result.RuleSummary.Loaded == 0 {
+		t.Fatal("expected loaded rules count > 0")
+	}
+	if result.RuleSummary.Applicable == 0 {
+		t.Fatal("expected applicable rules count > 0")
+	}
+	if len(result.RuleSummary.Skipped) == 0 {
+		t.Fatal("expected skipped PG rules for MySQL dialect")
+	}
+	for _, s := range result.RuleSummary.Skipped {
+		if s.Reason != "dialect_mismatch" {
+			t.Fatalf("expected dialect_mismatch reason, got %s", s.Reason)
+		}
+	}
+}
+
 func TestEnrichStatementsWithMetadataKeepsOfflinePathWhenProviderIsAbsent(t *testing.T) {
 	statements := []spec.Statement{
 		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Table: &spec.Table{Name: "users"}}},

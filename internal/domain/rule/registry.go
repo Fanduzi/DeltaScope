@@ -7,6 +7,7 @@ package rule
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -105,6 +106,48 @@ func (r *Registry) EvaluateGlobal(statements []spec.Statement) ([]Finding, error
 		findings = append(findings, ruleFindings...)
 	}
 	return findings, nil
+}
+
+// LoadedStatementRuleCount returns the number of registered statement rules.
+func (r *Registry) LoadedStatementRuleCount() int {
+	return len(r.statementRules)
+}
+
+// EvaluateStatementDetailed applies all statement rules and returns findings alongside
+// skipped-rule metadata for rules that did not apply with an inferable reason.
+func (r *Registry) EvaluateStatementDetailed(statement spec.Statement) (StatementEvaluation, error) {
+	var eval StatementEvaluation
+	for _, registered := range r.statementRules {
+		if !registered.AppliesTo(statement) {
+			if reason := inferSkipReason(registered.ID(), statement); reason != "" {
+				eval.Skipped = append(eval.Skipped, SkippedRule{
+					RuleID: registered.ID(),
+					Reason: reason,
+				})
+			}
+			continue
+		}
+		ruleFindings, err := registered.Evaluate(statement)
+		if err != nil {
+			return StatementEvaluation{}, err
+		}
+		ruleFindings, err = normalizeFindingRuleIDs(registered.ID(), ruleFindings)
+		if err != nil {
+			return StatementEvaluation{}, err
+		}
+		eval.Findings = append(eval.Findings, ruleFindings...)
+		eval.AppliedRuleIDs = append(eval.AppliedRuleIDs, registered.ID())
+	}
+	return eval, nil
+}
+
+// inferSkipReason returns a SkipReason when the reason a rule did not apply can be
+// reliably inferred. Rules where the reason is uncertain are not reported.
+func inferSkipReason(ruleID string, statement spec.Statement) SkipReason {
+	if strings.HasPrefix(ruleID, "ddl.pg.") && statement.Dialect != spec.DialectPostgreSQL {
+		return SkipReasonDialectMismatch
+	}
+	return ""
 }
 
 func normalizeFindingRuleIDs(ruleID string, findings []Finding) ([]Finding, error) {

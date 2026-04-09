@@ -1501,6 +1501,89 @@ func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	}
 }
 
+func TestAuditCommandSupportsGitHubActionsFormat(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "github-actions"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for blocker findings, got %d", code)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr for github-actions output, got %q", stderr.String())
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "::error") {
+		t.Fatalf("expected ::error annotation in github-actions output, got %q", output)
+	}
+	if !strings.Contains(output, "dml.where.require") {
+		t.Fatalf("expected rule ID in github-actions output, got %q", output)
+	}
+}
+
+func TestAuditCommandSupportsSARIFFormat(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "sarif"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for blocker findings, got %d", code)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr for sarif output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal sarif output: %v\noutput=%s", err, stdout.String())
+	}
+	if decoded["version"] != "2.1.0" {
+		t.Fatalf("expected SARIF version 2.1.0, got %v", decoded["version"])
+	}
+	runs, ok := decoded["runs"].([]any)
+	if !ok || len(runs) == 0 {
+		t.Fatalf("expected runs array in SARIF output, got %v", decoded["runs"])
+	}
+}
+
+func TestAuditCommandJSONFormatDoesNotRegress(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1 for blocker findings, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	if decoded["verdict"] != "reject" {
+		t.Fatalf("expected verdict reject, got %v", decoded["verdict"])
+	}
+}
+
 func TestRootVersionFlagPrintsVersionOnly(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version
@@ -1523,5 +1606,123 @@ func TestRootVersionFlagPrintsVersionOnly(t *testing.T) {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected root version output to contain %q, got %q", expected, output)
 		}
+	}
+}
+
+func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
+	output, err := renderJSONResult(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     147,
+			Applicable: 103,
+			Skipped: []rule.SkippedRule{{
+				RuleID: "ddl.pg.table.engine.allowlist",
+				Reason: rule.SkipReasonDialectMismatch,
+			}},
+		},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v\noutput=%s", err, string(output))
+	}
+	summary, ok := decoded["rule_summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected rule_summary object, got %#v", decoded["rule_summary"])
+	}
+	if loaded, _ := summary["loaded"].(float64); loaded != 147 {
+		t.Fatalf("expected loaded=147, got %v", summary["loaded"])
+	}
+	if applicable, _ := summary["applicable"].(float64); applicable != 103 {
+		t.Fatalf("expected applicable=103, got %v", summary["applicable"])
+	}
+	skipped, ok := summary["skipped"].([]any)
+	if !ok || len(skipped) != 1 {
+		t.Fatalf("expected 1 skipped rule, got %#v", summary["skipped"])
+	}
+	first, _ := skipped[0].(map[string]any)
+	if first["rule_id"] != "ddl.pg.table.engine.allowlist" {
+		t.Fatalf("expected skipped rule_id, got %#v", first)
+	}
+}
+
+func TestQuietOutputIncludesRuleSummary(t *testing.T) {
+	output := renderQuietResult(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     147,
+			Applicable: 103,
+			Skipped: []rule.SkippedRule{{
+				RuleID: "ddl.pg.table.engine.allowlist",
+				Reason: rule.SkipReasonDialectMismatch,
+			}},
+		},
+	})
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "[summary] loaded=147 applicable=103 skipped=1") {
+		t.Fatalf("expected summary line in quiet output, got %q", rendered)
+	}
+}
+
+func TestQuietOutputWithRuleSummaryButNoFindingsShowsSummary(t *testing.T) {
+	output := renderQuietResult(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     50,
+			Applicable: 50,
+		},
+	})
+
+	rendered := string(output)
+	if rendered == "pass" {
+		t.Fatalf("expected summary line, not just 'pass', got %q", rendered)
+	}
+	if !strings.Contains(rendered, "[summary] loaded=50 applicable=50 skipped=0") {
+		t.Fatalf("expected summary line when no findings but rule summary present, got %q", rendered)
+	}
+}
+
+func TestMarkdownPathWithRuleSummaryDoesNotRegress(t *testing.T) {
+	output, err := renderMarkdownResult(report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{Statements: 1, Blockers: 1},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause required",
+			}},
+		}},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     10,
+			Applicable: 9,
+			Skipped: []rule.SkippedRule{{
+				RuleID: "ddl.pg.table.engine.allowlist",
+				Reason: rule.SkipReasonDialectMismatch,
+			}},
+		},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render markdown: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "# DeltaScope Audit Result") {
+		t.Fatalf("expected markdown header, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "dml.where.require") {
+		t.Fatalf("expected finding in markdown, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "## Rule Summary") {
+		t.Fatalf("expected rule summary section, got %q", rendered)
 	}
 }

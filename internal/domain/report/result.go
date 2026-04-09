@@ -74,6 +74,13 @@ type StatementResult struct {
 	Explanation   *Explanation   `json:"explanation,omitempty"`
 }
 
+// RuleSummary captures rule applicability statistics across the full audit.
+type RuleSummary struct {
+	Loaded     int                `json:"loaded"`
+	Applicable int                `json:"applicable"`
+	Skipped    []rule.SkippedRule `json:"skipped,omitempty"`
+}
+
 // Summary captures high-level counts for the full audit result.
 type Summary struct {
 	Statements int `json:"statements"`
@@ -90,6 +97,7 @@ type Result struct {
 	GlobalFindings []rule.Finding            `json:"global_findings,omitempty"`
 	Unsupported    []spec.UnsupportedDetail  `json:"unsupported,omitempty"`
 	Explanation    *Explanation              `json:"explanation,omitempty"`
+	RuleSummary    *RuleSummary              `json:"rule_summary,omitempty"`
 }
 
 // Aggregate builds a final Result from statement and global findings.

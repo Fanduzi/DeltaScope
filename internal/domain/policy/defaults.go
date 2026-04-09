@@ -638,6 +638,27 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			// PG migration-safety rules (PostgreSQL-only).
+			"ddl.pg.create_index.concurrently.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.add_column.non_null_default.rewrite.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.add_check.not_valid.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.set_data_type.rewrite.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

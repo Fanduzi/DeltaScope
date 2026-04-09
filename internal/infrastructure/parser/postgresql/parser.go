@@ -74,6 +74,7 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_AlterTableStmt,
 		*pg_query.Node_RenameStmt,
 		*pg_query.Node_DropStmt,
+		*pg_query.Node_IndexStmt,
 		*pg_query.Node_TruncateStmt:
 		return spec.KindDDL
 	case *pg_query.Node_InsertStmt,

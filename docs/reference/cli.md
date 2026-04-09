@@ -14,7 +14,7 @@ These flags apply to all subcommands.
 |------|------|---------|-------------|
 | `--config` | string | (none) | Path to YAML policy config file. When omitted, `policy.Default()` is used. |
 | `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable DeltaScope binary. Starting with the `v0.17.0` public release line, the supported macOS and Linux `deltascope` archives are PG-capable, so PostgreSQL offline audit uses the normal main CLI path. A legacy `deltascope-pg` download may remain available during the transition for older CLI-only workflows. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
-| `--format` | string | `markdown` | Output format: `markdown` (human-readable) or `json` (stable machine-readable contract). |
+| `--format` | string | `markdown` | Output format: `markdown` (human-readable), `json` (stable machine-readable contract), `github-actions` (CI inline annotations), or `sarif` (SARIF 2.1.0 for GitHub Code Scanning). |
 | `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
 | `--version` | bool | false | Print only the semantic version string and exit. |
@@ -255,6 +255,40 @@ describing how dialect and schema were resolved.
 
 `dialect_source` values: `"default"` (offline default), `"flag"` (from `--dialect`), or `"detected"` (from a live instance in metadata-aware mode).
 For CLI metadata-aware audits, `schema_source` values are `"flag"` (from `--schema`) or `"inferred"` (unique match across accessible schemas). When schema inference is unnecessary or unavailable, the field may be omitted instead of emitting an extra source value.
+
+#### Quiet Mode
+
+`--quiet` changes markdown output only. With markdown output, DeltaScope suppresses the normal report body and prints each finding as a single line. With `--format json`, the JSON contract is unchanged.
+
+```
+[blocker] dml.where.require: UPDATE and DELETE statements must include a WHERE clause
+```
+
+This is useful for scripted processing or minimalist CI log output.
+
+#### GitHub Actions Output
+
+Use `--format github-actions` to produce inline CI annotations that render in the GitHub Actions workflow log.
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+Each finding maps to a GitHub Actions workflow command (`::error`, `::warning`, or `::notice`) based on the rule severity. Special characters in titles and messages are escaped per the GitHub workflow command specification.
+
+#### SARIF Output
+
+Use `--format sarif` to produce valid SARIF 2.1.0 JSON for GitHub Code Scanning, Azure DevOps, and other SARIF consumers.
+
+```bash
+deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```
+
+The output includes rule metadata (help text from explanation suggestions) under `tool.driver.rules` and maps severity levels to SARIF levels: `blocker` → `error`, `warning` → `warning`, `notice` → `note`.
+
+#### Rule Summary
+
+JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`; in markdown it renders as `## Rule Summary` and `## Skipped Rules` sections. GitHub Actions and SARIF output do not include rule summary.
 
 #### Quiet Mode
 

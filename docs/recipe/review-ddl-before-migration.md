@@ -313,3 +313,26 @@ echo "Audit result: $VERDICT"
 - [ ] Use `--format json` in CI so findings appear as structured data in logs.
 - [ ] Keep at least one migration fixture in the repository so developers can reproduce the same audit locally.
 - [ ] For multi-file migration directories, loop over files in migration order (alphabetical or version-sorted) so CI runs are deterministic. Cross-statement `merge-alter` findings are only detected when related statements are audited together in a single DeltaScope run.
+
+## PostgreSQL Migration Safety
+
+When auditing PostgreSQL migrations, DeltaScope applies an additional set of migration-safety rules that guard against common patterns causing table rewrites, long-held locks, or production incidents:
+
+| Rule ID | What It Catches | Safe Pattern |
+|---------|----------------|---------------|
+| `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` without `CONCURRENTLY` | Use `CREATE INDEX CONCURRENTLY` |
+| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | `ADD COLUMN … NOT NULL DEFAULT` with volatile default | Add nullable first, backfill, then add NOT NULL |
+| `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK (…)` without `NOT VALID` | Use `ADD CHECK (…) NOT VALID` |
+| `ddl.pg.alter.set_data_type.rewrite.warn` | `ALTER COLUMN … TYPE …` may rewrite table | Use add-new-column + backfill + drop-old pattern |
+
+Example: audit a PostgreSQL migration file with CI-native annotations:
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+Generate SARIF output for GitHub Code Scanning:
+
+```bash
+deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```

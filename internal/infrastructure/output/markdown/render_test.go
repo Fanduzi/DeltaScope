@@ -376,3 +376,70 @@ func assertNotContains(t *testing.T, output string, want string) {
 		t.Fatalf("expected output not to contain %q\noutput:\n%s", want, output)
 	}
 }
+
+func TestMarkdownRenderIncludesRuleSummary(t *testing.T) {
+	loaded := 147
+	applicable := 103
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     loaded,
+			Applicable: applicable,
+			Skipped: []rule.SkippedRule{{
+				RuleID: "ddl.pg.table.engine.allowlist",
+				Reason: rule.SkipReasonDialectMismatch,
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "## Rule Summary")
+	assertContains(t, output, "- Loaded: 147")
+	assertContains(t, output, "- Applicable: 103")
+	assertContains(t, output, "- Skipped: 1")
+}
+
+func TestMarkdownRenderIncludesSkippedRulesSection(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     10,
+			Applicable: 8,
+			Skipped: []rule.SkippedRule{
+				{RuleID: "ddl.pg.table.engine.allowlist", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "ddl.pg.index.concurrent.require", Reason: rule.SkipReasonDialectMismatch},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "## Skipped Rules")
+	assertContains(t, output, "`ddl.pg.index.concurrent.require`: not applicable to current dialect")
+	assertContains(t, output, "`ddl.pg.table.engine.allowlist`: not applicable to current dialect")
+}
+
+func TestMarkdownRenderOmitsSkippedSectionWhenEmpty(t *testing.T) {
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     10,
+			Applicable: 10,
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	assertContains(t, output, "## Rule Summary")
+	assertNotContains(t, output, "## Skipped Rules")
+}

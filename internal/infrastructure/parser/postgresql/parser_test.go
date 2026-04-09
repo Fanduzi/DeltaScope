@@ -319,6 +319,274 @@ func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
 	}
 }
 
+func TestExtractCreateIndexConcurrentFlag(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create index concurrently idx_users_email on public.users (email);")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create index, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		t.Fatalf("expected create_index operation, got %#v", statement.DDL)
+	}
+	if statement.DDL.Options["concurrently"] != "true" {
+		t.Fatalf("expected concurrently=true, got %#v", statement.DDL.Options)
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Schema != "public" || statement.DDL.Table.Name != "users" {
+		t.Fatalf("expected table public.users, got %#v", statement.DDL.Table)
+	}
+	if len(statement.DDL.Indexes) != 1 || statement.DDL.Indexes[0].Name != "idx_users_email" {
+		t.Fatalf("expected index name idx_users_email, got %#v", statement.DDL.Indexes)
+	}
+	if len(statement.DDL.Indexes[0].Columns) != 1 || statement.DDL.Indexes[0].Columns[0] != "email" {
+		t.Fatalf("expected index column [email], got %#v", statement.DDL.Indexes[0].Columns)
+	}
+}
+
+func TestExtractCreateIndexNonConcurrent(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create index idx_users_email on public.users (email);")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create index, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		t.Fatalf("expected create_index operation, got %#v", statement.DDL)
+	}
+	if statement.DDL.Options["concurrently"] != "false" {
+		t.Fatalf("expected concurrently=false, got %#v", statement.DDL.Options)
+	}
+}
+
+func TestExtractCreateUniqueIndex(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create unique index idx_users_email on public.users (email);")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create unique index, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		t.Fatalf("expected create_index operation, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Indexes) != 1 || statement.DDL.Indexes[0].Kind != spec.IndexKindUnique {
+		t.Fatalf("expected unique index kind, got %#v", statement.DDL.Indexes)
+	}
+}
+
+func TestExtractCreateIndexRejectsPartialIndex(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create index idx_active on public.users (email) where active = true;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown for partial index, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
+		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	}
+}
+
+func TestExtractCreateIndexRejectsExpressionIndex(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create index idx_lower_email on public.users (lower(email));")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown for expression index, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
+		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	}
+}
+
+func TestExtractCreateIndexRejectsIncludeClause(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create index idx_users_email on public.users (email) include (name);")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown for include clause, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
+		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	}
+}
+
+func TestExtractCreateIndexRejectsNonBtreeAccessMethod(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create index idx_users_email_hash on public.users using hash (email);")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown for non-btree access method, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
+		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	}
+	if statement.Unsupported.Reason == "" {
+		t.Fatalf("expected non-empty reason for non-btree access method, got %#v", statement.Unsupported)
+	}
+}
+
+func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("create unique index idx_users_email_unique on public.users (email) nulls not distinct;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected unsupported kind unknown for nulls not distinct, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
+		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	}
+	if statement.Unsupported.Reason == "" {
+		t.Fatalf("expected non-empty reason for nulls not distinct, got %#v", statement.Unsupported)
+	}
+}
+
+func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("alter table public.orders add constraint chk_amount check (amount > 0) not valid;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.DDL == nil || len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %#v", statement)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected add_constraint, got %#v", alter)
+	}
+	if alter.Options["constraint_type"] != "check" {
+		t.Fatalf("expected constraint_type=check, got %#v", alter.Options)
+	}
+	if alter.Options["not_valid"] != "true" {
+		t.Fatalf("expected not_valid=true, got %#v", alter.Options)
+	}
+}
+
+func TestExtractAlterAddCheckWithoutNotValid(t *testing.T) {
+	parser := New()
+
+	result, err := parser.Parse("alter table public.orders add constraint chk_amount check (amount > 0);")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.DDL == nil || len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %#v", statement)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected add_constraint, got %#v", alter)
+	}
+	if alter.Options["constraint_type"] != "check" {
+		t.Fatalf("expected constraint_type=check, got %#v", alter.Options)
+	}
+	if alter.Options["not_valid"] != "false" {
+		t.Fatalf("expected not_valid=false, got %#v", alter.Options)
+	}
+}
+
 func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
 	parser := New()
 

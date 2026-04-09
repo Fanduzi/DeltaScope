@@ -59,6 +59,21 @@ func Render(result report.Result) ([]byte, error) {
 		}
 	}
 
+	if result.RuleSummary != nil {
+		builder.WriteString("## Rule Summary\n\n")
+		builder.WriteString(fmt.Sprintf("- Loaded: %d\n", result.RuleSummary.Loaded))
+		builder.WriteString(fmt.Sprintf("- Applicable: %d\n", result.RuleSummary.Applicable))
+		builder.WriteString(fmt.Sprintf("- Skipped: %d\n", len(result.RuleSummary.Skipped)))
+		builder.WriteString("\n")
+
+		if len(result.RuleSummary.Skipped) > 0 {
+			builder.WriteString("## Skipped Rules\n\n")
+			for _, skipped := range result.RuleSummary.Skipped {
+				builder.WriteString(fmt.Sprintf("- `%s`: %s\n", skipped.RuleID, formatSkipReason(skipped.Reason)))
+			}
+		}
+	}
+
 	return []byte(builder.String()), nil
 }
 
@@ -97,6 +112,15 @@ func formatImpactRatio(ratio float64) string {
 		return strconv.FormatFloat(ratio, 'g', -1, 64)
 	}
 	return fmt.Sprintf("%.4f", ratio)
+}
+
+func formatSkipReason(reason rule.SkipReason) string {
+	switch reason {
+	case rule.SkipReasonDialectMismatch:
+		return "not applicable to current dialect"
+	default:
+		return string(reason)
+	}
 }
 
 func inlineCodeSpan(value string) string {

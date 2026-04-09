@@ -2890,6 +2890,114 @@ rules:
 
 ---
 
+## DDL：PostgreSQL 迁移安全规则（PostgreSQL Migration Safety Rules）
+
+> 以下规则仅对 PostgreSQL 方言生效，用于捕获可能导致锁表或全表重写的 DDL 操作。
+
+### `ddl.pg.create_index.concurrently.require`
+
+标记 PostgreSQL 上不带 `CONCURRENTLY` 的 `CREATE INDEX`。非并发的 `CREATE INDEX` 会对表持有排他锁，阻塞读写直到索引构建完成。
+
+- **默认**：已启用，级别 `warning`
+- **参数**：无
+
+**触发示例：**
+```sql
+CREATE INDEX idx_name ON users (email);
+```
+
+**通过示例：**
+```sql
+CREATE INDEX CONCURRENTLY idx_name ON users (email);
+```
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.pg.create_index.concurrently.require:
+    enabled: true
+    level: warning
+```
+
+---
+
+### `ddl.pg.alter.add_column.non_null_default.rewrite.warn`
+
+警告 `ALTER TABLE … ADD COLUMN … NOT NULL DEFAULT …` 可能触发 PostgreSQL 全表重写。添加带有 volatile 默认值（如 `gen_random_uuid()`）的非空列需要 PostgreSQL 重写每一行。
+
+- **默认**：已启用，级别 `warning`
+- **参数**：无
+
+**触发示例：**
+```sql
+ALTER TABLE users ADD COLUMN uuid UUID NOT NULL DEFAULT gen_random_uuid();
+```
+
+**通过示例：**
+先添加可为空的列，回填数据，然后在单独的迁移中添加 `NOT NULL` 约束。
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.pg.alter.add_column.non_null_default.rewrite.warn:
+    enabled: true
+    level: warning
+```
+
+---
+
+### `ddl.pg.alter.add_check.not_valid.require`
+
+标记 PostgreSQL 上不带 `NOT VALID` 的 `ALTER TABLE … ADD CHECK (…)`。不使用 `NOT VALID` 添加 `CHECK` 约束需要全表扫描来验证已有行，这会持有 `ACCESS EXCLUSIVE` 锁。
+
+- **默认**：已启用，级别 `warning`
+- **参数**：无
+
+**触发示例：**
+```sql
+ALTER TABLE orders ADD CHECK (total >= 0);
+```
+
+**通过示例：**
+```sql
+ALTER TABLE orders ADD CHECK (total >= 0) NOT VALID;
+```
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.pg.alter.add_check.not_valid.require:
+    enabled: true
+    level: warning
+```
+
+---
+
+### `ddl.pg.alter.set_data_type.rewrite.warn`
+
+警告 `ALTER TABLE … ALTER COLUMN … TYPE …` 可能需要 PostgreSQL 全表重写。某些类型变更（如 `varchar` 到 `integer`）需要 PostgreSQL 重写每一行。
+
+- **默认**：已启用，级别 `warning`
+- **参数**：无
+
+**触发示例：**
+```sql
+ALTER TABLE users ALTER COLUMN age TYPE bigint;
+```
+
+**通过示例：**
+使用三步安全迁移：添加新列 → 回填 → 删除旧列。
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.pg.alter.set_data_type.rewrite.warn:
+    enabled: true
+    level: warning
+```
+
+---
+
 ## DML 规则（DML Rules）
 
 ### `dml.where.require`

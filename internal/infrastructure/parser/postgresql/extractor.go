@@ -4,6 +4,7 @@ package postgresql
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -44,6 +45,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractRenameStmt(statement, node.RenameStmt), nil
 	case *pg_query.Node_DropStmt:
 		return extractDropStmt(statement, node.DropStmt), nil
+	case *pg_query.Node_IndexStmt:
+		return extractIndexStmt(statement, node.IndexStmt), nil
 	case *pg_query.Node_TruncateStmt:
 		return extractTruncateStmt(statement, node.TruncateStmt), nil
 	case *pg_query.Node_InsertStmt:
@@ -231,6 +234,68 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 	return statement
 }
 
+func extractIndexStmt(statement spec.Statement, stmt *pg_query.IndexStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_index", "postgresql create index statement payload is missing")
+	}
+	if stmt.GetWhereClause() != nil {
+		return unsupportedStatement(statement, "create_index", "postgresql partial index is unsupported in this milestone")
+	}
+	if len(stmt.GetIndexIncludingParams()) > 0 {
+		return unsupportedStatement(statement, "create_index", "postgresql create index include clause is unsupported in this milestone")
+	}
+	if am := stmt.GetAccessMethod(); am != "" && am != "btree" {
+		return unsupportedStatement(statement, "create_index", "postgresql create index with non-btree access method is unsupported in this milestone")
+	}
+	if stmt.GetNullsNotDistinct() {
+		return unsupportedStatement(statement, "create_index", "postgresql create index nulls not distinct is unsupported in this milestone")
+	}
+	if hasExpressionIndexColumn(stmt.GetIndexParams()) {
+		return unsupportedStatement(statement, "create_index", "postgresql expression index is unsupported in this milestone")
+	}
+
+	columns := indexColumnsFromIndexParams(stmt.GetIndexParams())
+	kind := spec.IndexKindSecondary
+	if stmt.GetUnique() {
+		kind = spec.IndexKindUnique
+	}
+
+	statement.DDL = &spec.DDL{
+		Operation: spec.DDLOperationCreateIndex,
+		Table:     tableFromRangeVar(stmt.GetRelation()),
+		Indexes: []spec.Index{
+			{Name: stmt.GetIdxname(), Kind: kind, Columns: columns},
+		},
+		Options: map[string]string{
+			"concurrently": strconv.FormatBool(stmt.GetConcurrent()),
+		},
+	}
+	return statement
+}
+
+func hasExpressionIndexColumn(params []*pg_query.Node) bool {
+	for _, param := range params {
+		elem := param.GetIndexElem()
+		if elem == nil {
+			return true
+		}
+		if elem.GetExpr() != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func indexColumnsFromIndexParams(params []*pg_query.Node) []string {
+	columns := make([]string, 0, len(params))
+	for _, param := range params {
+		if name := param.GetIndexElem().GetName(); name != "" {
+			columns = append(columns, name)
+		}
+	}
+	return columns
+}
+
 func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) spec.Statement {
 	if stmt == nil {
 		return unsupportedStatement(statement, "truncate", "postgresql truncate statement payload is missing")
@@ -303,7 +368,11 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if !ok {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "add_constraint", Reason: "postgresql constraint type is not in the approved v1 subset"}
 		}
-		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: map[string]string{"constraint_type": constraintType}}, true, nil
+		options := map[string]string{
+			"constraint_type": constraintType,
+			"not_valid":       strconv.FormatBool(constraint.GetSkipValidation()),
+		}
+		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options}, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
 		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName()}, true, nil
 	case pg_query.AlterTableType_AT_AlterColumnType:
@@ -463,6 +532,8 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "rename"
 	case *pg_query.Node_DropStmt:
 		return "drop"
+	case *pg_query.Node_IndexStmt:
+		return "create_index"
 	case *pg_query.Node_TruncateStmt:
 		return "truncate"
 	case *pg_query.Node_InsertStmt:

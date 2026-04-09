@@ -6,7 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
-Release target: `TBD`
+## [v0.19.0] - 2026-04-09
+
+### Added
+
+- PostgreSQL migration-safety rule pack (4 rules, default level `warning`):
+  - `ddl.pg.create_index.concurrently.require` — flags `CREATE INDEX` without `CONCURRENTLY` on PostgreSQL
+  - `ddl.pg.alter.add_column.non_null_default.rewrite.warn` — warns when `ALTER TABLE … ADD COLUMN … NOT NULL DEFAULT …` may trigger a full table rewrite
+  - `ddl.pg.alter.add_check.not_valid.require` — flags `ALTER TABLE … ADD CHECK (…)` without `NOT VALID` on large tables
+  - `ddl.pg.alter.set_data_type.rewrite.warn` — warns when `ALTER TABLE … ALTER COLUMN … TYPE …` may require a full table rewrite
+- `--format github-actions` output for inline CI annotations (`::error`, `::warning`, `::notice`) with proper workflow-command escaping
+- `--format sarif` output producing valid SARIF 2.1.0 JSON for GitHub Code Scanning and other SARIF consumers
+- `rule_summary` field in JSON output and `## Rule Summary` / `## Skipped Rules` sections in Markdown output showing loaded, applicable, and skipped rule counts
+
+### Changed
+
+- Documentation updated across all reference, recipe, and landing pages to reflect the v0.19.0 PostgreSQL migration-safety pack and CI output formats
 
 ## [v0.18.0] - 2026-04-09
 

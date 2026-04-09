@@ -3079,6 +3079,116 @@ rules:
 
 ---
 
+## DDL: PostgreSQL Migration-Safety Rules
+
+> These rules only apply when `--dialect postgresql` is set and are automatically skipped for MySQL/TiDB dialects.
+
+### `ddl.pg.create_index.concurrently.require`
+
+Flags `CREATE INDEX` without `CONCURRENTLY` on PostgreSQL. Non-concurrent `CREATE INDEX` holds an exclusive lock on the table, blocking reads and writes until the index build finishes.
+
+- **Default**: enabled, level `warning`
+- **Params**: none
+
+**Trigger example:**
+```sql
+CREATE INDEX idx_name ON users (email);
+```
+
+**Valid example:**
+```sql
+CREATE INDEX CONCURRENTLY idx_name ON users (email);
+```
+
+**Config example:**
+```yaml
+rules:
+  ddl.pg.create_index.concurrently.require:
+    enabled: true
+    level: warning
+```
+
+---
+
+### `ddl.pg.alter.add_column.non_null_default.rewrite.warn`
+
+Warns when `ALTER TABLE … ADD COLUMN … NOT NULL DEFAULT …` may trigger a full table rewrite on PostgreSQL. Adding a non-null column with a volatile default (e.g. `gen_random_uuid()`) requires PostgreSQL to rewrite every row.
+
+- **Default**: enabled, level `warning`
+- **Params**: none
+
+**Trigger example:**
+```sql
+ALTER TABLE users ADD COLUMN uuid UUID NOT NULL DEFAULT gen_random_uuid();
+```
+
+**Valid example:**
+
+Add the column as nullable first, backfill, then add the `NOT NULL` constraint in a separate migration.
+
+**Config example:**
+```yaml
+rules:
+  ddl.pg.alter.add_column.non_null_default.rewrite.warn:
+    enabled: true
+    level: warning
+```
+
+---
+
+### `ddl.pg.alter.add_check.not_valid.require`
+
+Flags `ALTER TABLE … ADD CHECK (…)` without `NOT VALID` on PostgreSQL. Adding a `CHECK` constraint without `NOT VALID` requires a full table scan to validate existing rows, which holds an `ACCESS EXCLUSIVE` lock.
+
+- **Default**: enabled, level `warning`
+- **Params**: none
+
+**Trigger example:**
+```sql
+ALTER TABLE orders ADD CHECK (total >= 0);
+```
+
+**Valid example:**
+```sql
+ALTER TABLE orders ADD CHECK (total >= 0) NOT VALID;
+```
+
+**Config example:**
+```yaml
+rules:
+  ddl.pg.alter.add_check.not_valid.require:
+    enabled: true
+    level: warning
+```
+
+---
+
+### `ddl.pg.alter.set_data_type.rewrite.warn`
+
+Warns when `ALTER TABLE … ALTER COLUMN … TYPE …` may require a full table rewrite on PostgreSQL. Certain type changes (e.g. `varchar` to `integer`) require PostgreSQL to rewrite every row.
+
+- **Default**: enabled, level `warning`
+- **Params**: none
+
+**Trigger example:**
+```sql
+ALTER TABLE users ALTER COLUMN age TYPE bigint;
+```
+
+**Valid example:**
+
+Use a three-step safe migration: add new column → backfill → drop old column.
+
+**Config example:**
+```yaml
+rules:
+  ddl.pg.alter.set_data_type.rewrite.warn:
+    enabled: true
+    level: warning
+```
+
+---
+
 ## Cross-References
 
 - Rule discovery commands: [rules.md](rules.md)

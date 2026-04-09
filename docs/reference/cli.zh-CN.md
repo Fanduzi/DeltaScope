@@ -12,7 +12,7 @@
 |------|------|--------|------|
 | `--config` | string | （无） | YAML 策略配置文件路径。省略时使用 `policy.Default()`。 |
 | `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable DeltaScope 二进制。从 `v0.17.0` 公开 release 开始，受支持的 macOS 和 Linux `deltascope` 主 archive 都直接提供该能力，因此 PostgreSQL offline 审计走的就是正常主 CLI 路径。迁移期内，`deltascope-pg` 仍可能作为旧 CLI-only 工作流的兼容下载短暂保留。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
-| `--format` | string | `markdown` | 输出格式：`markdown`（人类可读）或 `json`（稳定的机器可读契约）。 |
+| `--format` | string | `markdown` | 输出格式：`markdown`（人类可读）、`json`（稳定的机器可读契约）、`github-actions`（CI 内联注解）或 `sarif`（SARIF 2.1.0，用于 GitHub Code Scanning）。 |
 | `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
 | `--version` | bool | false | 仅打印语义化版本字符串后退出。 |
@@ -53,7 +53,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 ### 连接标志（元数据感知模式）
 
-提供以下任意一个标志即可激活元数据感知模式。DeltaScope 将连接至指定的 MySQL 或 TiDB 实例，获取实时 schema 信息（表结构、索引定义、实例变量），并在规则评估前将其附加到每条语句。当前 PostgreSQL 支持仍然只覆盖离线模式，不使用这些连接标志。
+提供以下任意一个标志即可激活元数据感知模式。DeltaScope 将连接至指定的 MySQL、TiDB 或 PostgreSQL 实例，获取实时 schema 信息（表结构、索引定义、实例变量），并在规则评估前将其附加到每条语句。
 
 | 标志 | 简写 | 默认值 | 描述 |
 |------|------|--------|------|
@@ -225,6 +225,30 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
 ```
 
 适用于脚本处理或极简 CI 日志输出。
+
+#### GitHub Actions 输出
+
+使用 `--format github-actions` 生成 CI 内联注解，渲染在 GitHub Actions 工作流日志中。
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+每条发现根据规则严重级别映射为 GitHub Actions 工作流命令（`::error`、`::warning` 或 `::notice`）。标题和消息中的特殊字符按照 GitHub 工作流命令规范进行转义。
+
+#### SARIF 输出
+
+使用 `--format sarif` 生成标准 SARIF 2.1.0 JSON，用于 GitHub Code Scanning、Azure DevOps 和其他 SARIF 消费方。
+
+```bash
+deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```
+
+输出包含规则元数据（来自 explanation suggestion 的帮助文本）放在 `tool.driver.rules` 下，严重级别映射：`blocker` → `error`、`warning` → `warning`、`notice` → `note`。
+
+#### 规则摘要
+
+JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现；在 markdown 中渲染为 `## Rule Summary` 和 `## Skipped Rules` 区段。GitHub Actions 和 SARIF 输出不包含规则摘要。
 
 ---
 

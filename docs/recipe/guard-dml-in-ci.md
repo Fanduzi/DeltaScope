@@ -137,6 +137,46 @@ audit-sql:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 ```
 
+## GitHub Actions Native Annotations
+
+Use `--format github-actions` to produce inline CI annotations that render in the GitHub Actions workflow log:
+
+```yaml
+      - name: Audit SQL migrations (annotations)
+        run: |
+          deltascope audit \
+            --file ./sql/changes.sql \
+            --format github-actions \
+            --fail-on blocker
+```
+
+## SARIF Output for GitHub Code Scanning
+
+Use `--format sarif` to generate SARIF 2.1.0 output for GitHub Code Scanning integration:
+
+```yaml
+      - name: Audit SQL migrations (SARIF)
+        run: |
+          deltascope audit \
+            --file ./sql/changes.sql \
+            --format sarif \
+            --fail-on blocker > deltascope.sarif
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: deltascope.sarif
+```
+
+## PostgreSQL Migration Safety in CI
+
+Audit PostgreSQL migration files with migration-safety rules in CI:
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations.sql --format sarif > deltascope.sarif
+```
+
 ## --fail-on Strategy
 
 | Setting | Exit 1 when | Recommended for |
