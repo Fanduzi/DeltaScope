@@ -97,6 +97,37 @@ func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {
 	}
 }
 
+func TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot(t *testing.T) {
+	snapshot := TableSnapshot{
+		Constraints: []Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
+	}
+
+	if !snapshot.HasPrimaryKey() {
+		t.Fatal("expected constraint-backed primary key to count as existing")
+	}
+}
+
+func TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot(t *testing.T) {
+	snapshot := TableSnapshot{
+		PrimaryKey: &Index{Name: "PRIMARY", Kind: IndexKindPrimary, Columns: []string{"id"}},
+	}
+
+	if !snapshot.HasPrimaryKey() {
+		t.Fatal("expected primary key index to count as existing")
+	}
+}
+
+func TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts(t *testing.T) {
+	snapshot := TableSnapshot{
+		Constraints: []Constraint{{Type: "check", Name: "users_id_positive", Columns: []string{"id"}}},
+		Indexes:     []Index{{Name: "idx_email", Kind: IndexKindSecondary, Columns: []string{"email"}}},
+	}
+
+	if snapshot.HasPrimaryKey() {
+		t.Fatal("expected snapshot without primary key facts to report false")
+	}
+}
+
 func TestDDLTracksExplicitNamesForNamingGovernanceTargets(t *testing.T) {
 	stmt := Statement{
 		Kind:    KindDDL,
