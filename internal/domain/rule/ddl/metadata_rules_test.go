@@ -225,6 +225,45 @@ func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
 	}
 }
 
+func TestAlterPrimaryKeyExistenceRuleConstraintOnlySnapshot(t *testing.T) {
+	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("new primary-key existence rule: %v", err)
+	}
+
+	// Snapshot has a primary_key constraint but no PrimaryKey index pointer.
+	// This can happen when metadata is loaded from a source that records
+	// constraints but does not populate the index summary.
+	statement := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Table: &spec.Table{Name: "users"},
+			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
+		},
+		Metadata: &spec.Metadata{
+			TargetTable: &spec.TableSnapshot{
+				Exists: true,
+				Table:  &spec.Table{Name: "users"},
+				Constraints: []spec.Constraint{
+					{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}},
+				},
+				// PrimaryKey is intentionally nil.
+			},
+		},
+	}
+
+	findings, err := pkRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate primary-key rule: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no primary-key existence finding when constraint-based PK exists, got %d: %#v", len(findings), findings)
+	}
+}
+
 func TestAlterPrimaryKeyExistenceRuleFallsBackToPrimaryKeyIndexName(t *testing.T) {
 	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,

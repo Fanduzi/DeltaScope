@@ -75,5 +75,13 @@ func (s TableSnapshot) FindIndex(name string) *Index {
 
 // HasPrimaryKey reports whether the snapshot currently has a primary key.
 func (s TableSnapshot) HasPrimaryKey() bool {
-	return s.PrimaryKey != nil
+	if s.PrimaryKey != nil {
+		return true
+	}
+	for _, c := range s.Constraints {
+		if c.Type == "primary_key" {
+			return true
+		}
+	}
+	return false
 }
