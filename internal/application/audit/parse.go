@@ -21,9 +21,18 @@ type ParsedStatement struct {
 
 // ParsedSQL is the application-owned parsing result used by later extraction steps.
 type ParsedSQL struct {
-	Dialect    spec.Dialect     `json:"dialect"`
+	Dialect    spec.Dialect      `json:"dialect"`
 	Statements []ParsedStatement `json:"statements"`
-	Warnings   []string         `json:"warnings,omitempty"`
+	Warnings   []string          `json:"warnings,omitempty"`
+}
+
+// PostgreSQLCapabilityBoundaryError reports that PostgreSQL parsing needs a PostgreSQL-capable build.
+type PostgreSQLCapabilityBoundaryError struct {
+	Message string
+}
+
+func (e *PostgreSQLCapabilityBoundaryError) Error() string {
+	return e.Message
 }
 
 // Parse delegates SQL parsing to the dialect-specific parser adapter.
@@ -41,9 +50,6 @@ func Parse(sql string, dialect spec.Dialect) (ParsedSQL, error) {
 func parseTiDB(sql string, dialect spec.Dialect) (ParsedSQL, error) {
 	result, err := tidbparser.New().Parse(sql)
 	if err != nil {
-		if token, ok := possiblePostgreSQLMismatch(sql); ok {
-			return ParsedSQL{}, formatPossiblePostgreSQLMismatchError(err, string(dialect), token)
-		}
 		return ParsedSQL{}, err
 	}
 

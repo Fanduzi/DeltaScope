@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -534,6 +535,148 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 			}
 		}
 	})
+}
+
+// ---------------------------------------------------------------------------
+// Task 4: Suggestion quality pass — actionable phrase assertions
+// ---------------------------------------------------------------------------
+
+func TestCreateIndexConcurrentlyRequiredRuleProvidesActionableSuggestion(t *testing.T) {
+	r := mustNewCreateIndexConcurrentlyRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateIndex,
+			Table:     &spec.Table{Schema: "public", Name: "users"},
+			Indexes:   []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary, Columns: []string{"email"}}},
+			Options:   map[string]string{"concurrently": "false"},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Explanation == nil {
+		t.Fatal("expected non-nil explanation")
+	}
+	if !strings.Contains(f.Explanation.Suggestion, "CONCURRENTLY") {
+		t.Fatalf("expected suggestion to mention CONCURRENTLY, got %q", f.Explanation.Suggestion)
+	}
+	if !strings.Contains(strings.ToLower(f.Explanation.Suggestion), "transaction") {
+		t.Fatalf("expected suggestion to mention transaction limitations, got %q", f.Explanation.Suggestion)
+	}
+}
+
+func TestAddColumnNonNullDefaultRewriteWarnRuleProvidesSaferMigrationSuggestion(t *testing.T) {
+	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+		spec.Alter{
+			Action: "add_column",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				Definition: &spec.Column{
+					Name:       "status",
+					Type:       "varchar(32)",
+					NotNull:    true,
+					HasDefault: true,
+				},
+			},
+		},
+	)
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Explanation == nil {
+		t.Fatal("expected non-nil explanation")
+	}
+	s := strings.ToLower(f.Explanation.Suggestion)
+	if !strings.Contains(s, "nullable") {
+		t.Fatalf("expected suggestion to mention nullable, got %q", f.Explanation.Suggestion)
+	}
+	if !strings.Contains(s, "backfill") {
+		t.Fatalf("expected suggestion to mention backfill, got %q", f.Explanation.Suggestion)
+	}
+}
+
+func TestAddCheckNotValidRuleProvidesValidationFlowSuggestion(t *testing.T) {
+	r := mustNewAddCheckNotValidRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+		spec.Alter{
+			Action: "add_constraint",
+			Name:   "chk_amount",
+			Options: map[string]string{
+				"constraint_type": "check",
+				"not_valid":       "false",
+			},
+		},
+	)
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Explanation == nil {
+		t.Fatal("expected non-nil explanation")
+	}
+	s := strings.ToLower(f.Explanation.Suggestion)
+	if !strings.Contains(s, "not valid") {
+		t.Fatalf("expected suggestion to mention NOT VALID, got %q", f.Explanation.Suggestion)
+	}
+	if !strings.Contains(s, "validate constraint") {
+		t.Fatalf("expected suggestion to mention VALIDATE CONSTRAINT, got %q", f.Explanation.Suggestion)
+	}
+}
+
+func TestSetDataTypeRewriteWarnRuleProvidesPhasedMigrationSuggestion(t *testing.T) {
+	r := mustNewSetDataTypeRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+		spec.Alter{
+			Action: "set_data_type",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				Definition: &spec.Column{Name: "status", Type: "text"},
+			},
+		},
+	)
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Explanation == nil {
+		t.Fatal("expected non-nil explanation")
+	}
+	s := strings.ToLower(f.Explanation.Suggestion)
+	if !strings.Contains(s, "shadow") {
+		t.Fatalf("expected suggestion to mention shadow column approach, got %q", f.Explanation.Suggestion)
+	}
+	if !strings.Contains(s, "phased") {
+		t.Fatalf("expected suggestion to mention phased migration, got %q", f.Explanation.Suggestion)
+	}
 }
 
 // ---------------------------------------------------------------------------

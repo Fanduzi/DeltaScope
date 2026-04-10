@@ -7,8 +7,10 @@ package deltascope
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
@@ -150,7 +152,50 @@ func TestAuditSupportsPostgreSQLDialectMapping(t *testing.T) {
 	}
 }
 
-func TestAuditMySQLParseablePGMismatchPreservesGlobalNoticeFinding(t *testing.T) {
+func TestAuditReturnsCapabilityBoundaryErrorForExplicitPostgreSQLOnUnsupportedBuild(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
+	}
+	_, err := Audit(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) returning id;",
+		Dialect: DialectPostgreSQL,
+	})
+	if err == nil {
+		t.Fatal("expected postgresql capability-boundary error")
+	}
+	message := err.Error()
+	var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
+	if !errors.As(err, &capabilityErr) {
+		t.Fatalf("expected typed capability-boundary error, got %T", err)
+	}
+	if message != capabilityErr.Error() {
+		t.Fatalf("expected stable capability-boundary message, got %q want %q", message, capabilityErr.Error())
+	}
+	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
+		t.Fatalf("did not expect mismatch wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
+		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
+	}
+}
+
+func TestAuditMySQLParseablePGSyntaxReturnsInputErrorWithoutPartialResult(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) returning id;",
+		Dialect: DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "possible dialect mismatch") {
+		t.Fatalf("did not expect adapter-only mismatch wording in public api error, got %q", err.Error())
+	}
+	if result.Verdict != "" || len(result.Statements) != 0 || len(result.GlobalFindings) != 0 || len(result.Unsupported) != 0 || result.Explanation != nil {
+		t.Fatalf("expected zero public result on input error, got %#v", result)
+	}
+}
+
+func TestAuditMySQLSerialDoesNotAddGlobalNotice(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "create table users (id serial primary key);",
 		Dialect: DialectMySQL,
@@ -158,15 +203,8 @@ func TestAuditMySQLParseablePGMismatchPreservesGlobalNoticeFinding(t *testing.T)
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	if len(result.GlobalFindings) != 1 {
-		t.Fatalf("expected 1 global advisory finding, got %#v", result.GlobalFindings)
-	}
-	finding := result.GlobalFindings[0]
-	if finding.Level != LevelNotice {
-		t.Fatalf("expected notice-level advisory, got %#v", finding)
-	}
-	if finding.Message == "" || finding.RuleID == "" {
-		t.Fatalf("expected stable advisory finding shape, got %#v", finding)
+	if len(result.GlobalFindings) != 0 {
+		t.Fatalf("did not expect global advisory finding, got %#v", result.GlobalFindings)
 	}
 }
 

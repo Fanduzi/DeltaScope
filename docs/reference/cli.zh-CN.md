@@ -250,6 +250,43 @@ deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > d
 
 JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现；在 markdown 中渲染为 `## Rule Summary` 和 `## Skipped Rules` 区段。GitHub Actions 和 SARIF 输出不包含规则摘要。
 
+#### PostgreSQL 信任信号
+
+在 MySQL/TiDB 路径审计时，DeltaScope 可能检测到 PostgreSQL 专属语法，发出 `dialect.postgresql.syntax.detected.notice` 全局告警。这是建议性的通知——DeltaScope **不会自动切换方言**。
+
+在 markdown 输出中，当此通知触发时会出现 `## Audit Context` 区段和明确的信任提示：
+
+```text
+## Audit Context
+- Mode: `offline`
+- Dialect: `mysql` (default)
+- Trust Note: Dialect remains `mysql` (default). DeltaScope did not auto-switch dialect.
+```
+
+在 JSON 输出中，顶层 `context` 对象始终报告 `mode`、`dialect` 和 `dialect_source`：
+
+```json
+{
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
+}
+```
+
+在 quiet 输出中，末尾追加 `[context]` 行：
+
+```text
+[context] mode=offline dialect=mysql dialect_source=default
+```
+
+如果 SQL 确实面向 PostgreSQL，请使用 `--dialect postgresql` 重新运行。如果不是，可以安全地忽略该通知。
+
+#### PostgreSQL 能力边界错误
+
+当 PG-capable 构建版本遇到尚未完全支持的 PostgreSQL 专属功能（如 DDL 解析）时，返回类型化的 `PostgreSQLCapabilityBoundaryError`。这区分了已知的能力限制和真正的解析失败。错误包含关于请求的功能面和当前构建支持能力的清晰信息。
+
 ---
 
 ## deltascope rules

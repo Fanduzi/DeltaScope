@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -318,6 +319,73 @@ func TestAuditSQLToolReturnsMetadataAwareContextForDirectConnection(t *testing.T
 	}
 }
 
+func TestAuditSQLToolRejectsExplicitPostgreSQLMetadataAwareRequestsOnUnsupportedBuild(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
+	}
+	previous := prepareMetadataAudit
+	client := metadataOnlyClientWithDialect{dialect: spec.DialectPostgreSQL}
+	prepareMetadataAudit = func(ctx context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return auditmeta.Prepare(ctx, auditmeta.Request{
+			SQL:                  request.SQL,
+			Connection:           request.Connection,
+			RequestedDialect:     request.RequestedDialect,
+			ExplicitDialect:      request.ExplicitDialect,
+			ExplicitSchema:       request.ExplicitSchema,
+			ExplicitSchemaSource: request.ExplicitSchemaSource,
+			SchemaHint:           request.SchemaHint,
+			OpenClient: func(auditmeta.ConnectionConfig) (auditmeta.Client, error) {
+				return client, nil
+			},
+		})
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "insert into users(id) values (1) returning id;",
+			"dialect": "postgresql",
+			"connection": map[string]any{
+				"host":     "127.0.0.1",
+				"port":     5432,
+				"user":     "root",
+				"password": "secret",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected tool error result, got protocol error: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("expected tool error result")
+	}
+	body := result.StructuredContent.(map[string]any)
+	message, ok := body["message"].(string)
+	if !ok || message == "" {
+		t.Fatalf("expected non-empty message, got %#v", body["message"])
+	}
+	if !strings.Contains(message, "PG-capable") {
+		t.Fatalf("expected capability-boundary wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "resolve schema targets:") {
+		t.Fatalf("did not expect metadata parse wrapper wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
+		t.Fatalf("did not expect mismatch wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
+		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
+	}
+}
+
 func TestAuditSQLToolResolvesConnectionRefFromServerConfig(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "connections.yaml")
@@ -488,6 +556,49 @@ func TestAuditSQLToolRejectsUnsupportedDialectBeforeMetadataSetup(t *testing.T) 
 	body := result.StructuredContent.(map[string]any)
 	if body["code"] != "bad_request" {
 		t.Fatalf("unexpected error code: %#v", body["code"])
+	}
+}
+
+func TestAuditSQLToolRejectsExplicitPostgreSQLOfflineRequestsOnUnsupportedBuild(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
+	}
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "insert into users(id) values (1) returning id;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected tool error result, got protocol error: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("expected tool error result")
+	}
+	body := result.StructuredContent.(map[string]any)
+	if body["code"] != "bad_request" {
+		t.Fatalf("unexpected error code: %#v", body["code"])
+	}
+	message, ok := body["message"].(string)
+	if !ok || message == "" {
+		t.Fatalf("expected non-empty message, got %#v", body["message"])
+	}
+	if !strings.Contains(message, "PG-capable") {
+		t.Fatalf("expected capability-boundary message, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
+		t.Fatalf("did not expect mismatch wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
+		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
 	}
 }
 
@@ -807,7 +918,15 @@ func collectTools(_ context.Context, sequence iter.Seq2[*sdkmcp.Tool, error]) (m
 
 type metadataOnlyClient struct{}
 
+type metadataOnlyClientWithDialect struct {
+	dialect spec.Dialect
+}
+
 func (metadataOnlyClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
+	return &spec.InstanceFacts{}, nil
+}
+
+func (metadataOnlyClientWithDialect) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
 	return &spec.InstanceFacts{}, nil
 }
 
@@ -815,11 +934,26 @@ func (metadataOnlyClient) LoadTableSnapshot(context.Context, spec.Dialect, strin
 	return &spec.TableSnapshot{}, nil
 }
 
+func (metadataOnlyClientWithDialect) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
+	return &spec.TableSnapshot{}, nil
+}
+
 func (metadataOnlyClient) DetectDialect(context.Context) (spec.Dialect, error) {
 	return spec.DialectTiDB, nil
 }
 
+func (c metadataOnlyClientWithDialect) DetectDialect(context.Context) (spec.Dialect, error) {
+	if c.dialect == "" {
+		return spec.DialectTiDB, nil
+	}
+	return c.dialect, nil
+}
+
 func (metadataOnlyClient) FindSchemasForTable(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
+func (metadataOnlyClientWithDialect) FindSchemasForTable(context.Context, string) ([]string, error) {
 	return nil, nil
 }
 
@@ -827,4 +961,10 @@ func (metadataOnlyClient) ResolveTableForIndex(context.Context, spec.Dialect, st
 	return "", nil
 }
 
+func (metadataOnlyClientWithDialect) ResolveTableForIndex(context.Context, spec.Dialect, string, string) (string, error) {
+	return "", nil
+}
+
 func (metadataOnlyClient) Close() error { return nil }
+
+func (metadataOnlyClientWithDialect) Close() error { return nil }

@@ -381,6 +381,22 @@ deltascope rules search "prefix"
 
 ---
 
+## 信任与误配防护（非规则行为）
+
+v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面。这些**不是**可配置的规则，在策略 YAML 中没有条目，不能被禁用或调整级别。
+
+| 行为 | 类规则 ID | 说明 |
+|------|----------|------|
+| PostgreSQL 语法启发式通知 | `dialect.postgresql.syntax.detected.notice` | 在 MySQL/TiDB 路径审计时，检测到常见 PG 专属语法标记（`RETURNING`、`ON CONFLICT`、`::`、`ALTER COLUMN TYPE USING`、`GENERATED AS IDENTITY`）后作为全局建议性告警发出。DeltaScope 不会自动切换方言。 |
+| PostgreSQL 能力边界错误 | — | 未支持的 PG 功能面返回类型化的 `PostgreSQLCapabilityBoundaryError`，取代启发式字符串匹配。 |
+| 启发式误报排除 | — | PostgreSQL 语法启发式不对字符串字面量、双引号标识符、反引号标识符、行注释或块注释中的标记触发。 |
+| 信任上下文可见性 | — | CLI 输出格式（json、markdown、quiet）包含审计上下文及方言来源和信任提示。`github-actions` 和 `sarif` 格式不包含。 |
+| 规则摘要可见性 | — | CLI 输出格式（json、markdown、quiet）包含已加载、适用和跳过的规则计数。`github-actions` 和 `sarif` 格式不包含。 |
+
+各项能力的权威状态请参见[能力矩阵](audit-capability-matrix.zh-CN.md)。
+
+---
+
 ## 参考链接
 
 - **参数文档** — [config.zh-CN.md](config.zh-CN.md)

@@ -74,6 +74,13 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 
 	parsed, err := Parse(request.SQL, request.Dialect)
 	if err != nil {
+		if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
+			if token, ok := possiblePostgreSQLMismatch(request.SQL); ok {
+				result := report.Aggregate(nil, []rule.Finding{buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token)})
+				result.Verdict = report.VerdictReview
+				return result, err
+			}
+		}
 		return report.Result{}, err
 	}
 	if err := ctx.Err(); err != nil {
@@ -112,9 +119,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 	if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
 		if token, ok := possiblePostgreSQLMismatch(request.SQL); ok {
-			result.GlobalFindings = append(result.GlobalFindings, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
-			result = report.Aggregate(result.Statements, result.GlobalFindings)
-			result.Unsupported = append([]spec.UnsupportedDetail(nil), result.Unsupported...)
+			result = addGlobalFinding(result, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
 		}
 	}
 	if len(result.Unsupported) > 0 {
@@ -124,13 +129,25 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 }
 
 func metadataRequestFor(request Request) *MetadataRequest {
-	if strings.TrimSpace(request.Schema) != "" || request.MetadataProvider != nil {
-		return &MetadataRequest{
-			Schema:   request.Schema,
-			Provider: request.MetadataProvider,
+	legacy := request.Metadata
+	schema := strings.TrimSpace(request.Schema)
+	provider := request.MetadataProvider
+
+	if legacy != nil {
+		if schema == "" {
+			schema = strings.TrimSpace(legacy.Schema)
+		}
+		if provider == nil {
+			provider = legacy.Provider
 		}
 	}
-	return request.Metadata
+	if schema == "" && provider == nil {
+		return nil
+	}
+	return &MetadataRequest{
+		Schema:   schema,
+		Provider: provider,
+	}
 }
 
 func planEstimatorFor(request Request) any {
@@ -152,4 +169,12 @@ func buildRegistry(cfg domainpolicy.Policy) (*rule.Registry, error) {
 		return nil, fmt.Errorf("register dml rules: %w", err)
 	}
 	return registry, nil
+}
+
+func addGlobalFinding(result report.Result, finding rule.Finding) report.Result {
+	findings := append(append([]rule.Finding(nil), result.GlobalFindings...), finding)
+	reaggregated := report.Aggregate(result.Statements, findings)
+	reaggregated.Unsupported = append([]spec.UnsupportedDetail(nil), result.Unsupported...)
+	reaggregated.RuleSummary = result.RuleSummary
+	return reaggregated
 }

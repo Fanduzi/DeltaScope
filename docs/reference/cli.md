@@ -290,6 +290,43 @@ The output includes rule metadata (help text from explanation suggestions) under
 
 JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`; in markdown it renders as `## Rule Summary` and `## Skipped Rules` sections. GitHub Actions and SARIF output do not include rule summary.
 
+#### PostgreSQL Trust Signals
+
+When auditing on the MySQL/TiDB path, DeltaScope may detect PostgreSQL-specific syntax and emit a `dialect.postgresql.syntax.detected.notice` global finding. This is an advisory notice — DeltaScope **does not auto-switch dialect**.
+
+In markdown output, a `## Audit Context` section appears with an explicit trust note when this notice fires:
+
+```text
+## Audit Context
+- Mode: `offline`
+- Dialect: `mysql` (default)
+- Trust Note: Dialect remains `mysql` (default). DeltaScope did not auto-switch dialect.
+```
+
+In JSON output, the top-level `context` object always reports `mode`, `dialect`, and `dialect_source`:
+
+```json
+{
+  "context": {
+    "mode": "offline",
+    "dialect": "mysql",
+    "dialect_source": "default"
+  }
+}
+```
+
+In quiet output, a `[context]` line is appended:
+
+```text
+[context] mode=offline dialect=mysql dialect_source=default
+```
+
+If the SQL does target PostgreSQL, re-run with `--dialect postgresql`. If not, the notice can be safely ignored.
+
+#### PostgreSQL Capability-Boundary Errors
+
+When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality that is not yet fully supported (e.g., DDL parsing), it returns a typed `PostgreSQLCapabilityBoundaryError`. This distinguishes known capability limits from real parse failures. The error includes a clear message about what surface was requested and what the current build supports.
+
 #### Quiet Mode
 
 `--quiet` changes markdown output only. With markdown output, DeltaScope suppresses the normal report body and prints each finding as a single line. With `--format json`, the JSON contract is unchanged.

@@ -86,15 +86,15 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				runContext = metadataContext
 			}
 
-			result, err := appaudit.AuditSQL(cmd.Context(), appaudit.Request{
+			result, auditErr := appaudit.AuditSQL(cmd.Context(), appaudit.Request{
 				SQL:              sql,
 				Dialect:          dialect,
 				ConfigPath:       options.ConfigPath,
 				Schema:           schema,
 				MetadataProvider: metadataProvider,
 			})
-			if err != nil && !errors.Is(err, appaudit.ErrUnsupportedStatement) {
-				return mapAuditError(exitCode, err)
+			if auditErr != nil && !errors.Is(auditErr, appaudit.ErrUnsupportedStatement) && !hasRenderableAuditResult(result) {
+				return mapAuditError(exitCode, auditErr)
 			}
 
 			output, err := renderResult(options.Format, options.Quiet, result, runContext)
@@ -114,6 +114,9 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				}
 			}
 
+			if auditErr != nil && !errors.Is(auditErr, appaudit.ErrUnsupportedStatement) {
+				return mapAuditError(exitCode, auditErr)
+			}
 			*exitCode = exitCodeForResult(result, options.FailOn)
 			return nil
 		},
@@ -265,6 +268,10 @@ func dialectSource(explicit bool) string {
 	return "default"
 }
 
+func hasRenderableAuditResult(result report.Result) bool {
+	return len(result.Statements) > 0 || len(result.GlobalFindings) > 0 || len(result.Unsupported) > 0 || result.RuleSummary != nil || result.Explanation != nil || result.Verdict != "" || result.Summary != (report.Summary{})
+}
+
 func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext) ([]byte, error) {
 	switch format {
 	case "json":
@@ -275,12 +282,12 @@ func renderResult(format string, quiet bool, result report.Result, runContext *a
 		return sarif.Render(result)
 	case "markdown":
 		if quiet {
-			return renderQuietResult(result), nil
+			return renderQuietResult(result, runContext), nil
 		}
 		return renderMarkdownResult(result, runContext)
 	default:
 		if quiet {
-			return renderQuietResult(result), nil
+			return renderQuietResult(result, runContext), nil
 		}
 		return renderMarkdownResult(result, runContext)
 	}
@@ -293,12 +300,15 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 	}
 
 	var b strings.Builder
-	if runContext != nil && runContext.Mode == "metadata-aware" {
+	if runContext != nil {
 		b.WriteString("## Audit Context\n")
 		fmt.Fprintf(&b, "- Mode: `%s`\n", runContext.Mode)
 		fmt.Fprintf(&b, "- Dialect: `%s` (%s)\n", runContext.Dialect, runContext.DialectSource)
 		if runContext.Schema != "" {
 			fmt.Fprintf(&b, "- Schema: `%s` (%s)\n", runContext.Schema, runContext.SchemaSource)
+		}
+		if hasPostgreSQLSyntaxNotice(result) {
+			fmt.Fprintf(&b, "- Trust Note: Dialect remains `%s` (%s). DeltaScope did not auto-switch dialect.\n", runContext.Dialect, runContext.DialectSource)
 		}
 		b.WriteString("\n")
 	}
@@ -323,7 +333,7 @@ func renderJSONResult(result report.Result, runContext *auditRunContext) ([]byte
 	return json.Marshal(payload)
 }
 
-func renderQuietResult(result report.Result) []byte {
+func renderQuietResult(result report.Result, runContext *auditRunContext) []byte {
 	lines := make([]string, 0)
 	for _, statement := range result.Statements {
 		for _, finding := range statement.Findings {
@@ -345,7 +355,23 @@ func renderQuietResult(result report.Result) []byte {
 	if len(lines) == 0 {
 		return []byte("pass")
 	}
+	if runContext != nil {
+		contextLine := fmt.Sprintf("[context] mode=%s dialect=%s dialect_source=%s", runContext.Mode, runContext.Dialect, runContext.DialectSource)
+		if runContext.Schema != "" {
+			contextLine += fmt.Sprintf(" schema=%s schema_source=%s", runContext.Schema, runContext.SchemaSource)
+		}
+		lines = append(lines, contextLine)
+	}
 	return []byte(strings.Join(lines, "\n"))
+}
+
+func hasPostgreSQLSyntaxNotice(result report.Result) bool {
+	for _, finding := range result.GlobalFindings {
+		if finding.RuleID == "dialect.postgresql.syntax.detected.notice" {
+			return true
+		}
+	}
+	return false
 }
 
 func formatQuietFinding(finding rule.Finding) string {
@@ -379,6 +405,7 @@ func mapAuditError(exitCode *int, err error) error {
 	var inputErr userError
 	var fileNotFoundErr viper.ConfigFileNotFoundError
 	var configParseErr viper.ConfigParseError
+	var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
 	switch {
 	case errors.As(err, &inputErr):
 		*exitCode = exitUser
@@ -388,9 +415,9 @@ func mapAuditError(exitCode *int, err error) error {
 		*exitCode = exitUser
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 		*exitCode = exitInternal
-	case strings.Contains(err.Error(), "parse sql:"):
+	case errors.As(err, &capabilityErr):
 		*exitCode = exitUser
-	case strings.Contains(err.Error(), "PG-capable build"):
+	case strings.Contains(err.Error(), "parse sql:"):
 		*exitCode = exitUser
 	case strings.Contains(err.Error(), "load policy:"):
 		*exitCode = exitUser

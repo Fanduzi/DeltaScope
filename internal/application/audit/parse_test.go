@@ -53,29 +53,23 @@ func TestParseRejectsUnknownDialect(t *testing.T) {
 	}
 }
 
-func TestParseMySQLPGMismatchHintOnParseError(t *testing.T) {
+func TestParseMySQLPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
 	_, err := Parse("insert into users (name) values ('alice') returning id;", spec.DialectMySQL)
 	if err == nil {
 		t.Fatal("expected parse error")
 	}
-	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("expected dialect mismatch hint, got %v", err)
-	}
-	if !strings.Contains(err.Error(), "postgresql") {
-		t.Fatalf("expected postgresql hint, got %v", err)
+	if strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("did not expect dialect mismatch hint, got %v", err)
 	}
 }
 
-func TestParseTiDBPGMismatchHintOnParseError(t *testing.T) {
+func TestParseTiDBPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
 	_, err := Parse("insert into users (name) values ('alice') returning id;", spec.DialectTiDB)
 	if err == nil {
 		t.Fatal("expected parse error")
 	}
-	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("expected dialect mismatch hint, got %v", err)
-	}
-	if !strings.Contains(err.Error(), "postgresql") {
-		t.Fatalf("expected postgresql hint, got %v", err)
+	if strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
+		t.Fatalf("did not expect dialect mismatch hint, got %v", err)
 	}
 }
 

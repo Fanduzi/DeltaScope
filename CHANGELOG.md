@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.20.0] - 2026-04-10
+
+### Added
+
+- PostgreSQL syntax heuristic notice (`dialect.postgresql.syntax.detected.notice`): when auditing on the MySQL/TiDB path, DeltaScope now detects common PostgreSQL-specific syntax tokens (`RETURNING`, `ON CONFLICT`, `::` casts, `ALTER COLUMN TYPE USING`, `GENERATED AS IDENTITY`) and emits a notice-level global finding suggesting `--dialect postgresql`. DeltaScope does not auto-switch dialect — the notice is advisory only.
+- Explicit PostgreSQL capability-boundary errors: unsupported-build surfaces now return typed `PostgreSQLCapabilityBoundaryError` values instead of heuristic string matching, making it easier for tooling and CI to distinguish real parse failures from capability limits.
+- CLI output trust signals: markdown output now includes a `## Audit Context` section with mode, dialect source, and an explicit trust note when a PostgreSQL syntax notice is present. JSON output includes a top-level `context` object. Quiet output appends a `[context]` line.
+- Rule summary and skipped-rules visibility in all output formats: `rule_summary` (loaded, applicable, skipped counts) appears in JSON; `## Rule Summary` and `## Skipped Rules` sections appear in markdown; `[summary]` line appears in quiet output.
+
+### Changed
+
+- PostgreSQL migration-safety rule suggestions now provide step-by-step migration guidance instead of generic tips:
+  - `ddl.pg.create_index.concurrently.require`: mentions that `CONCURRENTLY` cannot run inside a transaction.
+  - `ddl.pg.alter.add_column.non_null_default.rewrite.warn`: recommends a 4-step safe path (nullable → backfill → default → not null).
+  - `ddl.pg.alter.add_check.not_valid.require`: describes the 2-step `NOT VALID` → `VALIDATE CONSTRAINT` approach with lock-level detail.
+  - `ddl.pg.alter.set_data_type.rewrite.warn`: recommends phased migration with shadow column strategy for large tables.
+
+### Fixed
+
+- PostgreSQL syntax heuristic no longer fires for tokens inside string literals, quoted identifiers, backtick identifiers, line comments, or block comments.
+- Metadata request merge: mixed top-level `Schema`/`MetadataProvider` fields with legacy `Metadata` struct fields no longer drop schema or provider context.
+
 ## [v0.19.0] - 2026-04-09
 
 ### Added

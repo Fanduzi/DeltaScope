@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.19.0`, DeltaScope also ships PostgreSQL migration-safety rules plus CI-native `github-actions` and `sarif` output. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.20.0`, DeltaScope also ships PostgreSQL trust and misconfiguration guardrails: a syntax heuristic notice that detects PostgreSQL-specific SQL on the MySQL/TiDB path, typed capability-boundary errors for unsupported PG surfaces, and improved migration-safety rule suggestions. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,8 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.19.0/install.sh | \
-  DELTASCOPE_VERSION=v0.19.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.20.0/install.sh | \
+  DELTASCOPE_VERSION=v0.20.0 sh
 ```
 
 Need PostgreSQL offline audit support?
@@ -134,6 +134,18 @@ Generate SARIF output for GitHub Code Scanning:
 
 ```bash
 deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+```
+
+When SQL looks like PostgreSQL but the dialect is set to MySQL, DeltaScope emits an advisory notice without auto-switching:
+
+```bash
+deltascope audit --sql "insert into users(id) values (1) returning id;" --format markdown
+```
+
+To audit PostgreSQL SQL explicitly:
+
+```bash
+deltascope audit --dialect postgresql --sql "insert into users(id) values (1) returning id;"
 ```
 
 ## DML Impact Estimation

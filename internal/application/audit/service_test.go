@@ -13,8 +13,11 @@ import (
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+const postgreSQLSyntaxNoticeRuleID = "dialect.postgresql.syntax.detected.notice"
 
 type fakeMetadataProvider struct {
 	instanceCalls int
@@ -64,6 +67,95 @@ func (f *fakeMetadataProvider) ResolveTableForIndex(_ context.Context, dialect s
 	return f.indexTable, nil
 }
 
+func assertHasPostgreSQLSyntaxNotice(t *testing.T, result report.Result, token string) {
+	t.Helper()
+	if len(result.GlobalFindings) != 1 {
+		t.Fatalf("expected 1 global finding, got %#v", result.GlobalFindings)
+	}
+	finding := result.GlobalFindings[0]
+	if finding.RuleID != postgreSQLSyntaxNoticeRuleID {
+		t.Fatalf("expected rule id %q, got %#v", postgreSQLSyntaxNoticeRuleID, finding)
+	}
+	if finding.Level != rule.LevelNotice {
+		t.Fatalf("expected notice-level finding, got %#v", finding)
+	}
+	if !strings.Contains(strings.ToLower(finding.Message), "sql looks like postgresql") {
+		t.Fatalf("expected PostgreSQL syntax notice message, got %#v", finding)
+	}
+	if !strings.Contains(finding.Message, "--dialect postgresql") {
+		t.Fatalf("expected explicit dialect guidance, got %#v", finding)
+	}
+	if finding.Explanation == nil {
+		t.Fatalf("expected explanation, got %#v", finding)
+	}
+	if !strings.Contains(strings.ToLower(finding.Explanation.Why), "postgresql") {
+		t.Fatalf("expected why explanation, got %#v", finding.Explanation)
+	}
+	if !strings.Contains(strings.ToLower(finding.Explanation.Risk), "misleading") {
+		t.Fatalf("expected misleading risk explanation, got %#v", finding.Explanation)
+	}
+	if !strings.Contains(finding.Explanation.Suggestion, "--dialect postgresql") {
+		t.Fatalf("expected suggestion explanation, got %#v", finding.Explanation)
+	}
+	if finding.Metadata["token"] != token {
+		t.Fatalf("expected token metadata %q, got %#v", token, finding.Metadata)
+	}
+}
+
+func TestAuditPostgreSQLSyntaxNoticeProvidesExplicitTrustGuidance(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) returning id;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if len(result.GlobalFindings) != 1 {
+		t.Fatalf("expected 1 global finding, got %d", len(result.GlobalFindings))
+	}
+	finding := result.GlobalFindings[0]
+	if finding.RuleID != postgreSQLSyntaxNoticeRuleID {
+		t.Fatalf("expected rule id %q, got %q", postgreSQLSyntaxNoticeRuleID, finding.RuleID)
+	}
+	if finding.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", finding.Level)
+	}
+	if finding.Explanation == nil {
+		t.Fatal("expected non-nil explanation")
+	}
+
+	// Trust: DeltaScope does not auto-switch dialect
+	if !strings.Contains(strings.ToLower(finding.Explanation.Risk), "does not auto-switch") {
+		t.Fatalf("expected risk to mention no auto-switch, got %q", finding.Explanation.Risk)
+	}
+
+	// Suggestion must say: if PG, use --dialect postgresql; if not, ignore
+	sug := finding.Explanation.Suggestion
+	if !strings.Contains(sug, "--dialect postgresql") {
+		t.Fatalf("expected suggestion to mention --dialect postgresql, got %q", sug)
+	}
+	if !strings.Contains(strings.ToLower(sug), "if this sql targets postgresql") {
+		t.Fatalf("expected suggestion to mention targeting postgresql, got %q", sug)
+	}
+	if !strings.Contains(strings.ToLower(sug), "ignore") {
+		t.Fatalf("expected suggestion to mention ignoring the notice, got %q", sug)
+	}
+
+	// Message must carry --dialect postgresql
+	if !strings.Contains(finding.Message, "--dialect postgresql") {
+		t.Fatalf("expected message to carry --dialect postgresql, got %q", finding.Message)
+	}
+}
+
+func assertHasNoPostgreSQLSyntaxNotice(t *testing.T, result report.Result) {
+	t.Helper()
+	for _, finding := range result.GlobalFindings {
+		if finding.RuleID == postgreSQLSyntaxNoticeRuleID {
+			t.Fatalf("did not expect PostgreSQL syntax notice, got %#v", finding)
+		}
+	}
+}
+
 func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
 	_, err := AuditSQL(context.Background(), Request{
 		SQL:     "select 1;",
@@ -77,106 +169,90 @@ func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
 	}
 }
 
-func TestAuditSQLMySQLPGMismatchReturnsHintedError(t *testing.T) {
-	_, err := AuditSQL(context.Background(), Request{
-		SQL:     "insert into users (name) values ('alice') returning id;",
+func TestAuditAddsPostgreSQLSyntaxNoticeForReturning(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) returning id;",
 		Dialect: spec.DialectMySQL,
 	})
 	if err == nil {
 		t.Fatal("expected parse error")
 	}
-	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("expected dialect mismatch hint, got %v", err)
-	}
-	if !strings.Contains(err.Error(), "postgresql") {
-		t.Fatalf("expected postgresql hint, got %v", err)
+	assertHasPostgreSQLSyntaxNotice(t, result, "RETURNING")
+	if result.Verdict == report.VerdictPass {
+		t.Fatalf("expected parse-error partial result to avoid pass verdict, got %#v", result)
 	}
 }
 
-func TestAuditSQLTiDBPGMismatchReturnsHintedError(t *testing.T) {
-	_, err := AuditSQL(context.Background(), Request{
-		SQL:     "insert into users (name) values ('alice') returning id;",
+func TestAuditAddsPostgreSQLSyntaxNoticeForOnConflict(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) on conflict (id) do nothing;",
 		Dialect: spec.DialectTiDB,
 	})
 	if err == nil {
 		t.Fatal("expected parse error")
 	}
-	if !strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("expected dialect mismatch hint, got %v", err)
+	assertHasPostgreSQLSyntaxNotice(t, result, "ON CONFLICT")
+}
+
+func TestAuditAddsPostgreSQLSyntaxNoticeForTypeCast(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "select id::bigint from users;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parse error")
 	}
-	if !strings.Contains(err.Error(), "postgresql") {
-		t.Fatalf("expected postgresql hint, got %v", err)
+	assertHasPostgreSQLSyntaxNotice(t, result, "::")
+}
+
+func TestAuditAddsPostgreSQLSyntaxNoticeForAlterColumnTypeUsing(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "alter table users alter column score type bigint using abs(score);",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	assertHasPostgreSQLSyntaxNotice(t, result, "ALTER COLUMN TYPE USING")
+}
+
+func TestAuditSQLMySQLSerialDoesNotAddGlobalNotice(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id serial primary key);",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+	if result.RuleSummary == nil || result.RuleSummary.Loaded == 0 {
+		t.Fatalf("expected rule summary to be preserved, got %#v", result.RuleSummary)
 	}
 }
 
-func TestAuditSQLPostgreSQLPathDoesNotUseMismatchHint(t *testing.T) {
-	_, err := AuditSQL(context.Background(), Request{
-		SQL:     "insert into users (name) values ('alice') returning id;",
+func TestAuditSQLTiDBSerialDoesNotAddGlobalNotice(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table users (id serial primary key);",
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+}
+
+func TestAuditDoesNotAddPostgreSQLSyntaxNoticeWhenDialectExplicitlyPostgreSQL(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) returning id;",
 		Dialect: spec.DialectPostgreSQL,
 	})
 	if err != nil && strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
 		t.Fatalf("did not expect dialect mismatch hint on postgresql path, got %v", err)
 	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
 }
 
-func TestAuditSQLMySQLParseablePGMismatchAddsGlobalNotice(t *testing.T) {
-	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "create table users (id serial primary key);",
-		Dialect: spec.DialectMySQL,
-	})
-	if err != nil {
-		t.Fatalf("audit sql: %v", err)
-	}
-	if len(result.GlobalFindings) != 1 {
-		t.Fatalf("expected 1 global advisory finding, got %#v", result.GlobalFindings)
-	}
-	finding := result.GlobalFindings[0]
-	if finding.Level != "notice" {
-		t.Fatalf("expected notice-level advisory, got %#v", finding)
-	}
-	if !strings.Contains(strings.ToLower(finding.Message), "dialect mismatch") {
-		t.Fatalf("expected dialect mismatch advisory, got %#v", finding)
-	}
-	if !strings.Contains(finding.Message, "postgresql") {
-		t.Fatalf("expected postgresql target in advisory, got %#v", finding)
-	}
-	if result.Summary.Notices != 1 {
-		t.Fatalf("expected summary notice count 1, got %#v", result.Summary)
-	}
-}
-
-func TestAuditSQLTiDBParseablePGMismatchAddsGlobalNotice(t *testing.T) {
-	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "create table users (id serial primary key);",
-		Dialect: spec.DialectTiDB,
-	})
-	if err != nil {
-		t.Fatalf("audit sql: %v", err)
-	}
-	if len(result.GlobalFindings) != 1 {
-		t.Fatalf("expected 1 global advisory finding, got %#v", result.GlobalFindings)
-	}
-	if result.GlobalFindings[0].Level != "notice" {
-		t.Fatalf("expected notice-level advisory, got %#v", result.GlobalFindings[0])
-	}
-}
-
-func TestAuditSQLPostgreSQLParseablePGSyntaxDoesNotAddMismatchNotice(t *testing.T) {
-	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "create table users (id serial primary key);",
-		Dialect: spec.DialectPostgreSQL,
-	})
-	if err != nil && strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("did not expect dialect mismatch advisory on postgresql path, got %v", err)
-	}
-	for _, finding := range result.GlobalFindings {
-		if strings.Contains(strings.ToLower(finding.Message), "dialect mismatch") {
-			t.Fatalf("did not expect dialect mismatch advisory on postgresql path, got %#v", finding)
-		}
-	}
-}
-
-func TestAuditSQLMySQLNormalSQLDoesNotAddMismatchNotice(t *testing.T) {
+func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForMySQLSQL(t *testing.T) {
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table users (id bigint primary key) comment='users';",
 		Dialect: spec.DialectMySQL,
@@ -184,11 +260,51 @@ func TestAuditSQLMySQLNormalSQLDoesNotAddMismatchNotice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit sql: %v", err)
 	}
-	for _, finding := range result.GlobalFindings {
-		if strings.Contains(strings.ToLower(finding.Message), "dialect mismatch") {
-			t.Fatalf("did not expect mismatch advisory for normal mysql sql, got %#v", finding)
-		}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+}
+
+func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideStringLiteral(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "select 'returning' as note;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
 	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+}
+
+func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideBlockComment(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "select 1 /* returning */;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+}
+
+func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideLineComment(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "select 1 -- returning\n;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+}
+
+func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideBacktickIdentifier(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "select `returning` from users;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
 }
 
 func TestAuditSQLUsesDefaultPolicy(t *testing.T) {
@@ -294,6 +410,118 @@ func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {
 	}
 	if result.Summary.Statements != 2 {
 		t.Fatalf("expected summary statements=2, got %d", result.Summary.Statements)
+	}
+}
+
+func TestMetadataRequestForMergesTopLevelAndLegacyFields(t *testing.T) {
+	legacyProvider := &fakeMetadataProvider{}
+	topLevelProvider := &fakeMetadataProvider{}
+
+	tests := []struct {
+		name         string
+		request      Request
+		wantNil      bool
+		wantSchema   string
+		wantProvider MetadataProvider
+	}{
+		{
+			name:    "returns nil when metadata is absent",
+			request: Request{},
+			wantNil: true,
+		},
+		{
+			name: "returns legacy metadata when top-level fields are absent",
+			request: Request{
+				Metadata: &MetadataRequest{Schema: "legacy", Provider: legacyProvider},
+			},
+			wantSchema:   "legacy",
+			wantProvider: legacyProvider,
+		},
+		{
+			name: "merges top-level schema with legacy provider",
+			request: Request{
+				Schema:   "app",
+				Metadata: &MetadataRequest{Schema: "legacy", Provider: legacyProvider},
+			},
+			wantSchema:   "app",
+			wantProvider: legacyProvider,
+		},
+		{
+			name: "merges top-level provider with legacy schema",
+			request: Request{
+				MetadataProvider: topLevelProvider,
+				Metadata:         &MetadataRequest{Schema: "legacy", Provider: legacyProvider},
+			},
+			wantSchema:   "legacy",
+			wantProvider: topLevelProvider,
+		},
+		{
+			name: "top-level fields override legacy per field",
+			request: Request{
+				Schema:           "app",
+				MetadataProvider: topLevelProvider,
+				Metadata:         &MetadataRequest{Schema: "legacy", Provider: legacyProvider},
+			},
+			wantSchema:   "app",
+			wantProvider: topLevelProvider,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := metadataRequestFor(tt.request)
+			if tt.wantNil {
+				if got != nil {
+					t.Fatalf("expected nil metadata request, got %#v", got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("expected metadata request, got nil")
+			}
+			if got.Schema != tt.wantSchema {
+				t.Fatalf("expected schema %q, got %#v", tt.wantSchema, got)
+			}
+			if got.Provider != tt.wantProvider {
+				t.Fatalf("expected provider %#v, got %#v", tt.wantProvider, got.Provider)
+			}
+		})
+	}
+}
+
+func TestAuditSQLMergesTopLevelSchemaWithLegacyMetadataProvider(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		instance: &spec.InstanceFacts{
+			Version:                "8.0.36",
+			DefaultCharset:         "utf8mb4",
+			InnoDBDefaultRowFormat: "dynamic",
+		},
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "alter table users add column email varchar(255)",
+		Dialect: spec.DialectMySQL,
+		Schema:  "app",
+		Metadata: &MetadataRequest{
+			Provider: provider,
+		},
+	})
+	if err != nil {
+		t.Fatalf("audit sql with mixed metadata request fields: %v", err)
+	}
+
+	if provider.instanceCalls != 1 {
+		t.Fatalf("expected one instance-facts call, got %d", provider.instanceCalls)
+	}
+	if len(provider.tableCalls) != 1 || provider.tableCalls[0] != "users" {
+		t.Fatalf("expected one target-table call for users, got %#v", provider.tableCalls)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", result.Statements)
 	}
 }
 

@@ -177,6 +177,23 @@ Audit PostgreSQL migration files with migration-safety rules in CI:
 deltascope audit --dialect postgresql --file ./migrations.sql --format sarif > deltascope.sarif
 ```
 
+### Detecting Dialect Mismatches
+
+If your CI pipeline audits SQL without explicitly setting `--dialect`, DeltaScope runs in MySQL mode by default. When it encounters PostgreSQL-specific syntax, it emits an advisory notice (`dialect.postgresql.syntax.detected.notice`) without auto-switching dialect.
+
+To recognize this in CI:
+
+```bash
+# Check if the output includes a PostgreSQL syntax notice
+deltascope audit --file ./migrations.sql --format json | jq '.global_findings[] | select(.rule_id == "dialect.postgresql.syntax.detected.notice")'
+```
+
+If the notice fires, either add `--dialect postgresql` to the audit command or verify the SQL is indeed MySQL-compatible and ignore the notice.
+
+### Understanding Capability-Boundary Errors
+
+When using `--dialect postgresql` with a PG-capable DeltaScope binary on unsupported PostgreSQL surfaces (e.g., complex DDL that the parser cannot yet handle), DeltaScope returns a typed `PostgreSQLCapabilityBoundaryError`. In CI this appears as exit code `2`. Distinguish it from a real parse failure by checking the error message — capability-boundary errors clearly state what surface was requested and what the current build supports.
+
 ## --fail-on Strategy
 
 | Setting | Exit 1 when | Recommended for |

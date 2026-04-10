@@ -87,6 +87,13 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 
 	schema, schemaSource, err := resolveSchema(ctx, client, request.SQL, detectedDialect, request.ExplicitSchema, explicitSchemaSource(request.ExplicitSchemaSource), schemaHint(request.SchemaHint))
 	if err != nil {
+		if request.ExplicitDialect && request.RequestedDialect == spec.DialectPostgreSQL {
+			var prepErr *Error
+			var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
+			if errors.As(err, &prepErr) && prepErr.Kind == ErrorInvalidSQL && errors.As(prepErr.Err, &capabilityErr) {
+				return nil, newError(ErrorInvalidSQL, capabilityErr.Error(), prepErr.Err)
+			}
+		}
 		return nil, err
 	}
 

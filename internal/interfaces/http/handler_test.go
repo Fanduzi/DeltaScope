@@ -349,6 +349,68 @@ func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T
 	}
 }
 
+func TestHandlerAuditRejectsExplicitPostgreSQLMetadataAwareRequestsOnUnsupportedBuild(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
+	}
+	previous := prepareHTTPMetadataAudit
+	client := &metadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}
+	prepareHTTPMetadataAudit = func(ctx context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return auditmeta.Prepare(ctx, auditmeta.Request{
+			SQL:                  request.SQL,
+			Connection:           request.Connection,
+			RequestedDialect:     request.RequestedDialect,
+			ExplicitDialect:      request.ExplicitDialect,
+			ExplicitSchema:       request.ExplicitSchema,
+			ExplicitSchemaSource: request.ExplicitSchemaSource,
+			SchemaHint:           request.SchemaHint,
+			OpenClient: func(auditmeta.ConnectionConfig) (auditmeta.Client, error) {
+				return client, nil
+			},
+		})
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"insert into users(id) values (1) returning id;","dialect":"postgresql","connection":{"host":"127.0.0.1","port":5432,"user":"root","password":"secret"}}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	errPayload, ok := payload["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error envelope, got %#v", payload)
+	}
+	message, ok := errPayload["message"].(string)
+	if !ok || message == "" {
+		t.Fatalf("expected non-empty error message, got %#v", errPayload["message"])
+	}
+	if !strings.Contains(message, "PG-capable") {
+		t.Fatalf("expected capability-boundary wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "resolve schema targets:") {
+		t.Fatalf("did not expect metadata parse wrapper wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
+		t.Fatalf("did not expect mismatch wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
+		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
+	}
+}
+
 func TestHandlerAuditAcceptsPostgreSQLOfflineRequests(t *testing.T) {
 	var captured deltascope.Request
 
@@ -391,6 +453,50 @@ func TestHandlerAuditAcceptsPostgreSQLOfflineRequests(t *testing.T) {
 	}
 	if contextValue["metadata_source"] != "none" {
 		t.Fatalf("expected metadata source none, got %#v", contextValue["metadata_source"])
+	}
+}
+
+func TestHandlerAuditRejectsExplicitPostgreSQLOfflineRequestsOnUnsupportedBuild(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
+	}
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"insert into users(id) values (1) returning id;","dialect":"postgresql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	errPayload, ok := payload["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error envelope, got %#v", payload)
+	}
+	if errPayload["code"] != "bad_request" {
+		t.Fatalf("expected bad_request code, got %#v", errPayload["code"])
+	}
+	message, ok := errPayload["message"].(string)
+	if !ok || message == "" {
+		t.Fatalf("expected non-empty error message, got %#v", errPayload["message"])
+	}
+	if !strings.Contains(message, "PG-capable") {
+		t.Fatalf("expected capability-boundary message, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
+		t.Fatalf("did not expect mismatch wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
+		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
 	}
 }
 

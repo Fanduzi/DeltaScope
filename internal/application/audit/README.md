@@ -36,6 +36,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 - `Service.Audit(ctx, request)`
 - `ParsedStatement`
 - `ParsedSQL`
+- `PostgreSQLCapabilityBoundaryError`
 
 ## Dependencies
 - Upstream: future CLI and public audit entrypoints

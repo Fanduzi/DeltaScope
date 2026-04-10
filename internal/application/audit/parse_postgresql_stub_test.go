@@ -3,6 +3,7 @@
 package audit
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -19,5 +20,9 @@ func TestParseReturnsUnsupportedErrorForPostgreSQLWithoutBuildTag(t *testing.T) 
 	}
 	if strings.Contains(err.Error(), "deltascope-pg") {
 		t.Fatalf("did not expect legacy deltascope-pg guidance, got %v", err)
+	}
+	var capabilityErr *PostgreSQLCapabilityBoundaryError
+	if !errors.As(err, &capabilityErr) {
+		t.Fatalf("expected typed PostgreSQL capability-boundary error, got %T", err)
 	}
 }

@@ -66,7 +66,7 @@ func (r createIndexConcurrentlyRequiredRule) Evaluate(statement spec.Statement) 
 		Explanation: &rule.FindingExplanation{
 			Why:        "PostgreSQL builds a non-concurrent index while holding stronger locks than most online migration workflows can tolerate.",
 			Risk:       "Application writes to the indexed table can block during the entire index build window.",
-			Suggestion: "Use CREATE INDEX CONCURRENTLY in a dedicated migration step when your PostgreSQL rollout policy allows it.",
+			Suggestion: "Use CREATE INDEX CONCURRENTLY to build the index without blocking writes. Note that CONCURRENTLY cannot run inside a transaction; run it as a standalone migration step.",
 		},
 		Metadata: map[string]any{
 			"operation":    "create_index",
@@ -117,7 +117,7 @@ func (r addColumnNonNullDefaultRewriteWarnRule) Evaluate(statement spec.Statemen
 			Explanation: &rule.FindingExplanation{
 				Why:        "PostgreSQL must rewrite every row to evaluate and store the default value when a new column is both NOT NULL and has a default.",
 				Risk:       "Large tables may experience significant downtime during the rewrite, blocking concurrent reads and writes.",
-				Suggestion: "Split the migration: add the column as nullable, backfill data, then enforce NOT NULL in a separate step.",
+				Suggestion: "Split into safe steps: 1) ADD COLUMN as nullable with no default. 2) Backfill existing rows. 3) SET DEFAULT for new rows. 4) SET NOT NULL once all rows are populated.",
 			},
 			Metadata: map[string]any{
 				"action": "add_column",
@@ -171,7 +171,7 @@ func (r addCheckNotValidRequiredRule) Evaluate(statement spec.Statement) ([]rule
 			Explanation: &rule.FindingExplanation{
 				Why:        "PostgreSQL validates a CHECK constraint against all existing rows at ADD CONSTRAINT time when NOT VALID is absent.",
 				Risk:       "On large tables the validation scan can hold an ACCESS EXCLUSIVE lock, blocking reads and writes until it completes.",
-				Suggestion: "Add the constraint with NOT VALID, then run VALIDATE CONSTRAINT in a separate step to spread the lock impact.",
+				Suggestion: "Use a two-step approach: 1) ADD CONSTRAINT ... NOT VALID to register the constraint without scanning existing rows. 2) VALIDATE CONSTRAINT in a separate step — it holds only a SHARE UPDATE EXCLUSIVE lock.",
 			},
 			Metadata: map[string]any{
 				"action":           "add_constraint",
@@ -221,7 +221,7 @@ func (r setDataTypeRewriteWarnRule) Evaluate(statement spec.Statement) ([]rule.F
 			Explanation: &rule.FindingExplanation{
 				Why:        "PostgreSQL ALTER TABLE ... ALTER COLUMN ... SET DATA TYPE typically rewrites the entire table to convert existing row data.",
 				Risk:       "The rewrite holds an ACCESS EXCLUSIVE lock, blocking all concurrent access for the duration of the conversion.",
-				Suggestion: "Review the rollout strategy: consider shadow-column or backfill approaches to avoid a single-statement rewrite window.",
+				Suggestion: "Assess table size and lock impact first. For large tables, use a phased migration: add a shadow column with the new type, backfill in batches, switch application reads, then drop the old column.",
 			},
 			Metadata: map[string]any{
 				"action": "set_data_type",

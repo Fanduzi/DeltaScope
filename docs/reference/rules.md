@@ -393,6 +393,22 @@ are supplied to `deltascope audit`.
 
 ---
 
+## Trust & Misconfiguration Guardrails (Non-Rule Behaviors)
+
+v0.20.0 introduces additive behaviors that help identify dialect mismatches and unsupported surfaces. These are **not** configurable rules and do not have entries in the policy YAML. They cannot be disabled or re-leveled.
+
+| Behavior | Rule-like ID | Description |
+|----------|-------------|-------------|
+| PostgreSQL syntax heuristic notice | `dialect.postgresql.syntax.detected.notice` | Emitted as a global advisory finding when MySQL/TiDB path auditing detects common PG-specific syntax tokens (`RETURNING`, `ON CONFLICT`, `::`, `ALTER COLUMN TYPE USING`, `GENERATED AS IDENTITY`). DeltaScope does not auto-switch dialect. |
+| PostgreSQL capability-boundary errors | — | Unsupported PG surfaces return typed `PostgreSQLCapabilityBoundaryError` instead of heuristic string matching. |
+| Heuristic false-positive exclusion | — | The PostgreSQL syntax heuristic does not fire for tokens inside string literals, double-quoted identifiers, backtick identifiers, line comments, or block comments. |
+| Trust context visibility | — | CLI output formats (json, markdown, quiet) include audit context with dialect source and trust notes. `github-actions` and `sarif` formats do not. |
+| Rule summary visibility | — | CLI output formats (json, markdown, quiet) include loaded, applicable, and skipped rule counts. `github-actions` and `sarif` formats do not. |
+
+See the [capability matrix](audit-capability-matrix.md) for the authoritative status of each capability.
+
+---
+
 ## Cross-References
 
 - **Parameter documentation** — [config.md](config.md)

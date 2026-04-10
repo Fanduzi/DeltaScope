@@ -336,3 +336,37 @@ Generate SARIF output for GitHub Code Scanning:
 ```bash
 deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
 ```
+
+### Detecting Dialect Mismatches During Migration Review
+
+When auditing PostgreSQL migrations without `--dialect postgresql`, DeltaScope runs in MySQL mode by default and may emit a `dialect.postgresql.syntax.detected.notice` advisory. This notice means the SQL contains PostgreSQL-specific syntax but DeltaScope did **not** auto-switch dialect — the audit ran with the MySQL/TiDB parser, which may produce misleading or incomplete findings.
+
+How to recognize this in your migration review workflow:
+
+```bash
+# Check if the output includes a PostgreSQL syntax notice
+deltascope audit --file ./migrations.sql --format json | \
+  jq '.global_findings[] | select(.rule_id == "dialect.postgresql.syntax.detected.notice")'
+```
+
+If the notice fires during migration review, either:
+- Re-run with `--dialect postgresql` to get accurate findings for PostgreSQL SQL, or
+- Confirm the SQL is MySQL-compatible and ignore the notice.
+
+The markdown output renders an `## Audit Context` section when this notice triggers, and JSON output always includes a top-level `context` object with `mode`, `dialect`, and `dialect_source`.
+
+### Understanding Capability-Boundary Errors in Migration Review
+
+When using `--dialect postgresql` with a PG-capable DeltaScope binary, encountering unsupported PostgreSQL surfaces (e.g., complex DDL that the parser cannot yet handle) returns a typed `PostgreSQLCapabilityBoundaryError`. In CI this appears as exit code `2`.
+
+Distinguish it from a real parse failure by checking the error message — capability-boundary errors clearly state what surface was requested and what the current build supports. When this happens during migration review, the recommended action is to split the migration: audit the supported statements with DeltaScope and review the unsupported ones manually.
+
+### Using Trust Context and Rule Summary to Assess Audit Confidence
+
+All output formats report audit context and rule summary information that helps you judge how much of the audit is trustworthy:
+
+- **Markdown**: `## Audit Context` section shows the dialect and trust note; `## Rule Summary` and `## Skipped Rules` sections show which rules ran.
+- **JSON**: `context` object shows `mode`, `dialect`, and `dialect_source`; `rule_summary` object shows loaded, applicable, and skipped counts.
+- **Quiet**: `[context]` line shows mode and dialect at the end of output.
+
+When reviewing migrations, check the skipped-rules count — a high number of skipped rules (especially for your target dialect) may indicate the audit is running under the wrong dialect or that certain rule families are not applicable. This helps you decide whether the current audit result is sufficient or whether additional manual review is needed.

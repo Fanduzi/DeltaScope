@@ -3189,6 +3189,19 @@ rules:
 
 ---
 
+## Trust & Misconfiguration Guardrails
+
+v0.20.0 introduces PostgreSQL trust and misconfiguration guardrails as additive engine behaviors. These are **not configurable through the policy YAML** and do not have entries in the `rules:` block:
+
+- **PostgreSQL syntax heuristic notice** (`dialect.postgresql.syntax.detected.notice`): a global advisory finding emitted when MySQL/TiDB auditing detects PG-specific syntax tokens. This behavior is always active and cannot be disabled or re-leveled.
+- **PostgreSQL capability-boundary errors**: unsupported PG surfaces return typed `PostgreSQLCapabilityBoundaryError`. This is engine behavior, not a rule.
+- **Heuristic false-positive exclusion**: the PG syntax heuristic ignores tokens inside string literals, quoted identifiers, and comments. No configuration needed.
+- **Trust context and rule summary visibility**: CLI output formats (json, markdown, quiet) include audit context and rule counts. These are output-layer behaviors, not rule parameters.
+
+See [audit-capability-matrix.md](audit-capability-matrix.md) for the full capability table.
+
+---
+
 ## Cross-References
 
 - Rule discovery commands: [rules.md](rules.md)

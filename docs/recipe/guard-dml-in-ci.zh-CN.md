@@ -177,6 +177,23 @@ audit-sql:
 deltascope audit --dialect postgresql --file ./migrations.sql --format sarif > deltascope.sarif
 ```
 
+### 识别方言误配
+
+如果 CI 管道审计 SQL 时未显式设置 `--dialect`，DeltaScope 默认以 MySQL 模式运行。当遇到 PostgreSQL 专属语法时，会发出建议性通知（`dialect.postgresql.syntax.detected.notice`），但不会自动切换方言。
+
+在 CI 中识别此通知：
+
+```bash
+# 检查输出是否包含 PostgreSQL 语法通知
+deltascope audit --file ./migrations.sql --format json | jq '.global_findings[] | select(.rule_id == "dialect.postgresql.syntax.detected.notice")'
+```
+
+如果通知触发，要么在审计命令中添加 `--dialect postgresql`，要么确认 SQL 确实兼容 MySQL 并忽略该通知。
+
+### 理解能力边界错误
+
+当使用 `--dialect postgresql` 且 PG-capable 构建版本遇到尚未支持的 PostgreSQL 功能面（如复杂的 DDL 解析）时，DeltaScope 返回类型化的 `PostgreSQLCapabilityBoundaryError`。在 CI 中表现为退出码 `2`。通过错误消息可以区分——能力边界错误会明确说明请求的功能面和当前构建的支持能力。
+
 ## --fail-on 策略说明
 
 | 设置 | 退出码 1 的触发条件 | 适用场景 |

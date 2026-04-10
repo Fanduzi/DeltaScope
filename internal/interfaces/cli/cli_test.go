@@ -22,6 +22,16 @@ import (
 	viperconfig "github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper"
 )
 
+const postgreSQLSyntaxNoticeRuleID = "dialect.postgresql.syntax.detected.notice"
+
+// pgCapabilityBoundaryIsRealParser returns true when the PG-capable parser is
+// linked in (CGO_ENABLED=1 -tags postgresql). It returns false when the stub
+// build is active and parsePostgreSQL always returns PostgreSQLCapabilityBoundaryError.
+func pgCapabilityBoundaryIsRealParser() bool {
+	_, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL)
+	return err == nil
+}
+
 type failingWriter struct{}
 
 func (failingWriter) Write(_ []byte) (int, error) {
@@ -159,11 +169,11 @@ func TestResolveAuditSQLRejectsConflictingOrEmptyInput(t *testing.T) {
 
 func TestParseDialectNormalizesKnownAndUnknownValues(t *testing.T) {
 	tests := map[string]spec.Dialect{
-		"":            spec.DialectMySQL,
-		"mysql":       spec.DialectMySQL,
-		" TIDB ":      spec.DialectTiDB,
-		"PostgreSQL":  spec.DialectPostgreSQL,
-		"ClickHouse":  spec.Dialect("clickhouse"),
+		"":           spec.DialectMySQL,
+		"mysql":      spec.DialectMySQL,
+		" TIDB ":     spec.DialectTiDB,
+		"PostgreSQL": spec.DialectPostgreSQL,
+		"ClickHouse": spec.Dialect("clickhouse"),
 	}
 
 	for input, want := range tests {
@@ -290,101 +300,173 @@ func TestAuditCommandRejectsUnknownFailOnValue(t *testing.T) {
 	}
 }
 
-func TestAuditCommandMySQLPGMismatchShowsDialectHintOnStderr(t *testing.T) {
+func TestAuditCommandMarkdownIncludesOfflineTrustContext(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "## Audit Context") {
+		t.Fatalf("expected audit context section, got %q", output)
+	}
+	if !strings.Contains(output, "- Mode: `offline`") {
+		t.Fatalf("expected offline mode in audit context, got %q", output)
+	}
+	if !strings.Contains(output, "- Dialect: `mysql` (default)") {
+		t.Fatalf("expected mysql default dialect context, got %q", output)
+	}
+}
+
+func TestAuditCommandShowsPostgreSQLSyntaxNoticeOnParseErrorStdout(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "insert into users (name) values ('alice') returning id;", "--dialect", "mysql"},
+		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;", "--dialect", "mysql", "--fail-on", "notice"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
 	)
 
 	if code != 2 {
-		t.Fatalf("expected exit code 2 for user-facing parse error, got %d", code)
+		t.Fatalf("expected user-facing parse error exit code 2, got %d", code)
 	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout output on parse error, got %q", stdout.String())
+	output := stdout.String()
+	if !strings.Contains(output, postgreSQLSyntaxNoticeRuleID) {
+		t.Fatalf("expected rule id in stdout, got %q", output)
 	}
-	if !strings.Contains(strings.ToLower(stderr.String()), "dialect mismatch") {
-		t.Fatalf("expected dialect mismatch hint on stderr, got %q", stderr.String())
+	if !strings.Contains(strings.ToLower(output), "sql looks like postgresql") {
+		t.Fatalf("expected PostgreSQL syntax notice in stdout, got %q", output)
 	}
-	if !strings.Contains(stderr.String(), "postgresql") {
-		t.Fatalf("expected postgresql hint on stderr, got %q", stderr.String())
+	if !strings.Contains(output, "--dialect postgresql") {
+		t.Fatalf("expected explicit dialect guidance in stdout, got %q", output)
 	}
-}
-
-func TestAuditCommandPostgreSQLPathDoesNotShowMismatchHint(t *testing.T) {
-	stderr := &strings.Builder{}
-
-	Execute(
-		context.Background(),
-		[]string{"audit", "--sql", "insert into users (name) values ('alice') returning id;", "--dialect", "postgresql"},
-		strings.NewReader(""),
-		&strings.Builder{},
-		stderr,
-	)
-
+	if strings.Contains(output, "Verdict: `pass`") {
+		t.Fatalf("did not expect parse-error output to report pass, got %q", output)
+	}
+	if stderr.Len() == 0 {
+		t.Fatal("expected parse error on stderr")
+	}
 	if strings.Contains(strings.ToLower(stderr.String()), "dialect mismatch") {
-		t.Fatalf("did not expect dialect mismatch hint on postgresql path, got %q", stderr.String())
+		t.Fatalf("did not expect legacy dialect mismatch prose on stderr, got %q", stderr.String())
 	}
 }
 
-func TestAuditCommandMySQLParseablePGMismatchShowsAdvisoryFinding(t *testing.T) {
+func TestAuditCommandParseErrorJSONDoesNotReportPassVerdict(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "create table users (id serial primary key);", "--dialect", "mysql"},
+		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;", "--dialect", "mysql", "--fail-on", "notice", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
 	)
 
-	if code != 1 {
-		t.Fatalf("expected notice-level audit failure via existing fail-on behavior, got %d", code)
+	if code != 2 {
+		t.Fatalf("expected user-facing parse error exit code 2, got %d", code)
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected success-path advisory to stay on stdout, got %q", stderr.String())
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
 	}
-	if !strings.Contains(strings.ToLower(stdout.String()), "dialect mismatch") {
-		t.Fatalf("expected advisory finding in stdout, got %q", stdout.String())
+	if decoded["verdict"] == "pass" {
+		t.Fatalf("did not expect parse-error json to report pass, got %#v", decoded)
 	}
-	if !strings.Contains(stdout.String(), "postgresql") {
-		t.Fatalf("expected postgresql target in advisory output, got %q", stdout.String())
+	findings, ok := decoded["global_findings"].([]any)
+	if !ok || len(findings) != 1 {
+		t.Fatalf("expected one global finding, got %#v", decoded["global_findings"])
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok || finding["rule_id"] != postgreSQLSyntaxNoticeRuleID {
+		t.Fatalf("expected PostgreSQL syntax notice finding, got %#v", decoded["global_findings"])
+	}
+	if stderr.Len() == 0 {
+		t.Fatal("expected parse error on stderr")
 	}
 }
 
-func TestAuditCommandPostgreSQLParseablePGSyntaxDoesNotShowMismatchAdvisory(t *testing.T) {
+func TestAuditCommandParseErrorNoticeDoesNotImplyDialectSwitch(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "create table users (id serial primary key);", "--dialect", "postgresql"},
+		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
 	)
 
-	if code == 0 {
-		t.Fatalf("expected current postgresql path to remain non-success in this lane")
+	if code != 2 {
+		t.Fatalf("expected parse-error exit code 2, got %d", code)
 	}
-	if strings.Contains(strings.ToLower(stdout.String()), "dialect mismatch") || strings.Contains(strings.ToLower(stderr.String()), "dialect mismatch") {
-		t.Fatalf("did not expect mismatch advisory on postgresql path, stdout=%q stderr=%q", stdout.String(), stderr.String())
+	output := stdout.String()
+	if !strings.Contains(output, "- Dialect: `mysql` (default)") {
+		t.Fatalf("expected mysql default dialect context, got %q", output)
+	}
+	if !strings.Contains(output, "DeltaScope did not auto-switch dialect") {
+		t.Fatalf("expected trust note about no automatic dialect switch, got %q", output)
+	}
+	if strings.Contains(output, "- Dialect: `postgresql`") {
+		t.Fatalf("did not expect markdown output to imply a postgresql switch, got %q", output)
+	}
+	if stderr.Len() == 0 {
+		t.Fatal("expected parse error on stderr")
 	}
 }
 
-func TestAuditCommandMySQLNormalSQLDoesNotShowMismatchAdvisory(t *testing.T) {
+func TestAuditCommandShowsPostgreSQLSyntaxNoticeOnStdout(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "create table users (id bigint primary key) comment='users';", "--dialect", "mysql"},
+		[]string{"audit", "--sql", "alter table users alter column score type bigint using abs(score);", "--dialect", "mysql", "--fail-on", "notice"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected parse-error exit code 2 when notice threshold is enabled, got %d", code)
+	}
+	if stderr.Len() == 0 {
+		t.Fatal("expected parse error on stderr")
+	}
+	output := stdout.String()
+	if !strings.Contains(output, postgreSQLSyntaxNoticeRuleID) {
+		t.Fatalf("expected rule id in stdout, got %q", output)
+	}
+	if !strings.Contains(strings.ToLower(output), "sql looks like postgresql") {
+		t.Fatalf("expected PostgreSQL syntax notice in stdout, got %q", output)
+	}
+	if !strings.Contains(output, "ALTER COLUMN TYPE USING") {
+		t.Fatalf("expected ALTER COLUMN TYPE USING token in stdout, got %q", output)
+	}
+	if !strings.Contains(output, "--dialect postgresql") {
+		t.Fatalf("expected explicit dialect guidance in stdout, got %q", output)
+	}
+}
+
+func TestAuditCommandDoesNotShowPostgreSQLSyntaxNoticeForMySQLSQL(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "create table users (id bigint primary key) comment='users';", "--dialect", "mysql", "--fail-on", "notice"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -393,8 +475,29 @@ func TestAuditCommandMySQLNormalSQLDoesNotShowMismatchAdvisory(t *testing.T) {
 	if code == 2 {
 		t.Fatalf("did not expect parse-error path, stderr=%q", stderr.String())
 	}
-	if strings.Contains(strings.ToLower(stdout.String()), "dialect mismatch") {
-		t.Fatalf("did not expect advisory for normal mysql sql, got %q", stdout.String())
+	if strings.Contains(stdout.String(), postgreSQLSyntaxNoticeRuleID) {
+		t.Fatalf("did not expect PostgreSQL syntax notice for normal mysql sql, got %q", stdout.String())
+	}
+}
+
+func TestAuditCommandDoesNotShowPostgreSQLSyntaxNoticeForTokenInsideStringLiteral(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "select 'returning' as note;", "--dialect", "mysql", "--fail-on", "notice"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code == 2 {
+		t.Fatalf("did not expect parse-error exit code 2, stderr=%q", stderr.String())
+	}
+	output := stdout.String()
+	if strings.Contains(output, postgreSQLSyntaxNoticeRuleID) {
+		t.Fatalf("did not expect PostgreSQL syntax notice for token inside string literal, got %q", output)
 	}
 }
 
@@ -417,6 +520,29 @@ func TestAuditCommandQuietMarkdownOmitsFullReportWrapper(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "dml.where.require") {
 		t.Fatalf("expected quiet output to keep finding identity, got %q", stdout.String())
+	}
+}
+
+func TestAuditCommandQuietIncludesContextSummary(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--quiet"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1, got %d", code)
+	}
+	output := stdout.String()
+	if !strings.Contains(output, "[context] mode=offline dialect=mysql dialect_source=default") {
+		t.Fatalf("expected offline context line in quiet output, got %q", output)
+	}
+	if !strings.Contains(output, "[summary] loaded=") {
+		t.Fatalf("expected existing summary line to remain, got %q", output)
 	}
 }
 
@@ -1004,6 +1130,79 @@ func TestMetadataAwareJSONIncludesAuditContext(t *testing.T) {
 	}
 }
 
+func TestAuditCommandOfflineJSONIncludesAuditContext(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	contextValue, ok := decoded["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", decoded["context"])
+	}
+	if contextValue["mode"] != "offline" || contextValue["dialect"] != "mysql" || contextValue["dialect_source"] != "default" {
+		t.Fatalf("expected offline audit context, got %#v", contextValue)
+	}
+}
+
+func TestAuditCommandRejectsExplicitPostgreSQLMetadataAwareRequestWithCapabilityBoundaryError(t *testing.T) {
+	if pgCapabilityBoundaryIsRealParser() {
+		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
+	}
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectPostgreSQL,
+		schemasByTable: map[string][]string{"users": {"public"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout result on capability-boundary error, got %q", stdout.String())
+	}
+	message := stderr.String()
+	if !strings.Contains(message, "PG-capable") {
+		t.Fatalf("expected capability-boundary wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "resolve schema targets:") {
+		t.Fatalf("did not expect metadata parse wrapper wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
+		t.Fatalf("did not expect mismatch wording, got %q", message)
+	}
+	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
+		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
+	}
+}
+
 func TestRenderJSONResultIncludesFindingExplanationFields(t *testing.T) {
 	output, err := renderJSONResult(report.Result{
 		Statements: []report.StatementResult{{
@@ -1308,7 +1507,7 @@ func TestExitCodeForResultRespectsThresholds(t *testing.T) {
 	tests := []struct {
 		name      string
 		threshold string
-		summary    report.Summary
+		summary   report.Summary
 		want      int
 	}{
 		{name: "none ignores findings", threshold: "none", summary: report.Summary{Notices: 1, Warnings: 1, Blockers: 1}, want: exitOK},
@@ -1338,7 +1537,7 @@ func TestMapAuditErrorClassifiesKnownCases(t *testing.T) {
 		{name: "unknown dialect", err: appaudit.ErrUnknownDialect, want: exitUser},
 		{name: "unsupported statement", err: appaudit.ErrUnsupportedStatement, want: exitUser},
 		{name: "parse sql string match", err: errors.New("parse sql: syntax error"), want: exitUser},
-		{name: "pg capable build hint", err: errors.New("requires PG-capable build"), want: exitUser},
+		{name: "typed pg capability boundary", err: &appaudit.PostgreSQLCapabilityBoundaryError{Message: "requires PG-capable build"}, want: exitUser},
 		{name: "load policy string match", err: errors.New("load policy: bad config"), want: exitUser},
 		{name: "context canceled", err: context.Canceled, want: exitInternal},
 		{name: "generic error", err: errors.New("boom"), want: exitInternal},
@@ -1662,7 +1861,7 @@ func TestQuietOutputIncludesRuleSummary(t *testing.T) {
 				Reason: rule.SkipReasonDialectMismatch,
 			}},
 		},
-	})
+	}, nil)
 
 	rendered := string(output)
 	if !strings.Contains(rendered, "[summary] loaded=147 applicable=103 skipped=1") {
@@ -1678,7 +1877,7 @@ func TestQuietOutputWithRuleSummaryButNoFindingsShowsSummary(t *testing.T) {
 			Loaded:     50,
 			Applicable: 50,
 		},
-	})
+	}, nil)
 
 	rendered := string(output)
 	if rendered == "pass" {
@@ -1686,6 +1885,14 @@ func TestQuietOutputWithRuleSummaryButNoFindingsShowsSummary(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "[summary] loaded=50 applicable=50 skipped=0") {
 		t.Fatalf("expected summary line when no findings but rule summary present, got %q", rendered)
+	}
+}
+
+func TestQuietOutputKeepsPassWhenContextIsOnlyRenderableContent(t *testing.T) {
+	output := renderQuietResult(report.Result{}, &auditRunContext{Mode: "offline", Dialect: "mysql", DialectSource: "default"})
+
+	if string(output) != "pass" {
+		t.Fatalf("expected quiet success path to remain pass, got %q", string(output))
 	}
 }
 

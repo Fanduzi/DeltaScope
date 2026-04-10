@@ -259,3 +259,17 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | 主键形态 | DROP PRIMARY KEY 前的主键存在性检查 |
 | 表选项（引擎、字符集、行格式） | ALTER TABLE 时的表选项兼容性检查 |
 | `table_rows` | DROP TABLE 和 TRUNCATE TABLE 的行数安全阈值检查 |
+
+---
+
+## 信任与误配防护
+
+这些是增量行为（不是规则），帮助识别方言误配和未支持的功能面。不改变规则评估或触发条件。
+
+| 能力 | 状态 | 说明 |
+|------|------|------|
+| PostgreSQL 语法启发式通知 | 已覆盖 | 在 MySQL/TiDB 路径审计时，检测常见 PG 专属语法标记（`RETURNING`、`ON CONFLICT`、`::`、`ALTER COLUMN TYPE USING`、`GENERATED AS IDENTITY`），发出 `dialect.postgresql.syntax.detected.notice` 全局建议性告警。DeltaScope 不会自动切换方言。 |
+| PostgreSQL 能力边界错误 | 已覆盖 | 未支持的 PG 功能面返回类型化的 `PostgreSQLCapabilityBoundaryError`，取代启发式字符串匹配，使 CI 和工具能区分已知限制和真正的失败。 |
+| 离线信任上下文可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告审计上下文：markdown 包含 `## Audit Context` 区段和信任提示；JSON 包含 `context` 对象；quiet 包含 `[context]` 行。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含上下文元数据。 |
+| 规则摘要 / 跳过规则可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告已加载、适用和跳过的规则计数，方便确认当前方言下哪些规则运行了。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含规则摘要元数据。 |
+| 启发式误报排除 | 已覆盖 | PostgreSQL 语法启发式不对字符串字面量、双引号标识符、反引号标识符、行注释或块注释中的标记触发。 |

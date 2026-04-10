@@ -303,3 +303,17 @@ These rules fire only for MySQL and TiDB targets. For PostgreSQL, they are not a
 | `EXPLAIN`-based planner estimation | `dml.impact.estimate` and downstream impact rules may use the PostgreSQL planner to refine `UPDATE`/`DELETE` row estimates. This is a read-only `EXPLAIN` — DeltaScope does not execute `EXPLAIN ANALYZE`. |
 | `DROP CONSTRAINT` → primary key mapping | `ALTER TABLE … DROP CONSTRAINT` that targets the primary key is recognized and triggers `ddl.alter.drop_primary_key.forbid` and `ddl.alter.primary_key.drop.exists`. |
 | Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn` — offline PostgreSQL-specific rules that flag lock contention and table-rewrite risks. |
+
+---
+
+## Trust & Misconfiguration Guardrails
+
+These are additive behaviors (not rules) that help identify dialect mismatches and unsupported surfaces. They do not change rule evaluation or trigger conditions.
+
+| Capability | Status | Notes |
+|------------|--------|-------|
+| PostgreSQL syntax heuristic notice | covered | When auditing on MySQL/TiDB path, detects common PG-specific syntax tokens (`RETURNING`, `ON CONFLICT`, `::`, `ALTER COLUMN TYPE USING`, `GENERATED AS IDENTITY`) and emits `dialect.postgresql.syntax.detected.notice` as a global advisory finding. DeltaScope does not auto-switch dialect. |
+| PostgreSQL capability-boundary errors | covered | Unsupported PG surfaces return typed `PostgreSQLCapabilityBoundaryError` instead of heuristic string matching, enabling CI and tooling to distinguish known limits from real failures. |
+| Offline trust context visibility | covered | CLI output formats (json, markdown, quiet) report audit context: markdown includes `## Audit Context` section with trust note; JSON includes `context` object; quiet includes `[context]` line. The `github-actions` and `sarif` formats emit findings only and do not include context metadata. |
+| Rule summary / skipped rules visibility | covered | CLI output formats (json, markdown, quiet) report loaded, applicable, and skipped rule counts, making it easy to confirm which rules ran for the current dialect. The `github-actions` and `sarif` formats emit findings only and do not include rule summary metadata. |
+| Heuristic false-positive exclusion | covered | PostgreSQL syntax heuristic does not fire for tokens inside string literals, double-quoted identifiers, backtick identifiers, line comments, or block comments. |

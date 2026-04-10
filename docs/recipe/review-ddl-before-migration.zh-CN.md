@@ -336,3 +336,37 @@ deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql
 ```bash
 deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
 ```
+
+### 在迁移审查中识别方言误配
+
+当审计 PostgreSQL 迁移时未显式设置 `--dialect postgresql`，DeltaScope 默认以 MySQL 模式运行，可能发出 `dialect.postgresql.syntax.detected.notice` 建议性通知。此通知表明 SQL 包含 PostgreSQL 专属语法，但 DeltaScope **不会自动切换方言**——审计仍使用 MySQL/TiDB 解析器，可能产生误导或不完整的发现。
+
+如何在迁移审查流程中识别此通知：
+
+```bash
+# 检查输出是否包含 PostgreSQL 语法通知
+deltascope audit --file ./migrations.sql --format json | \
+  jq '.global_findings[] | select(.rule_id == "dialect.postgresql.syntax.detected.notice")'
+```
+
+如果通知在迁移审查中触发，请选择以下操作之一：
+- 使用 `--dialect postgresql` 重新运行，获取针对 PostgreSQL 的准确审计结果，或
+- 确认 SQL 确实兼容 MySQL 并忽略该通知。
+
+Markdown 输出在通知触发时会渲染 `## Audit Context` 区段；JSON 输出始终在顶层包含 `context` 对象，显示 `mode`、`dialect` 和 `dialect_source`。
+
+### 在迁移审查中理解能力边界错误
+
+使用 `--dialect postgresql` 且 PG-capable 构建版本遇到尚未支持的 PostgreSQL 功能面（如复杂的 DDL 解析）时，DeltaScope 返回类型化的 `PostgreSQLCapabilityBoundaryError`。在 CI 中表现为退出码 `2`。
+
+通过错误消息可以区分——能力边界错误会明确说明请求的功能面和当前构建的支持能力。发生这种情况时，建议将迁移拆分：用 DeltaScope 审计已支持的语句，未支持的部分进行人工审查。
+
+### 利用信任上下文和规则摘要评估审计可信度
+
+所有输出格式都会报告审计上下文和规则摘要信息，帮助你判断审计结果的可信程度：
+
+- **Markdown**：`## Audit Context` 区段显示方言和信任提示；`## Rule Summary` 和 `## Skipped Rules` 区段显示哪些规则运行了。
+- **JSON**：`context` 对象显示 `mode`、`dialect` 和 `dialect_source`；`rule_summary` 对象显示已加载、适用和跳过的规则计数。
+- **Quiet**：`[context]` 行在输出末尾显示模式和方言。
+
+审查迁移时，请关注跳过规则的计数——如果跳过规则数量较多（尤其是目标方言下的规则），可能意味着审计运行在错误的方言下，或某些规则族不适用。这有助于你判断当前审计结果是否充分，是否需要额外的人工审查。
