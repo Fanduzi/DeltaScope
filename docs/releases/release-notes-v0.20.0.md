@@ -52,7 +52,7 @@ When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality
 
 ### CLI Output Trust Signals
 
-All three output formats now include trust context:
+The CLI trust-oriented output formats now include trust context:
 
 | Format | What's Added |
 |--------|-------------|
@@ -60,7 +60,7 @@ All three output formats now include trust context:
 | **JSON** | Top-level `context` object with `mode`, `dialect`, `dialect_source` |
 | **Quiet** | `[context]` line with mode/dialect/source, `[summary]` line with loaded/applicable/skipped counts |
 
-Rule summary (loaded, applicable, skipped) is now visible in all formats — making it easy to confirm which rules ran and which were skipped for the current dialect.
+Rule summary (loaded, applicable, skipped) is now visible in the CLI `json`, `markdown`, and `quiet` formats — making it easy to confirm which rules ran and which were skipped for the current dialect. The `github-actions` and `sarif` formats emit findings only and do not include rule-summary metadata.
 
 ### Suggestion Quality Pass for PG Migration-Safety Rules
 

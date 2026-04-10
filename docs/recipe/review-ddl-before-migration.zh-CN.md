@@ -363,7 +363,7 @@ Markdown 输出在通知触发时会渲染 `## Audit Context` 区段；JSON 输�
 
 ### 利用信任上下文和规则摘要评估审计可信度
 
-所有输出格式都会报告审计上下文和规则摘要信息，帮助你判断审计结果的可信程度：
+CLI 的 `markdown`、`json` 和 `quiet` 输出都会报告审计上下文和规则摘要信息，帮助你判断审计结果的可信程度：
 
 - **Markdown**：`## Audit Context` 区段显示方言和信任提示；`## Rule Summary` 和 `## Skipped Rules` 区段显示哪些规则运行了。
 - **JSON**：`context` 对象显示 `mode`、`dialect` 和 `dialect_source`；`rule_summary` 对象显示已加载、适用和跳过的规则计数。

@@ -52,7 +52,7 @@ deltascope audit --sql "insert into users(id) values (1) returning id;" --format
 
 ### CLI 输出信任信号
 
-三种输出格式都包含信任上下文：
+CLI 的信任导向输出格式现在都包含信任上下文：
 
 | 格式 | 新增内容 |
 |------|---------|
@@ -60,7 +60,7 @@ deltascope audit --sql "insert into users(id) values (1) returning id;" --format
 | **JSON** | 顶层 `context` 对象，包含 `mode`、`dialect`、`dialect_source` |
 | **Quiet** | `[context]` 行显示模式/方言/来源，`[summary]` 行显示加载/适用/跳过规则数 |
 
-规则摘要（已加载、适用、跳过）在所有格式中可见——方便确认当前方言下哪些规则运行了、哪些被跳过。
+规则摘要（已加载、适用、跳过）现在在 CLI 的 `json`、`markdown` 和 `quiet` 格式中可见，方便确认当前方言下哪些规则运行了、哪些被跳过。`github-actions` 和 `sarif` 格式只输出告警结果，不包含规则摘要元数据。
 
 ### PG 迁移安全规则建议质量提升
 
