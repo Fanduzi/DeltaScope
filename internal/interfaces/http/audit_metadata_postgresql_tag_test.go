@@ -779,3 +779,39 @@ func TestExecuteAuditRequestPostgreSQLCreateTableConstraintsReturnNormalResult(t
 		})
 	}
 }
+
+func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *testing.T) {
+	cases := map[string]string{
+		"named FOREIGN KEY":  "create table orders (id bigint primary key, user_id bigint, constraint bad_fk foreign key (user_id) references users(id));",
+		"inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			})
+			if err != nil {
+				t.Fatalf("expected postgresql request to succeed, got %v", err)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected one statement result, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+			found := false
+			for _, finding := range response.Statements[0].Findings {
+				if finding.RuleID == "ddl.table.foreign_key.forbid" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", response.Statements[0].Findings)
+			}
+		})
+	}
+}

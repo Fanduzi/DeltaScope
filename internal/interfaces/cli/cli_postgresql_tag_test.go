@@ -1027,3 +1027,59 @@ func TestAuditCommandPostgreSQLCreateTableConstraintsReturnNormalResult(t *testi
 		})
 	}
 }
+
+func TestAuditCommandPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *testing.T) {
+	cases := map[string]string{
+		"named FOREIGN KEY":  "create table orders (id bigint primary key, user_id bigint, constraint bad_fk foreign key (user_id) references users(id));",
+		"inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+
+			if code != exitAudit {
+				t.Fatalf("expected audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) < 1 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if ok && finding["rule_id"] == "ddl.table.foreign_key.forbid" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", findings)
+			}
+		})
+	}
+}

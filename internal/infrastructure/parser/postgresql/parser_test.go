@@ -1055,6 +1055,79 @@ func TestExtractCreateTableConstraintNormalization(t *testing.T) {
 	}
 }
 
+func TestExtractCreateTableForeignKeyPreservesReferencedTableAndColumns(t *testing.T) {
+	sql := `create table orders (
+		user_id bigint,
+		constraint fk_orders_user foreign key (user_id) references users(id)
+	);`
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected kind %q, got %q", spec.KindDDL, statement.Kind)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create table, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateTable {
+		t.Fatalf("expected create_table ddl payload, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Name != "orders" {
+		t.Fatalf("expected table name orders, got %#v", statement.DDL.Table)
+	}
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("expected 1 constraint, got %d", len(statement.DDL.Constraints))
+	}
+	constraint := statement.DDL.Constraints[0]
+	if constraint.Type != "foreign_key" || constraint.Name != "fk_orders_user" {
+		t.Fatalf("expected named foreign_key constraint, got %+v", constraint)
+	}
+	if len(constraint.Columns) != 1 || constraint.Columns[0] != "user_id" {
+		t.Fatalf("expected local columns [user_id], got %#v", constraint.Columns)
+	}
+	if constraint.ReferencedTable != "users" {
+		t.Fatalf("expected referenced table users, got %q", constraint.ReferencedTable)
+	}
+	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
+		t.Fatalf("expected referenced columns [id], got %#v", constraint.ReferencedColumns)
+	}
+}
+
+func TestExtractCreateTableInlineReferencesPreservesReferencedTableAndColumns(t *testing.T) {
+	sql := `create table orders (
+		user_id bigint references users(id)
+	);`
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected kind %q, got %q", spec.KindDDL, statement.Kind)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create table, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateTable {
+		t.Fatalf("expected create_table ddl payload, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Name != "orders" {
+		t.Fatalf("expected table name orders, got %#v", statement.DDL.Table)
+	}
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("expected 1 constraint, got %d", len(statement.DDL.Constraints))
+	}
+	constraint := statement.DDL.Constraints[0]
+	if constraint.Type != "foreign_key" {
+		t.Fatalf("expected foreign_key constraint, got %+v", constraint)
+	}
+	if len(constraint.Columns) != 1 || constraint.Columns[0] != "user_id" {
+		t.Fatalf("expected local columns [user_id], got %#v", constraint.Columns)
+	}
+	if constraint.ReferencedTable != "users" {
+		t.Fatalf("expected referenced table users, got %q", constraint.ReferencedTable)
+	}
+	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
+		t.Fatalf("expected referenced columns [id], got %#v", constraint.ReferencedColumns)
+	}
+}
+
 func extractPostgreSQLStatement(t *testing.T, sql string) spec.Statement {
 	t.Helper()
 

@@ -742,6 +742,113 @@ func TestForeignKeyConstraintNamingRulesAreSuppressedWhenForeignKeysAreForbidden
 	}
 }
 
+func TestRicherPostgreSQLForeignKeyConstraintUsesSharedConstraintNamingRule(t *testing.T) {
+	statementRule, err := newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"prefix": "fk_"},
+	}, selectForeignKeyConstraintNames)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := postgresStatementWithConstraints(nil, nil, spec.Constraint{
+		Type:              "foreign_key",
+		Name:              "bad_orders_user",
+		Columns:           []string{"user_id"},
+		ReferencedTable:   "users",
+		ReferencedColumns: []string{"id"},
+	})
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for richer FK constraint with wrong prefix, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDConstraintForeignKeyNamePrefixRequire {
+		t.Fatalf("expected rule id %q, got %q", ruleIDConstraintForeignKeyNamePrefixRequire, findings[0].RuleID)
+	}
+	if findings[0].Metadata["subject"] != "constraint.foreign_key" {
+		t.Fatalf("expected subject constraint.foreign_key, got %#v", findings[0].Metadata["subject"])
+	}
+	if findings[0].Metadata["prefix"] != "fk_" {
+		t.Fatalf("expected prefix metadata fk_, got %#v", findings[0].Metadata["prefix"])
+	}
+	if findings[0].Metadata["name"] != "bad_orders_user" {
+		t.Fatalf("expected name metadata bad_orders_user, got %#v", findings[0].Metadata["name"])
+	}
+}
+
+func TestRicherPostgreSQLForeignKeyConstraintPassesSharedNamingRule(t *testing.T) {
+	statementRule, err := newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"prefix": "fk_"},
+	}, selectForeignKeyConstraintNames)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := postgresStatementWithConstraints(nil, nil, spec.Constraint{
+		Type:              "foreign_key",
+		Name:              "fk_orders_user",
+		Columns:           []string{"user_id"},
+		ReferencedTable:   "users",
+		ReferencedColumns: []string{"id"},
+	})
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for richer FK constraint with correct prefix, got %d", len(findings))
+	}
+}
+
+func TestRicherPostgreSQLInlineReferencesConstraintUsesSharedForeignKeyForbidRule(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Policy{
+		Rules: map[string]policy.RulePolicy{
+			ruleIDTableForeignKeyForbid: {
+				Enabled: true,
+				Level:   rule.LevelBlocker,
+				Params:  map[string]any{"forbid": true},
+			},
+		},
+	}
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	findings, err := registry.EvaluateStatement(spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "orders"},
+			Columns:   []spec.Column{{Name: "user_id", Type: "bigint"}},
+			Constraints: []spec.Constraint{{
+				Type:              "foreign_key",
+				Columns:           []string{"user_id"},
+				ReferencedTable:   "users",
+				ReferencedColumns: []string{"id"},
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 foreign_key forbid finding for richer inline references, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDTableForeignKeyForbid {
+		t.Fatalf("expected foreign key forbid finding, got %+v", findings)
+	}
+}
+
 func statementWithNamedObjects(tableName string, columns []spec.Column, indexes []spec.Index) spec.Statement {
 	if len(columns) == 0 {
 		columns = []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true, DefaultValue: "1"}}

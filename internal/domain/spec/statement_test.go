@@ -194,6 +194,72 @@ func TestDDLTracksExplicitNamesForNamingGovernanceTargets(t *testing.T) {
 	}
 }
 
+func TestConstraintPreservesForeignKeyReferencedObjectFacts(t *testing.T) {
+	constraint := Constraint{
+		Type:              "foreign_key",
+		Name:              "fk_orders_user",
+		Columns:           []string{"user_id"},
+		ReferencedTable:   "users",
+		ReferencedColumns: []string{"id"},
+	}
+
+	if constraint.ReferencedTable != "users" {
+		t.Fatalf("expected referenced table users, got %q", constraint.ReferencedTable)
+	}
+	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
+		t.Fatalf("expected referenced columns [id], got %#v", constraint.ReferencedColumns)
+	}
+
+	data, err := json.Marshal(constraint)
+	if err != nil {
+		t.Fatalf("marshal constraint: %v", err)
+	}
+	var roundTrip Constraint
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal constraint: %v", err)
+	}
+	if roundTrip.ReferencedTable != "users" {
+		t.Fatalf("expected referenced table to round-trip, got %q", roundTrip.ReferencedTable)
+	}
+	if len(roundTrip.ReferencedColumns) != 1 || roundTrip.ReferencedColumns[0] != "id" {
+		t.Fatalf("expected referenced columns to round-trip, got %#v", roundTrip.ReferencedColumns)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if got := payload["referenced_table"]; got != "users" {
+		t.Fatalf("expected referenced_table json value users, got %#v", got)
+	}
+	if got := payload["referenced_columns"]; got == nil {
+		t.Fatalf("expected referenced_columns json key to be present")
+	}
+}
+
+func TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent(t *testing.T) {
+	constraint := Constraint{
+		Type:    "check",
+		Name:    "chk_amount",
+		Columns: []string{"amount"},
+	}
+
+	data, err := json.Marshal(constraint)
+	if err != nil {
+		t.Fatalf("marshal constraint: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["referenced_table"]; ok {
+		t.Fatalf("expected referenced_table to be omitted from json for non-FK constraint, got %#v", payload)
+	}
+	if _, ok := payload["referenced_columns"]; ok {
+		t.Fatalf("expected referenced_columns to be omitted from json for non-FK constraint, got %#v", payload)
+	}
+}
+
 func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) {
 	stmt := Statement{
 		Kind:    KindDML,

@@ -384,3 +384,115 @@ func TestAuditSQLPostgreSQLValidateConstraintFlowsThroughPipeline(t *testing.T) 
 		}
 	}
 }
+
+func TestAuditSQLPostgreSQLCreateTableForeignKeyRetainsSupportedResultWithReferencedObjectFacts(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table orders (user_id bigint, constraint bad_fk foreign key (user_id) references users(id));",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != spec.KindDDL.String() {
+		t.Fatalf("expected DDL kind, got %q", result.Statements[0].Kind)
+	}
+
+	// The default policy forbids foreign keys. The richer FK semantics
+	// (ReferencedTable, ReferencedColumns) should not interfere with the
+	// shared FK-forbid rule firing correctly.
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			found = true
+			if finding.Metadata["constraint"] != "bad_fk" {
+				t.Fatalf("expected constraint name bad_fk, got %#v", finding.Metadata)
+			}
+		}
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("create-table FK should not trigger drop_primary_key finding, got %#v", finding)
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
+	}
+
+	// FK naming rules should be suppressed when FK-forbid is active.
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.constraint.foreign_key.name.prefix.require" {
+			t.Fatalf("FK naming rules should be suppressed by FK-forbid, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditSQLPostgreSQLCreateTableInlineReferencesRetainsSupportedResult(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table orders (user_id bigint references users(id));",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != spec.KindDDL.String() {
+		t.Fatalf("expected DDL kind, got %q", result.Statements[0].Kind)
+	}
+
+	// Inline REFERENCES produces an unnamed FK constraint. The default policy
+	// forbids foreign keys, so ddl.table.foreign_key.forbid must fire. Naming
+	// rules are suppressed by the forbid rule so they should not appear.
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			found = true
+		}
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("inline references should not trigger drop_primary_key finding, got %#v", finding)
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding for inline REFERENCES, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLPostgreSQLCreateOrReplaceViewReturnsUnsupported(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create or replace view active_users as select id from users;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "create_view" {
+		t.Fatalf("expected unsupported feature create_view, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}
+
+func TestAuditSQLPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table orders (id bigint, created_at date) partition by range (created_at);",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "partitioning" {
+		t.Fatalf("expected unsupported feature partitioning, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}

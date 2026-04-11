@@ -423,7 +423,13 @@ func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) {
 	case pg_query.ConstrType_CONSTR_UNIQUE:
 		ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: stringValuesFromNodes(constraint.GetKeys())})
 	case pg_query.ConstrType_CONSTR_FOREIGN:
-		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "foreign_key", Name: constraint.GetConname(), Columns: stringValuesFromNodes(constraint.GetFkAttrs())})
+		ddl.Constraints = append(ddl.Constraints, spec.Constraint{
+			Type:              "foreign_key",
+			Name:              constraint.GetConname(),
+			Columns:           stringValuesFromNodes(constraint.GetFkAttrs()),
+			ReferencedTable:   rangeVarName(constraint.GetPktable()),
+			ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
+		})
 	case pg_query.ConstrType_CONSTR_CHECK:
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
 	}
@@ -439,7 +445,13 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 		case pg_query.ConstrType_CONSTR_UNIQUE:
 			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: []string{column.GetColname()}})
 		case pg_query.ConstrType_CONSTR_FOREIGN:
-			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "foreign_key", Name: constraint.GetConname(), Columns: []string{column.GetColname()}})
+			ddl.Constraints = append(ddl.Constraints, spec.Constraint{
+				Type:              "foreign_key",
+				Name:              constraint.GetConname(),
+				Columns:           []string{column.GetColname()},
+				ReferencedTable:   rangeVarName(constraint.GetPktable()),
+				ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
+			})
 		case pg_query.ConstrType_CONSTR_CHECK:
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
 		}
@@ -558,6 +570,13 @@ func tableFromRangeVar(r *pg_query.RangeVar) *spec.Table {
 		return nil
 	}
 	return &spec.Table{Schema: r.GetSchemaname(), Name: r.GetRelname()}
+}
+
+func rangeVarName(r *pg_query.RangeVar) string {
+	if r == nil {
+		return ""
+	}
+	return r.GetRelname()
 }
 
 func singleTableSlice(table *spec.Table) []spec.Table {

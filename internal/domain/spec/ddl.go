@@ -84,9 +84,11 @@ type Index struct {
 
 // Constraint describes a non-index table constraint worth preserving for later rules.
 type Constraint struct {
-	Type    string   `json:"type"`
-	Name    string   `json:"name,omitempty"`
-	Columns []string `json:"columns,omitempty"`
+	Type              string   `json:"type"`
+	Name              string   `json:"name,omitempty"`
+	Columns           []string `json:"columns,omitempty"`
+	ReferencedTable   string   `json:"referenced_table,omitempty"`
+	ReferencedColumns []string `json:"referenced_columns,omitempty"`
 }
 
 // AlterColumnChange describes statement-local column-change intent.

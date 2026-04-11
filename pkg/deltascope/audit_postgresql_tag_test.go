@@ -673,3 +673,75 @@ func TestAuditPostgreSQLCreateTableConstraintsReturnNormalResult(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *testing.T) {
+	cases := map[string]string{
+		"named FOREIGN KEY":  "create table orders (id bigint primary key, user_id bigint, constraint bad_fk foreign key (user_id) references users(id));",
+		"inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+			found := false
+			for _, finding := range result.Statements[0].Findings {
+				if finding.RuleID == "ddl.table.foreign_key.forbid" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
+func TestAuditPostgreSQLCreateOrReplaceViewReturnsUnsupported(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "create or replace view active_users as select id from users;",
+		Dialect: DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "create_view" {
+		t.Fatalf("expected unsupported feature create_view, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}
+
+func TestAuditPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "create table orders (id bigint, created_at date) partition by range (created_at);",
+		Dialect: DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "partitioning" {
+		t.Fatalf("expected unsupported feature partitioning, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}
