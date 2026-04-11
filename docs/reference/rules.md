@@ -409,6 +409,29 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 ---
 
+## PostgreSQL DDL Coverage (v0.21.0)
+
+v0.21.0 expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. This is a coverage improvement — it does not add new rules. The newly normalized actions reuse existing shared rule families where applicable.
+
+### Supported PostgreSQL DDL Actions
+
+| Action | Normalized As | Rule Behavior |
+|--------|---------------|---------------|
+| `ALTER COLUMN ... SET DEFAULT` | `set_default` | Processed as a standard alter action through existing alter semantic rules. |
+| `ALTER COLUMN ... DROP DEFAULT` | `drop_default` | Processed as a standard alter action through existing alter semantic rules. |
+| `ALTER COLUMN ... SET NOT NULL` | `set_not_null` | Processed as a standard alter action through existing alter semantic rules. |
+| `ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | Processed as a standard alter action through existing alter semantic rules. |
+| `VALIDATE CONSTRAINT` | `validate_constraint` | Supported and auditable. No dedicated rule exists; it produces a clean audit unless other findings apply. |
+| `DROP CONSTRAINT` | `drop_constraint` | Constraint removal. When the target is a primary key and metadata is available, existing `ddl.alter.drop_primary_key` rules apply. Otherwise, processed as a standard alter action. |
+
+### Key Points
+
+- No new rule configuration items are needed. The value of this release is that existing shared rules and metadata-aware semantics now cover more PostgreSQL DDL actions.
+- `DROP CONSTRAINT` on a primary key (`DROP CONSTRAINT users_pkey`) maps to existing primary-key rules only in metadata-aware mode. In offline mode it passes through as a normal alter action without a dedicated finding.
+- `VALIDATE CONSTRAINT` is supported and auditable but does not have a dedicated rule. It produces a clean audit result unless other findings apply to the same statement.
+
+---
+
 ## Cross-References
 
 - **Parameter documentation** — [config.md](config.md)

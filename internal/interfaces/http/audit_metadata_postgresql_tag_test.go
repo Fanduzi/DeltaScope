@@ -531,6 +531,86 @@ func TestExecuteAuditRequestPostgreSQLDropViewMapsToForbidRule(t *testing.T) {
 	}
 }
 
+func TestExecuteAuditRequestPostgreSQLValidateConstraintReturnsNormalResult(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "alter table users validate constraint chk_amount;",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if response.Context == nil || response.Context.Mode != "offline" {
+		t.Fatalf("expected offline context, got %#v", response.Context)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+	if response.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+	}
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("validate_constraint should not trigger drop_primary_key finding, got %#v", finding)
+		}
+	}
+}
+
+func TestExecuteAuditRequestPostgreSQLAlterColumnSetNotNullReturnsNormalResult(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "alter table users alter column status set not null;",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if response.Context == nil || response.Context.Mode != "offline" {
+		t.Fatalf("expected offline context, got %#v", response.Context)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+	if response.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+	}
+	found := false
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.set_not_null.explicit_nullability_change.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected set_not_null semantic finding, got %#v", response.Statements[0].Findings)
+	}
+}
+
+func TestExecuteAuditRequestPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyFinding(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "alter table users drop constraint chk_amount;",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if response.Context == nil || response.Context.Mode != "offline" {
+		t.Fatalf("expected offline context, got %#v", response.Context)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("expected no drop_primary_key finding for non-PK constraint, got %#v", finding)
+		}
+	}
+}
+
 func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{

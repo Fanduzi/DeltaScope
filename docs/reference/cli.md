@@ -327,6 +327,40 @@ If the SQL does target PostgreSQL, re-run with `--dialect postgresql`. If not, t
 
 When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality that is not yet fully supported (e.g., DDL parsing), it returns a typed `PostgreSQLCapabilityBoundaryError`. This distinguishes known capability limits from real parse failures. The error includes a clear message about what surface was requested and what the current build supports.
 
+#### PostgreSQL DDL Coverage
+
+Starting with `v0.21.0`, DeltaScope normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. These forms no longer return capability-boundary errors:
+
+| PostgreSQL DDL | Action | Notes |
+|----------------|--------|-------|
+| `ALTER TABLE ... ALTER COLUMN ... SET DEFAULT` | `set_default` | Column default assignment during phased rollout |
+| `ALTER TABLE ... ALTER COLUMN ... DROP DEFAULT` | `drop_default` | Column default removal |
+| `ALTER TABLE ... ALTER COLUMN ... SET NOT NULL` | `set_not_null` | Nullability enforcement after backfill |
+| `ALTER TABLE ... ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | Nullability relaxation |
+| `ALTER TABLE ... VALIDATE CONSTRAINT` | `validate_constraint` | Constraint validation in the recommended `NOT VALID` → `VALIDATE` pattern |
+| `ALTER TABLE ... DROP CONSTRAINT` | `drop_constraint` | Constraint removal; primary-key drops reuse `ddl.alter.drop_primary_key` rules when metadata is available |
+
+Examples:
+
+```bash
+# Phased migration: set a column default
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users alter column status set default 'active';"
+
+# Constraint lifecycle: validate a constraint
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users validate constraint chk_amount;"
+
+# Constraint lifecycle: drop a constraint (primary-key mapping applies with metadata)
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table orders drop constraint orders_pkey;"
+```
+
+`VALIDATE CONSTRAINT` without a corresponding rule produces a clean audit — it is supported and auditable, but does not guarantee a finding. `DROP CONSTRAINT` on a primary key triggers existing primary-key rules only when metadata is available; in offline mode it passes through as a normal alter action.
+
 #### Quiet Mode
 
 `--quiet` changes markdown output only. With markdown output, DeltaScope suppresses the normal report body and prints each finding as a single line. With `--format json`, the JSON contract is unchanged.

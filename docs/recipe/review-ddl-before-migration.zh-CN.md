@@ -370,3 +370,36 @@ CLI 的 `markdown`、`json` 和 `quiet` 输出都会报告审计上下文和规�
 - **Quiet**：`[context]` 行在输出末尾显示模式和方言。
 
 审查迁移时，请关注跳过规则的计数——如果跳过规则数量较多（尤其是目标方言下的规则），可能意味着审计运行在错误的方言下，或某些规则族不适用。这有助于你判断当前审计结果是否充分，是否需要额外的人工审查。
+
+### PostgreSQL 分步迁移后续动作（v0.21.0）
+
+v0.21.0 扩展了 DeltaScope 审计更多常见 PostgreSQL 分步迁移后续语句的能力。以下常见的后续语句现在通过共享审核管线支持：
+
+| 迁移阶段 | DDL 示例 | 状态 |
+|---------|---------|------|
+| 设置列默认值 | `ALTER TABLE users ALTER COLUMN status SET DEFAULT 'active'` | 已支持、可审计，共享 alter 规则适用 |
+| 移除列默认值 | `ALTER TABLE users ALTER COLUMN status DROP DEFAULT` | 已支持、可审计，共享 alter 规则适用 |
+| 施加 NOT NULL | `ALTER TABLE users ALTER COLUMN status SET NOT NULL` | 已支持、可审计，共享 alter 规则适用 |
+| 放宽 NOT NULL | `ALTER TABLE users ALTER COLUMN status DROP NOT NULL` | 已支持、可审计，共享 alter 规则适用 |
+| 验证约束 | `ALTER TABLE users VALIDATE CONSTRAINT chk_amount` | 已支持、可审计；无专用规则，除非其他 finding 适用否则产生干净审计 |
+| 删除约束 | `ALTER TABLE orders DROP CONSTRAINT chk_amount` | 已支持、可审计；主键删除在 metadata 可用时映射到 `ddl.alter.drop_primary_key` 规则 |
+
+示例：审计分步迁移的后续步骤：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users alter column status set default 'active';"
+```
+
+示例：审计约束生命周期步骤：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users validate constraint chk_amount;"
+```
+
+重要说明：
+- `DROP CONSTRAINT` 针对主键（如 `DROP CONSTRAINT users_pkey`）仅在 metadata-aware 模式下触发已有的主键规则。在离线模式下，它作为普通 alter 动作通过。
+- `VALIDATE CONSTRAINT` 没有专用规则。它是 supported 且 auditable 的，但除非同一语句上适用其他 finding，否则产生干净的审计结果。

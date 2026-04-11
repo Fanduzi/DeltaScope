@@ -194,6 +194,10 @@ If the notice fires, either add `--dialect postgresql` to the audit command or v
 
 When using `--dialect postgresql` with a PG-capable DeltaScope binary on unsupported PostgreSQL surfaces (e.g., complex DDL that the parser cannot yet handle), DeltaScope returns a typed `PostgreSQLCapabilityBoundaryError`. In CI this appears as exit code `2`. Distinguish it from a real parse failure by checking the error message — capability-boundary errors clearly state what surface was requested and what the current build supports.
 
+### PostgreSQL DDL Coverage in CI (v0.21.0)
+
+Starting with v0.21.0, common PostgreSQL migration follow-up DDL statements — `SET DEFAULT`, `DROP DEFAULT`, `SET NOT NULL`, `DROP NOT NULL`, `VALIDATE CONSTRAINT`, and `DROP CONSTRAINT` — are normalized through the shared audit pipeline and no longer return capability-boundary errors. These statements produce normal audit results in CI, reducing false workflow breaks on standard phased migration sequences.
+
 ## --fail-on Strategy
 
 | Setting | Exit 1 when | Recommended for |

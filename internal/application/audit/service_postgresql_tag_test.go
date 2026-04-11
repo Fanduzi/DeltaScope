@@ -331,3 +331,56 @@ func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T)
 		t.Fatalf("expected drop_index existence finding, got %#v", result.Statements[0].Findings)
 	}
 }
+
+func TestAuditSQLPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyForbid(t *testing.T) {
+	provider := &fakeMetadataProvider{
+		snapshot: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Constraints: []spec.Constraint{
+				{Type: "check", Name: "chk_amount", Columns: []string{"amount"}},
+			},
+		},
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "alter table users drop constraint chk_amount;",
+		Dialect:          spec.DialectPostgreSQL,
+		Schema:           "public",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("expected no drop_primary_key finding for non-PK constraint, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditSQLPostgreSQLValidateConstraintFlowsThroughPipeline(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "alter table users validate constraint chk_amount;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != spec.KindDDL.String() {
+		t.Fatalf("expected DDL kind, got %q", result.Statements[0].Kind)
+	}
+
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("validate_constraint should not trigger drop_primary_key finding, got %#v", finding)
+		}
+	}
+}

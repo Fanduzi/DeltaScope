@@ -778,6 +778,134 @@ func TestAuditCommandPostgreSQLMetadataRenameIndexRendersExistenceFinding(t *tes
 	}
 }
 
+func TestAuditCommandSupportsPostgreSQLValidateConstraint(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users validate constraint chk_amount;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code %d for validate constraint, got %d\nstdout=%q\nstderr=%q", exitOK, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	if statement["kind"] != "ddl" {
+		t.Fatalf("expected ddl kind, got %#v", statement["kind"])
+	}
+	unsupported, ok := decoded["unsupported"].([]any)
+	if ok && len(unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", unsupported)
+	}
+}
+
+func TestAuditCommandPostgreSQLDropNonPrimaryKeyConstraintDoesNotRenderPrimaryKeyFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users drop constraint chk_amount;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code %d for drop constraint non-PK, got %d\nstdout=%q\nstderr=%q", exitOK, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, _ := statement["findings"].([]any)
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("expected no drop_primary_key finding for non-PK constraint, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditCommandPostgreSQLAlterColumnSetDefaultRendersForbidFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "alter table users alter column status set default 'active';", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) < 1 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.alter.set_default.explicit_default_change.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected set_default semantic finding, got %#v", findings)
+	}
+}
+
 func TestAuditCommandPostgreSQLMetadataDropIndexRendersExistenceFinding(t *testing.T) {
 	previous := newMetadataClient
 	client := &fakeMetadataClient{

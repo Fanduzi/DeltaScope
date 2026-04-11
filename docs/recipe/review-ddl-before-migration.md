@@ -370,3 +370,36 @@ All output formats report audit context and rule summary information that helps 
 - **Quiet**: `[context]` line shows mode and dialect at the end of output.
 
 When reviewing migrations, check the skipped-rules count — a high number of skipped rules (especially for your target dialect) may indicate the audit is running under the wrong dialect or that certain rule families are not applicable. This helps you decide whether the current audit result is sufficient or whether additional manual review is needed.
+
+### PostgreSQL Phased Migration Follow-Up Actions (v0.21.0)
+
+v0.21.0 expands DeltaScope's ability to audit more of the standard PostgreSQL phased migration sequence. The following common follow-up statements are now supported through the shared audit pipeline:
+
+| Migration Phase | DDL Example | Status |
+|----------------|-------------|--------|
+| Set column default | `ALTER TABLE users ALTER COLUMN status SET DEFAULT 'active'` | Supported, auditable, shared alter rules apply |
+| Drop column default | `ALTER TABLE users ALTER COLUMN status DROP DEFAULT` | Supported, auditable, shared alter rules apply |
+| Enforce NOT NULL | `ALTER TABLE users ALTER COLUMN status SET NOT NULL` | Supported, auditable, shared alter rules apply |
+| Relax NOT NULL | `ALTER TABLE users ALTER COLUMN status DROP NOT NULL` | Supported, auditable, shared alter rules apply |
+| Validate constraint | `ALTER TABLE users VALIDATE CONSTRAINT chk_amount` | Supported, auditable; no dedicated rule, produces clean audit unless other findings apply |
+| Drop constraint | `ALTER TABLE orders DROP CONSTRAINT chk_amount` | Supported, auditable; primary-key drops map to `ddl.alter.drop_primary_key` rules when metadata is available |
+
+Example: audit a phased migration follow-up step:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users alter column status set default 'active';"
+```
+
+Example: audit a constraint lifecycle step:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users validate constraint chk_amount;"
+```
+
+Important notes:
+- `DROP CONSTRAINT` targeting a primary key (e.g., `DROP CONSTRAINT users_pkey`) triggers existing primary-key rules only in metadata-aware mode. In offline mode, it passes through as a normal alter action.
+- `VALIDATE CONSTRAINT` does not have a dedicated rule. It is supported and auditable but produces a clean audit result unless other findings apply to the same statement.

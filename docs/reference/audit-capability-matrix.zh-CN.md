@@ -207,6 +207,26 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL 覆盖范围扩展（v0.21.0）
+
+v0.21.0 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。这些形式之前返回能力边界错误；现在产生正常的审计结果。不引入新规则——已有的共享规则族在适用时自动生效。
+
+| PostgreSQL DDL 动作 | 标准化为 | 已支持 | 可审计 | 规则映射 | 依赖 Metadata | 说明 |
+|---------------------|---------|:------:|:------:|:--------:|:------------:|------|
+| `ALTER COLUMN ... SET DEFAULT` | `set_default` | ✓ | ✓ | ✓（共享 alter） | — | 标准 alter 动作 |
+| `ALTER COLUMN ... DROP DEFAULT` | `drop_default` | ✓ | ✓ | ✓（共享 alter） | — | 标准 alter 动作 |
+| `ALTER COLUMN ... SET NOT NULL` | `set_not_null` | ✓ | ✓ | ✓（共享 alter） | — | 标准 alter 动作 |
+| `ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | ✓ | ✓ | ✓（共享 alter） | — | 标准 alter 动作 |
+| `VALIDATE CONSTRAINT` | `validate_constraint` | ✓ | ✓ | — | — | 无专用规则；除非其他 finding 适用，否则产生干净审计 |
+| `DROP CONSTRAINT`（一般） | `drop_constraint` | ✓ | ✓ | — | — | 离线模式下为标准 alter 动作 |
+| `DROP CONSTRAINT`（主键） | `drop_constraint` | ✓ | ✓ | ✓（`ddl.alter.drop_primary_key`） | ✓ | 通过 metadata-aware 规则的主键映射 |
+
+### 接口一致性
+
+所有新标准化的 PostgreSQL DDL 动作已在 CLI、HTTP（`POST /v1/audit`）、MCP（`audit_sql`）和公共 Go API（`pkg/deltascope`）上确认一致。
+
+---
+
 ## DML
 
 ### WHERE 条件 / 安全防护

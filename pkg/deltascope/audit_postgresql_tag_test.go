@@ -525,6 +525,100 @@ func TestAuditPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLValidateConstraintWithoutPrimaryKeyFinding(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "alter table users validate constraint chk_amount;",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+	}
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("validate_constraint should not trigger drop_primary_key finding, got %#v", finding)
+		}
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", result.Unsupported)
+	}
+}
+
+func TestAuditPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyFinding(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "alter table users drop constraint chk_amount;",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+	}
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("expected no drop_primary_key finding for non-PK constraint, got %#v", finding)
+		}
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", result.Unsupported)
+	}
+}
+
+func TestAuditPostgreSQLAlterColumnSetDefaultRendersForbidFinding(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "alter table users alter column status set default 'active';",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.set_default.explicit_default_change.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected set_default semantic finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditPostgreSQLAlterColumnDropNotNullRendersForbidFinding(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "alter table users alter column status drop not null;",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.alter.drop_not_null.explicit_nullability_change.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected drop_not_null semantic finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
 func TestAuditPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "alter table users alter column status type bigint;",

@@ -194,6 +194,10 @@ deltascope audit --file ./migrations.sql --format json | jq '.global_findings[] 
 
 当使用 `--dialect postgresql` 且 PG-capable 构建版本遇到尚未支持的 PostgreSQL 功能面（如复杂的 DDL 解析）时，DeltaScope 返回类型化的 `PostgreSQLCapabilityBoundaryError`。在 CI 中表现为退出码 `2`。通过错误消息可以区分——能力边界错误会明确说明请求的功能面和当前构建的支持能力。
 
+### CI 中的 PostgreSQL DDL 覆盖范围（v0.21.0）
+
+从 v0.21.0 开始，常见的 PostgreSQL 迁移后续 DDL 语句——`SET DEFAULT`、`DROP DEFAULT`、`SET NOT NULL`、`DROP NOT NULL`、`VALIDATE CONSTRAINT` 和 `DROP CONSTRAINT`——通过共享审核管线进行标准化处理，不再返回能力边界错误。这些语句在 CI 中产生正常的审计结果，减少了标准分步迁移序列上的误报工作流中断。
+
 ## --fail-on 策略说明
 
 | 设置 | 退出码 1 的触发条件 | 适用场景 |

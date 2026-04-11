@@ -671,6 +671,95 @@ func TestAuditSQLToolPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T
 	}
 }
 
+func TestAuditSQLToolPostgreSQLValidateConstraintReturnsNormalResult(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users validate constraint chk_amount;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	if statement["kind"] != "ddl" {
+		t.Fatalf("expected ddl kind, got %#v", statement["kind"])
+	}
+	findings, _ := statement["findings"].([]any)
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.alter.drop_primary_key.forbid" {
+			t.Fatalf("validate_constraint should not trigger drop_primary_key finding, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditSQLToolPostgreSQLAlterColumnSetDefaultReturnsNormalResult(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "alter table users alter column status set default 'active';",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.alter.set_default.explicit_default_change.forbid" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected set_default semantic finding, got %#v", findings)
+	}
+}
+
 func TestAuditSQLToolPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
 	server := NewServer(Config{Version: "test-version"})
 	session, err := connectClientSession(context.Background(), server)

@@ -3202,6 +3202,23 @@ See [audit-capability-matrix.md](audit-capability-matrix.md) for the full capabi
 
 ---
 
+## PostgreSQL DDL Coverage (v0.21.0)
+
+v0.21.0 expands PostgreSQL DDL normalization for common migration follow-up statements. This is a coverage improvement that reuses existing shared rules and metadata-aware semantics — it does **not** introduce new rule configuration items.
+
+The following PostgreSQL `ALTER TABLE` forms are now normalized through the shared audit pipeline instead of returning capability-boundary errors:
+
+- `ALTER COLUMN ... SET DEFAULT` (action: `set_default`)
+- `ALTER COLUMN ... DROP DEFAULT` (action: `drop_default`)
+- `ALTER COLUMN ... SET NOT NULL` (action: `set_not_null`)
+- `ALTER COLUMN ... DROP NOT NULL` (action: `drop_not_null`)
+- `VALIDATE CONSTRAINT` (action: `validate_constraint`) — supported and auditable, no dedicated rule
+- `DROP CONSTRAINT` (action: `drop_constraint`) — primary-key mapping applies via `ddl.alter.drop_primary_key` when metadata is available
+
+No changes to `configs/deltascope.example.yaml` are required for this release.
+
+---
+
 ## Cross-References
 
 - Rule discovery commands: [rules.md](rules.md)

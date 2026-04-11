@@ -221,6 +221,26 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL Coverage Expansion (v0.21.0)
+
+v0.21.0 normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. These forms previously returned capability-boundary errors; they now produce normal audit results. No new rules are introduced — existing shared rule families apply where relevant.
+
+| PostgreSQL DDL Action | Normalized As | Supported | Auditable | Rule-Mapped | Metadata-Dependent | Notes |
+|-----------------------|---------------|:---------:|:---------:|:-----------:|:------------------:|-------|
+| `ALTER COLUMN ... SET DEFAULT` | `set_default` | ✓ | ✓ | ✓ (shared alter) | — | Standard alter action |
+| `ALTER COLUMN ... DROP DEFAULT` | `drop_default` | ✓ | ✓ | ✓ (shared alter) | — | Standard alter action |
+| `ALTER COLUMN ... SET NOT NULL` | `set_not_null` | ✓ | ✓ | ✓ (shared alter) | — | Standard alter action |
+| `ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | ✓ | ✓ | ✓ (shared alter) | — | Standard alter action |
+| `VALIDATE CONSTRAINT` | `validate_constraint` | ✓ | ✓ | — | — | No dedicated rule; produces clean audit unless other findings apply |
+| `DROP CONSTRAINT` (general) | `drop_constraint` | ✓ | ✓ | — | — | Standard alter action in offline mode |
+| `DROP CONSTRAINT` (primary key) | `drop_constraint` | ✓ | ✓ | ✓ (`ddl.alter.drop_primary_key`) | ✓ | Primary-key mapping via metadata-aware rules |
+
+### Surface Parity
+
+All newly normalized PostgreSQL DDL actions are confirmed across CLI, HTTP (`POST /v1/audit`), MCP (`audit_sql`), and the public Go API (`pkg/deltascope`).
+
+---
+
 ## DML
 
 ### WHERE / Safety Guards

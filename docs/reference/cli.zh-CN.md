@@ -287,6 +287,40 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 
 当 PG-capable 构建版本遇到尚未完全支持的 PostgreSQL 专属功能（如 DDL 解析）时，返回类型化的 `PostgreSQLCapabilityBoundaryError`。这区分了已知的能力限制和真正的解析失败。错误包含关于请求的功能面和当前构建支持能力的清晰信息。
 
+#### PostgreSQL DDL 覆盖范围
+
+从 `v0.21.0` 开始，DeltaScope 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。以下形式不再返回能力边界错误：
+
+| PostgreSQL DDL | 动作 | 说明 |
+|----------------|------|------|
+| `ALTER TABLE ... ALTER COLUMN ... SET DEFAULT` | `set_default` | 分步上线中的列默认值设置 |
+| `ALTER TABLE ... ALTER COLUMN ... DROP DEFAULT` | `drop_default` | 列默认值移除 |
+| `ALTER TABLE ... ALTER COLUMN ... SET NOT NULL` | `set_not_null` | 回填后的非空约束施加 |
+| `ALTER TABLE ... ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | 非空约束放宽 |
+| `ALTER TABLE ... VALIDATE CONSTRAINT` | `validate_constraint` | 推荐的 `NOT VALID` → `VALIDATE` 模式中的约束验证步骤 |
+| `ALTER TABLE ... DROP CONSTRAINT` | `drop_constraint` | 约束移除；主键删除在 metadata 可用时复用 `ddl.alter.drop_primary_key` 规则 |
+
+示例：
+
+```bash
+# 分步迁移：设置列默认值
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users alter column status set default 'active';"
+
+# 约束生命周期：验证约束
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users validate constraint chk_amount;"
+
+# 约束生命周期：删除约束（有 metadata 时应用主键映射）
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table orders drop constraint orders_pkey;"
+```
+
+`VALIDATE CONSTRAINT` 在没有对应规则时产生干净的审计结果——它是 supported 且 auditable 的，但不保证产生 finding。`DROP CONSTRAINT` 针对主键时，仅在 metadata 可用的情况下触发已有的主键规则；在离线模式下，它作为普通 alter 动作通过。
+
 ---
 
 ## deltascope rules

@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.21.0] - 2026-04-11
+
+### Added
+
+- PostgreSQL DDL coverage expanded for common migration follow-up statements. The following `ALTER TABLE` forms are now normalized into the shared audit pipeline instead of returning capability-boundary errors:
+  - `ALTER COLUMN ... SET DEFAULT` — column default assignment during phased rollout
+  - `ALTER COLUMN ... DROP DEFAULT` — column default removal
+  - `ALTER COLUMN ... SET NOT NULL` — nullability enforcement after backfill
+  - `ALTER COLUMN ... DROP NOT NULL` — nullability relaxation
+  - `VALIDATE CONSTRAINT` — constraint validation step in the recommended `NOT VALID` → `VALIDATE CONSTRAINT` pattern
+  - `DROP CONSTRAINT` — constraint removal, including primary-key mapping via metadata-aware rules
+
+- Shared rule and metadata semantics now apply to the newly normalized PostgreSQL DDL actions. `DROP CONSTRAINT` on a primary key reuses existing `ddl.alter.drop_primary_key` rules when metadata is available.
+
+- CLI, HTTP, MCP, and public API (`pkg/deltascope`) parity confirmed for all newly supported PostgreSQL DDL forms.
+
+### Changed
+
+- PostgreSQL migration review workflows that previously hit capability-boundary errors for `SET DEFAULT`, `DROP DEFAULT`, `SET NOT NULL`, `DROP NOT NULL`, `VALIDATE CONSTRAINT`, or `DROP CONSTRAINT` now return normal audit results.
+
 ## [v0.20.0] - 2026-04-10
 
 ### Added

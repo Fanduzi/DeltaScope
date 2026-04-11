@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.20.0` 为止，DeltaScope 还新增了 PostgreSQL 信任与误配防护：语法启发式通知检测 MySQL/TiDB 路径上的 PostgreSQL 专属语法，类型化的能力边界错误取代了启发式字符串匹配，迁移安全规则建议也更加可操作。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.21.0` 为止，DeltaScope 覆盖了更多常见 PostgreSQL 迁移序列——`SET DEFAULT`、`DROP DEFAULT`、`SET NOT NULL`、`DROP NOT NULL`、`VALIDATE CONSTRAINT`、`DROP CONSTRAINT` 已通过共享审核管线进行标准化处理，不再返回能力边界错误。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.20.0/install.sh | \
-  DELTASCOPE_VERSION=v0.20.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.21.0/install.sh | \
+  DELTASCOPE_VERSION=v0.21.0 sh
 ```
 
 如果你需要 PostgreSQL 离线审计：
@@ -126,6 +126,22 @@ deltascope audit \
 
 ```bash
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+```
+
+审核 PostgreSQL 分步迁移的后续语句：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users alter column status set default 'active';"
+```
+
+审核 PostgreSQL 约束生命周期语句：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "alter table users validate constraint chk_amount;"
 ```
 
 生成 SARIF 报告用于 GitHub Code Scanning：

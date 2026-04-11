@@ -3316,3 +3316,20 @@ v0.20.0 引入了 PostgreSQL 信任与误配防护作为增量引擎行为。这
 - **信任上下文和规则摘要可见性**：CLI 输出格式（json、markdown、quiet）包含审计上下文和规则计数。这些是输出层行为，不是规则参数。
 
 完整能力表请参见[能力矩阵](audit-capability-matrix.zh-CN.md)。
+
+---
+
+## PostgreSQL DDL 覆盖范围（v0.21.0）
+
+v0.21.0 扩展了 PostgreSQL DDL 标准化范围，覆盖常见迁移后续语句。这是覆盖能力改进，复用已有的共享规则和 metadata-aware 语义——**不引入新的规则配置项**。
+
+以下 PostgreSQL `ALTER TABLE` 形式现在通过共享审核管线进行标准化处理，不再返回能力边界错误：
+
+- `ALTER COLUMN ... SET DEFAULT`（动作：`set_default`）
+- `ALTER COLUMN ... DROP DEFAULT`（动作：`drop_default`）
+- `ALTER COLUMN ... SET NOT NULL`（动作：`set_not_null`）
+- `ALTER COLUMN ... DROP NOT NULL`（动作：`drop_not_null`）
+- `VALIDATE CONSTRAINT`（动作：`validate_constraint`）——supported 且 auditable，无专用规则
+- `DROP CONSTRAINT`（动作：`drop_constraint`）——主键映射在 metadata 可用时通过 `ddl.alter.drop_primary_key` 适用
+
+本版本无需修改 `configs/deltascope.example.yaml`。
