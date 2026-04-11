@@ -72,20 +72,25 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 	}
 
 	ddl := &spec.DDL{
-		Operation: spec.DDLOperationCreateTable,
-		Table:     tableFromRangeVar(stmt.GetRelation()),
-		Columns:   make([]spec.Column, 0, len(stmt.GetTableElts())),
+		Operation:   spec.DDLOperationCreateTable,
+		Table:       tableFromRangeVar(stmt.GetRelation()),
+		Columns:     make([]spec.Column, 0, len(stmt.GetTableElts())),
+		Indexes:     make([]spec.Index, 0),
+		Constraints: make([]spec.Constraint, 0),
 	}
 
 	for _, item := range stmt.GetTableElts() {
-		column := item.GetColumnDef()
-		if column == nil {
+		if column := item.GetColumnDef(); column != nil {
+			if column.GetIdentity() != "" {
+				return unsupportedStatement(statement, "generated_as_identity", "postgresql GENERATED ... AS IDENTITY is unsupported in v1")
+			}
+			ddl.Columns = append(ddl.Columns, columnFromDef(column))
+			applyColumnConstraints(ddl, column)
 			continue
 		}
-		if column.GetIdentity() != "" {
-			return unsupportedStatement(statement, "generated_as_identity", "postgresql GENERATED ... AS IDENTITY is unsupported in v1")
+		if constraint := item.GetConstraint(); constraint != nil {
+			applyTableConstraint(ddl, constraint)
 		}
-		ddl.Columns = append(ddl.Columns, columnFromDef(column))
 	}
 
 	statement.DDL = ddl
@@ -413,6 +418,34 @@ func supportedConstraintType(kind pg_query.ConstrType) (string, bool) {
 	}
 }
 
+func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) {
+	switch constraint.GetContype() {
+	case pg_query.ConstrType_CONSTR_UNIQUE:
+		ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: stringValuesFromNodes(constraint.GetKeys())})
+	case pg_query.ConstrType_CONSTR_FOREIGN:
+		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "foreign_key", Name: constraint.GetConname(), Columns: stringValuesFromNodes(constraint.GetFkAttrs())})
+	case pg_query.ConstrType_CONSTR_CHECK:
+		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
+	}
+}
+
+func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
+	for _, item := range column.GetConstraints() {
+		constraint := item.GetConstraint()
+		if constraint == nil {
+			continue
+		}
+		switch constraint.GetContype() {
+		case pg_query.ConstrType_CONSTR_UNIQUE:
+			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: []string{column.GetColname()}})
+		case pg_query.ConstrType_CONSTR_FOREIGN:
+			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "foreign_key", Name: constraint.GetConname(), Columns: []string{column.GetColname()}})
+		case pg_query.ConstrType_CONSTR_CHECK:
+			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
+		}
+	}
+}
+
 func columnFromDef(column *pg_query.ColumnDef) spec.Column {
 	result := spec.Column{
 		Name:       column.GetColname(),
@@ -444,6 +477,80 @@ func stringNodeValue(node *pg_query.Node) string {
 		return value.GetSval()
 	}
 	return ""
+}
+
+func stringValuesFromNodes(nodes []*pg_query.Node) []string {
+	values := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		if value := stringNodeValue(node); value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
+}
+
+func columnRefsFromExpr(node *pg_query.Node) []string {
+	seen := make(map[string]struct{})
+	columns := make([]string, 0)
+	collectColumnRefs(node, seen, &columns)
+	return columns
+}
+
+func collectColumnRefs(node *pg_query.Node, seen map[string]struct{}, columns *[]string) {
+	if node == nil {
+		return
+	}
+	if columnRef := node.GetColumnRef(); columnRef != nil {
+		if name := columnRefName(columnRef); name != "" {
+			if _, ok := seen[name]; !ok {
+				seen[name] = struct{}{}
+				*columns = append(*columns, name)
+			}
+		}
+		return
+	}
+	if expr := node.GetAExpr(); expr != nil {
+		collectColumnRefs(expr.GetLexpr(), seen, columns)
+		collectColumnRefs(expr.GetRexpr(), seen, columns)
+		return
+	}
+	if boolExpr := node.GetBoolExpr(); boolExpr != nil {
+		for _, arg := range boolExpr.GetArgs() {
+			collectColumnRefs(arg, seen, columns)
+		}
+		return
+	}
+	if nullTest := node.GetNullTest(); nullTest != nil {
+		collectColumnRefs(nullTest.GetArg(), seen, columns)
+		return
+	}
+	if typeCast := node.GetTypeCast(); typeCast != nil {
+		collectColumnRefs(typeCast.GetArg(), seen, columns)
+		return
+	}
+	if coalesce := node.GetCoalesceExpr(); coalesce != nil {
+		for _, arg := range coalesce.GetArgs() {
+			collectColumnRefs(arg, seen, columns)
+		}
+		return
+	}
+	if indirection := node.GetAIndirection(); indirection != nil {
+		collectColumnRefs(indirection.GetArg(), seen, columns)
+		return
+	}
+	if function := node.GetFuncCall(); function != nil {
+		for _, arg := range function.GetArgs() {
+			collectColumnRefs(arg, seen, columns)
+		}
+	}
+}
+
+func columnRefName(ref *pg_query.ColumnRef) string {
+	fields := ref.GetFields()
+	if len(fields) == 0 {
+		return ""
+	}
+	return stringNodeValue(fields[len(fields)-1])
 }
 
 func tableFromRangeVar(r *pg_query.RangeVar) *spec.Table {

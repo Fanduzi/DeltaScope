@@ -103,6 +103,65 @@ func TestSecondaryPrefixRuleFindsBadNames(t *testing.T) {
 	}
 }
 
+func TestPostgreSQLUniqueUsesSharedIndexRulePath(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement spec.Statement
+	}{
+		{
+			name: "named unique uses shared index columns rule",
+			statement: postgresStatementWithIndexes(spec.Index{
+				Name:    "uq_users_tenant_email",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"tenant_id", "email", "region_id"},
+			}),
+		},
+		{
+			name: "inline unique uses shared index columns rule",
+			statement: postgresStatementWithIndexes(spec.Index{
+				Name:    "",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"tenant_id", "email", "region_id"},
+			}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule, err := newIndexColumnsMaxCountRule(policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"limit": 2},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			registry := rule.NewRegistry()
+			if err := registry.RegisterStatement(statementRule); err != nil {
+				t.Fatalf("register rule: %v", err)
+			}
+
+			findings, err := registry.EvaluateStatement(tt.statement)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].RuleID != ruleIDIndexColumnsMaxCount {
+				t.Fatalf("expected rule id %q, got %q", ruleIDIndexColumnsMaxCount, findings[0].RuleID)
+			}
+			if got := findings[0].Metadata["kind"]; got != spec.IndexKindUnique {
+				t.Fatalf("expected unique index metadata, got %#v", got)
+			}
+			if got := findings[0].Metadata["actual"]; got != 3 {
+				t.Fatalf("expected actual count metadata 3, got %#v", got)
+			}
+		})
+	}
+}
+
 func TestFulltextPrefixRuleFindsBadNames(t *testing.T) {
 	statement := statementWithIndexes(spec.Index{Name: "search_body", Kind: spec.IndexKindFulltext, Columns: []string{"body"}})
 	statementRule, err := newIndexPrefixRequiredRule(ruleIDIndexFulltextPrefixRequire, spec.IndexKindFulltext, "full_", rule.LevelWarning, policy.RulePolicy{
@@ -346,4 +405,11 @@ func statementWithIndexes(indexes ...spec.Index) spec.Statement {
 			Indexes: indexes,
 		},
 	}
+}
+
+func postgresStatementWithIndexes(indexes ...spec.Index) spec.Statement {
+	statement := statementWithIndexes(indexes...)
+	statement.Dialect = spec.DialectPostgreSQL
+	statement.DDL.Operation = spec.DDLOperationCreateTable
+	return statement
 }
