@@ -143,7 +143,7 @@ deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql
 ```bash
 deltascope audit \
   --dialect postgresql \
-  --sql "create table orders (id bigint generated always as identity primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
 ```
 
 审核 PostgreSQL 分步迁移的后续语句：

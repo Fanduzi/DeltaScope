@@ -317,7 +317,7 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 # 建表覆盖：命名 + 内联约束
 deltascope audit \
   --dialect postgresql \
-  --sql "create table orders (id bigint generated always as identity primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
 
 # 分步迁移：设置列默认值
 deltascope audit \

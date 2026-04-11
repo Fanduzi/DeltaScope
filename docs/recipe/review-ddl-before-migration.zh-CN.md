@@ -402,7 +402,7 @@ CLI 的 `markdown`、`json` 和 `quiet` 输出都会报告审计上下文和规�
 ```bash
 deltascope audit \
   --dialect postgresql \
-  --sql "create table orders (id bigint generated always as identity primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
 ```
 
 示例：审计分步迁移的后续步骤：
