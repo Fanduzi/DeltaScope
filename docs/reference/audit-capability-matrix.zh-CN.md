@@ -207,9 +207,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
-## DDL：PostgreSQL 覆盖范围扩展（v0.21.0）
+## DDL：PostgreSQL 覆盖范围扩展（v0.21.0 / v0.23.0）
 
-v0.21.0 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。这些形式之前返回能力边界错误；现在产生正常的审计结果。不引入新规则——已有的共享规则族在适用时自动生效。
+`v0.21.0` 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。`v0.23.0` 进一步扩展了 PostgreSQL `CREATE TABLE` 常见约束形态的覆盖范围。这些功能面此前会落入能力边界错误或结构不完整；现在会产生正常审计结果。不引入新规则——已有的共享规则族在适用时自动生效。
 
 | PostgreSQL DDL 动作 | 标准化为 | 已支持 | 可审计 | 规则映射 | 依赖 Metadata | 说明 |
 |---------------------|---------|:------:|:------:|:--------:|:------------:|------|
@@ -220,10 +220,16 @@ v0.21.0 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标�
 | `VALIDATE CONSTRAINT` | `validate_constraint` | ✓ | ✓ | — | — | 无专用规则；除非其他 finding 适用，否则产生干净审计 |
 | `DROP CONSTRAINT`（一般） | `drop_constraint` | ✓ | ✓ | — | — | 离线模式下为标准 alter 动作 |
 | `DROP CONSTRAINT`（主键） | `drop_constraint` | ✓ | ✓ | ✓（`ddl.alter.drop_primary_key`） | ✓ | 通过 metadata-aware 规则的主键映射 |
+| 表级命名 `CHECK` | `create_table` 共享事实 | ✓ | ✓ | ✓（配置后可复用共享约束命名治理） | — | 覆盖扩展；不新增规则族 |
+| 列级内联 `CHECK` | `create_table` 共享事实 | ✓ | ✓ | — | — | 结构已支持；无专用规则族 |
+| 表级命名 `UNIQUE` | `create_table` 共享事实 | ✓ | ✓ | ✓（配置后可复用共享约束命名治理） | — | 命名约束事实可复用既有命名治理 |
+| 列级内联 `UNIQUE` | `create_table` 共享事实 | ✓ | ✓ | ✓（共享索引事实） | — | 现有共享索引规则可消费标准化索引事实 |
+| 表级命名 `FOREIGN KEY` | `create_table` 共享事实 | ✓ | ✓ | ✓（配置后可复用共享约束命名治理） | — | 仅当策略允许外键时，命名规则才有意义 |
+| 列级内联 `REFERENCES` | `create_table` 共享事实 | ✓ | ✓ | — | — | 仅作为 parser-owned 共享事实；不发明 metadata 语义 |
 
 ### 接口一致性
 
-所有新标准化的 PostgreSQL DDL 动作已在 CLI、HTTP（`POST /v1/audit`）、MCP（`audit_sql`）和公共 Go API（`pkg/deltascope`）上确认一致。
+所有新标准化的 PostgreSQL DDL 动作以及 `v0.23.0` 的建表覆盖形态，均已在 CLI、HTTP（`POST /v1/audit`）、MCP（`audit_sql`）和公共 Go API（`pkg/deltascope`）上确认一致。
 
 ## Confidence 入口（`v0.22.0`）
 

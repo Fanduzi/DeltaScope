@@ -78,7 +78,7 @@ jobs:
 
       - name: Install DeltaScope
         run: |
-          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
+          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.23.0/deltascope_0.23.0_linux_amd64.tar.gz \
             -o /tmp/deltascope.tar.gz
           tar -xzf /tmp/deltascope.tar.gz -C /tmp
           install /tmp/deltascope /usr/local/bin/deltascope
@@ -123,7 +123,7 @@ audit-sql:
   image: ubuntu:22.04
   before_script:
     - apt-get update -qq && apt-get install -y -qq curl tar
-    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
+    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.23.0/deltascope_0.23.0_linux_amd64.tar.gz \
         -o /tmp/deltascope.tar.gz
     - tar -xzf /tmp/deltascope.tar.gz -C /tmp
     - install /tmp/deltascope /usr/local/bin/deltascope
@@ -194,19 +194,27 @@ If the notice fires, either add `--dialect postgresql` to the audit command or v
 
 When using `--dialect postgresql` with a PG-capable DeltaScope binary on unsupported PostgreSQL surfaces (e.g., complex DDL that the parser cannot yet handle), DeltaScope returns a typed `PostgreSQLCapabilityBoundaryError`. In CI this appears as exit code `2`. Distinguish it from a real parse failure by checking the error message — capability-boundary errors clearly state what surface was requested and what the current build supports.
 
-### PostgreSQL DDL Coverage in CI (v0.21.0)
+### PostgreSQL DDL Coverage in CI (v0.21.0 / v0.23.0)
 
 Starting with v0.21.0, common PostgreSQL migration follow-up DDL statements — `SET DEFAULT`, `DROP DEFAULT`, `SET NOT NULL`, `DROP NOT NULL`, `VALIDATE CONSTRAINT`, and `DROP CONSTRAINT` — are normalized through the shared audit pipeline and no longer return capability-boundary errors. These statements produce normal audit results in CI, reducing false workflow breaks on standard phased migration sequences.
 
-### Maintainer Confidence Targets (`v0.22.0`)
+Starting with `v0.23.0`, richer PostgreSQL `CREATE TABLE` statements also stay on the normal audit path in CI when they use common shared-rule-compatible constraint shapes such as named `CHECK` / `UNIQUE` / `FOREIGN KEY`, inline `CHECK`, inline `UNIQUE`, and inline `REFERENCES`.
 
-`v0.22.0` is the **E2E & Release Confidence Pack**. For maintainers, the canonical confidence entrypoints are:
+Keep the messaging precise:
+
+- this is broader PostgreSQL `CREATE TABLE` coverage, not full PostgreSQL DDL support
+- this is shared-rule reuse, not a new rule pack
+- inline `REFERENCES` is parser-owned shared structure only, not a new metadata-aware foreign-key contract
+
+### Maintainer Confidence Targets (`v0.22.0` → `v0.23.0` release line)
+
+`v0.22.0` established the **E2E & Release Confidence Pack**. Those same canonical repository entrypoints remain the maintainer verification path for `v0.23.0`:
 
 - `make pg-unit-test-gates`
 - `make pg-e2e-gates`
 - `make pg-confidence-gates`
-- `make release-surface-gates VERSION=v0.22.0`
-- `make release-version-surface-gates VERSION=v0.22.0`
+- `make release-surface-gates VERSION=v0.23.0`
+- `make release-version-surface-gates VERSION=v0.23.0`
 
 ## --fail-on Strategy
 

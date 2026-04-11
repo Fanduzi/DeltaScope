@@ -409,9 +409,9 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 ---
 
-## PostgreSQL DDL Coverage (v0.21.0)
+## PostgreSQL DDL Coverage (v0.21.0 / v0.23.0)
 
-v0.21.0 expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. This is a coverage improvement — it does not add new rules. The newly normalized actions reuse existing shared rule families where applicable.
+`v0.21.0` expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. `v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for more common constraint shapes. Both are coverage improvements — they do not add new rule IDs. The newly normalized actions and create-table structures reuse existing shared rule families where applicable.
 
 ### Supported PostgreSQL DDL Actions
 
@@ -423,12 +423,20 @@ v0.21.0 expands PostgreSQL DDL normalization so that common migration follow-up 
 | `ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | Processed as a standard alter action through existing alter semantic rules. |
 | `VALIDATE CONSTRAINT` | `validate_constraint` | Supported and auditable. No dedicated rule exists; it produces a clean audit unless other findings apply. |
 | `DROP CONSTRAINT` | `drop_constraint` | Constraint removal. When the target is a primary key and metadata is available, existing `ddl.alter.drop_primary_key` rules apply. Otherwise, processed as a standard alter action. |
+| Table-level named `CHECK` | `create_table` shared facts | Supported and auditable. Existing constraint naming governance can apply when configured. |
+| Column-level inline `CHECK` | `create_table` shared facts | Supported and auditable. No dedicated new rule; produces findings only when existing shared semantics apply. |
+| Table-level named `UNIQUE` | `create_table` shared facts | Supported and auditable. Existing constraint naming governance can apply when configured. |
+| Column-level inline `UNIQUE` | `create_table` shared facts | Supported and auditable. Existing shared index rules can consume the normalized index facts. |
+| Table-level named `FOREIGN KEY` | `create_table` shared facts | Supported and auditable. Existing foreign-key naming governance applies only when policy allows foreign keys. |
+| Column-level inline `REFERENCES` | `create_table` shared facts | Supported and auditable. Exposed as parser-owned shared facts only; no invented metadata semantics or dedicated new rule. |
 
 ### Key Points
 
-- No new rule configuration items are needed. The value of this release is that existing shared rules and metadata-aware semantics now cover more PostgreSQL DDL actions.
+- No new rule configuration items are needed. The value of these releases is that existing shared rules and metadata-aware semantics now cover more PostgreSQL DDL actions and create-table shapes.
 - `DROP CONSTRAINT` on a primary key (`DROP CONSTRAINT users_pkey`) maps to existing primary-key rules only in metadata-aware mode. In offline mode it passes through as a normal alter action without a dedicated finding.
 - `VALIDATE CONSTRAINT` is supported and auditable but does not have a dedicated rule. It produces a clean audit result unless other findings apply to the same statement.
+- Inline `REFERENCES` should be read narrowly: DeltaScope now keeps the parser-owned shared relationship facts instead of failing the surface, but this does not imply new metadata-aware foreign-key semantics beyond already existing rule behavior.
+- The `v0.23.0` create-table expansion should not be described as full PostgreSQL `CREATE TABLE` support; it is targeted coverage for common, shared-rule-compatible structures.
 
 ---
 

@@ -525,6 +525,120 @@ func TestConstraintNamingRulesEvaluateExplicitNamesOnly(t *testing.T) {
 	}
 }
 
+func TestPostgreSQLConstraintNamingRulesReuseSharedSelectors(t *testing.T) {
+	tests := []struct {
+		name         string
+		build        func(t *testing.T) rule.StatementRule
+		statement    spec.Statement
+		wantCount    int
+		wantRuleID   string
+		wantSubject  string
+		wantMetadata string
+	}{
+		{
+			name: "named check uses shared constraint naming rule",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"prefix": "ck_"},
+				}, selectCheckConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement:    postgresStatementWithConstraints(nil, nil, spec.Constraint{Type: "check", Name: "amount_positive"}),
+			wantCount:    1,
+			wantRuleID:   ruleIDConstraintCheckNamePrefixRequire,
+			wantSubject:  "constraint.check",
+			wantMetadata: "ck_",
+		},
+		{
+			name: "named foreign key uses shared constraint naming rule",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingSuffixRule(ruleIDConstraintForeignKeyNameSuffixRequire, "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"suffix": "_fk"},
+				}, selectForeignKeyConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement:    postgresStatementWithConstraints(nil, nil, spec.Constraint{Type: "foreign_key", Name: "orders_user_ref"}),
+			wantCount:    1,
+			wantRuleID:   ruleIDConstraintForeignKeyNameSuffixRequire,
+			wantSubject:  "constraint.foreign_key",
+			wantMetadata: "_fk",
+		},
+		{
+			name: "named unique uses shared constraint naming rule",
+			build: func(t *testing.T) rule.StatementRule {
+				t.Helper()
+				statementRule, err := newNamingContainsRule(ruleIDConstraintUniqueKeyNameContainsRequire, "unique key constraint", rule.LevelWarning, policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"contains": []string{"account", "tenant"}},
+				}, selectUniqueConstraintNames)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				return statementRule
+			},
+			statement:    postgresStatementWithConstraints(nil, []spec.Index{{Name: "uniq_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}}}),
+			wantCount:    1,
+			wantRuleID:   ruleIDConstraintUniqueKeyNameContainsRequire,
+			wantSubject:  "constraint.unique_key",
+			wantMetadata: "account,tenant",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statementRule := tt.build(t)
+
+			findings, err := statementRule.Evaluate(tt.statement)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != tt.wantCount {
+				t.Fatalf("expected %d findings, got %d", tt.wantCount, len(findings))
+			}
+			if tt.wantCount == 0 {
+				return
+			}
+			if findings[0].RuleID != tt.wantRuleID {
+				t.Fatalf("expected rule id %q, got %q", tt.wantRuleID, findings[0].RuleID)
+			}
+			if got := findings[0].Metadata["subject"]; got != tt.wantSubject {
+				t.Fatalf("expected subject metadata %q, got %#v", tt.wantSubject, got)
+			}
+			switch tt.name {
+			case "named check uses shared constraint naming rule":
+				if got := findings[0].Metadata["prefix"]; got != tt.wantMetadata {
+					t.Fatalf("expected prefix metadata %q, got %#v", tt.wantMetadata, got)
+				}
+			case "named foreign key uses shared constraint naming rule":
+				if got := findings[0].Metadata["suffix"]; got != tt.wantMetadata {
+					t.Fatalf("expected suffix metadata %q, got %#v", tt.wantMetadata, got)
+				}
+			case "named unique uses shared constraint naming rule":
+				values, ok := findings[0].Metadata["contains"].([]string)
+				if !ok {
+					t.Fatalf("expected contains metadata slice, got %#v", findings[0].Metadata["contains"])
+				}
+				if strings.Join(values, ",") != tt.wantMetadata {
+					t.Fatalf("expected contains metadata %q, got %v", tt.wantMetadata, values)
+				}
+			}
+		})
+	}
+}
+
 func TestRegisterSkipsForeignKeyConstraintNamingWhenForeignKeysAreForbidden(t *testing.T) {
 	registry := rule.NewRegistry()
 	cfg := policy.Policy{
@@ -664,4 +778,11 @@ func statementWithConstraints(primaryKey *spec.Index, indexes []spec.Index, cons
 			Constraints: constraints,
 		},
 	}
+}
+
+func postgresStatementWithConstraints(primaryKey *spec.Index, indexes []spec.Index, constraints ...spec.Constraint) spec.Statement {
+	statement := statementWithConstraints(primaryKey, indexes, constraints...)
+	statement.Dialect = spec.DialectPostgreSQL
+	statement.DDL.Operation = spec.DDLOperationCreateTable
+	return statement
 }

@@ -641,3 +641,35 @@ func TestAuditPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
 		t.Fatalf("expected pg set_data_type rewrite warning, got %#v", result.Statements[0].Findings)
 	}
 }
+
+func TestAuditPostgreSQLCreateTableConstraintsReturnNormalResult(t *testing.T) {
+	cases := map[string]string{
+		"named table-level CHECK":       "create table orders (id bigint primary key, amount numeric, constraint chk_orders_amount check (amount > 0));",
+		"column-level inline CHECK":     "create table orders (id bigint primary key, amount numeric check (amount > 0));",
+		"named table-level UNIQUE":      "create table users (id bigint primary key, email text, constraint uq_users_email unique (email));",
+		"column-level inline UNIQUE":    "create table users (id bigint primary key, email text unique);",
+		"named table-level FOREIGN KEY": "create table orders (id bigint primary key, user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));",
+		"column-level inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected no unsupported entries, got %#v", result.Unsupported)
+			}
+		})
+	}
+}

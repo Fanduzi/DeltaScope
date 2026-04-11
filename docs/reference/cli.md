@@ -340,9 +340,25 @@ Starting with `v0.21.0`, DeltaScope normalizes common PostgreSQL migration follo
 | `ALTER TABLE ... VALIDATE CONSTRAINT` | `validate_constraint` | Constraint validation in the recommended `NOT VALID` → `VALIDATE` pattern |
 | `ALTER TABLE ... DROP CONSTRAINT` | `drop_constraint` | Constraint removal; primary-key drops reuse `ddl.alter.drop_primary_key` rules when metadata is available |
 
+Starting with `v0.23.0`, DeltaScope also audits more common PostgreSQL `CREATE TABLE` constraint shapes through the same shared pipeline:
+
+| PostgreSQL `CREATE TABLE` shape | Supported | Auditable | Rule-mapped | Metadata-dependent | Notes |
+|---------------------------------|:---------:|:---------:|:-----------:|:------------------:|-------|
+| Table-level named `CHECK` | ✓ | ✓ | ✓ (shared constraint naming when configured) | — | Reuses existing constraint naming governance where applicable |
+| Column-level inline `CHECK` | ✓ | ✓ | — | — | Supported structure; no dedicated new rule family |
+| Table-level named `UNIQUE` | ✓ | ✓ | ✓ (shared constraint naming when configured) | — | Named constraint facts can flow into existing naming governance |
+| Column-level inline `UNIQUE` | ✓ | ✓ | ✓ (shared index facts) | — | Contributes index facts to existing shared index rules |
+| Table-level named `FOREIGN KEY` | ✓ | ✓ | ✓ (shared constraint naming when configured) | — | Foreign-key naming rules only matter when policy allows foreign keys |
+| Column-level inline `REFERENCES` | ✓ | ✓ | — | — | Exposed as parser-owned shared facts only; no invented metadata semantics |
+
 Examples:
 
 ```bash
+# Create-table coverage: named + inline constraints
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+
 # Phased migration: set a column default
 deltascope audit \
   --dialect postgresql \
@@ -359,7 +375,7 @@ deltascope audit \
   --sql "alter table orders drop constraint orders_pkey;"
 ```
 
-`VALIDATE CONSTRAINT` without a corresponding rule produces a clean audit — it is supported and auditable, but does not guarantee a finding. `DROP CONSTRAINT` on a primary key triggers existing primary-key rules only when metadata is available; in offline mode it passes through as a normal alter action.
+`VALIDATE CONSTRAINT` without a corresponding rule produces a clean audit — it is supported and auditable, but does not guarantee a finding. `DROP CONSTRAINT` on a primary key triggers existing primary-key rules only when metadata is available; in offline mode it passes through as a normal alter action. The `v0.23.0` create-table expansion does not claim full PostgreSQL DDL support and does not add new CLI flags or contracts.
 
 ## Repository Confidence Targets
 
@@ -371,7 +387,7 @@ deltascope audit \
 | `make release-surface-gates VERSION=vX.Y.Z` | Verify the package/release contract for the tagged release |
 | `make release-version-surface-gates VERSION=vX.Y.Z` | Verify versioned docs/install surfaces and bilingual release notes |
 
-`v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints.
+`v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints. `v0.23.0` then extends the documented PostgreSQL `CREATE TABLE` coverage while keeping these release-surface gates as the canonical verification path.
 
 #### Quiet Mode
 

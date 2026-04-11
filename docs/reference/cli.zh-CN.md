@@ -300,9 +300,25 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 | `ALTER TABLE ... VALIDATE CONSTRAINT` | `validate_constraint` | 推荐的 `NOT VALID` → `VALIDATE` 模式中的约束验证步骤 |
 | `ALTER TABLE ... DROP CONSTRAINT` | `drop_constraint` | 约束移除；主键删除在 metadata 可用时复用 `ddl.alter.drop_primary_key` 规则 |
 
+从 `v0.23.0` 开始，DeltaScope 还可以通过同一条共享审核管线审计更多常见 PostgreSQL `CREATE TABLE` 约束形态：
+
+| PostgreSQL `CREATE TABLE` 形态 | 已支持 | 可审计 | 规则映射 | 依赖 Metadata | 说明 |
+|-------------------------------|:------:|:------:|:--------:|:------------:|------|
+| 表级命名 `CHECK` | ✓ | ✓ | ✓（配置后可复用共享约束命名治理） | — | 在适用时复用现有约束命名治理 |
+| 列级内联 `CHECK` | ✓ | ✓ | — | — | 结构已支持；不新增专用规则族 |
+| 表级命名 `UNIQUE` | ✓ | ✓ | ✓（配置后可复用共享约束命名治理） | — | 命名约束事实可进入既有命名治理 |
+| 列级内联 `UNIQUE` | ✓ | ✓ | ✓（共享索引事实） | — | 现有共享索引规则可以消费这些索引事实 |
+| 表级命名 `FOREIGN KEY` | ✓ | ✓ | ✓（配置后可复用共享约束命名治理） | — | 外键命名规则仅在策略允许外键时才有意义 |
+| 列级内联 `REFERENCES` | ✓ | ✓ | — | — | 仅作为 parser-owned 的共享事实暴露；不凭空引入 metadata 语义 |
+
 示例：
 
 ```bash
+# 建表覆盖：命名 + 内联约束
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+
 # 分步迁移：设置列默认值
 deltascope audit \
   --dialect postgresql \
@@ -319,7 +335,7 @@ deltascope audit \
   --sql "alter table orders drop constraint orders_pkey;"
 ```
 
-`VALIDATE CONSTRAINT` 在没有对应规则时产生干净的审计结果——它是 supported 且 auditable 的，但不保证产生 finding。`DROP CONSTRAINT` 针对主键时，仅在 metadata 可用的情况下触发已有的主键规则；在离线模式下，它作为普通 alter 动作通过。
+`VALIDATE CONSTRAINT` 在没有对应规则时产生干净的审计结果——它是 supported 且 auditable 的，但不保证产生 finding。`DROP CONSTRAINT` 针对主键时，仅在 metadata 可用的情况下触发已有的主键规则；在离线模式下，它作为普通 alter 动作通过。`v0.23.0` 的建表覆盖扩展不代表完整 PostgreSQL DDL 支持，也没有新增 CLI flag 或接口契约。
 
 ## 仓库级 Confidence Targets
 
@@ -331,7 +347,7 @@ deltascope audit \
 | `make release-surface-gates VERSION=vX.Y.Z` | 校验该版本的 package/release 合同 |
 | `make release-version-surface-gates VERSION=vX.Y.Z` | 校验带版本的文档/安装面和双语 release notes |
 
-`v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。
+`v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。 
 
 ---
 

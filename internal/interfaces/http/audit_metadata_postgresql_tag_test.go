@@ -742,3 +742,40 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 		t.Fatalf("expected drop-index existence finding, got %#v", response.Statements[0].Findings)
 	}
 }
+
+func TestExecuteAuditRequestPostgreSQLCreateTableConstraintsReturnNormalResult(t *testing.T) {
+	cases := map[string]string{
+		"named table-level CHECK":       "create table orders (id bigint primary key, amount numeric, constraint chk_orders_amount check (amount > 0));",
+		"column-level inline CHECK":     "create table orders (id bigint primary key, amount numeric check (amount > 0));",
+		"named table-level UNIQUE":      "create table users (id bigint primary key, email text, constraint uq_users_email unique (email));",
+		"column-level inline UNIQUE":    "create table users (id bigint primary key, email text unique);",
+		"named table-level FOREIGN KEY": "create table orders (id bigint primary key, user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));",
+		"column-level inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			})
+			if err != nil {
+				t.Fatalf("expected postgresql request to succeed, got %v", err)
+			}
+			if response.Context == nil || response.Context.Mode != "offline" {
+				t.Fatalf("expected offline context, got %#v", response.Context)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected one statement result, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+			if len(response.Result.Unsupported) != 0 {
+				t.Fatalf("expected no unsupported entries, got %#v", response.Result.Unsupported)
+			}
+		})
+	}
+}

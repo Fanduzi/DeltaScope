@@ -974,3 +974,56 @@ func TestAuditCommandPostgreSQLMetadataDropIndexRendersExistenceFinding(t *testi
 		t.Fatalf("expected drop_index existence finding, got %#v", findings)
 	}
 }
+
+func TestAuditCommandPostgreSQLCreateTableConstraintsReturnNormalResult(t *testing.T) {
+	cases := map[string]string{
+		"named table-level CHECK":       "create table orders (id bigint primary key, amount numeric, constraint chk_orders_amount check (amount > 0));",
+		"column-level inline CHECK":     "create table orders (id bigint primary key, amount numeric check (amount > 0));",
+		"named table-level UNIQUE":      "create table users (id bigint primary key, email text, constraint uq_users_email unique (email));",
+		"column-level inline UNIQUE":    "create table users (id bigint primary key, email text unique);",
+		"named table-level FOREIGN KEY": "create table orders (id bigint primary key, user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));",
+		"column-level inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+
+			if code != exitOK && code != exitAudit {
+				t.Fatalf("expected normal audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			if statement["kind"] != "ddl" {
+				t.Fatalf("expected ddl kind, got %#v", statement["kind"])
+			}
+			unsupported, ok := decoded["unsupported"].([]any)
+			if ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported entries, got %#v", unsupported)
+			}
+		})
+	}
+}

@@ -954,3 +954,59 @@ func TestAuditSQLToolPostgreSQLDropViewMapsToForbidRule(t *testing.T) {
 	}
 }
 
+func TestAuditSQLToolPostgreSQLCreateTableConstraintsReturnNormalResult(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	cases := map[string]string{
+		"named table-level CHECK":       "create table orders (id bigint primary key, amount numeric, constraint chk_orders_amount check (amount > 0));",
+		"column-level inline CHECK":     "create table orders (id bigint primary key, amount numeric check (amount > 0));",
+		"named table-level UNIQUE":      "create table users (id bigint primary key, email text, constraint uq_users_email unique (email));",
+		"column-level inline UNIQUE":    "create table users (id bigint primary key, email text unique);",
+		"named table-level FOREIGN KEY": "create table orders (id bigint primary key, user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));",
+		"column-level inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name: "audit_sql",
+				Arguments: map[string]any{
+					"sql":     sql,
+					"dialect": "postgresql",
+				},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+			body := result.StructuredContent.(map[string]any)
+			contextValue, ok := body["context"].(map[string]any)
+			if !ok || contextValue["mode"] != "offline" {
+				t.Fatalf("expected offline context, got %#v", body["context"])
+			}
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			if statement["kind"] != "ddl" {
+				t.Fatalf("expected ddl kind, got %#v", statement["kind"])
+			}
+			unsupported, ok := body["unsupported"].([]any)
+			if ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported entries, got %#v", unsupported)
+			}
+		})
+	}
+}
+

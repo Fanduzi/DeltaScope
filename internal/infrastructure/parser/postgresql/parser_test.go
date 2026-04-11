@@ -904,3 +904,172 @@ func TestExtractDropCheckConstraint(t *testing.T) {
 		t.Fatalf("expected table name users, got %#v", statement.DDL.Table)
 	}
 }
+
+func TestExtractCreateTableConstraintNormalization(t *testing.T) {
+	tests := []struct {
+		name           string
+		sql            string
+		tableName      string
+		wantColumns    int
+		wantConstraint *spec.Constraint
+		wantIndex      *spec.Index
+	}{
+		{
+			name: "named_table_check",
+			sql: `create table orders (
+				id bigint primary key,
+				amount bigint,
+				constraint chk_orders_amount check (amount > 0)
+			);`,
+			tableName:   "orders",
+			wantColumns: 2,
+			wantConstraint: &spec.Constraint{
+				Type:    "check",
+				Name:    "chk_orders_amount",
+				Columns: []string{"amount"},
+			},
+		},
+		{
+			name: "inline_column_check",
+			sql: `create table users (
+				age int check (age >= 0)
+			);`,
+			tableName:   "users",
+			wantColumns: 1,
+			wantConstraint: &spec.Constraint{
+				Type:    "check",
+				Columns: []string{"age"},
+			},
+		},
+		{
+			name: "named_table_unique",
+			sql: `create table users (
+				id bigint,
+				email text,
+				constraint uq_users_email unique (email)
+			);`,
+			tableName:   "users",
+			wantColumns: 2,
+			wantIndex: &spec.Index{
+				Name:    "uq_users_email",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+		},
+		{
+			name: "inline_column_unique",
+			sql: `create table users (
+				email text unique
+			);`,
+			tableName:   "users",
+			wantColumns: 1,
+			wantIndex: &spec.Index{
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+		},
+		{
+			name: "named_table_foreign_key",
+			sql: `create table orders (
+				user_id bigint,
+				constraint fk_orders_user foreign key (user_id) references users(id)
+			);`,
+			tableName:   "orders",
+			wantColumns: 1,
+			wantConstraint: &spec.Constraint{
+				Type:    "foreign_key",
+				Name:    "fk_orders_user",
+				Columns: []string{"user_id"},
+			},
+		},
+		{
+			name: "inline_column_references",
+			sql: `create table orders (
+				user_id bigint references users(id)
+			);`,
+			tableName:   "orders",
+			wantColumns: 1,
+			wantConstraint: &spec.Constraint{
+				Type:    "foreign_key",
+				Columns: []string{"user_id"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := extractPostgreSQLStatement(t, tt.sql)
+
+			if statement.Kind != spec.KindDDL {
+				t.Fatalf("expected kind %q, got %q", spec.KindDDL, statement.Kind)
+			}
+			if statement.Unsupported != nil {
+				t.Fatalf("expected supported create table, got unsupported %#v", statement.Unsupported)
+			}
+			if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateTable {
+				t.Fatalf("expected create_table ddl payload, got %#v", statement.DDL)
+			}
+			if statement.DDL.Table == nil || statement.DDL.Table.Name != tt.tableName {
+				t.Fatalf("expected table name %s, got %#v", tt.tableName, statement.DDL.Table)
+			}
+			if len(statement.DDL.Columns) != tt.wantColumns {
+				t.Fatalf("expected %d columns, got %#v", tt.wantColumns, statement.DDL.Columns)
+			}
+
+			if tt.wantConstraint != nil {
+				if len(statement.DDL.Constraints) != 1 {
+					t.Fatalf("expected 1 constraint, got %#v", statement.DDL.Constraints)
+				}
+				constraint := statement.DDL.Constraints[0]
+				if constraint.Type != tt.wantConstraint.Type || constraint.Name != tt.wantConstraint.Name {
+					t.Fatalf("expected constraint %+v, got %+v", *tt.wantConstraint, constraint)
+				}
+				if len(constraint.Columns) != len(tt.wantConstraint.Columns) {
+					t.Fatalf("expected constraint columns %#v, got %#v", tt.wantConstraint.Columns, constraint.Columns)
+				}
+				for i, wantColumn := range tt.wantConstraint.Columns {
+					if constraint.Columns[i] != wantColumn {
+						t.Fatalf("expected constraint columns %#v, got %#v", tt.wantConstraint.Columns, constraint.Columns)
+					}
+				}
+			}
+
+			if tt.wantIndex != nil {
+				if len(statement.DDL.Indexes) != 1 {
+					t.Fatalf("expected 1 index, got %#v", statement.DDL.Indexes)
+				}
+				index := statement.DDL.Indexes[0]
+				if index.Name != tt.wantIndex.Name || index.Kind != tt.wantIndex.Kind {
+					t.Fatalf("expected index %+v, got %+v", *tt.wantIndex, index)
+				}
+				if len(index.Columns) != len(tt.wantIndex.Columns) {
+					t.Fatalf("expected index columns %#v, got %#v", tt.wantIndex.Columns, index.Columns)
+				}
+				for i, wantColumn := range tt.wantIndex.Columns {
+					if index.Columns[i] != wantColumn {
+						t.Fatalf("expected index columns %#v, got %#v", tt.wantIndex.Columns, index.Columns)
+					}
+				}
+			}
+		})
+	}
+}
+
+func extractPostgreSQLStatement(t *testing.T, sql string) spec.Statement {
+	t.Helper()
+
+	parser := New()
+	result, err := parser.Parse(sql)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	return statement
+}

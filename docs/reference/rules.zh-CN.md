@@ -397,9 +397,9 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ---
 
-## PostgreSQL DDL 覆盖范围（v0.21.0）
+## PostgreSQL DDL 覆盖范围（v0.21.0 / v0.23.0）
 
-v0.21.0 扩展了 PostgreSQL DDL 标准化范围，使常见迁移后续语句通过共享审核管线处理，不再返回能力边界错误。这是覆盖能力改进，不新增规则。新标准化的动作在适用时复用已有的共享规则族。
+`v0.21.0` 扩展了 PostgreSQL DDL 标准化范围，使常见迁移后续语句通过共享审核管线处理，不再返回能力边界错误。`v0.23.0` 则扩展了更多常见 PostgreSQL `CREATE TABLE` 约束形态的覆盖范围。二者都是覆盖能力改进，不新增规则 ID；新标准化动作和建表结构在适用时继续复用已有的共享规则族。
 
 ### 已支持的 PostgreSQL DDL 动作
 
@@ -411,12 +411,20 @@ v0.21.0 扩展了 PostgreSQL DDL 标准化范围，使常见迁移后续语句�
 | `ALTER COLUMN ... DROP NOT NULL` | `drop_not_null` | 作为标准 alter 动作通过已有的 alter 语义规则处理 |
 | `VALIDATE CONSTRAINT` | `validate_constraint` | supported 且 auditable。无专用规则；除非其他 finding 适用，否则产生干净的审计结果 |
 | `DROP CONSTRAINT` | `drop_constraint` | 约束移除。当目标是主键且 metadata 可用时，已有的 `ddl.alter.drop_primary_key` 规则适用。否则作为标准 alter 动作处理 |
+| 表级命名 `CHECK` | `create_table` 共享事实 | supported 且 auditable。配置后可复用既有约束命名治理 |
+| 列级内联 `CHECK` | `create_table` 共享事实 | supported 且 auditable。不新增专用规则；仅在现有共享语义适用时产生 finding |
+| 表级命名 `UNIQUE` | `create_table` 共享事实 | supported 且 auditable。配置后可复用既有约束命名治理 |
+| 列级内联 `UNIQUE` | `create_table` 共享事实 | supported 且 auditable。现有共享索引规则可以消费标准化后的索引事实 |
+| 表级命名 `FOREIGN KEY` | `create_table` 共享事实 | supported 且 auditable。仅在策略允许外键时，现有外键命名治理才有意义 |
+| 列级内联 `REFERENCES` | `create_table` 共享事实 | supported 且 auditable。仅暴露 parser-owned 共享事实；不发明新的 metadata 语义，也不新增专用规则 |
 
 ### 关键说明
 
-- 不需要新的规则配置项。本版本的价值在于已有的共享规则和 metadata-aware 语义现在可以覆盖更多 PostgreSQL DDL 动作。
+- 不需要新的规则配置项。这些版本的价值在于已有的共享规则和 metadata-aware 语义现在可以覆盖更多 PostgreSQL DDL 动作与建表形态。
 - `DROP CONSTRAINT` 针对主键（如 `DROP CONSTRAINT users_pkey`）仅在 metadata-aware 模式下映射到已有的主键规则。在离线模式下，它作为普通 alter 动作通过，不产生专用 finding。
 - `VALIDATE CONSTRAINT` 是 supported 且 auditable 的，但没有专用规则。除非同一语句上适用其他 finding，否则产生干净的审计结果。
+- 对内联 `REFERENCES` 的描述应保持收敛：DeltaScope 现在保留 parser-owned 的共享关系事实而不是直接落入能力边界错误，但这并不代表新增了 metadata-aware 外键语义。
+- `v0.23.0` 的建表覆盖扩展不应被表述为“完整 PostgreSQL CREATE TABLE 支持”；它只是面向常见、可复用共享规则的结构化覆盖扩展。
 
 ---
 

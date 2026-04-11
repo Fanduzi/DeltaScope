@@ -3202,9 +3202,9 @@ See [audit-capability-matrix.md](audit-capability-matrix.md) for the full capabi
 
 ---
 
-## PostgreSQL DDL Coverage (v0.21.0)
+## PostgreSQL DDL Coverage (v0.21.0 / v0.23.0)
 
-v0.21.0 expands PostgreSQL DDL normalization for common migration follow-up statements. This is a coverage improvement that reuses existing shared rules and metadata-aware semantics — it does **not** introduce new rule configuration items.
+`v0.21.0` expands PostgreSQL DDL normalization for common migration follow-up statements. `v0.23.0` expands common PostgreSQL `CREATE TABLE` constraint coverage. These are coverage improvements that reuse existing shared rules and metadata-aware semantics — they do **not** introduce new rule configuration items.
 
 The following PostgreSQL `ALTER TABLE` forms are now normalized through the shared audit pipeline instead of returning capability-boundary errors:
 
@@ -3215,7 +3215,22 @@ The following PostgreSQL `ALTER TABLE` forms are now normalized through the shar
 - `VALIDATE CONSTRAINT` (action: `validate_constraint`) — supported and auditable, no dedicated rule
 - `DROP CONSTRAINT` (action: `drop_constraint`) — primary-key mapping applies via `ddl.alter.drop_primary_key` when metadata is available
 
-No changes to `configs/deltascope.example.yaml` are required for this release.
+The following PostgreSQL `CREATE TABLE` shapes are additionally supported in `v0.23.0` without adding new config keys:
+
+- table-level named `CHECK`
+- column-level inline `CHECK`
+- table-level named `UNIQUE`
+- column-level inline `UNIQUE`
+- table-level named `FOREIGN KEY`
+- column-level inline `REFERENCES`
+
+Configuration implications:
+
+- Existing structured naming governance for `ddl.constraint.check.*`, `ddl.constraint.unique_key.*`, and `ddl.constraint.foreign_key.*` is reused when the normalized PostgreSQL create-table facts match those rule families.
+- Existing shared index rules can consume index facts emitted by inline `UNIQUE`.
+- Inline `REFERENCES` is parser-owned shared structure only. It does not add a new policy block or invent metadata-only behavior.
+
+No changes to `configs/deltascope.example.yaml` are required for these releases.
 
 ---
 

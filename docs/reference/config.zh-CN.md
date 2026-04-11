@@ -3319,9 +3319,9 @@ v0.20.0 引入了 PostgreSQL 信任与误配防护作为增量引擎行为。这
 
 ---
 
-## PostgreSQL DDL 覆盖范围（v0.21.0）
+## PostgreSQL DDL 覆盖范围（v0.21.0 / v0.23.0）
 
-v0.21.0 扩展了 PostgreSQL DDL 标准化范围，覆盖常见迁移后续语句。这是覆盖能力改进，复用已有的共享规则和 metadata-aware 语义——**不引入新的规则配置项**。
+`v0.21.0` 扩展了 PostgreSQL DDL 标准化范围，覆盖常见迁移后续语句。`v0.23.0` 进一步扩展了常见 PostgreSQL `CREATE TABLE` 约束形态的覆盖范围。这些都是覆盖能力改进，复用已有的共享规则和 metadata-aware 语义——**不引入新的规则配置项**。
 
 以下 PostgreSQL `ALTER TABLE` 形式现在通过共享审核管线进行标准化处理，不再返回能力边界错误：
 
@@ -3332,4 +3332,19 @@ v0.21.0 扩展了 PostgreSQL DDL 标准化范围，覆盖常见迁移后续语�
 - `VALIDATE CONSTRAINT`（动作：`validate_constraint`）——supported 且 auditable，无专用规则
 - `DROP CONSTRAINT`（动作：`drop_constraint`）——主键映射在 metadata 可用时通过 `ddl.alter.drop_primary_key` 适用
 
-本版本无需修改 `configs/deltascope.example.yaml`。
+`v0.23.0` 新增支持的 PostgreSQL `CREATE TABLE` 形态，但不新增配置键：
+
+- 表级命名 `CHECK`
+- 列级内联 `CHECK`
+- 表级命名 `UNIQUE`
+- 列级内联 `UNIQUE`
+- 表级命名 `FOREIGN KEY`
+- 列级内联 `REFERENCES`
+
+配置层面的含义：
+
+- 当标准化后的 PostgreSQL 建表事实与现有规则族匹配时，`ddl.constraint.check.*`、`ddl.constraint.unique_key.*`、`ddl.constraint.foreign_key.*` 等既有结构化命名治理会被复用。
+- 现有共享索引规则可以消费内联 `UNIQUE` 产出的索引事实。
+- 内联 `REFERENCES` 仅作为 parser-owned 的共享结构存在，不新增 policy block，也不凭空发明 metadata-only 行为。
+
+这些版本都无需修改 `configs/deltascope.example.yaml`。
