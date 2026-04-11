@@ -32,16 +32,26 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.21.0/install.sh | \
-  DELTASCOPE_VERSION=v0.21.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.22.0/install.sh | \
+  DELTASCOPE_VERSION=v0.22.0 sh
 ```
+
+### Confidence Pack（`v0.22.0`）
+
+`v0.22.0` 聚焦于既有 PostgreSQL 产品面的 confidence 闭环，而不是新增 PostgreSQL SQL 语义。
+
+- `make pg-unit-test-gates` —— 运行无需 Docker 的 PostgreSQL tag 单元测试覆盖
+- `make pg-e2e-gates` —— 运行基于 Docker 的 PostgreSQL CLI、HTTP、MCP 端到端套件
+- `make pg-confidence-gates` —— 规范化的 PostgreSQL confidence 总入口
+- `make release-surface-gates VERSION=v0.22.0` —— 校验 package/release 合同
+- `make release-version-surface-gates VERSION=v0.22.0` —— 校验带版本的文档/安装面与双语 release notes
 
 如果你需要 PostgreSQL 离线审计：
 
 - 在受支持的 macOS 和 Linux 平台上直接安装正常的 DeltaScope 主 archive 即可，不再需要单独的 PG-only 安装入口。
 - `deltascope-pg_<version>_linux_amd64.tar.gz` 仅继续保留为旧 CLI-only 流程迁移时的兼容下载。
 
-核心发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。installer 默认安装 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
+核心发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ### Release Contract
 
@@ -290,9 +300,12 @@ deltascope audit \
 ## 开发工作流
 
 ```bash
-make build      # 构建所有二进制到 bin/
-make test       # 单元测试（无 Docker）
-make test-e2e-cli  # 端到端测试（需要 Docker）
+make build              # 构建所有二进制到 bin/
+make test               # 单元测试（无 Docker）
+make test-e2e-cli       # 端到端测试（需要 Docker）
+make pg-unit-test-gates # PostgreSQL tag 单元测试 gate
+make pg-e2e-gates       # PostgreSQL CLI / HTTP / MCP 端到端 gate
+make pg-confidence-gates # PostgreSQL confidence 总入口
 ```
 
 详情见 [Dev docs](docs/dev/README.md)。

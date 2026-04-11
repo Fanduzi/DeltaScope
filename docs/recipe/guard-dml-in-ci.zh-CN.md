@@ -78,7 +78,7 @@ jobs:
 
       - name: Install DeltaScope
         run: |
-          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz \
+          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
             -o /tmp/deltascope.tar.gz
           tar -xzf /tmp/deltascope.tar.gz -C /tmp
           install /tmp/deltascope /usr/local/bin/deltascope
@@ -123,7 +123,7 @@ audit-sql:
   image: ubuntu:22.04
   before_script:
     - apt-get update -qq && apt-get install -y -qq curl tar
-    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz
+    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
         -o /tmp/deltascope.tar.gz
     - tar -xzf /tmp/deltascope.tar.gz -C /tmp
     - install /tmp/deltascope /usr/local/bin/deltascope
@@ -197,6 +197,16 @@ deltascope audit --file ./migrations.sql --format json | jq '.global_findings[] 
 ### CI 中的 PostgreSQL DDL 覆盖范围（v0.21.0）
 
 从 v0.21.0 开始，常见的 PostgreSQL 迁移后续 DDL 语句——`SET DEFAULT`、`DROP DEFAULT`、`SET NOT NULL`、`DROP NOT NULL`、`VALIDATE CONSTRAINT` 和 `DROP CONSTRAINT`——通过共享审核管线进行标准化处理，不再返回能力边界错误。这些语句在 CI 中产生正常的审计结果，减少了标准分步迁移序列上的误报工作流中断。
+
+### Maintainer Confidence Targets（`v0.22.0`）
+
+`v0.22.0` 是 **E2E & Release Confidence Pack**。对于维护者，规范化的 confidence 入口为：
+
+- `make pg-unit-test-gates`
+- `make pg-e2e-gates`
+- `make pg-confidence-gates`
+- `make release-surface-gates VERSION=v0.22.0`
+- `make release-version-surface-gates VERSION=v0.22.0`
 
 ## --fail-on 策略说明
 

@@ -67,8 +67,8 @@ jobs:
       - name: Verify Linux PG CLI smoke lane
         run: make smoke-pg-cli-linux
 
-      - name: Verify tagged PostgreSQL HTTP and MCP surfaces
-        run: CGO_ENABLED=1 go test -tags postgresql ./internal/interfaces/http ./internal/interfaces/mcp
+      - name: Verify tagged PostgreSQL unit test gates
+        run: make pg-unit-test-gates
 
   macos-arm64-pg-smoke:
     runs-on: macos-15

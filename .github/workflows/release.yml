@@ -37,10 +37,11 @@ jobs:
           set -euo pipefail
           make release-test-gates
 
-      - name: Verify MCP launcher package contract
-        run: |
-          test "$(node -p "require('./packages/deltascope-mcp/package.json').version")" = "${GITHUB_REF_NAME#v}"
-          (cd packages/deltascope-mcp && npm pack --dry-run)
+      - name: Verify release-surface gates
+        run: make release-surface-gates VERSION="${GITHUB_REF_NAME}"
+
+      - name: Verify release version surfaces
+        run: make release-version-surface-gates VERSION="${GITHUB_REF_NAME}"
 
       - name: Verify converged Linux amd64 PG release archive shape
         run: make verify-pg-linux-release-archive

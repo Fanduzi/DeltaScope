@@ -1,6 +1,6 @@
 {
   "name": "@fanduzi/deltascope-mcp",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Launcher package for the DeltaScope MCP stdio server",
   "type": "module",
   "repository": {

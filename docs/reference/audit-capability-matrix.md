@@ -239,6 +239,16 @@ v0.21.0 normalizes common PostgreSQL migration follow-up DDL through the shared 
 
 All newly normalized PostgreSQL DDL actions are confirmed across CLI, HTTP (`POST /v1/audit`), MCP (`audit_sql`), and the public Go API (`pkg/deltascope`).
 
+## Confidence Entry Points (`v0.22.0`)
+
+`v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new SQL rule semantics; it documents and validates the existing CLI, HTTP, MCP, and release surfaces with canonical repository targets.
+
+- `make pg-unit-test-gates` — PostgreSQL-tagged unit confidence without Docker
+- `make pg-e2e-gates` — Docker-backed PostgreSQL CLI, HTTP, and MCP transport confidence
+- `make pg-confidence-gates` — canonical combined PostgreSQL confidence closure
+- `make release-surface-gates VERSION=vX.Y.Z` — package/release contract verification
+- `make release-version-surface-gates VERSION=vX.Y.Z` — versioned docs/install/release-notes verification
+
 ---
 
 ## DML

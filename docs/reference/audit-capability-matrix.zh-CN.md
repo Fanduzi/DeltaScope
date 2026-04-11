@@ -225,6 +225,16 @@ v0.21.0 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标�
 
 所有新标准化的 PostgreSQL DDL 动作已在 CLI、HTTP（`POST /v1/audit`）、MCP（`audit_sql`）和公共 Go API（`pkg/deltascope`）上确认一致。
 
+## Confidence 入口（`v0.22.0`）
+
+`v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 SQL 规则语义，而是通过规范化的仓库目标来记录并验证既有的 CLI、HTTP、MCP 与 release surface。
+
+- `make pg-unit-test-gates` —— 无需 Docker 的 PostgreSQL tag 单元测试 confidence
+- `make pg-e2e-gates` —— 基于 Docker 的 PostgreSQL CLI、HTTP、MCP transport confidence
+- `make pg-confidence-gates` —— 规范化的 PostgreSQL confidence 总入口
+- `make release-surface-gates VERSION=vX.Y.Z` —— package/release 合同校验
+- `make release-version-surface-gates VERSION=vX.Y.Z` —— 带版本的文档/安装/release-notes 校验
+
 ---
 
 ## DML

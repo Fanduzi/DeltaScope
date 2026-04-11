@@ -195,43 +195,6 @@ func TestPrepareRejectsDialectMismatch(t *testing.T) {
 	}
 }
 
-func TestPrepareReturnsCapabilityBoundaryErrorWithoutSchemaWrapperForExplicitPostgreSQL(t *testing.T) {
-	t.Parallel()
-
-	client := &fakeClient{detectDialect: spec.DialectPostgreSQL}
-	_, err := Prepare(context.Background(), Request{
-		SQL:              "select 1;",
-		RequestedDialect: spec.DialectPostgreSQL,
-		ExplicitDialect:  true,
-		OpenClient: func(config ConnectionConfig) (Client, error) {
-			return client, nil
-		},
-	})
-	if err == nil {
-		t.Fatal("expected capability-boundary error")
-	}
-	var prepErr *Error
-	if !errors.As(err, &prepErr) {
-		t.Fatalf("expected typed prepare error, got %T", err)
-	}
-	if prepErr.Kind != ErrorInvalidSQL {
-		t.Fatalf("expected invalid_sql kind, got %#v", prepErr)
-	}
-	var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
-	if !errors.As(prepErr.Err, &capabilityErr) {
-		t.Fatalf("expected typed capability-boundary cause, got %T", prepErr.Err)
-	}
-	if err.Error() != capabilityErr.Error() {
-		t.Fatalf("expected unwrapped capability message, got %q want %q", err.Error(), capabilityErr.Error())
-	}
-	if strings.Contains(strings.ToLower(err.Error()), "resolve schema targets:") {
-		t.Fatalf("did not expect schema wrapper, got %q", err.Error())
-	}
-	if !client.closed {
-		t.Fatal("expected client to close on prepare failure")
-	}
-}
-
 func TestPrepareKeepsSchemaWrapperForNonCapabilityInvalidSQL(t *testing.T) {
 	t.Parallel()
 

@@ -34,9 +34,19 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.21.0/install.sh | \
-  DELTASCOPE_VERSION=v0.21.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.22.0/install.sh | \
+  DELTASCOPE_VERSION=v0.22.0 sh
 ```
+
+### Confidence Pack (`v0.22.0`)
+
+`v0.22.0` focuses on confidence around the existing PostgreSQL product surface, not new PostgreSQL SQL semantics.
+
+- `make pg-unit-test-gates` — run PostgreSQL-tagged unit coverage without Docker
+- `make pg-e2e-gates` — run Docker-backed PostgreSQL CLI, HTTP, and MCP end-to-end suites
+- `make pg-confidence-gates` — canonical combined PostgreSQL confidence entrypoint
+- `make release-surface-gates VERSION=v0.22.0` — verify the package/release contract
+- `make release-version-surface-gates VERSION=v0.22.0` — verify versioned docs/install surfaces and bilingual release notes
 
 Need PostgreSQL offline audit support?
 
@@ -288,6 +298,9 @@ Paste a SQL snippet or point to a file — the agent audits it with DeltaScope a
 - `make build` produces all local binaries under `bin/`
 - `make build-linux` produces Linux amd64 binaries under `bin/`
 - `make test-e2e-cli` runs the Docker-backed metadata CLI smoke suite
+- `make pg-unit-test-gates` runs the PostgreSQL-tagged unit gate set
+- `make pg-e2e-gates` runs the Docker-backed PostgreSQL CLI, HTTP, and MCP suites
+- `make pg-confidence-gates` runs the canonical PostgreSQL confidence closure
 - [docs/dev/testing.md](docs/dev/testing.md) covers the full target set
 
 ## HTTP Service

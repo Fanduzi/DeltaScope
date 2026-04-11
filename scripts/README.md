@@ -11,6 +11,9 @@ Operational scripts for local DeltaScope workflows.
 | test_cli_metadata_e2e.sh | Starts Docker fixtures, seeds TiDB, runs metadata-aware CLI e2e flows, and provides JSON assertion helpers |
 | test_mcp_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged MCP metadata-aware e2e smoke tests for direct and connection_ref paths |
 | test_http_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged HTTP metadata-aware e2e smoke tests against the live JSON API |
+| test_cli_metadata_e2e_postgresql.sh | Builds the PG-capable CLI, starts PostgreSQL fixtures, and runs metadata-aware PostgreSQL CLI end-to-end coverage |
+| test_http_metadata_e2e_postgresql.sh | Starts PostgreSQL fixtures and runs tagged HTTP metadata-aware PostgreSQL end-to-end tests against the live JSON API |
+| test_mcp_metadata_e2e_postgresql.sh | Starts PostgreSQL fixtures and runs tagged MCP metadata-aware PostgreSQL end-to-end tests |
 
 ## Exports
 
@@ -20,6 +23,9 @@ Operational scripts for local DeltaScope workflows.
 - `test_cli_metadata_e2e.sh [mysql|tidb|all]`
 - `test_mcp_metadata_e2e.sh [mysql|tidb|all]`
 - `test_http_metadata_e2e.sh [mysql|tidb|all]`
+- `test_cli_metadata_e2e_postgresql.sh`
+- `test_http_metadata_e2e_postgresql.sh`
+- `test_mcp_metadata_e2e_postgresql.sh`
 - `make smoke-pg-cli-manylinux-baseline`
 - `make test-e2e-cli`
 - `make test-e2e-cli-mysql`
@@ -28,6 +34,14 @@ Operational scripts for local DeltaScope workflows.
 - `make test-e2e-mcp-tidb`
 - `make test-e2e-http-mysql`
 - `make test-e2e-http-tidb`
+- `make test-e2e-cli-postgresql`
+- `make test-e2e-http-postgresql`
+- `make test-e2e-mcp-postgresql`
+- `make pg-unit-test-gates`
+- `make pg-e2e-gates`
+- `make pg-confidence-gates`
+- `make release-surface-gates VERSION=<tag-or-version>`
+- `make release-version-surface-gates VERSION=<tag-or-version>`
 
 ## Dependencies
 - Upstream: local developers, `Makefile`, and release-verification workflows

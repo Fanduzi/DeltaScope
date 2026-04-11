@@ -78,7 +78,7 @@ jobs:
 
       - name: Install DeltaScope
         run: |
-          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz \
+          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
             -o /tmp/deltascope.tar.gz
           tar -xzf /tmp/deltascope.tar.gz -C /tmp
           install /tmp/deltascope /usr/local/bin/deltascope
@@ -123,7 +123,7 @@ audit-sql:
   image: ubuntu:22.04
   before_script:
     - apt-get update -qq && apt-get install -y -qq curl tar
-    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz
+    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
         -o /tmp/deltascope.tar.gz
     - tar -xzf /tmp/deltascope.tar.gz -C /tmp
     - install /tmp/deltascope /usr/local/bin/deltascope
@@ -197,6 +197,16 @@ When using `--dialect postgresql` with a PG-capable DeltaScope binary on unsuppo
 ### PostgreSQL DDL Coverage in CI (v0.21.0)
 
 Starting with v0.21.0, common PostgreSQL migration follow-up DDL statements — `SET DEFAULT`, `DROP DEFAULT`, `SET NOT NULL`, `DROP NOT NULL`, `VALIDATE CONSTRAINT`, and `DROP CONSTRAINT` — are normalized through the shared audit pipeline and no longer return capability-boundary errors. These statements produce normal audit results in CI, reducing false workflow breaks on standard phased migration sequences.
+
+### Maintainer Confidence Targets (`v0.22.0`)
+
+`v0.22.0` is the **E2E & Release Confidence Pack**. For maintainers, the canonical confidence entrypoints are:
+
+- `make pg-unit-test-gates`
+- `make pg-e2e-gates`
+- `make pg-confidence-gates`
+- `make release-surface-gates VERSION=v0.22.0`
+- `make release-version-surface-gates VERSION=v0.22.0`
 
 ## --fail-on Strategy
 

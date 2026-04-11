@@ -361,6 +361,18 @@ deltascope audit \
 
 `VALIDATE CONSTRAINT` without a corresponding rule produces a clean audit — it is supported and auditable, but does not guarantee a finding. `DROP CONSTRAINT` on a primary key triggers existing primary-key rules only when metadata is available; in offline mode it passes through as a normal alter action.
 
+## Repository Confidence Targets
+
+| Target | Purpose |
+|--------|---------|
+| `make pg-unit-test-gates` | Run PostgreSQL-tagged unit packages without Docker |
+| `make pg-e2e-gates` | Run Docker-backed PostgreSQL CLI, HTTP, and MCP end-to-end suites |
+| `make pg-confidence-gates` | Combine the canonical PostgreSQL unit + E2E confidence gates |
+| `make release-surface-gates VERSION=vX.Y.Z` | Verify the package/release contract for the tagged release |
+| `make release-version-surface-gates VERSION=vX.Y.Z` | Verify versioned docs/install surfaces and bilingual release notes |
+
+`v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints.
+
 #### Quiet Mode
 
 `--quiet` changes markdown output only. With markdown output, DeltaScope suppresses the normal report body and prints each finding as a single line. With `--format json`, the JSON contract is unchanged.

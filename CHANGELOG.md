@@ -6,6 +6,19 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.22.0] - 2026-04-11
+
+### Added
+
+- Canonical PostgreSQL confidence entrypoints for local and CI verification: `pg-unit-test-gates`, `pg-e2e-gates`, and `pg-confidence-gates`.
+- Reusable release confidence gates: `release-surface-gates` for package/release contract checks and `release-version-surface-gates` for versioned docs/install surface checks.
+- Bilingual release notes and release-facing docs aligned around the `v0.22.0` **E2E & Release Confidence Pack** milestone.
+
+### Changed
+
+- DeltaScope now documents confidence closure around the existing PostgreSQL product surfaces instead of introducing new PostgreSQL SQL semantics in this release.
+- README, landing page, CLI/reference docs, CI recipes, and scripts guide now point to the `v0.22.0` release line and the canonical confidence targets used to verify transport and release-surface alignment.
+
 ## [v0.21.0] - 2026-04-11
 
 ### Added

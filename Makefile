@@ -1,4 +1,4 @@
-.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-arm64 package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql
+.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-arm64 package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -219,3 +219,51 @@ test-e2e-http-postgresql:
 
 test-e2e-mcp-postgresql:
 	./scripts/test_mcp_metadata_e2e_postgresql.sh
+
+# Canonical PostgreSQL confidence gates (v0.22.0).
+# These targets compose existing commands into reusable confidence entry-points.
+
+# pg-unit-test-gates: run all PostgreSQL-tagged unit tests (no Docker required).
+pg-unit-test-gates:
+	CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+
+# pg-e2e-gates: run all three Docker-backed PostgreSQL E2E suites.
+pg-e2e-gates:
+	$(MAKE) test-e2e-cli-postgresql
+	$(MAKE) test-e2e-http-postgresql
+	$(MAKE) test-e2e-mcp-postgresql
+
+# pg-confidence-gates: run all PostgreSQL-tagged unit tests plus Docker E2E.
+pg-confidence-gates:
+	$(MAKE) pg-unit-test-gates
+	$(MAKE) pg-e2e-gates
+
+# release-surface-gates: verify reusable package/release invariants that should block release.
+# VERSION may be passed explicitly (for tag release checks) and otherwise defaults to the current MCP launcher package version.
+release-surface-gates:
+	@set -euo pipefail; \
+	version="$(VERSION)"; \
+	if [ -z "$$version" ]; then \
+		version="v$$(node -p 'require("./packages/deltascope-mcp/package.json").version')"; \
+	fi; \
+	version_no_v="$${version#v}"; \
+	test "$$(node -p 'require("./packages/deltascope-mcp/package.json").version')" = "$$version_no_v"; \
+	(cd packages/deltascope-mcp && npm pack --dry-run)
+
+# release-version-surface-gates: verify versioned docs surfaces for the current release.
+# This stays separate from the release-blocking package contract so docs wording can evolve independently.
+release-version-surface-gates:
+	@set -euo pipefail; \
+	version="$(VERSION)"; \
+	test -n "$$version"; \
+	en_notes="docs/releases/release-notes-$${version}.md"; \
+	zh_notes="docs/releases/release-notes-$${version}.zh-CN.md"; \
+	test -f "$$en_notes"; \
+	test -f "$$zh_notes"; \
+	grep -q "^# DeltaScope $${version} Release Notes$$" "$$en_notes"; \
+	grep -q "^# DeltaScope $${version} 发行说明$$" "$$zh_notes"; \
+	grep -q "https://raw.githubusercontent.com/Fanduzi/DeltaScope/$${version}/install.sh" README.md; \
+	grep -q "DELTASCOPE_VERSION=$${version} sh" README.md; \
+	grep -q "https://raw.githubusercontent.com/Fanduzi/DeltaScope/$${version}/install.sh" README_ZH.md; \
+	grep -q "DELTASCOPE_VERSION=$${version} sh" README_ZH.md; \
+	grep -q "release-notes-$${version}.md" docs/landing/index.html

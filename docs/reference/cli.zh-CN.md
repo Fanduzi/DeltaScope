@@ -321,6 +321,18 @@ deltascope audit \
 
 `VALIDATE CONSTRAINT` 在没有对应规则时产生干净的审计结果——它是 supported 且 auditable 的，但不保证产生 finding。`DROP CONSTRAINT` 针对主键时，仅在 metadata 可用的情况下触发已有的主键规则；在离线模式下，它作为普通 alter 动作通过。
 
+## 仓库级 Confidence Targets
+
+| Target | 作用 |
+|--------|------|
+| `make pg-unit-test-gates` | 运行无需 Docker 的 PostgreSQL tag 单元测试包 |
+| `make pg-e2e-gates` | 运行基于 Docker 的 PostgreSQL CLI、HTTP、MCP 端到端套件 |
+| `make pg-confidence-gates` | 组合 PostgreSQL 单元 + E2E 的规范化 confidence gates |
+| `make release-surface-gates VERSION=vX.Y.Z` | 校验该版本的 package/release 合同 |
+| `make release-version-surface-gates VERSION=vX.Y.Z` | 校验带版本的文档/安装面和双语 release notes |
+
+`v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。
+
 ---
 
 ## deltascope rules
