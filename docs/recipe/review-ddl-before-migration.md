@@ -371,9 +371,9 @@ All output formats report audit context and rule summary information that helps 
 
 When reviewing migrations, check the skipped-rules count — a high number of skipped rules (especially for your target dialect) may indicate the audit is running under the wrong dialect or that certain rule families are not applicable. This helps you decide whether the current audit result is sufficient or whether additional manual review is needed.
 
-### PostgreSQL Coverage Milestones (v0.21.0 / v0.23.0)
+### PostgreSQL Coverage Milestones (v0.21.0 / v0.23.0 / v0.24.0)
 
-`v0.21.0` expands DeltaScope's ability to audit more of the standard PostgreSQL phased migration sequence. `v0.23.0` expands common PostgreSQL `CREATE TABLE` coverage for richer constraint shapes. Together they let migration review cover more real-world PostgreSQL DDL without overstating support.
+`v0.21.0` expands DeltaScope's ability to audit more of the standard PostgreSQL phased migration sequence. `v0.23.0` expands common PostgreSQL `CREATE TABLE` coverage for richer constraint shapes. `v0.24.0` deepens the foreign-key semantics of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns`. Together they let migration review cover more real-world PostgreSQL DDL with progressively richer semantics, without overstating support.
 
 #### Phased Migration Follow-Up Actions (`v0.21.0`)
 
@@ -394,8 +394,8 @@ When reviewing migrations, check the skipped-rules count — a high number of sk
 | Column-level inline `CHECK` | `amount numeric check (amount >= 0)` | Supported, auditable; no dedicated new rule family |
 | Table-level named `UNIQUE` | `CONSTRAINT uniq_orders_user UNIQUE (user_id)` | Supported, auditable; existing naming governance can apply when configured |
 | Column-level inline `UNIQUE` | `email text unique` | Supported, auditable; shared index rules can consume normalized index facts |
-| Table-level named `FOREIGN KEY` | `CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)` | Supported, auditable; naming governance matters only when policy allows foreign keys |
-| Column-level inline `REFERENCES` | `user_id bigint references users(id)` | Supported, auditable; parser-owned shared facts only, no invented metadata semantics |
+| Table-level named `FOREIGN KEY` | `CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)` | Supported, auditable; naming governance matters only when policy allows foreign keys. `v0.24.0` preserves `ReferencedTable`/`ReferencedColumns` |
+| Column-level inline `REFERENCES` | `user_id bigint references users(id)` | Supported, auditable; parser-owned shared facts only, no invented metadata semantics. `v0.24.0` preserves `ReferencedTable`/`ReferencedColumns` |
 
 Example: audit a constraint-rich PostgreSQL create-table statement:
 
@@ -425,4 +425,5 @@ Important notes:
 - `DROP CONSTRAINT` targeting a primary key (e.g., `DROP CONSTRAINT users_pkey`) triggers existing primary-key rules only in metadata-aware mode. In offline mode, it passes through as a normal alter action.
 - `VALIDATE CONSTRAINT` does not have a dedicated rule. It is supported and auditable but produces a clean audit result unless other findings apply to the same statement.
 - `v0.23.0` should be described as broader PostgreSQL `CREATE TABLE` coverage, not full PostgreSQL DDL support.
+- `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.

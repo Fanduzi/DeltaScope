@@ -409,9 +409,9 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 ---
 
-## PostgreSQL DDL Coverage (v0.21.0 / v0.23.0)
+## PostgreSQL DDL Coverage (v0.21.0 / v0.23.0 / v0.24.0)
 
-`v0.21.0` expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. `v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for more common constraint shapes. Both are coverage improvements — they do not add new rule IDs. The newly normalized actions and create-table structures reuse existing shared rule families where applicable.
+`v0.21.0` expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. `v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for more common constraint shapes. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned referenced table and referenced column facts through the shared `spec.Constraint` model. None of these releases add new rule IDs. The newly normalized actions and create-table structures reuse existing shared rule families where applicable.
 
 ### Supported PostgreSQL DDL Actions
 
@@ -427,16 +427,17 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 | Column-level inline `CHECK` | `create_table` shared facts | Supported and auditable. No dedicated new rule; produces findings only when existing shared semantics apply. |
 | Table-level named `UNIQUE` | `create_table` shared facts | Supported and auditable. Existing constraint naming governance can apply when configured. |
 | Column-level inline `UNIQUE` | `create_table` shared facts | Supported and auditable. Existing shared index rules can consume the normalized index facts. |
-| Table-level named `FOREIGN KEY` | `create_table` shared facts | Supported and auditable. Existing foreign-key naming governance applies only when policy allows foreign keys. |
-| Column-level inline `REFERENCES` | `create_table` shared facts | Supported and auditable. Exposed as parser-owned shared facts only; no invented metadata semantics or dedicated new rule. |
+| Table-level named `FOREIGN KEY` | `create_table` shared facts | Supported and auditable. Existing foreign-key naming governance applies only when policy allows foreign keys. `v0.24.0`: preserves `ReferencedTable` and `ReferencedColumns` as parser-owned shared contract facts. |
+| Column-level inline `REFERENCES` | `create_table` shared facts | Supported and auditable. Exposed as parser-owned shared facts only; no invented metadata semantics or dedicated new rule. `v0.24.0`: preserves `ReferencedTable` and `ReferencedColumns` as parser-owned shared contract facts. |
 
 ### Key Points
 
-- No new rule configuration items are needed. The value of these releases is that existing shared rules and metadata-aware semantics now cover more PostgreSQL DDL actions and create-table shapes.
+- No new rule configuration items are needed. The value of these releases is that existing shared rules and metadata-aware semantics now cover more PostgreSQL DDL actions and create-table shapes with richer semantics.
 - `DROP CONSTRAINT` on a primary key (`DROP CONSTRAINT users_pkey`) maps to existing primary-key rules only in metadata-aware mode. In offline mode it passes through as a normal alter action without a dedicated finding.
 - `VALIDATE CONSTRAINT` is supported and auditable but does not have a dedicated rule. It produces a clean audit result unless other findings apply to the same statement.
 - Inline `REFERENCES` should be read narrowly: DeltaScope now keeps the parser-owned shared relationship facts instead of failing the surface, but this does not imply new metadata-aware foreign-key semantics beyond already existing rule behavior.
-- The `v0.23.0` create-table expansion should not be described as full PostgreSQL `CREATE TABLE` support; it is targeted coverage for common, shared-rule-compatible structures.
+- `v0.24.0` deepens `v0.23.0` foreign-key semantics: `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth. They represent what the SQL statement declares, not what the database schema currently contains.
+- The `v0.23.0`/`v0.24.0` create-table work should not be described as full PostgreSQL `CREATE TABLE` support; it is targeted coverage for common, shared-rule-compatible structures with progressively richer semantics.
 
 ---
 

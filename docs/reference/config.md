@@ -3202,9 +3202,9 @@ See [audit-capability-matrix.md](audit-capability-matrix.md) for the full capabi
 
 ---
 
-## PostgreSQL DDL Coverage (v0.21.0 / v0.23.0)
+## PostgreSQL DDL Coverage (v0.21.0 / v0.23.0 / v0.24.0)
 
-`v0.21.0` expands PostgreSQL DDL normalization for common migration follow-up statements. `v0.23.0` expands common PostgreSQL `CREATE TABLE` constraint coverage. These are coverage improvements that reuse existing shared rules and metadata-aware semantics — they do **not** introduce new rule configuration items.
+`v0.21.0` expands PostgreSQL DDL normalization for common migration follow-up statements. `v0.23.0` expands common PostgreSQL `CREATE TABLE` constraint coverage. `v0.24.0` deepens the semantic value of the PostgreSQL `CREATE TABLE` shapes that `v0.23.0` brought into the shared audit pipeline. These are coverage and semantics improvements that reuse existing shared rules and metadata-aware semantics — they do **not** introduce new rule configuration items.
 
 The following PostgreSQL `ALTER TABLE` forms are now normalized through the shared audit pipeline instead of returning capability-boundary errors:
 
@@ -3224,11 +3224,17 @@ The following PostgreSQL `CREATE TABLE` shapes are additionally supported in `v0
 - table-level named `FOREIGN KEY`
 - column-level inline `REFERENCES`
 
+`v0.24.0` deepens the foreign-key semantics for these create-table shapes:
+
+- Named `FOREIGN KEY` and inline `REFERENCES` now preserve parser-owned `ReferencedTable` and `ReferencedColumns` as shared contract facts.
+- These are parser-owned structural facts, not live metadata truth — they represent what the SQL statement declares, not what the database schema currently contains.
+
 Configuration implications:
 
 - Existing structured naming governance for `ddl.constraint.check.*`, `ddl.constraint.unique_key.*`, and `ddl.constraint.foreign_key.*` is reused when the normalized PostgreSQL create-table facts match those rule families.
 - Existing shared index rules can consume index facts emitted by inline `UNIQUE`.
-- Inline `REFERENCES` is parser-owned shared structure only. It does not add a new policy block or invent metadata-only behavior.
+- Existing `ddl.table.foreign_key.forbid` continues to fire for all foreign-key forms, including inline `REFERENCES` carrying the richer semantics.
+- `ReferencedTable` and `ReferencedColumns` are additive fields with `omitempty` JSON encoding — no new policy block is needed.
 
 No changes to `configs/deltascope.example.yaml` are required for these releases.
 

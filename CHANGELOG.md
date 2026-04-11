@@ -6,6 +6,18 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.24.0] - 2026-04-11
+
+### Added
+
+- PostgreSQL `CREATE TABLE` foreign-key semantics now preserve parser-owned referenced table and referenced columns in the shared `spec.Constraint` model. Named `FOREIGN KEY` and inline `REFERENCES` forms both carry `ReferencedTable` and `ReferencedColumns` as shared contract facts. These are parser-owned structural facts, not metadata-dependent truth claims.
+- Service-level and surface parity tests tightened across CLI, HTTP, MCP, and public Go API (`pkg/deltascope`) for richer PostgreSQL foreign-key shapes. Inline `REFERENCES` now asserts `ddl.table.foreign_key.forbid` fires under the default policy.
+- Unsupported boundary tests added for `CREATE OR REPLACE VIEW` and `PARTITION BY` on the service layer and public Go API, confirming that adjacent unsupported forms remain explicitly outside the supported surface.
+
+### Changed
+
+- Release-facing docs now position `v0.24.0` as a PostgreSQL `CREATE TABLE` semantics pack — a semantic deepening of `v0.23.0` — not a new rule pack and not full PostgreSQL DDL support.
+
 ## [v0.23.0] - 2026-04-11
 
 ### Added

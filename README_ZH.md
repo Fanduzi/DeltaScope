@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.23.0` 为止，DeltaScope 可以通过共享审核管线审计更多常见 PostgreSQL `CREATE TABLE` 结构，包括命名与内联 `CHECK`、命名与内联 `UNIQUE`、命名 `FOREIGN KEY` 和内联 `REFERENCES`。这是覆盖范围扩展，不代表完整 PostgreSQL DDL 支持。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.24.0` 为止，DeltaScope 深化了 `v0.23.0` 已纳入的 PostgreSQL `CREATE TABLE` 结构的语义信息——具名和内联 `FOREIGN KEY` / `REFERENCES` 现在保留解析器拥有的被引用表和被引用列事实，并通过共享审核管线流转至既有规则族。这是 `v0.23.0` 的语义深化，不代表完整 PostgreSQL DDL 支持。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,19 +32,19 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.23.0/install.sh | \
-  DELTASCOPE_VERSION=v0.23.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.24.0/install.sh | \
+  DELTASCOPE_VERSION=v0.24.0 sh
 ```
 
-### PostgreSQL CREATE TABLE Coverage Pack（`v0.23.0`）
+### PostgreSQL CREATE TABLE Semantics Pack（`v0.24.0`）
 
-`v0.23.0` 扩展了常见 PostgreSQL `CREATE TABLE` 约束形态的覆盖范围，不新增 PostgreSQL 规则 ID，也不宣称已经完整支持 PostgreSQL DDL。
+`v0.24.0` 深化了 `v0.23.0` 已纳入共享审核管线的 PostgreSQL `CREATE TABLE` 形态的语义信息，不新增 PostgreSQL 规则 ID，也不宣称完整 PostgreSQL DDL 支持。
 
-- 表级命名 `CHECK`、`UNIQUE`、`FOREIGN KEY` 已支持且可审计。
-- 列级内联 `CHECK`、内联 `UNIQUE`、内联 `REFERENCES` 已支持且可审计。
-- 当标准化后的事实能复用既有规则时，共享规则族会继续生效；命名约束可以进入结构化命名治理，内联 `UNIQUE` 会贡献索引事实。
-- 内联 `REFERENCES` 仅作为 parser-owned 的共享结构暴露；不会凭空引入新的 metadata-dependent 语义。
-- `make release-surface-gates VERSION=v0.23.0` 与 `make release-version-surface-gates VERSION=v0.23.0` 用于校验 package/release 与带版本文档面。
+- 具名 `FOREIGN KEY` 和内联 `REFERENCES` 现在保留解析器拥有的被引用表和被引用列作为共享契约事实。
+- 已有的共享 FK 命名治理和 `ddl.table.foreign_key.forbid` 继续适用于更丰富的外键形态。
+- `ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是实时元数据真相。
+- 不支持的边界（`GENERATED ... AS IDENTITY`、`PARTITION BY`）仍明确处于支持面之外。
+- `make release-surface-gates VERSION=v0.24.0` 与 `make release-version-surface-gates VERSION=v0.24.0` 用于校验 package/release 与带版本文档面。
 
 如果你需要 PostgreSQL 离线审计：
 
@@ -144,6 +144,14 @@ deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql
 deltascope audit \
   --dialect postgresql \
   --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+```
+
+审核带有具名外键的 PostgreSQL `CREATE TABLE`：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));"
 ```
 
 审核 PostgreSQL 分步迁移的后续语句：

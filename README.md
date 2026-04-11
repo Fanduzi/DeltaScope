@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.23.0`, DeltaScope audits more common PostgreSQL `CREATE TABLE` structures — named and inline `CHECK`, named and inline `UNIQUE`, named `FOREIGN KEY`, and inline `REFERENCES` — through the shared audit pipeline where existing rule families apply. This is a coverage expansion, not a claim of full PostgreSQL DDL support. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.24.0`, DeltaScope deepens the semantic value of PostgreSQL `CREATE TABLE` structures — named and inline `FOREIGN KEY` / `REFERENCES` now preserve parser-owned referenced table and referenced column facts through the shared audit pipeline where existing rule families apply. This is a semantic deepening of `v0.23.0`, not a claim of full PostgreSQL DDL support. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,19 +34,19 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.23.0/install.sh | \
-  DELTASCOPE_VERSION=v0.23.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.24.0/install.sh | \
+  DELTASCOPE_VERSION=v0.24.0 sh
 ```
 
-### PostgreSQL CREATE TABLE Coverage Pack (`v0.23.0`)
+### PostgreSQL CREATE TABLE Semantics Pack (`v0.24.0`)
 
-`v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for common constraint forms without adding new PostgreSQL rule IDs or claiming full PostgreSQL DDL support.
+`v0.24.0` deepens the semantic value of the PostgreSQL `CREATE TABLE` shapes that `v0.23.0` brought into the shared audit pipeline, without adding new PostgreSQL rule IDs or claiming full PostgreSQL DDL support.
 
-- Table-level named `CHECK`, `UNIQUE`, and `FOREIGN KEY` constraints are supported and auditable.
-- Column-level inline `CHECK`, inline `UNIQUE`, and inline `REFERENCES` are supported and auditable.
-- Shared rule families apply where the normalized facts match existing rules; named constraints can flow into structured naming governance, and inline `UNIQUE` contributes index facts.
-- Inline `REFERENCES` is parser-owned shared structure only; it does not invent metadata-dependent behavior beyond existing rule semantics.
-- `make release-surface-gates VERSION=v0.23.0` and `make release-version-surface-gates VERSION=v0.23.0` verify the package/release and versioned docs surfaces.
+- Named `FOREIGN KEY` and inline `REFERENCES` now preserve parser-owned referenced table and referenced columns as shared contract facts.
+- Existing shared FK naming governance and `ddl.table.foreign_key.forbid` continue to apply on the richer foreign-key shapes.
+- `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not live metadata truth.
+- Unsupported boundaries (`GENERATED ... AS IDENTITY`, `PARTITION BY`) remain explicitly outside the supported surface.
+- `make release-surface-gates VERSION=v0.24.0` and `make release-version-surface-gates VERSION=v0.24.0` verify the package/release and versioned docs surfaces.
 
 Need PostgreSQL offline audit support?
 
@@ -146,6 +146,14 @@ Audit a PostgreSQL `CREATE TABLE` statement with named and inline constraints:
 deltascope audit \
   --dialect postgresql \
   --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+```
+
+Audit a PostgreSQL `CREATE TABLE` with a named foreign key referencing another table:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));"
 ```
 
 Audit a PostgreSQL phased migration follow-up statement:

@@ -371,9 +371,9 @@ CLI 的 `markdown`、`json` 和 `quiet` 输出都会报告审计上下文和规�
 
 审查迁移时，请关注跳过规则的计数——如果跳过规则数量较多（尤其是目标方言下的规则），可能意味着审计运行在错误的方言下，或某些规则族不适用。这有助于你判断当前审计结果是否充分，是否需要额外的人工审查。
 
-### PostgreSQL 覆盖里程碑（v0.21.0 / v0.23.0）
+### PostgreSQL 覆盖里程碑（v0.21.0 / v0.23.0 / v0.24.0）
 
-`v0.21.0` 扩展了 DeltaScope 对标准 PostgreSQL 分步迁移序列的审计能力；`v0.23.0` 则扩展了常见 PostgreSQL `CREATE TABLE` 富约束形态的覆盖范围。两者结合后，迁移审查可以覆盖更多真实 PostgreSQL DDL，同时仍保持表述克制。
+`v0.21.0` 扩展了 DeltaScope 对标准 PostgreSQL 分步迁移序列的审计能力；`v0.23.0` 则扩展了常见 PostgreSQL `CREATE TABLE` 富约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的外键语义，保留解析器拥有的 `ReferencedTable` 和 `ReferencedColumns`。三者结合后，迁移审查可以覆盖更多真实 PostgreSQL DDL 并拥有更丰富的语义信息，同时仍保持表述克制。
 
 #### 分步迁移后续动作（`v0.21.0`）
 
@@ -394,8 +394,8 @@ CLI 的 `markdown`、`json` 和 `quiet` 输出都会报告审计上下文和规�
 | 列级内联 `CHECK` | `amount numeric check (amount >= 0)` | 已支持、可审计；不新增专用规则族 |
 | 表级命名 `UNIQUE` | `CONSTRAINT uniq_orders_user UNIQUE (user_id)` | 已支持、可审计；配置后可复用既有命名治理 |
 | 列级内联 `UNIQUE` | `email text unique` | 已支持、可审计；共享索引规则可消费标准化索引事实 |
-| 表级命名 `FOREIGN KEY` | `CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)` | 已支持、可审计；仅当策略允许外键时命名治理才有意义 |
-| 列级内联 `REFERENCES` | `user_id bigint references users(id)` | 已支持、可审计；仅是 parser-owned 共享事实，不发明新的 metadata 语义 |
+| 表级命名 `FOREIGN KEY` | `CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)` | 已支持、可审计；仅当策略允许外键时命名治理才有意义。`v0.24.0` 保留 `ReferencedTable`/`ReferencedColumns` |
+| 列级内联 `REFERENCES` | `user_id bigint references users(id)` | 已支持、可审计；仅是 parser-owned 共享事实，不发明新的 metadata 语义。`v0.24.0` 保留 `ReferencedTable`/`ReferencedColumns` |
 
 示例：审计带富约束的 PostgreSQL 建表语句：
 
@@ -425,4 +425,5 @@ deltascope audit \
 - `DROP CONSTRAINT` 针对主键（如 `DROP CONSTRAINT users_pkey`）仅在 metadata-aware 模式下触发已有的主键规则。在离线模式下，它作为普通 alter 动作通过。
 - `VALIDATE CONSTRAINT` 没有专用规则。它是 supported 且 auditable 的，但除非同一语句上适用其他 finding，否则产生干净的审计结果。
 - `v0.23.0` 应被描述为更广的 PostgreSQL `CREATE TABLE` 覆盖范围，而不是完整 PostgreSQL DDL 支持。
+- `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。

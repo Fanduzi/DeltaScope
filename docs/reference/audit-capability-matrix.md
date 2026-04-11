@@ -221,9 +221,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0)
+## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0 / v0.24.0)
 
-`v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results. No new rules are introduced — existing shared rule families apply where relevant.
+`v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns` through the shared `spec.Constraint` model. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results with progressively richer semantics. No new rules are introduced — existing shared rule families apply where relevant.
 
 | PostgreSQL DDL Action | Normalized As | Supported | Auditable | Rule-Mapped | Metadata-Dependent | Notes |
 |-----------------------|---------------|:---------:|:---------:|:-----------:|:------------------:|-------|
@@ -238,12 +238,12 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | Column-level inline `CHECK` | `create_table` shared facts | ✓ | ✓ | — | — | Supported structure; no dedicated rule family |
 | Table-level named `UNIQUE` | `create_table` shared facts | ✓ | ✓ | ✓ (shared constraint naming when configured) | — | Named-constraint facts can reuse existing naming governance |
 | Column-level inline `UNIQUE` | `create_table` shared facts | ✓ | ✓ | ✓ (shared index facts) | — | Existing shared index rules can consume normalized index facts |
-| Table-level named `FOREIGN KEY` | `create_table` shared facts | ✓ | ✓ | ✓ (shared constraint naming when configured) | — | Naming rules matter only when policy allows foreign keys |
-| Column-level inline `REFERENCES` | `create_table` shared facts | ✓ | ✓ | — | — | Parser-owned shared facts only; no invented metadata semantics |
+| Table-level named `FOREIGN KEY` | `create_table` shared facts | ✓ | ✓ | ✓ (shared constraint naming when configured) | — | Naming rules matter only when policy allows foreign keys. `v0.24.0`: preserves `ReferencedTable`/`ReferencedColumns` |
+| Column-level inline `REFERENCES` | `create_table` shared facts | ✓ | ✓ | — | — | Parser-owned shared facts only; no invented metadata semantics. `v0.24.0`: preserves `ReferencedTable`/`ReferencedColumns` |
 
 ### Surface Parity
 
-All newly normalized PostgreSQL DDL actions and `v0.23.0` create-table coverage shapes are confirmed across CLI, HTTP (`POST /v1/audit`), MCP (`audit_sql`), and the public Go API (`pkg/deltascope`).
+All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table coverage shapes are confirmed across CLI, HTTP (`POST /v1/audit`), MCP (`audit_sql`), and the public Go API (`pkg/deltascope`).
 
 ## Confidence Entry Points (`v0.22.0`)
 
