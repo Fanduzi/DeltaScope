@@ -78,7 +78,7 @@ jobs:
 
       - name: Install DeltaScope
         run: |
-          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
+          curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.23.0/deltascope_0.23.0_linux_amd64.tar.gz \
             -o /tmp/deltascope.tar.gz
           tar -xzf /tmp/deltascope.tar.gz -C /tmp
           install /tmp/deltascope /usr/local/bin/deltascope
@@ -123,7 +123,7 @@ audit-sql:
   image: ubuntu:22.04
   before_script:
     - apt-get update -qq && apt-get install -y -qq curl tar
-    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.22.0/deltascope_0.22.0_linux_amd64.tar.gz \
+    - curl -L https://github.com/Fanduzi/DeltaScope/releases/download/v0.23.0/deltascope_0.23.0_linux_amd64.tar.gz \
         -o /tmp/deltascope.tar.gz
     - tar -xzf /tmp/deltascope.tar.gz -C /tmp
     - install /tmp/deltascope /usr/local/bin/deltascope
@@ -194,19 +194,27 @@ deltascope audit --file ./migrations.sql --format json | jq '.global_findings[] 
 
 当使用 `--dialect postgresql` 且 PG-capable 构建版本遇到尚未支持的 PostgreSQL 功能面（如复杂的 DDL 解析）时，DeltaScope 返回类型化的 `PostgreSQLCapabilityBoundaryError`。在 CI 中表现为退出码 `2`。通过错误消息可以区分——能力边界错误会明确说明请求的功能面和当前构建的支持能力。
 
-### CI 中的 PostgreSQL DDL 覆盖范围（v0.21.0）
+### CI 中的 PostgreSQL DDL 覆盖范围（v0.21.0 / v0.23.0）
 
 从 v0.21.0 开始，常见的 PostgreSQL 迁移后续 DDL 语句——`SET DEFAULT`、`DROP DEFAULT`、`SET NOT NULL`、`DROP NOT NULL`、`VALIDATE CONSTRAINT` 和 `DROP CONSTRAINT`——通过共享审核管线进行标准化处理，不再返回能力边界错误。这些语句在 CI 中产生正常的审计结果，减少了标准分步迁移序列上的误报工作流中断。
 
-### Maintainer Confidence Targets（`v0.22.0`）
+从 `v0.23.0` 开始，包含常见共享规则兼容约束形态的 PostgreSQL `CREATE TABLE` 语句，也可以在 CI 中保持正常审计路径，例如命名 `CHECK` / `UNIQUE` / `FOREIGN KEY`、内联 `CHECK`、内联 `UNIQUE` 与内联 `REFERENCES`。
 
-`v0.22.0` 是 **E2E & Release Confidence Pack**。对于维护者，规范化的 confidence 入口为：
+表述时请保持准确：
+
+- 这是更广的 PostgreSQL `CREATE TABLE` 覆盖范围，不是完整 PostgreSQL DDL 支持
+- 这是共享规则复用，不是新的规则包
+- 内联 `REFERENCES` 仅是 parser-owned 的共享结构，不代表新的 metadata-aware 外键契约
+
+### Maintainer Confidence Targets（`v0.22.0` → `v0.23.0` release 线）
+
+`v0.22.0` 建立了 **E2E & Release Confidence Pack**。进入 `v0.23.0` 后，维护者仍通过同一组规范化仓库入口完成验证：
 
 - `make pg-unit-test-gates`
 - `make pg-e2e-gates`
 - `make pg-confidence-gates`
-- `make release-surface-gates VERSION=v0.22.0`
-- `make release-version-surface-gates VERSION=v0.22.0`
+- `make release-surface-gates VERSION=v0.23.0`
+- `make release-version-surface-gates VERSION=v0.23.0`
 
 ## --fail-on 策略说明
 

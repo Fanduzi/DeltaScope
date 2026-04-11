@@ -371,9 +371,11 @@ All output formats report audit context and rule summary information that helps 
 
 When reviewing migrations, check the skipped-rules count — a high number of skipped rules (especially for your target dialect) may indicate the audit is running under the wrong dialect or that certain rule families are not applicable. This helps you decide whether the current audit result is sufficient or whether additional manual review is needed.
 
-### PostgreSQL Phased Migration Follow-Up Actions (v0.21.0)
+### PostgreSQL Coverage Milestones (v0.21.0 / v0.23.0)
 
-v0.21.0 expands DeltaScope's ability to audit more of the standard PostgreSQL phased migration sequence. The following common follow-up statements are now supported through the shared audit pipeline:
+`v0.21.0` expands DeltaScope's ability to audit more of the standard PostgreSQL phased migration sequence. `v0.23.0` expands common PostgreSQL `CREATE TABLE` coverage for richer constraint shapes. Together they let migration review cover more real-world PostgreSQL DDL without overstating support.
+
+#### Phased Migration Follow-Up Actions (`v0.21.0`)
 
 | Migration Phase | DDL Example | Status |
 |----------------|-------------|--------|
@@ -383,6 +385,25 @@ v0.21.0 expands DeltaScope's ability to audit more of the standard PostgreSQL ph
 | Relax NOT NULL | `ALTER TABLE users ALTER COLUMN status DROP NOT NULL` | Supported, auditable, shared alter rules apply |
 | Validate constraint | `ALTER TABLE users VALIDATE CONSTRAINT chk_amount` | Supported, auditable; no dedicated rule, produces clean audit unless other findings apply |
 | Drop constraint | `ALTER TABLE orders DROP CONSTRAINT chk_amount` | Supported, auditable; primary-key drops map to `ddl.alter.drop_primary_key` rules when metadata is available |
+
+#### Constraint-Rich `CREATE TABLE` Coverage (`v0.23.0`)
+
+| `CREATE TABLE` shape | Example | Status |
+|----------------------|---------|--------|
+| Table-level named `CHECK` | `CONSTRAINT chk_amount CHECK (amount >= 0)` | Supported, auditable; existing naming governance can apply when configured |
+| Column-level inline `CHECK` | `amount numeric check (amount >= 0)` | Supported, auditable; no dedicated new rule family |
+| Table-level named `UNIQUE` | `CONSTRAINT uniq_orders_user UNIQUE (user_id)` | Supported, auditable; existing naming governance can apply when configured |
+| Column-level inline `UNIQUE` | `email text unique` | Supported, auditable; shared index rules can consume normalized index facts |
+| Table-level named `FOREIGN KEY` | `CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)` | Supported, auditable; naming governance matters only when policy allows foreign keys |
+| Column-level inline `REFERENCES` | `user_id bigint references users(id)` | Supported, auditable; parser-owned shared facts only, no invented metadata semantics |
+
+Example: audit a constraint-rich PostgreSQL create-table statement:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (id bigint generated always as identity primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
+```
 
 Example: audit a phased migration follow-up step:
 
@@ -403,3 +424,5 @@ deltascope audit \
 Important notes:
 - `DROP CONSTRAINT` targeting a primary key (e.g., `DROP CONSTRAINT users_pkey`) triggers existing primary-key rules only in metadata-aware mode. In offline mode, it passes through as a normal alter action.
 - `VALIDATE CONSTRAINT` does not have a dedicated rule. It is supported and auditable but produces a clean audit result unless other findings apply to the same statement.
+- `v0.23.0` should be described as broader PostgreSQL `CREATE TABLE` coverage, not full PostgreSQL DDL support.
+- Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.

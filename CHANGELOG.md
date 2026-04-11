@@ -6,6 +6,19 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.23.0] - 2026-04-11
+
+### Added
+
+- PostgreSQL `CREATE TABLE` coverage expanded for common constraint shapes: table-level named `CHECK`, column-level inline `CHECK`, table-level named `UNIQUE`, column-level inline `UNIQUE`, table-level named `FOREIGN KEY`, and column-level inline `REFERENCES`.
+- Shared rule reuse for the newly normalized PostgreSQL create-table structures. Named `CHECK`, `UNIQUE`, and `FOREIGN KEY` constraints can flow into existing structured naming governance where the policy makes those rule families applicable; inline `UNIQUE` contributes index facts; inline `REFERENCES` is exposed as parser-owned shared facts without adding metadata-only semantics.
+- CLI, HTTP, MCP, and public Go API (`pkg/deltascope`) parity confirmed for the expanded PostgreSQL `CREATE TABLE` coverage.
+
+### Changed
+
+- Release-facing docs now position `v0.23.0` as a PostgreSQL `CREATE TABLE` coverage pack, not full PostgreSQL DDL support and not a new-rule release.
+- Reference docs and recipes now distinguish supported, auditable, rule-mapped, and metadata-dependent behavior for the richer PostgreSQL create-table shapes.
+
 ## [v0.22.0] - 2026-04-11
 
 ### Added
