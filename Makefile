@@ -241,7 +241,7 @@ pg-confidence-gates:
 # release-surface-gates: verify reusable package/release invariants that should block release.
 # VERSION may be passed explicitly (for tag release checks) and otherwise defaults to the current MCP launcher package version.
 release-surface-gates:
-	@set -euo pipefail; \
+	@set -eu; \
 	version="$(VERSION)"; \
 	if [ -z "$$version" ]; then \
 		version="v$$(node -p 'require("./packages/deltascope-mcp/package.json").version')"; \
@@ -253,7 +253,7 @@ release-surface-gates:
 # release-version-surface-gates: verify versioned docs surfaces for the current release.
 # This stays separate from the release-blocking package contract so docs wording can evolve independently.
 release-version-surface-gates:
-	@set -euo pipefail; \
+	@set -eu; \
 	version="$(VERSION)"; \
 	test -n "$$version"; \
 	en_notes="docs/releases/release-notes-$${version}.md"; \
