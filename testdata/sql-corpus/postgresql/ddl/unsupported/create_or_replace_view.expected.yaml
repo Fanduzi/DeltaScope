@@ -1,0 +1,10 @@
+name: create_or_replace_view
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1
+  findings:
+    include: []
+    exclude: []

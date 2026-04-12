@@ -1,0 +1,18 @@
+name: create_table_inline_references_forbid
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.foreign_key.forbid
+    exclude: []
+  facts:
+    constraints:
+      - type: foreign_key
+        referenced_table: users
+        referenced_columns: [id]

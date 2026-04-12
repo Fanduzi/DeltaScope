@@ -27,6 +27,19 @@ type corpusExpected struct {
 			Exclude []string `yaml:"exclude"`
 		} `yaml:"findings"`
 	} `yaml:"expect"`
+	Facts *corpusFacts `yaml:"facts"`
+}
+
+// corpusFacts carries expected structural facts for deeper assertions.
+type corpusFacts struct {
+	Constraints []corpusFactConstraint `yaml:"constraints"`
+}
+
+// corpusFactConstraint is one expected constraint fact.
+type corpusFactConstraint struct {
+	Type              string   `yaml:"type"`
+	ReferencedTable   string   `yaml:"referenced_table,omitempty"`
+	ReferencedColumns []string `yaml:"referenced_columns,omitempty"`
 }
 
 var validDialects = map[string]bool{
@@ -114,6 +127,15 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				for _, id := range tc.Expect.Findings.Exclude {
 					if id == "" {
 						t.Fatal("findings.exclude must not contain empty strings")
+					}
+				}
+			}
+
+			// 6. Validate facts.constraints if present.
+			if tc.Facts != nil {
+				for _, c := range tc.Facts.Constraints {
+					if c.Type == "" {
+						t.Fatal("facts.constraints[].type must not be empty")
 					}
 				}
 			}
