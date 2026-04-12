@@ -241,6 +241,15 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 - `make release-surface-gates VERSION=vX.Y.Z` —— package/release 合同校验
 - `make release-version-surface-gates VERSION=vX.Y.Z` —— 带版本的文档/安装/release-notes 校验
 
+## 语料库支撑的置信度（`v0.25.0`）
+
+`v0.25.0` 是 **SQL 语料库与边界置信度包**。它新增了跨方言的 SQL 语料库（`testdata/sql-corpus/`），通过现有审计应用层运行代表性的 MySQL、TiDB 和 PostgreSQL 用例，并在两个层面断言预期结果：
+
+1. **报告层**——不支持计数、语句类型、findings 包含/排除。
+2. **语义层**——操作名和约束事实（类型、名称、列、被引用表/列）。
+
+语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。`GENERATED ... AS IDENTITY` 作为当前边界 finding 记录；修复项跟踪在 `PostgreSQL CREATE TABLE Unsupported Boundary Pack` 中。
+
 ---
 
 ## DML

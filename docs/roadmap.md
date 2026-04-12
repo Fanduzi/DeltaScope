@@ -4,7 +4,7 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Next Milestone: v0.25.0 SQL Corpus & Boundary Confidence Pack
+## Current Milestone: v0.25.0 SQL Corpus & Boundary Confidence Pack
 
 **Goal:** build a durable SQL corpus and table-driven audit harness for MySQL, TiDB, and PostgreSQL.
 

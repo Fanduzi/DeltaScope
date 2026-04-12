@@ -6,6 +6,21 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.25.0] - 2026-04-12
+
+### Added
+
+- Dialect-wide SQL corpus harness (`testdata/sql-corpus/`) with MySQL, TiDB, and PostgreSQL baseline cases covering supported, unsupported, finding-producing, clean, and boundary categories.
+- Two-layer corpus assertions: report-level audit checks (unsupported count, statement kind, findings) plus semantic parse/extract assertions (operation name, constraint facts) driven by a single `.expected.yaml` file per case.
+- MySQL baseline corpus: DDL supported (primary key), DDL findings (foreign key forbid), DML findings (UPDATE/DELETE without WHERE), DML clean (UPDATE/DELETE with WHERE).
+- TiDB baseline corpus: DDL supported (primary key), DML findings (UPDATE/DELETE without WHERE), DML clean (UPDATE with WHERE).
+- PostgreSQL baseline corpus: DDL supported (named CHECK, UNIQUE, FOREIGN KEY, inline REFERENCES), DDL findings (inline REFERENCES forbid), DDL unsupported (CREATE OR REPLACE VIEW), DDL boundary (GENERATED ... AS IDENTITY, PARTITION BY).
+- `GENERATED ... AS IDENTITY` is recorded as a current boundary finding in the corpus — it is not fixed in this release. Follow-up: `PostgreSQL CREATE TABLE Unsupported Boundary Pack`.
+
+### Changed
+
+- Release-facing docs now position `v0.25.0` as the **SQL Corpus & Boundary Confidence Pack** — a durable corpus and table-driven audit harness that answers which representative SQL statements have been run through DeltaScope and what outcomes are expected. It does not add new rules, new CLI flags, or new public API contracts.
+
 ## [v0.24.0] - 2026-04-11
 
 ### Added

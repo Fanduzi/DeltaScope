@@ -1,0 +1,12 @@
+name: create_table_foreign_key_forbid
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.foreign_key.forbid
+    exclude: []

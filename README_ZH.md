@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.24.0` 为止，DeltaScope 深化了 `v0.23.0` 已纳入的 PostgreSQL `CREATE TABLE` 结构的语义信息——具名和内联 `FOREIGN KEY` / `REFERENCES` 现在保留解析器拥有的被引用表和被引用列事实，并通过共享审核管线流转至既有规则族。这是 `v0.23.0` 的语义深化，不代表完整 PostgreSQL DDL 支持。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.25.0` 为止，DeltaScope 引入了跨方言的 SQL 语料库与双层断言机制——覆盖 MySQL、TiDB 和 PostgreSQL 的代表性基线用例，用于回答"哪些 SQL 语句实际通过了引擎，预期结果是什么"这一发布信心问题。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,19 +32,21 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.24.0/install.sh | \
-  DELTASCOPE_VERSION=v0.24.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.25.0/install.sh | \
+  DELTASCOPE_VERSION=v0.25.0 sh
 ```
 
-### PostgreSQL CREATE TABLE Semantics Pack（`v0.24.0`）
+### SQL 语料库与边界置信度包（`v0.25.0`）
 
-`v0.24.0` 深化了 `v0.23.0` 已纳入共享审核管线的 PostgreSQL `CREATE TABLE` 形态的语义信息，不新增 PostgreSQL 规则 ID，也不宣称完整 PostgreSQL DDL 支持。
+`v0.25.0` 引入了持久化 SQL 语料库（`testdata/sql-corpus/`），覆盖 MySQL、TiDB 和 PostgreSQL 的代表性基线用例。本版本不新增规则、CLI 标志或公共 API 契约。
 
-- 具名 `FOREIGN KEY` 和内联 `REFERENCES` 现在保留解析器拥有的被引用表和被引用列作为共享契约事实。
-- 已有的共享 FK 命名治理和 `ddl.table.foreign_key.forbid` 继续适用于更丰富的外键形态。
-- `ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是实时元数据真相。
-- 不支持的边界（`GENERATED ... AS IDENTITY`、`PARTITION BY`）仍明确处于支持面之外。
-- `make release-surface-gates VERSION=v0.24.0` 与 `make release-version-surface-gates VERSION=v0.24.0` 用于校验 package/release 与带版本文档面。
+- 每个语料用例由 `.sql` + `.expected.yaml` 文件对组成，通过现有审计应用层驱动。
+- 双层断言：报告层检查（不支持计数、语句类型、findings）和语义解析/提取层检查（操作名、约束事实）。
+- 语料用例覆盖 supported、unsupported、findings、clean 和 boundary 类别。
+- `GENERATED ... AS IDENTITY` 作为当前边界 finding 记录在语料库中——本版本未修复。后续待办：`PostgreSQL CREATE TABLE Unsupported Boundary Pack`。
+- `make release-surface-gates VERSION=v0.25.0` 与 `make release-version-surface-gates VERSION=v0.25.0` 用于校验 package/release 与带版本文档面。
+
+上一里程碑：`v0.24.0` 深化了 PostgreSQL `CREATE TABLE` 外键语义（`ReferencedTable` / `ReferencedColumns` 作为解析器拥有的结构事实）。详见 [v0.24.0 发行说明](docs/releases/release-notes-v0.24.0.zh-CN.md)。
 
 如果你需要 PostgreSQL 离线审计：
 

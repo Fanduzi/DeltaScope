@@ -255,6 +255,15 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 - `make release-surface-gates VERSION=vX.Y.Z` — package/release contract verification
 - `make release-version-surface-gates VERSION=vX.Y.Z` — versioned docs/install/release-notes verification
 
+## Corpus-Backed Confidence (`v0.25.0`)
+
+`v0.25.0` is the **SQL Corpus & Boundary Confidence Pack**. It adds a dialect-wide SQL corpus harness (`testdata/sql-corpus/`) that runs representative MySQL, TiDB, and PostgreSQL cases through the existing audit application layer and asserts expected outcomes at two layers:
+
+1. **Report-level** — unsupported count, statement kind, findings include/exclude.
+2. **Semantic** — operation name and constraint facts (type, name, columns, referenced table/columns).
+
+The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are. `GENERATED ... AS IDENTITY` is recorded as a current boundary finding; the fix is tracked under `PostgreSQL CREATE TABLE Unsupported Boundary Pack`.
+
 ---
 
 ## DML

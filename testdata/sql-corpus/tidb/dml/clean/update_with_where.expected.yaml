@@ -1,0 +1,12 @@
+name: update_with_where
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  unsupported:
+    count: 0
+  findings:
+    include: []
+    exclude:
+      - dml.where.require
