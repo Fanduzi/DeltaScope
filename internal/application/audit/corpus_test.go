@@ -150,6 +150,13 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 				}
 			}
 
+			// Semantic assertions: operation and facts via parse/extract path.
+			if len(result.Statements) > 0 {
+				if tc.Expect.Operation != "" || (tc.Facts != nil && len(tc.Facts.Constraints) > 0) {
+					corpusAssertSemantic(t, string(sqlBytes), dialect, tc)
+				}
+			}
+
 			t.Logf("OK: %s (%s/%s) verdict=%s findings=%v unsupported=%d",
 				tc.Name, tc.Dialect, tc.Category, result.Verdict, sortedKeys(allRuleIDs), len(result.Unsupported))
 		})

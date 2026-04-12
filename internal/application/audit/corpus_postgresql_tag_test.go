@@ -118,85 +118,15 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 				}
 			}
 
-			// Assert facts.constraints if present in expected.
-			if tc.Facts != nil && len(tc.Facts.Constraints) > 0 {
-				// report.Result does not expose DDL constraints directly.
-				// Use parse+extract to get spec.Statement for fact checking.
-				assertConstraintFacts(t, string(sqlBytes), tc.Facts.Constraints)
+			// Semantic assertions: operation and facts via parse/extract path.
+			if len(result.Statements) > 0 {
+				if tc.Expect.Operation != "" || (tc.Facts != nil && len(tc.Facts.Constraints) > 0) {
+					corpusAssertSemantic(t, string(sqlBytes), spec.DialectPostgreSQL, tc)
+				}
 			}
 
 			t.Logf("OK: %s (%s/%s) verdict=%s findings=%v unsupported=%d audit_err=%v",
 				tc.Name, tc.Dialect, tc.Category, result.Verdict, sortedKeys(allRuleIDs), len(result.Unsupported), auditErr)
 		})
 	}
-}
-
-// assertConstraintFacts parses and extracts the SQL to verify expected constraint facts.
-// This is test-only — it uses the internal parse+extract path to access spec.Statement.DDL.Constraints,
-// which report.Result does not expose.
-func assertConstraintFacts(t *testing.T, sql string, expected []corpusFactConstraint) {
-	t.Helper()
-
-	parsed, err := Parse(sql, spec.DialectPostgreSQL)
-	if err != nil {
-		t.Fatalf("constraint facts: parse failed: %v", err)
-	}
-	statements, err := Extract(parsed)
-	if err != nil {
-		t.Fatalf("constraint facts: extract failed: %v", err)
-	}
-
-	// Filter to supported statements only.
-	var supported *spec.Statement
-	for i := range statements {
-		if statements[i].Unsupported == nil {
-			supported = &statements[i]
-			break
-		}
-	}
-	if supported == nil || supported.DDL == nil {
-		t.Fatal("constraint facts: no supported DDL statement found")
-	}
-
-	actualConstraints := supported.DDL.Constraints
-	for _, exp := range expected {
-		found := false
-		for _, actual := range actualConstraints {
-			if actual.Type != exp.Type {
-				continue
-			}
-			if exp.Type == "foreign_key" {
-				if actual.ReferencedTable == exp.ReferencedTable &&
-					stringSlicesEqual(actual.ReferencedColumns, exp.ReferencedColumns) {
-					found = true
-					break
-				}
-			} else {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("facts.constraints: expected %s constraint with referenced_table=%q referenced_columns=%v, not found in %+v",
-				exp.Type, exp.ReferencedTable, exp.ReferencedColumns, actualConstraints)
-		}
-	}
-}
-
-// stringSlicesEqual compares two string slices for equality, ignoring order.
-func stringSlicesEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	seen := make(map[string]int)
-	for _, s := range a {
-		seen[s]++
-	}
-	for _, s := range b {
-		seen[s]--
-		if seen[s] < 0 {
-			return false
-		}
-	}
-	return true
 }

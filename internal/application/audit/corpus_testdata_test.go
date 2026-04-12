@@ -38,6 +38,8 @@ type corpusFacts struct {
 // corpusFactConstraint is one expected constraint fact.
 type corpusFactConstraint struct {
 	Type              string   `yaml:"type"`
+	Name              string   `yaml:"name,omitempty"`
+	Columns           []string `yaml:"columns,omitempty"`
 	ReferencedTable   string   `yaml:"referenced_table,omitempty"`
 	ReferencedColumns []string `yaml:"referenced_columns,omitempty"`
 }
@@ -51,6 +53,12 @@ var validDialects = map[string]bool{
 var validCategories = map[string]bool{
 	"ddl": true,
 	"dml": true,
+}
+
+var validStatementKinds = map[string]bool{
+	"ddl":    true,
+	"dml":    true,
+	"unknown": true,
 }
 
 // corpusExpectedFiles walks corpusRoot recursively and returns all
@@ -117,6 +125,18 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				}
 			}
 
+			// 5. Validate operation if present — must not be empty.
+			if tc.Expect.Operation != "" {
+				// non-empty is valid
+			}
+
+			// 6. Validate statement_kind if present — must be a known enum.
+			if tc.Expect.StatementKind != "" {
+				if !validStatementKinds[tc.Expect.StatementKind] {
+					t.Fatalf("invalid statement_kind %q; must be one of ddl, dml, unknown", tc.Expect.StatementKind)
+				}
+			}
+
 			// 5. Validate findings lists if present.
 			if tc.Expect.Findings != nil {
 				for _, id := range tc.Expect.Findings.Include {
@@ -131,11 +151,21 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				}
 			}
 
-			// 6. Validate facts.constraints if present.
+			// 7. Validate facts.constraints if present.
 			if tc.Facts != nil {
 				for _, c := range tc.Facts.Constraints {
 					if c.Type == "" {
 						t.Fatal("facts.constraints[].type must not be empty")
+					}
+					for _, col := range c.Columns {
+						if col == "" {
+							t.Fatal("facts.constraints[].columns must not contain empty strings")
+						}
+					}
+					for _, col := range c.ReferencedColumns {
+						if col == "" {
+							t.Fatal("facts.constraints[].referenced_columns must not contain empty strings")
+						}
 					}
 				}
 			}
