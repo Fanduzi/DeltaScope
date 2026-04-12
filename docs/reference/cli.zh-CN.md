@@ -542,6 +542,12 @@ deltascope --version
 
 ---
 
+## 发布验证
+
+从 `v0.25.0` 开始，DeltaScope 的发布验证新增了 SQL 语料库测试，通过审计应用层运行代表性的 MySQL、TiDB 和 PostgreSQL 用例，并进行双层断言（报告层与语义层）。这些语料测试是发布信心资产，不影响 CLI 行为，也不需要用户进行任何操作。
+
+---
+
 ## 参考链接
 
 - **规则目录** — [rules.zh-CN.md](rules.zh-CN.md)

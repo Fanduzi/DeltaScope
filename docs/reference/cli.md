@@ -597,6 +597,12 @@ deltascope --version
 
 ---
 
+## Release Validation
+
+Starting with `v0.25.0`, DeltaScope release validation includes SQL corpus tests that run representative MySQL, TiDB, and PostgreSQL cases through the audit application layer with two-layer assertions (report-level and semantic). These corpus tests are release-confidence assets and do not affect CLI behavior or require any user action.
+
+---
+
 ## Cross-References
 
 - **Rule catalog** — [rules.md](rules.md)
