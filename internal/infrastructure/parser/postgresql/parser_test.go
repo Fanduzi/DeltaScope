@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
 
 func TestParserParsesMultiStatementSQL(t *testing.T) {
@@ -1145,4 +1146,263 @@ func extractPostgreSQLStatement(t *testing.T, sql string) spec.Statement {
 		t.Fatalf("extract: %v", err)
 	}
 	return statement
+}
+
+// parseCreateStmtAST parses SQL and returns the raw *pg_query.CreateStmt node
+// for direct AST inspection. Used by characterization tests.
+func parseCreateStmtAST(t *testing.T, sql string) *pg_query.CreateStmt {
+	t.Helper()
+	result, err := pg_query.Parse(sql)
+	if err != nil {
+		t.Fatalf("pg_query.Parse: %v", err)
+	}
+	stmts := result.GetStmts()
+	if len(stmts) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(stmts))
+	}
+	node := stmts[0].GetStmt()
+	if node == nil {
+		t.Fatal("stmt node is nil")
+	}
+	createStmt, ok := node.GetNode().(*pg_query.Node_CreateStmt)
+	if !ok {
+		t.Fatalf("expected *Node_CreateStmt, got %T", node.GetNode())
+	}
+	return createStmt.CreateStmt
+}
+
+// ---------------------------------------------------------------------------
+// v0.26.0 Task 1: AST characterization tests for CREATE TABLE boundary cases
+// ---------------------------------------------------------------------------
+// These tests lock down AST facts about how pg_query_go/v6 represents
+// PostgreSQL features that are currently unsupported by the extractor.
+// They do NOT assert extractor behavior — only the raw AST shape so that
+// Task 2+ can make informed changes.
+// ---------------------------------------------------------------------------
+
+func TestParseCreateTableIdentityColumnAST(t *testing.T) {
+	sql := `CREATE TABLE users (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email text
+);`
+
+	stmt := parseCreateStmtAST(t, sql)
+
+	// There should be 2 table elements (id column, email column).
+	// PRIMARY KEY is an inline column constraint, not a separate table element.
+	elts := stmt.GetTableElts()
+	if len(elts) != 2 {
+		t.Fatalf("expected 2 table elements, got %d", len(elts))
+	}
+
+	// First element must be a ColumnDef.
+	colNode := elts[0].GetColumnDef()
+	if colNode == nil {
+		t.Fatal("first table element is not a ColumnDef")
+	}
+
+	// FACT 1: ColumnDef.Identity is EMPTY for GENERATED ALWAYS AS IDENTITY.
+	// Despite the protobuf field existing, pg_query_go/v6 represents identity
+	// through the column constraint list (CONSTR_IDENTITY), not via this field.
+	identity := colNode.GetIdentity()
+	t.Logf("ColumnDef.Identity = %q", identity)
+	if identity != "" {
+		t.Logf("ColumnDef.Identity is non-empty (%q) — the hypothesis that it is always empty was wrong", identity)
+	}
+
+	// FACT 2: Identity is represented as CONSTR_IDENTITY (4) in the column
+	// constraint list, with GeneratedWhen="a" (ALWAYS).
+	constraints := colNode.GetConstraints()
+	t.Logf("ColumnDef has %d inline constraints", len(constraints))
+	var identityConstraint *pg_query.Constraint
+	for _, c := range constraints {
+		con := c.GetConstraint()
+		if con != nil && con.GetContype() == pg_query.ConstrType_CONSTR_IDENTITY {
+			identityConstraint = con
+			break
+		}
+	}
+	if identityConstraint == nil {
+		t.Fatal("expected CONSTR_IDENTITY in column constraint list for GENERATED ALWAYS AS IDENTITY")
+	}
+	t.Logf("CONSTR_IDENTITY.GeneratedWhen = %q", identityConstraint.GetGeneratedWhen())
+	if identityConstraint.GetGeneratedWhen() != "a" {
+		t.Fatalf("expected GeneratedWhen='a' for ALWAYS, got %q", identityConstraint.GetGeneratedWhen())
+	}
+
+	// FACT 3: PRIMARY KEY appears as CONSTR_PRIMARY in the column constraint list.
+	foundPrimary := false
+	for _, c := range constraints {
+		con := c.GetConstraint()
+		if con != nil && con.GetContype() == pg_query.ConstrType_CONSTR_PRIMARY {
+			foundPrimary = true
+			break
+		}
+	}
+	if !foundPrimary {
+		t.Fatal("expected CONSTR_PRIMARY in column constraint list for PRIMARY KEY")
+	}
+}
+
+func TestParseCreateTableGeneratedStoredColumnAST(t *testing.T) {
+	sql := `CREATE TABLE users (
+  first_name text,
+  last_name text,
+  full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED
+);`
+
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 3 {
+		t.Fatalf("expected 3 table elements, got %d", len(elts))
+	}
+
+	// Third element is the generated column.
+	colNode := elts[2].GetColumnDef()
+	if colNode == nil {
+		t.Fatal("third table element is not a ColumnDef")
+	}
+	if colNode.GetColname() != "full_name" {
+		t.Fatalf("expected column name 'full_name', got %q", colNode.GetColname())
+	}
+
+	// FACT 1: ColumnDef.Generated is EMPTY for GENERATED ALWAYS AS (...) STORED.
+	// Despite the protobuf field existing, pg_query_go/v6 represents generated
+	// columns through the column constraint list (CONSTR_GENERATED), not via this field.
+	generated := colNode.GetGenerated()
+	t.Logf("ColumnDef.Generated = %q", generated)
+	if generated != "" {
+		t.Logf("ColumnDef.Generated is non-empty (%q) — the hypothesis that it is always empty was wrong", generated)
+	}
+
+	// FACT 2: ColumnDef.Identity is also empty (this is a generated column, not identity).
+	identity := colNode.GetIdentity()
+	t.Logf("ColumnDef.Identity = %q", identity)
+	if identity != "" {
+		t.Fatalf("expected ColumnDef.Identity to be empty for GENERATED column, got %q", identity)
+	}
+
+	// FACT 3: The generated expression is represented as CONSTR_GENERATED (5) in
+	// the column constraint list, with GeneratedWhen="a" (ALWAYS) and RawExpr populated.
+	constraints := colNode.GetConstraints()
+	t.Logf("ColumnDef has %d inline constraints", len(constraints))
+	var generatedConstraint *pg_query.Constraint
+	for _, c := range constraints {
+		con := c.GetConstraint()
+		if con != nil && con.GetContype() == pg_query.ConstrType_CONSTR_GENERATED {
+			generatedConstraint = con
+			break
+		}
+	}
+	if generatedConstraint == nil {
+		t.Fatal("expected CONSTR_GENERATED in column constraint list for GENERATED ALWAYS AS (...) STORED")
+	}
+
+	// FACT 4: GeneratedWhen is "a" for ALWAYS.
+	gw := generatedConstraint.GetGeneratedWhen()
+	t.Logf("CONSTR_GENERATED.GeneratedWhen = %q", gw)
+	if gw != "a" {
+		t.Fatalf("expected GeneratedWhen='a' for ALWAYS, got %q", gw)
+	}
+
+	// FACT 5: RawExpr is populated with the generation expression.
+	if generatedConstraint.GetRawExpr() == nil {
+		t.Fatal("expected CONSTR_GENERATED.RawExpr to be non-nil for generated column expression")
+	}
+}
+
+func TestParseCreateTableExclusionConstraintAST(t *testing.T) {
+	sql := `CREATE TABLE bookings (
+  room_id int,
+  during tsrange,
+  EXCLUDE USING gist (room_id WITH =, during WITH &&)
+);`
+
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 3 {
+		t.Fatalf("expected 3 table elements, got %d", len(elts))
+	}
+
+	// Third element should be the EXCLUDE constraint (a table-level constraint).
+	constraintNode := elts[2].GetConstraint()
+	if constraintNode == nil {
+		t.Fatal("third table element is not a Constraint node")
+	}
+
+	// FACT 1: The exclusion constraint has contype CONSTR_EXCLUSION (9).
+	contype := constraintNode.GetContype()
+	t.Logf("Constraint.Contype = %s (%d)", contype.String(), contype)
+	if contype != pg_query.ConstrType_CONSTR_EXCLUSION {
+		t.Fatalf("expected CONSTR_EXCLUSION, got %s (%d)", contype.String(), contype)
+	}
+
+	// FACT 2: The access method ("gist") is stored in Constraint.AccessMethod.
+	accessMethod := constraintNode.GetAccessMethod()
+	t.Logf("Constraint.AccessMethod = %q", accessMethod)
+	if accessMethod != "gist" {
+		t.Fatalf("expected access method 'gist', got %q", accessMethod)
+	}
+
+	// FACT 3: The exclusion elements are stored in Constraint.Exclusions.
+	exclusions := constraintNode.GetExclusions()
+	t.Logf("Constraint.Exclusions count = %d", len(exclusions))
+	if len(exclusions) == 0 {
+		t.Fatal("expected non-empty Exclusions list for EXCLUDE constraint")
+	}
+
+	// FACT 4: The constraint name is empty (unnamed exclusion constraint).
+	conname := constraintNode.GetConname()
+	t.Logf("Constraint.Conname = %q", conname)
+
+	// FACT 5: Verify the exclusion constraint has no FK/PK related fields populated.
+	if constraintNode.GetFkAttrs() != nil {
+		t.Log("Constraint.FkAttrs is populated (unexpected for EXCLUSION)")
+	}
+}
+
+func TestParseCreateTablePartitionByAST(t *testing.T) {
+	sql := `CREATE TABLE events (
+  id bigint,
+  created_at timestamptz NOT NULL
+) PARTITION BY RANGE (created_at);`
+
+	stmt := parseCreateStmtAST(t, sql)
+
+	// FACT 1: CreateStmt.Partspec is non-nil for PARTITION BY.
+	partspec := stmt.GetPartspec()
+	t.Logf("CreateStmt.Partspec != nil: %v", partspec != nil)
+	if partspec == nil {
+		t.Fatal("expected CreateStmt.Partspec to be non-nil for PARTITION BY RANGE")
+	}
+
+	// FACT 2: The partition strategy is RANGE (PartitionStrategy_PARTITION_STRATEGY_RANGE = 2).
+	strategy := partspec.GetStrategy()
+	t.Logf("PartitionSpec.Strategy = %s (%d)", strategy.String(), strategy)
+	if strategy != pg_query.PartitionStrategy_PARTITION_STRATEGY_RANGE {
+		t.Fatalf("expected PARTITION_STRATEGY_RANGE, got %s (%d)", strategy.String(), strategy)
+	}
+
+	// FACT 3: PartitionSpec.PartParams contains the partition key columns.
+	partParams := partspec.GetPartParams()
+	t.Logf("PartitionSpec.PartParams count = %d", len(partParams))
+	if len(partParams) == 0 {
+		t.Fatal("expected non-empty PartParams for PARTITION BY RANGE")
+	}
+
+	// FACT 4: CreateStmt.Partbound should be nil for a top-level partitioned table
+	// (Partbound is used when attaching a partition, not when declaring the parent).
+	partbound := stmt.GetPartbound()
+	t.Logf("CreateStmt.Partbound != nil: %v", partbound != nil)
+	if partbound != nil {
+		t.Log("CreateStmt.Partbound is non-nil — this is unexpected for a partitioned parent table")
+	}
+
+	// FACT 5: TableElts should still contain the regular column definitions.
+	elts := stmt.GetTableElts()
+	if len(elts) != 2 {
+		t.Fatalf("expected 2 table elements, got %d", len(elts))
+	}
 }
