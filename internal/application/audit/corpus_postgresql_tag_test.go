@@ -81,6 +81,22 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 				}
 			}
 
+			// Assert unsupported.include.
+			if tc.Expect.Unsupported != nil {
+				for _, feat := range tc.Expect.Unsupported.Include {
+					found := false
+					for _, u := range result.Unsupported {
+						if u.Feature == feat {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("unsupported.include: expected feature %q not found (actual: %+v)", feat, unsupportedFeatures(result.Unsupported))
+					}
+				}
+			}
+
 			// Assert statement_kind.
 			if tc.Expect.StatementKind != "" {
 				if len(result.Statements) == 0 {
@@ -129,4 +145,13 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 				tc.Name, tc.Dialect, tc.Category, result.Verdict, sortedKeys(allRuleIDs), len(result.Unsupported), auditErr)
 		})
 	}
+}
+
+// unsupportedFeatures returns a summary of unsupported detail features for error messages.
+func unsupportedFeatures(details []spec.UnsupportedDetail) []string {
+	features := make([]string, 0, len(details))
+	for _, d := range details {
+		features = append(features, d.Feature)
+	}
+	return features
 }

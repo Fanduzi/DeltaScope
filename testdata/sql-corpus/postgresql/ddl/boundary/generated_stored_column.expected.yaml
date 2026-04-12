@@ -1,4 +1,4 @@
-name: generated_identity
+name: generated_stored_column
 dialect: postgresql
 category: ddl
 expect:
@@ -6,7 +6,7 @@ expect:
   unsupported:
     count: 1
     include:
-      - generated_as_identity
+      - generated_column
   findings:
     include: []
     exclude: []

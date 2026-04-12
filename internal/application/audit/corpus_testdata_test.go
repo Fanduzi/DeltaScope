@@ -20,7 +20,8 @@ type corpusExpected struct {
 		StatementKind  string   `yaml:"statement_kind"`
 		Operation      string   `yaml:"operation"`
 		Unsupported    *struct {
-			Count *int `yaml:"count"`
+			Count   *int     `yaml:"count"`
+			Include []string `yaml:"include,omitempty"`
 		} `yaml:"unsupported"`
 		Findings *struct {
 			Include []string `yaml:"include"`
@@ -118,10 +119,15 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				t.Fatalf("invalid category %q; must be one of ddl, dml", tc.Category)
 			}
 
-			// 4. Validate unsupported.count if present.
-			if tc.Expect.Unsupported != nil && tc.Expect.Unsupported.Count != nil {
-				if *tc.Expect.Unsupported.Count < 0 {
+			// 4. Validate unsupported fields if present.
+			if tc.Expect.Unsupported != nil {
+				if tc.Expect.Unsupported.Count != nil && *tc.Expect.Unsupported.Count < 0 {
 					t.Fatalf("unsupported.count must be >= 0, got %d", *tc.Expect.Unsupported.Count)
+				}
+				for _, feat := range tc.Expect.Unsupported.Include {
+					if feat == "" {
+						t.Fatal("unsupported.include must not contain empty strings")
+					}
 				}
 			}
 
@@ -137,7 +143,7 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				}
 			}
 
-			// 5. Validate findings lists if present.
+			// 7. Validate findings lists if present.
 			if tc.Expect.Findings != nil {
 				for _, id := range tc.Expect.Findings.Include {
 					if id == "" {
@@ -151,7 +157,7 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				}
 			}
 
-			// 7. Validate facts.constraints if present.
+			// 8. Validate facts.constraints if present.
 			if tc.Facts != nil {
 				for _, c := range tc.Facts.Constraints {
 					if c.Type == "" {
