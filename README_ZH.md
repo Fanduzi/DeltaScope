@@ -46,7 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.25.0/install.
 - `GENERATED ... AS IDENTITY` 作为当前边界 finding 记录在语料库中——本版本未修复。后续待办：`PostgreSQL CREATE TABLE Unsupported Boundary Pack`。
 - `make release-surface-gates VERSION=v0.25.0` 与 `make release-version-surface-gates VERSION=v0.25.0` 用于校验 package/release 与带版本文档面。
 
-上一里程碑：`v0.24.0` 深化了 PostgreSQL `CREATE TABLE` 外键语义（`ReferencedTable` / `ReferencedColumns` 作为解析器拥有的结构事实）。详见 [v0.24.0 发行说明](docs/releases/release-notes-v0.24.0.md)。
+上一里程碑：`v0.24.0` 深化了 PostgreSQL `CREATE TABLE` 外键语义（`ReferencedTable` / `ReferencedColumns` 作为解析器拥有的结构事实）。详见 [v0.24.0 发行说明](docs/releases/release-notes-v0.24.0.zh-CN.md)。
 
 如果你需要 PostgreSQL 离线审计：
 
