@@ -4,58 +4,35 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.25.0 SQL Corpus & Boundary Confidence Pack
+## Latest Completed Milestone: v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack
 
-**Goal:** build a durable SQL corpus and table-driven audit harness for MySQL, TiDB, and PostgreSQL.
+**Goal:** tighten the PostgreSQL `CREATE TABLE` unsupported boundary contract at the extractor level, backed by corpus cases and surface parity tests.
 
-The milestone should answer a practical release-confidence question: which representative SQL statements have actually been run through DeltaScope, and what outcomes are expected?
+The milestone answers a practical boundary-confidence question: which PostgreSQL `CREATE TABLE` forms are explicitly outside the supported surface, and how is that contract verified?
 
-### Scope
+### Completed Scope
 
-- Add `testdata/sql-corpus/` with dialect-specific SQL examples and expected outcomes.
-- Cover representative MySQL, TiDB, and PostgreSQL DDL/DML cases.
-- Assert stable audit facts instead of full rendered-output snapshots.
-- Include supported, unsupported, finding-producing, clean, and boundary examples.
-- Run corpus tests through the existing audit application layer.
-- Keep transport E2E coverage sampled rather than exhaustive.
-
-### Initial Coverage Targets
-
-- MySQL DDL/DML baseline: `CREATE TABLE`, `ALTER TABLE`, `CREATE/DROP INDEX`, `UPDATE`, `DELETE`, and `INSERT`.
-- TiDB DDL/DML baseline: MySQL-compatible core cases plus TiDB-specific compatibility boundaries where relevant.
-- PostgreSQL DDL baseline: recently expanded `ALTER TABLE` and `CREATE TABLE` forms from the `v0.21.0` through `v0.24.0` release line.
-
-### Non-Goals
-
-- Do not claim full vendor grammar conformance.
-- Do not add a broad new rule pack.
-- Do not convert every case into CLI/HTTP/MCP E2E.
-- Do not widen SQL support just to populate the corpus.
-
-## Next Milestone: v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack
-
-The `v0.25.0` SQL corpus records current boundary behavior. `v0.26.0` should own the actual PostgreSQL unsupported-boundary fixes and parity work.
-
-Track these cases:
-
-- `GENERATED ... AS IDENTITY`
-- generated stored columns
-- partitioned `CREATE TABLE`
-- exclusion constraints
-- schema-qualified foreign-key references
-
-Known implementation concern:
-
-- The current PostgreSQL extractor has a `column.GetIdentity()` guard, but `pg_query_go/v6` may expose identity columns as a `CONSTR_IDENTITY` constraint instead. This needs a dedicated red/green investigation before changing behavior.
-
-Expected follow-up outcomes:
-
-- Each boundary has parser-level tests.
-- Each boundary has audit-service tests.
-- At least CLI and public Go API unsupported output parity is covered.
+- Extractor-level `unsupportedStatement` return for `generated_as_identity`, `generated_column`, `exclusion_constraint`, and `partitioning`.
+- PostgreSQL corpus cases lock each boundary with precise `.expected.yaml` assertions.
+- Surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` verify the unsupported contract on every transport.
 - Docs distinguish unsupported boundaries from supported `v0.23.0` / `v0.24.0` create-table semantics.
 
-Schema-qualified foreign-key references are a decision point:
+### Boundary Contracts
+
+| Feature | Extractor Tag |
+|---------|---------------|
+| Identity columns (`GENERATED ... AS IDENTITY`) | `generated_as_identity` |
+| Generated stored columns (`GENERATED ALWAYS AS ... STORED`) | `generated_column` |
+| Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` |
+| Partitioned tables (`PARTITION BY`) | `partitioning` |
+
+## Next Follow-up
+
+Schema-qualified foreign-key references remain a decision point:
 
 - If preserving schema requires a shared contract expansion, run impact analysis on `spec.Constraint` first.
 - If the impact is not clearly low, defer `ReferencedSchema` to a later milestone rather than mixing it into boundary tightening.
+
+Additional potential follow-up (not committed):
+
+- `ALTER TABLE ... GENERATED` boundary coverage.

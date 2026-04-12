@@ -427,3 +427,16 @@ deltascope audit \
 - `v0.23.0` 应被描述为更广的 PostgreSQL `CREATE TABLE` 覆盖范围，而不是完整 PostgreSQL DDL 支持。
 - `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。
+
+##### 不支持边界收口（`v0.26.0`）
+
+从 `v0.26.0` 开始，以下 PostgreSQL `CREATE TABLE` 语法被提取器显式拒绝为不支持边界。在迁移审核中遇到这些语法时，DeltaScope 返回 `unsupported` 结果，而非静默接受或部分处理：
+
+| 特性 | 提取器标签 |
+|------|-----------|
+| Identity 列（`GENERATED ... AS IDENTITY`） | `generated_as_identity` |
+| Generated stored 列（`GENERATED ALWAYS AS ... STORED`） | `generated_column` |
+| Exclusion 约束（`EXCLUDE USING`） | `exclusion_constraint` |
+| 分区表（`PARTITION BY`） | `partitioning` |
+
+审核使用这些特性的迁移时，推荐操作不变：拆分迁移，用 DeltaScope 审核已支持的语句，手动审核不支持的语句。这是边界收口，不是支持范围扩大。

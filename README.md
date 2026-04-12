@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.25.0`, DeltaScope ships a dialect-wide SQL corpus harness with representative baseline cases across MySQL, TiDB, and PostgreSQL, plus two-layer assertions (report-level and semantic) that answer which SQL statements have actually been run through the engine and what outcomes are expected. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.26.0`, DeltaScope tightens the PostgreSQL `CREATE TABLE` unsupported boundary contract: identity columns, generated stored columns, exclusion constraints, and partitioned tables are now explicitly unsupported at the extractor level, backed by corpus cases and surface parity tests across all four transports. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,21 +34,29 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.25.0/install.sh | \
-  DELTASCOPE_VERSION=v0.25.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.26.0/install.sh | \
+  DELTASCOPE_VERSION=v0.26.0 sh
 ```
 
-### SQL Corpus & Boundary Confidence Pack (`v0.25.0`)
+### PostgreSQL CREATE TABLE Unsupported Boundary Pack (`v0.26.0`)
 
-`v0.25.0` introduces a durable SQL corpus harness (`testdata/sql-corpus/`) with representative baseline cases across MySQL, TiDB, and PostgreSQL. It does not add new rules, new CLI flags, or new public API contracts.
+`v0.26.0` tightens the PostgreSQL `CREATE TABLE` unsupported boundary contract. It does not add new rules, new CLI flags, or new public API contracts, and it is not full PostgreSQL `CREATE TABLE` support.
 
-- Each corpus case is a `.sql` + `.expected.yaml` pair driven by the existing audit application layer.
-- Two-layer assertions: report-level checks (unsupported count, statement kind, findings) and semantic parse/extract checks (operation, constraint facts).
-- Corpus cases cover supported, unsupported, finding-producing, clean, and boundary categories.
-- `GENERATED ... AS IDENTITY` is recorded as a current boundary finding — it is not fixed in this release. Follow-up: `PostgreSQL CREATE TABLE Unsupported Boundary Pack`.
-- `make release-surface-gates VERSION=v0.25.0` and `make release-version-surface-gates VERSION=v0.25.0` verify the package/release and versioned docs surfaces.
+- **Identity columns** (`GENERATED ... AS IDENTITY`) → explicit unsupported (`generated_as_identity`).
+- **Generated stored columns** (`GENERATED ALWAYS AS ... STORED`) → explicit unsupported (`generated_column`).
+- **Exclusion constraints** (`EXCLUDE USING`) → explicit unsupported (`exclusion_constraint`).
+- **Partitioned tables** (`PARTITION BY`) → explicit unsupported (`partitioning`).
+- PostgreSQL corpus cases lock these four boundaries with precise expected-outcome assertions.
+- Surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` verify each boundary is exposed through the correct unsupported contract on every transport.
 
-Previous milestone: `v0.24.0` deepened PostgreSQL `CREATE TABLE` foreign-key semantics (`ReferencedTable` / `ReferencedColumns` as parser-owned structural facts). See the [v0.24.0 release notes](docs/releases/release-notes-v0.24.0.md) for details.
+Surface contract for unsupported statements:
+
+- **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
+- **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
+
+`make release-surface-gates VERSION=v0.26.0` and `make release-version-surface-gates VERSION=v0.26.0` verify the package/release and versioned docs surfaces.
+
+Previous milestone: `v0.25.0` introduced a durable SQL corpus harness with two-layer assertions. See the [v0.25.0 release notes](docs/releases/release-notes-v0.25.0.md) for details.
 
 Need PostgreSQL offline audit support?
 

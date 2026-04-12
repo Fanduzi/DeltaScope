@@ -601,6 +601,10 @@ deltascope --version
 
 Starting with `v0.25.0`, DeltaScope release validation includes SQL corpus tests that run representative MySQL, TiDB, and PostgreSQL cases through the audit application layer with two-layer assertions (report-level and semantic). These corpus tests are release-confidence assets and do not affect CLI behavior or require any user action.
 
+### PostgreSQL CREATE TABLE Unsupported Boundaries (`v0.26.0`)
+
+Starting with `v0.26.0`, the PostgreSQL extractor explicitly rejects identity columns, generated stored columns, exclusion constraints, and partitioned tables as unsupported boundaries. The CLI exposes these through the unsupported result path: the audit output includes an `unsupported` array with `feature` and `reason` fields, and the process exits with the audit exit code. This is not a new CLI flag or contract — it is a boundary tightening that ensures these forms are no longer silently accepted or partially handled.
+
 ---
 
 ## Cross-References

@@ -248,7 +248,25 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 1. **报告层**——不支持计数、语句类型、findings 包含/排除。
 2. **语义层**——操作名和约束事实（类型、名称、列、被引用表/列）。
 
-语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。`GENERATED ... AS IDENTITY` 作为当前边界 finding 记录；修复项跟踪在 `PostgreSQL CREATE TABLE Unsupported Boundary Pack` 中。
+语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
+
+## PostgreSQL 不支持边界（`v0.26.0`）
+
+`v0.26.0` 是 **PostgreSQL CREATE TABLE 不支持边界收口包**。它在提取器层收口了 PostgreSQL `CREATE TABLE` 中明确不在支持范围内的语法边界：
+
+| 特性 | 提取器标签 | Surface 契约 |
+|------|-----------|-------------|
+| Identity 列（`GENERATED ... AS IDENTITY`） | `generated_as_identity` | Unsupported |
+| Generated stored 列（`GENERATED ALWAYS AS ... STORED`） | `generated_column` | Unsupported |
+| Exclusion 约束（`EXCLUDE USING`） | `exclusion_constraint` | Unsupported |
+| 分区表（`PARTITION BY`） | `partitioning` | Unsupported |
+
+每条边界由语料用例和表面对等测试锁定。没有新增规则 ID——这些是提取器层的 unsupported 契约，不是规则 finding。
+
+不支持语句的 surface 契约：
+
+- **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组的部分结果，以及 `ErrUnsupportedStatement`。
+- **HTTP** 和 **MCP**：作为传输层错误暴露（HTTP 错误响应、MCP tool error）。
 
 ---
 

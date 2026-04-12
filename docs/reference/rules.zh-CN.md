@@ -401,6 +401,19 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.21.0` 扩展了 PostgreSQL DDL 标准化范围，使常见迁移后续语句通过共享审核管线处理，不再返回能力边界错误。`v0.23.0` 则扩展了更多常见 PostgreSQL `CREATE TABLE` 约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的被引用表和被引用列事实。这些版本均不新增规则 ID；新标准化动作和建表结构在适用时继续复用已有的共享规则族。
 
+### PostgreSQL CREATE TABLE 不支持边界（v0.26.0）
+
+`v0.26.0` 在提取器层收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。以下语法被显式标记为 unsupported——它们**不是**规则 finding，**没有新增规则 ID**。它们是提取器层契约，返回包含特性标签和原因字符串的 `UnsupportedDetail` 条目。
+
+| 特性 | 提取器标签 |
+|------|-----------|
+| Identity 列（`GENERATED ... AS IDENTITY`） | `generated_as_identity` |
+| Generated stored 列（`GENERATED ALWAYS AS ... STORED`） | `generated_column` |
+| Exclusion 约束（`EXCLUDE USING`） | `exclusion_constraint` |
+| 分区表（`PARTITION BY`） | `partitioning` |
+
+每条边界由语料用例和 CLI、HTTP、MCP、`pkg/deltascope` 的表面对等测试锁定。surface 契约详情见[审计能力矩阵](audit-capability-matrix.zh-CN.md)。
+
 ### 已支持的 PostgreSQL DDL 动作
 
 | 动作 | 标准化为 | 规则行为 |

@@ -546,6 +546,10 @@ deltascope --version
 
 从 `v0.25.0` 开始，DeltaScope 的发布验证新增了 SQL 语料库测试，通过审计应用层运行代表性的 MySQL、TiDB 和 PostgreSQL 用例，并进行双层断言（报告层与语义层）。这些语料测试是发布信心资产，不影响 CLI 行为，也不需要用户进行任何操作。
 
+### PostgreSQL CREATE TABLE 不支持边界（`v0.26.0`）
+
+从 `v0.26.0` 开始，PostgreSQL 提取器显式拒绝 identity 列、generated stored 列、exclusion 约束和分区表作为不支持边界。CLI 通过 unsupported 结果路径暴露这些信息：审计输出包含 `unsupported` 数组（带 `feature` 和 `reason` 字段），进程以审计退出码退出。这不是新增 CLI 标志或契约——这是边界收口，确保这些语法不再被静默接受或部分处理。
+
 ---
 
 ## 参考链接

@@ -6,6 +6,18 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.26.0] - 2026-04-12
+
+### Added
+
+- PostgreSQL `CREATE TABLE` unsupported boundary tightening: identity columns (`GENERATED ... AS IDENTITY`), generated stored columns (`GENERATED ALWAYS AS ... STORED`), exclusion constraints (`EXCLUDE USING`), and partitioned tables (`PARTITION BY`) are now explicitly marked as unsupported at the extractor level instead of being silently accepted or partially handled.
+- PostgreSQL corpus cases updated to lock the four unsupported boundaries (`generated_as_identity`, `generated_column`, `exclusion_constraint`, `partitioning`) with precise expected-outcome assertions.
+- Surface parity tests across CLI, HTTP, MCP, and public Go API (`pkg/deltascope`) verify that each boundary is exposed through the correct unsupported contract on every transport.
+
+### Changed
+
+- Release-facing docs now position `v0.26.0` as the **PostgreSQL CREATE TABLE Unsupported Boundary Pack** — an extractor-level boundary tightening backed by corpus and surface tests. It does not add new rules, new CLI flags, or new public API contracts. It does not represent full PostgreSQL `CREATE TABLE` support.
+
 ## [v0.25.0] - 2026-04-12
 
 ### Added

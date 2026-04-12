@@ -427,3 +427,16 @@ Important notes:
 - `v0.23.0` should be described as broader PostgreSQL `CREATE TABLE` coverage, not full PostgreSQL DDL support.
 - `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.
+
+#### Unsupported Boundary Tightening (`v0.26.0`)
+
+Starting with `v0.26.0`, the following PostgreSQL `CREATE TABLE` forms are explicitly rejected as unsupported boundaries by the extractor. When encountered in migration review, DeltaScope returns an `unsupported` result rather than silently accepting or partially handling them:
+
+| Feature | Extractor Tag |
+|---------|---------------|
+| Identity columns (`GENERATED ... AS IDENTITY`) | `generated_as_identity` |
+| Generated stored columns (`GENERATED ALWAYS AS ... STORED`) | `generated_column` |
+| Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` |
+| Partitioned tables (`PARTITION BY`) | `partitioning` |
+
+When reviewing migrations that use these features, the recommended action remains the same: split the migration, audit the supported statements with DeltaScope, and review the unsupported ones manually. This is a boundary tightening, not a support expansion.

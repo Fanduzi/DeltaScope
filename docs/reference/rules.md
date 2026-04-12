@@ -413,6 +413,19 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.21.0` expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. `v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for more common constraint shapes. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned referenced table and referenced column facts through the shared `spec.Constraint` model. None of these releases add new rule IDs. The newly normalized actions and create-table structures reuse existing shared rule families where applicable.
 
+### PostgreSQL CREATE TABLE Unsupported Boundaries (v0.26.0)
+
+`v0.26.0` tightens the PostgreSQL `CREATE TABLE` unsupported boundary contract at the extractor level. The following forms are explicitly marked as unsupported — they are **not** rule findings and **no new rule IDs** are involved. They are extractor-level contracts that return `UnsupportedDetail` entries with feature tags and reason strings.
+
+| Feature | Extractor Tag |
+|---------|---------------|
+| Identity columns (`GENERATED ... AS IDENTITY`) | `generated_as_identity` |
+| Generated stored columns (`GENERATED ALWAYS AS ... STORED`) | `generated_column` |
+| Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` |
+| Partitioned tables (`PARTITION BY`) | `partitioning` |
+
+Each boundary is backed by corpus cases and surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope`. See the [capability matrix](audit-capability-matrix.md) for the surface contract details.
+
 ### Supported PostgreSQL DDL Actions
 
 | Action | Normalized As | Rule Behavior |

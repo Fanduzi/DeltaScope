@@ -262,7 +262,25 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 1. **Report-level** — unsupported count, statement kind, findings include/exclude.
 2. **Semantic** — operation name and constraint facts (type, name, columns, referenced table/columns).
 
-The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are. `GENERATED ... AS IDENTITY` is recorded as a current boundary finding; the fix is tracked under `PostgreSQL CREATE TABLE Unsupported Boundary Pack`.
+The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
+
+## PostgreSQL Unsupported Boundaries (`v0.26.0`)
+
+`v0.26.0` is the **PostgreSQL CREATE TABLE Unsupported Boundary Pack**. It tightens the extractor-level boundary contract for PostgreSQL `CREATE TABLE` forms that are explicitly outside the supported surface:
+
+| Feature | Extractor Tag | Surface Contract |
+|---------|---------------|-----------------|
+| Identity columns (`GENERATED ... AS IDENTITY`) | `generated_as_identity` | Unsupported |
+| Generated stored columns (`GENERATED ALWAYS AS ... STORED`) | `generated_column` | Unsupported |
+| Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` | Unsupported |
+| Partitioned tables (`PARTITION BY`) | `partitioning` | Unsupported |
+
+Each boundary is backed by corpus cases and surface parity tests. No new rule IDs are involved — these are extractor-level unsupported contracts, not rule findings.
+
+Surface contract for unsupported statements:
+
+- **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array plus `ErrUnsupportedStatement`.
+- **HTTP** and **MCP**: expose as transport-level error (HTTP error response, MCP tool error).
 
 ---
 
