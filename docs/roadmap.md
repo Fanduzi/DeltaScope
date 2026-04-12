@@ -4,7 +4,7 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Current Milestone: v0.25.0 SQL Corpus & Boundary Confidence Pack
+## Latest Completed Milestone: v0.25.0 SQL Corpus & Boundary Confidence Pack
 
 **Goal:** build a durable SQL corpus and table-driven audit harness for MySQL, TiDB, and PostgreSQL.
 
@@ -32,11 +32,9 @@ The milestone should answer a practical release-confidence question: which repre
 - Do not convert every case into CLI/HTTP/MCP E2E.
 - Do not widen SQL support just to populate the corpus.
 
-## Explicit Follow-Up TODO
+## Next Milestone: v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack
 
-### PostgreSQL CREATE TABLE Unsupported Boundary Pack
-
-This is intentionally separate from `v0.25.0`. The SQL corpus should record current boundary behavior, but this follow-up pack should own the actual PostgreSQL unsupported-boundary fixes and parity work.
+The `v0.25.0` SQL corpus records current boundary behavior. `v0.26.0` should own the actual PostgreSQL unsupported-boundary fixes and parity work.
 
 Track these cases:
 
@@ -57,3 +55,7 @@ Expected follow-up outcomes:
 - At least CLI and public Go API unsupported output parity is covered.
 - Docs distinguish unsupported boundaries from supported `v0.23.0` / `v0.24.0` create-table semantics.
 
+Schema-qualified foreign-key references are a decision point:
+
+- If preserving schema requires a shared contract expansion, run impact analysis on `spec.Constraint` first.
+- If the impact is not clearly low, defer `ReferencedSchema` to a later milestone rather than mixing it into boundary tightening.
