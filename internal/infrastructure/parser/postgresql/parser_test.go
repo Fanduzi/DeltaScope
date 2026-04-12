@@ -1172,6 +1172,107 @@ func parseCreateStmtAST(t *testing.T, sql string) *pg_query.CreateStmt {
 }
 
 // ---------------------------------------------------------------------------
+// v0.26.0 Task 2: Behavior tests — unsupported CREATE TABLE boundaries
+// ---------------------------------------------------------------------------
+// These tests assert that the extractor correctly rejects unsupported
+// PostgreSQL CREATE TABLE features via the unsupportedStatement contract.
+// ---------------------------------------------------------------------------
+
+func TestExtractCreateTableIdentityColumnReturnsUnsupported(t *testing.T) {
+	sql := `CREATE TABLE users (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  email text
+);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind %q, got %q", spec.KindUnknown, statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for GENERATED AS IDENTITY column")
+	}
+	if statement.Unsupported.Feature != "generated_as_identity" {
+		t.Fatalf("expected unsupported feature 'generated_as_identity', got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Reason == "" {
+		t.Fatal("expected non-empty unsupported reason")
+	}
+	t.Logf("unsupported: feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+}
+
+func TestExtractCreateTableGeneratedStoredColumnReturnsUnsupported(t *testing.T) {
+	sql := `CREATE TABLE users (
+  first_name text,
+  last_name text,
+  full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED
+);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind %q, got %q", spec.KindUnknown, statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for GENERATED ALWAYS AS (...) STORED column")
+	}
+	if statement.Unsupported.Feature != "generated_column" {
+		t.Fatalf("expected unsupported feature 'generated_column', got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Reason == "" {
+		t.Fatal("expected non-empty unsupported reason")
+	}
+	t.Logf("unsupported: feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+}
+
+func TestExtractCreateTableExclusionConstraintReturnsUnsupported(t *testing.T) {
+	sql := `CREATE TABLE bookings (
+  room_id int,
+  during tsrange,
+  EXCLUDE USING gist (room_id WITH =, during WITH &&)
+);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind %q, got %q", spec.KindUnknown, statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for EXCLUDE constraint")
+	}
+	if statement.Unsupported.Feature != "exclusion_constraint" {
+		t.Fatalf("expected unsupported feature 'exclusion_constraint', got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Reason == "" {
+		t.Fatal("expected non-empty unsupported reason")
+	}
+	t.Logf("unsupported: feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+}
+
+func TestExtractCreateTablePartitionByStillReturnsUnsupported(t *testing.T) {
+	sql := `CREATE TABLE events (
+  id bigint,
+  created_at timestamptz NOT NULL
+) PARTITION BY RANGE (created_at);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind %q, got %q", spec.KindUnknown, statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for PARTITION BY")
+	}
+	if statement.Unsupported.Feature != "partitioning" {
+		t.Fatalf("expected unsupported feature 'partitioning', got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Reason == "" {
+		t.Fatal("expected non-empty unsupported reason")
+	}
+	t.Logf("unsupported: feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+}
+
+// ---------------------------------------------------------------------------
 // v0.26.0 Task 1: AST characterization tests for CREATE TABLE boundary cases
 // ---------------------------------------------------------------------------
 // These tests lock down AST facts about how pg_query_go/v6 represents

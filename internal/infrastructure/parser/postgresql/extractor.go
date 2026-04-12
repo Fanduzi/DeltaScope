@@ -84,12 +84,17 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 			if column.GetIdentity() != "" {
 				return unsupportedStatement(statement, "generated_as_identity", "postgresql GENERATED ... AS IDENTITY is unsupported in v1")
 			}
-			ddl.Columns = append(ddl.Columns, columnFromDef(column))
-			applyColumnConstraints(ddl, column)
+			if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
+					return unsupportedStatement(statement, unsupported.Feature, unsupported.Reason)
+				}
+				ddl.Columns = append(ddl.Columns, columnFromDef(column))
+				applyColumnConstraints(ddl, column)
 			continue
 		}
 		if constraint := item.GetConstraint(); constraint != nil {
-			applyTableConstraint(ddl, constraint)
+			if unsupported := applyTableConstraint(ddl, constraint); unsupported != nil {
+					return unsupportedStatement(statement, unsupported.Feature, unsupported.Reason)
+				}
 		}
 	}
 
@@ -418,7 +423,7 @@ func supportedConstraintType(kind pg_query.ConstrType) (string, bool) {
 	}
 }
 
-func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) {
+func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.UnsupportedDetail {
 	switch constraint.GetContype() {
 	case pg_query.ConstrType_CONSTR_UNIQUE:
 		ddl.Indexes = append(ddl.Indexes, spec.Index{Name: constraint.GetConname(), Kind: spec.IndexKindUnique, Columns: stringValuesFromNodes(constraint.GetKeys())})
@@ -432,7 +437,10 @@ func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) {
 		})
 	case pg_query.ConstrType_CONSTR_CHECK:
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
+	case pg_query.ConstrType_CONSTR_EXCLUSION:
+		return &spec.UnsupportedDetail{Feature: "exclusion_constraint", Reason: "postgresql EXCLUDE constraints are unsupported in v1"}
 	}
+	return nil
 }
 
 func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
@@ -456,6 +464,22 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
 		}
 	}
+}
+
+func hasUnsupportedColumnConstraint(column *pg_query.ColumnDef) *spec.UnsupportedDetail {
+	for _, item := range column.GetConstraints() {
+		constraint := item.GetConstraint()
+		if constraint == nil {
+			continue
+		}
+		switch constraint.GetContype() {
+		case pg_query.ConstrType_CONSTR_IDENTITY:
+			return &spec.UnsupportedDetail{Feature: "generated_as_identity", Reason: "postgresql GENERATED ... AS IDENTITY is unsupported in v1"}
+		case pg_query.ConstrType_CONSTR_GENERATED:
+			return &spec.UnsupportedDetail{Feature: "generated_column", Reason: "postgresql GENERATED ALWAYS AS ... STORED columns are unsupported in v1"}
+		}
+	}
+	return nil
 }
 
 func columnFromDef(column *pg_query.ColumnDef) spec.Column {
