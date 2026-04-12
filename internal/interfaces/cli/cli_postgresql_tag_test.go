@@ -1083,3 +1083,68 @@ func TestAuditCommandPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *test
 		})
 	}
 }
+
+func TestAuditCommandPostgreSQLCreateTableBoundaryReturnsUnsupported(t *testing.T) {
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"identity": {
+			sql:     "CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, email text);",
+			feature: "generated_as_identity",
+		},
+		"generated_stored": {
+			sql:     "CREATE TABLE users (first_name text, last_name text, full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED);",
+			feature: "generated_column",
+		},
+		"exclusion": {
+			sql:     "CREATE TABLE bookings (room_id int, during tsrange, EXCLUDE USING gist (room_id WITH =, during WITH &&));",
+			feature: "exclusion_constraint",
+		},
+		"partitioned": {
+			sql:     "CREATE TABLE events (id bigint, created_at timestamptz NOT NULL) PARTITION BY RANGE (created_at);",
+			feature: "partitioning",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tc.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+
+			if code != exitAudit {
+				t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			unsupported, ok := decoded["unsupported"].([]any)
+			if !ok || len(unsupported) != 1 {
+				t.Fatalf("expected one unsupported detail, got %#v", decoded["unsupported"])
+			}
+			item, ok := unsupported[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected unsupported object, got %#v", unsupported[0])
+			}
+			if item["feature"] != tc.feature {
+				t.Fatalf("expected unsupported feature %q, got %q", tc.feature, item["feature"])
+			}
+			if item["reason"] == "" {
+				t.Fatalf("expected unsupported reason, got %#v", item)
+			}
+		})
+	}
+}

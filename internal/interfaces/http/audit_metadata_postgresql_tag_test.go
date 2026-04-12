@@ -9,6 +9,7 @@ package httpapi
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -811,6 +812,47 @@ func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(
 			}
 			if !found {
 				t.Fatalf("expected foreign_key forbid finding, got %#v", response.Statements[0].Findings)
+			}
+		})
+	}
+}
+
+func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *testing.T) {
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"identity": {
+			sql:     "CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, email text);",
+			feature: "generated_as_identity",
+		},
+		"generated_stored": {
+			sql:     "CREATE TABLE users (first_name text, last_name text, full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED);",
+			feature: "generated_column",
+		},
+		"exclusion": {
+			sql:     "CREATE TABLE bookings (room_id int, during tsrange, EXCLUDE USING gist (room_id WITH =, during WITH &&));",
+			feature: "exclusion_constraint",
+		},
+		"partitioned": {
+			sql:     "CREATE TABLE events (id bigint, created_at timestamptz NOT NULL) PARTITION BY RANGE (created_at);",
+			feature: "partitioning",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     tc.sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			})
+			if err == nil {
+				t.Fatalf("expected unsupported error for %s, got nil", name)
+			}
+			if !strings.Contains(err.Error(), "unsupported") {
+				t.Fatalf("expected unsupported error message, got %v", err)
 			}
 		})
 	}

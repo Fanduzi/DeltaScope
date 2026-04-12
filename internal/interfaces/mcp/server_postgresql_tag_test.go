@@ -9,6 +9,7 @@ package mcpapi
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -1065,3 +1066,63 @@ func TestAuditSQLToolPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *test
 	}
 }
 
+func TestAuditSQLToolPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"identity": {
+			sql:     "CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, email text);",
+			feature: "generated_as_identity",
+		},
+		"generated_stored": {
+			sql:     "CREATE TABLE users (first_name text, last_name text, full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED);",
+			feature: "generated_column",
+		},
+		"exclusion": {
+			sql:     "CREATE TABLE bookings (room_id int, during tsrange, EXCLUDE USING gist (room_id WITH =, during WITH &&));",
+			feature: "exclusion_constraint",
+		},
+		"partitioned": {
+			sql:     "CREATE TABLE events (id bigint, created_at timestamptz NOT NULL) PARTITION BY RANGE (created_at);",
+			feature: "partitioning",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name: "audit_sql",
+				Arguments: map[string]any{
+					"sql":     tc.sql,
+					"dialect": "postgresql",
+				},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if !result.IsError {
+				t.Fatalf("expected tool error for unsupported %s, got success result", name)
+			}
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %#v", result.StructuredContent)
+			}
+			code, _ := body["code"].(string)
+			if code == "" {
+				t.Fatalf("expected error code in tool error, got %#v", body)
+			}
+			message, _ := body["message"].(string)
+			if !strings.Contains(message, "unsupported") {
+				t.Fatalf("expected unsupported in error message, got %q", message)
+			}
+		})
+	}
+}

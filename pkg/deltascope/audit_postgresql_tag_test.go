@@ -745,3 +745,60 @@ func TestAuditPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.T) 
 		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
 	}
 }
+
+func TestAuditPostgreSQLCreateTableIdentityReturnsUnsupported(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, email text);",
+		Dialect: DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "generated_as_identity" {
+		t.Fatalf("expected unsupported feature generated_as_identity, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}
+
+func TestAuditPostgreSQLCreateTableGeneratedStoredReturnsUnsupported(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE users (first_name text, last_name text, full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED);",
+		Dialect: DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "generated_column" {
+		t.Fatalf("expected unsupported feature generated_column, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}
+
+func TestAuditPostgreSQLCreateTableExclusionReturnsUnsupported(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE bookings (room_id int, during tsrange, EXCLUDE USING gist (room_id WITH =, during WITH &&));",
+		Dialect: DialectPostgreSQL,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	}
+	if len(result.Unsupported) != 1 {
+		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Feature != "exclusion_constraint" {
+		t.Fatalf("expected unsupported feature exclusion_constraint, got %#v", result.Unsupported[0])
+	}
+	if result.Unsupported[0].Reason == "" {
+		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	}
+}
