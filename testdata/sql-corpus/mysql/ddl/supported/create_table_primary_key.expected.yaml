@@ -1,0 +1,12 @@
+name: create_table_primary_key
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include: []
+    exclude: []
