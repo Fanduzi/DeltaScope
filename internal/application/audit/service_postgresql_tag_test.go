@@ -10,6 +10,254 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+// --- v0.29.0 Task 1: Schema-Aware FK Policy Characterization Tests ---
+//
+// These three tests characterize the current state of FK facts and rule
+// behavior for the schema-aware FK policy decision gate (v0.29.0 Task 1).
+//
+// They are NOT TDD tests driving new production behavior. They lock in
+// observable facts about what the current extractor/rule path provides,
+// so that Task 2 has stable decision inputs.
+
+// TestAuditSQLPostgreSQLSchemaQualifiedForeignKeyFactsAvailableForPolicy
+// proves that the current rule/service path can observe all four
+// schema-aware FK facts: owning table schema, referenced_schema,
+// referenced_table, and referenced_columns.
+//
+// This establishes that the schema-aware policy limitation is NOT a
+// data-availability problem — the extractor already preserves these facts.
+func TestAuditSQLPostgreSQLSchemaQualifiedForeignKeyFactsAvailableForPolicy(t *testing.T) {
+	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));"
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     sql,
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	// Extract the underlying spec to prove extractor-level facts.
+	stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+	if !ok {
+		t.Fatal("expected supported statement")
+	}
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	// Owning table schema must be "public" (from CREATE TABLE public.orders).
+	if stmt.DDL.Table == nil {
+		t.Fatal("expected table payload")
+	}
+	if stmt.DDL.Table.Schema != "public" {
+		t.Errorf("expected owning table schema %q, got %q", "public", stmt.DDL.Table.Schema)
+	}
+	if stmt.DDL.Table.Name != "orders" {
+		t.Errorf("expected owning table name %q, got %q", "orders", stmt.DDL.Table.Name)
+	}
+
+	// FK constraint must carry explicit cross-schema referenced-object facts.
+	found := false
+	for _, c := range stmt.DDL.Constraints {
+		if c.Type == "foreign_key" && c.Name == "fk_orders_approver" {
+			found = true
+
+			// referenced_schema must be "auth" (from REFERENCES auth.users).
+			if c.ReferencedSchema != "auth" {
+				t.Errorf("expected ReferencedSchema %q, got %q", "auth", c.ReferencedSchema)
+			}
+			// referenced_table must be "users" — never "auth.users".
+			if c.ReferencedTable != "users" {
+				t.Errorf("expected ReferencedTable %q, got %q", "users", c.ReferencedTable)
+			}
+			// referenced_columns must be ["id"].
+			if len(c.ReferencedColumns) != 1 || c.ReferencedColumns[0] != "id" {
+				t.Errorf("expected ReferencedColumns [id], got %v", c.ReferencedColumns)
+			}
+			// owning columns must be ["approver_id"].
+			if len(c.Columns) != 1 || c.Columns[0] != "approver_id" {
+				t.Errorf("expected Columns [approver_id], got %v", c.Columns)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected named FK constraint fk_orders_approver in %+v", stmt.DDL.Constraints)
+	}
+
+	// The FK forbid finding metadata must also expose referenced_schema = "auth".
+	findingFound := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			findingFound = true
+			if finding.Metadata["referenced_schema"] != "auth" {
+				t.Errorf("expected finding referenced_schema %q, got %v", "auth", finding.Metadata["referenced_schema"])
+			}
+			if finding.Metadata["referenced_table"] != "users" {
+				t.Errorf("expected finding referenced_table %q, got %v", "users", finding.Metadata["referenced_table"])
+			}
+		}
+	}
+	if !findingFound {
+		t.Fatalf("expected foreign_key forbid finding with cross-schema metadata, got %#v", result.Statements[0].Findings)
+	}
+}
+
+// TestAuditSQLPostgreSQLBareForeignKeyReferenceLeavesSchemaUnknown
+// proves that bare REFERENCES users(id) — without a schema qualifier —
+// leaves referenced_schema empty at both extractor and rule level.
+//
+// This is evidence for the "no search_path inference" policy: bare
+// references cannot be treated as "public.users" because DeltaScope
+// does not model PostgreSQL search_path semantics.
+func TestAuditSQLPostgreSQLBareForeignKeyReferenceLeavesSchemaUnknown(t *testing.T) {
+	const sql = "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));"
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     sql,
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	// Extract the underlying spec to prove extractor-level facts.
+	stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+	if !ok {
+		t.Fatal("expected supported statement")
+	}
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	// Owning table schema must be empty — bare CREATE TABLE has no schema.
+	if stmt.DDL.Table == nil {
+		t.Fatal("expected table payload")
+	}
+	if stmt.DDL.Table.Schema != "" {
+		t.Errorf("expected owning table schema to be empty for bare CREATE TABLE, got %q", stmt.DDL.Table.Schema)
+	}
+
+	// FK constraint must NOT have referenced_schema populated.
+	found := false
+	for _, c := range stmt.DDL.Constraints {
+		if c.Type == "foreign_key" {
+			found = true
+
+			// referenced_schema must be empty — bare REFERENCES has no schema qualifier.
+			if c.ReferencedSchema != "" {
+				t.Errorf("expected ReferencedSchema to be empty for bare REFERENCES, got %q", c.ReferencedSchema)
+			}
+			if c.ReferencedTable != "users" {
+				t.Errorf("expected ReferencedTable %q, got %q", "users", c.ReferencedTable)
+			}
+			if len(c.ReferencedColumns) != 1 || c.ReferencedColumns[0] != "id" {
+				t.Errorf("expected ReferencedColumns [id], got %v", c.ReferencedColumns)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected FK constraint in %+v", stmt.DDL.Constraints)
+	}
+
+	// The FK forbid finding must NOT include referenced_schema.
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			if v, exists := finding.Metadata["referenced_schema"]; exists && v != "" {
+				t.Errorf("expected no referenced_schema in finding metadata for bare REFERENCES, got %v", v)
+			}
+		}
+	}
+}
+
+// TestAuditSQLPostgreSQLForeignKeyRuleIsSchemaAgnosticToday
+// proves that the current FK forbid rule fires identically regardless of
+// whether the FK is schema-qualified or bare. All three cases produce
+// exactly one ddl.table.foreign_key.forbid finding with the same level.
+//
+// This establishes that v0.29's challenge is a policy decision — whether
+// to distinguish cross-schema from same-schema — not a metadata visibility
+// issue.
+func TestAuditSQLPostgreSQLForeignKeyRuleIsSchemaAgnosticToday(t *testing.T) {
+	tests := []struct {
+		name          string
+		sql           string
+		wantFindings  int
+		wantRefSchema string // expected referenced_schema in finding metadata (empty string = absent)
+		wantRuleID    string
+	}{
+		{
+			name:          "cross_schema_fk_triggers_forbid_identically",
+			sql:           "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));",
+			wantFindings:  1,
+			wantRefSchema: "auth",
+			wantRuleID:    "ddl.table.foreign_key.forbid",
+		},
+		{
+			name:          "same_schema_fk_triggers_forbid_identically",
+			sql:           "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES public.users(id));",
+			wantFindings:  1,
+			wantRefSchema: "public",
+			wantRuleID:    "ddl.table.foreign_key.forbid",
+		},
+		{
+			name:          "bare_fk_triggers_forbid_identically",
+			sql:           "CREATE TABLE orders (id bigint PRIMARY KEY, user_id bigint REFERENCES users(id));",
+			wantFindings:  1,
+			wantRefSchema: "", // absent
+			wantRuleID:    "ddl.table.foreign_key.forbid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+			}
+
+			// Count FK forbid findings.
+			count := 0
+			for _, finding := range result.Statements[0].Findings {
+				if finding.RuleID == tt.wantRuleID {
+					count++
+
+					// All three cases must produce the same level.
+					if finding.Level != "blocker" {
+						t.Errorf("expected level blocker, got %q", finding.Level)
+					}
+
+					// Verify referenced_schema matches expectation.
+					if tt.wantRefSchema == "" {
+						if v, exists := finding.Metadata["referenced_schema"]; exists && v != "" {
+							t.Errorf("expected no referenced_schema, got %v", v)
+						}
+					} else {
+						if finding.Metadata["referenced_schema"] != tt.wantRefSchema {
+							t.Errorf("expected referenced_schema %q, got %v", tt.wantRefSchema, finding.Metadata["referenced_schema"])
+						}
+					}
+				}
+			}
+			if count != tt.wantFindings {
+				t.Fatalf("expected %d FK forbid findings, got %d", tt.wantFindings, count)
+			}
+		})
+	}
+}
+
 func TestAuditSQLReturnsMixedSupportedAndUnsupportedPostgreSQLResults(t *testing.T) {
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter table users rename column old_name to new_name; select 1;",
