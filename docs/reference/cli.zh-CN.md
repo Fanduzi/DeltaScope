@@ -550,6 +550,10 @@ deltascope --version
 
 从 `v0.26.0` 开始，PostgreSQL 提取器显式拒绝 identity 列、generated stored 列、exclusion 约束和分区表作为不支持边界。CLI 通过 unsupported 结果路径暴露这些信息：审计输出包含 `unsupported` 数组（带 `feature` 和 `reason` 字段），进程以审计退出码退出。这不是新增 CLI 标志或契约——这是边界收口，确保这些语法不再被静默接受或部分处理。
 
+### Schema-Qualified Reference 语义（`v0.27.0`）
+
+从 `v0.27.0` 开始，PostgreSQL 提取器在共享契约中保留了 schema-qualified 被引用对象事实（`ReferencedSchema`）。CLI 当前 FK forbid finding 的输出契约不变——finding 元数据不暴露 `referenced_schema`。Schema-qualified reference 事实在共享契约中保留，由语料和服务层语义测试验证。这不是新增 CLI 标志或输出契约。
+
 ---
 
 ## 参考链接

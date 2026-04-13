@@ -605,6 +605,10 @@ Starting with `v0.25.0`, DeltaScope release validation includes SQL corpus tests
 
 Starting with `v0.26.0`, the PostgreSQL extractor explicitly rejects identity columns, generated stored columns, exclusion constraints, and partitioned tables as unsupported boundaries. The CLI exposes these through the unsupported result path: the audit output includes an `unsupported` array with `feature` and `reason` fields, and the process exits with the audit exit code. This is not a new CLI flag or contract — it is a boundary tightening that ensures these forms are no longer silently accepted or partially handled.
 
+### Schema-Qualified Reference Semantics (`v0.27.0`)
+
+Starting with `v0.27.0`, the PostgreSQL extractor preserves schema-qualified referenced-object facts (`ReferencedSchema`) in the shared contract. The CLI current output contract for FK forbid findings remains unchanged — `referenced_schema` is not exposed in the finding metadata. Schema-qualified reference facts are preserved in the shared contract and validated by corpus and service-level semantic tests. This is not a new CLI flag or output contract.
+
 ---
 
 ## Cross-References

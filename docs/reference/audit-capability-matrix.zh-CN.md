@@ -250,6 +250,19 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## Schema-Qualified Reference 语义（`v0.27.0`）
+
+`v0.27.0` 是 **Schema-Qualified Reference Semantics Pack**。它在共享 `spec.Constraint` 契约中保留了 PostgreSQL schema-qualified 被引用对象事实。这是语义契约保留，不是新规则族。
+
+| 方面 | 说明 |
+|------|------|
+| 新增字段 | `spec.Constraint` 上的 `ReferencedSchema` |
+| 规范化表示 | `ReferencedSchema = "public"`，`ReferencedTable = "users"`（从不拼接） |
+| 锁定方式 | 语料用例 + 服务层语义测试 |
+| 公共 finding 元数据 | 不变——CLI、HTTP、MCP、`pkg/deltascope` 不在 finding 输出中暴露 `referenced_schema` |
+
+当前公共传输面保持既有支持行为；共享语义契约在底层更丰富。这不是完整的 PostgreSQL 外键支持，也不是 schema-aware 规则支持。
+
 ## PostgreSQL 不支持边界（`v0.26.0`）
 
 `v0.26.0` 是 **PostgreSQL CREATE TABLE 不支持边界收口包**。它在提取器层收口了 PostgreSQL `CREATE TABLE` 中明确不在支持范围内的语法边界：
