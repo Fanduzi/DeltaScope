@@ -45,7 +45,33 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 | Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` |
 | Partitioned tables (`PARTITION BY`) | `partitioning` |
 
+## Next Milestone: v0.29.0 Schema-Aware FK Policy Pack
+
+**Goal:** decide whether explicit PostgreSQL referenced-object schema facts should start influencing FK policy behavior, and ship only the narrowest schema-aware rule behavior that remains explainable and low-risk.
+
+The milestone follows `v0.27.0` and `v0.28.0` in sequence:
+
+- `v0.27.0` preserved schema-qualified FK facts in the shared semantic contract.
+- `v0.28.0` exposed those facts on outward FK forbid finding metadata.
+- `v0.29.0` should answer whether explicit schema-qualified FK facts have policy value, not just descriptive value.
+
+### Planned Scope
+
+- Decision gate first: use GitNexus impact analysis to determine whether a narrow schema-aware FK policy path can be introduced with low blast radius.
+- Treat bare references such as `REFERENCES users(id)` as schema unknown.
+- Do not infer `public`.
+- Do not model PostgreSQL `search_path`.
+- Prefer one narrow PostgreSQL-specific advisory or policy distinction over a broad new rule pack.
+- Preserve the current normalized representation: schema and table remain separate facts.
+
+### Explicit Non-Goals
+
+- Full PostgreSQL foreign key support
+- Complete schema-aware PostgreSQL modeling
+- Cross-schema validation matrices
+- Parser/extractor redesign
+- MySQL or TiDB policy changes
+
 ## Additional Follow-up
 
-- Schema-aware FK policy/rule work remains a future decision point after metadata surface widening.
 - `ALTER TABLE ... GENERATED` boundary coverage is still a potential follow-up, but not a committed milestone.
