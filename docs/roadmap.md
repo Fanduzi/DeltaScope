@@ -36,10 +36,26 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 | Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` |
 | Partitioned tables (`PARTITION BY`) | `partitioning` |
 
-## Next Follow-up
+## Next Milestone: v0.28.0 Referenced-Object Metadata Surface Pack
 
-Schema-qualified reference facts are now preserved in the shared contract. Follow-up decisions:
+**Goal:** decide whether PostgreSQL referenced-object facts that already exist in the shared semantic contract should become visible in public finding metadata, and widen that outward contract only if the change remains additive and low risk.
 
-- Decide whether public finding metadata should expose referenced-object schema facts.
-- Schema-aware FK policy/rule work remains a future decision point, not a committed milestone.
-- `ALTER TABLE ... GENERATED` boundary coverage is a potential follow-up but is not committed.
+The milestone answers a practical product question left open after `v0.27.0`: should CLI / HTTP / MCP / `pkg/deltascope` users be able to see `referenced_schema`, `referenced_table`, and `referenced_columns` directly in the relevant FK-related finding metadata?
+
+### Planned Scope
+
+- Run impact analysis on the FK-related finding metadata path before widening any outward contract.
+- If the blast radius stays low, add additive referenced-object metadata fields to the relevant FK finding path without changing rule IDs or transport-level behavior.
+- Lock the widened metadata contract across CLI, HTTP, MCP, and `pkg/deltascope` surface tests.
+- Update docs and release surfaces to describe metadata widening accurately, without implying schema-aware rule support.
+
+### Explicit Non-Goals
+
+- New rule IDs or new PostgreSQL rule families.
+- Schema-aware FK policy decisions or cross-schema validation.
+- Parser/extractor redesign for schema-qualified references; `v0.27.0` already preserved those facts in the shared contract.
+
+## Additional Follow-up
+
+- Schema-aware FK policy/rule work remains a future decision point after metadata surface widening.
+- `ALTER TABLE ... GENERATED` boundary coverage is still a potential follow-up, but not a committed milestone.
