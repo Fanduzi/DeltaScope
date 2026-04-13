@@ -817,6 +817,47 @@ func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(
 	}
 }
 
+func TestExecuteAuditRequestPostgreSQLSchemaQualifiedReferencesRenderFKFindings(t *testing.T) {
+	cases := map[string]string{
+		"inline REFERENCES public.users": "create table orders (id bigint primary key, user_id bigint references public.users(id));",
+		"named FK REFERENCES public.users": "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			})
+			if err != nil {
+				t.Fatalf("expected postgresql request to succeed, got %v", err)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected one statement result, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+
+			found := false
+			for _, finding := range response.Statements[0].Findings {
+				if finding.RuleID == "ddl.table.foreign_key.forbid" {
+					found = true
+					// Schema-qualified reference must not produce "public.users" as referenced_table.
+					if refTable, _ := finding.Metadata["referenced_table"].(string); refTable == "public.users" {
+						t.Fatalf("referenced_table must not be schema-qualified concat 'public.users', got %q", refTable)
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", response.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *testing.T) {
 	cases := map[string]struct {
 		sql     string

@@ -1066,6 +1066,69 @@ func TestAuditSQLToolPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *test
 	}
 }
 
+func TestAuditSQLToolPostgreSQLSchemaQualifiedReferencesRenderFKFindings(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	cases := map[string]string{
+		"inline REFERENCES public.users": "create table orders (id bigint primary key, user_id bigint references public.users(id));",
+		"named FK REFERENCES public.users": "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
+	}
+
+	for name, sql := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name: "audit_sql",
+				Arguments: map[string]any{
+					"sql":     sql,
+					"dialect": "postgresql",
+				},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+			body := result.StructuredContent.(map[string]any)
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) < 1 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if ok && finding["rule_id"] == "ddl.table.foreign_key.forbid" {
+					found = true
+					meta, _ := finding["metadata"].(map[string]any)
+					if meta == nil {
+						t.Fatalf("expected finding metadata, got nil")
+					}
+					// Schema-qualified reference must not produce "public.users" as referenced_table.
+					if refTable, _ := meta["referenced_table"].(string); refTable == "public.users" {
+						t.Fatalf("referenced_table must not be schema-qualified concat 'public.users', got %q", refTable)
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", findings)
+			}
+		})
+	}
+}
+
 func TestAuditSQLToolPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *testing.T) {
 	server := NewServer(Config{Version: "test-version"})
 	session, err := connectClientSession(context.Background(), server)

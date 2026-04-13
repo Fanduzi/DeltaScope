@@ -708,6 +708,61 @@ func TestAuditPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *testing.T) 
 	}
 }
 
+func TestAuditPostgreSQLSchemaQualifiedReferencesReturnSupportedFKFindings(t *testing.T) {
+	cases := map[string]struct {
+		sql            string
+		wantConstraint string
+	}{
+		"inline REFERENCES public.users": {
+			sql: "create table orders (id bigint primary key, user_id bigint references public.users(id));",
+		},
+		"named FK REFERENCES public.users": {
+			sql:            "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
+			wantConstraint: "fk_orders_approver",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tc.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected no unsupported entries, got %#v", result.Unsupported)
+			}
+
+			found := false
+			for _, finding := range result.Statements[0].Findings {
+				if finding.RuleID == "ddl.table.foreign_key.forbid" {
+					found = true
+					if tc.wantConstraint != "" {
+						if finding.Metadata["constraint"] != tc.wantConstraint {
+							t.Errorf("expected constraint %q, got %q", tc.wantConstraint, finding.Metadata["constraint"])
+						}
+					}
+					// Schema-qualified reference must not concatenate into "public.users".
+					if refTable, _ := finding.Metadata["referenced_table"].(string); refTable == "public.users" {
+						t.Fatalf("referenced_table must not be schema-qualified 'public.users', got %q", refTable)
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLCreateOrReplaceViewReturnsUnsupported(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "create or replace view active_users as select id from users;",
