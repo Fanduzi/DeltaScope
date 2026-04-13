@@ -1,0 +1,19 @@
+name: create_table_bare_fk_no_cross_schema_advisory
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.foreign_key.forbid
+    exclude:
+      - ddl.pg.table.foreign_key.cross_schema.advisory
+  facts:
+    constraints:
+      - type: foreign_key
+        referenced_table: users
+        referenced_columns: [id]

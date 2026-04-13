@@ -1270,3 +1270,162 @@ func TestAuditSQLToolPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectM
 		t.Fatalf("expected foreign_key forbid finding, got %#v", findings)
 	}
 }
+
+func TestAuditSQLToolPostgreSQLCrossSchemaFKRendersAdvisoryNotice(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) < 2 {
+		t.Fatalf("expected at least two findings, got %#v", statement["findings"])
+	}
+
+	advisoryFound := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			advisoryFound = true
+			if finding["level"] != "notice" {
+				t.Errorf("expected advisory level notice, got %v", finding["level"])
+			}
+			meta, _ := finding["metadata"].(map[string]any)
+			if meta == nil {
+				t.Fatalf("expected metadata in advisory finding, got nil")
+			}
+			if meta["table_schema"] != "public" {
+				t.Errorf("expected table_schema public, got %v", meta["table_schema"])
+			}
+			if meta["referenced_schema"] != "auth" {
+				t.Errorf("expected referenced_schema auth, got %v", meta["referenced_schema"])
+			}
+			if meta["referenced_table"] != "users" {
+				t.Errorf("expected referenced_table users, got %v", meta["referenced_table"])
+			}
+			refCols, _ := meta["referenced_columns"].([]any)
+			if len(refCols) < 1 || refCols[0] != "id" {
+				t.Errorf("expected referenced_columns [id], got %v", refCols)
+			}
+			if refTable, _ := meta["referenced_table"].(string); refTable == "auth.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'auth.users'")
+			}
+		}
+	}
+	if !advisoryFound {
+		t.Fatalf("expected cross-schema advisory finding, got %#v", findings)
+	}
+}
+
+func TestAuditSQLToolPostgreSQLSameSchemaFKDoesNotRenderAdvisory(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id));",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for same-schema FK, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditSQLToolPostgreSQLBareFKDoesNotRenderAdvisory(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for bare FK reference, got %#v", finding)
+		}
+	}
+}

@@ -1258,6 +1258,169 @@ func TestAuditCommandPostgreSQLSchemaQualifiedReferencesRenderFKFindings(t *test
 	}
 }
 
+func TestAuditCommandPostgreSQLCrossSchemaFKRendersAdvisoryNotice(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) < 2 {
+		t.Fatalf("expected at least two findings, got %#v", statement["findings"])
+	}
+
+	advisoryFound := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			advisoryFound = true
+			if finding["level"] != "notice" {
+				t.Errorf("expected advisory level notice, got %v", finding["level"])
+			}
+			meta, _ := finding["metadata"].(map[string]any)
+			if meta == nil {
+				t.Fatalf("expected metadata in advisory finding, got nil")
+			}
+			if meta["table_schema"] != "public" {
+				t.Errorf("expected table_schema public, got %v", meta["table_schema"])
+			}
+			if meta["referenced_schema"] != "auth" {
+				t.Errorf("expected referenced_schema auth, got %v", meta["referenced_schema"])
+			}
+			if meta["referenced_table"] != "users" {
+				t.Errorf("expected referenced_table users, got %v", meta["referenced_table"])
+			}
+			refCols, _ := meta["referenced_columns"].([]any)
+			if len(refCols) < 1 || refCols[0] != "id" {
+				t.Errorf("expected referenced_columns [id], got %v", refCols)
+			}
+			// referenced_table must NOT be schema-qualified.
+			if refTable, _ := meta["referenced_table"].(string); refTable == "auth.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'auth.users'")
+			}
+		}
+	}
+	if !advisoryFound {
+		t.Fatalf("expected cross-schema advisory finding, got %#v", findings)
+	}
+}
+
+func TestAuditCommandPostgreSQLSameSchemaFKDoesNotRenderAdvisory(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id));", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for same-schema FK, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditCommandPostgreSQLBareFKDoesNotRenderAdvisory(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings array, got %#v", statement["findings"])
+	}
+
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if ok && finding["rule_id"] == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for bare FK reference, got %#v", finding)
+		}
+	}
+}
+
 func TestAuditCommandPostgreSQLCreateTableBoundaryReturnsUnsupported(t *testing.T) {
 	cases := map[string]struct {
 		sql     string

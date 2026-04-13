@@ -1,0 +1,22 @@
+name: create_table_cross_schema_fk_advisory
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.foreign_key.forbid
+      - ddl.pg.table.foreign_key.cross_schema.advisory
+    exclude: []
+  facts:
+    constraints:
+      - type: foreign_key
+        name: fk_orders_approver
+        columns: [approver_id]
+        referenced_schema: auth
+        referenced_table: users
+        referenced_columns: [id]
