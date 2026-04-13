@@ -857,3 +857,51 @@ func TestAuditPostgreSQLCreateTableExclusionReturnsUnsupported(t *testing.T) {
 		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
 	}
 }
+
+func TestAuditPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	// 1. FK forbid finding must trigger.
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			found = true
+
+			// 2. Current metadata contains: table, constraint, columns.
+			if finding.Metadata["table"] == nil {
+				t.Errorf("expected metadata key 'table', got nil")
+			}
+			if finding.Metadata["constraint"] == nil {
+				t.Errorf("expected metadata key 'constraint', got nil")
+			}
+			if finding.Metadata["columns"] == nil {
+				t.Errorf("expected metadata key 'columns', got nil")
+			}
+
+			// 3. referenced_schema is NOT exposed in pkg finding metadata (v0.28.0 current state).
+			if _, exists := finding.Metadata["referenced_schema"]; exists {
+				t.Errorf("referenced_schema should not appear in pkg finding metadata yet, got %v", finding.Metadata["referenced_schema"])
+			}
+			// 4. referenced_table is also NOT exposed.
+			if _, exists := finding.Metadata["referenced_table"]; exists {
+				t.Errorf("referenced_table should not appear in pkg finding metadata yet, got %v", finding.Metadata["referenced_table"])
+			}
+			// 5. referenced_columns is also NOT exposed.
+			if _, exists := finding.Metadata["referenced_columns"]; exists {
+				t.Errorf("referenced_columns should not appear in pkg finding metadata yet, got %v", finding.Metadata["referenced_columns"])
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
+	}
+}

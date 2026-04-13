@@ -1189,3 +1189,82 @@ func TestAuditSQLToolPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *tes
 		})
 	}
 }
+
+func TestAuditSQLToolPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body := result.StructuredContent.(map[string]any)
+	statements, ok := body["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", body["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) < 1 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+
+	// 1. FK forbid finding must trigger.
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.table.foreign_key.forbid" {
+			found = true
+			metadata, _ := finding["metadata"].(map[string]any)
+			if metadata == nil {
+				t.Fatalf("expected metadata map in finding, got nil")
+			}
+
+			// 2. Current metadata contains: table, constraint, columns.
+			if metadata["table"] == nil {
+				t.Errorf("expected metadata key 'table', got nil")
+			}
+			if metadata["constraint"] == nil {
+				t.Errorf("expected metadata key 'constraint', got nil")
+			}
+			if metadata["columns"] == nil {
+				t.Errorf("expected metadata key 'columns', got nil")
+			}
+
+			// 3. referenced_schema is NOT exposed in MCP tool output (v0.28.0 current state).
+			if _, exists := metadata["referenced_schema"]; exists {
+				t.Errorf("referenced_schema should not appear in MCP finding metadata yet, got %v", metadata["referenced_schema"])
+			}
+			// 4. referenced_table is also NOT exposed.
+			if _, exists := metadata["referenced_table"]; exists {
+				t.Errorf("referenced_table should not appear in MCP finding metadata yet, got %v", metadata["referenced_table"])
+			}
+			// 5. referenced_columns is also NOT exposed.
+			if _, exists := metadata["referenced_columns"]; exists {
+				t.Errorf("referenced_columns should not appear in MCP finding metadata yet, got %v", metadata["referenced_columns"])
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding, got %#v", findings)
+	}
+}
