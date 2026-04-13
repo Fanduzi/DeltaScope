@@ -261,3 +261,58 @@ func (r tableForeignKeyForbidRule) Evaluate(statement spec.Statement) ([]rule.Fi
 	}
 	return findings, nil
 }
+
+// ---------------------------------------------------------------------------
+// Rule: ddl.pg.table.foreign_key.cross_schema.advisory
+// ---------------------------------------------------------------------------
+
+type tableForeignKeyCrossSchemaAdvisoryRule struct {
+	level rule.Level
+}
+
+func newTableForeignKeyCrossSchemaAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return tableForeignKeyCrossSchemaAdvisoryRule{
+		level: configuredLevel(cfg, rule.LevelNotice),
+	}, nil
+}
+
+func (r tableForeignKeyCrossSchemaAdvisoryRule) ID() string {
+	return ruleIDPGTableForeignKeyCrossSchemaAdvisory
+}
+
+func (r tableForeignKeyCrossSchemaAdvisoryRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectPostgreSQL && appliesToCreateTable(statement)
+}
+
+func (r tableForeignKeyCrossSchemaAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, constraint := range statement.DDL.Constraints {
+		if constraint.Type != "foreign_key" {
+			continue
+		}
+		if statement.DDL.Table.Schema == "" || constraint.ReferencedSchema == "" {
+			continue
+		}
+		if statement.DDL.Table.Schema == constraint.ReferencedSchema {
+			continue
+		}
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: fmt.Sprintf("foreign key constraint %q references a different schema (%s.%s → %s.%s)", constraint.Name, statement.DDL.Table.Schema, statement.DDL.Table.Name, constraint.ReferencedSchema, constraint.ReferencedTable),
+			Metadata: map[string]any{
+				"table":              statement.DDL.Table.Name,
+				"table_schema":       statement.DDL.Table.Schema,
+				"constraint":         constraint.Name,
+				"columns":            append([]string(nil), constraint.Columns...),
+				"referenced_schema":  constraint.ReferencedSchema,
+				"referenced_table":   constraint.ReferencedTable,
+				"referenced_columns": append([]string(nil), constraint.ReferencedColumns...),
+			},
+		})
+	}
+	return findings, nil
+}

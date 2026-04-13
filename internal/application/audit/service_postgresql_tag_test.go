@@ -970,3 +970,98 @@ func TestAuditSQLPostgreSQLSchemaQualifiedNamedFKExposesReferencedObjectMetadata
 		t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
 	}
 }
+
+// --- v0.29.0 Task 2: Cross-schema FK advisory service-level tests ---
+
+// TestAuditSQLPostgreSQLCrossSchemaFKTriggersAdvisory proves that an explicit
+// cross-schema FK on a PostgreSQL CREATE TABLE triggers the new advisory rule
+// alongside the existing FK forbid rule.
+func TestAuditSQLPostgreSQLCrossSchemaFKTriggersAdvisory(t *testing.T) {
+	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));"
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     sql,
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	advisoryFound := false
+	forbidFound := false
+	for _, finding := range result.Statements[0].Findings {
+		switch finding.RuleID {
+		case "ddl.pg.table.foreign_key.cross_schema.advisory":
+			advisoryFound = true
+			if finding.Level != "notice" {
+				t.Errorf("expected advisory level notice, got %q", finding.Level)
+			}
+			if finding.Metadata["table_schema"] != "public" {
+				t.Errorf("expected table_schema public, got %v", finding.Metadata["table_schema"])
+			}
+			if finding.Metadata["referenced_schema"] != "auth" {
+				t.Errorf("expected referenced_schema auth, got %v", finding.Metadata["referenced_schema"])
+			}
+			if finding.Metadata["referenced_table"] != "users" {
+				t.Errorf("expected referenced_table users, got %v", finding.Metadata["referenced_table"])
+			}
+		case "ddl.table.foreign_key.forbid":
+			forbidFound = true
+		}
+	}
+	if !advisoryFound {
+		t.Fatalf("expected cross-schema advisory finding, got %#v", result.Statements[0].Findings)
+	}
+	if !forbidFound {
+		t.Fatalf("expected FK forbid finding to still be present, got %#v", result.Statements[0].Findings)
+	}
+}
+
+// TestAuditSQLPostgreSQLSameSchemaFKDoesNotTriggerAdvisory proves that an
+// explicit same-schema FK does not trigger the cross-schema advisory.
+func TestAuditSQLPostgreSQLSameSchemaFKDoesNotTriggerAdvisory(t *testing.T) {
+	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id));"
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     sql,
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for same-schema FK, got %#v", finding)
+		}
+	}
+}
+
+// TestAuditSQLPostgreSQLBareFKDoesNotTriggerAdvisory proves that a bare
+// REFERENCES without schema qualifier does not trigger the cross-schema advisory.
+func TestAuditSQLPostgreSQLBareFKDoesNotTriggerAdvisory(t *testing.T) {
+	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));"
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     sql,
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for bare FK reference, got %#v", finding)
+		}
+	}
+}

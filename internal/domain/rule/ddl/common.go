@@ -154,6 +154,7 @@ const (
 	ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn          = "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
 	ruleIDPGAlterAddCheckNotValidRequire                     = "ddl.pg.alter.add_check.not_valid.require"
 	ruleIDPGAlterSetDataTypeRewriteWarn                      = "ddl.pg.alter.set_data_type.rewrite.warn"
+	ruleIDPGTableForeignKeyCrossSchemaAdvisory               = "ddl.pg.table.foreign_key.cross_schema.advisory"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
