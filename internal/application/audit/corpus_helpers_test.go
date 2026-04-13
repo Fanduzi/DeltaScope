@@ -48,7 +48,7 @@ func corpusAssertOperation(t *testing.T, stmt spec.Statement, expected string) {
 
 // corpusAssertConstraintFacts asserts that every expected constraint is present
 // in the statement's DDL constraints. Each expected constraint can specify any
-// combination of type, name, columns, referenced_table, and referenced_columns.
+// combination of type, name, columns, referenced_schema, referenced_table, and referenced_columns.
 // Only non-zero fields in the expected entry are checked.
 func corpusAssertConstraintFacts(t *testing.T, stmt spec.Statement, expected []corpusFactConstraint) {
 	t.Helper()
@@ -74,10 +74,12 @@ func corpusAssertConstraintFacts(t *testing.T, stmt spec.Statement, expected []c
 func summarizeConstraints(constraints []spec.Constraint) []map[string]string {
 	out := make([]map[string]string, 0, len(constraints))
 	for _, c := range constraints {
-		out = append(out, map[string]string{
+		m := map[string]string{
 			"type": c.Type, "name": c.Name,
-			"referenced_table": c.ReferencedTable,
-		})
+			"referenced_schema": c.ReferencedSchema,
+			"referenced_table":  c.ReferencedTable,
+		}
+		out = append(out, m)
 	}
 	return out
 }
@@ -92,6 +94,9 @@ func constraintMatches(actual spec.Constraint, exp corpusFactConstraint) bool {
 		return false
 	}
 	if len(exp.Columns) > 0 && !stringSlicesEqual(actual.Columns, exp.Columns) {
+		return false
+	}
+	if exp.ReferencedSchema != "" && actual.ReferencedSchema != exp.ReferencedSchema {
 		return false
 	}
 	if exp.ReferencedTable != "" && actual.ReferencedTable != exp.ReferencedTable {

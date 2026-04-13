@@ -6,6 +6,19 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.27.0] - 2026-04-13
+
+### Added
+
+- Additive `ReferencedSchema` field on `spec.Constraint`: PostgreSQL schema-qualified `REFERENCES public.users(id)` now preserves the referenced-object schema (`"public"`) as a parser-owned shared contract fact alongside the existing `ReferencedTable` (`"users"`). The normalized representation is always `ReferencedSchema` + `ReferencedTable` — `ReferencedTable` is never concatenated into `"public.users"`.
+- PostgreSQL extractor preserves schema-qualified reference facts for both named `FOREIGN KEY ... REFERENCES schema.table` and inline `REFERENCES schema.table` forms.
+- Corpus cases updated to lock schema-qualified reference semantics with precise `.expected.yaml` assertions (`ReferencedSchema = "public"`, `ReferencedTable = "users"`).
+- Service-level semantic tests assert schema-qualified reference facts are preserved through the audit pipeline.
+
+### Changed
+
+- Release-facing docs now position `v0.27.0` as the **Schema-Qualified Reference Semantics Pack** — an additive semantic preservation of PostgreSQL schema-qualified referenced-object facts in the shared contract. It does not add new rules, new CLI flags, or new public API contracts. Current public finding metadata (CLI, HTTP, MCP, `pkg/deltascope`) remains unchanged; the shared semantic contract is richer underneath.
+
 ## [v0.26.0] - 2026-04-12
 
 ### Added

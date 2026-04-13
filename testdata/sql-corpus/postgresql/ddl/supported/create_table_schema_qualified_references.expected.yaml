@@ -1,0 +1,25 @@
+name: create_table_schema_qualified_references
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.foreign_key.forbid
+    exclude: []
+  facts:
+    constraints:
+      - type: foreign_key
+        referenced_schema: public
+        referenced_table: users
+        referenced_columns: [id]
+      - type: foreign_key
+        name: fk_orders_approver
+        columns: [approver_id]
+        referenced_schema: public
+        referenced_table: users
+        referenced_columns: [id]

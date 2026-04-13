@@ -1084,6 +1084,98 @@ func TestAuditCommandPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *test
 	}
 }
 
+func TestAuditCommandPostgreSQLSchemaQualifiedReferencesRenderFKFindings(t *testing.T) {
+	cases := map[string]struct {
+		sql              string
+		wantConstraint   string
+		wantColumns      []string
+	}{
+		"inline REFERENCES public.users": {
+			sql:            "create table orders (id bigint primary key, user_id bigint references public.users(id));",
+			wantConstraint: "",
+		},
+		"named FK REFERENCES public.users": {
+			sql:            "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
+			wantConstraint: "fk_orders_approver",
+			wantColumns:    []string{"approver_id"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tc.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+
+			if code != exitAudit {
+				t.Fatalf("expected audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) < 1 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == "ddl.table.foreign_key.forbid" {
+					found = true
+					meta, _ := finding["metadata"].(map[string]any)
+					if meta == nil {
+						t.Fatalf("expected finding metadata, got nil")
+					}
+					if tc.wantConstraint != "" {
+						if meta["constraint"] != tc.wantConstraint {
+							t.Errorf("expected constraint %q, got %q", tc.wantConstraint, meta["constraint"])
+						}
+					}
+					if len(tc.wantColumns) > 0 {
+						cols, _ := meta["columns"].([]any)
+						if len(cols) != len(tc.wantColumns) {
+							t.Errorf("expected %d columns, got %d", len(tc.wantColumns), len(cols))
+						}
+					}
+					// Verify referenced_table is NOT "public.users" (schema-qualified).
+					// The finding metadata does not include referenced_table, but the
+					// FK forbid finding must not concatenate schema+table.
+					if refTable, _ := meta["referenced_table"].(string); refTable == "public.users" {
+						t.Fatalf("referenced_table must not be schema-qualified concat 'public.users', got %q", refTable)
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", findings)
+			}
+		})
+	}
+}
+
 func TestAuditCommandPostgreSQLCreateTableBoundaryReturnsUnsupported(t *testing.T) {
 	cases := map[string]struct {
 		sql     string

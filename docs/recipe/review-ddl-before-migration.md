@@ -440,3 +440,11 @@ Starting with `v0.26.0`, the following PostgreSQL `CREATE TABLE` forms are expli
 | Partitioned tables (`PARTITION BY`) | `partitioning` |
 
 When reviewing migrations that use these features, the recommended action remains the same: split the migration, audit the supported statements with DeltaScope, and review the unsupported ones manually. This is a boundary tightening, not a support expansion.
+
+#### Schema-Qualified Reference Semantics (`v0.27.0`)
+
+Starting with `v0.27.0`, the PostgreSQL extractor preserves schema-qualified referenced-object facts in the shared contract. For migrations using `REFERENCES public.users(id)`, the schema (`"public"`) is now preserved as `ReferencedSchema` alongside the existing `ReferencedTable` (`"users"`).
+
+- This is additive semantic preservation — no new rules, no new CLI flags.
+- No schema-aware rule decisions are made based on `ReferencedSchema` yet.
+- Current public finding metadata remains unchanged; the shared contract is richer underneath.

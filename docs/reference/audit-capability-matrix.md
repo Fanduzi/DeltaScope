@@ -264,9 +264,22 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## Schema-Qualified Reference Semantics (`v0.27.0`)
+
+`v0.27.0` is the **Schema-Qualified Reference Semantics Pack**. It preserves PostgreSQL schema-qualified referenced-object facts in the shared `spec.Constraint` contract. This is semantic contract preservation, not a new rule family.
+
+| Aspect | Detail |
+|--------|--------|
+| Additive field | `ReferencedSchema` on `spec.Constraint` |
+| Normalized representation | `ReferencedSchema = "public"`, `ReferencedTable = "users"` (never concatenated) |
+| Backed by | Corpus cases + service-level semantic tests |
+| Public finding metadata | Unchanged — CLI, HTTP, MCP, `pkg/deltascope` do not expose `referenced_schema` in finding output |
+
+Current public transports preserve existing supported behavior; the shared semantic contract is richer underneath. This is not full PostgreSQL foreign key support and not schema-aware rule support.
+
 ## PostgreSQL Unsupported Boundaries (`v0.26.0`)
 
-`v0.26.0` is the **PostgreSQL CREATE TABLE Unsupported Boundary Pack**. It tightens the extractor-level boundary contract for PostgreSQL `CREATE TABLE` forms that are explicitly outside the supported surface:
+`v0.26.0` is the **PostgreSQL CREATE TABLE Unsupported Boundary Pack**. It tightens the extractor-level boundary contract for PostgreSQL `CREATE TABLE` forms that are explicitly outside the supported surface. Each boundary is backed by corpus cases and surface parity tests. No new rule IDs are involved — these are extractor-level unsupported contracts, not rule findings.
 
 | Feature | Extractor Tag | Surface Contract |
 |---------|---------------|-----------------|
@@ -274,8 +287,6 @@ The corpus does not add new rules, change audit behavior, or affect end-user wor
 | Generated stored columns (`GENERATED ALWAYS AS ... STORED`) | `generated_column` | Unsupported |
 | Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` | Unsupported |
 | Partitioned tables (`PARTITION BY`) | `partitioning` | Unsupported |
-
-Each boundary is backed by corpus cases and surface parity tests. No new rule IDs are involved — these are extractor-level unsupported contracts, not rule findings.
 
 Surface contract for unsupported statements:
 

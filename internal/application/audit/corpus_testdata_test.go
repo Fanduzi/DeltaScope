@@ -41,6 +41,7 @@ type corpusFactConstraint struct {
 	Type              string   `yaml:"type"`
 	Name              string   `yaml:"name,omitempty"`
 	Columns           []string `yaml:"columns,omitempty"`
+	ReferencedSchema  string   `yaml:"referenced_schema,omitempty"`
 	ReferencedTable   string   `yaml:"referenced_table,omitempty"`
 	ReferencedColumns []string `yaml:"referenced_columns,omitempty"`
 }

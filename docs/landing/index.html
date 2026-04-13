@@ -638,13 +638,13 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.26.0 — PostgreSQL CREATE TABLE Unsupported Boundary Pack</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.27.0 — Schema-Qualified Reference Semantics Pack</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL, TiDB, and PostgreSQL SQL
 before it ships</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.
 Starting with the v0.17.0 release line, the supported macOS and Linux main archives ship those three binaries as PG-capable for PostgreSQL offline audit.
-The v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack tightens the extractor-level boundary contract for identity columns, generated stored columns, exclusion constraints, and partitioned tables — backed by corpus cases and surface parity tests. This is a boundary tightening, not a support expansion.</p>
+The v0.27.0 Schema-Qualified Reference Semantics Pack preserves PostgreSQL schema-qualified referenced-object facts in the shared contract — an additive semantic preservation backed by corpus and service-level tests. This is not a new rule pack or a support expansion.</p>
         <div class="hero-actions animate-fade-up" style="animation-delay:0.28s;">
           <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero.ctaPrimary">Install DeltaScope</a>
           <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
@@ -1062,15 +1062,23 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.26.0</div>
+              <div class="release-version">v0.27.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL CREATE TABLE Unsupported Boundary Pack</div>
-            <div class="release-copy" data-i18n="releases.items.v0260">PostgreSQL CREATE TABLE unsupported boundary tightening: identity columns, generated stored columns, exclusion constraints, and partitioned tables are now explicitly marked as unsupported SQL corpus harness with representative MySQL, TiDB, and PostgreSQL baseline cases and two-layer assertions (report-level and semantic). This is a release-confidence asset, not a new rule pack.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Schema-Qualified Reference Semantics Pack</div>
+            <div class="release-copy" data-i18n="releases.items.v0270">PostgreSQL schema-qualified referenced-object facts are now preserved in the shared contract via the additive ReferencedSchema field — backed by corpus cases and service-level semantic tests. This is additive semantic preservation, not a new rule pack.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.27.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.27.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.27.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.26.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v0260">Unsupported Boundary Pack</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v0260">PostgreSQL CREATE TABLE unsupported boundary tightening: identity columns, generated stored columns, exclusion constraints, and partitioned tables are now explicitly marked as unsupported. This is a boundary tightening, not a support expansion.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0260" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.zh-CN.md">Open v0.26.0 notes →</a>
+            </article>
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.25.0</div>
@@ -1086,14 +1094,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v0240">DeltaScope deepens PostgreSQL create-table foreign-key semantics — named and inline `FOREIGN KEY` / `REFERENCES` preserve parser-owned referenced table and referenced column facts.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.24.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0240" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.24.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.24.0.zh-CN.md">Open v0.24.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.23.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v0230">Coverage pack</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v0230">PostgreSQL `CREATE TABLE` coverage for common named and inline `CHECK`, `UNIQUE`, `FOREIGN KEY`, and `REFERENCES` forms through shared rule reuse.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.23.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0230" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.23.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.23.0.zh-CN.md">Open v0.23.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1131,7 +1131,7 @@ Statement 1: CREATE TABLE
               <span class="nav-logo-text">DeltaScope</span>
             </a>
             <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.
-Starting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack tightens the extractor-level boundary contract for identity columns, generated stored columns, exclusion constraints, and partitioned tables — backed by corpus cases and surface parity tests.</p>
+Starting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.27.0 Schema-Qualified Reference Semantics Pack preserves PostgreSQL schema-qualified referenced-object facts in the shared contract — an additive semantic preservation backed by corpus and service-level tests.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1143,7 +1143,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.26.0.zh-CN.md">Release Notes v0.26.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.27.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.27.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.27.0.zh-CN.md">Release Notes v0.27.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1187,9 +1187,9 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: 'Install'
         },
         hero: {
-          badge: 'v0.26.0 — PostgreSQL CREATE TABLE Unsupported Boundary Pack',
+          badge: 'v0.27.0 — Schema-Qualified Reference Semantics Pack',
           title: 'Audit risky MySQL, TiDB, and PostgreSQL SQL\nbefore it ships',
-          sub: 'DeltaScope exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.\nStarting with the v0.17.0 release line, the supported macOS and Linux main archives ship those three binaries as PG-capable for PostgreSQL offline audit.\nThe v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack tightens the extractor-level boundary contract for identity columns, generated stored columns, exclusion constraints, and partitioned tables — backed by corpus cases and surface parity tests. This is a boundary tightening, not a support expansion.',
+          sub: 'DeltaScope exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.\nStarting with the v0.17.0 release line, the supported macOS and Linux main archives ship those three binaries as PG-capable for PostgreSQL offline audit.\nThe v0.27.0 Schema-Qualified Reference Semantics Pack preserves PostgreSQL schema-qualified referenced-object facts in the shared contract — an additive semantic preservation backed by corpus and service-level tests. This is not a new rule pack or a support expansion.',
           ctaPrimary: 'Install DeltaScope',
           ctaSecondary: 'See Real Workflows',
           badgeAgent: 'Agent Ready'
@@ -1313,28 +1313,27 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           sub: 'Keep the latest release front and center, skim the last few PostgreSQL milestones quickly, and use the archive link when you want the full history.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL CREATE TABLE Unsupported Boundary Pack',
+          currentTitle: 'Schema-Qualified Reference Semantics Pack',
           currentLink: 'Read release notes →',
           labels: {
+            v0260: 'Unsupported Boundary Pack',
             v0250: 'SQL Corpus & Boundary Confidence Pack',
-            v0240: 'Semantics pack',
-            v0230: 'Coverage pack'
+            v0240: 'Semantics pack'
           },
           links: {
+            v0260: 'Open v0.26.0 notes →',
             v0250: 'Open v0.25.0 notes →',
-            v0240: 'Open v0.24.0 notes →',
-            v0230: 'Open v0.23.0 notes →'
+            v0240: 'Open v0.24.0 notes →'
           },
           archiveTitle: 'Release archive',
           archiveLabel: 'All versions',
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v0270: 'PostgreSQL schema-qualified referenced-object facts are now preserved in the shared contract via the additive ReferencedSchema field — backed by corpus cases and service-level semantic tests. This is additive semantic preservation, not a new rule pack.',
             v0260: 'PostgreSQL CREATE TABLE unsupported boundary tightening: identity columns, generated stored columns, exclusion constraints, and partitioned tables are now explicitly marked as unsupported. Backed by corpus cases and surface parity tests.',
             v0250: 'DeltaScope adds a dialect-wide SQL corpus harness with representative MySQL, TiDB, and PostgreSQL baseline cases and two-layer assertions (report-level and semantic). This is a release-confidence asset, not a new rule pack.',
-            v0240: 'DeltaScope deepens PostgreSQL create-table foreign-key semantics — named and inline `FOREIGN KEY` / `REFERENCES` preserve parser-owned referenced table and referenced column facts.',
-            v0230: 'PostgreSQL `CREATE TABLE` coverage for common named and inline `CHECK`, `UNIQUE`, `FOREIGN KEY`, and `REFERENCES` forms through shared rule reuse.',
-            v0220: 'Canonical PostgreSQL unit, E2E, and release-surface gates around CLI, HTTP, MCP, and release surfaces.'
+            v0240: 'DeltaScope deepens PostgreSQL create-table foreign-key semantics — named and inline `FOREIGN KEY` / `REFERENCES` preserve parser-owned referenced table and referenced column facts.'
           }
         },
         cta: {
@@ -1344,14 +1343,14 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.\nStarting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.26.0 PostgreSQL CREATE TABLE Unsupported Boundary Pack tightens the extractor-level boundary contract for identity columns, generated stored columns, exclusion constraints, and partitioned tables — backed by corpus cases and surface parity tests.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.\nStarting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.27.0 Schema-Qualified Reference Semantics Pack preserves PostgreSQL schema-qualified referenced-object facts in the shared contract — an additive semantic preservation backed by corpus and service-level tests.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.26.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.27.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1369,9 +1368,9 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: '安装'
         },
         hero: {
-          badge: 'v0.26.0 —— PostgreSQL CREATE TABLE 不支持边界收口包',
+          badge: 'v0.27.0 —— Schema-Qualified Reference Semantics Pack',
           title: '在上线前审计高风险 MySQL、TiDB 与 PostgreSQL SQL',
-          sub: 'DeltaScope 已统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 这三个主产品面。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux 主 archive 都会直接提供 PG-capable 的三条主二进制，用于 PostgreSQL offline。\n`v0.26.0` PostgreSQL CREATE TABLE 不支持边界收口包收紧了提取器级边界契约，明确将 identity 列、generated stored 列、exclusion 约束和分区表标记为不支持。这是边界收口，不是支持范围扩大。',
+          sub: 'DeltaScope 已统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp` 这三个主产品面。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux 主 archive 都会直接提供 PG-capable 的三条主二进制，用于 PostgreSQL offline。\n`v0.27.0` Schema-Qualified Reference Semantics Pack 在共享契约中保留了 PostgreSQL schema-qualified 被引用对象事实——由语料和服务层测试支撑的 additive 语义保留。这不是新规则包，也不是支持范围扩大。',
           ctaPrimary: '安装 DeltaScope',
           ctaSecondary: '查看真实场景',
           badgeAgent: '支持 Agent'
@@ -1495,28 +1494,28 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           sub: '首页只保留当前版本和最近几个 PostgreSQL 里程碑；如果要看完整历史，再进入统一的发布归档入口。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL CREATE TABLE 不支持边界收口包',
+          currentTitle: 'Schema-Qualified Reference Semantics Pack',
           currentLink: '查看发布说明 →',
           labels: {
+            v0260: '不支持边界收口包',
             v0250: '语料库与边界置信度包',
-            v0240: '语义包',
-            v0230: '覆盖包'
+            v0240: '语义包'
           },
           links: {
+            v0260: '查看 v0.26.0 发布说明 →',
             v0250: '查看 v0.25.0 发布说明 →',
-            v0240: '查看 v0.24.0 发布说明 →',
-            v0230: '查看 v0.23.0 发布说明 →'
+            v0240: '查看 v0.24.0 发布说明 →'
           },
           archiveTitle: '发布归档',
           archiveLabel: '全部版本',
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v0270: 'PostgreSQL schema-qualified 被引用对象事实现已在共享契约中保留（additive ReferencedSchema 字段）——由语料用例和服务层语义测试支撑。这是 additive 语义保留，不是新规则包。',
             v0260: 'PostgreSQL CREATE TABLE 不支持边界收口：identity 列、generated stored 列、exclusion 约束和分区表现被明确标记为不支持。由语料用例和接入面对等测试支撑。这是边界收口，不是支持范围扩大。',
             v0250: 'DeltaScope 新增跨方言 SQL 语料库，覆盖 MySQL、TiDB 和 PostgreSQL 的代表性基线用例，通过双层断言（报告层与语义层）验证预期结果。这是发布信心资产，不是新的规则包。',
-            v0240: 'DeltaScope 深化 PostgreSQL 建表外键语义——具名和内联 `FOREIGN KEY` / `REFERENCES` 保留解析器拥有的被引用表和被引用列事实。',
-            v0230: 'PostgreSQL `CREATE TABLE` 覆盖常见命名与内联 `CHECK`、`UNIQUE`、`FOREIGN KEY`、`REFERENCES` 形态，通过共享规则复用实现。',
-            v0220: '围绕既有 CLI、HTTP、MCP 与 release surfaces 增加规范化 PostgreSQL 单元、E2E 与 release-surface gates。'
+            v0240: 'DeltaScope 深化 PostgreSQL 建表外键语义——具名和内联 `FOREIGN KEY` / `REFERENCES` 保留解析器拥有的被引用表和被引用列事实。'
+          }
           }
         },
         cta: {
@@ -1526,14 +1525,14 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux release asset 都会收敛到统一的 `deltascope` / `deltascope-server` / `deltascope-mcp` PostgreSQL offline 产品面。`v0.26.0` PostgreSQL CREATE TABLE 不支持边界收口包收紧了提取器级边界契约，明确将 identity 列、generated stored 列、exclusion 约束和分区表标记为不支持——由语料用例和接入面对等测试支撑。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux release asset 都会收敛到统一的 `deltascope` / `deltascope-server` / `deltascope-mcp` PostgreSQL offline 产品面。`v0.27.0` Schema-Qualified Reference Semantics Pack 在共享契约中保留了 PostgreSQL schema-qualified 被引用对象事实——由语料和服务层测试支撑的 additive 语义保留。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.26.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.27.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

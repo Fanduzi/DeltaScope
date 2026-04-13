@@ -496,3 +496,92 @@ func TestAuditSQLPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.
 		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
 	}
 }
+
+func TestAuditSQLPostgreSQLInlineSchemaQualifiedReferencesPreservesReferencedSchemaFacts(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table orders (id bigint primary key, user_id bigint references public.users(id));",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != spec.KindDDL.String() {
+		t.Fatalf("expected DDL kind, got %q", result.Statements[0].Kind)
+	}
+
+	stmt, ok := corpusExtractStatement(t, "create table orders (id bigint primary key, user_id bigint references public.users(id));", spec.DialectPostgreSQL)
+	if !ok {
+		t.Fatal("expected supported statement")
+	}
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	found := false
+	for _, c := range stmt.DDL.Constraints {
+		if c.Type == "foreign_key" {
+			found = true
+			if c.ReferencedSchema != "public" {
+				t.Errorf("expected ReferencedSchema %q, got %q", "public", c.ReferencedSchema)
+			}
+			if c.ReferencedTable != "users" {
+				t.Errorf("expected ReferencedTable %q, got %q", "users", c.ReferencedTable)
+			}
+			if len(c.ReferencedColumns) != 1 || c.ReferencedColumns[0] != "id" {
+				t.Errorf("expected ReferencedColumns [id], got %v", c.ReferencedColumns)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key constraint in %+v", stmt.DDL.Constraints)
+	}
+}
+
+func TestAuditSQLPostgreSQLNamedSchemaQualifiedFKPreservesReferencedSchemaFacts(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != spec.KindDDL.String() {
+		t.Fatalf("expected DDL kind, got %q", result.Statements[0].Kind)
+	}
+
+	stmt, ok := corpusExtractStatement(t, "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));", spec.DialectPostgreSQL)
+	if !ok {
+		t.Fatal("expected supported statement")
+	}
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	found := false
+	for _, c := range stmt.DDL.Constraints {
+		if c.Type == "foreign_key" && c.Name == "fk_orders_approver" {
+			found = true
+			if c.ReferencedSchema != "public" {
+				t.Errorf("expected ReferencedSchema %q, got %q", "public", c.ReferencedSchema)
+			}
+			if c.ReferencedTable != "users" {
+				t.Errorf("expected ReferencedTable %q, got %q", "users", c.ReferencedTable)
+			}
+			if len(c.ReferencedColumns) != 1 || c.ReferencedColumns[0] != "id" {
+				t.Errorf("expected ReferencedColumns [id], got %v", c.ReferencedColumns)
+			}
+			if len(c.Columns) != 1 || c.Columns[0] != "approver_id" {
+				t.Errorf("expected Columns [approver_id], got %v", c.Columns)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected named foreign_key constraint fk_orders_approver in %+v", stmt.DDL.Constraints)
+	}
+}

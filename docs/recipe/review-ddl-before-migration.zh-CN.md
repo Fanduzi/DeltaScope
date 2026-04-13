@@ -440,3 +440,11 @@ deltascope audit \
 | 分区表（`PARTITION BY`） | `partitioning` |
 
 审核使用这些特性的迁移时，推荐操作不变：拆分迁移，用 DeltaScope 审核已支持的语句，手动审核不支持的语句。这是边界收口，不是支持范围扩大。
+
+##### Schema-Qualified Reference 语义（`v0.27.0`）
+
+从 `v0.27.0` 开始，PostgreSQL 提取器在共享契约中保留了 schema-qualified 被引用对象事实。对于使用 `REFERENCES public.users(id)` 的迁移，schema（`"public"`）现在作为 `ReferencedSchema` 在已有的 `ReferencedTable`（`"users"`）旁保留。
+
+- 这是 additive 语义保留——不新增规则，不新增 CLI 标志。
+- 尚不基于 `ReferencedSchema` 做出 schema-aware 规则决策。
+- 当前公共 finding 元数据不变；共享契约在底层更丰富。

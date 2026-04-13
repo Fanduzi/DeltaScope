@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.26.0` 为止，DeltaScope 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约：identity 列、generated stored 列、exclusion 约束和分区表现在会在提取器层被显式标记为 unsupported，并由语料用例和四条传输通道的表面对等测试锁定。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.27.0` 为止，DeltaScope 在共享契约中保留了 PostgreSQL schema-qualified 被引用对象事实（`ReferencedSchema`），由语料和服务层测试锁定——这是一次 additive 语义保留。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,9 +32,20 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.26.0/install.sh | \
-  DELTASCOPE_VERSION=v0.26.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.27.0/install.sh | \
+  DELTASCOPE_VERSION=v0.27.0 sh
 ```
+
+### Schema-Qualified Reference Semantics Pack（`v0.27.0`）
+
+`v0.27.0` 在共享契约中保留了 PostgreSQL schema-qualified 被引用对象事实。本版本不新增规则、CLI 标志或公共 API 契约，也不是完整的 PostgreSQL 外键支持。
+
+- **`ReferencedSchema`** 是 `spec.Constraint` 上的 additive 字段，保留 schema-qualified `REFERENCES` 的 schema 部分（如 `REFERENCES public.users(id)` → `ReferencedSchema = "public"`，`ReferencedTable = "users"`）。
+- PostgreSQL 提取器对命名 `FOREIGN KEY` 和内联 `REFERENCES` 两种形式都保留这些事实。
+- 语料和服务层测试通过精确断言锁定语义契约。
+- CLI、HTTP、MCP 和 `pkg/deltascope` 当前公共 finding 元数据不变——共享语义契约在底层更丰富。
+
+上一里程碑：`v0.26.0` 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。详见 [v0.26.0 发行说明](docs/releases/release-notes-v0.26.0.zh-CN.md)。
 
 ### PostgreSQL CREATE TABLE 不支持边界收口包（`v0.26.0`）
 
@@ -52,9 +63,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.26.0/install.
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组（包含 `feature` 和 `reason` 字段）的部分结果，以及 `ErrUnsupportedStatement` 哨兵错误。
 - **HTTP** 和 **MCP**：将不支持语句作为传输层错误暴露（HTTP 错误响应、MCP tool error），因为底层审计函数对不支持边界返回错误。
 
-`make release-surface-gates VERSION=v0.26.0` 与 `make release-version-surface-gates VERSION=v0.26.0` 用于校验 package/release 与带版本文档面。
+`make release-surface-gates VERSION=v0.27.0` 与 `make release-version-surface-gates VERSION=v0.27.0` 用于校验 package/release 与带版本文档面。
 
-上一里程碑：`v0.25.0` 引入了持久化 SQL 语料库与双层断言机制。详见 [v0.25.0 发行说明](docs/releases/release-notes-v0.25.0.zh-CN.md)。
+上一里程碑：`v0.26.0` 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。详见 [v0.26.0 发行说明](docs/releases/release-notes-v0.26.0.zh-CN.md)。
 
 如果你需要 PostgreSQL 离线审计：
 

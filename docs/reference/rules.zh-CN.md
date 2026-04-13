@@ -405,6 +405,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.26.0` 在提取器层收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。以下语法被显式标记为 unsupported——它们**不是**规则 finding，**没有新增规则 ID**。它们是提取器层契约，返回包含特性标签和原因字符串的 `UnsupportedDetail` 条目。
 
+### Schema-Qualified Reference 语义（v0.27.0）
+
+`v0.27.0` 通过 additive `ReferencedSchema` 字段在共享 `spec.Constraint` 契约中保留了 PostgreSQL schema-qualified 被引用对象事实。这**不是**新规则 ID——它属于提取器/共享语义事实。现有 FK forbid 规则元数据尚不包含 `referenced_schema` 字段。当前公共 finding 元数据（CLI、HTTP、MCP、`pkg/deltascope`）不变；共享语义契约在底层更丰富。
+
 | 特性 | 提取器标签 |
 |------|-----------|
 | Identity 列（`GENERATED ... AS IDENTITY`） | `generated_as_identity` |

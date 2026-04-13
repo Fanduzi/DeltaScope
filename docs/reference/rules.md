@@ -417,6 +417,10 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.26.0` tightens the PostgreSQL `CREATE TABLE` unsupported boundary contract at the extractor level. The following forms are explicitly marked as unsupported — they are **not** rule findings and **no new rule IDs** are involved. They are extractor-level contracts that return `UnsupportedDetail` entries with feature tags and reason strings.
 
+### Schema-Qualified Reference Semantics (v0.27.0)
+
+`v0.27.0` preserves PostgreSQL schema-qualified referenced-object facts in the shared `spec.Constraint` contract via the additive `ReferencedSchema` field. This is **not** a new rule ID — it belongs to extractor/shared semantic facts. Existing FK forbid rule metadata does not yet include the `referenced_schema` field. Current public finding metadata (CLI, HTTP, MCP, `pkg/deltascope`) remains unchanged; the shared semantic contract is richer underneath.
+
 | Feature | Extractor Tag |
 |---------|---------------|
 | Identity columns (`GENERATED ... AS IDENTITY`) | `generated_as_identity` |
