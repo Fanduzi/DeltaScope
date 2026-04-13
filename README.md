@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.27.0`, DeltaScope preserves schema-qualified PostgreSQL referenced-object facts (`ReferencedSchema`) in the shared contract — an additive semantic preservation backed by corpus and service-level tests. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.28.0`, DeltaScope exposes PostgreSQL referenced-object facts (`referenced_schema`, `referenced_table`, `referenced_columns`) in FK forbid finding metadata — an additive metadata widening across all four transport surfaces. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,9 +34,19 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.27.0/install.sh | \
-  DELTASCOPE_VERSION=v0.27.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.28.0/install.sh | \
+  DELTASCOPE_VERSION=v0.28.0 sh
 ```
+
+### Referenced-Object Metadata Surface Pack (`v0.28.0`)
+
+`v0.28.0` exposes PostgreSQL referenced-object facts (`referenced_schema`, `referenced_table`, `referenced_columns`) as additive finding metadata on the FK forbid rule, across CLI, HTTP, MCP, and `pkg/deltascope`. It does not add new rules, new CLI flags, or new public API contracts, and it is not schema-aware FK policy support.
+
+- **Finding metadata widening**: the `ddl.table.foreign_key.forbid` finding now includes `referenced_schema` (e.g., `"public"`), `referenced_table` (e.g., `"users"`), and `referenced_columns` (e.g., `["id"]`) when the underlying constraint carries those facts. `referenced_table` is never concatenated into `"public.users"`.
+- Parser/extractor semantics are unchanged from `v0.27.0`. The shared semantic contract (`spec.Constraint`) already had `ReferencedSchema`, `ReferencedTable`, and `ReferencedColumns`; `v0.28.0` widens the outward finding metadata to expose them.
+- No new rule IDs, no new CLI flags, no schema-aware FK policy decisions.
+
+Previous milestone: `v0.27.0` preserved schema-qualified PostgreSQL referenced-object facts in the shared contract. See the [v0.27.0 release notes](docs/releases/release-notes-v0.27.0.md) for details.
 
 ### Schema-Qualified Reference Semantics Pack (`v0.27.0`)
 
@@ -65,7 +75,7 @@ Surface contract for unsupported statements:
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
 - **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
 
-`make release-surface-gates VERSION=v0.27.0` and `make release-version-surface-gates VERSION=v0.27.0` verify the package/release and versioned docs surfaces.
+`make release-surface-gates VERSION=v0.28.0` and `make release-version-surface-gates VERSION=v0.28.0` verify the package/release and versioned docs surfaces.
 
 Previous milestone: `v0.26.0` tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract. See the [v0.26.0 release notes](docs/releases/release-notes-v0.26.0.md) for details.
 

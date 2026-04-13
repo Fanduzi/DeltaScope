@@ -857,3 +857,124 @@ func TestAuditPostgreSQLCreateTableExclusionReturnsUnsupported(t *testing.T) {
 		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
 	}
 }
+
+func TestAuditPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+	}
+
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			found = true
+			if finding.Metadata["table"] == nil {
+				t.Errorf("expected metadata key 'table', got nil")
+			}
+			if finding.Metadata["constraint"] == nil {
+				t.Errorf("expected metadata key 'constraint', got nil")
+			}
+			if finding.Metadata["columns"] == nil {
+				t.Errorf("expected metadata key 'columns', got nil")
+			}
+			// v0.28.0: referenced-object metadata is now exposed.
+			if finding.Metadata["referenced_schema"] != "public" {
+				t.Errorf("expected referenced_schema %q, got %v", "public", finding.Metadata["referenced_schema"])
+			}
+			if finding.Metadata["referenced_table"] != "users" {
+				t.Errorf("expected referenced_table %q, got %v", "users", finding.Metadata["referenced_table"])
+			}
+			if finding.Metadata["referenced_columns"] == nil {
+				t.Errorf("expected metadata key 'referenced_columns', got nil")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditPostgreSQLSchemaQualifiedFKExposesReferencedObjectMetadata(t *testing.T) {
+	cases := map[string]struct {
+		sql              string
+		wantConstraint   string
+		wantColumns      []string
+		wantRefSchema    string
+		wantRefTable     string
+		wantRefColumns   []string
+	}{
+		"inline REFERENCES public.users": {
+			sql:            "create table orders (id bigint primary key, user_id bigint references public.users(id));",
+			wantRefSchema:  "public",
+			wantRefTable:   "users",
+			wantRefColumns: []string{"id"},
+		},
+		"named FK REFERENCES public.users": {
+			sql:            "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
+			wantConstraint: "fk_orders_approver",
+			wantColumns:    []string{"approver_id"},
+			wantRefSchema:  "public",
+			wantRefTable:   "users",
+			wantRefColumns: []string{"id"},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tc.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement result, got %#v", result.Statements)
+			}
+
+			found := false
+			for _, finding := range result.Statements[0].Findings {
+				if finding.RuleID == "ddl.table.foreign_key.forbid" {
+					found = true
+
+					// Existing metadata.
+					if tc.wantConstraint != "" && finding.Metadata["constraint"] != tc.wantConstraint {
+						t.Errorf("expected constraint %q, got %v", tc.wantConstraint, finding.Metadata["constraint"])
+					}
+					if tc.wantColumns != nil {
+						cols, ok := finding.Metadata["columns"].([]string)
+						if !ok || len(cols) != len(tc.wantColumns) || cols[0] != tc.wantColumns[0] {
+							t.Errorf("expected columns %v, got %v", tc.wantColumns, finding.Metadata["columns"])
+						}
+					}
+
+					// Referenced-object metadata.
+					if finding.Metadata["referenced_schema"] != tc.wantRefSchema {
+						t.Errorf("expected referenced_schema %q, got %v", tc.wantRefSchema, finding.Metadata["referenced_schema"])
+					}
+					if finding.Metadata["referenced_table"] != tc.wantRefTable {
+						t.Errorf("expected referenced_table %q, got %v", tc.wantRefTable, finding.Metadata["referenced_table"])
+					}
+					refCols, ok := finding.Metadata["referenced_columns"].([]string)
+					if !ok || len(refCols) != len(tc.wantRefColumns) || refCols[0] != tc.wantRefColumns[0] {
+						t.Errorf("expected referenced_columns %v, got %v", tc.wantRefColumns, finding.Metadata["referenced_columns"])
+					}
+
+					// referenced_table must NOT be schema-qualified.
+					if finding.Metadata["referenced_table"] == "public.users" {
+						t.Fatalf("referenced_table must not be schema-qualified 'public.users'")
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("expected foreign_key forbid finding, got %#v", result.Statements[0].Findings)
+			}
+		})
+	}
+}

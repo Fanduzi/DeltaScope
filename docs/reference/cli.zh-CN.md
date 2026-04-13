@@ -552,7 +552,31 @@ deltascope --version
 
 ### Schema-Qualified Reference 语义（`v0.27.0`）
 
-从 `v0.27.0` 开始，PostgreSQL 提取器在共享契约中保留了 schema-qualified 被引用对象事实（`ReferencedSchema`）。CLI 当前 FK forbid finding 的输出契约不变——finding 元数据不暴露 `referenced_schema`。Schema-qualified reference 事实在共享契约中保留，由语料和服务层语义测试验证。这不是新增 CLI 标志或输出契约。
+从 `v0.27.0` 开始，PostgreSQL 提取器在共享契约中保留了 schema-qualified 被引用对象事实（`ReferencedSchema`）。从 `v0.28.0` 开始，FK forbid finding metadata 已暴露这些被引用对象字段。这不是新增 CLI 标志或输出契约。
+
+### Referenced-Object Metadata Surface（`v0.28.0`）
+
+从 `v0.28.0` 开始，CLI JSON 输出中的 `ddl.table.foreign_key.forbid` finding metadata 现在在底层 PostgreSQL FK 约束携带这些事实时，会包含 `referenced_schema`（如 `"public"`）、`referenced_table`（如 `"users"`）和 `referenced_columns`（如 `["id"]`）。这是一次 additive metadata widening——没有新增 CLI 标志，没有新增 finding metadata 对象之外的输出契约字段。`referenced_table` 不会拼接成 `"public.users"`。
+
+Schema-qualified FK 的 finding metadata 示例：
+
+```json
+{
+  "rule_id": "ddl.table.foreign_key.forbid",
+  "level": "blocker",
+  "message": "...",
+  "metadata": {
+    "table": "orders",
+    "constraint": "fk_orders_approver",
+    "columns": ["approver_id"],
+    "referenced_schema": "public",
+    "referenced_table": "users",
+    "referenced_columns": ["id"]
+  }
+}
+```
+
+这不是新增 CLI 标志，不是 schema-aware FK 策略支持，也不是新规则族。
 
 ---
 

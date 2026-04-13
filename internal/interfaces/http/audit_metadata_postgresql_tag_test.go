@@ -898,3 +898,55 @@ func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError
 		})
 	}
 }
+
+func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+
+	// 1. FK forbid finding must trigger.
+	found := false
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.foreign_key.forbid" {
+			found = true
+
+			// 2. Current metadata contains: table, constraint, columns.
+			if finding.Metadata["table"] == nil {
+				t.Errorf("expected metadata key 'table', got nil")
+			}
+			if finding.Metadata["constraint"] == nil {
+				t.Errorf("expected metadata key 'constraint', got nil")
+			}
+			if finding.Metadata["columns"] == nil {
+				t.Errorf("expected metadata key 'columns', got nil")
+			}
+
+			// v0.28.0: referenced-object metadata is now exposed.
+			if finding.Metadata["referenced_schema"] == nil {
+				t.Errorf("expected metadata key 'referenced_schema', got nil")
+			}
+			if finding.Metadata["referenced_table"] == nil {
+				t.Errorf("expected metadata key 'referenced_table', got nil")
+			}
+			if finding.Metadata["referenced_columns"] == nil {
+				t.Errorf("expected metadata key 'referenced_columns', got nil")
+			}
+			// referenced_table must NOT be schema-qualified.
+			if refTable, _ := finding.Metadata["referenced_table"].(string); refTable == "public.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'public.users'")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding, got %#v", response.Statements[0].Findings)
+	}
+}

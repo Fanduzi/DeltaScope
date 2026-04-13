@@ -250,6 +250,20 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## Referenced-Object Metadata Surface（`v0.28.0`）
+
+`v0.28.0` 是 **Referenced-Object Metadata Surface Pack**。它将 PostgreSQL 被引用对象事实（`referenced_schema`、`referenced_table`、`referenced_columns`）从共享语义契约中以 additive 方式暴露到 FK forbid 规则的 finding metadata，覆盖 CLI、HTTP、MCP 和 `pkg/deltascope` 四条传输面。这是 additive metadata widening，不是新规则族。
+
+| 方面 | 说明 |
+|------|------|
+| Widened metadata | `ddl.table.foreign_key.forbid` finding metadata 现在在底层约束携带被引用对象事实时，会包含 `referenced_schema`、`referenced_table`、`referenced_columns` |
+| 条件发射 | `referenced_schema` 在无 schema 限定符时省略；`referenced_table` 和 `referenced_columns` 在所有携带这些事实的 FK 约束中出现 |
+| 规范化表示 | `referenced_table` 不会拼接成 `"public.users"`——schema 和 table 始终是独立字段 |
+| 锁定方式 | 覆盖 CLI、HTTP、MCP 和 `pkg/deltascope` 的 surface 测试 |
+| 没有新 rule ID | `ddl.table.foreign_key.forbid` 规则不变，仅 finding metadata 更宽 |
+
+这不是 schema-aware FK 策略支持，不是完整的 PostgreSQL 外键支持，也不是新规则族。
+
 ## Schema-Qualified Reference 语义（`v0.27.0`）
 
 `v0.27.0` 是 **Schema-Qualified Reference Semantics Pack**。它在共享 `spec.Constraint` 契约中保留了 PostgreSQL schema-qualified 被引用对象事实。这是语义契约保留，不是新规则族。
@@ -259,9 +273,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | 新增字段 | `spec.Constraint` 上的 `ReferencedSchema` |
 | 规范化表示 | `ReferencedSchema = "public"`，`ReferencedTable = "users"`（从不拼接） |
 | 锁定方式 | 语料用例 + 服务层语义测试 |
-| 公共 finding 元数据 | 不变——CLI、HTTP、MCP、`pkg/deltascope` 不在 finding 输出中暴露 `referenced_schema` |
+| 公共 finding 元数据 | `v0.28.0` 已将 `referenced_schema`、`referenced_table`、`referenced_columns` 暴露到 FK forbid finding 输出 |
 
-当前公共传输面保持既有支持行为；共享语义契约在底层更丰富。这不是完整的 PostgreSQL 外键支持，也不是 schema-aware 规则支持。
+当前公共传输面已在 FK forbid finding metadata 中暴露被引用对象字段（`v0.28.0`）。这不是完整的 PostgreSQL 外键支持，也不是 schema-aware 规则支持。
 
 ## PostgreSQL 不支持边界（`v0.26.0`）
 

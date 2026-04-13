@@ -858,6 +858,88 @@ func TestAuditCommandPostgreSQLDropNonPrimaryKeyConstraintDoesNotRenderPrimaryKe
 	}
 }
 
+func TestAuditCommandPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) < 1 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+
+	// 1. FK forbid finding must trigger.
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.table.foreign_key.forbid" {
+			found = true
+			metadata, _ := finding["metadata"].(map[string]any)
+			if metadata == nil {
+				t.Fatalf("expected metadata map in finding, got nil")
+			}
+
+			// 2. Current metadata contains: table, constraint, columns.
+			if metadata["table"] == nil {
+				t.Errorf("expected metadata key 'table', got nil")
+			}
+			if metadata["constraint"] == nil {
+				t.Errorf("expected metadata key 'constraint', got nil")
+			}
+			if metadata["columns"] == nil {
+				t.Errorf("expected metadata key 'columns', got nil")
+			}
+
+			// v0.28.0: referenced-object metadata is now exposed.
+			if metadata["referenced_schema"] == nil {
+				t.Errorf("expected metadata key 'referenced_schema', got nil")
+			}
+			if metadata["referenced_table"] == nil {
+				t.Errorf("expected metadata key 'referenced_table', got nil")
+			}
+			if metadata["referenced_columns"] == nil {
+				t.Errorf("expected metadata key 'referenced_columns', got nil")
+			}
+			// referenced_table must NOT be schema-qualified.
+			if refTable, _ := metadata["referenced_table"].(string); refTable == "public.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'public.users'")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected foreign_key forbid finding, got %#v", findings)
+	}
+}
+
 func TestAuditCommandPostgreSQLAlterColumnSetDefaultRendersForbidFinding(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}

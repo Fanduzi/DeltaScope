@@ -240,11 +240,23 @@ func (r tableForeignKeyForbidRule) Evaluate(statement spec.Statement) ([]rule.Fi
 			Level:      r.level,
 			Message:    fmt.Sprintf("foreign key constraint %q is forbidden", constraint.Name),
 			Suggestion: "remove the foreign key constraint or disable the policy intentionally",
-			Metadata: map[string]any{
-				"table":      statement.DDL.Table.Name,
-				"constraint": constraint.Name,
-				"columns":    append([]string(nil), constraint.Columns...),
-			},
+			Metadata: func() map[string]any {
+				m := map[string]any{
+					"table":      statement.DDL.Table.Name,
+					"constraint": constraint.Name,
+					"columns":    append([]string(nil), constraint.Columns...),
+				}
+				if constraint.ReferencedSchema != "" {
+					m["referenced_schema"] = constraint.ReferencedSchema
+				}
+				if constraint.ReferencedTable != "" {
+					m["referenced_table"] = constraint.ReferencedTable
+				}
+				if len(constraint.ReferencedColumns) > 0 {
+					m["referenced_columns"] = append([]string(nil), constraint.ReferencedColumns...)
+				}
+				return m
+			}(),
 		})
 	}
 	return findings, nil
