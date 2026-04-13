@@ -447,4 +447,18 @@ Starting with `v0.27.0`, the PostgreSQL extractor preserves schema-qualified ref
 
 - This is additive semantic preservation — no new rules, no new CLI flags.
 - No schema-aware rule decisions are made based on `ReferencedSchema` yet.
-- Current public finding metadata remains unchanged; the shared contract is richer underneath.
+- Starting with `v0.28.0`, FK forbid finding metadata now exposes these referenced-object fields directly.
+
+#### Referenced-Object Metadata Surface (`v0.28.0`)
+
+Starting with `v0.28.0`, DeltaScope review outputs can surface PostgreSQL referenced-object facts directly in FK forbid findings. When auditing a migration containing a foreign key with schema-qualified references (e.g., `REFERENCES public.users(id)`), the FK forbid finding metadata now includes `referenced_schema`, `referenced_table`, and `referenced_columns`.
+
+Example: audit a PostgreSQL migration with a named foreign key referencing another schema:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (user_id bigint, constraint fk_orders_user foreign key (user_id) references public.users(id));"
+```
+
+The FK forbid finding now shows which table and schema the constraint references, making it easier to assess cross-schema dependencies during migration review. This is an additive metadata widening — no new rules, no new CLI flags, and no schema-aware FK policy decisions.

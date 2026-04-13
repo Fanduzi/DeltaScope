@@ -264,6 +264,20 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## Referenced-Object Metadata Surface (`v0.28.0`)
+
+`v0.28.0` is the **Referenced-Object Metadata Surface Pack**. It widens the outward FK forbid finding metadata to expose PostgreSQL referenced-object facts (`referenced_schema`, `referenced_table`, `referenced_columns`) that were already present in the shared semantic contract from `v0.27.0`. This is an additive metadata widening, not a new rule family.
+
+| Aspect | Detail |
+|--------|--------|
+| Widened metadata | `ddl.table.foreign_key.forbid` finding metadata now includes `referenced_schema`, `referenced_table`, `referenced_columns` when the underlying constraint carries those facts |
+| Conditional emission | `referenced_schema` is omitted when no schema qualifier is present; `referenced_table` and `referenced_columns` appear for all FK constraints that carry them |
+| Normalized representation | `referenced_table` is never concatenated with `referenced_schema` (e.g., never `"public.users"`) |
+| Backed by | Surface tests across CLI, HTTP, MCP, and `pkg/deltascope` |
+| No new rule IDs | The `ddl.table.foreign_key.forbid` rule is unchanged; only its finding metadata is wider |
+
+This is not schema-aware FK policy support, not full PostgreSQL foreign key support, and not a new rule family.
+
 ## Schema-Qualified Reference Semantics (`v0.27.0`)
 
 `v0.27.0` is the **Schema-Qualified Reference Semantics Pack**. It preserves PostgreSQL schema-qualified referenced-object facts in the shared `spec.Constraint` contract. This is semantic contract preservation, not a new rule family.
@@ -273,9 +287,9 @@ The corpus does not add new rules, change audit behavior, or affect end-user wor
 | Additive field | `ReferencedSchema` on `spec.Constraint` |
 | Normalized representation | `ReferencedSchema = "public"`, `ReferencedTable = "users"` (never concatenated) |
 | Backed by | Corpus cases + service-level semantic tests |
-| Public finding metadata | Unchanged — CLI, HTTP, MCP, `pkg/deltascope` do not expose `referenced_schema` in finding output |
+| Public finding metadata | `v0.28.0` widens the outward finding metadata to expose `referenced_schema`, `referenced_table`, `referenced_columns` on FK forbid findings |
 
-Current public transports preserve existing supported behavior; the shared semantic contract is richer underneath. This is not full PostgreSQL foreign key support and not schema-aware rule support.
+Current public transports now expose referenced-object fields in FK forbid finding metadata (`v0.28.0`). This is not full PostgreSQL foreign key support and not schema-aware rule support.
 
 ## PostgreSQL Unsupported Boundaries (`v0.26.0`)
 

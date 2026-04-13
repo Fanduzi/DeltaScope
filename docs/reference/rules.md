@@ -419,7 +419,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 ### Schema-Qualified Reference Semantics (v0.27.0)
 
-`v0.27.0` preserves PostgreSQL schema-qualified referenced-object facts in the shared `spec.Constraint` contract via the additive `ReferencedSchema` field. This is **not** a new rule ID — it belongs to extractor/shared semantic facts. Existing FK forbid rule metadata does not yet include the `referenced_schema` field. Current public finding metadata (CLI, HTTP, MCP, `pkg/deltascope`) remains unchanged; the shared semantic contract is richer underneath.
+`v0.27.0` preserves PostgreSQL schema-qualified referenced-object facts in the shared `spec.Constraint` contract via the additive `ReferencedSchema` field. This is **not** a new rule ID — it belongs to extractor/shared semantic facts. Starting with `v0.28.0`, FK forbid finding metadata now exposes `referenced_schema`, `referenced_table`, and `referenced_columns` when the underlying constraint carries those facts.
+
+### Referenced-Object Metadata Surface (v0.28.0)
+
+`v0.28.0` widens the outward `ddl.table.foreign_key.forbid` finding metadata to expose PostgreSQL referenced-object fields (`referenced_schema`, `referenced_table`, `referenced_columns`). These fields were already present in the shared semantic contract from `v0.27.0`; `v0.28.0` makes them visible in CLI JSON, HTTP responses, MCP structured content, and `pkg/deltascope` finding metadata.
+
+- **No new rule IDs** — the `ddl.table.foreign_key.forbid` rule is unchanged; only its finding metadata is wider.
+- **Conditional emission** — `referenced_schema` is omitted when no schema qualifier is present; `referenced_table` and `referenced_columns` appear for all FK constraints that carry them.
+- **Normalized representation** — `referenced_table` is never concatenated with `referenced_schema`.
+- This is **not** schema-aware FK policy support, not full PostgreSQL foreign key support, and not a new rule family.
 
 | Feature | Extractor Tag |
 |---------|---------------|

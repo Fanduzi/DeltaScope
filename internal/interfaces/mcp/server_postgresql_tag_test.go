@@ -1190,7 +1190,7 @@ func TestAuditSQLToolPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *tes
 	}
 }
 
-func TestAuditSQLToolPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t *testing.T) {
+func TestAuditSQLToolPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
 	server := NewServer(Config{Version: "test-version"})
 	session, err := connectClientSession(context.Background(), server)
 	if err != nil {

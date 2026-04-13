@@ -607,7 +607,31 @@ Starting with `v0.26.0`, the PostgreSQL extractor explicitly rejects identity co
 
 ### Schema-Qualified Reference Semantics (`v0.27.0`)
 
-Starting with `v0.27.0`, the PostgreSQL extractor preserves schema-qualified referenced-object facts (`ReferencedSchema`) in the shared contract. The CLI current output contract for FK forbid findings remains unchanged — `referenced_schema` is not exposed in the finding metadata. Schema-qualified reference facts are preserved in the shared contract and validated by corpus and service-level semantic tests. This is not a new CLI flag or output contract.
+Starting with `v0.27.0`, the PostgreSQL extractor preserves schema-qualified referenced-object facts (`ReferencedSchema`) in the shared contract. Starting with `v0.28.0`, FK forbid finding metadata now exposes these referenced-object fields. This is not a new CLI flag or output contract.
+
+### Referenced-Object Metadata Surface (`v0.28.0`)
+
+Starting with `v0.28.0`, the `ddl.table.foreign_key.forbid` finding metadata in CLI JSON output now includes `referenced_schema` (e.g., `"public"`), `referenced_table` (e.g., `"users"`), and `referenced_columns` (e.g., `["id"]`) when the underlying PostgreSQL FK constraint carries those facts. This is an additive metadata widening — no new CLI flags, no new output contract fields beyond the finding metadata object. `referenced_table` is never concatenated with `referenced_schema` (e.g., never `"public.users"`).
+
+Example finding metadata for a schema-qualified FK:
+
+```json
+{
+  "rule_id": "ddl.table.foreign_key.forbid",
+  "level": "blocker",
+  "message": "...",
+  "metadata": {
+    "table": "orders",
+    "constraint": "fk_orders_approver",
+    "columns": ["approver_id"],
+    "referenced_schema": "public",
+    "referenced_table": "users",
+    "referenced_columns": ["id"]
+  }
+}
+```
+
+This is not a new CLI flag, not schema-aware FK policy support, and not a new rule family.
 
 ---
 

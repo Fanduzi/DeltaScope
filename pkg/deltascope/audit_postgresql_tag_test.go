@@ -858,7 +858,7 @@ func TestAuditPostgreSQLCreateTableExclusionReturnsUnsupported(t *testing.T) {
 	}
 }
 
-func TestAuditPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t *testing.T) {
+func TestAuditPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
 		Dialect: DialectPostgreSQL,

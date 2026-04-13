@@ -447,4 +447,18 @@ deltascope audit \
 
 - 这是 additive 语义保留——不新增规则，不新增 CLI 标志。
 - 尚不基于 `ReferencedSchema` 做出 schema-aware 规则决策。
-- 当前公共 finding 元数据不变；共享契约在底层更丰富。
+- 从 `v0.28.0` 开始，FK forbid finding metadata 已直接暴露这些被引用对象字段。
+
+##### Referenced-Object Metadata Surface（`v0.28.0`）
+
+从 `v0.28.0` 开始，DeltaScope 审核输出可以直接在 FK forbid finding 中暴露 PostgreSQL 被引用对象事实。审核包含 schema-qualified 外键的迁移时（如 `REFERENCES public.users(id)`），FK forbid finding metadata 现在包含 `referenced_schema`、`referenced_table` 和 `referenced_columns`。
+
+示例：审计引用其他 schema 的命名外键 PostgreSQL 迁移：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table orders (user_id bigint, constraint fk_orders_user foreign key (user_id) references public.users(id));"
+```
+
+FK forbid finding 现在显示约束引用的表和 schema，使迁移审查中评估跨 schema 依赖关系更加容易。这是一次 additive metadata widening——不新增规则、不新增 CLI 标志，也没有 schema-aware FK 策略决策。

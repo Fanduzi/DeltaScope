@@ -899,7 +899,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError
 	}
 }
 
-func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t *testing.T) {
+func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
 		Dialect: deltascope.DialectPostgreSQL,

@@ -407,7 +407,16 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ### Schema-Qualified Reference 语义（v0.27.0）
 
-`v0.27.0` 通过 additive `ReferencedSchema` 字段在共享 `spec.Constraint` 契约中保留了 PostgreSQL schema-qualified 被引用对象事实。这**不是**新规则 ID——它属于提取器/共享语义事实。现有 FK forbid 规则元数据尚不包含 `referenced_schema` 字段。当前公共 finding 元数据（CLI、HTTP、MCP、`pkg/deltascope`）不变；共享语义契约在底层更丰富。
+`v0.27.0` 通过 additive `ReferencedSchema` 字段在共享 `spec.Constraint` 契约中保留了 PostgreSQL schema-qualified 被引用对象事实。这**不是**新规则 ID——它属于提取器/共享语义事实。从 `v0.28.0` 开始，FK forbid finding metadata 已暴露 `referenced_schema`、`referenced_table` 和 `referenced_columns`。
+
+### Referenced-Object Metadata Surface（v0.28.0）
+
+`v0.28.0` 将 `ddl.table.foreign_key.forbid` finding metadata 向外扩展，暴露 PostgreSQL 被引用对象字段（`referenced_schema`、`referenced_table`、`referenced_columns`）。这些字段在 `v0.27.0` 已存在于共享语义契约中；`v0.28.0` 使其在 CLI JSON、HTTP 响应、MCP StructuredContent 和 `pkg/deltascope` finding metadata 中可见。
+
+- **没有新 rule ID**——`ddl.table.foreign_key.forbid` 规则不变，仅 finding metadata 更宽。
+- **条件发射**——`referenced_schema` 在无 schema 限定符时省略；`referenced_table` 和 `referenced_columns` 在所有携带这些事实的 FK 约束中出现。
+- **规范化表示**——`referenced_table` 不会拼接成 `"public.users"`。
+- 这**不是** schema-aware FK 策略支持，不是完整的 PostgreSQL 外键支持，也不是新规则族。
 
 | 特性 | 提取器标签 |
 |------|-----------|

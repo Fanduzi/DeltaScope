@@ -6,6 +6,17 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.28.0] - 2026-04-13
+
+### Added
+
+- FK forbid finding metadata now exposes referenced-object fields (`referenced_schema`, `referenced_table`, `referenced_columns`) for PostgreSQL foreign key constraints. These fields were already present in the shared semantic contract (`spec.Constraint`) from `v0.27.0`; `v0.28.0` widens the outward finding metadata contract so CLI, HTTP, MCP, and `pkg/deltascope` users can see them directly.
+- `referenced_table` is never concatenated with `referenced_schema` (e.g., never `"public.users"`). The two fields are always separate and normalized.
+
+### Changed
+
+- Release-facing docs now position `v0.28.0` as the **Referenced-Object Metadata Surface Pack** — an additive metadata widening of the FK forbid finding contract. It does not add new rules, new CLI flags, new public API contracts, or schema-aware FK policy support. Parser/extractor semantics are unchanged from `v0.27.0`.
+
 ## [v0.27.0] - 2026-04-13
 
 ### Added

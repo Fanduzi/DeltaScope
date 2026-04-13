@@ -858,7 +858,7 @@ func TestAuditCommandPostgreSQLDropNonPrimaryKeyConstraintDoesNotRenderPrimaryKe
 	}
 }
 
-func TestAuditCommandPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t *testing.T) {
+func TestAuditCommandPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
