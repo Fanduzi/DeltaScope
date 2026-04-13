@@ -432,9 +432,10 @@ func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.
 			Type:              "foreign_key",
 			Name:              constraint.GetConname(),
 			Columns:           stringValuesFromNodes(constraint.GetFkAttrs()),
+			ReferencedSchema:  rangeVarSchema(constraint.GetPktable()),
 			ReferencedTable:   rangeVarName(constraint.GetPktable()),
 			ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
-		})
+			})
 	case pg_query.ConstrType_CONSTR_CHECK:
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
 	case pg_query.ConstrType_CONSTR_EXCLUSION:
@@ -457,6 +458,7 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 				Type:              "foreign_key",
 				Name:              constraint.GetConname(),
 				Columns:           []string{column.GetColname()},
+				ReferencedSchema:  rangeVarSchema(constraint.GetPktable()),
 				ReferencedTable:   rangeVarName(constraint.GetPktable()),
 				ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
 			})
@@ -601,6 +603,13 @@ func rangeVarName(r *pg_query.RangeVar) string {
 		return ""
 	}
 	return r.GetRelname()
+}
+
+func rangeVarSchema(r *pg_query.RangeVar) string {
+	if r == nil {
+		return ""
+	}
+	return r.GetSchemaname()
 }
 
 func singleTableSlice(table *spec.Table) []spec.Table {

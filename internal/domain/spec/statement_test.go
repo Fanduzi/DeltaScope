@@ -260,6 +260,61 @@ func TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent(t *testing.T) {
 	}
 }
 
+func TestConstraintPreservesForeignKeyReferencedSchemaFacts(t *testing.T) {
+	constraint := Constraint{
+		Type:              "foreign_key",
+		Name:              "fk_orders_user",
+		Columns:           []string{"user_id"},
+		ReferencedSchema:  "public",
+		ReferencedTable:   "users",
+		ReferencedColumns: []string{"id"},
+	}
+
+	if constraint.ReferencedSchema != "public" {
+		t.Fatalf("expected referenced schema public, got %q", constraint.ReferencedSchema)
+	}
+
+	data, err := json.Marshal(constraint)
+	if err != nil {
+		t.Fatalf("marshal constraint: %v", err)
+	}
+	var roundTrip Constraint
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal constraint: %v", err)
+	}
+	if roundTrip.ReferencedSchema != "public" {
+		t.Fatalf("expected referenced schema to round-trip, got %q", roundTrip.ReferencedSchema)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if got := payload["referenced_schema"]; got != "public" {
+		t.Fatalf("expected referenced_schema json value public, got %#v", got)
+	}
+}
+
+func TestConstraintOmitsReferencedSchemaWhenAbsent(t *testing.T) {
+	constraint := Constraint{
+		Type:    "check",
+		Name:    "chk_amount",
+		Columns: []string{"amount"},
+	}
+
+	data, err := json.Marshal(constraint)
+	if err != nil {
+		t.Fatalf("marshal constraint: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["referenced_schema"]; ok {
+		t.Fatalf("expected referenced_schema to be omitted from json for non-FK constraint, got %#v", payload)
+	}
+}
+
 func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) {
 	stmt := Statement{
 		Kind:    KindDML,

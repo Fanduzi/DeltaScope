@@ -87,6 +87,7 @@ type Constraint struct {
 	Type              string   `json:"type"`
 	Name              string   `json:"name,omitempty"`
 	Columns           []string `json:"columns,omitempty"`
+	ReferencedSchema  string   `json:"referenced_schema,omitempty"`
 	ReferencedTable   string   `json:"referenced_table,omitempty"`
 	ReferencedColumns []string `json:"referenced_columns,omitempty"`
 }

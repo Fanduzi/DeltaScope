@@ -1717,3 +1717,83 @@ func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyDropsSchemaToday(t
 	t.Logf("Current behavior: ReferencedTable=%q, schema info is lost", constraint.ReferencedTable)
 	t.Log("Gap confirmed: applies to both inline REFERENCES and table-level FOREIGN KEY")
 }
+
+// ---------------------------------------------------------------------------
+// v0.27.0 Task 2: Behavior tests — schema-qualified REFERENCES preservation
+// ---------------------------------------------------------------------------
+// These tests assert that the extractor preserves schema-qualified reference
+// semantics via the new ReferencedSchema field on spec.Constraint.
+// ---------------------------------------------------------------------------
+
+func TestExtractCreateTableInlineSchemaQualifiedReferencesPreservesReferencedSchema(t *testing.T) {
+	sql := `CREATE TABLE orders (
+  id bigint PRIMARY KEY,
+  user_id bigint REFERENCES public.users(id)
+);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected kind %q, got %q", spec.KindDDL, statement.Kind)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create table, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateTable {
+		t.Fatalf("expected create_table ddl payload, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("expected 1 constraint, got %d", len(statement.DDL.Constraints))
+	}
+
+	constraint := statement.DDL.Constraints[0]
+	if constraint.Type != "foreign_key" {
+		t.Fatalf("expected foreign_key constraint, got %+v", constraint)
+	}
+	if constraint.ReferencedSchema != "public" {
+		t.Fatalf("expected ReferencedSchema %q, got %q", "public", constraint.ReferencedSchema)
+	}
+	if constraint.ReferencedTable != "users" {
+		t.Fatalf("expected ReferencedTable %q, got %q", "users", constraint.ReferencedTable)
+	}
+	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
+		t.Fatalf("expected ReferencedColumns [id], got %#v", constraint.ReferencedColumns)
+	}
+}
+
+func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyPreservesReferencedSchema(t *testing.T) {
+	sql := `CREATE TABLE orders (
+  id bigint PRIMARY KEY,
+  user_id bigint,
+  CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id)
+);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected kind %q, got %q", spec.KindDDL, statement.Kind)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported create table, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateTable {
+		t.Fatalf("expected create_table ddl payload, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("expected 1 constraint, got %d", len(statement.DDL.Constraints))
+	}
+
+	constraint := statement.DDL.Constraints[0]
+	if constraint.Type != "foreign_key" || constraint.Name != "fk_orders_user" {
+		t.Fatalf("expected named foreign_key constraint, got %+v", constraint)
+	}
+	if constraint.ReferencedSchema != "public" {
+		t.Fatalf("expected ReferencedSchema %q, got %q", "public", constraint.ReferencedSchema)
+	}
+	if constraint.ReferencedTable != "users" {
+		t.Fatalf("expected ReferencedTable %q, got %q", "users", constraint.ReferencedTable)
+	}
+	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
+		t.Fatalf("expected ReferencedColumns [id], got %#v", constraint.ReferencedColumns)
+	}
+}
