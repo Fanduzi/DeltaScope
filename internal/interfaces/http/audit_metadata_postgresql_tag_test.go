@@ -930,17 +930,19 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyMetadataNotExpose
 				t.Errorf("expected metadata key 'columns', got nil")
 			}
 
-			// 3. referenced_schema is NOT exposed in HTTP response metadata (v0.28.0 current state).
-			if _, exists := finding.Metadata["referenced_schema"]; exists {
-				t.Errorf("referenced_schema should not appear in HTTP finding metadata yet, got %v", finding.Metadata["referenced_schema"])
+			// v0.28.0: referenced-object metadata is now exposed.
+			if finding.Metadata["referenced_schema"] == nil {
+				t.Errorf("expected metadata key 'referenced_schema', got nil")
 			}
-			// 4. referenced_table is also NOT exposed.
-			if _, exists := finding.Metadata["referenced_table"]; exists {
-				t.Errorf("referenced_table should not appear in HTTP finding metadata yet, got %v", finding.Metadata["referenced_table"])
+			if finding.Metadata["referenced_table"] == nil {
+				t.Errorf("expected metadata key 'referenced_table', got nil")
 			}
-			// 5. referenced_columns is also NOT exposed.
-			if _, exists := finding.Metadata["referenced_columns"]; exists {
-				t.Errorf("referenced_columns should not appear in HTTP finding metadata yet, got %v", finding.Metadata["referenced_columns"])
+			if finding.Metadata["referenced_columns"] == nil {
+				t.Errorf("expected metadata key 'referenced_columns', got nil")
+			}
+			// referenced_table must NOT be schema-qualified.
+			if refTable, _ := finding.Metadata["referenced_table"].(string); refTable == "public.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'public.users'")
 			}
 		}
 	}

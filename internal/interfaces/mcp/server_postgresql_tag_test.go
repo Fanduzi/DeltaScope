@@ -1250,17 +1250,19 @@ func TestAuditSQLToolPostgreSQLSchemaQualifiedForeignKeyMetadataNotExposedYet(t 
 				t.Errorf("expected metadata key 'columns', got nil")
 			}
 
-			// 3. referenced_schema is NOT exposed in MCP tool output (v0.28.0 current state).
-			if _, exists := metadata["referenced_schema"]; exists {
-				t.Errorf("referenced_schema should not appear in MCP finding metadata yet, got %v", metadata["referenced_schema"])
+			// v0.28.0: referenced-object metadata is now exposed.
+			if metadata["referenced_schema"] == nil {
+				t.Errorf("expected metadata key 'referenced_schema', got nil")
 			}
-			// 4. referenced_table is also NOT exposed.
-			if _, exists := metadata["referenced_table"]; exists {
-				t.Errorf("referenced_table should not appear in MCP finding metadata yet, got %v", metadata["referenced_table"])
+			if metadata["referenced_table"] == nil {
+				t.Errorf("expected metadata key 'referenced_table', got nil")
 			}
-			// 5. referenced_columns is also NOT exposed.
-			if _, exists := metadata["referenced_columns"]; exists {
-				t.Errorf("referenced_columns should not appear in MCP finding metadata yet, got %v", metadata["referenced_columns"])
+			if metadata["referenced_columns"] == nil {
+				t.Errorf("expected metadata key 'referenced_columns', got nil")
+			}
+			// referenced_table must NOT be schema-qualified.
+			if refTable, _ := metadata["referenced_table"].(string); refTable == "public.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'public.users'")
 			}
 		}
 	}
