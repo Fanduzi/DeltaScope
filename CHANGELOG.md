@@ -6,6 +6,19 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.30.0] - 2026-04-14
+
+### Added
+
+- PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity boundary coverage is now locked as an explicit unsupported contract across corpus, service checks, and surface parity for CLI, HTTP, MCP, and `pkg/deltascope`.
+
+### Changed
+
+- PostgreSQL `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` now returns the explicit unsupported feature `generated_column` instead of looking like an ordinary supported add-column path.
+- PostgreSQL `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` now returns the explicit unsupported feature `generated_as_identity` instead of looking like an ordinary supported add-column path.
+- Adjacent PostgreSQL `ALTER TABLE` generated/identity alteration forms such as `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` remain generic unsupported boundaries.
+- Release-facing docs now position `v0.30.0` as the **PostgreSQL ALTER TABLE GENERATED Boundary Pack** — a boundary-tightening release, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
+
 ## [v0.29.0] - 2026-04-14
 
 ### Added
