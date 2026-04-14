@@ -372,6 +372,16 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "add_column", Name: column.GetColname(), Column: &spec.AlterColumn{Definition: columnPtr(columnFromDef(column))}}, true, nil
 	case pg_query.AlterTableType_AT_DropColumn:
 		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+	case pg_query.AlterTableType_AT_DropExpression:
+		return spec.Alter{}, false, &spec.UnsupportedDetail{
+			Feature: "generated_column",
+			Reason:  "postgresql generated column alteration is unsupported in v1",
+		}
+	case pg_query.AlterTableType_AT_SetIdentity, pg_query.AlterTableType_AT_DropIdentity:
+		return spec.Alter{}, false, &spec.UnsupportedDetail{
+			Feature: "generated_as_identity",
+			Reason:  "postgresql identity column alteration is unsupported in v1",
+		}
 	case pg_query.AlterTableType_AT_AddConstraint:
 		constraint := cmd.GetDef().GetConstraint()
 		if constraint == nil {

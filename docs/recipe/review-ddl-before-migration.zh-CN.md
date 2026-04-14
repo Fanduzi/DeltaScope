@@ -428,6 +428,22 @@ deltascope audit \
 - `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。
 
+##### PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
+
+从 `v0.31.0` 开始，额外的 PostgreSQL generated/identity `ALTER TABLE` 形态被显式暴露为 unsupported 边界，收口了 `v0.30.0` 留下的相邻间隙。在迁移审核中遇到这些语法时，DeltaScope 返回 `unsupported` 结果，使用与 `v0.26.0` 和 `v0.30.0` 相同的稳定特性标签。
+
+| 特性 | 提取器标签 |
+|------|-----------|
+| Drop expression（`ALTER COLUMN ... DROP EXPRESSION`） | `generated_column` |
+| Set generated（`ALTER COLUMN ... SET GENERATED ...`） | `generated_as_identity` |
+| Drop identity（`ALTER COLUMN ... DROP IDENTITY`） | `generated_as_identity` |
+
+审核使用这些特性的迁移时，推荐操作不变：拆分迁移，用 DeltaScope 审核已支持的语句，手动审核不支持的语句。
+
+请保持表述收敛：
+- 这是边界收紧，不是 generated-column 支持、identity-column 支持，也不是完整的 PostgreSQL `ALTER TABLE` 支持。
+- 语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等共同锁定这一显式 unsupported 契约。
+
 ##### PostgreSQL ALTER TABLE GENERATED Boundary Pack（`v0.30.0`）
 
 从 `v0.30.0` 开始，带有 generated stored 或 identity 语义的 PostgreSQL `ALTER TABLE ... ADD COLUMN` 形态会被显式暴露为 unsupported 边界。在迁移审核中遇到这些语法时，DeltaScope 返回 `unsupported` 结果，而非静默接受或部分处理。
@@ -442,7 +458,7 @@ deltascope audit \
 请保持表述收敛：
 - 这是边界收紧，不是 generated-column 支持、identity-column 支持，也不是广义的 PostgreSQL `ALTER TABLE` 支持。
 - 语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等共同锁定这一显式 unsupported 契约。
-- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界。
+- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
 
 ##### 不支持边界收口（`v0.26.0`）
 

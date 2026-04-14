@@ -546,6 +546,16 @@ deltascope --version
 
 从 `v0.25.0` 开始，DeltaScope 的发布验证新增了 SQL 语料库测试，通过审计应用层运行代表性的 MySQL、TiDB 和 PostgreSQL 用例，并进行双层断言（报告层与语义层）。这些语料测试是发布信心资产，不影响 CLI 行为，也不需要用户进行任何操作。
 
+### PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
+
+从 `v0.31.0` 开始，额外的 PostgreSQL generated/identity `ALTER TABLE` 形态被作为显式 unsupported 边界暴露，收口了 `v0.30.0` 留下的相邻间隙。CLI 通过同一条 unsupported 结果路径呈现这些信息：审计输出包含带 `feature` 和 `reason` 字段的 `unsupported` 数组，进程以审计退出码退出。
+
+- `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column`
+- `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity`
+- `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity`
+- 语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等共同锁定这一契约。
+- 这不是新增 CLI 标志，也不是支持范围扩大——这是边界收紧。
+
 ### PostgreSQL ALTER TABLE GENERATED Boundary Pack（`v0.30.0`）
 
 从 `v0.30.0` 开始，带有 generated stored 或 identity 语义的 PostgreSQL `ALTER TABLE ... ADD COLUMN` 形态会被作为显式 unsupported 边界暴露。CLI 通过同一条 unsupported 结果路径呈现这些信息：审计输出包含带 `feature` 和 `reason` 字段的 `unsupported` 数组，进程以审计退出码退出。
@@ -553,7 +563,7 @@ deltascope --version
 - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column`
 - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity`
 - 语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等共同锁定这一契约。
-- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界。
+- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
 - 这不是新增 CLI 标志，也不是支持范围扩大——这是边界收紧。
 
 ### PostgreSQL CREATE TABLE 不支持边界（`v0.26.0`）

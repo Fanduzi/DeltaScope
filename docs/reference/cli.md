@@ -601,6 +601,16 @@ deltascope --version
 
 Starting with `v0.25.0`, DeltaScope release validation includes SQL corpus tests that run representative MySQL, TiDB, and PostgreSQL cases through the audit application layer with two-layer assertions (report-level and semantic). These corpus tests are release-confidence assets and do not affect CLI behavior or require any user action.
 
+### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
+
+Starting with `v0.31.0`, additional PostgreSQL generated/identity `ALTER TABLE` forms are surfaced as explicit unsupported boundaries, closing the adjacent gap left by `v0.30.0`. The CLI exposes these through the same unsupported result path: the audit output includes an `unsupported` array with `feature` and `reason` fields, and the process exits with the audit exit code.
+
+- `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column`
+- `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity`
+- `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity`
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock the same contract.
+- This is not a new CLI flag or support expansion — it is boundary tightening.
+
 ### PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
 
 Starting with `v0.30.0`, PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics are surfaced as explicit unsupported boundaries. The CLI exposes these through the same unsupported result path: the audit output includes an `unsupported` array with `feature` and `reason` fields, and the process exits with the audit exit code.
@@ -608,7 +618,7 @@ Starting with `v0.30.0`, PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carr
 - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column`
 - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity`
 - Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock the same contract.
-- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries.
+- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms now receive explicit unsupported mappings in `v0.31.0`.
 - This is not a new CLI flag or support expansion — it is boundary tightening.
 
 ### PostgreSQL CREATE TABLE Unsupported Boundaries (`v0.26.0`)

@@ -6,6 +6,17 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.31.0] - 2026-04-14
+
+### Changed
+
+- PostgreSQL `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` now returns the explicit unsupported feature `generated_column` instead of a generic AST-subtype unsupported boundary.
+- PostgreSQL `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` now returns the explicit unsupported feature `generated_as_identity` instead of a generic AST-subtype unsupported boundary.
+- PostgreSQL `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` now returns the explicit unsupported feature `generated_as_identity` instead of a generic AST-subtype unsupported boundary.
+- These mappings align the adjacent PostgreSQL generated/identity alteration forms with the same stable unsupported feature names used by `v0.26.0` (`CREATE TABLE`) and `v0.30.0` (`ADD COLUMN`).
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity tests lock these boundary outcomes with precise assertions.
+- Release-facing docs now position `v0.31.0` as the **PostgreSQL ALTER TABLE GENERATED Follow-up Pack** — boundary tightening only, not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
+
 ## [v0.30.0] - 2026-04-14
 
 ### Added

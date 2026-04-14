@@ -1,0 +1,13 @@
+name: alter_table_drop_generated_expression
+
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1
+    include:
+      - generated_column
+  findings:
+    include: []
+    exclude: []
