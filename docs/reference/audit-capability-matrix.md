@@ -264,6 +264,22 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## Schema-Aware FK Policy Pack (`v0.29.0`)
+
+`v0.29.0` is the **Schema-Aware FK Policy Pack**. It is the first schema-aware FK policy step: DeltaScope emits the PostgreSQL-only notice rule `ddl.pg.table.foreign_key.cross_schema.advisory` when the owning table schema and referenced schema are both explicit and different.
+
+| Aspect | Detail |
+|--------|--------|
+| New rule ID | `ddl.pg.table.foreign_key.cross_schema.advisory` |
+| Default level | `notice` |
+| Trigger | PostgreSQL only; owning table schema explicit; referenced schema explicit; schemas differ |
+| Same-schema FK | no advisory |
+| Bare `REFERENCES users(id)` | no advisory; referenced schema remains unknown |
+| Metadata | findings may include `table_schema`, `referenced_schema`, `referenced_table`, `referenced_columns` |
+| Normalized representation | `referenced_table` remains `"users"`, never `"auth.users"` |
+
+This is not a broad PostgreSQL FK engine, not a cross-schema validation workflow, and not `search_path`-aware behavior.
+
 ## Referenced-Object Metadata Surface (`v0.28.0`)
 
 `v0.28.0` is the **Referenced-Object Metadata Surface Pack**. It widens the outward FK forbid finding metadata to expose PostgreSQL referenced-object facts (`referenced_schema`, `referenced_table`, `referenced_columns`) that were already present in the shared semantic contract from `v0.27.0`. This is an additive metadata widening, not a new rule family.
@@ -276,7 +292,7 @@ The corpus does not add new rules, change audit behavior, or affect end-user wor
 | Backed by | Surface tests across CLI, HTTP, MCP, and `pkg/deltascope` |
 | No new rule IDs | The `ddl.table.foreign_key.forbid` rule is unchanged; only its finding metadata is wider |
 
-This is not schema-aware FK policy support, not full PostgreSQL foreign key support, and not a new rule family.
+This is not schema-aware FK policy support, not a broad PostgreSQL FK implementation, and not a new rule family.
 
 ## Schema-Qualified Reference Semantics (`v0.27.0`)
 
@@ -289,7 +305,7 @@ This is not schema-aware FK policy support, not full PostgreSQL foreign key supp
 | Backed by | Corpus cases + service-level semantic tests |
 | Public finding metadata | `v0.28.0` widens the outward finding metadata to expose `referenced_schema`, `referenced_table`, `referenced_columns` on FK forbid findings |
 
-Current public transports now expose referenced-object fields in FK forbid finding metadata (`v0.28.0`). This is not full PostgreSQL foreign key support and not schema-aware rule support.
+Current public transports now expose referenced-object fields in FK forbid finding metadata (`v0.28.0`). This is not a broad PostgreSQL FK implementation and not schema-aware rule support.
 
 ## PostgreSQL Unsupported Boundaries (`v0.26.0`)
 

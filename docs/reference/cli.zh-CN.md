@@ -578,6 +578,37 @@ Schema-qualified FK 的 finding metadata 示例：
 
 这不是新增 CLI 标志，不是 schema-aware FK 策略支持，也不是新规则族。
 
+### Schema-Aware FK Policy Pack（`v0.29.0`）
+
+从 `v0.29.0` 开始，CLI JSON 输出还可以暴露 PostgreSQL-only notice 规则 `ddl.pg.table.foreign_key.cross_schema.advisory`，用于显式 cross-schema 外键。
+
+- 仅当 owning table schema 与 referenced schema 都显式存在且两者不同时触发。
+- Same-schema 外键不触发。
+- 裸引用如 `REFERENCES users(id)` 仍然是 schema unknown，因此不触发。
+- DeltaScope 不推断 `public`，也不建模 PostgreSQL `search_path`。
+- 没有新增 CLI 标志。
+
+显式 cross-schema FK 的 notice finding metadata 示例：
+
+```json
+{
+  "rule_id": "ddl.pg.table.foreign_key.cross_schema.advisory",
+  "level": "notice",
+  "message": "...",
+  "metadata": {
+    "table": "orders",
+    "table_schema": "billing",
+    "constraint": "fk_orders_approver",
+    "columns": ["approver_id"],
+    "referenced_schema": "auth",
+    "referenced_table": "users",
+    "referenced_columns": ["id"]
+  }
+}
+```
+
+`referenced_table` 始终规范化为 `"users"`，不会写成 `"auth.users"`。
+
 ---
 
 ## 参考链接

@@ -418,6 +418,16 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 - **规范化表示**——`referenced_table` 不会拼接成 `"public.users"`。
 - 这**不是** schema-aware FK 策略支持，不是完整的 PostgreSQL 外键支持，也不是新规则族。
 
+### Schema-Aware FK Policy Pack（v0.29.0）
+
+`v0.29.0` 是第一个 schema-aware FK policy 步骤。DeltaScope 新增了 PostgreSQL-only notice 规则 `ddl.pg.table.foreign_key.cross_schema.advisory`，用于显式 cross-schema 外键。
+
+- **规则契约**——仅当审计方言为 PostgreSQL、owning table schema 显式存在、referenced schema 显式存在且两者不同时触发。
+- **不触发的情况**——same-schema 外键不触发；裸引用如 `REFERENCES users(id)` 也不触发，因为 referenced schema 仍然 unknown。
+- **不做推断/建模**——DeltaScope 不推断 `public`，也不建模 PostgreSQL `search_path` 语义。
+- **Metadata surface**——finding 可包含 `table_schema`、`referenced_schema`、`referenced_table`、`referenced_columns`；`referenced_table` 始终规范化为 `"users"`，不会写成 `"auth.users"`。
+- **边界**——这不是完整的 PostgreSQL 外键支持，也不是跨 schema 校验引擎。
+
 | 特性 | 提取器标签 |
 |------|-----------|
 | Identity 列（`GENERATED ... AS IDENTITY`） | `generated_as_identity` |

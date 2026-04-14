@@ -849,6 +849,178 @@ func TestRicherPostgreSQLInlineReferencesConstraintUsesSharedForeignKeyForbidRul
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.29.0 Task 2: ddl.pg.table.foreign_key.cross_schema.advisory
+// ---------------------------------------------------------------------------
+
+func TestTableForeignKeyCrossSchemaAdvisoryFiresForExplicitCrossSchemaFK(t *testing.T) {
+	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelNotice,
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "orders", Schema: "public"},
+			Columns:   []spec.Column{{Name: "id", Type: "bigint"}, {Name: "approver_id", Type: "bigint"}},
+			Constraints: []spec.Constraint{
+				{
+					Type:              "foreign_key",
+					Name:              "fk_orders_approver",
+					Columns:           []string{"approver_id"},
+					ReferencedSchema:  "auth",
+					ReferencedTable:   "users",
+					ReferencedColumns: []string{"id"},
+				},
+			},
+		},
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 cross-schema advisory finding, got %d", len(findings))
+	}
+	if statementRule.ID() != "ddl.pg.table.foreign_key.cross_schema.advisory" {
+		t.Fatalf("expected rule ID ddl.pg.table.foreign_key.cross_schema.advisory, got %q", statementRule.ID())
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected level notice, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["table_schema"] != "public" {
+		t.Fatalf("expected table_schema public, got %v", findings[0].Metadata["table_schema"])
+	}
+	if findings[0].Metadata["referenced_schema"] != "auth" {
+		t.Fatalf("expected referenced_schema auth, got %v", findings[0].Metadata["referenced_schema"])
+	}
+	if findings[0].Metadata["referenced_table"] != "users" {
+		t.Fatalf("expected referenced_table users, got %v", findings[0].Metadata["referenced_table"])
+	}
+}
+
+func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForSameSchemaFK(t *testing.T) {
+	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelNotice,
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "orders", Schema: "public"},
+			Columns:   []spec.Column{{Name: "id", Type: "bigint"}, {Name: "user_id", Type: "bigint"}},
+			Constraints: []spec.Constraint{
+				{
+					Type:              "foreign_key",
+					Name:              "fk_orders_user",
+					Columns:           []string{"user_id"},
+					ReferencedSchema:  "public",
+					ReferencedTable:   "users",
+					ReferencedColumns: []string{"id"},
+				},
+			},
+		},
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 advisory findings for same-schema FK, got %d", len(findings))
+	}
+}
+
+func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForBareReference(t *testing.T) {
+	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelNotice,
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	// Bare REFERENCES users(id) — no schema qualifier, no owning schema.
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "orders"},
+			Columns:   []spec.Column{{Name: "id", Type: "bigint"}, {Name: "approver_id", Type: "bigint"}},
+			Constraints: []spec.Constraint{
+				{
+					Type:              "foreign_key",
+					Name:              "",
+					Columns:           []string{"approver_id"},
+					ReferencedSchema:  "",
+					ReferencedTable:   "users",
+					ReferencedColumns: []string{"id"},
+				},
+			},
+		},
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 advisory findings for bare FK reference, got %d", len(findings))
+	}
+}
+
+func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForMySQL(t *testing.T) {
+	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelNotice,
+	})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectMySQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "orders", Schema: "public"},
+			Columns:   []spec.Column{{Name: "id", Type: "bigint"}, {Name: "approver_id", Type: "bigint"}},
+			Constraints: []spec.Constraint{
+				{
+					Type:              "foreign_key",
+					Name:              "fk_orders_approver",
+					Columns:           []string{"approver_id"},
+					ReferencedSchema:  "auth",
+					ReferencedTable:   "users",
+					ReferencedColumns: []string{"id"},
+				},
+			},
+		},
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 advisory findings for MySQL, got %d", len(findings))
+	}
+}
+
 func statementWithNamedObjects(tableName string, columns []spec.Column, indexes []spec.Index) spec.Statement {
 	if len(columns) == 0 {
 		columns = []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true, DefaultValue: "1"}}

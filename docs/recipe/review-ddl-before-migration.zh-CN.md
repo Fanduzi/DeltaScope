@@ -462,3 +462,17 @@ deltascope audit \
 ```
 
 FK forbid finding 现在显示约束引用的表和 schema，使迁移审查中评估跨 schema 依赖关系更加容易。这是一次 additive metadata widening——不新增规则、不新增 CLI 标志，也没有 schema-aware FK 策略决策。
+
+##### Schema-Aware FK Policy Pack（`v0.29.0`）
+
+从 `v0.29.0` 开始，DeltaScope 为 PostgreSQL 增加了一个窄范围的 schema-aware FK policy 步骤：显式 cross-schema 外键现在会额外发出 notice 级规则 `ddl.pg.table.foreign_key.cross_schema.advisory`。
+
+- `CREATE TABLE public.orders (...) REFERENCES auth.users(id)` 现在会同时产生既有的 `ddl.table.foreign_key.forbid` blocker 和新增的 notice-level advisory。
+- `CREATE TABLE public.orders (...) REFERENCES public.users(id)` 仍只走既有 FK forbid 路径。
+- `CREATE TABLE public.orders (...) REFERENCES users(id)` 也仍只走既有 FK forbid 路径，因为 referenced schema 仍然 unknown。
+
+这个策略刻意保持狭窄：
+
+- DeltaScope 不推断 `public`。
+- DeltaScope 不建模 PostgreSQL `search_path`。
+- 这不是跨 schema 校验引擎，也不是完整的 PostgreSQL 外键支持。

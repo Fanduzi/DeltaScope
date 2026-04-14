@@ -659,6 +659,11 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params:  map[string]any{},
 			},
+			"ddl.pg.table.foreign_key.cross_schema.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

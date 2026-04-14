@@ -950,3 +950,90 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferenced
 		t.Fatalf("expected foreign_key forbid finding, got %#v", response.Statements[0].Findings)
 	}
 }
+
+func TestExecuteAuditRequestPostgreSQLCrossSchemaFKRendersAdvisoryNotice(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+
+	advisoryFound := false
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			advisoryFound = true
+			if finding.Level != "notice" {
+				t.Errorf("expected advisory level notice, got %q", finding.Level)
+			}
+			if finding.Metadata["table_schema"] != "public" {
+				t.Errorf("expected table_schema public, got %v", finding.Metadata["table_schema"])
+			}
+			if finding.Metadata["referenced_schema"] != "auth" {
+				t.Errorf("expected referenced_schema auth, got %v", finding.Metadata["referenced_schema"])
+			}
+			if finding.Metadata["referenced_table"] != "users" {
+				t.Errorf("expected referenced_table users, got %v", finding.Metadata["referenced_table"])
+			}
+			refCols, _ := finding.Metadata["referenced_columns"].([]string)
+			if len(refCols) < 1 || refCols[0] != "id" {
+				t.Errorf("expected referenced_columns [id], got %v", refCols)
+			}
+			// referenced_table must NOT be schema-qualified.
+			if finding.Metadata["referenced_table"] == "auth.users" {
+				t.Fatalf("referenced_table must not be schema-qualified 'auth.users'")
+			}
+		}
+	}
+	if !advisoryFound {
+		t.Fatalf("expected cross-schema advisory finding, got %#v", response.Statements[0].Findings)
+	}
+}
+
+func TestExecuteAuditRequestPostgreSQLSameSchemaFKDoesNotRenderAdvisory(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id));",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for same-schema FK, got %#v", finding)
+		}
+	}
+}
+
+func TestExecuteAuditRequestPostgreSQLBareFKDoesNotRenderAdvisory(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+
+	for _, finding := range response.Statements[0].Findings {
+		if finding.RuleID == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+			t.Fatalf("expected no cross-schema advisory for bare FK reference, got %#v", finding)
+		}
+	}
+}

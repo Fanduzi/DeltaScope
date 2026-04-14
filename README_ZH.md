@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.28.0` 为止，DeltaScope 在 FK forbid finding metadata 中暴露 PostgreSQL 被引用对象事实（`referenced_schema`、`referenced_table`、`referenced_columns`），覆盖 CLI、HTTP、MCP 和 `pkg/deltascope` 四条传输面——这是一次 additive metadata widening。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.29.0` 为止，DeltaScope 发布 **Schema-Aware FK Policy Pack**：当 owning table schema 与 referenced schema 都显式存在且两者不同，显式 PostgreSQL cross-schema 外键会发出 notice-level 规则 `ddl.pg.table.foreign_key.cross_schema.advisory`；same-schema 与裸 `REFERENCES users(id)` 形态保持不变。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,9 +32,20 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.28.0/install.sh | \
-  DELTASCOPE_VERSION=v0.28.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.29.0/install.sh | \
+  DELTASCOPE_VERSION=v0.29.0 sh
 ```
+
+### Schema-Aware FK Policy Pack（`v0.29.0`）
+
+`v0.29.0` 开始让显式 PostgreSQL schema-qualified FK 事实参与一个窄范围策略判断。当 owning table schema 与 referenced schema 都显式存在且两者不同，DeltaScope 会发出 notice-level 规则 `ddl.pg.table.foreign_key.cross_schema.advisory`。
+
+- **只覆盖跨 schema 场景**：只有显式 cross-schema FK 会多出一条 notice-level advisory；same-schema FK 不触发。
+- **裸引用仍保持 unknown**：`REFERENCES users(id)` 仍然是 schema unknown。DeltaScope 不推断 `public`，也不建模 `search_path`。
+- **现有 FK forbid 规则仍然生效**：这条 advisory 只是额外信号，不替代 `ddl.table.foreign_key.forbid`。
+- **Metadata 继续保持规范化**：finding 可包含 `table_schema`、`referenced_schema`、`referenced_table`、`referenced_columns`，且 `referenced_table` 始终是 `"users"`，不会写成 `"auth.users"`。
+
+上一里程碑：`v0.28.0` 已把被引用对象事实暴露到 outward FK finding metadata。详见 [v0.29.0 发行说明](docs/releases/release-notes-v0.29.0.zh-CN.md)。
 
 ### Referenced-Object Metadata Surface Pack（`v0.28.0`）
 
@@ -73,7 +84,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.28.0/install.
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组（包含 `feature` 和 `reason` 字段）的部分结果，以及 `ErrUnsupportedStatement` 哨兵错误。
 - **HTTP** 和 **MCP**：将不支持语句作为传输层错误暴露（HTTP 错误响应、MCP tool error），因为底层审计函数对不支持边界返回错误。
 
-`make release-surface-gates VERSION=v0.28.0` 与 `make release-version-surface-gates VERSION=v0.28.0` 用于校验 package/release 与带版本文档面。
+`make release-surface-gates VERSION=v0.29.0` 与 `make release-version-surface-gates VERSION=v0.29.0` 用于校验 package/release 与带版本文档面。
 
 上一里程碑：`v0.26.0` 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。详见 [v0.26.0 发行说明](docs/releases/release-notes-v0.26.0.zh-CN.md)。
 

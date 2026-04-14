@@ -4,26 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.28.0 Referenced-Object Metadata Surface Pack
+## Latest Completed Milestone: v0.29.0 Schema-Aware FK Policy Pack
 
-**Goal:** expose PostgreSQL referenced-object facts that already existed in the shared semantic contract as additive finding metadata on the FK forbid rule, across all four transport surfaces.
+**Goal:** use explicit PostgreSQL schema-qualified FK facts for one narrow policy decision: a notice-level cross-schema advisory when both schemas are explicit and different.
 
-The milestone answers a practical product question left open after `v0.27.0`: should CLI / HTTP / MCP / `pkg/deltascope` users be able to see `referenced_schema`, `referenced_table`, and `referenced_columns` directly in the relevant FK-related finding metadata?
+The milestone answers the next practical product question after `v0.28.0`: should the referenced-object metadata surface participate in policy at all? The answer is yes, but only for explicit cross-schema foreign keys.
 
 ### Completed Scope
 
-- Impact analysis confirmed LOW blast radius on the FK forbid metadata builder path.
-- Additive metadata widening: `ddl.table.foreign_key.forbid` finding metadata now includes `referenced_schema`, `referenced_table`, and `referenced_columns` when the underlying constraint carries those facts.
-- `referenced_table` is never concatenated with `referenced_schema` (e.g., never `"public.users"`).
-- Surface tests lock the widened metadata contract across CLI, HTTP, MCP, and `pkg/deltascope`.
-- Docs and release surfaces describe metadata widening accurately without implying schema-aware rule support.
+- Added the PostgreSQL-only notice rule `ddl.pg.table.foreign_key.cross_schema.advisory`.
+- The rule fires only when the owning table schema is explicit, the referenced schema is explicit, and those schemas differ.
+- Same-schema foreign keys do not trigger the advisory.
+- Bare references such as `REFERENCES users(id)` remain schema unknown; DeltaScope does not infer `public` and does not model PostgreSQL `search_path` semantics.
+- Finding metadata can include `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns`; `referenced_table` remains normalized as `"users"`, never `"auth.users"`.
+- Surface tests lock the advisory contract across CLI, HTTP, MCP, and `pkg/deltascope`.
 
 ### Key Design Decisions
 
-- Metadata widening is additive only; no existing metadata fields changed, no rule IDs changed.
-- Conditional emission: `referenced_schema` is omitted when no schema qualifier is present.
-- Parser/extractor semantics are unchanged from `v0.27.0`.
-- This is not schema-aware FK policy support, not full PostgreSQL foreign key support, and not a new rule family.
+- This is the first schema-aware FK policy step, not full PostgreSQL foreign key support.
+- The rule is advisory and notice-level; it adds context without replacing `ddl.table.foreign_key.forbid`.
+- Cross-schema detection depends only on explicit SQL facts, not live metadata or search-path inference.
+- The metadata representation stays normalized: schema and table remain separate fields.
 
 ## Previous Milestone: v0.27.0 Schema-Qualified Reference Semantics Pack
 
@@ -45,33 +46,7 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 | Exclusion constraints (`EXCLUDE USING`) | `exclusion_constraint` |
 | Partitioned tables (`PARTITION BY`) | `partitioning` |
 
-## Next Milestone: v0.29.0 Schema-Aware FK Policy Pack
-
-**Goal:** decide whether explicit PostgreSQL referenced-object schema facts should start influencing FK policy behavior, and ship only the narrowest schema-aware rule behavior that remains explainable and low-risk.
-
-The milestone follows `v0.27.0` and `v0.28.0` in sequence:
-
-- `v0.27.0` preserved schema-qualified FK facts in the shared semantic contract.
-- `v0.28.0` exposed those facts on outward FK forbid finding metadata.
-- `v0.29.0` should answer whether explicit schema-qualified FK facts have policy value, not just descriptive value.
-
-### Planned Scope
-
-- Decision gate first: use GitNexus impact analysis to determine whether a narrow schema-aware FK policy path can be introduced with low blast radius.
-- Treat bare references such as `REFERENCES users(id)` as schema unknown.
-- Do not infer `public`.
-- Do not model PostgreSQL `search_path`.
-- Prefer one narrow PostgreSQL-specific advisory or policy distinction over a broad new rule pack.
-- Preserve the current normalized representation: schema and table remain separate facts.
-
-### Explicit Non-Goals
-
-- Full PostgreSQL foreign key support
-- Complete schema-aware PostgreSQL modeling
-- Cross-schema validation matrices
-- Parser/extractor redesign
-- MySQL or TiDB policy changes
-
 ## Additional Follow-up
 
-- `ALTER TABLE ... GENERATED` boundary coverage is still a potential follow-up, but not a committed milestone.
+- Decide whether schema-aware FK policy should expand beyond the explicit cross-schema advisory shipped in `v0.29.0`.
+- `ALTER TABLE ... GENERATED` boundary coverage remains a visible follow-up, but not a committed milestone.

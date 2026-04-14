@@ -250,6 +250,22 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## Schema-Aware FK Policy Pack（`v0.29.0`）
+
+`v0.29.0` 是 **Schema-Aware FK Policy Pack**。这是第一个 schema-aware FK policy 步骤：当 owning table schema 与 referenced schema 都显式存在且两者不同，DeltaScope 会发出 PostgreSQL-only notice 规则 `ddl.pg.table.foreign_key.cross_schema.advisory`。
+
+| 方面 | 说明 |
+|------|------|
+| 新 rule ID | `ddl.pg.table.foreign_key.cross_schema.advisory` |
+| 默认级别 | `notice` |
+| 触发条件 | 仅 PostgreSQL；owning table schema 显式存在；referenced schema 显式存在；两者不同 |
+| Same-schema FK | 不发出 advisory |
+| 裸 `REFERENCES users(id)` | 不发出 advisory；referenced schema 保持 unknown |
+| Metadata | finding 可包含 `table_schema`、`referenced_schema`、`referenced_table`、`referenced_columns` |
+| 规范化表示 | `referenced_table` 始终是 `"users"`，不会写成 `"auth.users"` |
+
+这不是完整的 PostgreSQL 外键支持，不是跨 schema 校验引擎，也不是 `search_path`-aware 行为。
+
 ## Referenced-Object Metadata Surface（`v0.28.0`）
 
 `v0.28.0` 是 **Referenced-Object Metadata Surface Pack**。它将 PostgreSQL 被引用对象事实（`referenced_schema`、`referenced_table`、`referenced_columns`）从共享语义契约中以 additive 方式暴露到 FK forbid 规则的 finding metadata，覆盖 CLI、HTTP、MCP 和 `pkg/deltascope` 四条传输面。这是 additive metadata widening，不是新规则族。

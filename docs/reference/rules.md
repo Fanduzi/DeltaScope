@@ -428,7 +428,17 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 - **No new rule IDs** — the `ddl.table.foreign_key.forbid` rule is unchanged; only its finding metadata is wider.
 - **Conditional emission** — `referenced_schema` is omitted when no schema qualifier is present; `referenced_table` and `referenced_columns` appear for all FK constraints that carry them.
 - **Normalized representation** — `referenced_table` is never concatenated with `referenced_schema`.
-- This is **not** schema-aware FK policy support, not full PostgreSQL foreign key support, and not a new rule family.
+- This is **not** schema-aware FK policy support, not a broad PostgreSQL FK implementation, and not a new rule family.
+
+### Schema-Aware FK Policy Pack (v0.29.0)
+
+`v0.29.0` is the first schema-aware FK policy step. DeltaScope now ships the PostgreSQL-only notice rule `ddl.pg.table.foreign_key.cross_schema.advisory` for explicit cross-schema foreign keys.
+
+- **Rule contract** — the rule fires only when the audit dialect is PostgreSQL, the owning table schema is explicit, the referenced schema is explicit, and the two schemas differ.
+- **No fire cases** — same-schema foreign keys do not trigger it, and bare references such as `REFERENCES users(id)` do not trigger it because the referenced schema remains unknown.
+- **No inference/modeling** — DeltaScope does not infer `public`, and it does not model PostgreSQL `search_path` semantics.
+- **Metadata contract** — the finding may include `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns`; `referenced_table` remains normalized as `"users"`, never `"auth.users"`.
+- **Boundary** — this is the first schema-aware FK policy step, not a broad PostgreSQL FK implementation and not a cross-schema validation workflow.
 
 | Feature | Extractor Tag |
 |---------|---------------|
