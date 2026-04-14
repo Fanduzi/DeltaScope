@@ -462,3 +462,17 @@ deltascope audit \
 ```
 
 The FK forbid finding now shows which table and schema the constraint references, making it easier to assess cross-schema dependencies during migration review. This is an additive metadata widening — no new rules, no new CLI flags, and no schema-aware FK policy decisions.
+
+#### Schema-Aware FK Policy Pack (`v0.29.0`)
+
+Starting with `v0.29.0`, DeltaScope adds one narrow schema-aware FK policy step for PostgreSQL: explicit cross-schema foreign keys now emit the notice-level rule `ddl.pg.table.foreign_key.cross_schema.advisory`.
+
+- `CREATE TABLE public.orders (...) REFERENCES auth.users(id)` now produces the existing `ddl.table.foreign_key.forbid` blocker plus the extra notice-level advisory.
+- `CREATE TABLE public.orders (...) REFERENCES public.users(id)` stays on the existing FK forbid path only.
+- `CREATE TABLE public.orders (...) REFERENCES users(id)` also stays on the existing FK forbid path only, because the referenced schema remains unknown.
+
+This is intentionally narrow:
+
+- DeltaScope does not infer `public`.
+- DeltaScope does not model PostgreSQL `search_path`.
+- This is not a cross-schema validation workflow and not a broad PostgreSQL FK implementation.

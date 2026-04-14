@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.28.0`, DeltaScope exposes PostgreSQL referenced-object facts (`referenced_schema`, `referenced_table`, `referenced_columns`) in FK forbid finding metadata — an additive metadata widening across all four transport surfaces. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.29.0`, DeltaScope ships the **Schema-Aware FK Policy Pack**: explicit PostgreSQL cross-schema foreign keys now emit the notice-level rule `ddl.pg.table.foreign_key.cross_schema.advisory` when both schemas are explicit and different, while same-schema and bare `REFERENCES users(id)` forms stay unchanged. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,9 +34,20 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.28.0/install.sh | \
-  DELTASCOPE_VERSION=v0.28.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.29.0/install.sh | \
+  DELTASCOPE_VERSION=v0.29.0 sh
 ```
+
+### Schema-Aware FK Policy Pack (`v0.29.0`)
+
+`v0.29.0` starts using explicit PostgreSQL schema-qualified FK facts for a narrow policy decision. DeltaScope now emits the notice-level rule `ddl.pg.table.foreign_key.cross_schema.advisory` when the owning table schema and referenced schema are both explicit and different.
+
+- **Cross-schema only**: explicit cross-schema FK gets an extra notice-level advisory. Same-schema FK does not trigger it.
+- **Bare references stay unknown**: `REFERENCES users(id)` remains schema unknown. DeltaScope does not infer `public` and does not model `search_path`.
+- **Existing FK forbid rule still applies**: the advisory adds context; it does not replace `ddl.table.foreign_key.forbid`.
+- **Metadata stays normalized**: findings can include `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns`, and `referenced_table` remains `"users"`, never `"auth.users"`.
+
+Previous milestone: `v0.28.0` exposed referenced-object facts on outward FK finding metadata. See the [v0.29.0 release notes](docs/releases/release-notes-v0.29.0.md) for details.
 
 ### Referenced-Object Metadata Surface Pack (`v0.28.0`)
 
@@ -50,7 +61,7 @@ Previous milestone: `v0.27.0` preserved schema-qualified PostgreSQL referenced-o
 
 ### Schema-Qualified Reference Semantics Pack (`v0.27.0`)
 
-`v0.27.0` preserves schema-qualified PostgreSQL referenced-object facts in the shared contract. It does not add new rules, new CLI flags, or new public API contracts, and it is not full PostgreSQL foreign key support.
+`v0.27.0` preserves schema-qualified PostgreSQL referenced-object facts in the shared contract. It does not add new rules, new CLI flags, or new public API contracts, and it is not a broad PostgreSQL FK implementation.
 
 - **`ReferencedSchema`** is an additive field on `spec.Constraint` that preserves the schema portion of schema-qualified `REFERENCES` (e.g., `REFERENCES public.users(id)` → `ReferencedSchema = "public"`, `ReferencedTable = "users"`).
 - PostgreSQL extractor preserves these facts for both named `FOREIGN KEY` and inline `REFERENCES` forms.
@@ -75,7 +86,7 @@ Surface contract for unsupported statements:
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
 - **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
 
-`make release-surface-gates VERSION=v0.28.0` and `make release-version-surface-gates VERSION=v0.28.0` verify the package/release and versioned docs surfaces.
+`make release-surface-gates VERSION=v0.29.0` and `make release-version-surface-gates VERSION=v0.29.0` verify the package/release and versioned docs surfaces.
 
 Previous milestone: `v0.26.0` tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract. See the [v0.26.0 release notes](docs/releases/release-notes-v0.26.0.md) for details.
 

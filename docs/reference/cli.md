@@ -633,6 +633,37 @@ Example finding metadata for a schema-qualified FK:
 
 This is not a new CLI flag, not schema-aware FK policy support, and not a new rule family.
 
+### Schema-Aware FK Policy Pack (`v0.29.0`)
+
+Starting with `v0.29.0`, CLI JSON output can also surface the PostgreSQL-only notice rule `ddl.pg.table.foreign_key.cross_schema.advisory` for explicit cross-schema foreign keys.
+
+- The rule fires only when the owning table schema and referenced schema are both explicit and different.
+- Same-schema foreign keys do not trigger it.
+- Bare references such as `REFERENCES users(id)` remain schema unknown and do not trigger it.
+- DeltaScope does not infer `public` and does not model PostgreSQL `search_path`.
+- No new CLI flag is introduced.
+
+Example notice-level finding metadata for an explicit cross-schema FK:
+
+```json
+{
+  "rule_id": "ddl.pg.table.foreign_key.cross_schema.advisory",
+  "level": "notice",
+  "message": "...",
+  "metadata": {
+    "table": "orders",
+    "table_schema": "billing",
+    "constraint": "fk_orders_approver",
+    "columns": ["approver_id"],
+    "referenced_schema": "auth",
+    "referenced_table": "users",
+    "referenced_columns": ["id"]
+  }
+}
+```
+
+`referenced_table` remains normalized as `"users"`, never `"auth.users"`.
+
 ---
 
 ## Cross-References

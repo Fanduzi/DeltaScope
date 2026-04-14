@@ -6,6 +6,19 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.29.0] - 2026-04-14
+
+### Added
+
+- PostgreSQL now ships the notice-level advisory rule `ddl.pg.table.foreign_key.cross_schema.advisory` for explicit cross-schema foreign keys when the owning table schema and referenced schema are both explicit and different.
+- Cross-schema advisory findings can expose `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns` in outward finding metadata. `referenced_table` remains normalized as `"users"`, never `"auth.users"`.
+
+### Changed
+
+- The additive FK finding metadata surface introduced in `v0.28.0` now participates in a narrow PostgreSQL policy decision. Same-schema foreign keys and bare references such as `REFERENCES users(id)` remain unchanged.
+- Bare references remain schema unknown. DeltaScope does not infer `public` and does not model PostgreSQL `search_path` semantics.
+- Release-facing docs now position `v0.29.0` as the **Schema-Aware FK Policy Pack** — the first schema-aware FK policy step, not full PostgreSQL foreign key support and not a cross-schema validation engine.
+
 ## [v0.28.0] - 2026-04-13
 
 ### Added
