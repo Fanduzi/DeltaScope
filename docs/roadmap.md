@@ -4,19 +4,34 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.30.0 PostgreSQL ALTER TABLE GENERATED Boundary Pack
+## Latest Completed Milestone: v0.31.0 PostgreSQL ALTER TABLE GENERATED Follow-up Pack
 
-**Goal:** tighten PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity boundaries so generated stored and identity add-column forms become explicit unsupported outcomes instead of accidental supported actions or ordinary add-column fallthrough.
+**Goal:** map additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`.
 
-The milestone follows the boundary discipline from `v0.26.0`, which locked unsupported PostgreSQL `CREATE TABLE` generated/identity cases. `v0.30.0` extends that explicit unsupported contract shape to selected PostgreSQL `ALTER TABLE` forms without broadening semantic support.
+The milestone follows the boundary discipline from `v0.26.0` (`CREATE TABLE`) and `v0.30.0` (`ADD COLUMN`). `v0.31.0` extends the same explicit unsupported contract shape to the remaining generated/identity alteration forms without broadening semantic support.
 
 ### Completed Scope
 
+- Locked `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` to explicit unsupported `generated_column`.
+- Locked `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` to explicit unsupported `generated_as_identity`.
+- Locked `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` to explicit unsupported `generated_as_identity`.
+- Added corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity coverage for the same boundary contract.
+- Kept the release framed as boundary tightening, not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
+
+### Key Design Decisions
+
+- Reuse existing unsupported feature names (`generated_column`, `generated_as_identity`) from `v0.26.0` and `v0.30.0`.
+- Do not add new rule IDs, CLI flags, or public API contracts.
+- Keep unsupported behavior explicit at every public surface.
+- Do not imply support for generated expressions or identity semantics beyond the locked unsupported outcomes.
+
+## Previous Milestone: v0.30.0 PostgreSQL ALTER TABLE GENERATED Boundary Pack
+
+**Goal:** tighten PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity boundaries so generated stored and identity add-column forms become explicit unsupported outcomes instead of accidental supported actions or ordinary add-column fallthrough.
+
 - Locked `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` to explicit unsupported `generated_column`.
 - Locked `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` to explicit unsupported `generated_as_identity`.
-- Added corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity coverage for the same boundary contract.
-- Kept adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms on generic unsupported boundaries.
-- Kept the release framed as boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity coverage locked this boundary contract.
 
 ### Key Design Decisions
 
@@ -25,15 +40,15 @@ The milestone follows the boundary discipline from `v0.26.0`, which locked unsup
 - Keep unsupported behavior explicit at every public surface.
 - Do not imply support for generated expressions or identity semantics beyond the locked unsupported outcomes.
 
-## Next Milestone: PostgreSQL boundary follow-up
+## Next Milestone: PostgreSQL boundary support-readiness gate
 
-**Goal:** decide whether future PostgreSQL boundary work should deepen explicit unsupported subtyping or stay on generic unsupported contracts for additional alter-table forms.
+**Goal:** decide whether future PostgreSQL boundary work should deepen explicit unsupported subtyping for additional alter-table forms (e.g., `ALTER COLUMN ... SET DATA TYPE`, `ALTER COLUMN ... RESTART`) or transition toward real generated-column / identity-column support.
 
 ### Candidate Follow-up Questions
 
-- Should any additional PostgreSQL `ALTER TABLE` generated/identity forms receive stable explicit unsupported subtypes?
-- Should boundary documentation be widened further without implying semantic support?
 - Which unsupported PostgreSQL forms still need corpus-backed confidence coverage?
+- Should boundary documentation be widened further without implying semantic support?
+- Should any explicit unsupported boundary ever become real semantic support?
 
 ## Previous Milestone: v0.27.0 Schema-Qualified Reference Semantics Pack
 

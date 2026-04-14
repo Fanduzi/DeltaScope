@@ -250,6 +250,21 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
+
+`v0.31.0` 是 **PostgreSQL ALTER TABLE GENERATED 后续边界包**。它将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。这些结果是显式 unsupported 契约，不是新的规则 finding。
+
+| 方面 | 说明 |
+|------|------|
+| Drop expression | `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column` |
+| Set generated | `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity` |
+| Drop identity | `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity` |
+| 锁定方式 | 语料用例、service 检查，以及 CLI、HTTP、MCP、`pkg/deltascope` 的表面对等 |
+| 新 rule ID | 无 |
+| 新 CLI / API 标志 | 无 |
+
+这是边界收紧，不是 generated-column 支持、identity-column 支持，也不是完整的 PostgreSQL `ALTER TABLE` 支持。
+
 ## PostgreSQL ALTER TABLE GENERATED Boundary Pack（`v0.30.0`）
 
 `v0.30.0` 是 **PostgreSQL ALTER TABLE GENERATED Boundary Pack**。它收紧了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated stored / identity 语义下的不支持边界契约。这些结果是显式 unsupported 契约，不是新的规则 finding。
@@ -259,7 +274,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | Generated stored add-column | `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column` |
 | Identity add-column | `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity` |
 | 锁定方式 | 语料用例、service 检查，以及 CLI、HTTP、MCP、`pkg/deltascope` 的表面对等 |
-| 相邻形态 | `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界 |
+| 相邻形态 | `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射 |
 | 新 rule ID | 无 |
 | 新 CLI / API 标志 | 无 |
 
@@ -325,7 +340,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组的部分结果，以及 `ErrUnsupportedStatement`。
 - **HTTP** 和 **MCP**：作为传输层错误暴露（HTTP 错误响应、MCP tool error）。
-- **`v0.30.0` 说明**：PostgreSQL `ALTER TABLE ... ADD COLUMN` 的 generated / identity 形态现在也通过 `generated_column` 与 `generated_as_identity` 走相同的显式 unsupported 契约；相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界。
+- **`v0.30.0` 说明**：PostgreSQL `ALTER TABLE ... ADD COLUMN` 的 generated / identity 形态现在也通过 `generated_column` 与 `generated_as_identity` 走相同的显式 unsupported 契约；相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
 
 ---
 

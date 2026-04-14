@@ -401,6 +401,16 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.21.0` 扩展了 PostgreSQL DDL 标准化范围，使常见迁移后续语句通过共享审核管线处理，不再返回能力边界错误。`v0.23.0` 则扩展了更多常见 PostgreSQL `CREATE TABLE` 约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的被引用表和被引用列事实。这些版本均不新增规则 ID；新标准化动作和建表结构在适用时继续复用已有的共享规则族。
 
+### PostgreSQL ALTER TABLE GENERATED 后续边界包（v0.31.0）
+
+`v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。这些结果**不是**规则 finding，**没有新增规则 ID**。它们是提取器层契约，返回带特性标签和原因字符串的 `UnsupportedDetail` 条目。
+
+- `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column`
+- `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity`
+- `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity`
+- 语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等一起锁定这一契约。
+- 这是边界收紧，不是 generated-column 支持、identity-column 支持，也不是完整的 PostgreSQL `ALTER TABLE` 支持。
+
 ### PostgreSQL ALTER TABLE GENERATED Boundary Pack（v0.30.0）
 
 `v0.30.0` 收紧了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated stored / identity 形态下的不支持边界契约。这些结果**不是**规则 finding，**没有新增规则 ID**。它们是提取器层契约，返回带特性标签和原因字符串的 `UnsupportedDetail` 条目。
@@ -408,7 +418,7 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column`
 - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity`
 - 语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等一起锁定这一契约。
-- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界。
+- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
 - 这是边界收紧，不是 generated-column 支持、identity-column 支持，也不是广义的 PostgreSQL `ALTER TABLE` 支持。
 
 ### PostgreSQL CREATE TABLE 不支持边界（v0.26.0）

@@ -428,6 +428,22 @@ Important notes:
 - `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.
 
+#### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
+
+Starting with `v0.31.0`, additional PostgreSQL generated/identity `ALTER TABLE` forms are explicitly surfaced as unsupported boundaries, closing the adjacent gap left by `v0.30.0`. When encountered in migration review, DeltaScope returns an `unsupported` result with the same stable feature tags used by the `v0.26.0` and `v0.30.0` boundary work.
+
+| Feature | Extractor Tag |
+|---------|---------------|
+| Drop expression (`ALTER COLUMN ... DROP EXPRESSION`) | `generated_column` |
+| Set generated (`ALTER COLUMN ... SET GENERATED ...`) | `generated_as_identity` |
+| Drop identity (`ALTER COLUMN ... DROP IDENTITY`) | `generated_as_identity` |
+
+When reviewing migrations that use these features, the recommended action remains the same: split the migration, audit the supported statements with DeltaScope, and review the unsupported ones manually.
+
+Keep the scope narrow:
+- This is boundary tightening, not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock the same explicit unsupported contract.
+
 #### PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
 
 Starting with `v0.30.0`, PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics are explicitly surfaced as unsupported boundaries. When encountered in migration review, DeltaScope returns an `unsupported` result rather than silently accepting or partially handling them.
@@ -442,7 +458,7 @@ When reviewing migrations that use these features, the recommended action remain
 Keep the scope narrow:
 - This is boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
 - Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock the same explicit unsupported contract.
-- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries.
+- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms now receive explicit unsupported mappings in `v0.31.0`.
 
 #### Unsupported Boundary Tightening (`v0.26.0`)
 

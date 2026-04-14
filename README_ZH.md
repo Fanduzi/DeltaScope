@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.30.0` 为止，DeltaScope 发布 **PostgreSQL ALTER TABLE GENERATED Boundary Pack**：带有 generated stored 或 identity 语义的 PostgreSQL `ALTER TABLE ... ADD COLUMN` 形态现在会返回显式 unsupported 结果（`generated_column`、`generated_as_identity`），不再看起来像普通受支持的 add-column 路径。语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等一起锁定了这一契约。相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界。这是边界收口，不是支持范围扩大。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.31.0` 为止，DeltaScope 发布 **PostgreSQL ALTER TABLE GENERATED 后续边界包**：PostgreSQL `ALTER TABLE` generated/identity alteration 形态（`DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY`）现在会返回显式 unsupported 结果（`generated_column`、`generated_as_identity`），不再使用 generic AST-subtype 边界。这扩展了 `v0.30.0` 的 `ADD COLUMN` 边界工作，并将所有 PostgreSQL generated/identity unsupported 形态统一到同一套稳定 feature tag 下。语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等一起锁定了这一契约。这是边界收口，不是支持范围扩大。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,9 +32,22 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.30.0/install.sh | \
-  DELTASCOPE_VERSION=v0.30.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.31.0/install.sh | \
+  DELTASCOPE_VERSION=v0.31.0 sh
 ```
+
+### PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
+
+`v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。本版本不新增规则、CLI 标志或公共 API 契约，也不是 generated-column 支持、identity-column 支持，或完整的 PostgreSQL `ALTER TABLE` 支持。
+
+- **Drop expression**（`ALTER COLUMN ... DROP EXPRESSION`）→ 显式 unsupported（`generated_column`）。
+- **Set generated**（`ALTER COLUMN ... SET GENERATED ...`）→ 显式 unsupported（`generated_as_identity`）。
+- **Drop identity**（`ALTER COLUMN ... DROP IDENTITY`）→ 显式 unsupported（`generated_as_identity`）。
+- 语料用例和 service 层检查通过精确断言锁定这些边界结果。
+- CLI、HTTP、MCP 和 `pkg/deltascope` 的表面对等验证同一 unsupported 契约在每条传输通道上成立。
+- 这次发布是边界收口，不是 generated-column 支持、identity-column 支持，也不是完整的 PostgreSQL `ALTER TABLE` 支持。
+
+上一里程碑：`v0.30.0` 收口了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated / identity 形态上的不支持边界契约。详见 [v0.31.0 发行说明](docs/releases/release-notes-v0.31.0.zh-CN.md)。
 
 ### PostgreSQL ALTER TABLE GENERATED Boundary Pack（`v0.30.0`）
 
@@ -44,7 +57,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.30.0/install.
 - **Identity add-column**（`GENERATED ALWAYS AS IDENTITY`）→ 显式 unsupported（`generated_as_identity`）。
 - 语料用例和 service 层检查通过精确断言锁定这些边界结果。
 - CLI、HTTP、MCP 和 `pkg/deltascope` 的表面对等验证同一 unsupported 契约在每条传输通道上成立。
-- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 仍保持 generic unsupported 边界。
+- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
 - 这次发布是边界收口，不是 generated-column 支持、identity-column 支持，也不是广义的 PostgreSQL `ALTER TABLE` 支持。
 
 上一里程碑：`v0.29.0` 为显式跨 schema 引用新增了一个窄范围 schema-aware FK advisory 步骤。详见 [v0.30.0 发行说明](docs/releases/release-notes-v0.30.0.zh-CN.md)。
@@ -97,9 +110,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.30.0/install.
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组（包含 `feature` 和 `reason` 字段）的部分结果，以及 `ErrUnsupportedStatement` 哨兵错误。
 - **HTTP** 和 **MCP**：将不支持语句作为传输层错误暴露（HTTP 错误响应、MCP tool error），因为底层审计函数对不支持边界返回错误。
 
-`make release-surface-gates VERSION=v0.30.0` 与 `make release-version-surface-gates VERSION=v0.30.0` 用于校验 package/release 与带版本文档面。
+`make release-surface-gates VERSION=v0.31.0` 与 `make release-version-surface-gates VERSION=v0.31.0` 用于校验 package/release 与带版本文档面。
 
-上一里程碑：`v0.26.0` 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。详见 [v0.26.0 发行说明](docs/releases/release-notes-v0.26.0.zh-CN.md)。
+上一里程碑：`v0.30.0` 收口了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated / identity 形态上的不支持边界契约。详见 [v0.30.0 发行说明](docs/releases/release-notes-v0.30.0.zh-CN.md)。
 
 如果你需要 PostgreSQL 离线审计：
 

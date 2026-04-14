@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.30.0`, DeltaScope ships the **PostgreSQL ALTER TABLE GENERATED Boundary Pack**: PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics now return explicit unsupported outcomes (`generated_column`, `generated_as_identity`) instead of looking like ordinary supported add-column paths. Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock this contract. Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries. This is boundary tightening, not support expansion. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.31.0`, DeltaScope ships the **PostgreSQL ALTER TABLE GENERATED Follow-up Pack**: PostgreSQL `ALTER TABLE` generated/identity alteration forms (`DROP EXPRESSION`, `SET GENERATED`, `DROP IDENTITY`) now return explicit unsupported outcomes (`generated_column`, `generated_as_identity`) instead of generic AST-subtype boundaries. This extends the `v0.30.0` `ADD COLUMN` boundary work and aligns all PostgreSQL generated/identity unsupported forms under the same stable feature tags. Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock this contract. This is boundary tightening, not support expansion. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,9 +34,22 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.30.0/install.sh | \
-  DELTASCOPE_VERSION=v0.30.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.31.0/install.sh | \
+  DELTASCOPE_VERSION=v0.31.0 sh
 ```
+
+### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
+
+`v0.31.0` maps additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`. It does not add new rules, new CLI flags, or new public API contracts, and it is not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
+
+- **Drop expression** (`ALTER COLUMN ... DROP EXPRESSION`) → explicit unsupported (`generated_column`).
+- **Set generated** (`ALTER COLUMN ... SET GENERATED ...`) → explicit unsupported (`generated_as_identity`).
+- **Drop identity** (`ALTER COLUMN ... DROP IDENTITY`) → explicit unsupported (`generated_as_identity`).
+- Corpus cases and service-level checks lock these boundary outcomes with precise assertions.
+- Surface parity across CLI, HTTP, MCP, and `pkg/deltascope` verifies the same unsupported contract on every transport.
+- This release is boundary tightening, not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
+
+Previous milestone: `v0.30.0` tightened the PostgreSQL `ALTER TABLE ... ADD COLUMN` unsupported boundary contract for generated/identity forms. See the [v0.31.0 release notes](docs/releases/release-notes-v0.31.0.md) for details.
 
 ### PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
 
@@ -46,7 +59,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.30.0/install.
 - **Identity add-column** (`GENERATED ALWAYS AS IDENTITY`) → explicit unsupported (`generated_as_identity`).
 - Corpus cases and service-level checks lock these boundary outcomes with precise assertions.
 - Surface parity across CLI, HTTP, MCP, and `pkg/deltascope` verifies the same unsupported contract on every transport.
-- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries.
+- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms now receive explicit unsupported mappings in `v0.31.0`.
 - This release is boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
 
 Previous milestone: `v0.29.0` added a narrow schema-aware FK advisory step for explicit cross-schema references. See the [v0.30.0 release notes](docs/releases/release-notes-v0.30.0.md) for details.
@@ -99,9 +112,9 @@ Surface contract for unsupported statements:
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
 - **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
 
-`make release-surface-gates VERSION=v0.30.0` and `make release-version-surface-gates VERSION=v0.30.0` verify the package/release and versioned docs surfaces.
+`make release-surface-gates VERSION=v0.31.0` and `make release-version-surface-gates VERSION=v0.31.0` verify the package/release and versioned docs surfaces.
 
-Previous milestone: `v0.26.0` tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract. See the [v0.26.0 release notes](docs/releases/release-notes-v0.26.0.md) for details.
+Previous milestone: `v0.30.0` tightened the PostgreSQL `ALTER TABLE ... ADD COLUMN` unsupported boundary contract for generated/identity forms. See the [v0.30.0 release notes](docs/releases/release-notes-v0.30.0.md) for details.
 
 Need PostgreSQL offline audit support?
 

@@ -264,6 +264,21 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
+
+`v0.31.0` is the **PostgreSQL ALTER TABLE GENERATED Follow-up Pack**. It maps additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`. These are explicit unsupported contracts, not new rule findings.
+
+| Aspect | Detail |
+|--------|--------|
+| Drop expression | `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column` |
+| Set generated | `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity` |
+| Drop identity | `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity` |
+| Backed by | Corpus cases, service checks, and surface parity across CLI, HTTP, MCP, and `pkg/deltascope` |
+| New rule IDs | none |
+| New CLI/API flags | none |
+
+This is boundary tightening, not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
+
 ## PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
 
 `v0.30.0` is the **PostgreSQL ALTER TABLE GENERATED Boundary Pack**. It tightens the unsupported boundary contract for PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics. These are explicit unsupported contracts, not new rule findings.
@@ -273,7 +288,7 @@ The corpus does not add new rules, change audit behavior, or affect end-user wor
 | Generated stored add-column | `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column` |
 | Identity add-column | `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity` |
 | Backed by | Corpus cases, service checks, and surface parity across CLI, HTTP, MCP, and `pkg/deltascope` |
-| Adjacent forms | `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` remain generic unsupported boundaries |
+| Adjacent forms | `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` now receive explicit unsupported mappings in `v0.31.0` |
 | New rule IDs | none |
 | New CLI/API flags | none |
 
@@ -337,7 +352,7 @@ Surface contract for unsupported statements:
 
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array plus `ErrUnsupportedStatement`.
 - **HTTP** and **MCP**: expose as transport-level error (HTTP error response, MCP tool error).
-- **`v0.30.0` note**: PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity forms now follow the same explicit unsupported contract shape through `generated_column` and `generated_as_identity`, but adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` remain generic unsupported boundaries.
+- **`v0.30.0` note**: PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity forms now follow the same explicit unsupported contract shape through `generated_column` and `generated_as_identity`. Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` now receive explicit unsupported mappings in `v0.31.0`.
 
 ---
 
