@@ -1171,6 +1171,27 @@ func parseCreateStmtAST(t *testing.T, sql string) *pg_query.CreateStmt {
 	return createStmt.CreateStmt
 }
 
+func parseAlterTableStmtAST(t *testing.T, sql string) *pg_query.AlterTableStmt {
+	t.Helper()
+	result, err := pg_query.Parse(sql)
+	if err != nil {
+		t.Fatalf("pg_query.Parse: %v", err)
+	}
+	stmts := result.GetStmts()
+	if len(stmts) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(stmts))
+	}
+	node := stmts[0].GetStmt()
+	if node == nil {
+		t.Fatal("stmt node is nil")
+	}
+	alterStmt, ok := node.GetNode().(*pg_query.Node_AlterTableStmt)
+	if !ok {
+		t.Fatalf("expected *Node_AlterTableStmt, got %T", node.GetNode())
+	}
+	return alterStmt.AlterTableStmt
+}
+
 // ---------------------------------------------------------------------------
 // v0.26.0 Task 2: Behavior tests — unsupported CREATE TABLE boundaries
 // ---------------------------------------------------------------------------
@@ -1410,6 +1431,290 @@ func TestParseCreateTableGeneratedStoredColumnAST(t *testing.T) {
 	// FACT 5: RawExpr is populated with the generation expression.
 	if generatedConstraint.GetRawExpr() == nil {
 		t.Fatal("expected CONSTR_GENERATED.RawExpr to be non-nil for generated column expression")
+	}
+}
+
+func TestParseAlterTableAddGeneratedStoredColumnAST(t *testing.T) {
+	sql := `ALTER TABLE users
+  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
+
+	stmt := parseAlterTableStmtAST(t, sql)
+	if stmt == nil {
+		t.Fatal("expected AlterTableStmt")
+	}
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 alter command, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddColumn {
+		t.Fatalf("expected subtype AT_AddColumn, got %s (%d)", cmd.GetSubtype().String(), cmd.GetSubtype())
+	}
+	column := cmd.GetDef().GetColumnDef()
+	if column == nil {
+		t.Fatal("expected add-column command def to be ColumnDef")
+	}
+	if column.GetColname() != "full_name" {
+		t.Fatalf("expected column name full_name, got %q", column.GetColname())
+	}
+	if column.GetGenerated() != "" {
+		t.Fatalf("expected ColumnDef.Generated to be empty, got %q", column.GetGenerated())
+	}
+	constraints := column.GetConstraints()
+	if len(constraints) != 1 {
+		t.Fatalf("expected 1 column constraint, got %d", len(constraints))
+	}
+	constraint := constraints[0].GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected generated constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_GENERATED {
+		t.Fatalf("expected CONSTR_GENERATED, got %s (%d)", constraint.GetContype().String(), constraint.GetContype())
+	}
+	if constraint.GetGeneratedWhen() != "a" {
+		t.Fatalf("expected GeneratedWhen='a', got %q", constraint.GetGeneratedWhen())
+	}
+	if constraint.GetRawExpr() == nil {
+		t.Fatal("expected CONSTR_GENERATED.RawExpr to be non-nil")
+	}
+}
+
+func TestParseAlterTableAddIdentityColumnAST(t *testing.T) {
+	sql := `ALTER TABLE users
+  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
+
+	stmt := parseAlterTableStmtAST(t, sql)
+	if stmt == nil {
+		t.Fatal("expected AlterTableStmt")
+	}
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 alter command, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddColumn {
+		t.Fatalf("expected subtype AT_AddColumn, got %s (%d)", cmd.GetSubtype().String(), cmd.GetSubtype())
+	}
+	column := cmd.GetDef().GetColumnDef()
+	if column == nil {
+		t.Fatal("expected add-column command def to be ColumnDef")
+	}
+	if column.GetColname() != "id" {
+		t.Fatalf("expected column name id, got %q", column.GetColname())
+	}
+	if column.GetIdentity() != "" {
+		t.Fatalf("expected ColumnDef.Identity to be empty, got %q", column.GetIdentity())
+	}
+	constraints := column.GetConstraints()
+	if len(constraints) != 1 {
+		t.Fatalf("expected 1 column constraint, got %d", len(constraints))
+	}
+	constraint := constraints[0].GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected identity constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_IDENTITY {
+		t.Fatalf("expected CONSTR_IDENTITY, got %s (%d)", constraint.GetContype().String(), constraint.GetContype())
+	}
+	if constraint.GetGeneratedWhen() != "a" {
+		t.Fatalf("expected GeneratedWhen='a', got %q", constraint.GetGeneratedWhen())
+	}
+}
+
+func TestParseAlterTableDropGeneratedExpressionAST(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN full_name DROP EXPRESSION;`
+
+	stmt := parseAlterTableStmtAST(t, sql)
+	if stmt == nil {
+		t.Fatal("expected AlterTableStmt")
+	}
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 alter command, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_DropExpression {
+		t.Fatalf("expected subtype AT_DropExpression, got %s (%d)", cmd.GetSubtype().String(), cmd.GetSubtype())
+	}
+	if cmd.GetName() != "full_name" {
+		t.Fatalf("expected column name full_name, got %q", cmd.GetName())
+	}
+	if cmd.GetDef() != nil {
+		t.Fatalf("expected AT_DropExpression def to be nil, got %T", cmd.GetDef().GetNode())
+	}
+}
+
+func TestParseAlterTableSetIdentityGeneratedAST(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN id SET GENERATED BY DEFAULT;`
+
+	stmt := parseAlterTableStmtAST(t, sql)
+	if stmt == nil {
+		t.Fatal("expected AlterTableStmt")
+	}
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 alter command, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_SetIdentity {
+		t.Fatalf("expected subtype AT_SetIdentity, got %s (%d)", cmd.GetSubtype().String(), cmd.GetSubtype())
+	}
+	if cmd.GetName() != "id" {
+		t.Fatalf("expected column name id, got %q", cmd.GetName())
+	}
+	listNode := cmd.GetDef().GetList()
+	if listNode == nil {
+		t.Fatal("expected AT_SetIdentity def to be a List")
+	}
+	items := listNode.GetItems()
+	if len(items) != 1 {
+		t.Fatalf("expected 1 defelem item, got %d", len(items))
+	}
+	defElem := items[0].GetDefElem()
+	if defElem == nil {
+		t.Fatal("expected first list item to be DefElem")
+	}
+	if defElem.GetDefname() != "generated" {
+		t.Fatalf("expected defname generated, got %q", defElem.GetDefname())
+	}
+	arg := defElem.GetArg()
+	if arg == nil || arg.GetInteger() == nil {
+		t.Fatal("expected defelem arg integer for generated setting")
+	}
+	if arg.GetInteger().GetIval() != 100 {
+		t.Fatalf("expected integer 100 for BY DEFAULT, got %d", arg.GetInteger().GetIval())
+	}
+}
+
+func TestParseAlterTableDropIdentityAST(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN id DROP IDENTITY;`
+
+	stmt := parseAlterTableStmtAST(t, sql)
+	if stmt == nil {
+		t.Fatal("expected AlterTableStmt")
+	}
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 alter command, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_DropIdentity {
+		t.Fatalf("expected subtype AT_DropIdentity, got %s (%d)", cmd.GetSubtype().String(), cmd.GetSubtype())
+	}
+	if cmd.GetName() != "id" {
+		t.Fatalf("expected column name id, got %q", cmd.GetName())
+	}
+	if cmd.GetDef() != nil {
+		t.Fatalf("expected AT_DropIdentity def to be nil, got %T", cmd.GetDef().GetNode())
+	}
+}
+
+func TestExtractAlterTableAddGeneratedStoredColumnCurrentBehavior(t *testing.T) {
+	sql := `ALTER TABLE users
+  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected current behavior to classify generated add-column as DDL, got %q with unsupported=%#v", statement.Kind, statement.Unsupported)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected current behavior to treat generated add-column as supported, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table DDL payload, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %#v", statement.DDL.Alter)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_column" {
+		t.Fatalf("expected add_column action, got %#v", alter)
+	}
+	if alter.Column == nil || alter.Column.Definition == nil || alter.Column.Definition.Name != "full_name" {
+		t.Fatalf("expected add_column definition for full_name, got %#v", alter.Column)
+	}
+	if alter.Column.Definition.HasDefault {
+		t.Fatalf("expected generated add-column to arrive without default metadata, got %#v", alter.Column.Definition)
+	}
+}
+
+func TestExtractAlterTableAddIdentityColumnCurrentBehavior(t *testing.T) {
+	sql := `ALTER TABLE users
+  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected current behavior to classify identity add-column as DDL, got %q with unsupported=%#v", statement.Kind, statement.Unsupported)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected current behavior to treat identity add-column as supported, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table DDL payload, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %#v", statement.DDL.Alter)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_column" {
+		t.Fatalf("expected add_column action, got %#v", alter)
+	}
+	if alter.Column == nil || alter.Column.Definition == nil || alter.Column.Definition.Name != "id" {
+		t.Fatalf("expected add_column definition for id, got %#v", alter.Column)
+	}
+}
+
+func TestExtractAlterTableDropGeneratedExpressionCurrentBehavior(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN full_name DROP EXPRESSION;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected drop expression to remain unsupported today, got kind=%q ddl=%#v", statement.Kind, statement.DDL)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for DROP EXPRESSION current behavior")
+	}
+	if statement.Unsupported.Feature != "dropexpression" {
+		t.Fatalf("expected unsupported feature dropexpression, got %q", statement.Unsupported.Feature)
+	}
+}
+
+func TestExtractAlterTableSetIdentityGeneratedCurrentBehavior(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN id SET GENERATED BY DEFAULT;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected set identity generated to remain unsupported today, got kind=%q ddl=%#v", statement.Kind, statement.DDL)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for SET GENERATED current behavior")
+	}
+	if statement.Unsupported.Feature != "setidentity" {
+		t.Fatalf("expected unsupported feature setidentity, got %q", statement.Unsupported.Feature)
 	}
 }
 
