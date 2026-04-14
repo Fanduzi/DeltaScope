@@ -1600,6 +1600,49 @@ func TestParseAlterTableSetIdentityGeneratedAST(t *testing.T) {
 	}
 }
 
+func TestParseAlterTableSetIdentityGeneratedAlwaysAST(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN id SET GENERATED ALWAYS;`
+
+	stmt := parseAlterTableStmtAST(t, sql)
+	if stmt == nil {
+		t.Fatal("expected AlterTableStmt")
+	}
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 alter command, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_SetIdentity {
+		t.Fatalf("expected subtype AT_SetIdentity, got %s (%d)", cmd.GetSubtype().String(), cmd.GetSubtype())
+	}
+	if cmd.GetName() != "id" {
+		t.Fatalf("expected column name id, got %q", cmd.GetName())
+	}
+	listNode := cmd.GetDef().GetList()
+	if listNode == nil {
+		t.Fatal("expected AT_SetIdentity def to be a List")
+	}
+	items := listNode.GetItems()
+	if len(items) != 1 {
+		t.Fatalf("expected 1 defelem item, got %d", len(items))
+	}
+	defElem := items[0].GetDefElem()
+	if defElem == nil {
+		t.Fatal("expected first list item to be DefElem")
+	}
+	if defElem.GetDefname() != "generated" {
+		t.Fatalf("expected defname generated, got %q", defElem.GetDefname())
+	}
+	arg := defElem.GetArg()
+	if arg == nil || arg.GetInteger() == nil {
+		t.Fatal("expected defelem arg integer for generated setting")
+	}
+}
+
 func TestParseAlterTableDropIdentityAST(t *testing.T) {
 	sql := `ALTER TABLE users
   ALTER COLUMN id DROP IDENTITY;`
@@ -1698,6 +1741,23 @@ func TestExtractAlterTableSetIdentityGeneratedCurrentBehavior(t *testing.T) {
 	}
 	if statement.Unsupported.Feature != "setidentity" {
 		t.Fatalf("expected unsupported feature setidentity, got %q", statement.Unsupported.Feature)
+	}
+}
+
+func TestExtractAlterTableDropIdentityCurrentBehavior(t *testing.T) {
+	sql := `ALTER TABLE users
+  ALTER COLUMN id DROP IDENTITY;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected drop identity to remain unsupported today, got kind=%q ddl=%#v", statement.Kind, statement.DDL)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for DROP IDENTITY current behavior")
+	}
+	if statement.Unsupported.Feature != "dropidentity" {
+		t.Fatalf("expected unsupported feature dropidentity, got %q", statement.Unsupported.Feature)
 	}
 }
 
