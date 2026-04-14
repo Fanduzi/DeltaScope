@@ -745,6 +745,56 @@ func TestAuditSQLPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.
 	}
 }
 
+func TestAuditSQLPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+	tests := []struct {
+		name    string
+		sql     string
+		feature string
+	}{
+		{
+			name: "add generated stored column",
+			sql: `ALTER TABLE users
+  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`,
+			feature: "generated_column",
+		},
+		{
+			name: "add identity column",
+			sql: `ALTER TABLE users
+  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`,
+			feature: "generated_as_identity",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if !errors.Is(err, ErrUnsupportedStatement) {
+				t.Fatalf("expected unsupported statement sentinel, got %v", err)
+			}
+			if len(result.Unsupported) != 1 {
+				t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+			}
+			if result.Unsupported[0].Feature != tt.feature {
+				t.Fatalf("expected unsupported feature %q, got %#v", tt.feature, result.Unsupported[0])
+			}
+			if result.Unsupported[0].Reason == "" {
+				t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+			}
+			if len(result.GlobalFindings) != 0 {
+				t.Fatalf("expected no global findings for unsupported statement, got %#v", result.GlobalFindings)
+			}
+			for _, stmt := range result.Statements {
+				if len(stmt.Findings) != 0 {
+					t.Fatalf("expected no statement findings for unsupported case, got %#v", stmt.Findings)
+				}
+			}
+		})
+	}
+}
+
 func TestAuditSQLPostgreSQLInlineSchemaQualifiedReferencesPreservesReferencedSchemaFacts(t *testing.T) {
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table orders (id bigint primary key, user_id bigint references public.users(id));",
