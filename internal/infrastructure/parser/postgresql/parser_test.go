@@ -1627,60 +1627,43 @@ func TestParseAlterTableDropIdentityAST(t *testing.T) {
 	}
 }
 
-func TestExtractAlterTableAddGeneratedStoredColumnCurrentBehavior(t *testing.T) {
+func TestExtractAlterTableAddGeneratedStoredColumnReturnsUnsupported(t *testing.T) {
 	sql := `ALTER TABLE users
   ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
 
 	statement := extractPostgreSQLStatement(t, sql)
 
-	if statement.Kind != spec.KindDDL {
-		t.Fatalf("expected current behavior to classify generated add-column as DDL, got %q with unsupported=%#v", statement.Kind, statement.Unsupported)
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected generated add-column to be unsupported, got kind=%q ddl=%#v", statement.Kind, statement.DDL)
 	}
-	if statement.Unsupported != nil {
-		t.Fatalf("expected current behavior to treat generated add-column as supported, got unsupported %#v", statement.Unsupported)
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for generated add-column")
 	}
-	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
-		t.Fatalf("expected alter_table DDL payload, got %#v", statement.DDL)
+	if statement.Unsupported.Feature != "generated_column" {
+		t.Fatalf("expected unsupported feature generated_column, got %q", statement.Unsupported.Feature)
 	}
-	if len(statement.DDL.Alter) != 1 {
-		t.Fatalf("expected 1 alter action, got %#v", statement.DDL.Alter)
-	}
-	alter := statement.DDL.Alter[0]
-	if alter.Action != "add_column" {
-		t.Fatalf("expected add_column action, got %#v", alter)
-	}
-	if alter.Column == nil || alter.Column.Definition == nil || alter.Column.Definition.Name != "full_name" {
-		t.Fatalf("expected add_column definition for full_name, got %#v", alter.Column)
-	}
-	if alter.Column.Definition.HasDefault {
-		t.Fatalf("expected generated add-column to arrive without default metadata, got %#v", alter.Column.Definition)
+	if statement.Unsupported.Reason == "" {
+		t.Fatal("expected non-empty unsupported reason")
 	}
 }
 
-func TestExtractAlterTableAddIdentityColumnCurrentBehavior(t *testing.T) {
+func TestExtractAlterTableAddIdentityColumnReturnsUnsupported(t *testing.T) {
 	sql := `ALTER TABLE users
   ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
 
 	statement := extractPostgreSQLStatement(t, sql)
 
-	if statement.Kind != spec.KindDDL {
-		t.Fatalf("expected current behavior to classify identity add-column as DDL, got %q with unsupported=%#v", statement.Kind, statement.Unsupported)
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected identity add-column to be unsupported, got kind=%q ddl=%#v", statement.Kind, statement.DDL)
 	}
-	if statement.Unsupported != nil {
-		t.Fatalf("expected current behavior to treat identity add-column as supported, got unsupported %#v", statement.Unsupported)
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail for identity add-column")
 	}
-	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
-		t.Fatalf("expected alter_table DDL payload, got %#v", statement.DDL)
+	if statement.Unsupported.Feature != "generated_as_identity" {
+		t.Fatalf("expected unsupported feature generated_as_identity, got %q", statement.Unsupported.Feature)
 	}
-	if len(statement.DDL.Alter) != 1 {
-		t.Fatalf("expected 1 alter action, got %#v", statement.DDL.Alter)
-	}
-	alter := statement.DDL.Alter[0]
-	if alter.Action != "add_column" {
-		t.Fatalf("expected add_column action, got %#v", alter)
-	}
-	if alter.Column == nil || alter.Column.Definition == nil || alter.Column.Definition.Name != "id" {
-		t.Fatalf("expected add_column definition for id, got %#v", alter.Column)
+	if statement.Unsupported.Reason == "" {
+		t.Fatal("expected non-empty unsupported reason")
 	}
 }
 
