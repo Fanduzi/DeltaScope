@@ -413,6 +413,16 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.21.0` expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. `v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for more common constraint shapes. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned referenced table and referenced column facts through the shared `spec.Constraint` model. None of these releases add new rule IDs. The newly normalized actions and create-table structures reuse existing shared rule families where applicable.
 
+### PostgreSQL ALTER TABLE GENERATED Boundary Pack (v0.30.0)
+
+`v0.30.0` tightens the PostgreSQL `ALTER TABLE ... ADD COLUMN` unsupported boundary contract for generated stored and identity forms. These outcomes are **not** rule findings and **no new rule IDs** are involved. They are extractor-level contracts that return `UnsupportedDetail` entries with feature tags and reason strings.
+
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column`
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity`
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock this contract.
+- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries.
+- This is boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
+
 ### PostgreSQL CREATE TABLE Unsupported Boundaries (v0.26.0)
 
 `v0.26.0` tightens the PostgreSQL `CREATE TABLE` unsupported boundary contract at the extractor level. The following forms are explicitly marked as unsupported — they are **not** rule findings and **no new rule IDs** are involved. They are extractor-level contracts that return `UnsupportedDetail` entries with feature tags and reason strings.

@@ -264,6 +264,21 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
+
+`v0.30.0` is the **PostgreSQL ALTER TABLE GENERATED Boundary Pack**. It tightens the unsupported boundary contract for PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics. These are explicit unsupported contracts, not new rule findings.
+
+| Aspect | Detail |
+|--------|--------|
+| Generated stored add-column | `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column` |
+| Identity add-column | `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity` |
+| Backed by | Corpus cases, service checks, and surface parity across CLI, HTTP, MCP, and `pkg/deltascope` |
+| Adjacent forms | `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` remain generic unsupported boundaries |
+| New rule IDs | none |
+| New CLI/API flags | none |
+
+This is boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
+
 ## Schema-Aware FK Policy Pack (`v0.29.0`)
 
 `v0.29.0` is the **Schema-Aware FK Policy Pack**. It is the first schema-aware FK policy step: DeltaScope emits the PostgreSQL-only notice rule `ddl.pg.table.foreign_key.cross_schema.advisory` when the owning table schema and referenced schema are both explicit and different.
@@ -322,6 +337,7 @@ Surface contract for unsupported statements:
 
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array plus `ErrUnsupportedStatement`.
 - **HTTP** and **MCP**: expose as transport-level error (HTTP error response, MCP tool error).
+- **`v0.30.0` note**: PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity forms now follow the same explicit unsupported contract shape through `generated_column` and `generated_as_identity`, but adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` remain generic unsupported boundaries.
 
 ---
 

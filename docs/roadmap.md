@@ -4,55 +4,36 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.29.0 Schema-Aware FK Policy Pack
+## Latest Completed Milestone: v0.30.0 PostgreSQL ALTER TABLE GENERATED Boundary Pack
 
-**Goal:** use explicit PostgreSQL schema-qualified FK facts for one narrow policy decision: a notice-level cross-schema advisory when both schemas are explicit and different.
+**Goal:** tighten PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity boundaries so generated stored and identity add-column forms become explicit unsupported outcomes instead of accidental supported actions or ordinary add-column fallthrough.
 
-The milestone answers the next practical product question after `v0.28.0`: should the referenced-object metadata surface participate in policy at all? The answer is yes, but only for explicit cross-schema foreign keys.
+The milestone follows the boundary discipline from `v0.26.0`, which locked unsupported PostgreSQL `CREATE TABLE` generated/identity cases. `v0.30.0` extends that explicit unsupported contract shape to selected PostgreSQL `ALTER TABLE` forms without broadening semantic support.
 
 ### Completed Scope
 
-- Added the PostgreSQL-only notice rule `ddl.pg.table.foreign_key.cross_schema.advisory`.
-- The rule fires only when the owning table schema is explicit, the referenced schema is explicit, and those schemas differ.
-- Same-schema foreign keys do not trigger the advisory.
-- Bare references such as `REFERENCES users(id)` remain schema unknown; DeltaScope does not infer `public` and does not model PostgreSQL `search_path` semantics.
-- Finding metadata can include `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns`; `referenced_table` remains normalized as `"users"`, never `"auth.users"`.
-- Surface tests lock the advisory contract across CLI, HTTP, MCP, and `pkg/deltascope`.
+- Locked `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` to explicit unsupported `generated_column`.
+- Locked `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` to explicit unsupported `generated_as_identity`.
+- Added corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity coverage for the same boundary contract.
+- Kept adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms on generic unsupported boundaries.
+- Kept the release framed as boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
 
 ### Key Design Decisions
 
-- This is the first schema-aware FK policy step, not full PostgreSQL foreign key support.
-- The rule is advisory and notice-level; it adds context without replacing `ddl.table.foreign_key.forbid`.
-- Cross-schema detection depends only on explicit SQL facts, not live metadata or search-path inference.
-- The metadata representation stays normalized: schema and table remain separate fields.
+- Reuse existing unsupported feature names where semantics already match.
+- Do not add new rule IDs, CLI flags, or public API contracts.
+- Keep unsupported behavior explicit at every public surface.
+- Do not imply support for generated expressions or identity semantics beyond the locked unsupported outcomes.
 
-## Next Milestone: v0.30.0 PostgreSQL ALTER TABLE GENERATED Boundary Pack
+## Next Milestone: PostgreSQL boundary follow-up
 
-**Goal:** tighten PostgreSQL `ALTER TABLE` generated/identity-column boundaries so generated and identity alteration forms become explicit unsupported outcomes instead of accidental supported actions or generic alter-table fallbacks.
+**Goal:** decide whether future PostgreSQL boundary work should deepen explicit unsupported subtyping or stay on generic unsupported contracts for additional alter-table forms.
 
-The milestone follows the boundary discipline from `v0.26.0`, which locked unsupported PostgreSQL `CREATE TABLE` generated/identity cases. The next target is the currently whitelisted PostgreSQL `ALTER TABLE` subset, especially forms that look like ordinary `ADD COLUMN` commands but carry generated or identity semantics DeltaScope does not model.
+### Candidate Follow-up Questions
 
-### Planned Scope
-
-- Characterize `pg_query_go/v6` AST shapes for:
-  - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED`
-  - `ALTER TABLE ... ADD COLUMN ... GENERATED ... AS IDENTITY`
-  - generated-expression alteration forms such as `DROP EXPRESSION`, if the parser exposes a stable subtype
-  - identity alteration forms such as `SET GENERATED` / `DROP IDENTITY`, if the parser exposes stable subtypes
-- Convert any currently supported generated/identity alter-table path into an explicit unsupported contract.
-- Prefer the existing unsupported feature names where they match the semantics:
-  - `generated_column`
-  - `generated_as_identity`
-- Add PostgreSQL corpus cases and surface parity for selected unsupported boundaries.
-- Keep the release framed as boundary tightening, not generated-column or identity-column support.
-
-### Explicit Non-Goals
-
-- Do not add generated-column semantic support.
-- Do not add identity-column semantic support.
-- Do not extract generated expressions into the shared contract.
-- Do not broaden PostgreSQL `ALTER TABLE` support beyond the selected boundary checks.
-- Do not change MySQL or TiDB behavior.
+- Should any additional PostgreSQL `ALTER TABLE` generated/identity forms receive stable explicit unsupported subtypes?
+- Should boundary documentation be widened further without implying semantic support?
+- Which unsupported PostgreSQL forms still need corpus-backed confidence coverage?
 
 ## Previous Milestone: v0.27.0 Schema-Qualified Reference Semantics Pack
 
@@ -77,4 +58,4 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 ## Additional Follow-up
 
 - Decide whether schema-aware FK policy should expand beyond the explicit cross-schema advisory shipped in `v0.29.0`.
-- Decide later whether explicit generated/identity unsupported boundaries should become real PostgreSQL generated-column support.
+- Decide later whether explicit generated/identity unsupported boundaries should ever become real PostgreSQL generated-column or identity-column support.

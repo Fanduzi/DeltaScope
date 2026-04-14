@@ -428,6 +428,22 @@ Important notes:
 - `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.
 
+#### PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
+
+Starting with `v0.30.0`, PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics are explicitly surfaced as unsupported boundaries. When encountered in migration review, DeltaScope returns an `unsupported` result rather than silently accepting or partially handling them.
+
+| Feature | Extractor Tag |
+|---------|---------------|
+| Generated stored add-column (`GENERATED ALWAYS AS (...) STORED`) | `generated_column` |
+| Identity add-column (`GENERATED ALWAYS AS IDENTITY`) | `generated_as_identity` |
+
+When reviewing migrations that use these features, the recommended action remains the same: split the migration, audit the supported statements with DeltaScope, and review the unsupported ones manually.
+
+Keep the scope narrow:
+- This is boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock the same explicit unsupported contract.
+- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries.
+
 #### Unsupported Boundary Tightening (`v0.26.0`)
 
 Starting with `v0.26.0`, the following PostgreSQL `CREATE TABLE` forms are explicitly rejected as unsupported boundaries by the extractor. When encountered in migration review, DeltaScope returns an `unsupported` result rather than silently accepting or partially handling them:

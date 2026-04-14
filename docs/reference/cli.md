@@ -601,6 +601,16 @@ deltascope --version
 
 Starting with `v0.25.0`, DeltaScope release validation includes SQL corpus tests that run representative MySQL, TiDB, and PostgreSQL cases through the audit application layer with two-layer assertions (report-level and semantic). These corpus tests are release-confidence assets and do not affect CLI behavior or require any user action.
 
+### PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
+
+Starting with `v0.30.0`, PostgreSQL `ALTER TABLE ... ADD COLUMN` forms that carry generated stored or identity semantics are surfaced as explicit unsupported boundaries. The CLI exposes these through the same unsupported result path: the audit output includes an `unsupported` array with `feature` and `reason` fields, and the process exits with the audit exit code.
+
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` → `generated_column`
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS IDENTITY` → `generated_as_identity`
+- Corpus, service, and CLI / HTTP / MCP / `pkg/deltascope` parity lock the same contract.
+- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms remain generic unsupported boundaries.
+- This is not a new CLI flag or support expansion — it is boundary tightening.
+
 ### PostgreSQL CREATE TABLE Unsupported Boundaries (`v0.26.0`)
 
 Starting with `v0.26.0`, the PostgreSQL extractor explicitly rejects identity columns, generated stored columns, exclusion constraints, and partitioned tables as unsupported boundaries. The CLI exposes these through the unsupported result path: the audit output includes an `unsupported` array with `feature` and `reason` fields, and the process exits with the audit exit code. This is not a new CLI flag or contract — it is a boundary tightening that ensures these forms are no longer silently accepted or partially handled.

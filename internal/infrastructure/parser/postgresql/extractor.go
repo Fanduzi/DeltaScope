@@ -363,6 +363,9 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if column == nil {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alter_table", Reason: "postgresql add column payload is missing"}
 		}
+		if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
+			return spec.Alter{}, false, unsupported
+		}
 		if column.GetIdentity() != "" {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "generated_as_identity", Reason: "postgresql GENERATED ... AS IDENTITY is unsupported in v1"}
 		}

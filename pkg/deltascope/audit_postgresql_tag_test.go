@@ -839,6 +839,43 @@ func TestAuditPostgreSQLCreateTableGeneratedStoredReturnsUnsupported(t *testing.
 	}
 }
 
+func TestAuditPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"generated stored add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
+			feature: "generated_column",
+		},
+		"identity add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
+			feature: "generated_as_identity",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tc.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if !errors.Is(err, ErrUnsupportedStatement) {
+				t.Fatalf("expected unsupported statement sentinel, got %v", err)
+			}
+			if len(result.Unsupported) != 1 {
+				t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+			}
+			if result.Unsupported[0].Feature != tc.feature {
+				t.Fatalf("expected unsupported feature %q, got %#v", tc.feature, result.Unsupported[0])
+			}
+			if result.Unsupported[0].Reason == "" {
+				t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLCreateTableExclusionReturnsUnsupported(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "CREATE TABLE bookings (room_id int, during tsrange, EXCLUDE USING gist (room_id WITH =, during WITH &&));",
