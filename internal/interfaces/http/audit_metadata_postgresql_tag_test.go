@@ -899,6 +899,51 @@ func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError
 	}
 }
 
+func TestExecuteAuditRequestPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"generated stored add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
+			feature: "generated_column",
+		},
+		"identity add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
+			feature: "generated_as_identity",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			captured := deltascope.Result{}
+			_, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     tc.sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				result, auditErr := deltascope.Audit(ctx, request)
+				captured = result
+				return result, auditErr
+			})
+			if err == nil {
+				t.Fatalf("expected unsupported error for %s, got nil", name)
+			}
+			if !strings.Contains(err.Error(), "unsupported") {
+				t.Fatalf("expected unsupported error message, got %v", err)
+			}
+			if len(captured.Unsupported) != 1 {
+				t.Fatalf("expected one unsupported detail for %s, got %#v", name, captured.Unsupported)
+			}
+			if captured.Unsupported[0].Feature != tc.feature {
+				t.Fatalf("expected unsupported feature %q, got %#v", tc.feature, captured.Unsupported[0])
+			}
+			if captured.Unsupported[0].Reason == "" {
+				t.Fatalf("expected unsupported reason, got %#v", captured.Unsupported[0])
+			}
+		})
+	}
+}
+
 func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",

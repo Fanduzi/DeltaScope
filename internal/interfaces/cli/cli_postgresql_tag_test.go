@@ -1485,3 +1485,60 @@ func TestAuditCommandPostgreSQLCreateTableBoundaryReturnsUnsupported(t *testing.
 		})
 	}
 }
+
+func TestAuditCommandPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"generated stored add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
+			feature: "generated_column",
+		},
+		"identity add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
+			feature: "generated_as_identity",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tc.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+
+			if code != exitAudit {
+				t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			unsupported, ok := decoded["unsupported"].([]any)
+			if !ok || len(unsupported) != 1 {
+				t.Fatalf("expected one unsupported detail, got %#v", decoded["unsupported"])
+			}
+			item, ok := unsupported[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected unsupported object, got %#v", unsupported[0])
+			}
+			if item["feature"] != tc.feature {
+				t.Fatalf("expected unsupported feature %q, got %#v", tc.feature, item["feature"])
+			}
+			if item["reason"] == "" {
+				t.Fatalf("expected unsupported reason, got %#v", item)
+			}
+		})
+	}
+}

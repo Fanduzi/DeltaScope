@@ -1172,7 +1172,7 @@ func TestAuditSQLToolPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *tes
 				t.Fatalf("call audit_sql: %v", err)
 			}
 			if !result.IsError {
-				t.Fatalf("expected tool error for unsupported %s, got success result", name)
+				t.Fatalf("expected tool error for unsupported %s (%s), got success result", name, tc.feature)
 			}
 			body, ok := result.StructuredContent.(map[string]any)
 			if !ok {
@@ -1184,7 +1184,60 @@ func TestAuditSQLToolPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *tes
 			}
 			message, _ := body["message"].(string)
 			if !strings.Contains(message, "unsupported") {
-				t.Fatalf("expected unsupported in error message, got %q", message)
+				t.Fatalf("expected unsupported in error message for feature %q, got %q", tc.feature, message)
+			}
+		})
+	}
+}
+
+func TestAuditSQLToolPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	cases := map[string]struct {
+		sql     string
+		feature string
+	}{
+		"generated stored add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
+			feature: "generated_column",
+		},
+		"identity add-column": {
+			sql:     "ALTER TABLE users ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
+			feature: "generated_as_identity",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name: "audit_sql",
+				Arguments: map[string]any{
+					"sql":     tc.sql,
+					"dialect": "postgresql",
+				},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if !result.IsError {
+				t.Fatalf("expected tool error for unsupported %s (%s), got success result", name, tc.feature)
+			}
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %#v", result.StructuredContent)
+			}
+			code, _ := body["code"].(string)
+			if code == "" {
+				t.Fatalf("expected error code in tool error, got %#v", body)
+			}
+			message, _ := body["message"].(string)
+			if !strings.Contains(message, "unsupported") {
+				t.Fatalf("expected unsupported in error message for feature %q, got %q", tc.feature, message)
 			}
 		})
 	}
