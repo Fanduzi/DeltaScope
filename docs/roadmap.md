@@ -26,6 +26,34 @@ The milestone answers the next practical product question after `v0.28.0`: shoul
 - Cross-schema detection depends only on explicit SQL facts, not live metadata or search-path inference.
 - The metadata representation stays normalized: schema and table remain separate fields.
 
+## Next Milestone: v0.30.0 PostgreSQL ALTER TABLE GENERATED Boundary Pack
+
+**Goal:** tighten PostgreSQL `ALTER TABLE` generated/identity-column boundaries so generated and identity alteration forms become explicit unsupported outcomes instead of accidental supported actions or generic alter-table fallbacks.
+
+The milestone follows the boundary discipline from `v0.26.0`, which locked unsupported PostgreSQL `CREATE TABLE` generated/identity cases. The next target is the currently whitelisted PostgreSQL `ALTER TABLE` subset, especially forms that look like ordinary `ADD COLUMN` commands but carry generated or identity semantics DeltaScope does not model.
+
+### Planned Scope
+
+- Characterize `pg_query_go/v6` AST shapes for:
+  - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED`
+  - `ALTER TABLE ... ADD COLUMN ... GENERATED ... AS IDENTITY`
+  - generated-expression alteration forms such as `DROP EXPRESSION`, if the parser exposes a stable subtype
+  - identity alteration forms such as `SET GENERATED` / `DROP IDENTITY`, if the parser exposes stable subtypes
+- Convert any currently supported generated/identity alter-table path into an explicit unsupported contract.
+- Prefer the existing unsupported feature names where they match the semantics:
+  - `generated_column`
+  - `generated_as_identity`
+- Add PostgreSQL corpus cases and surface parity for selected unsupported boundaries.
+- Keep the release framed as boundary tightening, not generated-column or identity-column support.
+
+### Explicit Non-Goals
+
+- Do not add generated-column semantic support.
+- Do not add identity-column semantic support.
+- Do not extract generated expressions into the shared contract.
+- Do not broaden PostgreSQL `ALTER TABLE` support beyond the selected boundary checks.
+- Do not change MySQL or TiDB behavior.
+
 ## Previous Milestone: v0.27.0 Schema-Qualified Reference Semantics Pack
 
 **Goal:** preserve PostgreSQL schema-qualified referenced-object facts in the shared contract, backed by corpus cases and service-level semantic tests.
@@ -49,4 +77,4 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 ## Additional Follow-up
 
 - Decide whether schema-aware FK policy should expand beyond the explicit cross-schema advisory shipped in `v0.29.0`.
-- `ALTER TABLE ... GENERATED` boundary coverage remains a visible follow-up, but not a committed milestone.
+- Decide later whether explicit generated/identity unsupported boundaries should become real PostgreSQL generated-column support.
