@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.31.0` 为止，DeltaScope 发布 **PostgreSQL ALTER TABLE GENERATED 后续边界包**：PostgreSQL `ALTER TABLE` generated/identity alteration 形态（`DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY`）现在会返回显式 unsupported 结果（`generated_column`、`generated_as_identity`），不再使用 generic AST-subtype 边界。这扩展了 `v0.30.0` 的 `ADD COLUMN` 边界工作，并将所有 PostgreSQL generated/identity unsupported 形态统一到同一套稳定 feature tag 下。语料、service 以及 CLI / HTTP / MCP / `pkg/deltascope` 的表面对等一起锁定了这一契约。这是边界收口，不是支持范围扩大。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.32.0` 为止，DeltaScope 发布 **PostgreSQL 边界支持就绪门控**：一个决策里程碑，通过 characterization 测试记录 generated 和 identity 列的稳定 AST 事实，并推荐 `v0.33.0` 作为窄事实保留包。未新增 PostgreSQL 支持行为、rule ID、CLI 标志或公共 API 字段。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,9 +32,20 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.31.0/install.sh | \
-  DELTASCOPE_VERSION=v0.31.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.32.0/install.sh | \
+  DELTASCOPE_VERSION=v0.32.0 sh
 ```
+
+### PostgreSQL 边界支持就绪门控（`v0.32.0`）
+
+`v0.32.0` 是一个决策里程碑——不是功能发布。Characterization 测试记录了 PostgreSQL generated 和 identity 列的稳定 AST 事实（`GeneratedWhen` 编码、`CONSTR_IDENTITY` / `CONSTR_GENERATED` 类型、identity 序列选项结构）。就绪报告推荐 `v0.33.0` 作为窄事实保留包，在 `spec.Column` 上新增 `GeneratedWhen` 和 `IsIdentity` 字段。未新增规则、CLI 标志或公共 API 契约。
+
+- **仅决策门控**：无生产代码、extractor、spec、rule 或 policy 变更。
+- **Characterization 测试**：`parser_test.go` 中 7 个测试断言稳定的 AST 结构。
+- **就绪报告**：完整的边界清单、AST 事实覆盖和 v0.33.0 推荐。
+- **延迟领域**：generated expression 渲染、identity 序列选项规范化、rule 行为变更、ALTER TABLE 状态转换。
+
+上一里程碑：`v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签。详见 [v0.32.0 发行说明](docs/releases/release-notes-v0.32.0.zh-CN.md)。
 
 ### PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
 
@@ -110,9 +121,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.31.0/install.
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组（包含 `feature` 和 `reason` 字段）的部分结果，以及 `ErrUnsupportedStatement` 哨兵错误。
 - **HTTP** 和 **MCP**：将不支持语句作为传输层错误暴露（HTTP 错误响应、MCP tool error），因为底层审计函数对不支持边界返回错误。
 
-`make release-surface-gates VERSION=v0.31.0` 与 `make release-version-surface-gates VERSION=v0.31.0` 用于校验 package/release 与带版本文档面。
+`make release-surface-gates VERSION=v0.32.0` 与 `make release-version-surface-gates VERSION=v0.32.0` 用于校验 package/release 与带版本文档面。
 
-上一里程碑：`v0.30.0` 收口了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated / identity 形态上的不支持边界契约。详见 [v0.30.0 发行说明](docs/releases/release-notes-v0.30.0.zh-CN.md)。
+上一里程碑：`v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签。详见 [v0.31.0 发行说明](docs/releases/release-notes-v0.31.0.zh-CN.md)。
 
 如果你需要 PostgreSQL 离线审计：
 
