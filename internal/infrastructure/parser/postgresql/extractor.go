@@ -81,9 +81,6 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 
 	for _, item := range stmt.GetTableElts() {
 		if column := item.GetColumnDef(); column != nil {
-			if column.GetIdentity() != "" {
-				return unsupportedStatement(statement, "generated_as_identity", "postgresql GENERATED ... AS IDENTITY is unsupported in v1")
-			}
 			if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
 					return unsupportedStatementWithDetail(statement, unsupported)
 				}
@@ -366,9 +363,6 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
 			return spec.Alter{}, false, unsupported
 		}
-		if column.GetIdentity() != "" {
-			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "generated_as_identity", Reason: "postgresql GENERATED ... AS IDENTITY is unsupported in v1"}
-		}
 		return spec.Alter{Action: "add_column", Name: column.GetColname(), Column: &spec.AlterColumn{Definition: columnPtr(columnFromDef(column))}}, true, nil
 	case pg_query.AlterTableType_AT_DropColumn:
 		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
@@ -482,26 +476,6 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 }
 
 func hasUnsupportedColumnConstraint(column *pg_query.ColumnDef) *spec.UnsupportedDetail {
-	for _, item := range column.GetConstraints() {
-		constraint := item.GetConstraint()
-		if constraint == nil {
-			continue
-		}
-		switch constraint.GetContype() {
-		case pg_query.ConstrType_CONSTR_IDENTITY:
-			return &spec.UnsupportedDetail{
-				Feature:  "generated_as_identity",
-				Reason:   "postgresql GENERATED ... AS IDENTITY is unsupported in v1",
-				Metadata: generatedIdentityUnsupportedMetadata(column),
-			}
-		case pg_query.ConstrType_CONSTR_GENERATED:
-			return &spec.UnsupportedDetail{
-				Feature:  "generated_column",
-				Reason:   "postgresql GENERATED ALWAYS AS ... STORED columns are unsupported in v1",
-				Metadata: generatedIdentityUnsupportedMetadata(column),
-			}
-		}
-	}
 	return nil
 }
 
