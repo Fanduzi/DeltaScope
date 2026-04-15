@@ -428,6 +428,10 @@ Important notes:
 - `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.
 
+#### PostgreSQL Boundary Support-Readiness Gate (`v0.32.0`)
+
+`v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate** — a decision milestone, not a feature release. No new migration review behavior was added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. For migration reviewers, nothing changes: existing unsupported boundaries remain in place, and the recommended workflow (split migration, audit supported statements, review unsupported ones manually) is unchanged.
+
 #### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
 
 Starting with `v0.31.0`, additional PostgreSQL generated/identity `ALTER TABLE` forms are explicitly surfaced as unsupported boundaries, closing the adjacent gap left by `v0.30.0`. When encountered in migration review, DeltaScope returns an `unsupported` result with the same stable feature tags used by the `v0.26.0` and `v0.30.0` boundary work.

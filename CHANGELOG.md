@@ -6,6 +6,17 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.32.0] - 2026-04-14
+
+### Added
+
+- Characterization tests in `internal/infrastructure/parser/postgresql/parser_test.go` documenting stable AST facts about PostgreSQL generated and identity columns: `GeneratedWhen` encoding (`"a"` / `"d"`), `CONSTR_IDENTITY` / `CONSTR_GENERATED` constraint types, identity sequence option shape (`DefElem` nodes with `defname` and `Integer` arg), and AST shape consistency between `CREATE TABLE` and `ALTER TABLE ADD COLUMN`.
+- Decision report at `docs/plans/reports/2026-04-14-v0.32.0-pg-boundary-support-readiness-report.md` documenting the complete unsupported boundary inventory, AST fact coverage, shared contract decision, and v0.33.0 recommendation.
+
+### Changed
+
+- Release-facing docs now position `v0.32.0` as the **PostgreSQL Boundary Support-Readiness Gate** — a decision milestone, not a feature release. No new PostgreSQL support behavior, rule IDs, CLI flags, or public API fields were added.
+
 ## [v0.31.0] - 2026-04-14
 
 ### Changed

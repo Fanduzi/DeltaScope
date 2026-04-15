@@ -428,6 +428,10 @@ deltascope audit \
 - `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。
 
+##### PostgreSQL 边界支持就绪门控（`v0.32.0`）
+
+`v0.32.0` 是 **PostgreSQL 边界支持就绪门控**——一个决策里程碑，不是功能发布。未新增迁移审核行为。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。对迁移审核者来说，没有任何变化：现有的 unsupported 边界仍然有效，推荐的工作流（拆分迁移、审核已支持语句、手动审核不支持的语句）不变。
+
 ##### PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
 
 从 `v0.31.0` 开始，额外的 PostgreSQL generated/identity `ALTER TABLE` 形态被显式暴露为 unsupported 边界，收口了 `v0.30.0` 留下的相邻间隙。在迁移审核中遇到这些语法时，DeltaScope 返回 `unsupported` 结果，使用与 `v0.26.0` 和 `v0.30.0` 相同的稳定特性标签。

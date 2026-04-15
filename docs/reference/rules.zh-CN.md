@@ -401,6 +401,10 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 `v0.21.0` 扩展了 PostgreSQL DDL 标准化范围，使常见迁移后续语句通过共享审核管线处理，不再返回能力边界错误。`v0.23.0` 则扩展了更多常见 PostgreSQL `CREATE TABLE` 约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的被引用表和被引用列事实。这些版本均不新增规则 ID；新标准化动作和建表结构在适用时继续复用已有的共享规则族。
 
+### PostgreSQL 边界支持就绪门控（v0.32.0）
+
+`v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑，不是功能发布。未新增规则 ID。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。未变更任何生产 extractor、spec、rule 或 policy 代码。
+
 ### PostgreSQL ALTER TABLE GENERATED 后续边界包（v0.31.0）
 
 `v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。这些结果**不是**规则 finding，**没有新增规则 ID**。它们是提取器层契约，返回带特性标签和原因字符串的 `UnsupportedDetail` 条目。

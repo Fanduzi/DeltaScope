@@ -264,6 +264,20 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## PostgreSQL Boundary Support-Readiness Gate (`v0.32.0`)
+
+`v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone — not a feature release. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack.
+
+| Aspect | Detail |
+|--------|--------|
+| Characterization tests | 7 tests in `parser_test.go` documenting `GeneratedWhen` encoding, constraint types, sequence option shape |
+| Readiness report | Complete boundary inventory, AST fact coverage, v0.33.0 recommendation |
+| New rule IDs | none |
+| New CLI/API flags | none |
+| Production code changes | none |
+
+No new audit capabilities, rules, or surface contracts were added.
+
 ## PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
 
 `v0.31.0` is the **PostgreSQL ALTER TABLE GENERATED Follow-up Pack**. It maps additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`. These are explicit unsupported contracts, not new rule findings.

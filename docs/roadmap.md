@@ -4,7 +4,24 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.31.0 PostgreSQL ALTER TABLE GENERATED Follow-up Pack
+## Latest Completed Milestone: v0.32.0 PostgreSQL Boundary Support-Readiness Gate
+
+**Goal:** produce an evidence-backed decision about PostgreSQL generated/identity support readiness, documenting stable AST facts and recommending the next milestone direction.
+
+### Completed Scope
+
+- Characterization tests in `internal/infrastructure/parser/postgresql/parser_test.go` documenting stable AST facts: `GeneratedWhen` encoding (`"a"` / `"d"`), `CONSTR_IDENTITY` / `CONSTR_GENERATED` types, identity sequence option shape, and AST consistency between `CREATE TABLE` and `ALTER TABLE ADD COLUMN`.
+- Decision report at `docs/plans/reports/2026-04-14-v0.32.0-pg-boundary-support-readiness-report.md` with complete unsupported boundary inventory, AST fact coverage table, shared contract decision, and v0.33.0 recommendation.
+- No production code, extractor, spec, rule, or policy changes.
+
+### Key Design Decisions
+
+- Decision gate only — not a feature release.
+- DeltaScope is ready for narrow fact preservation, not full generated/identity semantic support.
+- Recommended v0.33.0 fields: `GeneratedWhen` (string) and `IsIdentity` (bool) on `spec.Column` as `omitempty` additions.
+- Deferred: generated expression rendering, identity sequence option normalization, rule behavior changes, ALTER TABLE state transitions.
+
+## Previous Milestone: v0.31.0 PostgreSQL ALTER TABLE GENERATED Follow-up Pack
 
 **Goal:** map additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`.
 
@@ -40,15 +57,25 @@ The milestone follows the boundary discipline from `v0.26.0` (`CREATE TABLE`) an
 - Keep unsupported behavior explicit at every public surface.
 - Do not imply support for generated expressions or identity semantics beyond the locked unsupported outcomes.
 
-## Next Milestone: PostgreSQL boundary support-readiness gate
+## Next Milestone: v0.33.0 PostgreSQL Generated/Identity Fact Preservation Pack
 
-**Goal:** decide whether future PostgreSQL boundary work should deepen explicit unsupported subtyping for additional alter-table forms (e.g., `ALTER COLUMN ... SET DATA TYPE`, `ALTER COLUMN ... RESTART`) or transition toward real generated-column / identity-column support.
+**Goal:** preserve narrow generated/identity facts in the shared DDL contract while keeping generated expressions, identity sequence options, and ALTER TABLE state transitions unsupported.
 
-### Candidate Follow-up Questions
+### Candidate Scope
 
-- Which unsupported PostgreSQL forms still need corpus-backed confidence coverage?
-- Should boundary documentation be widened further without implying semantic support?
-- Should any explicit unsupported boundary ever become real semantic support?
+- Add `GeneratedWhen` (string, `omitempty`) and `IsIdentity` (bool, `omitempty`) to `spec.Column`.
+- Start with `CREATE TABLE` facts; include `ALTER TABLE ADD COLUMN` only if the field model is identical.
+- Add PostgreSQL corpus YAML entries for generated/identity test cases.
+- Update CLI, HTTP, MCP, and `pkg/deltascope` surface tests to validate new optional fields.
+
+### Explicit Non-Goals
+
+- Generated expression rendering
+- Identity sequence option normalization
+- Generated/identity rule behavior
+- ALTER TABLE state-transition support (SET GENERATED, DROP EXPRESSION, DROP IDENTITY)
+- Removing existing unsupported boundaries before fact preservation is proven
+- Changing any MySQL/TiDB behavior
 
 ## Previous Milestone: v0.27.0 Schema-Qualified Reference Semantics Pack
 

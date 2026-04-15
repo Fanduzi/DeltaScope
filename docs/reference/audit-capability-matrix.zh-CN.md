@@ -250,6 +250,20 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## PostgreSQL 边界支持就绪门控（`v0.32.0`）
+
+`v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑——不是功能发布。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。
+
+| 方面 | 说明 |
+|------|------|
+| Characterization 测试 | `parser_test.go` 中 7 个测试记录 `GeneratedWhen` 编码、约束类型、序列选项结构 |
+| 就绪报告 | 完整边界清单、AST 事实覆盖、v0.33.0 推荐 |
+| 新 rule ID | 无 |
+| 新 CLI / API 标志 | 无 |
+| 生产代码变更 | 无 |
+
+未新增审核能力、规则或 surface 契约。
+
 ## PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
 
 `v0.31.0` 是 **PostgreSQL ALTER TABLE GENERATED 后续边界包**。它将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。这些结果是显式 unsupported 契约，不是新的规则 finding。

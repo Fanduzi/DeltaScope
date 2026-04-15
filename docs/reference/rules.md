@@ -413,6 +413,10 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 
 `v0.21.0` expands PostgreSQL DDL normalization so that common migration follow-up statements are processed through the shared audit pipeline instead of returning capability-boundary errors. `v0.23.0` expands PostgreSQL `CREATE TABLE` coverage for more common constraint shapes. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned referenced table and referenced column facts through the shared `spec.Constraint` model. None of these releases add new rule IDs. The newly normalized actions and create-table structures reuse existing shared rule families where applicable.
 
+### PostgreSQL Boundary Support-Readiness Gate (v0.32.0)
+
+`v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone, not a feature release. No new rule IDs were added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. No production extractor, spec, rule, or policy code changed.
+
 ### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (v0.31.0)
 
 `v0.31.0` maps additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`. These outcomes are **not** rule findings and **no new rule IDs** are involved. They are extractor-level contracts that return `UnsupportedDetail` entries with feature tags and reason strings.
