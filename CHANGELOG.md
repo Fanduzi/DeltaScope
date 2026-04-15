@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.34.0] - 2026-04-15
+
+### Added
+
+- PostgreSQL narrow generated/identity definition forms are now processed through the normal supported audit path instead of returning `ErrUnsupportedStatement`. The following forms are supported:
+  - `CREATE TABLE ... GENERATED ALWAYS AS (...) STORED` — generated stored column definitions.
+  - `CREATE TABLE ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` — identity column definitions, including identity with sequence options (`START WITH`, `INCREMENT BY`, `CACHE`, `CYCLE`).
+  - `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` — generated stored add-column definitions.
+  - `ALTER TABLE ... ADD COLUMN ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` — identity add-column definitions.
+- CLI, HTTP, MCP, and `pkg/deltascope` surface tests switched from unsupported contract assertions to supported result contract assertions for the narrow generated/identity forms.
+
+### Changed
+
+- PostgreSQL extractor no longer rejects narrow generated/identity definition forms at the unsupported boundary. These forms enter the normal normalization and rule evaluation path.
+- Corpus expected outcomes and service-level tests updated to assert supported results (normal statement output, no unsupported detail) for narrow generated/identity forms.
+- Shared facts preserved from `v0.33.0` continue flowing through the supported path: `generated_when`, `is_identity`, `identity_options`.
+- Release-facing docs now position `v0.34.0` as the **PostgreSQL Generated/Identity Narrow Support Pack** — a narrow support widening release. It does not add full generated-column support, full identity-column support, generated expression evaluation, complete PostgreSQL sequence semantics, state-transition support, or new rules. Unsupported feature names for state-transition forms remain: `generated_column` (`DROP EXPRESSION`), `generated_as_identity` (`SET GENERATED`, `DROP IDENTITY`).
+
 ## [v0.33.0] - 2026-04-15
 
 ### Added

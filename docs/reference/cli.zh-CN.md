@@ -640,6 +640,27 @@ Schema-qualified FK 的 finding metadata 示例：
 
 ---
 
+## v0.34.0 — Generated/Identity 定义形态的窄范围支持
+
+从 v0.34.0 开始，窄范围 PostgreSQL generated/identity 定义形态通过正常的已支持审核路径处理。这些形态的 CLI 输出不再包含 `unsupported` 数组——审核产生正常的带 findings 的结果。
+
+已支持形态：
+
+- `CREATE TABLE ... GENERATED ALWAYS AS (...) STORED`
+- `CREATE TABLE ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY`
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED`
+- `ALTER TABLE ... ADD COLUMN ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY`
+
+这些形态现在产生标准 CLI 输出（退出码 0 表示干净通过，1 表示 findings 达到 `--fail-on` 阈值）。v0.33.0 的共享事实（`generated_when`、`is_identity`、`identity_options`）继续在正常结果路径中流转。
+
+状态转换形态仍为 unsupported：
+
+- `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column`
+- `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity`
+- `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity`
+
+这是窄范围支持扩展——不是完整的 generated-column 支持、不是完整的 identity-column 支持、不是 generated expression 求值，也不是状态转换支持。无新增 CLI 标志。
+
 ### v0.33.0 — Unsupported Metadata
 
 v0.33.0 在 CLI JSON 输出中为不支持的 generated/identity 结果暴露结构化 metadata。

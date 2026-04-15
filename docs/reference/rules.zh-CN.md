@@ -499,6 +499,15 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ---
 
+### PostgreSQL Generated/Identity Narrow Support（v0.34.0）
+
+v0.34.0 是 **PostgreSQL Generated/Identity Narrow Support 包**。它是提取器层的支持范围扩展——不是规则行为变更。未新增规则 ID。窄范围 generated/identity 定义形态（`CREATE TABLE` 和 `ALTER TABLE ADD COLUMN`）现在通过正常审核管线处理，不再作为 unsupported 边界被拒绝。已有规则对这些新支持形态的适用方式与其它 PostgreSQL DDL 语句一致。
+
+- 已支持形态：`CREATE TABLE` 的 generated stored / identity 定义，`ALTER TABLE ADD COLUMN` 的 generated stored / identity 定义。
+- 保留事实：`generated_when`、`is_identity`、`identity_options`（来自 v0.33.0）继续流转。
+- 仍然 unsupported：`DROP EXPRESSION`（`generated_column`）、`SET GENERATED`（`generated_as_identity`）、`DROP IDENTITY`（`generated_as_identity`）。
+- 这不是完整的 generated-column 支持、不是完整的 identity-column 支持、不是 generated expression 求值，也不是状态转换支持。
+
 ## v0.33.0 — 共享契约变更与 Unsupported Metadata
 
 v0.33.0 未新增 rule ID 或规则行为变更。变更限于：

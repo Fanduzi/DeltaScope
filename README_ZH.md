@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.33.0` 为止，DeltaScope 发布 **PostgreSQL Generated/Identity 事实保留 + Unsupported Metadata 展示包**：generated/identity 列事实现在被保留到共享 DDL 契约，不支持的 generated/identity 结果携带结构化 metadata。Generated expression 文本仍然延迟。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,105 +32,21 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.33.0/install.sh | \
-  DELTASCOPE_VERSION=v0.33.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.34.0/install.sh | \
+  DELTASCOPE_VERSION=v0.34.0 sh
 ```
 
-### PostgreSQL Generated/Identity 事实保留 + Unsupported Metadata 展示包（`v0.33.0`）
+### PostgreSQL 支持
 
-`v0.33.0` 在共享 DDL 契约中保留窄范围 generated/identity 列事实，并在不支持的 generated/identity 结果上展示结构化 metadata。本版本不新增 generated-column 支持、identity-column 支持、表达式求值或规则行为变更。
+DeltaScope 通过 CLI、HTTP、MCP 和 `pkg/deltascope` 四条产品面支持 PostgreSQL 离线审核：
 
-- **共享契约字段**：`spec.Column` 新增 `GeneratedWhen`（字符串：`"a"` / `"d"`）、`IsIdentity`（布尔值）和 `IdentityOptions`（有限结构化选项映射），适用于 `CREATE TABLE` 和 `ALTER TABLE ADD COLUMN` 路径。
-- **Unsupported metadata**：`UnsupportedDetail.Metadata` 现在为 generated/identity 不支持结果携带 `column`、`generated_when`、`is_identity`（identity 情况）和 `identity_options`（带选项情况）。
-- **GeneratedExpression 延迟**：不保留表达式文本——当前 `pg_query_go` 依赖没有稳定的表达式渲染器。
-- **MCP surface 限制**：metadata 当前未在 MCP tool error 响应中直接展示；CLI、HTTP 和 `pkg/deltascope` 可暴露 metadata。
-- Unsupported feature 名称不变：`generated_column`、`generated_as_identity`。无新增 rule ID、CLI 标志或公共 API 契约。
+- **Generated/identity 定义形态**：`CREATE TABLE` 和 `ALTER TABLE ... ADD COLUMN` 中的 generated stored / identity 定义通过正常审核路径处理。`generated_when`、`is_identity` 和 `identity_options` 等共享事实在已支持路径中流转。
+- **状态转换形态**——`ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION`、`SET GENERATED` 和 `DROP IDENTITY`——仍为 unsupported，以显式 unsupported-feature 结果暴露。
+- **Generated expression 文本**不做求值或保留。
 
-上一里程碑：`v0.32.0` 通过 characterization 测试记录了稳定的 AST 事实，推荐 `v0.33.0` 作为窄事实保留包。详见 [v0.33.0 发行说明](docs/releases/release-notes-v0.33.0.zh-CN.md)。
+详见 [审核能力矩阵](docs/reference/audit-capability-matrix.zh-CN.md) 了解各面契约，[发行说明](docs/releases/README.md) 了解版本演进。
 
-### PostgreSQL 边界支持就绪门控（`v0.32.0`）
-
-`v0.32.0` 是一个决策里程碑——不是功能发布。Characterization 测试记录了 PostgreSQL generated 和 identity 列的稳定 AST 事实（`GeneratedWhen` 编码、`CONSTR_IDENTITY` / `CONSTR_GENERATED` 类型、identity 序列选项结构）。就绪报告推荐 `v0.33.0` 作为窄事实保留包，在 `spec.Column` 上新增 `GeneratedWhen` 和 `IsIdentity` 字段。未新增规则、CLI 标志或公共 API 契约。
-
-### PostgreSQL ALTER TABLE GENERATED 后续边界包（`v0.31.0`）
-
-`v0.31.0` 将额外的 PostgreSQL generated/identity `ALTER TABLE` 形态映射到显式 unsupported feature 标签，收口了 `v0.30.0` 留下的相邻间隙。本版本不新增规则、CLI 标志或公共 API 契约，也不是 generated-column 支持、identity-column 支持，或完整的 PostgreSQL `ALTER TABLE` 支持。
-
-- **Drop expression**（`ALTER COLUMN ... DROP EXPRESSION`）→ 显式 unsupported（`generated_column`）。
-- **Set generated**（`ALTER COLUMN ... SET GENERATED ...`）→ 显式 unsupported（`generated_as_identity`）。
-- **Drop identity**（`ALTER COLUMN ... DROP IDENTITY`）→ 显式 unsupported（`generated_as_identity`）。
-- 语料用例和 service 层检查通过精确断言锁定这些边界结果。
-- CLI、HTTP、MCP 和 `pkg/deltascope` 的表面对等验证同一 unsupported 契约在每条传输通道上成立。
-- 这次发布是边界收口，不是 generated-column 支持、identity-column 支持，也不是完整的 PostgreSQL `ALTER TABLE` 支持。
-
-上一里程碑：`v0.30.0` 收口了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated / identity 形态上的不支持边界契约。详见 [v0.31.0 发行说明](docs/releases/release-notes-v0.31.0.zh-CN.md)。
-
-### PostgreSQL ALTER TABLE GENERATED Boundary Pack（`v0.30.0`）
-
-`v0.30.0` 收口了 PostgreSQL `ALTER TABLE ... ADD COLUMN` 在 generated / identity 形态上的不支持边界契约。本版本不新增规则、CLI 标志或公共 API 契约，也不是广义的 PostgreSQL `ALTER TABLE` 支持。
-
-- **Generated stored add-column**（`GENERATED ALWAYS AS (...) STORED`）→ 显式 unsupported（`generated_column`）。
-- **Identity add-column**（`GENERATED ALWAYS AS IDENTITY`）→ 显式 unsupported（`generated_as_identity`）。
-- 语料用例和 service 层检查通过精确断言锁定这些边界结果。
-- CLI、HTTP、MCP 和 `pkg/deltascope` 的表面对等验证同一 unsupported 契约在每条传输通道上成立。
-- 相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
-- 这次发布是边界收口，不是 generated-column 支持、identity-column 支持，也不是广义的 PostgreSQL `ALTER TABLE` 支持。
-
-上一里程碑：`v0.29.0` 为显式跨 schema 引用新增了一个窄范围 schema-aware FK advisory 步骤。详见 [v0.30.0 发行说明](docs/releases/release-notes-v0.30.0.zh-CN.md)。
-
-### Schema-Aware FK Policy Pack（`v0.29.0`）
-
-`v0.29.0` 开始让显式 PostgreSQL schema-qualified FK 事实参与一个窄范围策略判断。当 owning table schema 与 referenced schema 都显式存在且两者不同，DeltaScope 会发出 notice-level 规则 `ddl.pg.table.foreign_key.cross_schema.advisory`。
-
-- **只覆盖跨 schema 场景**：只有显式 cross-schema FK 会多出一条 notice-level advisory；same-schema FK 不触发。
-- **裸引用仍保持 unknown**：`REFERENCES users(id)` 仍然是 schema unknown。DeltaScope 不推断 `public`，也不建模 `search_path`。
-- **现有 FK forbid 规则仍然生效**：这条 advisory 只是额外信号，不替代 `ddl.table.foreign_key.forbid`。
-- **Metadata 继续保持规范化**：finding 可包含 `table_schema`、`referenced_schema`、`referenced_table`、`referenced_columns`，且 `referenced_table` 始终是 `"users"`，不会写成 `"auth.users"`。
-
-上一里程碑：`v0.28.0` 已把被引用对象事实暴露到 outward FK finding metadata。详见 [v0.29.0 发行说明](docs/releases/release-notes-v0.29.0.zh-CN.md)。
-
-### Referenced-Object Metadata Surface Pack（`v0.28.0`）
-
-`v0.28.0` 将 PostgreSQL 被引用对象事实（`referenced_schema`、`referenced_table`、`referenced_columns`）以 additive 方式暴露到 FK forbid 规则的 finding metadata，覆盖 CLI、HTTP、MCP 和 `pkg/deltascope`。本版本不新增规则、CLI 标志或公共 API 契约，也不是 schema-aware FK 策略支持。
-
-- **Finding metadata widening**：`ddl.table.foreign_key.forbid` finding 现在在底层约束携带被引用对象事实时，会包含 `referenced_schema`（如 `"public"`）、`referenced_table`（如 `"users"`）和 `referenced_columns`（如 `["id"]`）。`referenced_table` 不会拼接成 `"public.users"`。
-- 解析器/提取器语义与 `v0.27.0` 一致。共享语义契约（`spec.Constraint`）已有 `ReferencedSchema`、`ReferencedTable` 和 `ReferencedColumns`；`v0.28.0` 扩展了 outward finding metadata 来暴露它们。
-- 没有新增 rule ID，没有新增 CLI 标志，没有 schema-aware FK 策略决策。
-
-上一里程碑：`v0.27.0` 在共享契约中保留了 PostgreSQL schema-qualified 被引用对象事实。详见 [v0.27.0 发行说明](docs/releases/release-notes-v0.27.0.zh-CN.md)。
-
-### Schema-Qualified Reference Semantics Pack（`v0.27.0`）
-
-`v0.27.0` 在共享契约中保留了 PostgreSQL schema-qualified 被引用对象事实。本版本不新增规则、CLI 标志或公共 API 契约，也不是完整的 PostgreSQL 外键支持。
-
-- **`ReferencedSchema`** 是 `spec.Constraint` 上的 additive 字段，保留 schema-qualified `REFERENCES` 的 schema 部分（如 `REFERENCES public.users(id)` → `ReferencedSchema = "public"`，`ReferencedTable = "users"`）。
-- PostgreSQL 提取器对命名 `FOREIGN KEY` 和内联 `REFERENCES` 两种形式都保留这些事实。
-- 语料和服务层测试通过精确断言锁定语义契约。
-- CLI、HTTP、MCP 和 `pkg/deltascope` 当前公共 finding 元数据不变——共享语义契约在底层更丰富。
-
-上一里程碑：`v0.26.0` 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。详见 [v0.26.0 发行说明](docs/releases/release-notes-v0.26.0.zh-CN.md)。
-
-### PostgreSQL CREATE TABLE 不支持边界收口包（`v0.26.0`）
-
-`v0.26.0` 收口了 PostgreSQL `CREATE TABLE` 的不支持边界契约。本版本不新增规则、CLI 标志或公共 API 契约，也不是完整的 PostgreSQL `CREATE TABLE` 支持。
-
-- **Identity 列**（`GENERATED ... AS IDENTITY`）→ 显式 unsupported（`generated_as_identity`）。
-- **Generated stored 列**（`GENERATED ALWAYS AS ... STORED`）→ 显式 unsupported（`generated_column`）。
-- **Exclusion 约束**（`EXCLUDE USING`）→ 显式 unsupported（`exclusion_constraint`）。
-- **分区表**（`PARTITION BY`）→ 显式 unsupported（`partitioning`）。
-- PostgreSQL 语料用例锁定这四条边界，包含精确的预期结果断言。
-- CLI、HTTP、MCP 和 `pkg/deltascope` 的表面对等测试验证每条边界通过正确的 unsupported 契约在每条传输通道上暴露。
-
-不支持语句的 surface 契约：
-
-- **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组（包含 `feature` 和 `reason` 字段）的部分结果，以及 `ErrUnsupportedStatement` 哨兵错误。
-- **HTTP** 和 **MCP**：将不支持语句作为传输层错误暴露（HTTP 错误响应、MCP tool error），因为底层审计函数对不支持边界返回错误。
-
-`make release-surface-gates VERSION=v0.33.0` 与 `make release-version-surface-gates VERSION=v0.33.0` 用于校验 package/release 与带版本文档面。
-
-上一里程碑：`v0.33.0` 在共享 DDL 契约中保留了 generated/identity 列事实并展示 unsupported metadata。详见 [v0.33.0 发行说明](docs/releases/release-notes-v0.33.0.zh-CN.md)。
-
-如果你需要 PostgreSQL 离线审计：
+如果你需要 PostgreSQL 离线审核：
 
 - 在受支持的 macOS 和 Linux 平台上直接安装正常的 DeltaScope 主 archive 即可，不再需要单独的 PG-only 安装入口。
 - `deltascope-pg_<version>_linux_amd64.tar.gz` 仅继续保留为旧 CLI-only 流程迁移时的兼容下载。

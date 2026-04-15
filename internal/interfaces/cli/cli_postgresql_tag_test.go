@@ -1426,14 +1426,6 @@ func TestAuditCommandPostgreSQLCreateTableBoundaryReturnsUnsupported(t *testing.
 		sql     string
 		feature string
 	}{
-		"identity": {
-			sql:     "CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, email text);",
-			feature: "generated_as_identity",
-		},
-		"generated_stored": {
-			sql:     "CREATE TABLE users (first_name text, last_name text, full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED);",
-			feature: "generated_column",
-		},
 		"exclusion": {
 			sql:     "CREATE TABLE bookings (room_id int, during tsrange, EXCLUDE USING gist (room_id WITH =, during WITH &&));",
 			feature: "exclusion_constraint",
@@ -1550,18 +1542,15 @@ func TestAuditCommandPostgreSQLAlterTableGeneratedFollowUpBoundariesReturnUnsupp
 	}
 }
 
-func TestAuditCommandPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+func TestAuditCommandPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSupported(t *testing.T) {
 	cases := map[string]struct {
-		sql     string
-		feature string
+		sql string
 	}{
 		"generated stored add-column": {
-			sql:     "ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
-			feature: "generated_column",
+			sql: "ALTER TABLE users ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
 		},
 		"identity add-column": {
-			sql:     "ALTER TABLE users ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
-			feature: "generated_as_identity",
+			sql: "ALTER TABLE users ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
 		},
 	}
 
@@ -1578,8 +1567,8 @@ func TestAuditCommandPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t 
 				stderr,
 			)
 
-			if code != exitAudit {
-				t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+			if code != 0 {
+				t.Fatalf("expected exit code 0 (supported pass), got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
 			}
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr output, got %q", stderr.String())
@@ -1589,82 +1578,39 @@ func TestAuditCommandPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t 
 			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
 				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
 			}
-			unsupported, ok := decoded["unsupported"].([]any)
-			if !ok || len(unsupported) != 1 {
-				t.Fatalf("expected one unsupported detail, got %#v", decoded["unsupported"])
+			unsupported, _ := decoded["unsupported"].([]any)
+			if len(unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", unsupported)
 			}
-			item, ok := unsupported[0].(map[string]any)
-			if !ok {
-				t.Fatalf("expected unsupported object, got %#v", unsupported[0])
-			}
-			if item["feature"] != tc.feature {
-				t.Fatalf("expected unsupported feature %q, got %#v", tc.feature, item["feature"])
-			}
-			if item["reason"] == "" {
-				t.Fatalf("expected unsupported reason, got %#v", item)
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected 1 statement, got %#v", decoded["statements"])
 			}
 		})
 	}
 }
 
-// TestAuditCommandPostgreSQLGeneratedIdentityUnsupportedMetadata proves that
-// CLI JSON output surfaces unsupported metadata for generated/identity columns.
-// Each case asserts that the "metadata" key in the unsupported object carries
-// column, generated_when, and (for identity) is_identity / identity_options.
-func TestAuditCommandPostgreSQLGeneratedIdentityUnsupportedMetadata(t *testing.T) {
+// TestAuditCommandPostgreSQLGeneratedIdentityNarrowNowSupported proves that narrow
+// generated/identity forms are now processed through the normal supported CLI path.
+// Each case asserts: exitAudit or 0 (supported path), no stderr, empty unsupported array, one statement.
+func TestAuditCommandPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
 	cases := map[string]struct {
-		sql              string
-		feature          string
-		wantMetadataKeys []string
-		wantMetadata     map[string]any
+		sql string
 	}{
 		"generated_stored_column": {
-			sql:              `CREATE TABLE t (first_name text, full_name text GENERATED ALWAYS AS (first_name) STORED);`,
-			feature:          "generated_column",
-			wantMetadataKeys: []string{"column", "generated_when"},
-			wantMetadata: map[string]any{
-				"column":         "full_name",
-				"generated_when": "a",
-			},
+			sql: `CREATE TABLE t (first_name text, full_name text GENERATED ALWAYS AS (first_name) STORED);`,
 		},
 		"generated_always_as_identity": {
-			sql:              `CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY);`,
-			feature:          "generated_as_identity",
-			wantMetadataKeys: []string{"column", "generated_when", "is_identity"},
-			wantMetadata: map[string]any{
-				"column":         "id",
-				"generated_when": "a",
-				"is_identity":    true,
-			},
+			sql: `CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY);`,
 		},
 		"generated_by_default_identity_with_options": {
-			sql:              `CREATE TABLE t (id bigint GENERATED BY DEFAULT AS IDENTITY (START WITH 10 INCREMENT BY 5 CACHE 20 CYCLE));`,
-			feature:          "generated_as_identity",
-			wantMetadataKeys: []string{"column", "generated_when", "is_identity", "identity_options"},
-			wantMetadata: map[string]any{
-				"column":         "id",
-				"generated_when": "d",
-				"is_identity":    true,
-			},
+			sql: `CREATE TABLE t (id bigint GENERATED BY DEFAULT AS IDENTITY (START WITH 10 INCREMENT BY 5 CACHE 20 CYCLE));`,
 		},
 		"alter_table_add_generated_column": {
-			sql:              `ALTER TABLE t ADD COLUMN full_name text GENERATED ALWAYS AS (first_name) STORED;`,
-			feature:          "generated_column",
-			wantMetadataKeys: []string{"column", "generated_when"},
-			wantMetadata: map[string]any{
-				"column":         "full_name",
-				"generated_when": "a",
-			},
+			sql: `ALTER TABLE t ADD COLUMN full_name text GENERATED ALWAYS AS (first_name) STORED;`,
 		},
 		"alter_table_add_identity_column": {
-			sql:              `ALTER TABLE t ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`,
-			feature:          "generated_as_identity",
-			wantMetadataKeys: []string{"column", "generated_when", "is_identity"},
-			wantMetadata: map[string]any{
-				"column":         "id",
-				"generated_when": "a",
-				"is_identity":    true,
-			},
+			sql: `ALTER TABLE t ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`,
 		},
 	}
 
@@ -1681,8 +1627,8 @@ func TestAuditCommandPostgreSQLGeneratedIdentityUnsupportedMetadata(t *testing.T
 				stderr,
 			)
 
-			if code != exitAudit {
-				t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+			if code != exitAudit && code != 0 {
+				t.Fatalf("expected exitAudit or 0 (supported path), got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
 			}
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr output, got %q", stderr.String())
@@ -1692,56 +1638,13 @@ func TestAuditCommandPostgreSQLGeneratedIdentityUnsupportedMetadata(t *testing.T
 			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
 				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
 			}
-			unsupported, ok := decoded["unsupported"].([]any)
-			if !ok || len(unsupported) != 1 {
-				t.Fatalf("expected one unsupported detail, got %#v", decoded["unsupported"])
+			unsupported, _ := decoded["unsupported"].([]any)
+			if len(unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", unsupported)
 			}
-			item, ok := unsupported[0].(map[string]any)
-			if !ok {
-				t.Fatalf("expected unsupported object, got %#v", unsupported[0])
-			}
-			if item["feature"] != tc.feature {
-				t.Fatalf("expected unsupported feature %q, got %q", tc.feature, item["feature"])
-			}
-			if item["reason"] == "" {
-				t.Fatalf("expected unsupported reason, got %#v", item)
-			}
-
-			// Assert metadata presence and key values.
-			meta, ok := item["metadata"].(map[string]any)
-			if !ok {
-				t.Fatalf("expected metadata object, got %#v", item["metadata"])
-			}
-			for _, key := range tc.wantMetadataKeys {
-				if _, ok := meta[key]; !ok {
-					t.Fatalf("expected metadata key %q, got %+v", key, meta)
-				}
-			}
-			for key, wantVal := range tc.wantMetadata {
-				actVal, ok := meta[key]
-				if !ok {
-					t.Fatalf("expected metadata key %q, got %+v", key, meta)
-				}
-				if !cliMetadataValueEqual(wantVal, actVal) {
-					t.Fatalf("metadata[%q]: expected %v (%T), got %v (%T)", key, wantVal, wantVal, actVal, actVal)
-				}
-			}
-
-			// For identity_options, assert nested values.
-			if name == "generated_by_default_identity_with_options" {
-				opts, ok := meta["identity_options"].(map[string]any)
-				if !ok {
-					t.Fatalf("expected identity_options to be map[string]any, got %T", meta["identity_options"])
-				}
-				if !cliMetadataValueEqual(float64(10), opts["start"]) {
-					t.Fatalf("expected identity_options.start=10, got %v", opts["start"])
-				}
-				if !cliMetadataValueEqual(float64(5), opts["increment"]) {
-					t.Fatalf("expected identity_options.increment=5, got %v", opts["increment"])
-				}
-				if !cliMetadataValueEqual(true, opts["cycle"]) {
-					t.Fatalf("expected identity_options.cycle=true, got %v", opts["cycle"])
-				}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected 1 statement, got %#v", decoded["statements"])
 			}
 		})
 	}

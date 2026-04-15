@@ -264,6 +264,45 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## PostgreSQL Generated/Identity Narrow Support (`v0.34.0`)
+
+`v0.34.0` is the **PostgreSQL Generated/Identity Narrow Support Pack**. Narrow generated/identity definition forms are now processed through the normal supported audit path instead of returning unsupported boundaries. This is narrow support widening — not full generated-column support, not full identity-column support, not generated expression evaluation, not complete PostgreSQL sequence semantics, and not state-transition support.
+
+| Aspect | Detail |
+|--------|--------|
+| Supported forms | `CREATE TABLE` and `ALTER TABLE ADD COLUMN` generated stored / identity definitions |
+| Preserved facts | `generated_when`, `is_identity`, `identity_options` (from v0.33.0) continue flowing |
+| GeneratedExpression | Not in contract — no expression text preserved |
+| Still unsupported | `DROP EXPRESSION` (`generated_column`), `SET GENERATED` (`generated_as_identity`), `DROP IDENTITY` (`generated_as_identity`) |
+| New rule IDs | none |
+| New CLI/API flags | none |
+
+### Supported Forms Detail
+
+| Form | Status | Audit Behavior |
+|------|--------|---------------|
+| `CREATE TABLE ... GENERATED ALWAYS AS (...) STORED` | Supported | Normal audit result with findings where applicable |
+| `CREATE TABLE ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` | Supported | Normal audit result with findings where applicable |
+| `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` | Supported | Normal audit result with findings where applicable |
+| `ALTER TABLE ... ADD COLUMN ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` | Supported | Normal audit result with findings where applicable |
+
+### Surface Contract for Supported Forms
+
+| Surface | Behavior |
+|---------|----------|
+| CLI | Normal audit output (exit code 0 or 1 depending on findings), no `unsupported` array |
+| pkg/deltascope | `Audit()` returns result with statements, no `ErrUnsupportedStatement` |
+| HTTP | Normal audit response, no unsupported error |
+| MCP | Normal tool result with statements, no `IsError` |
+
+### Unsupported State-Transition Forms (unchanged)
+
+| Form | Feature Tag |
+|------|------------|
+| `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` | `generated_column` |
+| `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` | `generated_as_identity` |
+| `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` | `generated_as_identity` |
+
 ## PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing (`v0.33.0`)
 
 `v0.33.0` is the **PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack**. It preserves narrow generated/identity column facts in the shared DDL contract and surfaces structured metadata on unsupported generated/identity outcomes. This is fact preservation and metadata widening — not generated-column support, identity-column support, or rule behavior changes.

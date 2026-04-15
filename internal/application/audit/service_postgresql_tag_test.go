@@ -745,23 +745,26 @@ func TestAuditSQLPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.
 	}
 }
 
-func TestAuditSQLPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *testing.T) {
+func TestAuditSQLPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSupported(t *testing.T) {
 	tests := []struct {
-		name    string
-		sql     string
-		feature string
+		name              string
+		sql               string
+		wantColumnName    string
+		wantGeneratedWhen string
+		wantIsIdentity    bool
 	}{
 		{
-			name: "add generated stored column",
-			sql: `ALTER TABLE users
-  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`,
-			feature: "generated_column",
+			name:              "add generated stored column",
+			sql:               "ALTER TABLE users\n  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;",
+			wantColumnName:    "full_name",
+			wantGeneratedWhen: "a",
 		},
 		{
-			name: "add identity column",
-			sql: `ALTER TABLE users
-  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`,
-			feature: "generated_as_identity",
+			name:              "add identity column",
+			sql:               "ALTER TABLE users\n  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;",
+			wantColumnName:    "id",
+			wantGeneratedWhen: "a",
+			wantIsIdentity:    true,
 		},
 	}
 
@@ -771,25 +774,40 @@ func TestAuditSQLPostgreSQLAlterTableGeneratedBoundariesReturnUnsupported(t *tes
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
 			})
-			if !errors.Is(err, ErrUnsupportedStatement) {
-				t.Fatalf("expected unsupported statement sentinel, got %v", err)
+			if err != nil {
+				t.Fatalf("expected supported, got error: %v", err)
 			}
-			if len(result.Unsupported) != 1 {
-				t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
 			}
-			if result.Unsupported[0].Feature != tt.feature {
-				t.Fatalf("expected unsupported feature %q, got %#v", tt.feature, result.Unsupported[0])
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement result, got %d", len(result.Statements))
 			}
-			if result.Unsupported[0].Reason == "" {
-				t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
 			}
-			if len(result.GlobalFindings) != 0 {
-				t.Fatalf("expected no global findings for unsupported statement, got %#v", result.GlobalFindings)
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
 			}
-			for _, stmt := range result.Statements {
-				if len(stmt.Findings) != 0 {
-					t.Fatalf("expected no statement findings for unsupported case, got %#v", stmt.Findings)
+
+			var col *spec.Column
+			for i := range stmt.DDL.Alter {
+				alt := &stmt.DDL.Alter[i]
+				if alt.Column != nil && alt.Column.Definition != nil && alt.Column.Definition.Name == tt.wantColumnName {
+					col = alt.Column.Definition
+					break
 				}
+			}
+			if col == nil {
+				t.Fatalf("expected column %q not found in alter actions", tt.wantColumnName)
+			}
+			if col.GeneratedWhen != tt.wantGeneratedWhen {
+				t.Fatalf("expected GeneratedWhen %q, got %q", tt.wantGeneratedWhen, col.GeneratedWhen)
+			}
+			if col.IsIdentity != tt.wantIsIdentity {
+				t.Fatalf("expected IsIdentity %v, got %v", tt.wantIsIdentity, col.IsIdentity)
 			}
 		})
 	}
@@ -1182,66 +1200,56 @@ func TestAuditSQLPostgreSQLBareFKDoesNotTriggerAdvisory(t *testing.T) {
 // v0.33.0 Task 3: Service tests — unsupported metadata surfacing
 // ---------------------------------------------------------------------------
 
-func TestAuditSQLPostgreSQLGeneratedIdentityUnsupportedMetadata(t *testing.T) {
+func TestAuditSQLPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
 	tests := []struct {
 		name             string
 		sql              string
-		wantFeature      string
-		wantMetadataKeys []string
-		wantMetadata     map[string]any
+		wantColumnName   string
+		wantGeneratedWhen string
+		wantIsIdentity   bool
+		wantIdentityOpts map[string]any
+		isAlter          bool
 	}{
 		{
-			name:        "generated_stored_column",
-			sql:         `CREATE TABLE t (first_name text, full_name text GENERATED ALWAYS AS (first_name) STORED);`,
-			wantFeature: "generated_column",
-			wantMetadataKeys: []string{"column", "generated_when"},
-			wantMetadata: map[string]any{
-				"column":         "full_name",
-				"generated_when": "a",
+			name:              "generated_stored_column",
+			sql:               `CREATE TABLE t (first_name text, full_name text GENERATED ALWAYS AS (first_name) STORED);`,
+			wantColumnName:    "full_name",
+			wantGeneratedWhen: "a",
+		},
+		{
+			name:              "generated_always_as_identity",
+			sql:               `CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY);`,
+			wantColumnName:    "id",
+			wantGeneratedWhen: "a",
+			wantIsIdentity:    true,
+		},
+		{
+			name:              "generated_by_default_as_identity_with_options",
+			sql:               `CREATE TABLE t (id bigint GENERATED BY DEFAULT AS IDENTITY (START WITH 10 INCREMENT BY 5 CACHE 20 CYCLE));`,
+			wantColumnName:    "id",
+			wantGeneratedWhen: "d",
+			wantIsIdentity:    true,
+			wantIdentityOpts: map[string]any{
+				"start":     int32(10),
+				"increment": int32(5),
+				"cache":     int32(20),
+				"cycle":     true,
 			},
 		},
 		{
-			name:        "generated_always_as_identity",
-			sql:         `CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY);`,
-			wantFeature: "generated_as_identity",
-			wantMetadataKeys: []string{"column", "generated_when", "is_identity"},
-			wantMetadata: map[string]any{
-				"column":         "id",
-				"generated_when": "a",
-				"is_identity":    true,
-			},
+			name:              "alter_table_add_generated_column",
+			sql:               `ALTER TABLE t ADD COLUMN full_name text GENERATED ALWAYS AS (first_name) STORED;`,
+			wantColumnName:    "full_name",
+			wantGeneratedWhen: "a",
+			isAlter:           true,
 		},
 		{
-			name:        "generated_by_default_as_identity_with_options",
-			sql:         `CREATE TABLE t (id bigint GENERATED BY DEFAULT AS IDENTITY (START WITH 10 INCREMENT BY 5 CACHE 20 CYCLE));`,
-			wantFeature: "generated_as_identity",
-			wantMetadataKeys: []string{"column", "generated_when", "is_identity", "identity_options"},
-			wantMetadata: map[string]any{
-				"column":         "id",
-				"generated_when": "d",
-				"is_identity":    true,
-			},
-		},
-		{
-			name:        "alter_table_add_generated_column",
-			sql:         `ALTER TABLE t ADD COLUMN full_name text GENERATED ALWAYS AS (first_name) STORED;`,
-			wantFeature: "generated_column",
-			wantMetadataKeys: []string{"column", "generated_when"},
-			wantMetadata: map[string]any{
-				"column":         "full_name",
-				"generated_when": "a",
-			},
-		},
-		{
-			name:        "alter_table_add_identity_column",
-			sql:         `ALTER TABLE t ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`,
-			wantFeature: "generated_as_identity",
-			wantMetadataKeys: []string{"column", "generated_when", "is_identity"},
-			wantMetadata: map[string]any{
-				"column":         "id",
-				"generated_when": "a",
-				"is_identity":    true,
-			},
+			name:              "alter_table_add_identity_column",
+			sql:               `ALTER TABLE t ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`,
+			wantColumnName:    "id",
+			wantGeneratedWhen: "a",
+			wantIsIdentity:    true,
+			isAlter:           true,
 		},
 	}
 
@@ -1251,54 +1259,61 @@ func TestAuditSQLPostgreSQLGeneratedIdentityUnsupportedMetadata(t *testing.T) {
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
 			})
-			if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
-				t.Fatalf("audit sql: %v", err)
+			if err != nil {
+				t.Fatalf("expected supported, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
 			}
 
-			var detail *spec.UnsupportedDetail
-			for i := range result.Unsupported {
-				if result.Unsupported[i].Feature == tt.wantFeature {
-					detail = &result.Unsupported[i]
-					break
-				}
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
 			}
-			if detail == nil {
-				t.Fatalf("expected unsupported feature %q, got %+v", tt.wantFeature, result.Unsupported)
-			}
-			if detail.Metadata == nil {
-				t.Fatal("expected unsupported metadata to be populated")
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
 			}
 
-			for _, key := range tt.wantMetadataKeys {
-				if _, ok := detail.Metadata[key]; !ok {
-					t.Fatalf("expected metadata key %q, got %+v", key, detail.Metadata)
+			var col *spec.Column
+			if tt.isAlter {
+				for i := range stmt.DDL.Alter {
+					alt := &stmt.DDL.Alter[i]
+					if alt.Column != nil && alt.Column.Definition != nil && alt.Column.Definition.Name == tt.wantColumnName {
+						col = alt.Column.Definition
+						break
+					}
+				}
+			} else {
+				for i := range stmt.DDL.Columns {
+					if stmt.DDL.Columns[i].Name == tt.wantColumnName {
+						col = &stmt.DDL.Columns[i]
+						break
+					}
 				}
 			}
-
-			for key, wantVal := range tt.wantMetadata {
-				actVal, ok := detail.Metadata[key]
-				if !ok {
-					t.Fatalf("expected metadata key %q, got %+v", key, detail.Metadata)
-				}
-				if !serviceMetadataValueEqual(wantVal, actVal) {
-					t.Fatalf("metadata[%q]: expected %v (%T), got %v (%T)", key, wantVal, wantVal, actVal, actVal)
-				}
+			if col == nil {
+				t.Fatalf("expected column %q not found", tt.wantColumnName)
 			}
 
-			// For identity_options, assert nested values when present.
-			if tt.name == "generated_by_default_as_identity_with_options" {
-				opts, ok := detail.Metadata["identity_options"].(map[string]any)
-				if !ok {
-					t.Fatalf("expected identity_options to be map[string]any, got %T", detail.Metadata["identity_options"])
+			if col.GeneratedWhen != tt.wantGeneratedWhen {
+				t.Fatalf("expected GeneratedWhen %q, got %q", tt.wantGeneratedWhen, col.GeneratedWhen)
+			}
+			if col.IsIdentity != tt.wantIsIdentity {
+				t.Fatalf("expected IsIdentity %v, got %v", tt.wantIsIdentity, col.IsIdentity)
+			}
+
+			if tt.wantIdentityOpts != nil {
+				if col.IdentityOptions == nil {
+					t.Fatal("expected IdentityOptions to be populated")
 				}
-				if !serviceMetadataValueEqual(int32(10), opts["start"]) {
-					t.Fatalf("expected identity_options.start=10, got %v", opts["start"])
-				}
-				if !serviceMetadataValueEqual(int32(5), opts["increment"]) {
-					t.Fatalf("expected identity_options.increment=5, got %v", opts["increment"])
-				}
-				if !serviceMetadataValueEqual(true, opts["cycle"]) {
-					t.Fatalf("expected identity_options.cycle=true, got %v", opts["cycle"])
+				for key, wantVal := range tt.wantIdentityOpts {
+					actVal, ok := col.IdentityOptions[key]
+					if !ok {
+						t.Fatalf("expected identity_options key %q, got %+v", key, col.IdentityOptions)
+					}
+					if !serviceMetadataValueEqual(wantVal, actVal) {
+						t.Fatalf("identity_options[%q]: expected %v (%T), got %v (%T)", key, wantVal, wantVal, actVal, actVal)
+					}
 				}
 			}
 		})

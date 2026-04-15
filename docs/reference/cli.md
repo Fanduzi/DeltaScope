@@ -695,6 +695,27 @@ Example notice-level finding metadata for an explicit cross-schema FK:
 
 ---
 
+## v0.34.0: Narrow Support for Generated/Identity Definitions
+
+Starting with v0.34.0, narrow PostgreSQL generated/identity definition forms are processed through the normal supported audit path. CLI output for these forms no longer includes an `unsupported` array — instead, the audit produces normal results with findings where applicable.
+
+Supported forms:
+
+- `CREATE TABLE ... GENERATED ALWAYS AS (...) STORED`
+- `CREATE TABLE ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY`
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED`
+- `ALTER TABLE ... ADD COLUMN ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY`
+
+These forms now produce standard CLI output (exit code 0 for clean pass, 1 if findings meet the `--fail-on` threshold). Shared facts (`generated_when`, `is_identity`, `identity_options`) from v0.33.0 continue flowing through the normal result path.
+
+State-transition forms remain unsupported:
+
+- `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` → `generated_column`
+- `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` → `generated_as_identity`
+- `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` → `generated_as_identity`
+
+This is narrow support widening — not full generated-column support, not full identity-column support, not generated expression evaluation, and not state-transition support. No new CLI flags were added.
+
 ## v0.33.0: Unsupported Metadata for Generated/Identity Statements
 
 Starting with `v0.33.0`, PostgreSQL unsupported generated/identity outcomes carry structured metadata in CLI JSON output. When auditing a `CREATE TABLE` or `ALTER TABLE ADD COLUMN` statement that contains `GENERATED ALWAYS AS (...) STORED` or `GENERATED ... AS IDENTITY`, the `unsupported` array entry now includes a `metadata` object:

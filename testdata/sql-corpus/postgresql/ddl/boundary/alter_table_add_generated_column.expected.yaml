@@ -4,15 +4,10 @@ dialect: postgresql
 category: ddl
 expect:
   parse_ok: true
+  statement_kind: ddl
+  operation: alter_table
   unsupported:
-    count: 1
-    include:
-      - generated_column
-    metadata:
-      - feature: generated_column
-        metadata:
-          column: full_name
-          generated_when: a
+    count: 0
   findings:
     include: []
     exclude: []
