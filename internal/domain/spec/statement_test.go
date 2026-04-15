@@ -469,6 +469,195 @@ func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) 
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.33.0 Task 2: Contract tests — generated/identity fact preservation
+// ---------------------------------------------------------------------------
+// These tests assert that Column and UnsupportedDetail carry generated/identity
+// facts and that they round-trip through JSON with omitempty behavior.
+// ---------------------------------------------------------------------------
+
+func TestColumnPreservesGeneratedWhenFact(t *testing.T) {
+	col := Column{
+		Name:          "full_name",
+		Type:          "text",
+		GeneratedWhen: "a",
+	}
+
+	if col.GeneratedWhen != "a" {
+		t.Fatalf("expected GeneratedWhen 'a', got %q", col.GeneratedWhen)
+	}
+
+	data, err := json.Marshal(col)
+	if err != nil {
+		t.Fatalf("marshal column: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if got := payload["generated_when"]; got != "a" {
+		t.Fatalf("expected generated_when json value 'a', got %#v", got)
+	}
+}
+
+func TestColumnOmitsGeneratedWhenWhenEmpty(t *testing.T) {
+	col := Column{Name: "email", Type: "text"}
+
+	data, err := json.Marshal(col)
+	if err != nil {
+		t.Fatalf("marshal column: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["generated_when"]; ok {
+		t.Fatalf("expected generated_when to be omitted when empty, got %#v", payload)
+	}
+}
+
+func TestColumnPreservesIsIdentityFact(t *testing.T) {
+	col := Column{
+		Name:        "id",
+		Type:        "bigint",
+		IsIdentity:  true,
+	}
+
+	if !col.IsIdentity {
+		t.Fatal("expected IsIdentity true")
+	}
+
+	data, err := json.Marshal(col)
+	if err != nil {
+		t.Fatalf("marshal column: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if got := payload["is_identity"]; got != true {
+		t.Fatalf("expected is_identity json value true, got %#v", got)
+	}
+}
+
+func TestColumnOmitsIsIdentityWhenFalse(t *testing.T) {
+	col := Column{Name: "email", Type: "text"}
+
+	data, err := json.Marshal(col)
+	if err != nil {
+		t.Fatalf("marshal column: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["is_identity"]; ok {
+		t.Fatalf("expected is_identity to be omitted when false, got %#v", payload)
+	}
+}
+
+func TestColumnPreservesIdentityOptionsFact(t *testing.T) {
+	col := Column{
+		Name:    "id",
+		Type:    "bigint",
+		IdentityOptions: map[string]any{
+			"start":    int32(10),
+			"increment": int32(5),
+			"cycle":    true,
+		},
+	}
+
+	if col.IdentityOptions == nil {
+		t.Fatal("expected IdentityOptions to be populated")
+	}
+	if col.IdentityOptions["start"] != int32(10) {
+		t.Fatalf("expected start=10, got %v", col.IdentityOptions["start"])
+	}
+	if col.IdentityOptions["cycle"] != true {
+		t.Fatalf("expected cycle=true, got %v", col.IdentityOptions["cycle"])
+	}
+
+	data, err := json.Marshal(col)
+	if err != nil {
+		t.Fatalf("marshal column: %v", err)
+	}
+	var roundTrip Column
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal round-trip: %v", err)
+	}
+	if roundTrip.IdentityOptions == nil {
+		t.Fatal("expected IdentityOptions to survive round-trip")
+	}
+}
+
+func TestColumnOmitsIdentityOptionsWhenNil(t *testing.T) {
+	col := Column{Name: "email", Type: "text"}
+
+	data, err := json.Marshal(col)
+	if err != nil {
+		t.Fatalf("marshal column: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["identity_options"]; ok {
+		t.Fatalf("expected identity_options to be omitted when nil, got %#v", payload)
+	}
+}
+
+func TestUnsupportedDetailPreservesMetadata(t *testing.T) {
+	detail := UnsupportedDetail{
+		Feature: "generated_column",
+		Reason:  "unsupported in v1",
+		Metadata: map[string]any{
+			"column":         "full_name",
+			"generated_when": "a",
+		},
+	}
+
+	if detail.Metadata == nil {
+		t.Fatal("expected Metadata to be populated")
+	}
+	if detail.Metadata["column"] != "full_name" {
+		t.Fatalf("expected metadata column=full_name, got %v", detail.Metadata["column"])
+	}
+
+	data, err := json.Marshal(detail)
+	if err != nil {
+		t.Fatalf("marshal detail: %v", err)
+	}
+	var roundTrip UnsupportedDetail
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal round-trip: %v", err)
+	}
+	if roundTrip.Metadata == nil {
+		t.Fatal("expected Metadata to survive round-trip")
+	}
+	if roundTrip.Metadata["column"] != "full_name" {
+		t.Fatalf("expected metadata column to round-trip, got %v", roundTrip.Metadata["column"])
+	}
+}
+
+func TestUnsupportedDetailOmitsMetadataWhenNil(t *testing.T) {
+	detail := UnsupportedDetail{
+		Feature: "select",
+		Reason:  "unsupported",
+	}
+
+	data, err := json.Marshal(detail)
+	if err != nil {
+		t.Fatalf("marshal detail: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["metadata"]; ok {
+		t.Fatalf("expected metadata to be omitted when nil, got %#v", payload)
+	}
+}
+
 func ptrInt64(value int64) *int64 {
 	return &value
 }

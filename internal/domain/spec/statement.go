@@ -56,8 +56,9 @@ type Statement struct {
 
 // UnsupportedDetail captures one parser-recognized but unsupported statement or feature.
 type UnsupportedDetail struct {
-	Index   int    `json:"index,omitempty"`
-	Feature string `json:"feature"`
-	SQL     string `json:"sql,omitempty"`
-	Reason  string `json:"reason"`
+	Index    int            `json:"index,omitempty"`
+	Feature  string         `json:"feature"`
+	SQL      string         `json:"sql,omitempty"`
+	Reason   string         `json:"reason"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 }
