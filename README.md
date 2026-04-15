@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.34.0`, DeltaScope ships the **PostgreSQL Generated/Identity Narrow Support Pack**: narrow generated/identity definition forms are now supported through the normal audit path. Shared facts from v0.33.0 continue flowing. State-transition forms remain unsupported. Generated expression text remains deferred. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for supported macOS and Linux platforms. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -38,111 +38,15 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.34.0/install.
   DELTASCOPE_VERSION=v0.34.0 sh
 ```
 
-### PostgreSQL Generated/Identity Narrow Support Pack (`v0.34.0`)
+### PostgreSQL Support
 
-`v0.34.0` widens PostgreSQL generated/identity support so that narrow definition forms are processed through the normal audit path instead of returning `ErrUnsupportedStatement`. This is narrow support — not full generated-column support, not full identity-column support, not generated expression evaluation, not complete PostgreSQL sequence semantics, and not state-transition support.
+DeltaScope supports PostgreSQL offline audit across CLI, HTTP, MCP, and `pkg/deltascope` surfaces:
 
-- **Supported forms**: `CREATE TABLE` generated stored / identity definitions, and `ALTER TABLE ... ADD COLUMN` generated stored / identity definitions. These forms now produce normal audit results with findings where applicable.
-- **Preserved facts**: `generated_when`, `is_identity`, and `identity_options` from `v0.33.0` continue flowing through the supported path.
-- **Still unsupported**: `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` (`generated_column`), `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` (`generated_as_identity`), `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` (`generated_as_identity`).
-- **No new rules**, no new CLI flags, no rule behavior changes. This is extractor-level support widening.
-- Surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` verify the supported contract for narrow forms.
+- **Generated/identity definition forms** in `CREATE TABLE` and `ALTER TABLE ... ADD COLUMN` are processed through the normal audit path. Shared facts such as `generated_when`, `is_identity`, and `identity_options` are preserved where applicable.
+- **State-transition forms** — `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` — remain unsupported and surface as explicit unsupported-feature outcomes.
+- **Generated expression text** is not evaluated or preserved.
 
-Previous milestone: `v0.33.0` preserved generated/identity column facts and surfaced unsupported metadata. See the [v0.34.0 release notes](docs/releases/release-notes-v0.34.0.md) for details.
-
-### PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack (`v0.33.0`)
-
-`v0.33.0` preserves narrow generated/identity column facts in the shared DDL contract and surfaces structured metadata on unsupported generated/identity outcomes. It does not add generated-column support, identity-column support, expression evaluation, or rule behavior changes.
-
-- **Shared contract fields**: `GeneratedWhen` (string: `"a"` / `"d"`), `IsIdentity` (bool), and `IdentityOptions` (finite structured option map) added to `spec.Column` for `CREATE TABLE` and `ALTER TABLE ADD COLUMN` paths.
-- **Unsupported metadata**: `UnsupportedDetail.Metadata` now carries `column`, `generated_when`, `is_identity` (identity cases), and `identity_options` (options cases) for generated/identity unsupported outcomes.
-- **GeneratedExpression deferred**: no expression text is preserved — the current `pg_query_go` dependency lacks a stable expression renderer.
-- **MCP surface limitation**: metadata is not directly surfaced in MCP tool error responses; CLI, HTTP, and `pkg/deltascope` expose it.
-- Unsupported feature names unchanged: `generated_column`, `generated_as_identity`. No new rule IDs, CLI flags, or public API contracts.
-
-Previous milestone: `v0.32.0` documented stable AST facts through characterization tests and recommended `v0.33.0` as a narrow fact-preservation pack. See the [v0.33.0 release notes](docs/releases/release-notes-v0.33.0.md) for details.
-
-### PostgreSQL Boundary Support-Readiness Gate (`v0.32.0`)
-
-`v0.32.0` is a decision milestone — not a feature release. Characterization tests document stable AST facts about PostgreSQL generated and identity columns (`GeneratedWhen` encoding, `CONSTR_IDENTITY` / `CONSTR_GENERATED` types, identity sequence option shape). A readiness report recommends `v0.33.0` as a narrow fact-preservation pack adding `GeneratedWhen` and `IsIdentity` fields to `spec.Column`. No new rules, CLI flags, or public API contracts were added.
-
-### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
-
-`v0.31.0` maps additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags, closing the adjacent gap left by `v0.30.0`. It does not add new rules, new CLI flags, or new public API contracts, and it is not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
-
-- **Drop expression** (`ALTER COLUMN ... DROP EXPRESSION`) → explicit unsupported (`generated_column`).
-- **Set generated** (`ALTER COLUMN ... SET GENERATED ...`) → explicit unsupported (`generated_as_identity`).
-- **Drop identity** (`ALTER COLUMN ... DROP IDENTITY`) → explicit unsupported (`generated_as_identity`).
-- Corpus cases and service-level checks lock these boundary outcomes with precise assertions.
-- Surface parity across CLI, HTTP, MCP, and `pkg/deltascope` verifies the same unsupported contract on every transport.
-- This release is boundary tightening, not generated-column support, identity-column support, or complete PostgreSQL `ALTER TABLE` support.
-
-Previous milestone: `v0.30.0` tightened the PostgreSQL `ALTER TABLE ... ADD COLUMN` unsupported boundary contract for generated/identity forms. See the [v0.31.0 release notes](docs/releases/release-notes-v0.31.0.md) for details.
-
-### PostgreSQL ALTER TABLE GENERATED Boundary Pack (`v0.30.0`)
-
-`v0.30.0` tightens the PostgreSQL `ALTER TABLE ... ADD COLUMN` unsupported boundary contract for generated/identity forms. It does not add new rules, new CLI flags, or new public API contracts, and it is not broad PostgreSQL `ALTER TABLE` support.
-
-- **Generated stored add-column** (`GENERATED ALWAYS AS (...) STORED`) → explicit unsupported (`generated_column`).
-- **Identity add-column** (`GENERATED ALWAYS AS IDENTITY`) → explicit unsupported (`generated_as_identity`).
-- Corpus cases and service-level checks lock these boundary outcomes with precise assertions.
-- Surface parity across CLI, HTTP, MCP, and `pkg/deltascope` verifies the same unsupported contract on every transport.
-- Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` forms now receive explicit unsupported mappings in `v0.31.0`.
-- This release is boundary tightening, not generated-column support, identity-column support, or broad PostgreSQL `ALTER TABLE` support.
-
-Previous milestone: `v0.29.0` added a narrow schema-aware FK advisory step for explicit cross-schema references. See the [v0.30.0 release notes](docs/releases/release-notes-v0.30.0.md) for details.
-
-### Schema-Aware FK Policy Pack (`v0.29.0`)
-
-`v0.29.0` starts using explicit PostgreSQL schema-qualified FK facts for a narrow policy decision. DeltaScope now emits the notice-level rule `ddl.pg.table.foreign_key.cross_schema.advisory` when the owning table schema and referenced schema are both explicit and different.
-
-- **Cross-schema only**: explicit cross-schema FK gets an extra notice-level advisory. Same-schema FK does not trigger it.
-- **Bare references stay unknown**: `REFERENCES users(id)` remains schema unknown. DeltaScope does not infer `public` and does not model `search_path`.
-- **Existing FK forbid rule still applies**: the advisory adds context; it does not replace `ddl.table.foreign_key.forbid`.
-- **Metadata stays normalized**: findings can include `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns`, and `referenced_table` remains `"users"`, never `"auth.users"`.
-
-Previous milestone: `v0.28.0` exposed referenced-object facts on outward FK finding metadata. See the [v0.29.0 release notes](docs/releases/release-notes-v0.29.0.md) for details.
-
-### Referenced-Object Metadata Surface Pack (`v0.28.0`)
-
-`v0.28.0` exposes PostgreSQL referenced-object facts (`referenced_schema`, `referenced_table`, `referenced_columns`) as additive finding metadata on the FK forbid rule, across CLI, HTTP, MCP, and `pkg/deltascope`. It does not add new rules, new CLI flags, or new public API contracts, and it is not schema-aware FK policy support.
-
-- **Finding metadata widening**: the `ddl.table.foreign_key.forbid` finding now includes `referenced_schema` (e.g., `"public"`), `referenced_table` (e.g., `"users"`), and `referenced_columns` (e.g., `["id"]`) when the underlying constraint carries those facts. `referenced_table` is never concatenated into `"public.users"`.
-- Parser/extractor semantics are unchanged from `v0.27.0`. The shared semantic contract (`spec.Constraint`) already had `ReferencedSchema`, `ReferencedTable`, and `ReferencedColumns`; `v0.28.0` widens the outward finding metadata to expose them.
-- No new rule IDs, no new CLI flags, no schema-aware FK policy decisions.
-
-Previous milestone: `v0.27.0` preserved schema-qualified PostgreSQL referenced-object facts in the shared contract. See the [v0.27.0 release notes](docs/releases/release-notes-v0.27.0.md) for details.
-
-### Schema-Qualified Reference Semantics Pack (`v0.27.0`)
-
-`v0.27.0` preserves schema-qualified PostgreSQL referenced-object facts in the shared contract. It does not add new rules, new CLI flags, or new public API contracts, and it is not a broad PostgreSQL FK implementation.
-
-- **`ReferencedSchema`** is an additive field on `spec.Constraint` that preserves the schema portion of schema-qualified `REFERENCES` (e.g., `REFERENCES public.users(id)` → `ReferencedSchema = "public"`, `ReferencedTable = "users"`).
-- PostgreSQL extractor preserves these facts for both named `FOREIGN KEY` and inline `REFERENCES` forms.
-- Corpus and service-level tests lock the semantic contract with precise assertions.
-- CLI, HTTP, MCP, and `pkg/deltascope` current public finding metadata remains unchanged — the shared semantic contract is richer underneath.
-
-Previous milestone: `v0.26.0` tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract. See the [v0.26.0 release notes](docs/releases/release-notes-v0.26.0.md) for details.
-
-### PostgreSQL CREATE TABLE Unsupported Boundary Pack (`v0.26.0`)
-
-`v0.26.0` tightens the PostgreSQL `CREATE TABLE` unsupported boundary contract. It does not add new rules, new CLI flags, or new public API contracts, and it is not full PostgreSQL `CREATE TABLE` support.
-
-- **Identity columns** (`GENERATED ... AS IDENTITY`) → explicit unsupported (`generated_as_identity`).
-- **Generated stored columns** (`GENERATED ALWAYS AS ... STORED`) → explicit unsupported (`generated_column`).
-- **Exclusion constraints** (`EXCLUDE USING`) → explicit unsupported (`exclusion_constraint`).
-- **Partitioned tables** (`PARTITION BY`) → explicit unsupported (`partitioning`).
-- PostgreSQL corpus cases lock these four boundaries with precise expected-outcome assertions.
-- Surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` verify each boundary is exposed through the correct unsupported contract on every transport.
-
-Surface contract for unsupported statements:
-
-- **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
-- **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
-
-`make release-surface-gates VERSION=v0.34.0` and `make release-version-surface-gates VERSION=v0.34.0` verify the package/release and versioned docs surfaces.
-
-Previous milestone: `v0.34.0` widens narrow generated/identity definition forms to supported. See the [v0.34.0 release notes](docs/releases/release-notes-v0.34.0.md) for details.
+See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for detailed surface contracts and [release notes](docs/releases/README.md) for version-by-version changes.
 
 Need PostgreSQL offline audit support?
 
