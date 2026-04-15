@@ -126,6 +126,87 @@ func stringSlicesEqual(a, b []string) bool {
 	return true
 }
 
+// corpusAssertUnsupportedMetadata asserts that each expected metadata entry is
+// present on a matching unsupported detail in the result. Matching is by feature
+// name; metadata values are compared with numeric type coercion (int/int32/int64/float64
+// are treated as equivalent when their values match).
+func corpusAssertUnsupportedMetadata(t *testing.T, actual []spec.UnsupportedDetail, expected []corpusUnsupported) {
+	t.Helper()
+	for _, exp := range expected {
+		found := false
+		for _, u := range actual {
+			if u.Feature != exp.Feature {
+				continue
+			}
+			if corpusMetadataMatches(t, exp.Metadata, u.Metadata) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("unsupported.metadata: expected feature=%q metadata=%+v not matched", exp.Feature, exp.Metadata)
+		}
+	}
+}
+
+// corpusMetadataMatches checks whether all expected keys/values are present in
+// actual. Numeric types are coerced: int, int32, int64, and float64 are compared
+// by value. Other types use direct equality.
+func corpusMetadataMatches(t *testing.T, expected, actual map[string]any) bool {
+	t.Helper()
+	for key, expVal := range expected {
+		actVal, ok := actual[key]
+		if !ok {
+			return false
+		}
+		if !corpusValueEqual(expVal, actVal) {
+			return false
+		}
+	}
+	return true
+}
+
+// corpusValueEqual compares two values with numeric type coercion and
+// recursive map[string]any support.
+func corpusValueEqual(a, b any) bool {
+	aFloat, aIsNum := toFloat64(a)
+	bFloat, bIsNum := toFloat64(b)
+	if aIsNum && bIsNum {
+		return aFloat == bFloat
+	}
+	// Recursive map comparison for nested identity_options etc.
+	aMap, aIsMap := a.(map[string]any)
+	bMap, bIsMap := b.(map[string]any)
+	if aIsMap && bIsMap {
+		if len(aMap) != len(bMap) {
+			return false
+		}
+		for k, av := range aMap {
+			bv, ok := bMap[k]
+			if !ok || !corpusValueEqual(av, bv) {
+				return false
+			}
+		}
+		return true
+	}
+	return a == b
+}
+
+// toFloat64 converts numeric types to float64 for comparison.
+func toFloat64(v any) (float64, bool) {
+	switch n := v.(type) {
+	case int:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case float64:
+		return n, true
+	}
+	return 0, false
+}
+
 // corpusAssertSemantic checks operation and facts against the parsed/extracted
 // statement. This is the single entrypoint for all semantic (non-report) assertions.
 // Only fields present in the expected YAML are checked.

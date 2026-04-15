@@ -8,6 +8,12 @@ expect:
     count: 1
     include:
       - generated_as_identity
+    metadata:
+      - feature: generated_as_identity
+        metadata:
+          column: id
+          generated_when: a
+          is_identity: true
   findings:
     include: []
     exclude: []

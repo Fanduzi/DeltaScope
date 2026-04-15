@@ -94,6 +94,11 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 					if !found {
 						t.Errorf("unsupported.include: expected feature %q not found (actual: %+v)", feat, unsupportedFeatures(result.Unsupported))
 					}
+
+				// Assert unsupported.metadata.
+				if tc.Expect.Unsupported != nil && len(tc.Expect.Unsupported.Metadata) > 0 {
+					corpusAssertUnsupportedMetadata(t, result.Unsupported, tc.Expect.Unsupported.Metadata)
+				}
 				}
 			}
 

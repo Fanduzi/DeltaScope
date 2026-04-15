@@ -20,8 +20,9 @@ type corpusExpected struct {
 		StatementKind  string   `yaml:"statement_kind"`
 		Operation      string   `yaml:"operation"`
 		Unsupported    *struct {
-			Count   *int     `yaml:"count"`
-			Include []string `yaml:"include,omitempty"`
+			Count    *int               `yaml:"count"`
+			Include  []string           `yaml:"include,omitempty"`
+			Metadata []corpusUnsupported `yaml:"metadata,omitempty"`
 		} `yaml:"unsupported"`
 		Findings *struct {
 			Include []string `yaml:"include"`
@@ -44,6 +45,12 @@ type corpusFactConstraint struct {
 	ReferencedSchema  string   `yaml:"referenced_schema,omitempty"`
 	ReferencedTable   string   `yaml:"referenced_table,omitempty"`
 	ReferencedColumns []string `yaml:"referenced_columns,omitempty"`
+}
+
+// corpusUnsupported is one expected unsupported-detail metadata entry.
+type corpusUnsupported struct {
+	Feature  string         `yaml:"feature"`
+	Metadata map[string]any `yaml:"metadata,omitempty"`
 }
 
 var validDialects = map[string]bool{
@@ -130,6 +137,11 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 						t.Fatal("unsupported.include must not contain empty strings")
 					}
 				}
+					for _, m := range tc.Expect.Unsupported.Metadata {
+						if m.Feature == "" {
+							t.Fatal("unsupported.metadata[].feature must not be empty")
+						}
+					}
 			}
 
 			// 5. Validate operation if present — must not be empty.
