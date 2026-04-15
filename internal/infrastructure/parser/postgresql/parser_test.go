@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -2359,5 +2360,458 @@ func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyPreservesReference
 	}
 	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
 		t.Fatalf("expected ReferencedColumns [id], got %#v", constraint.ReferencedColumns)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.33.0 Task 1: Generated expression and identity option characterization
+// ---------------------------------------------------------------------------
+
+func TestParsePostgreSQLGeneratedExpressionSupportReadinessFacts(t *testing.T) {
+	sql := `CREATE TABLE users (
+  first_name text,
+  last_name text,
+  full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED
+);`
+
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 3 {
+		t.Fatalf("expected 3 table elements, got %d", len(elts))
+	}
+
+	// FACT 1: AST is CreateStmt (confirmed by parseCreateStmtAST helper).
+
+	// FACT 2: Find full_name ColumnDef.
+	colNode := elts[2].GetColumnDef()
+	if colNode == nil {
+		t.Fatal("third table element is not a ColumnDef")
+	}
+	if colNode.GetColname() != "full_name" {
+		t.Fatalf("expected column name 'full_name', got %q", colNode.GetColname())
+	}
+
+	// FACT 3: Find CONSTR_GENERATED.
+	constraints := colNode.GetConstraints()
+	var generatedConstraint *pg_query.Constraint
+	for _, c := range constraints {
+		con := c.GetConstraint()
+		if con != nil && con.GetContype() == pg_query.ConstrType_CONSTR_GENERATED {
+			generatedConstraint = con
+			break
+		}
+	}
+	if generatedConstraint == nil {
+		t.Fatal("expected CONSTR_GENERATED in column constraint list")
+	}
+
+	// FACT 4: GeneratedWhen == "a" (ALWAYS).
+	if generatedConstraint.GetGeneratedWhen() != "a" {
+		t.Fatalf("expected GeneratedWhen='a', got %q", generatedConstraint.GetGeneratedWhen())
+	}
+
+	// FACT 5: RawExpr != nil.
+	rawExpr := generatedConstraint.GetRawExpr()
+	if rawExpr == nil {
+		t.Fatal("expected CONSTR_GENERATED.RawExpr to be non-nil")
+	}
+
+	// FACT 6: RawExpr top-level node type.
+	t.Logf("RawExpr node type: %T", rawExpr.GetNode())
+
+	// Walk the expression tree to find column refs and string literals.
+	var columnRefs []string
+	var stringLiterals []string
+	walkExprForStrings(t, rawExpr, &columnRefs, &stringLiterals)
+
+	t.Logf("Column refs found in RawExpr: %v", columnRefs)
+	t.Logf("String literals found in RawExpr: %v", stringLiterals)
+
+	// FACT 7: Can stably see first_name in the expression.
+	foundFirstName := false
+	for _, ref := range columnRefs {
+		if ref == "first_name" {
+			foundFirstName = true
+		}
+	}
+	if !foundFirstName {
+		t.Fatal("expected to find 'first_name' column reference in RawExpr")
+	}
+
+	// FACT 8: Can stably see last_name in the expression.
+	foundLastName := false
+	for _, ref := range columnRefs {
+		if ref == "last_name" {
+			foundLastName = true
+		}
+	}
+	if !foundLastName {
+		t.Fatal("expected to find 'last_name' column reference in RawExpr")
+	}
+
+	// FACT 9: Can stably see the string space literal.
+	foundSpaceLiteral := false
+	for _, lit := range stringLiterals {
+		if lit == " " {
+			foundSpaceLiteral = true
+		}
+	}
+	if !foundSpaceLiteral {
+		t.Fatal("expected to find ' ' string literal in RawExpr")
+	}
+
+	// FACT 10: pg_query does not expose DeparseExpr. Only pg_query.Deparse
+	// operates on a full ParseResult. There is no stable per-expression
+	// deparse helper in pg_query_go/v6. This means GeneratedExpression
+	// requires a custom renderer or defer.
+	t.Log("pg_query has no DeparseExpr - GeneratedExpression MUST use custom renderer or defer")
+	// FACT 10: Record whether pg_query.DeparseExpr can render the expression.
+}
+
+// walkExprForStrings recursively walks a pg_query Node tree to extract
+// ColumnRef names and A_Const string values for characterization.
+func walkExprForStrings(t *testing.T, node *pg_query.Node, columnRefs *[]string, stringLiterals *[]string) {
+	t.Helper()
+	if node == nil {
+		return
+	}
+
+	if colRef := node.GetColumnRef(); colRef != nil {
+		for _, field := range colRef.GetFields() {
+			if str := field.GetString_(); str != nil {
+				*columnRefs = append(*columnRefs, str.GetSval())
+			}
+		}
+		return
+	}
+
+	if aConst := node.GetAConst(); aConst != nil {
+		if str := aConst.GetSval(); str != nil {
+			*stringLiterals = append(*stringLiterals, str.GetSval())
+		}
+		return
+	}
+
+	if aExpr := node.GetAExpr(); aExpr != nil {
+		walkExprForStrings(t, aExpr.GetLexpr(), columnRefs, stringLiterals)
+		walkExprForStrings(t, aExpr.GetRexpr(), columnRefs, stringLiterals)
+		return
+	}
+
+	if funcCall := node.GetFuncCall(); funcCall != nil {
+		for _, fn := range funcCall.GetFuncname() {
+			walkExprForStrings(t, fn, columnRefs, stringLiterals)
+		}
+		for _, arg := range funcCall.GetArgs() {
+			walkExprForStrings(t, arg, columnRefs, stringLiterals)
+		}
+		return
+	}
+
+	if list := node.GetList(); list != nil {
+		for _, item := range list.GetItems() {
+			walkExprForStrings(t, item, columnRefs, stringLiterals)
+		}
+		return
+	}
+}
+
+func TestParsePostgreSQLIdentityOptionSupportReadinessFacts(t *testing.T) {
+	sql := `CREATE TABLE users (
+  id bigint GENERATED BY DEFAULT AS IDENTITY (
+    START WITH 10
+    INCREMENT BY 5
+    MINVALUE 1
+    MAXVALUE 9999
+    CACHE 20
+    CYCLE
+  ) PRIMARY KEY
+);`
+
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 1 {
+		t.Fatalf("expected 1 table element, got %d", len(elts))
+	}
+
+	// FACT 1: Find id ColumnDef.
+	colNode := elts[0].GetColumnDef()
+	if colNode == nil {
+		t.Fatal("first table element is not a ColumnDef")
+	}
+	if colNode.GetColname() != "id" {
+		t.Fatalf("expected column name 'id', got %q", colNode.GetColname())
+	}
+
+	// FACT 2: Find CONSTR_IDENTITY.
+	constraints := colNode.GetConstraints()
+	var identityConstraint *pg_query.Constraint
+	for _, c := range constraints {
+		con := c.GetConstraint()
+		if con != nil && con.GetContype() == pg_query.ConstrType_CONSTR_IDENTITY {
+			identityConstraint = con
+			break
+		}
+	}
+	if identityConstraint == nil {
+		t.Fatal("expected CONSTR_IDENTITY in column constraint list")
+	}
+
+	// FACT 3: GeneratedWhen == "d" (BY DEFAULT).
+	if identityConstraint.GetGeneratedWhen() != "d" {
+		t.Fatalf("expected GeneratedWhen='d' for BY DEFAULT, got %q", identityConstraint.GetGeneratedWhen())
+	}
+
+	// FACT 4: Options is non-empty.
+	options := identityConstraint.GetOptions()
+	if len(options) == 0 {
+		t.Fatal("expected identity constraint to have options")
+	}
+
+	// FACT 5: Extract all option keys and values.
+	optionValues := make(map[string]interface{})
+	for _, opt := range options {
+		defElem := opt.GetDefElem()
+		if defElem == nil {
+			t.Fatal("expected identity option to be a DefElem")
+		}
+		name := defElem.GetDefname()
+		argNode := defElem.GetArg()
+
+		if argNode == nil {
+			optionValues[name] = nil
+			t.Logf("Option %q = nil (no arg node)", name)
+			continue
+		}
+
+		if intNode := argNode.GetInteger(); intNode != nil {
+			optionValues[name] = intNode.GetIval()
+			t.Logf("Option %q = %d (Integer)", name, intNode.GetIval())
+			continue
+		}
+
+		if floatNode := argNode.GetFloat(); floatNode != nil {
+			optionValues[name] = floatNode.GetFval()
+			t.Logf("Option %q = %q (Float string)", name, floatNode.GetFval())
+			continue
+		}
+
+		if strNode := argNode.GetString_(); strNode != nil {
+			optionValues[name] = strNode.GetSval()
+			t.Logf("Option %q = %q (String)", name, strNode.GetSval())
+			continue
+		}
+
+		// Try Boolean (used by CYCLE / NO CYCLE).
+		if boolNode := argNode.GetBoolean(); boolNode != nil {
+			optionValues[name] = boolNode.GetBoolval()
+			t.Logf("Option %q = %v (Boolean)", name, boolNode.GetBoolval())
+			continue
+		}
+
+		optionValues[name] = fmt.Sprintf("UNKNOWN_TYPE:%T", argNode.GetNode())
+		t.Logf("Option %q = unknown type %T", name, argNode.GetNode())
+	}
+
+	// FACT 6: Option keys include start, increment, minvalue, maxvalue, cache, cycle.
+	requiredKeys := []string{"start", "increment", "minvalue", "maxvalue", "cache", "cycle"}
+	for _, key := range requiredKeys {
+		if _, ok := optionValues[key]; !ok {
+			t.Fatalf("expected option key %q in identity options, got keys: %v", key, optionKeys(optionValues))
+		}
+	}
+
+	// FACT 7: Numeric options have integer values.
+	assertIntOption(t, optionValues, "start", 10)
+	assertIntOption(t, optionValues, "increment", 5)
+	assertIntOption(t, optionValues, "minvalue", 1)
+	assertIntOption(t, optionValues, "maxvalue", 9999)
+	assertIntOption(t, optionValues, "cache", 20)
+
+	// FACT 8: Cycle option shape.
+	cycleVal := optionValues["cycle"]
+	t.Logf("CYCLE option value: %v (type: %T)", cycleVal, cycleVal)
+
+	switch v := cycleVal.(type) {
+	case nil:
+		t.Logf("CYCLE is a flag (no arg) - boolean-safe: false, flag-style: true")
+	case bool:
+		t.Logf("CYCLE is boolean %v - boolean-safe, can enter IdentityOptions", v)
+		if !v {
+			t.Fatal("expected CYCLE to be true")
+		}
+	case int32:
+		t.Logf("CYCLE is integer %d - boolean-safe if 0/1", v)
+	case string:
+		t.Logf("CYCLE is string %q - needs normalization", v)
+	default:
+		t.Logf("CYCLE is unexpected type %T: %v", v, v)
+	}
+}
+
+func assertIntOption(t *testing.T, options map[string]interface{}, key string, expected int32) {
+	t.Helper()
+	val, ok := options[key]
+	if !ok {
+		t.Fatalf("expected option %q to exist", key)
+	}
+	intVal, ok := val.(int32)
+	if !ok {
+		t.Fatalf("expected option %q to be int32, got %T: %v", key, val, val)
+	}
+	if intVal != expected {
+		t.Fatalf("expected option %q = %d, got %d", key, expected, intVal)
+	}
+}
+
+func optionKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// ---------------------------------------------------------------------------
+// v0.33.0 Task 2: Extractor behavior tests — generated/identity fact preservation
+// ---------------------------------------------------------------------------
+// These tests assert that the extractor preserves GeneratedWhen, IsIdentity,
+// IdentityOptions on spec.Column and surfaces Metadata on UnsupportedDetail.
+// ---------------------------------------------------------------------------
+
+func TestExtractCreateTableGeneratedStoredPreservesGeneratedWhen(t *testing.T) {
+	sql := `CREATE TABLE users (
+	  first_name text,
+	  last_name text,
+	  full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED
+	);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	// Statement remains unsupported but now carries metadata.
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind unknown, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail")
+	}
+	if statement.Unsupported.Feature != "generated_column" {
+		t.Fatalf("expected feature generated_column, got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Metadata == nil {
+		t.Fatal("expected unsupported metadata to be populated for generated column")
+	}
+	if statement.Unsupported.Metadata["column"] != "full_name" {
+		t.Fatalf("expected metadata column=full_name, got %v", statement.Unsupported.Metadata["column"])
+	}
+	if statement.Unsupported.Metadata["generated_when"] != "a" {
+		t.Fatalf("expected metadata generated_when=a, got %v", statement.Unsupported.Metadata["generated_when"])
+	}
+}
+
+func TestExtractCreateTableIdentityColumnPreservesMetadataWithOptions(t *testing.T) {
+	sql := `CREATE TABLE users (
+	  id bigint GENERATED BY DEFAULT AS IDENTITY (
+	    START WITH 10
+	    INCREMENT BY 5
+	    MINVALUE 1
+	    MAXVALUE 9999
+	    CACHE 20
+	    CYCLE
+	  ) PRIMARY KEY
+	);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind unknown, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail")
+	}
+	if statement.Unsupported.Feature != "generated_as_identity" {
+		t.Fatalf("expected feature generated_as_identity, got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Metadata == nil {
+		t.Fatal("expected unsupported metadata to be populated for identity column")
+	}
+	if statement.Unsupported.Metadata["column"] != "id" {
+		t.Fatalf("expected metadata column=id, got %v", statement.Unsupported.Metadata["column"])
+	}
+	if statement.Unsupported.Metadata["generated_when"] != "d" {
+		t.Fatalf("expected metadata generated_when=d, got %v", statement.Unsupported.Metadata["generated_when"])
+	}
+	if statement.Unsupported.Metadata["is_identity"] != true {
+		t.Fatalf("expected metadata is_identity=true, got %v", statement.Unsupported.Metadata["is_identity"])
+	}
+	opts, ok := statement.Unsupported.Metadata["identity_options"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected identity_options to be map[string]any, got %T", statement.Unsupported.Metadata["identity_options"])
+	}
+	if opts["start"] != int32(10) {
+		t.Fatalf("expected start=10, got %v", opts["start"])
+	}
+	if opts["increment"] != int32(5) {
+		t.Fatalf("expected increment=5, got %v", opts["increment"])
+	}
+	if opts["cycle"] != true {
+		t.Fatalf("expected cycle=true, got %v", opts["cycle"])
+	}
+}
+
+func TestExtractAlterTableAddIdentityColumnPreservesMetadata(t *testing.T) {
+	sql := `ALTER TABLE users
+	  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind unknown, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail")
+	}
+	if statement.Unsupported.Feature != "generated_as_identity" {
+		t.Fatalf("expected feature generated_as_identity, got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Metadata == nil {
+		t.Fatal("expected unsupported metadata for identity add-column")
+	}
+	if statement.Unsupported.Metadata["column"] != "id" {
+		t.Fatalf("expected metadata column=id, got %v", statement.Unsupported.Metadata["column"])
+	}
+	if statement.Unsupported.Metadata["generated_when"] != "a" {
+		t.Fatalf("expected metadata generated_when=a, got %v", statement.Unsupported.Metadata["generated_when"])
+	}
+	if statement.Unsupported.Metadata["is_identity"] != true {
+		t.Fatalf("expected metadata is_identity=true, got %v", statement.Unsupported.Metadata["is_identity"])
+	}
+}
+
+func TestExtractAlterTableAddGeneratedStoredPreservesMetadata(t *testing.T) {
+	sql := `ALTER TABLE users
+	  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	if statement.Kind != spec.KindUnknown {
+		t.Fatalf("expected kind unknown, got %q", statement.Kind)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported detail")
+	}
+	if statement.Unsupported.Feature != "generated_column" {
+		t.Fatalf("expected feature generated_column, got %q", statement.Unsupported.Feature)
+	}
+	if statement.Unsupported.Metadata == nil {
+		t.Fatal("expected unsupported metadata for generated add-column")
+	}
+	if statement.Unsupported.Metadata["column"] != "full_name" {
+		t.Fatalf("expected metadata column=full_name, got %v", statement.Unsupported.Metadata["column"])
+	}
+	if statement.Unsupported.Metadata["generated_when"] != "a" {
+		t.Fatalf("expected metadata generated_when=a, got %v", statement.Unsupported.Metadata["generated_when"])
 	}
 }

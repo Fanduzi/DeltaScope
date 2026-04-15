@@ -59,7 +59,10 @@ type Column struct {
 	DefaultValue              string `json:"default_value,omitempty"`
 	DefaultIsNull             bool   `json:"default_is_null,omitempty"`
 	DefaultIsCurrentTimestamp bool   `json:"default_is_current_timestamp,omitempty"`
-	OnUpdateCurrentTimestamp  bool   `json:"on_update_current_timestamp,omitempty"`
+	OnUpdateCurrentTimestamp  bool       `json:"on_update_current_timestamp,omitempty"`
+	GeneratedWhen            string     `json:"generated_when,omitempty"`
+	IsIdentity               bool       `json:"is_identity,omitempty"`
+	IdentityOptions          map[string]any `json:"identity_options,omitempty"`
 }
 
 // IndexKind identifies the semantic class of an index declaration.

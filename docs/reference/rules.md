@@ -508,3 +508,11 @@ Each boundary is backed by corpus cases and surface parity tests across CLI, HTT
 - **Metadata-aware mode** — [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md)
 - **CLI usage** — [cli.md](cli.md)
 - **Capability matrix** — [audit-capability-matrix.md](audit-capability-matrix.md)
+
+---
+
+## v0.33.0 Note: Shared Contract & Unsupported Metadata
+
+v0.33.0 does not add new rules or change rule behavior. It introduces shared contract fields (`GeneratedWhen`, `IsIdentity`, `IdentityOptions` on `spec.Column`) and unsupported metadata (`Metadata` on `spec.UnsupportedDetail`) for PostgreSQL generated/identity outcomes. These are additive contract changes visible to rule consumers, not rule trigger or level changes.
+
+Unsupported feature names remain: `generated_column`, `generated_as_identity`. The metadata keys surfaced on these unsupported outcomes are `column`, `generated_when`, `is_identity` (identity cases), and `identity_options` (options cases).

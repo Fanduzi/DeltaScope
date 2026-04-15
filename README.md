@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.32.0`, DeltaScope ships the **PostgreSQL Boundary Support-Readiness Gate**: a decision milestone documenting stable AST facts about generated and identity columns through characterization tests, and recommending `v0.33.0` as a narrow fact-preservation pack. No new PostgreSQL support behavior, rule IDs, CLI flags, or public API fields were added. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.33.0`, DeltaScope ships the **PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack**: generated/identity column facts are now preserved in the shared DDL contract, and unsupported generated/identity outcomes carry structured metadata. Generated expression text remains deferred. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,20 +34,25 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.32.0/install.sh | \
-  DELTASCOPE_VERSION=v0.32.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.33.0/install.sh | \
+  DELTASCOPE_VERSION=v0.33.0 sh
 ```
+
+### PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack (`v0.33.0`)
+
+`v0.33.0` preserves narrow generated/identity column facts in the shared DDL contract and surfaces structured metadata on unsupported generated/identity outcomes. It does not add generated-column support, identity-column support, expression evaluation, or rule behavior changes.
+
+- **Shared contract fields**: `GeneratedWhen` (string: `"a"` / `"d"`), `IsIdentity` (bool), and `IdentityOptions` (finite structured option map) added to `spec.Column` for `CREATE TABLE` and `ALTER TABLE ADD COLUMN` paths.
+- **Unsupported metadata**: `UnsupportedDetail.Metadata` now carries `column`, `generated_when`, `is_identity` (identity cases), and `identity_options` (options cases) for generated/identity unsupported outcomes.
+- **GeneratedExpression deferred**: no expression text is preserved — the current `pg_query_go` dependency lacks a stable expression renderer.
+- **MCP surface limitation**: metadata is not directly surfaced in MCP tool error responses; CLI, HTTP, and `pkg/deltascope` expose it.
+- Unsupported feature names unchanged: `generated_column`, `generated_as_identity`. No new rule IDs, CLI flags, or public API contracts.
+
+Previous milestone: `v0.32.0` documented stable AST facts through characterization tests and recommended `v0.33.0` as a narrow fact-preservation pack. See the [v0.33.0 release notes](docs/releases/release-notes-v0.33.0.md) for details.
 
 ### PostgreSQL Boundary Support-Readiness Gate (`v0.32.0`)
 
 `v0.32.0` is a decision milestone — not a feature release. Characterization tests document stable AST facts about PostgreSQL generated and identity columns (`GeneratedWhen` encoding, `CONSTR_IDENTITY` / `CONSTR_GENERATED` types, identity sequence option shape). A readiness report recommends `v0.33.0` as a narrow fact-preservation pack adding `GeneratedWhen` and `IsIdentity` fields to `spec.Column`. No new rules, CLI flags, or public API contracts were added.
-
-- **Decision gate only**: no production code, extractor, spec, rule, or policy changes.
-- **Characterization tests**: 7 tests in `parser_test.go` assert stable AST structures.
-- **Readiness report**: complete boundary inventory, AST fact coverage, and v0.33.0 recommendation.
-- **Deferred**: generated expression rendering, identity sequence option normalization, rule behavior changes, ALTER TABLE state transitions.
-
-Previous milestone: `v0.31.0` mapped additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags. See the [v0.32.0 release notes](docs/releases/release-notes-v0.32.0.md) for details.
 
 ### PostgreSQL ALTER TABLE GENERATED Follow-up Pack (`v0.31.0`)
 
@@ -123,9 +128,9 @@ Surface contract for unsupported statements:
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
 - **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
 
-`make release-surface-gates VERSION=v0.32.0` and `make release-version-surface-gates VERSION=v0.32.0` verify the package/release and versioned docs surfaces.
+`make release-surface-gates VERSION=v0.33.0` and `make release-version-surface-gates VERSION=v0.33.0` verify the package/release and versioned docs surfaces.
 
-Previous milestone: `v0.31.0` mapped additional PostgreSQL generated/identity `ALTER TABLE` forms to explicit unsupported feature tags. See the [v0.31.0 release notes](docs/releases/release-notes-v0.31.0.md) for details.
+Previous milestone: `v0.33.0` preserves generated/identity facts and surfaces unsupported metadata for PostgreSQL. See the [v0.33.0 release notes](docs/releases/release-notes-v0.33.0.md) for details.
 
 Need PostgreSQL offline audit support?
 

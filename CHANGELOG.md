@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.33.0] - 2026-04-15
+
+### Added
+
+- `GeneratedWhen` (string, `omitempty`) and `IsIdentity` (bool, `omitempty`) fields on `spec.Column` preserve narrow generated/identity column facts for PostgreSQL `CREATE TABLE` and `ALTER TABLE ADD COLUMN` paths. `GeneratedWhen` encodes `"a"` (ALWAYS) or `"d"` (BY DEFAULT); `IsIdentity` is `true` for identity columns. `GeneratedExpression` is deferred — no expression text is preserved.
+- `IdentityOptions map[string]any` on `spec.Column` carries finite structured identity sequence option facts (`start`, `increment`, `minvalue`, `maxvalue`, `cache`, `cycle`). This is not complete PostgreSQL sequence semantics — only options present in the SQL text are preserved.
+- `Metadata map[string]any` on `spec.UnsupportedDetail` surfaces structured metadata for unsupported generated/identity outcomes. Keys: `column` (string), `generated_when` (string), `is_identity` (bool for identity cases), `identity_options` (object for options cases).
+- PostgreSQL extractor populates the new shared contract fields and unsupported metadata for both `CREATE TABLE` and `ALTER TABLE ADD COLUMN` generated/identity paths.
+- Corpus cases updated to assert metadata on unsupported generated/identity boundary outcomes.
+- Service-level tests lock the new metadata contract with precise assertions.
+- Surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` verify unsupported metadata flows through each transport. MCP surface limitation documented: metadata is not directly surfaced in MCP tool error responses.
+
+### Changed
+
+- Release-facing docs now position `v0.33.0` as the **PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack** — a fact preservation and metadata widening release. It does not add generated-column support, identity-column support, expression evaluation, rule behavior changes, or ALTER TABLE state-transition support. Unsupported feature names remain unchanged: `generated_column`, `generated_as_identity`.
+
 ## [v0.32.0] - 2026-04-14
 
 ### Added

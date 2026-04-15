@@ -85,7 +85,7 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 				return unsupportedStatement(statement, "generated_as_identity", "postgresql GENERATED ... AS IDENTITY is unsupported in v1")
 			}
 			if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
-					return unsupportedStatement(statement, unsupported.Feature, unsupported.Reason)
+					return unsupportedStatementWithDetail(statement, unsupported)
 				}
 				ddl.Columns = append(ddl.Columns, columnFromDef(column))
 				applyColumnConstraints(ddl, column)
@@ -150,7 +150,7 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 		}
 		alter, ok, unsupported := alterFromCmd(cmd)
 		if unsupported != nil {
-			return unsupportedStatement(statement, unsupported.Feature, unsupported.Reason)
+			return unsupportedStatementWithDetail(statement, unsupported)
 		}
 		if !ok {
 			return unsupportedStatement(statement, "alter_table", "postgresql alter table command is unsupported in v1")
@@ -489,9 +489,17 @@ func hasUnsupportedColumnConstraint(column *pg_query.ColumnDef) *spec.Unsupporte
 		}
 		switch constraint.GetContype() {
 		case pg_query.ConstrType_CONSTR_IDENTITY:
-			return &spec.UnsupportedDetail{Feature: "generated_as_identity", Reason: "postgresql GENERATED ... AS IDENTITY is unsupported in v1"}
+			return &spec.UnsupportedDetail{
+				Feature:  "generated_as_identity",
+				Reason:   "postgresql GENERATED ... AS IDENTITY is unsupported in v1",
+				Metadata: generatedIdentityUnsupportedMetadata(column),
+			}
 		case pg_query.ConstrType_CONSTR_GENERATED:
-			return &spec.UnsupportedDetail{Feature: "generated_column", Reason: "postgresql GENERATED ALWAYS AS ... STORED columns are unsupported in v1"}
+			return &spec.UnsupportedDetail{
+				Feature:  "generated_column",
+				Reason:   "postgresql GENERATED ALWAYS AS ... STORED columns are unsupported in v1",
+				Metadata: generatedIdentityUnsupportedMetadata(column),
+			}
 		}
 	}
 	return nil
@@ -504,7 +512,87 @@ func columnFromDef(column *pg_query.ColumnDef) spec.Column {
 		NotNull:    column.GetIsNotNull(),
 		HasDefault: column.GetRawDefault() != nil || column.GetCookedDefault() != nil,
 	}
+	applyGeneratedIdentityFacts(&result, column)
 	return result
+}
+
+// applyGeneratedIdentityFacts extracts GeneratedWhen, IsIdentity, and
+// IdentityOptions from CONSTR_GENERATED / CONSTR_IDENTITY constraints and
+// writes them into the spec.Column.
+func applyGeneratedIdentityFacts(col *spec.Column, column *pg_query.ColumnDef) {
+	for _, item := range column.GetConstraints() {
+		constraint := item.GetConstraint()
+		if constraint == nil {
+			continue
+		}
+		switch constraint.GetContype() {
+		case pg_query.ConstrType_CONSTR_GENERATED:
+			col.GeneratedWhen = constraint.GetGeneratedWhen()
+		case pg_query.ConstrType_CONSTR_IDENTITY:
+			col.IsIdentity = true
+			col.GeneratedWhen = constraint.GetGeneratedWhen()
+			if opts := identityOptionsFromConstraint(constraint); len(opts) > 0 {
+				col.IdentityOptions = opts
+			}
+		}
+	}
+}
+
+// identityOptionsFromConstraint extracts identity sequence options from a
+// CONSTR_IDENTITY constraint's Options list (DefElem nodes). Numeric options
+// are int32; CYCLE is bool.
+func identityOptionsFromConstraint(constraint *pg_query.Constraint) map[string]any {
+	options := constraint.GetOptions()
+	if len(options) == 0 {
+		return nil
+	}
+	result := make(map[string]any, len(options))
+	for _, opt := range options {
+		defElem := opt.GetDefElem()
+		if defElem == nil {
+			continue
+		}
+		name := defElem.GetDefname()
+		argNode := defElem.GetArg()
+		if argNode == nil {
+			continue
+		}
+		if intNode := argNode.GetInteger(); intNode != nil {
+			result[name] = intNode.GetIval()
+			continue
+		}
+		if boolNode := argNode.GetBoolean(); boolNode != nil {
+			result[name] = boolNode.GetBoolval()
+			continue
+		}
+	}
+	return result
+}
+
+// generatedIdentityUnsupportedMetadata builds UnsupportedDetail.Metadata for
+// unsupported generated/identity column outcomes, carrying the column name,
+// generated_when, is_identity flag, and identity options when present.
+func generatedIdentityUnsupportedMetadata(column *pg_query.ColumnDef) map[string]any {
+	metadata := map[string]any{
+		"column": column.GetColname(),
+	}
+	for _, item := range column.GetConstraints() {
+		constraint := item.GetConstraint()
+		if constraint == nil {
+			continue
+		}
+		switch constraint.GetContype() {
+		case pg_query.ConstrType_CONSTR_GENERATED, pg_query.ConstrType_CONSTR_IDENTITY:
+			metadata["generated_when"] = constraint.GetGeneratedWhen()
+		}
+		if constraint.GetContype() == pg_query.ConstrType_CONSTR_IDENTITY {
+			metadata["is_identity"] = true
+			if opts := identityOptionsFromConstraint(constraint); len(opts) > 0 {
+				metadata["identity_options"] = opts
+			}
+		}
+	}
+	return metadata
 }
 
 func typeNameString(typeName *pg_query.TypeName) string {
@@ -688,6 +776,17 @@ func unsupportedStatement(statement spec.Statement, feature string, reason strin
 		Feature: feature,
 		Reason:  reason,
 	}
+	return statement
+}
+
+// unsupportedStatementWithDetail applies the full UnsupportedDetail (including
+// Metadata) to the statement, preserving any structured context from the
+// extraction path.
+func unsupportedStatementWithDetail(statement spec.Statement, detail *spec.UnsupportedDetail) spec.Statement {
+	statement.Kind = spec.KindUnknown
+	statement.DDL = nil
+	statement.DML = nil
+	statement.Unsupported = detail
 	return statement
 }
 

@@ -264,6 +264,30 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing (`v0.33.0`)
+
+`v0.33.0` is the **PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack**. It preserves narrow generated/identity column facts in the shared DDL contract and surfaces structured metadata on unsupported generated/identity outcomes. This is fact preservation and metadata widening — not generated-column support, identity-column support, or rule behavior changes.
+
+| Aspect | Detail |
+|--------|--------|
+| New shared contract fields | `GeneratedWhen` (string: `"a"` / `"d"`), `IsIdentity` (bool), `IdentityOptions` (finite map) on `spec.Column` |
+| Unsupported metadata widening | `UnsupportedDetail.Metadata` carries `column`, `generated_when`, `is_identity`, `identity_options` |
+| Applicable paths | `CREATE TABLE` and `ALTER TABLE ADD COLUMN` generated/identity columns |
+| GeneratedExpression | Deferred — no stable expression renderer |
+| IdentityOptions scope | Finite structured facts only; not complete PostgreSQL sequence semantics |
+| New rule IDs | none |
+| New CLI/API flags | none |
+| Unsupported feature names | Unchanged: `generated_column`, `generated_as_identity` |
+
+### Surface Contract for Unsupported Metadata
+
+| Surface | Metadata Visibility |
+|---------|-------------------|
+| CLI (JSON) | `unsupported[0].metadata` visible in JSON output |
+| pkg/deltascope | `result.Unsupported[i].Metadata` accessible as `map[string]any` |
+| HTTP | Metadata available via captured result; transport returns unsupported error |
+| MCP | **Not directly surfaced** — MCP returns `IsError=true` with error code/message only |
+
 ## PostgreSQL Boundary Support-Readiness Gate (`v0.32.0`)
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate**. It is a decision milestone — not a feature release. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack.
@@ -367,6 +391,7 @@ Surface contract for unsupported statements:
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array plus `ErrUnsupportedStatement`.
 - **HTTP** and **MCP**: expose as transport-level error (HTTP error response, MCP tool error).
 - **`v0.30.0` note**: PostgreSQL `ALTER TABLE ... ADD COLUMN` generated/identity forms now follow the same explicit unsupported contract shape through `generated_column` and `generated_as_identity`. Adjacent `DROP EXPRESSION`, `SET GENERATED`, and `DROP IDENTITY` now receive explicit unsupported mappings in `v0.31.0`.
+- **`v0.33.0` note**: Unsupported generated/identity outcomes now carry structured metadata (`column`, `generated_when`, `is_identity`, `identity_options`) via `UnsupportedDetail.Metadata`. CLI and `pkg/deltascope` expose this directly; MCP does not.
 
 ---
 

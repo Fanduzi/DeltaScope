@@ -8,6 +8,11 @@ expect:
     count: 1
     include:
       - generated_column
+    metadata:
+      - feature: generated_column
+        metadata:
+          column: full_name
+          generated_when: a
   findings:
     include: []
     exclude: []

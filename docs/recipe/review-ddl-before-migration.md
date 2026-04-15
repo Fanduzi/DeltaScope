@@ -428,6 +428,23 @@ Important notes:
 - `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.
 
+#### PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata (`v0.33.0`)
+
+Starting with `v0.33.0`, unsupported generated/identity outcomes in migration review carry structured metadata. When DeltaScope encounters `GENERATED ALWAYS AS (...) STORED` or `GENERATED ... AS IDENTITY` in a `CREATE TABLE` or `ALTER TABLE ADD COLUMN`, the unsupported result now includes:
+
+| Metadata Key | Type | Example |
+|-------------|------|---------|
+| `column` | string | `"id"` |
+| `generated_when` | string | `"a"` or `"d"` |
+| `is_identity` | bool | `true` for identity columns |
+| `identity_options` | object | `{"start": 10, "increment": 5, "cycle": true}` |
+
+This metadata helps migration reviewers identify which columns are generated/identity and what parameters they use — without DeltaScope needing to support or evaluate the expressions.
+
+**Deferred**: `GeneratedExpression` (the computed expression for `GENERATED ALWAYS AS (...) STORED`) is not preserved. There is no stable expression renderer in the current `pg_query_go` dependency. Expression text remains unavailable until a future milestone provides a deparse path.
+
+The recommended migration review workflow is unchanged: split the migration, audit supported statements with DeltaScope, and review unsupported ones manually. The metadata now provides additional context for the manual review step.
+
 #### PostgreSQL Boundary Support-Readiness Gate (`v0.32.0`)
 
 `v0.32.0` is the **PostgreSQL Boundary Support-Readiness Gate** — a decision milestone, not a feature release. No new migration review behavior was added. Characterization tests document stable AST facts about generated and identity columns; a readiness report recommends `v0.33.0` as a narrow fact-preservation pack. For migration reviewers, nothing changes: existing unsupported boundaries remain in place, and the recommended workflow (split migration, audit supported statements, review unsupported ones manually) is unchanged.

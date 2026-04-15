@@ -637,3 +637,37 @@ Schema-qualified FK 的 finding metadata 示例：
 - **策略配置** — [config.zh-CN.md](config.zh-CN.md)
 - **HTTP API** — [http-api.zh-CN.md](http-api.zh-CN.md)
 - **元数据感知模式** — [../concept/metadata-aware-mode.zh-CN.md](../concept/metadata-aware-mode.zh-CN.md)
+
+---
+
+### v0.33.0 — Unsupported Metadata
+
+v0.33.0 在 CLI JSON 输出中为不支持的 generated/identity 结果暴露结构化 metadata。
+
+**JSON 输出示例**（不支持 identity 列）：
+
+```json
+{
+  "unsupported": [
+    {
+      "feature": "generated_as_identity",
+      "reason": "generated as identity columns are not supported",
+      "metadata": {
+        "column": "id",
+        "generated_when": "a",
+        "is_identity": true,
+        "identity_options": { "start": 10, "increment": 5, "cycle": true }
+      }
+    }
+  ]
+}
+```
+
+**Metadata 键**：
+
+| 键 | 类型 | 适用场景 |
+|----|------|----------|
+| `column` | string | generated 列 + identity 列 |
+| `generated_when` | string | generated 列 + identity 列（`"a"` / `"d"`） |
+| `is_identity` | bool | 仅 identity 列 |
+| `identity_options` | object | 仅带选项的 identity 列 |

@@ -1,4 +1,4 @@
-name: generated_identity
+name: generated_identity_with_options
 dialect: postgresql
 category: ddl
 expect:
@@ -11,8 +11,15 @@ expect:
       - feature: generated_as_identity
         metadata:
           column: id
-          generated_when: a
+          generated_when: d
           is_identity: true
+          identity_options:
+            start: 10
+            increment: 5
+            minvalue: 1
+            maxvalue: 9999
+            cache: 20
+            cycle: true
   findings:
     include: []
     exclude: []

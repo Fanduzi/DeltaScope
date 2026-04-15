@@ -496,3 +496,16 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 - **元数据感知模式** — [../concept/metadata-aware-mode.zh-CN.md](../concept/metadata-aware-mode.zh-CN.md)
 - **CLI 用法** — [cli.zh-CN.md](cli.zh-CN.md)
 - **能力矩阵** — [audit-capability-matrix.zh-CN.md](audit-capability-matrix.zh-CN.md)
+
+---
+
+## v0.33.0 — 共享契约变更与 Unsupported Metadata
+
+v0.33.0 未新增 rule ID 或规则行为变更。变更限于：
+
+- `spec.Column` 新增 `GeneratedWhen`、`IsIdentity`、`IdentityOptions` 字段（shared contract widening）
+- `spec.UnsupportedDetail` 新增 `Metadata map[string]any` 字段（unsupported metadata surfacing）
+- PostgreSQL extractor 填充新字段和 metadata
+- Surface parity 测试验证四条传输通道的 metadata 流转
+
+Unsupported feature 名称不变：`generated_column`、`generated_as_identity`。
