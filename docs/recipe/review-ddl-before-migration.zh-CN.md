@@ -428,6 +428,27 @@ deltascope audit \
 - `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。
 
+##### PostgreSQL Generated/Identity Narrow Support（`v0.34.0`）
+
+从 `v0.34.0` 开始，窄范围 PostgreSQL generated/identity 定义形态通过正常的已支持审核路径处理。审核包含这些形态的迁移时，DeltaScope 返回标准的带 findings 审核结果：
+
+- `CREATE TABLE ... GENERATED ALWAYS AS (...) STORED` — 作为正常 DDL 语句审核。
+- `CREATE TABLE ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` — 作为正常 DDL 语句审核。
+- `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` — 作为正常 DDL 语句审核。
+- `ALTER TABLE ... ADD COLUMN ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` — 作为正常 DDL 语句审核。
+
+`v0.33.0` 的共享事实（`generated_when`、`is_identity`、`identity_options`）继续在已支持路径中流转。
+
+**状态转换形态仍然 unsupported**，仍需手动审核：
+
+| 形态 | Unsupported Feature |
+|------|-------------------|
+| `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` | `generated_column` |
+| `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` | `generated_as_identity` |
+| `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` | `generated_as_identity` |
+
+这是窄范围支持扩展——不是完整的 generated-column 支持、不是完整的 identity-column 支持、不是 generated expression 求值，也不是状态转换支持。无新增规则。
+
 ##### v0.33.0 — Generated/Identity Metadata
 
 v0.33.0 在不支持的 generated/identity 结果上暴露结构化 metadata（`UnsupportedDetail.Metadata`），包含 `column`、`generated_when`、`is_identity` 和 `identity_options` 键。`GeneratedExpression` 保持延迟——不保留表达式文本。审核工作流未变更：generated/identity 列仍触发 unsupported boundary 并返回 partial result。

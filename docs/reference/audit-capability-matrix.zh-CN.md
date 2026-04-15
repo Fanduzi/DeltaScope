@@ -250,6 +250,45 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## PostgreSQL Generated/Identity Narrow Support（`v0.34.0`）
+
+`v0.34.0` 是 **PostgreSQL Generated/Identity Narrow Support 包**。窄范围 generated/identity 定义形态现在通过正常已支持审核路径处理，不再返回 unsupported 边界。这是窄范围支持扩展——不是完整的 generated-column 支持、不是完整的 identity-column 支持、不是 generated expression 求值、不是完整的 PostgreSQL 序列语义，也不是状态转换支持。
+
+| 方面 | 范围 |
+|------|------|
+| 已支持形态 | `CREATE TABLE` 和 `ALTER TABLE ADD COLUMN` 的 generated stored / identity 定义 |
+| 保留事实 | `generated_when`、`is_identity`、`identity_options`（来自 v0.33.0）继续流转 |
+| GeneratedExpression | 不在契约中——不保留表达式文本 |
+| 仍然 unsupported | `DROP EXPRESSION`（`generated_column`）、`SET GENERATED`（`generated_as_identity`）、`DROP IDENTITY`（`generated_as_identity`） |
+| 新 rule ID | 无 |
+| 新 CLI / API 标志 | 无 |
+
+### 已支持形态详情
+
+| 形态 | 状态 | 审核行为 |
+|------|------|---------|
+| `CREATE TABLE ... GENERATED ALWAYS AS (...) STORED` | 已支持 | 正常审核结果，适用时产生 findings |
+| `CREATE TABLE ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` | 已支持 | 正常审核结果，适用时产生 findings |
+| `ALTER TABLE ... ADD COLUMN ... GENERATED ALWAYS AS (...) STORED` | 已支持 | 正常审核结果，适用时产生 findings |
+| `ALTER TABLE ... ADD COLUMN ... GENERATED {ALWAYS|BY DEFAULT} AS IDENTITY` | 已支持 | 正常审核结果，适用时产生 findings |
+
+### 已支持形态的 Surface 契约
+
+| Surface | 行为 |
+|---------|------|
+| CLI | 正常审核输出（退出码 0 或 1 取决于 findings），无 `unsupported` 数组 |
+| pkg/deltascope | `Audit()` 返回带 statements 的 result，无 `ErrUnsupportedStatement` |
+| HTTP | 正常审核响应，无 unsupported 错误 |
+| MCP | 正常 tool result 带 statements，无 `IsError` |
+
+### Unsupported 状态转换形态（不变）
+
+| 形态 | Feature Tag |
+|------|------------|
+| `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` | `generated_column` |
+| `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` | `generated_as_identity` |
+| `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` | `generated_as_identity` |
+
 ### v0.33.0 — PostgreSQL Generated/Identity 事实保留 + Unsupported Metadata 展示包
 
 | 方面 | 范围 |

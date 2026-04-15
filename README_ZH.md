@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.33.0` 为止，DeltaScope 发布 **PostgreSQL Generated/Identity 事实保留 + Unsupported Metadata 展示包**：generated/identity 列事实现在被保留到共享 DDL 契约，不支持的 generated/identity 结果携带结构化 metadata。Generated expression 文本仍然延迟。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上，不再依赖单独的 PG-only CLI 入口。到 `v0.34.0` 为止，DeltaScope 发布 **PostgreSQL Generated/Identity Narrow Support 包**：窄范围 generated/identity 定义形态现在通过正常审核路径处理。v0.33.0 的共享事实继续流转。状态转换形态仍为 unsupported。Generated expression 文本仍然延迟。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
 
 ## 安装
 
@@ -32,9 +32,21 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.33.0/install.sh | \
-  DELTASCOPE_VERSION=v0.33.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.34.0/install.sh | \
+  DELTASCOPE_VERSION=v0.34.0 sh
 ```
+
+### PostgreSQL Generated/Identity Narrow Support 包（`v0.34.0`）
+
+`v0.34.0` 扩展了 PostgreSQL generated/identity 支持，使窄范围定义形态通过正常审核路径处理，不再返回 `ErrUnsupportedStatement`。这是窄范围支持——不是完整的 generated-column 支持、不是完整的 identity-column 支持、不是 generated expression 求值、不是完整的 PostgreSQL 序列语义，也不是状态转换支持。
+
+- **已支持形态**：`CREATE TABLE` 的 generated stored / identity 定义，以及 `ALTER TABLE ... ADD COLUMN` 的 generated stored / identity 定义。这些形态现在产生正常的审核结果。
+- **保留事实**：`v0.33.0` 引入的 `generated_when`、`is_identity` 和 `identity_options` 继续在已支持路径中流转。
+- **仍然 unsupported**：`ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION`（`generated_column`）、`ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...`（`generated_as_identity`）、`ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY`（`generated_as_identity`）。
+- **无新增规则**、无新增 CLI 标志、无规则行为变更。这是提取器层的支持范围扩展。
+- CLI、HTTP、MCP 和 `pkg/deltascope` 的表面对等测试验证窄范围形态的已支持契约。
+
+上一里程碑：`v0.33.0` 在共享 DDL 契约中保留了 generated/identity 列事实并展示 unsupported metadata。详见 [v0.34.0 发行说明](docs/releases/release-notes-v0.34.0.zh-CN.md)。
 
 ### PostgreSQL Generated/Identity 事实保留 + Unsupported Metadata 展示包（`v0.33.0`）
 
@@ -126,9 +138,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.33.0/install.
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组（包含 `feature` 和 `reason` 字段）的部分结果，以及 `ErrUnsupportedStatement` 哨兵错误。
 - **HTTP** 和 **MCP**：将不支持语句作为传输层错误暴露（HTTP 错误响应、MCP tool error），因为底层审计函数对不支持边界返回错误。
 
-`make release-surface-gates VERSION=v0.33.0` 与 `make release-version-surface-gates VERSION=v0.33.0` 用于校验 package/release 与带版本文档面。
+`make release-surface-gates VERSION=v0.34.0` 与 `make release-version-surface-gates VERSION=v0.34.0` 用于校验 package/release 与带版本文档面。
 
-上一里程碑：`v0.33.0` 在共享 DDL 契约中保留了 generated/identity 列事实并展示 unsupported metadata。详见 [v0.33.0 发行说明](docs/releases/release-notes-v0.33.0.zh-CN.md)。
+上一里程碑：`v0.34.0` 将窄范围 generated/identity 定义形态扩展为已支持。详见 [v0.34.0 发行说明](docs/releases/release-notes-v0.34.0.zh-CN.md)。
 
 如果你需要 PostgreSQL 离线审计：
 

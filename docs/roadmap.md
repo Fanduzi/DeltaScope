@@ -4,27 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.33.0 PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack
+## Latest Completed Milestone: v0.34.0 PostgreSQL Generated/Identity Narrow Support Pack
 
-**Goal:** preserve narrow generated/identity column facts in the shared DDL contract and surface structured metadata on unsupported generated/identity outcomes, without adding generated-column support, identity-column support, or rule behavior changes.
+**Goal:** widen PostgreSQL generated/identity support so that narrow definition forms are processed through the normal audit path, without adding full generated-column support, full identity-column support, generated expression evaluation, or state-transition support.
 
 ### Completed Scope
 
-- `GeneratedWhen` (string) and `IsIdentity` (bool) added to `spec.Column` as `omitempty` fields for `CREATE TABLE` and `ALTER TABLE ADD COLUMN` generated/identity paths.
-- `IdentityOptions map[string]any` added to `spec.Column` carrying finite structured identity sequence option facts (`start`, `increment`, `minvalue`, `maxvalue`, `cache`, `cycle`).
-- `Metadata map[string]any` added to `spec.UnsupportedDetail` surfacing `column`, `generated_when`, `is_identity`, and `identity_options` for unsupported generated/identity outcomes.
-- PostgreSQL extractor populates the new fields and metadata for both `CREATE TABLE` and `ALTER TABLE ADD COLUMN` paths.
-- Corpus cases, service tests, and surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` lock the new contract.
+- PostgreSQL extractor no longer rejects narrow generated/identity definition forms (`CREATE TABLE` and `ALTER TABLE ADD COLUMN`) at the unsupported boundary.
+- Corpus expected outcomes and service-level tests updated to assert supported results for narrow forms.
+- Surface tests across CLI, HTTP, MCP, and `pkg/deltascope` switched from unsupported to supported contract assertions.
+- Shared facts from v0.33.0 continue flowing: `generated_when`, `is_identity`, `identity_options`.
 
 ### Key Design Decisions
 
-- Fact preservation + metadata widening only — not generated-column support, identity-column support, or expression evaluation.
-- `GeneratedExpression` explicitly deferred — no stable expression renderer available.
-- `IdentityOptions` is a finite structured fact bag, not complete PostgreSQL sequence semantics.
-- Unsupported feature names unchanged: `generated_column`, `generated_as_identity`.
+- Narrow support only — not full generated-column support, not full identity-column support, not generated expression evaluation.
+- `GeneratedExpression` still deferred — no stable expression renderer.
+- State-transition forms remain unsupported: `DROP EXPRESSION` (`generated_column`), `SET GENERATED` (`generated_as_identity`), `DROP IDENTITY` (`generated_as_identity`).
 - No new rule IDs, CLI flags, or rule behavior changes.
-- MCP surface limitation: metadata not directly surfaced in tool error responses.
-- ALTER TABLE state-transition forms (`DROP EXPRESSION`, `SET GENERATED`, `DROP IDENTITY`) remain unsupported without metadata.
+
+## Previous Milestone: v0.33.0 PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack
+
+**Goal:** preserve narrow generated/identity column facts in the shared DDL contract and surface structured metadata on unsupported generated/identity outcomes.
+
+- `GeneratedWhen`, `IsIdentity`, `IdentityOptions` added to `spec.Column`.
+- `Metadata map[string]any` added to `spec.UnsupportedDetail` for structured unsupported outcomes.
+- Corpus, service, and surface parity tests lock the new contract.
+- No new rule IDs, CLI flags, or rule behavior changes.
 
 ## Previous Milestone: v0.32.0 PostgreSQL Boundary Support-Readiness Gate
 

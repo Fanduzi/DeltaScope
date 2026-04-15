@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.33.0`, DeltaScope ships the **PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack**: generated/identity column facts are now preserved in the shared DDL contract, and unsupported generated/identity outcomes carry structured metadata. Generated expression text remains deferred. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+DeltaScope is an offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for the supported macOS and Linux platforms instead of living behind a separate PG-only CLI entrypoint. As of `v0.34.0`, DeltaScope ships the **PostgreSQL Generated/Identity Narrow Support Pack**: narrow generated/identity definition forms are now supported through the normal audit path. Shared facts from v0.33.0 continue flowing. State-transition forms remain unsupported. Generated expression text remains deferred. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 ## Install
 
@@ -34,9 +34,21 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.33.0/install.sh | \
-  DELTASCOPE_VERSION=v0.33.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.34.0/install.sh | \
+  DELTASCOPE_VERSION=v0.34.0 sh
 ```
+
+### PostgreSQL Generated/Identity Narrow Support Pack (`v0.34.0`)
+
+`v0.34.0` widens PostgreSQL generated/identity support so that narrow definition forms are processed through the normal audit path instead of returning `ErrUnsupportedStatement`. This is narrow support — not full generated-column support, not full identity-column support, not generated expression evaluation, not complete PostgreSQL sequence semantics, and not state-transition support.
+
+- **Supported forms**: `CREATE TABLE` generated stored / identity definitions, and `ALTER TABLE ... ADD COLUMN` generated stored / identity definitions. These forms now produce normal audit results with findings where applicable.
+- **Preserved facts**: `generated_when`, `is_identity`, and `identity_options` from `v0.33.0` continue flowing through the supported path.
+- **Still unsupported**: `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` (`generated_column`), `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` (`generated_as_identity`), `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` (`generated_as_identity`).
+- **No new rules**, no new CLI flags, no rule behavior changes. This is extractor-level support widening.
+- Surface parity tests across CLI, HTTP, MCP, and `pkg/deltascope` verify the supported contract for narrow forms.
+
+Previous milestone: `v0.33.0` preserved generated/identity column facts and surfaced unsupported metadata. See the [v0.34.0 release notes](docs/releases/release-notes-v0.34.0.md) for details.
 
 ### PostgreSQL Generated/Identity Fact Preservation + Unsupported Metadata Surfacing Pack (`v0.33.0`)
 
@@ -128,9 +140,9 @@ Surface contract for unsupported statements:
 - **CLI** and **`pkg/deltascope`**: return a partial result with an `unsupported` array carrying `feature` and `reason` fields, plus the `ErrUnsupportedStatement` sentinel error.
 - **HTTP** and **MCP**: expose unsupported statements as transport-level errors (HTTP error response, MCP tool error) because the underlying audit function returns an error for unsupported boundaries.
 
-`make release-surface-gates VERSION=v0.33.0` and `make release-version-surface-gates VERSION=v0.33.0` verify the package/release and versioned docs surfaces.
+`make release-surface-gates VERSION=v0.34.0` and `make release-version-surface-gates VERSION=v0.34.0` verify the package/release and versioned docs surfaces.
 
-Previous milestone: `v0.33.0` preserves generated/identity facts and surfaces unsupported metadata for PostgreSQL. See the [v0.33.0 release notes](docs/releases/release-notes-v0.33.0.md) for details.
+Previous milestone: `v0.34.0` widens narrow generated/identity definition forms to supported. See the [v0.34.0 release notes](docs/releases/release-notes-v0.34.0.md) for details.
 
 Need PostgreSQL offline audit support?
 

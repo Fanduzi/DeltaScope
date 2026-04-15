@@ -511,6 +511,15 @@ Each boundary is backed by corpus cases and surface parity tests across CLI, HTT
 
 ---
 
+### PostgreSQL Generated/Identity Narrow Support (v0.34.0)
+
+v0.34.0 is the **PostgreSQL Generated/Identity Narrow Support Pack**. It is extractor-level support widening — not a rule behavior change. No new rule IDs were added. Narrow generated/identity definition forms (`CREATE TABLE` and `ALTER TABLE ADD COLUMN`) now flow through the normal audit pipeline instead of being rejected as unsupported boundaries. Existing rules apply to these newly supported forms the same way they apply to other PostgreSQL DDL statements.
+
+- Supported forms: `CREATE TABLE` generated stored / identity definitions, `ALTER TABLE ADD COLUMN` generated stored / identity definitions.
+- Preserved facts: `generated_when`, `is_identity`, `identity_options` (from v0.33.0) continue flowing.
+- Still unsupported: `DROP EXPRESSION` (`generated_column`), `SET GENERATED` (`generated_as_identity`), `DROP IDENTITY` (`generated_as_identity`).
+- This is not full generated-column support, not full identity-column support, not generated expression evaluation, and not state-transition support.
+
 ## v0.33.0 Note: Shared Contract & Unsupported Metadata
 
 v0.33.0 does not add new rules or change rule behavior. It introduces shared contract fields (`GeneratedWhen`, `IsIdentity`, `IdentityOptions` on `spec.Column`) and unsupported metadata (`Metadata` on `spec.UnsupportedDetail`) for PostgreSQL generated/identity outcomes. These are additive contract changes visible to rule consumers, not rule trigger or level changes.
