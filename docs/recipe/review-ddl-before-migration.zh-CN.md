@@ -428,6 +428,10 @@ deltascope audit \
 - `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。
 
+##### v0.33.0 — Generated/Identity Metadata
+
+v0.33.0 在不支持的 generated/identity 结果上暴露结构化 metadata（`UnsupportedDetail.Metadata`），包含 `column`、`generated_when`、`is_identity` 和 `identity_options` 键。`GeneratedExpression` 保持延迟——不保留表达式文本。审核工作流未变更：generated/identity 列仍触发 unsupported boundary 并返回 partial result。
+
 ##### PostgreSQL 边界支持就绪门控（`v0.32.0`）
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**——一个决策里程碑，不是功能发布。未新增迁移审核行为。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。对迁移审核者来说，没有任何变化：现有的 unsupported 边界仍然有效，推荐的工作流（拆分迁移、审核已支持语句、手动审核不支持的语句）不变。

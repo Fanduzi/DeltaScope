@@ -250,6 +250,15 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+### v0.33.0 — PostgreSQL Generated/Identity 事实保留 + Unsupported Metadata 展示包
+
+| 方面 | 范围 |
+|------|------|
+| 共享契约字段 | `spec.Column` 新增 `GeneratedWhen`、`IsIdentity`、`IdentityOptions`（`CREATE TABLE` + `ALTER TABLE ADD COLUMN`） |
+| Unsupported metadata | `UnsupportedDetail.Metadata` 携带 `column`、`generated_when`、`is_identity`、`identity_options` |
+| Surface 契约 | CLI / pkg / HTTP 暴露 metadata；MCP 限制（metadata 未直接展示） |
+| 延迟领域 | `GeneratedExpression`、ALTER TABLE 状态转换 metadata |
+
 ## PostgreSQL 边界支持就绪门控（`v0.32.0`）
 
 `v0.32.0` 是 **PostgreSQL 边界支持就绪门控**。这是一个决策里程碑——不是功能发布。Characterization 测试记录了 generated 和 identity 列的稳定 AST 事实；就绪报告推荐 `v0.33.0` 作为窄事实保留包。
@@ -355,6 +364,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 - **CLI** 和 **`pkg/deltascope`**：返回带 `unsupported` 数组的部分结果，以及 `ErrUnsupportedStatement`。
 - **HTTP** 和 **MCP**：作为传输层错误暴露（HTTP 错误响应、MCP tool error）。
 - **`v0.30.0` 说明**：PostgreSQL `ALTER TABLE ... ADD COLUMN` 的 generated / identity 形态现在也通过 `generated_column` 与 `generated_as_identity` 走相同的显式 unsupported 契约；相邻的 `DROP EXPRESSION`、`SET GENERATED`、`DROP IDENTITY` 现已在 `v0.31.0` 中获得显式 unsupported 映射。
+- **`v0.33.0` 说明**：Unsupported 结果现在通过 `UnsupportedDetail.Metadata` 暴露结构化 metadata（`column`、`generated_when`、`is_identity`、`identity_options`）。CLI / pkg / HTTP 通道直接展示 metadata；MCP 通道受限于当前 transport 未直接展示 metadata 字段。
 
 ---
 

@@ -692,3 +692,37 @@ Example notice-level finding metadata for an explicit cross-schema FK:
 - **Policy configuration** — [config.md](config.md)
 - **HTTP API** — [http-api.md](http-api.md)
 - **Metadata-aware mode** — [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md)
+
+---
+
+## v0.33.0: Unsupported Metadata for Generated/Identity Statements
+
+Starting with `v0.33.0`, PostgreSQL unsupported generated/identity outcomes carry structured metadata in CLI JSON output. When auditing a `CREATE TABLE` or `ALTER TABLE ADD COLUMN` statement that contains `GENERATED ALWAYS AS (...) STORED` or `GENERATED ... AS IDENTITY`, the `unsupported` array entry now includes a `metadata` object:
+
+```json
+{
+  "unsupported": [
+    {
+      "feature": "generated_as_identity",
+      "reason": "...",
+      "metadata": {
+        "column": "id",
+        "generated_when": "a",
+        "is_identity": true,
+        "identity_options": { "start": 10, "increment": 5, "cache": 20, "cycle": true }
+      }
+    }
+  ]
+}
+```
+
+Metadata keys:
+
+| Key | Present When | Type |
+|-----|-------------|------|
+| `column` | always | string |
+| `generated_when` | always | `"a"` (ALWAYS) or `"d"` (BY DEFAULT) |
+| `is_identity` | identity columns | boolean (`true`) |
+| `identity_options` | identity with options | object with numeric/boolean values |
+
+This is an additive metadata widening on the unsupported contract. No new CLI flags or output format changes were introduced.
