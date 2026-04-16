@@ -367,15 +367,19 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	case pg_query.AlterTableType_AT_DropColumn:
 		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
 	case pg_query.AlterTableType_AT_DropExpression:
-		return spec.Alter{}, false, &spec.UnsupportedDetail{
-			Feature: "generated_column",
-			Reason:  "postgresql generated column alteration is unsupported in v1",
-		}
-	case pg_query.AlterTableType_AT_SetIdentity, pg_query.AlterTableType_AT_DropIdentity:
-		return spec.Alter{}, false, &spec.UnsupportedDetail{
-			Feature: "generated_as_identity",
-			Reason:  "postgresql identity column alteration is unsupported in v1",
-		}
+		return spec.Alter{Action: "drop_expression", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+	case pg_query.AlterTableType_AT_SetIdentity:
+		generatedWhen := generatedWhenFromDef(cmd.GetDef())
+		return spec.Alter{
+			Action: "set_generated",
+			Name:   cmd.GetName(),
+			Column: &spec.AlterColumn{OldName: cmd.GetName()},
+			Options: map[string]string{
+				"generated_when": generatedWhen,
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_DropIdentity:
+		return spec.Alter{Action: "drop_identity", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
 	case pg_query.AlterTableType_AT_AddConstraint:
 		constraint := cmd.GetDef().GetConstraint()
 		if constraint == nil {
@@ -413,6 +417,29 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}
+}
+
+// generatedWhenFromDef extracts the generated mode from an AT_SetIdentity
+// def payload. PostgreSQL encodes ALWAYS as 97 ('a') and BY DEFAULT as 100 ('d').
+func generatedWhenFromDef(defNode *pg_query.Node) string {
+	if defNode == nil {
+		return ""
+	}
+	listNode := defNode.GetList()
+	if listNode == nil {
+		return ""
+	}
+	for _, item := range listNode.GetItems() {
+		defElem := item.GetDefElem()
+		if defElem == nil || defElem.GetDefname() != "generated" {
+			continue
+		}
+		arg := defElem.GetArg()
+		if arg != nil && arg.GetInteger() != nil {
+			return string(rune(arg.GetInteger().GetIval()))
+		}
+	}
+	return ""
 }
 
 func supportedConstraintType(kind pg_query.ConstrType) (string, bool) {

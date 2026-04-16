@@ -1,4 +1,4 @@
-name: alter_table_set_generated_identity
+name: alter_table_set_generated_identity_always
 
 dialect: postgresql
 category: ddl
@@ -16,4 +16,4 @@ facts:
     - action: set_generated
       column_old_name: id
       options:
-        generated_when: d
+        generated_when: a

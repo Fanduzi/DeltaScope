@@ -95,10 +95,10 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 						t.Errorf("unsupported.include: expected feature %q not found (actual: %+v)", feat, unsupportedFeatures(result.Unsupported))
 					}
 
-				// Assert unsupported.metadata.
-				if tc.Expect.Unsupported != nil && len(tc.Expect.Unsupported.Metadata) > 0 {
-					corpusAssertUnsupportedMetadata(t, result.Unsupported, tc.Expect.Unsupported.Metadata)
-				}
+					// Assert unsupported.metadata.
+					if tc.Expect.Unsupported != nil && len(tc.Expect.Unsupported.Metadata) > 0 {
+						corpusAssertUnsupportedMetadata(t, result.Unsupported, tc.Expect.Unsupported.Metadata)
+					}
 				}
 			}
 
@@ -143,6 +143,10 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 			if len(result.Statements) > 0 {
 				if tc.Expect.Operation != "" || (tc.Facts != nil && len(tc.Facts.Constraints) > 0) {
 					corpusAssertSemantic(t, string(sqlBytes), spec.DialectPostgreSQL, tc)
+				}
+				stmt, ok := corpusExtractStatement(t, string(sqlBytes), spec.DialectPostgreSQL)
+				if ok {
+					corpusAssertPostgreSQLAlterFacts(t, stmt, raw)
 				}
 			}
 
