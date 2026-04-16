@@ -3,6 +3,8 @@ package audit
 import (
 	"testing"
 
+	"go.yaml.in/yaml/v3"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -222,5 +224,66 @@ func corpusAssertSemantic(t *testing.T, sql string, dialect spec.Dialect, tc cor
 	}
 	if tc.Facts != nil && len(tc.Facts.Constraints) > 0 {
 		corpusAssertConstraintFacts(t, stmt, tc.Facts.Constraints)
+	}
+}
+
+type corpusPostgreSQLAlterFactFile struct {
+	Facts *struct {
+		Alter []corpusPostgreSQLAlterFact `yaml:"alter"`
+	} `yaml:"facts"`
+}
+
+type corpusPostgreSQLAlterFact struct {
+	Action        string         `yaml:"action"`
+	ColumnOldName string         `yaml:"column_old_name,omitempty"`
+	Options       map[string]any `yaml:"options,omitempty"`
+}
+
+func corpusAssertPostgreSQLAlterFacts(t *testing.T, stmt spec.Statement, rawYAML []byte) {
+	t.Helper()
+	var expected corpusPostgreSQLAlterFactFile
+	if err := yaml.Unmarshal(rawYAML, &expected); err != nil {
+		t.Fatalf("parse PostgreSQL alter facts yaml: %v", err)
+	}
+	if expected.Facts == nil || len(expected.Facts.Alter) == 0 {
+		return
+	}
+	if stmt.DDL == nil {
+		t.Fatal("semantic facts: statement has no DDL payload")
+	}
+	for _, want := range expected.Facts.Alter {
+		matched := false
+		for i := range stmt.DDL.Alter {
+			actual := stmt.DDL.Alter[i]
+			if actual.Action != want.Action {
+				continue
+			}
+			if want.ColumnOldName != "" {
+				if actual.Column == nil || actual.Column.OldName != want.ColumnOldName {
+					continue
+				}
+			}
+			if len(want.Options) > 0 {
+				if len(actual.Options) == 0 {
+					continue
+				}
+				optionsMatch := true
+				for key, expectedValue := range want.Options {
+					actualValue, ok := actual.Options[key]
+					if !ok || !corpusValueEqual(expectedValue, actualValue) {
+						optionsMatch = false
+						break
+					}
+				}
+				if !optionsMatch {
+					continue
+				}
+			}
+			matched = true
+			break
+		}
+		if !matched {
+			t.Errorf("facts.alter: expected %+v not found in actual alter actions %+v", want, stmt.DDL.Alter)
+		}
 	}
 }
