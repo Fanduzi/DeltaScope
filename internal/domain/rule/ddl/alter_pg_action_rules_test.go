@@ -271,6 +271,204 @@ func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
 	})
 }
 
+// TestPGGeneratedIdentityForbidRules covers the three PG-only generated/identity
+// state-transition forbid rules: drop_expression, set_generated, drop_identity.
+// These rules are registered in Register() and only fire for PostgreSQL dialect.
+func TestPGGeneratedIdentityForbidRules(t *testing.T) {
+	pgForbidConfig := policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"forbid": true},
+	}
+
+	// The three PG-generated/identity actions that get their own forbid rules.
+	pgGenIdentActions := []struct {
+		ruleID string
+		action string
+		label  string
+	}{
+		{ruleIDAlterDropExpressionForbid, "drop_expression", "drop expression"},
+		{ruleIDAlterSetGeneratedForbid, "set_generated", "set generated"},
+		{ruleIDAlterDropIdentityForbid, "drop_identity", "drop identity"},
+	}
+
+	for _, pg := range pgGenIdentActions {
+		t.Run(pg.ruleID, func(t *testing.T) {
+			r, err := newForbiddenAlterActionRule(
+				pg.ruleID, pg.action, pg.label,
+				rule.LevelWarning, pgForbidConfig,
+				withDialectAllowlist(spec.DialectPostgreSQL),
+			)
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+
+			// --- Positive: PG + matching action -> 1 finding ---
+			t.Run("positive_pg_matching_action", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+					spec.Alter{Action: pg.action, Name: "col1"},
+				)
+				findings, err := r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 1 {
+					t.Fatalf("expected 1 finding, got %d", len(findings))
+				}
+			})
+
+			// --- Negative: MySQL + matching action -> 0 findings ---
+			t.Run("negative_mysql_matching_action", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectMySQL,
+					spec.Alter{Action: pg.action, Name: "col1"},
+				)
+				findings, err := r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for MySQL, got %d", len(findings))
+				}
+			})
+
+			// --- Negative: TiDB + matching action -> 0 findings ---
+			t.Run("negative_tidb_matching_action", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectTiDB,
+					spec.Alter{Action: pg.action, Name: "col1"},
+				)
+				findings, err := r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for TiDB, got %d", len(findings))
+				}
+			})
+
+			// --- Negative: PG + wrong action -> 0 findings ---
+			t.Run("negative_pg_wrong_action", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+					spec.Alter{Action: "modify_column", Name: "col1"},
+				)
+				findings, err := r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for wrong action, got %d", len(findings))
+				}
+			})
+
+			// --- Negative: PG + add_column -> not caught by these rules ---
+			t.Run("negative_pg_add_column", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+					spec.Alter{Action: "add_column", Name: "col1"},
+				)
+				findings, err := r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for add_column, got %d", len(findings))
+				}
+			})
+
+			// --- AppliesTo boundary: PG + matching action -> true ---
+			t.Run("applies_to_pg_matching_action", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+					spec.Alter{Action: pg.action, Name: "col1"},
+				)
+				if !r.AppliesTo(stmt) {
+					t.Fatal("expected AppliesTo() == true for PG + matching action")
+				}
+			})
+
+			// --- AppliesTo boundary: MySQL + matching action -> false ---
+			t.Run("applies_to_mysql_matching_action", func(t *testing.T) {
+				stmt := alterStatementWithDialect(spec.DialectMySQL,
+					spec.Alter{Action: pg.action, Name: "col1"},
+				)
+				if r.AppliesTo(stmt) {
+					t.Fatal("expected AppliesTo() == false for MySQL + matching action")
+				}
+			})
+
+			// --- AppliesTo boundary: forbid:false -> false ---
+			t.Run("applies_to_forbid_false", func(t *testing.T) {
+				noForbidConfig := policy.RulePolicy{
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{"forbid": false},
+				}
+				rNoForbid, err := newForbiddenAlterActionRule(
+					pg.ruleID, pg.action, pg.label,
+					rule.LevelWarning, noForbidConfig,
+					withDialectAllowlist(spec.DialectPostgreSQL),
+				)
+				if err != nil {
+					t.Fatalf("new rule: %v", err)
+				}
+				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+					spec.Alter{Action: pg.action, Name: "col1"},
+				)
+				if rNoForbid.AppliesTo(stmt) {
+					t.Fatal("expected AppliesTo() == false when forbid:false")
+				}
+			})
+		})
+	}
+}
+
+// TestPGGeneratedIdentityForbidRulesNoCrossFire proves the three new
+// generated/identity forbid rules do NOT match any of the five existing
+// PG-native alter action values (set_data_type, set_default, etc.).
+func TestPGGeneratedIdentityForbidRulesNoCrossFire(t *testing.T) {
+	cfg := policy.RulePolicy{Enabled: true, Level: rule.LevelWarning, Params: map[string]any{"forbid": true}}
+
+	newActions := []struct {
+		ruleID string
+		action string
+	}{
+		{ruleIDAlterDropExpressionForbid, "drop_expression"},
+		{ruleIDAlterSetGeneratedForbid, "set_generated"},
+		{ruleIDAlterDropIdentityForbid, "drop_identity"},
+	}
+
+	existingPGActions := []string{"set_data_type", "set_default", "drop_default", "set_not_null", "drop_not_null"}
+
+	for _, na := range newActions {
+		r, err := newForbiddenAlterActionRule(
+			na.ruleID, na.action, na.action,
+			rule.LevelWarning, cfg,
+			withDialectAllowlist(spec.DialectPostgreSQL),
+		)
+		if err != nil {
+			t.Fatalf("new rule %s: %v", na.ruleID, err)
+		}
+
+		for _, existing := range existingPGActions {
+			t.Run(na.action+"_does_not_match_"+existing, func(t *testing.T) {
+				stmt := spec.Statement{
+					Kind:    spec.KindDDL,
+					Dialect: spec.DialectPostgreSQL,
+					DDL: &spec.DDL{
+						Table: &spec.Table{Name: "users"},
+						Alter: []spec.Alter{{Action: existing, Name: "col1"}},
+					},
+				}
+				findings, err := r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for action %q against rule %q, got %d",
+						existing, na.ruleID, len(findings))
+				}
+			})
+		}
+	}
+}
+
 // alterStatementWithDialect builds a synthetic ALTER TABLE statement with a specific dialect.
 func alterStatementWithDialect(dialect spec.Dialect, alters ...spec.Alter) spec.Statement {
 	return spec.Statement{

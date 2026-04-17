@@ -257,6 +257,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterDropNotNullForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterActionRule(ruleIDAlterDropNotNullForbid, "drop_not_null", "drop not null", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
 		}},
+		{ruleID: ruleIDAlterDropExpressionForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropExpressionForbid, "drop_expression", "drop expression", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
+		{ruleID: ruleIDAlterSetGeneratedForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterSetGeneratedForbid, "set_generated", "set generated", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
+		{ruleID: ruleIDAlterDropIdentityForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newForbiddenAlterActionRule(ruleIDAlterDropIdentityForbid, "drop_identity", "drop identity", rule.LevelWarning, cfg, withDialectAllowlist(spec.DialectPostgreSQL))
+		}},
 		{ruleID: ruleIDAlterModifyColumnTargetTypeFamilyAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterTargetTypeFamilyRule(ruleIDAlterModifyColumnTargetTypeFamilyAllowlist, "modify_column", "modify column", rule.LevelBlocker, defaultConservativeAlterTypeFamilies, cfg)
 		}},

@@ -638,6 +638,27 @@ func Default() Policy {
 					"forbid": true,
 				},
 			},
+			"ddl.alter.drop_expression.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.set_generated.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
+			"ddl.alter.drop_identity.forbid": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"forbid": true,
+				},
+			},
 			// PG migration-safety rules (PostgreSQL-only).
 			"ddl.pg.create_index.concurrently.require": {
 				Enabled: true,
