@@ -251,6 +251,8 @@ jobs:
           set -euo pipefail
           mkdir -p "${RUNNER_TEMP}/homebrew-deltascope/Casks"
           bash ./scripts/render_homebrew_cask.sh > "${RUNNER_TEMP}/homebrew-deltascope/Casks/deltascope.rb"
+          CASK="${RUNNER_TEMP}/homebrew-deltascope/Casks/deltascope.rb" \
+            bash ./scripts/verify_homebrew_cask.sh
 
       - name: Publish Homebrew cask
         env:
@@ -271,13 +273,43 @@ jobs:
           git commit -m "Update deltascope cask for ${GITHUB_REF_NAME}"
           git push origin HEAD:main
 
+  verify-homebrew-cask-install:
+    needs:
+      - publish-homebrew-cask
+    runs-on: macos-15
+    timeout-minutes: 15
+
+    steps:
+      - name: Verify installed Homebrew cask binary contract
+        run: |
+          set -euo pipefail
+          brew uninstall --cask deltascope || true
+          brew untap Fanduzi/deltascope || true
+          brew tap Fanduzi/deltascope
+          brew install --cask --no-quarantine Fanduzi/deltascope/deltascope
+          version_output="$(deltascope --version)"
+          printf '%s\n' "${version_output}"
+          case "${version_output}" in
+            *"${GITHUB_REF_NAME}"*) ;;
+            *) echo "installed deltascope version mismatch: expected ${GITHUB_REF_NAME}" >&2; exit 1 ;;
+          esac
+          case "${version_output}" in
+            *postgresql*) ;;
+            *) echo "installed deltascope lacks PostgreSQL support: ${version_output}" >&2; exit 1 ;;
+          esac
+          deltascope audit \
+            --dialect postgresql \
+            --sql 'create table pg_smoke (id bigint primary key);' \
+            --format json \
+            --fail-on none >/dev/null
+
   publish-mcp-launcher-package:
     needs:
       - release-linux
       - release-linux-arm64
       - release-macos-arm64
       - release-macos-amd64
-      - publish-homebrew-cask
+      - verify-homebrew-cask-install
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

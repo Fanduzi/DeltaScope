@@ -7,6 +7,7 @@ Operational scripts for local DeltaScope workflows.
 | File | Responsibility |
 |------|---------------|
 | verify_pg_manylinux_baseline.sh | Builds `deltascope-pg` in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
+| verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
 | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |
 | package_pg_cli_release.sh | Packages the verified manylinux `deltascope-pg` binary into the only approved public PG v1 release archive and emits a checksum sidecar |
 | test_cli_metadata_e2e.sh | Starts Docker fixtures, seeds TiDB, runs metadata-aware CLI e2e flows, and provides JSON assertion helpers |
@@ -19,6 +20,7 @@ Operational scripts for local DeltaScope workflows.
 ## Exports
 
 - `verify_pg_manylinux_baseline.sh`
+- `verify_homebrew_cask.sh`
 - `verify_release_archive.sh`
 - `package_pg_cli_release.sh`
 - `make package-pg-cli-release VERSION=<tag-or-version>`
@@ -54,6 +56,7 @@ Operational scripts for local DeltaScope workflows.
 - The CLI e2e script builds `./cmd/deltascope` once per run, while the MCP and HTTP e2e scripts run tagged Go tests against the real server entrypoints.
 - The Docker-backed suites are intentionally separate from `go test ./...`.
 - The release archive verifier is the final package-level contract gate: cask/install-facing archives must contain version-matched PG-capable binaries before upload.
+- The Homebrew cask verifier ensures the tap update still points at the exact darwin release assets and checksums produced by the release jobs.
 - The manylinux baseline verifier is Phase 7 Slice 3's reusable gate for the only public PG v1 artifact, `deltascope-pg`.
 - The PG release packager is Phase 7 Slice 4's only public PostgreSQL publish helper; it packages `deltascope-pg` and does not emit `deltascope-server-pg` or `deltascope-mcp-pg` archives.
 

@@ -36,6 +36,18 @@ jobs:
           version: "~> v2"
           args: check
 
+      - name: Verify Homebrew cask render contract
+        env:
+          VERSION: v0.0.0-dev
+          DARWIN_AMD64_SHA256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          DARWIN_ARM64_SHA256: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/deltascope-homebrew-cask
+          bash ./scripts/render_homebrew_cask.sh > /tmp/deltascope-homebrew-cask/deltascope.rb
+          CASK=/tmp/deltascope-homebrew-cask/deltascope.rb \
+            bash ./scripts/verify_homebrew_cask.sh
+
       - name: Verify Linux binaries are statically linked
         run: |
           set -euo pipefail
