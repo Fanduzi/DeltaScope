@@ -65,6 +65,19 @@ main() {
   mkdir -p "${ROOT_DIR}/${BUILD_DIR}"
 
   log "building converged Linux ${TARGET_ARCH} PG-capable binaries in ${MANYLINUX_IMAGE} (${MANYLINUX_PLATFORM})"
+  local docker_env_args=()
+  local env_name env_value
+  for env_name in \
+    HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY \
+    http_proxy https_proxy all_proxy no_proxy \
+    GOPROXY GOSUMDB GONOSUMDB GONOPROXY GOPRIVATE
+  do
+    env_value="${!env_name:-}"
+    if [[ -n "${env_value}" ]]; then
+      docker_env_args+=(-e "${env_name}=${env_value}")
+    fi
+  done
+
   docker run --rm \
     --platform "${MANYLINUX_PLATFORM}" \
     -v "${ROOT_DIR}:/src" \
@@ -74,6 +87,7 @@ main() {
     -e TARGET_ARCH="${TARGET_ARCH}" \
     -e GO_TARBALL_ARCH="${GO_TARBALL_ARCH}" \
     -e VERSION="${VERSION}" \
+    "${docker_env_args[@]}" \
     "${MANYLINUX_IMAGE}" \
     bash -lc '
       set -euo pipefail

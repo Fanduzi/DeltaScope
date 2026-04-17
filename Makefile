@@ -108,6 +108,13 @@ verify-pg-linux-release-archive-arm64:
 package-pg-linux-release-archive-amd64:
 	set -eu; \
 	host_worktree="$$(pwd)"; \
+	docker_env_args=""; \
+	for env_name in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy GOPROXY GOSUMDB GONOSUMDB GONOPROXY GOPRIVATE; do \
+		eval "env_value=\$${$$env_name-}"; \
+		if [ -n "$$env_value" ]; then \
+			docker_env_args="$$docker_env_args -e $$env_name=$$env_value"; \
+		fi; \
+	done; \
 	rm -rf dist; \
 	mkdir -p dist; \
 	docker run --rm \
@@ -119,6 +126,7 @@ package-pg-linux-release-archive-amd64:
 		-e GO_VERSION="$(GO_VERSION)" \
 		-e RELEASE_VERSION="$(VERSION)" \
 		-e HOME=/tmp/deltascope-home \
+		$$docker_env_args \
 		$(PG_MANYLINUX_IMAGE) \
 		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin /tmp/release-src; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; tar --exclude=.git -C /work -cf - . | tar -C /tmp/release-src -xf -; cd /tmp/release-src; git init -q; git config user.name "release-bot"; git config user.email "release-bot@example.com"; git remote add origin https://github.com/Fanduzi/DeltaScope.git; git add .; git commit -qm "release snapshot"; git tag "$$RELEASE_VERSION"; goreleaser release --config .goreleaser.pg-smoke.yml --clean --skip=publish --skip=announce --skip=sign --skip=sbom; cp dist/deltascope_*_linux_amd64.tar.gz /out/; cp dist/deltascope_*_checksums.txt /out/'; \
 	archive="$$(ls dist/deltascope_*_linux_amd64.tar.gz | head -n 1)"; \
@@ -130,11 +138,29 @@ package-pg-linux-release-archive-amd64:
 	test -f "$$generic_checksum"; \
 	cp "$$generic_checksum" "$$platform_checksum"; \
 	grep -q "  $${archive_base}$$" "$$platform_checksum"; \
-	VERSION="$(VERSION)" ARCHIVE="$$archive" CHECKSUM="$$platform_checksum" GLIBC_BASELINE="$(PG_GLIBC_BASELINE)" bash ./scripts/verify_release_archive.sh
+	docker run --rm \
+		--platform $(PG_MANYLINUX_PLATFORM) \
+		--user "$$(id -u):$$(id -g)" \
+		-v "$$host_worktree:/work" \
+		-w /work \
+		-e VERSION="$(VERSION)" \
+		-e ARCHIVE="/work/$$archive" \
+		-e CHECKSUM="/work/$$platform_checksum" \
+		-e GLIBC_BASELINE="$(PG_GLIBC_BASELINE)" \
+		$$docker_env_args \
+		$(PG_MANYLINUX_IMAGE) \
+		bash ./scripts/verify_release_archive.sh
 
 package-pg-linux-release-archive-arm64:
 	set -eu; \
 	host_worktree="$$(pwd)"; \
+	docker_env_args=""; \
+	for env_name in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY http_proxy https_proxy all_proxy no_proxy GOPROXY GOSUMDB GONOSUMDB GONOPROXY GOPRIVATE; do \
+		eval "env_value=\$${$$env_name-}"; \
+		if [ -n "$$env_value" ]; then \
+			docker_env_args="$$docker_env_args -e $$env_name=$$env_value"; \
+		fi; \
+	done; \
 	rm -rf dist; \
 	mkdir -p dist; \
 	docker run --rm \
@@ -146,6 +172,7 @@ package-pg-linux-release-archive-arm64:
 		-e GO_VERSION="$(GO_VERSION)" \
 		-e RELEASE_VERSION="$(VERSION)" \
 		-e HOME=/tmp/deltascope-home \
+		$$docker_env_args \
 		quay.io/pypa/manylinux2014_aarch64 \
 		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin /tmp/release-src; GO_TARBALL="go$${GO_VERSION}.linux-arm64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; tar --exclude=.git -C /work -cf - . | tar -C /tmp/release-src -xf -; cd /tmp/release-src; git init -q; git config user.name "release-bot"; git config user.email "release-bot@example.com"; git remote add origin https://github.com/Fanduzi/DeltaScope.git; git add .; git commit -qm "release snapshot"; git tag "$$RELEASE_VERSION"; goreleaser release --config .goreleaser.pg-smoke-arm64.yml --clean --skip=publish --skip=announce --skip=sign --skip=sbom; cp dist/deltascope_*_linux_arm64.tar.gz /out/; cp dist/deltascope_*_checksums.txt /out/'; \
 	archive="$$(ls dist/deltascope_*_linux_arm64.tar.gz | head -n 1)"; \
@@ -157,7 +184,18 @@ package-pg-linux-release-archive-arm64:
 	test -f "$$generic_checksum"; \
 	mv "$$generic_checksum" "$$platform_checksum"; \
 	grep -q "  $${archive_base}$$" "$$platform_checksum"; \
-	VERSION="$(VERSION)" ARCHIVE="$$archive" CHECKSUM="$$platform_checksum" GLIBC_BASELINE="$(PG_GLIBC_BASELINE)" bash ./scripts/verify_release_archive.sh
+	docker run --rm \
+		--platform linux/arm64 \
+		--user "$$(id -u):$$(id -g)" \
+		-v "$$host_worktree:/work" \
+		-w /work \
+		-e VERSION="$(VERSION)" \
+		-e ARCHIVE="/work/$$archive" \
+		-e CHECKSUM="/work/$$platform_checksum" \
+		-e GLIBC_BASELINE="$(PG_GLIBC_BASELINE)" \
+		$$docker_env_args \
+		quay.io/pypa/manylinux2014_aarch64 \
+		bash ./scripts/verify_release_archive.sh
 
 # Phase 7 Slice 4 packages only the approved public PG v1 artifact after the manylinux/glibc gate passes.
 # `deltascope-server-pg` and `deltascope-mcp-pg` are intentionally excluded from this public release path.

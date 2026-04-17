@@ -56,8 +56,10 @@ Operational scripts for local DeltaScope workflows.
 - The CLI e2e script builds `./cmd/deltascope` once per run, while the MCP and HTTP e2e scripts run tagged Go tests against the real server entrypoints.
 - The Docker-backed suites are intentionally separate from `go test ./...`.
 - The release archive verifier is the final package-level contract gate: cask/install-facing archives must contain version-matched PG-capable binaries before upload.
+- Linux main-archive verification is executed inside the matching manylinux container so the verifier can execute the packaged Linux binaries instead of relying on the host OS.
 - The Homebrew cask verifier ensures the tap update still points at the exact darwin release assets and checksums produced by the release jobs.
 - The manylinux baseline verifier is Phase 7 Slice 3's reusable gate for the only public PG v1 artifact, `deltascope-pg`.
+- The manylinux verifier and manylinux release packagers inherit host `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` plus Go module env like `GOPROXY` and `GOSUMDB`, so constrained networks can use local proxies or domestic mirrors without patching scripts.
 - The PG release packager is Phase 7 Slice 4's only public PostgreSQL publish helper; it packages `deltascope-pg` and does not emit `deltascope-server-pg` or `deltascope-mcp-pg` archives.
 
 ## Update Rule
