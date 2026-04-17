@@ -286,7 +286,7 @@ jobs:
           brew uninstall --cask deltascope || true
           brew untap Fanduzi/deltascope || true
           brew tap Fanduzi/deltascope
-          brew install --cask --no-quarantine Fanduzi/deltascope/deltascope
+          brew install --cask Fanduzi/deltascope/deltascope
           version_output="$(deltascope --version)"
           printf '%s\n' "${version_output}"
           case "${version_output}" in
