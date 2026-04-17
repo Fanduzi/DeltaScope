@@ -9,7 +9,8 @@ expect:
   unsupported:
     count: 0
   findings:
-    include: []
+    include:
+      - ddl.alter.drop_identity.forbid
     exclude: []
 facts:
   alter:
