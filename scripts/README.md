@@ -28,6 +28,7 @@ Operational scripts for local DeltaScope workflows.
 - `test_http_metadata_e2e_postgresql.sh`
 - `test_mcp_metadata_e2e_postgresql.sh`
 - `make smoke-pg-cli-manylinux-baseline`
+- `make verify-pg-linux-release-archive-cn VERSION=<tag-or-version>`
 - `make test-e2e-cli`
 - `make test-e2e-cli-mysql`
 - `make test-e2e-cli-tidb`
@@ -57,6 +58,7 @@ Operational scripts for local DeltaScope workflows.
 - The Homebrew cask verifier ensures the tap update still points at the exact darwin release assets and checksums produced by the release jobs.
 - The manylinux baseline verifier is the reusable gate for the converged Linux PG-capable binaries and enforces the approved glibc baseline before release packaging.
 - The manylinux verifier and manylinux release packagers inherit host `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` plus Go module env like `GOPROXY` and `GOSUMDB`, so constrained networks can use local proxies or domestic mirrors without patching scripts.
+- `make verify-pg-linux-release-archive-cn` is a local-only convenience wrapper that defaults to `GOPROXY=https://goproxy.cn,direct` and `GOSUMDB=off` before delegating to the normal Linux archive verifier.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
