@@ -511,6 +511,18 @@ Each boundary is backed by corpus cases and surface parity tests across CLI, HTT
 
 ---
 
+### PostgreSQL Generated/Identity Rule Coverage (v0.36.0)
+
+v0.36.0 is the **PostgreSQL Generated/Identity Rule Coverage Pack**. Three new PostgreSQL-only forbid rules cover the generated/identity state-transition forms that became supported in v0.35.0. These are forbid alter-action rules using the existing `newForbiddenAlterActionRule` constructor with a PostgreSQL-only dialect allowlist.
+
+| Rule ID | Action | Covered Form | Dialect |
+|---------|--------|-------------|---------|
+| `ddl.alter.drop_expression.forbid` | `drop_expression` | `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` | PostgreSQL only |
+| `ddl.alter.set_generated.forbid` | `set_generated` | `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` | PostgreSQL only |
+| `ddl.alter.drop_identity.forbid` | `drop_identity` | `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` | PostgreSQL only |
+
+These rules produce explicit `rule_id` findings across CLI, HTTP, MCP, and `pkg/deltascope` surfaces. This is rule coverage — not parser support widening, not spec contract widening, not generated expression evaluation, not complete PostgreSQL sequence semantics. No MySQL/TiDB behavior changes.
+
 ### PostgreSQL Generated/Identity State-Transition Support (v0.35.0)
 
 v0.35.0 is the **PostgreSQL Generated/Identity State-Transition Pack**. State-transition forms for PostgreSQL generated and identity columns are now supported through the normal audit path. It is extractor-level support widening — not a rule behavior change. No new rule IDs were added. Existing rules apply to these newly supported forms the same way they apply to other PostgreSQL DDL statements.

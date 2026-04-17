@@ -499,6 +499,18 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 ---
 
+### PostgreSQL Generated/Identity Rule Coverage（v0.36.0）
+
+v0.36.0 是 **PostgreSQL Generated/Identity Rule Coverage Pack**。三条新的 PostgreSQL-only forbid 规则覆盖了 v0.35.0 已支持的 generated/identity 状态转换形态。这些规则使用现有的 `newForbiddenAlterActionRule` 构造器加 PostgreSQL-only 方言白名单。
+
+| Rule ID | Action | 覆盖形态 | 方言 |
+|---------|--------|---------|------|
+| `ddl.alter.drop_expression.forbid` | `drop_expression` | `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` | 仅 PostgreSQL |
+| `ddl.alter.set_generated.forbid` | `set_generated` | `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` | 仅 PostgreSQL |
+| `ddl.alter.drop_identity.forbid` | `drop_identity` | `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` | 仅 PostgreSQL |
+
+这些规则在 CLI、HTTP、MCP 和 `pkg/deltascope` 四条产品面上产生明确的 `rule_id` findings。这是规则覆盖——不是 parser 支持范围扩展、不是 spec 契约扩展、不是 generated expression 求值、不是完整的 PostgreSQL 序列语义。无 MySQL/TiDB 行为变更。
+
 ### PostgreSQL Generated/Identity State-Transition Support（v0.35.0）
 
 v0.35.0 是 **PostgreSQL Generated/Identity State-Transition Pack**。PostgreSQL generated 和 identity 列的状态转换形态现在通过正常审核路径支持。它是提取器层的支持范围扩展——不是规则行为变更。未新增规则 ID。已有规则对这些新支持形态的适用方式与其它 PostgreSQL DDL 语句一致。
