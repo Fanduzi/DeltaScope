@@ -695,6 +695,34 @@ Example notice-level finding metadata for an explicit cross-schema FK:
 
 ---
 
+## v0.36.0: Rule Coverage for Generated/Identity State-Transition Forms
+
+Starting with v0.36.0, PostgreSQL generated/identity state-transition forms that were supported in v0.35.0 now produce explicit `rule_id` findings. The supported parser/output path is unchanged — the difference is that these forms now trigger PostgreSQL-only forbid rules instead of passing silently.
+
+New rule IDs:
+
+| Rule ID | Covered Form |
+|---------|-------------|
+| `ddl.alter.drop_expression.forbid` | `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` |
+| `ddl.alter.set_generated.forbid` | `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` |
+| `ddl.alter.drop_identity.forbid` | `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` |
+
+Example JSON finding:
+
+```json
+{
+  "findings": [
+    {
+      "rule_id": "ddl.alter.set_generated.forbid",
+      "level": "blocker",
+      "message": "ALTER action 'set_generated' is not allowed"
+    }
+  ]
+}
+```
+
+This is rule coverage — not parser support widening, not spec contract widening, not generated expression evaluation, not complete PostgreSQL sequence semantics. No new CLI flags were added.
+
 ## v0.35.0: State-Transition Support for Generated/Identity Columns
 
 Starting with v0.35.0, PostgreSQL state-transition forms for generated and identity columns are processed through the normal supported audit path. CLI output for these forms no longer includes an `unsupported` array — instead, the audit produces normal results with findings where applicable.

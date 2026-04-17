@@ -6,6 +6,20 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.36.0] - 2026-04-17
+
+### Added
+
+- Three new PostgreSQL-only forbid rules cover the generated/identity state-transition forms that became supported in v0.35.0:
+  - `ddl.alter.drop_expression.forbid` — flags `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` on PostgreSQL.
+  - `ddl.alter.set_generated.forbid` — flags `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` on PostgreSQL.
+  - `ddl.alter.drop_identity.forbid` — flags `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` on PostgreSQL.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces now produce explicit `rule_id` findings for these state-transition forms instead of passing silently.
+
+### Changed
+
+- Release-facing docs now position `v0.36.0` as the **PostgreSQL Generated/Identity Rule Coverage Pack**. It does not add parser support widening, spec contract widening, generated expression evaluation, complete PostgreSQL sequence semantics, or MySQL/TiDB changes.
+
 ## [v0.35.0] - 2026-04-16
 
 ### Added

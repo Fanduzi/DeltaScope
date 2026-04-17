@@ -640,6 +640,34 @@ Schema-qualified FK 的 finding metadata 示例：
 
 ---
 
+## v0.36.0 — Generated/Identity 状态转换形态的规则覆盖
+
+从 v0.36.0 开始，v0.35.0 已支持的 PostgreSQL generated/identity 状态转换形态现在产生明确的 `rule_id` findings。支持的 parser/output 路径不变——区别在于这些形态现在触发 PostgreSQL-only forbid 规则，不再静默通过。
+
+新增 rule ID：
+
+| Rule ID | 覆盖形态 |
+|---------|---------|
+| `ddl.alter.drop_expression.forbid` | `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION` |
+| `ddl.alter.set_generated.forbid` | `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...` |
+| `ddl.alter.drop_identity.forbid` | `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY` |
+
+示例 JSON finding：
+
+```json
+{
+  "findings": [
+    {
+      "rule_id": "ddl.alter.set_generated.forbid",
+      "level": "blocker",
+      "message": "ALTER action 'set_generated' is not allowed"
+    }
+  ]
+}
+```
+
+这是规则覆盖——不是 parser 支持范围扩展、不是 spec 契约扩展、不是 generated expression 求值、不是完整的 PostgreSQL 序列语义。无新增 CLI 标志。
+
 ## v0.35.0 — Generated/Identity 状态转换形态支持
 
 从 v0.35.0 开始，PostgreSQL generated 和 identity 列的状态转换形态通过正常已支持审核路径处理。这些形态的 CLI 输出不再包含 `unsupported` 数组——审核产生正常的带 findings 的结果。

@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.35.0 PostgreSQL Generated/Identity State-Transition Pack
+## Latest Completed Milestone: v0.36.0 PostgreSQL Generated/Identity Rule Coverage Pack
+
+**Goal:** extend PostgreSQL DDL rule coverage to the generated/identity state-transition forms that became supported in v0.35.0, so those forms produce explicit `rule_id` findings instead of passing silently.
+
+### Completed Scope
+
+- Three new PostgreSQL-only forbid rules registered:
+  - `ddl.alter.drop_expression.forbid` — flags `ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION`
+  - `ddl.alter.set_generated.forbid` — flags `ALTER TABLE ... ALTER COLUMN ... SET GENERATED ...`
+  - `ddl.alter.drop_identity.forbid` — flags `ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY`
+- Rules use existing `newForbiddenAlterActionRule` with PostgreSQL-only dialect allowlist.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- No parser support widening, no spec contract widening, no new spec fields.
+
+### Key Design Decisions
+
+- Rule coverage only — not parser support widening, not spec contract widening, not generated expression evaluation, not complete PostgreSQL sequence semantics.
+- `GeneratedExpression` still deferred — no stable expression renderer.
+- No MySQL/TiDB behavior changes.
+
+## Previous Milestone: v0.35.0 PostgreSQL Generated/Identity State-Transition Pack
 
 **Goal:** support PostgreSQL generated/identity state-transition forms through the normal audit path, without adding full generated-column lifecycle support, generated expression evaluation, complete PostgreSQL sequence semantics, or new rule IDs.
 
