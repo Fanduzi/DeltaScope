@@ -119,7 +119,7 @@ jobs:
           cache: true
 
       - name: Verify manylinux glibc baseline for converged Linux amd64 binaries
-        run: make smoke-pg-cli-manylinux-baseline
+        run: make smoke-pg-cli-manylinux-baseline VERSION=v0.0.0-dev
 
       - name: Verify transitional PG CLI release package shape
         run: |
@@ -131,7 +131,7 @@ jobs:
           grep -q '^deltascope-pg$' /tmp/deltascope-pg-archive-list.txt
 
       - name: Verify converged Linux amd64 PG release archive shape
-        run: make verify-pg-linux-release-archive
+        run: make verify-pg-linux-release-archive VERSION=v0.0.0-dev
 
   linux-arm64-pg-manylinux-baseline:
     runs-on: ubuntu-24.04-arm
@@ -148,7 +148,7 @@ jobs:
           cache: true
 
       - name: Verify manylinux glibc baseline for converged Linux arm64 binaries
-        run: make smoke-pg-cli-manylinux-baseline-arm64
+        run: make smoke-pg-cli-manylinux-baseline-arm64 VERSION=v0.0.0-dev
 
       - name: Verify converged Linux arm64 PG release archive shape
-        run: make verify-pg-linux-release-archive-arm64
+        run: make verify-pg-linux-release-archive-arm64 VERSION=v0.0.0-dev

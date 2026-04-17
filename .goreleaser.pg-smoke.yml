@@ -7,6 +7,8 @@ builds:
     main: ./cmd/deltascope
     env:
       - CGO_ENABLED=1
+    ldflags:
+      - -X github.com/Fanduzi/DeltaScope/internal/interfaces/cli.Version={{ .Tag }}
     flags:
       - -tags=postgresql
       - -buildvcs=false
@@ -19,6 +21,8 @@ builds:
     main: ./cmd/deltascope-server
     env:
       - CGO_ENABLED=1
+    ldflags:
+      - -X main.Version={{ .Tag }}
     flags:
       - -tags=postgresql
       - -buildvcs=false
@@ -31,6 +35,8 @@ builds:
     main: ./cmd/deltascope-mcp
     env:
       - CGO_ENABLED=1
+    ldflags:
+      - -X main.Version={{ .Tag }}
     flags:
       - -tags=postgresql
       - -buildvcs=false

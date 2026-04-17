@@ -7,6 +7,8 @@ PG_GLIBC_BASELINE ?= GLIBC_2.17
 PG_MANYLINUX_IMAGE ?= quay.io/pypa/manylinux2014_x86_64
 PG_MANYLINUX_PLATFORM ?= linux/amd64
 GO_VERSION ?= $(shell go env GOVERSION | sed 's/^go//')
+CLI_VERSION_LDFLAGS = $(if $(VERSION),-ldflags "-X github.com/Fanduzi/DeltaScope/internal/interfaces/cli.Version=$(VERSION)")
+MAIN_VERSION_LDFLAGS = $(if $(VERSION),-ldflags "-X main.Version=$(VERSION)")
 
 test:
 	go test ./...
@@ -20,34 +22,39 @@ build: build-cli build-server build-mcp
 
 build-cli:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope ./cmd/deltascope
+	CGO_ENABLED=1 go build -tags postgresql $(CLI_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope ./cmd/deltascope
 
 # Transitional Package 1.4 policy:
 # - `deltascope` is the primary PG-capable CLI entrypoint for local/unified builds.
 # - `deltascope-pg` remains as a compatibility alias while the public release/install story is still converging.
 # - deltascope-server-pg and deltascope-mcp-pg stay out of the public release path here.
 build-cli-pg: build-cli
-	cp ./$(BUILD_DIR)/deltascope ./$(BUILD_DIR)/deltascope-pg
+	cp $(BUILD_DIR)/deltascope $(BUILD_DIR)/deltascope-pg
 
 smoke-pg-cli: build-cli-pg
-	./$(BUILD_DIR)/deltascope --version
-	./$(BUILD_DIR)/deltascope capabilities
-	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
-	./$(BUILD_DIR)/deltascope-pg --version >/dev/null
+	$(BUILD_DIR)/deltascope --version
+	$(BUILD_DIR)/deltascope capabilities
+	printf '%s\n' '$(PG_SMOKE_SQL)' | $(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
+	$(BUILD_DIR)/deltascope-pg --version >/dev/null
 
 # Host-native PG-capable smoke for the unified surfaces.
 # This is the portable baseline used by non-Linux smoke lanes before release-matrix convergence.
 smoke-pg-host-surfaces: build
-	./$(BUILD_DIR)/deltascope --version
-	./$(BUILD_DIR)/deltascope capabilities
-	printf '%s\n' '$(PG_SMOKE_SQL)' | ./$(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
-	./$(BUILD_DIR)/deltascope-server --version
-	./$(BUILD_DIR)/deltascope-mcp --version
+	$(BUILD_DIR)/deltascope --version
+	$(BUILD_DIR)/deltascope capabilities
+	printf '%s\n' '$(PG_SMOKE_SQL)' | $(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
+	$(BUILD_DIR)/deltascope-server --version
+	$(BUILD_DIR)/deltascope-mcp --version
 
 # Host-native archive packaging truth for future darwin/linux-arm release convergence.
 package-host-release-archive: smoke-pg-host-surfaces
 	rm -rf dist
 	VERSION=$(VERSION) BUILD_DIR=$(BUILD_DIR) DIST_DIR=dist bash ./scripts/package_host_release_archive.sh
+	os="$$(uname -s | tr '[:upper:]' '[:lower:]')"; \
+	arch="$$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"; \
+	archive="$$(ls dist/deltascope_*_"$$os"_"$$arch".tar.gz | head -n 1)"; \
+	checksum="$$(ls dist/deltascope_*_"$$os"_"$$arch"_checksums.txt | head -n 1)"; \
+	VERSION=$(VERSION) ARCHIVE="$$archive" CHECKSUM="$$checksum" bash ./scripts/verify_release_archive.sh
 
 verify-pg-host-release-archive:
 	$(MAKE) package-host-release-archive VERSION=v0.0.0-dev BUILD_DIR=$(BUILD_DIR)
@@ -88,76 +95,15 @@ smoke-pg-cli-manylinux-baseline-arm64:
 # This keeps Linux CGO truth on the Linux/container path and avoids pretending a Darwin host can validate it.
 verify-pg-linux-release-archive:
 	set -eu; \
-	rm -rf dist; \
-	docker run --rm \
-		--platform $(PG_MANYLINUX_PLATFORM) \
-		--user "$$(id -u):$$(id -g)" \
-		-v "$$(pwd):/work" \
-		-w /work \
-		-e GO_VERSION="$(GO_VERSION)" \
-		-e HOME=/tmp/deltascope-home \
-		$(PG_MANYLINUX_IMAGE) \
-		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
-	archive="$$(ls dist/deltascope_*_linux_amd64.tar.gz | head -n 1)"; \
-	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
-	archive_contents="$$(mktemp)"; \
-	trap 'rm -f "$$archive_contents"' EXIT; \
-	test -n "$$archive"; \
-	test -n "$$checksum"; \
-	test -f "$$archive"; \
-	test -f "$$checksum"; \
-	tar -tzf "$$archive" > "$$archive_contents"; \
-	grep -q '^deltascope$$' "$$archive_contents"; \
-	grep -q '^deltascope-server$$' "$$archive_contents"; \
-	grep -q '^deltascope-mcp$$' "$$archive_contents"; \
-	grep -q '^README.md$$' "$$archive_contents"; \
-	grep -q '^README_ZH.md$$' "$$archive_contents"; \
-	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
-	grep -q '^SECURITY.md$$' "$$archive_contents"; \
-	grep -q "  $$(basename "$$archive")$$" "$$checksum"; \
-	extract_dir="$$(mktemp -d)"; \
-	trap 'rm -f "$$archive_contents"; rm -rf "$$extract_dir"' EXIT; \
-	tar -xzf "$$archive" -C "$$extract_dir"; \
-	for binary in deltascope deltascope-server deltascope-mcp; do \
-		max_glibc="$$(strings "$$extract_dir/$$binary" | grep -o 'GLIBC_[0-9.]*' | sort -Vu | tail -1 || true)"; \
-		test -n "$$max_glibc"; \
-		if [ "$$(printf '%s\n%s\n' "$(PG_GLIBC_BASELINE)" "$$max_glibc" | sort -V | tail -1)" != "$(PG_GLIBC_BASELINE)" ]; then \
-			echo "glibc baseline check failed for $$binary: found $$max_glibc, expected <= $(PG_GLIBC_BASELINE)" >&2; \
-			exit 1; \
-		fi; \
-	done; \
-	"$$extract_dir/deltascope" --version >/dev/null; \
-	"$$extract_dir/deltascope" audit --dialect postgresql --sql 'create table pg_smoke (id bigint primary key);' --format json --fail-on none >/dev/null
+	version="$(VERSION)"; \
+	if [ -z "$$version" ]; then version="v0.0.0-dev"; fi; \
+	$(MAKE) package-pg-linux-release-archive-amd64 VERSION="$$version"
 
 verify-pg-linux-release-archive-arm64:
 	set -eu; \
-	rm -rf dist; \
-	docker run --rm \
-		--platform linux/arm64 \
-		--user "$$(id -u):$$(id -g)" \
-		-v "$$(pwd):/work" \
-		-w /work \
-		-e GO_VERSION="$(GO_VERSION)" \
-		-e HOME=/tmp/deltascope-home \
-		quay.io/pypa/manylinux2014_aarch64 \
-		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin; GO_TARBALL="go$${GO_VERSION}.linux-arm64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; goreleaser release --config .goreleaser.pg-smoke-arm64.yml --clean --snapshot --skip=publish --skip=announce --skip=sign --skip=sbom'; \
-	archive="$$(ls dist/deltascope_*_linux_arm64.tar.gz | head -n 1)"; \
-	checksum="$$(ls dist/deltascope_*_checksums.txt | head -n 1)"; \
-	archive_contents="$$(mktemp)"; \
-	trap 'rm -f "$$archive_contents"' EXIT; \
-	test -n "$$archive"; \
-	test -n "$$checksum"; \
-	test -f "$$archive"; \
-	test -f "$$checksum"; \
-	tar -tzf "$$archive" > "$$archive_contents"; \
-	grep -q '^deltascope$$' "$$archive_contents"; \
-	grep -q '^deltascope-server$$' "$$archive_contents"; \
-	grep -q '^deltascope-mcp$$' "$$archive_contents"; \
-	grep -q '^README.md$$' "$$archive_contents"; \
-	grep -q '^README_ZH.md$$' "$$archive_contents"; \
-	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
-	grep -q '^SECURITY.md$$' "$$archive_contents"; \
-	grep -q "  $$(basename "$$archive")$$" "$$checksum"
+	version="$(VERSION)"; \
+	if [ -z "$$version" ]; then version="v0.0.0-dev"; fi; \
+	$(MAKE) package-pg-linux-release-archive-arm64 VERSION="$$version"
 
 package-pg-linux-release-archive-amd64:
 	set -eu; \
@@ -183,7 +129,8 @@ package-pg-linux-release-archive-amd64:
 	test -f "$$archive"; \
 	test -f "$$generic_checksum"; \
 	cp "$$generic_checksum" "$$platform_checksum"; \
-	grep -q "  $${archive_base}$$" "$$platform_checksum"
+	grep -q "  $${archive_base}$$" "$$platform_checksum"; \
+	VERSION="$(VERSION)" ARCHIVE="$$archive" CHECKSUM="$$platform_checksum" GLIBC_BASELINE="$(PG_GLIBC_BASELINE)" bash ./scripts/verify_release_archive.sh
 
 package-pg-linux-release-archive-arm64:
 	set -eu; \
@@ -209,7 +156,8 @@ package-pg-linux-release-archive-arm64:
 	test -f "$$archive"; \
 	test -f "$$generic_checksum"; \
 	mv "$$generic_checksum" "$$platform_checksum"; \
-	grep -q "  $${archive_base}$$" "$$platform_checksum"
+	grep -q "  $${archive_base}$$" "$$platform_checksum"; \
+	VERSION="$(VERSION)" ARCHIVE="$$archive" CHECKSUM="$$platform_checksum" GLIBC_BASELINE="$(PG_GLIBC_BASELINE)" bash ./scripts/verify_release_archive.sh
 
 # Phase 7 Slice 4 packages only the approved public PG v1 artifact after the manylinux/glibc gate passes.
 # `deltascope-server-pg` and `deltascope-mcp-pg` are intentionally excluded from this public release path.
@@ -218,17 +166,17 @@ package-pg-cli-release: smoke-pg-cli-manylinux-baseline
 
 build-server:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope-server ./cmd/deltascope-server
+	CGO_ENABLED=1 go build -tags postgresql $(MAIN_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope-server ./cmd/deltascope-server
 
 build-mcp:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=1 go build -tags postgresql -o $(BUILD_DIR)/deltascope-mcp ./cmd/deltascope-mcp
+	CGO_ENABLED=1 go build -tags postgresql $(MAIN_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope-mcp ./cmd/deltascope-mcp
 
 build-linux:
 	mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/deltascope-linux-amd64 ./cmd/deltascope
-	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/deltascope-server-linux-amd64 ./cmd/deltascope-server
-	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/deltascope-mcp-linux-amd64 ./cmd/deltascope-mcp
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 go build $(CLI_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope-linux-amd64 ./cmd/deltascope
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 go build $(MAIN_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope-server-linux-amd64 ./cmd/deltascope-server
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 go build $(MAIN_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope-mcp-linux-amd64 ./cmd/deltascope-mcp
 
 test-e2e-cli: test-e2e-cli-mysql test-e2e-cli-tidb
 

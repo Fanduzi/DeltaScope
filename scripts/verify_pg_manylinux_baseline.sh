@@ -15,6 +15,7 @@ TARGET_ARCH="${PG_TARGET_ARCH:-amd64}"
 GO_TARBALL_ARCH="${PG_GO_TARBALL_ARCH:-${TARGET_ARCH}}"
 TRANSITIONAL_ALIAS="${PG_TRANSITIONAL_ALIAS:-0}"
 GO_VERSION="${GO_VERSION:-$(go env GOVERSION | sed 's/^go//')}"
+VERSION="${VERSION:-}"
 
 log() {
   printf '[pg-manylinux-baseline] %s\n' "$*"
@@ -72,6 +73,7 @@ main() {
     -e BUILD_DIR="${BUILD_DIR}" \
     -e TARGET_ARCH="${TARGET_ARCH}" \
     -e GO_TARBALL_ARCH="${GO_TARBALL_ARCH}" \
+    -e VERSION="${VERSION}" \
     "${MANYLINUX_IMAGE}" \
     bash -lc '
       set -euo pipefail
@@ -81,9 +83,15 @@ main() {
       tar -C /usr/local -xzf "/tmp/${GO_TARBALL}"
       export PATH="/usr/local/go/bin:${PATH}"
       mkdir -p "${BUILD_DIR}"
-      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg" ./cmd/deltascope
-      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-server-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-server
-      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql -o "${BUILD_DIR}/deltascope-mcp-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-mcp
+      CLI_LDFLAGS=()
+      MAIN_LDFLAGS=()
+      if [[ -n "${VERSION}" ]]; then
+        CLI_LDFLAGS=(-ldflags "-X github.com/Fanduzi/DeltaScope/internal/interfaces/cli.Version=${VERSION}")
+        MAIN_LDFLAGS=(-ldflags "-X main.Version=${VERSION}")
+      fi
+      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql "${CLI_LDFLAGS[@]}" -o "${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg" ./cmd/deltascope
+      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql "${MAIN_LDFLAGS[@]}" -o "${BUILD_DIR}/deltascope-server-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-server
+      CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql "${MAIN_LDFLAGS[@]}" -o "${BUILD_DIR}/deltascope-mcp-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-mcp
     '
 
   if [[ "${TRANSITIONAL_ALIAS}" = "1" ]]; then

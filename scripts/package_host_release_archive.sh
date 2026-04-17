@@ -11,6 +11,13 @@ DIST_DIR="${DIST_DIR:-dist}"
 VERSION="${VERSION:-}"
 RAW_VERSION="${VERSION#v}"
 
+resolve_path() {
+  case "$1" in
+    /*) printf '%s' "$1" ;;
+    *) printf '%s/%s' "${ROOT_DIR}" "$1" ;;
+  esac
+}
+
 fail() {
   printf '[host-release-package][FAIL] %s\n' "$*" >&2
   exit 1
@@ -47,25 +54,29 @@ main() {
   [[ -n "${VERSION}" ]] || fail "VERSION is required (example: VERSION=v0.17.0)"
   [[ -n "${RAW_VERSION}" ]] || fail "VERSION must resolve to a non-empty raw version"
 
+  local build_dir_abs dist_dir_abs
+  build_dir_abs="$(resolve_path "${BUILD_DIR}")"
+  dist_dir_abs="$(resolve_path "${DIST_DIR}")"
+
   local os arch archive_basename archive_path checksum_basename checksum_path package_dir
   os="$(detect_os)"
   arch="$(detect_arch)"
   archive_basename="deltascope_${RAW_VERSION}_${os}_${arch}.tar.gz"
-  archive_path="${ROOT_DIR}/${DIST_DIR}/${archive_basename}"
+  archive_path="${dist_dir_abs}/${archive_basename}"
   checksum_basename="deltascope_${RAW_VERSION}_${os}_${arch}_checksums.txt"
-  checksum_path="${ROOT_DIR}/${DIST_DIR}/${checksum_basename}"
+  checksum_path="${dist_dir_abs}/${checksum_basename}"
 
-  [[ -f "${ROOT_DIR}/${BUILD_DIR}/deltascope" ]] || fail "missing binary: ${ROOT_DIR}/${BUILD_DIR}/deltascope"
-  [[ -f "${ROOT_DIR}/${BUILD_DIR}/deltascope-server" ]] || fail "missing binary: ${ROOT_DIR}/${BUILD_DIR}/deltascope-server"
-  [[ -f "${ROOT_DIR}/${BUILD_DIR}/deltascope-mcp" ]] || fail "missing binary: ${ROOT_DIR}/${BUILD_DIR}/deltascope-mcp"
+  [[ -f "${build_dir_abs}/deltascope" ]] || fail "missing binary: ${build_dir_abs}/deltascope"
+  [[ -f "${build_dir_abs}/deltascope-server" ]] || fail "missing binary: ${build_dir_abs}/deltascope-server"
+  [[ -f "${build_dir_abs}/deltascope-mcp" ]] || fail "missing binary: ${build_dir_abs}/deltascope-mcp"
 
-  mkdir -p "${ROOT_DIR}/${DIST_DIR}"
-  package_dir="$(mktemp -d "${ROOT_DIR}/${DIST_DIR}/host-package.XXXXXX")"
+  mkdir -p "${dist_dir_abs}"
+  package_dir="$(mktemp -d "${dist_dir_abs}/host-package.XXXXXX")"
   trap 'if [[ -n "${package_dir:-}" ]]; then rm -rf "${package_dir}"; fi' EXIT
 
-  cp "${ROOT_DIR}/${BUILD_DIR}/deltascope" "${package_dir}/deltascope"
-  cp "${ROOT_DIR}/${BUILD_DIR}/deltascope-server" "${package_dir}/deltascope-server"
-  cp "${ROOT_DIR}/${BUILD_DIR}/deltascope-mcp" "${package_dir}/deltascope-mcp"
+  cp "${build_dir_abs}/deltascope" "${package_dir}/deltascope"
+  cp "${build_dir_abs}/deltascope-server" "${package_dir}/deltascope-server"
+  cp "${build_dir_abs}/deltascope-mcp" "${package_dir}/deltascope-mcp"
   cp "${ROOT_DIR}/README.md" "${package_dir}/README.md"
   cp "${ROOT_DIR}/README_ZH.md" "${package_dir}/README_ZH.md"
   cp "${ROOT_DIR}/CHANGELOG.md" "${package_dir}/CHANGELOG.md"

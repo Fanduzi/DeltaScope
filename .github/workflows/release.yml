@@ -44,7 +44,7 @@ jobs:
         run: make release-version-surface-gates VERSION="${GITHUB_REF_NAME}"
 
       - name: Verify converged Linux amd64 PG release archive shape
-        run: make verify-pg-linux-release-archive
+        run: make verify-pg-linux-release-archive VERSION="${GITHUB_REF_NAME}"
 
       - name: Resolve release note paths
         run: |
