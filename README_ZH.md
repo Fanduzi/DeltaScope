@@ -49,13 +49,12 @@ DeltaScope 通过 CLI、HTTP、MCP 和 `pkg/deltascope` 四条产品面支持 Po
 如果你需要 PostgreSQL 离线审核：
 
 - 在受支持的 macOS 和 Linux 平台上直接安装正常的 DeltaScope 主 archive 即可，不再需要单独的 PG-only 安装入口。
-- `deltascope-pg_<version>_linux_amd64.tar.gz` 仅继续保留为旧 CLI-only 流程迁移时的兼容下载。
 
 核心发布产物命名为 `deltascope_<version>_<os>_<arch>.tar.gz`。开发侧命令统一收敛在 [Dev docs](docs/dev/README.md)。
 
 ### Release Contract
 
-每个 tag 都会产出核心 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。受支持的 `darwin/amd64`、`darwin/arm64`、`linux/amd64`、`linux/arm64` 主 archive 都是 PG-capable，可在三条主二进制上提供 PostgreSQL offline。installer script、Homebrew Cask 与 npm MCP launcher 都直接解析这些主 archive。`deltascope-pg_<version>_linux_amd64.tar.gz` 可能仍作为旧 CLI 工作流的兼容下载短暂保留，但不再属于主安装叙事。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
+每个 tag 都会产出核心 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server`、`deltascope-mcp` 三个二进制文件。受支持的 `darwin/amd64`、`darwin/arm64`、`linux/amd64`、`linux/arm64` 主 archive 都是 PG-capable，可在三条主二进制上提供 PostgreSQL offline。installer script、Homebrew Cask 与 npm MCP launcher 都直接解析这些主 archive。`@fanduzi/deltascope-mcp` 的当前版本请以 npm 包元数据为准。
 
 ## 快速开始
 

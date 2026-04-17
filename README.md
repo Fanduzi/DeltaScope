@@ -51,13 +51,12 @@ See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for
 Need PostgreSQL offline audit support?
 
 - Install the normal DeltaScope main archive on supported macOS and Linux platforms; no separate PG-only installer is required.
-- `deltascope-pg_<version>_linux_amd64.tar.gz` remains available only as a legacy compatibility download for older CLI-only workflows during the transition.
 
 The published core archive format is `deltascope_<version>_<os>_<arch>.tar.gz`. Development-oriented commands are documented under [Dev docs](docs/dev/README.md).
 
 ### Release Contract
 
-Every tag produces core archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The supported `darwin/amd64`, `darwin/arm64`, `linux/amd64`, and `linux/arm64` main archives are PG-capable and support PostgreSQL offline across all three binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve those platform-specific main archives from GitHub Release assets. `deltascope-pg_<version>_linux_amd64.tar.gz` may still appear as a legacy compatibility download during the transition, but it is no longer part of the primary install story. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
+Every tag produces core archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The supported `darwin/amd64`, `darwin/arm64`, `linux/amd64`, and `linux/arm64` main archives are PG-capable and support PostgreSQL offline across all three binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve those platform-specific main archives from GitHub Release assets. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
 
 ## Quick Start
 

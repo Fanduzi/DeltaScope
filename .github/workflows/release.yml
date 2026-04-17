@@ -102,21 +102,6 @@ jobs:
             dist/deltascope_${GITHUB_REF_NAME#v}_checksums.txt \
             --clobber
 
-      - name: Build and package transitional PG CLI compatibility artifact
-        run: |
-          set -euo pipefail
-          make package-pg-cli-release VERSION="${GITHUB_REF_NAME}"
-
-      - name: Upload transitional PG CLI compatibility artifact
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh release upload "${GITHUB_REF_NAME}" \
-            dist/deltascope-pg_${GITHUB_REF_NAME#v}_linux_amd64.tar.gz \
-            dist/deltascope-pg_${GITHUB_REF_NAME#v}_linux_amd64_checksums.txt \
-            --clobber
-
       - name: Sync GitHub release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

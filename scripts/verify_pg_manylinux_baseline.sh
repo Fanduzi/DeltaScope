@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # input: local git checkout, Docker daemon, manylinux image, and the PostgreSQL build tag
 # output: repeatable Linux PG-capable builds for the converged primary binaries plus automated glibc baseline verification
-# pos: reusable manylinux/glibc verification gate for the converged Linux PG release lanes and optional transitional PG CLI artifact
+# pos: reusable manylinux/glibc verification gate for the converged Linux PG release lanes
 # note: if this file changes, update this header and module README.md.
 
 set -euo pipefail
@@ -13,7 +13,6 @@ MANYLINUX_IMAGE="${PG_MANYLINUX_IMAGE:-quay.io/pypa/manylinux2014_x86_64}"
 MANYLINUX_PLATFORM="${PG_MANYLINUX_PLATFORM:-linux/amd64}"
 TARGET_ARCH="${PG_TARGET_ARCH:-amd64}"
 GO_TARBALL_ARCH="${PG_GO_TARBALL_ARCH:-${TARGET_ARCH}}"
-TRANSITIONAL_ALIAS="${PG_TRANSITIONAL_ALIAS:-0}"
 GO_VERSION="${GO_VERSION:-$(go env GOVERSION | sed 's/^go//')}"
 VERSION="${VERSION:-}"
 
@@ -108,16 +107,9 @@ main() {
       CGO_ENABLED=1 GOOS=linux GOARCH=${TARGET_ARCH} go build -buildvcs=false -trimpath -tags postgresql "${MAIN_LDFLAGS[@]}" -o "${BUILD_DIR}/deltascope-mcp-linux-${TARGET_ARCH}-pg" ./cmd/deltascope-mcp
     '
 
-  if [[ "${TRANSITIONAL_ALIAS}" = "1" ]]; then
-    cp "${ROOT_DIR}/${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg" "${ROOT_DIR}/${BUILD_DIR}/deltascope-pg-manylinux-${TARGET_ARCH}"
-  fi
-
   verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-linux-${TARGET_ARCH}-pg"
   verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-server-linux-${TARGET_ARCH}-pg"
   verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-mcp-linux-${TARGET_ARCH}-pg"
-  if [[ "${TRANSITIONAL_ALIAS}" = "1" ]]; then
-    verify_artifact "${ROOT_DIR}/${BUILD_DIR}/deltascope-pg-manylinux-${TARGET_ARCH}"
-  fi
 }
 
 main "$@"

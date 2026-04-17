@@ -1,4 +1,4 @@
-.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
+.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -24,18 +24,10 @@ build-cli:
 	mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=1 go build -tags postgresql $(CLI_VERSION_LDFLAGS) -o $(BUILD_DIR)/deltascope ./cmd/deltascope
 
-# Transitional Package 1.4 policy:
-# - `deltascope` is the primary PG-capable CLI entrypoint for local/unified builds.
-# - `deltascope-pg` remains as a compatibility alias while the public release/install story is still converging.
-# - deltascope-server-pg and deltascope-mcp-pg stay out of the public release path here.
-build-cli-pg: build-cli
-	cp $(BUILD_DIR)/deltascope $(BUILD_DIR)/deltascope-pg
-
-smoke-pg-cli: build-cli-pg
+smoke-pg-cli: build-cli
 	$(BUILD_DIR)/deltascope --version
 	$(BUILD_DIR)/deltascope capabilities
 	printf '%s\n' '$(PG_SMOKE_SQL)' | $(BUILD_DIR)/deltascope audit --dialect postgresql --format json --fail-on none
-	$(BUILD_DIR)/deltascope-pg --version >/dev/null
 
 # Host-native PG-capable smoke for the unified surfaces.
 # This is the portable baseline used by non-Linux smoke lanes before release-matrix convergence.
@@ -83,13 +75,13 @@ verify-pg-host-release-archive:
 smoke-pg-cli-linux: smoke-pg-cli
 	CGO_ENABLED=0 go build -o $(BUILD_DIR)/deltascope ./cmd/deltascope
 
-# Phase 7 Slice 3 adds a reusable manylinux/glibc baseline gate for the only public PG v1 artifact.
-# This verifies `deltascope-pg` inside a controlled Linux container and fails if the glibc baseline drifts above the approved threshold.
+# Phase 7 Slice 3 adds a reusable manylinux/glibc baseline gate for the converged Linux PG-capable binaries.
+# This verifies the main Linux binaries inside a controlled Linux container and fails if the glibc baseline drifts above the approved threshold.
 smoke-pg-cli-manylinux-baseline:
-	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=$(PG_MANYLINUX_IMAGE) PG_MANYLINUX_PLATFORM=$(PG_MANYLINUX_PLATFORM) PG_TARGET_ARCH=amd64 PG_GO_TARBALL_ARCH=amd64 PG_TRANSITIONAL_ALIAS=1 bash ./scripts/verify_pg_manylinux_baseline.sh
+	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=$(PG_MANYLINUX_IMAGE) PG_MANYLINUX_PLATFORM=$(PG_MANYLINUX_PLATFORM) PG_TARGET_ARCH=amd64 PG_GO_TARBALL_ARCH=amd64 bash ./scripts/verify_pg_manylinux_baseline.sh
 
 smoke-pg-cli-manylinux-baseline-arm64:
-	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=quay.io/pypa/manylinux2014_aarch64 PG_MANYLINUX_PLATFORM=linux/arm64 PG_TARGET_ARCH=arm64 PG_GO_TARBALL_ARCH=arm64 PG_TRANSITIONAL_ALIAS=0 bash ./scripts/verify_pg_manylinux_baseline.sh
+	PG_GLIBC_BASELINE=$(PG_GLIBC_BASELINE) PG_MANYLINUX_IMAGE=quay.io/pypa/manylinux2014_aarch64 PG_MANYLINUX_PLATFORM=linux/arm64 PG_TARGET_ARCH=arm64 PG_GO_TARBALL_ARCH=arm64 bash ./scripts/verify_pg_manylinux_baseline.sh
 
 # Release validation closure: verify the actual Linux amd64 PG GoReleaser archive inside a Linux container.
 # This keeps Linux CGO truth on the Linux/container path and avoids pretending a Darwin host can validate it.
@@ -196,11 +188,6 @@ package-pg-linux-release-archive-arm64:
 		$$docker_env_args \
 		quay.io/pypa/manylinux2014_aarch64 \
 		bash ./scripts/verify_release_archive.sh
-
-# Phase 7 Slice 4 packages only the approved public PG v1 artifact after the manylinux/glibc gate passes.
-# `deltascope-server-pg` and `deltascope-mcp-pg` are intentionally excluded from this public release path.
-package-pg-cli-release: smoke-pg-cli-manylinux-baseline
-	VERSION=$(VERSION) BUILD_DIR=$(BUILD_DIR) DIST_DIR=dist bash ./scripts/package_pg_cli_release.sh
 
 build-server:
 	mkdir -p $(BUILD_DIR)

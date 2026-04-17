@@ -6,10 +6,9 @@ Operational scripts for local DeltaScope workflows.
 
 | File | Responsibility |
 |------|---------------|
-| verify_pg_manylinux_baseline.sh | Builds `deltascope-pg` in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
+| verify_pg_manylinux_baseline.sh | Builds the converged Linux PG-capable binaries in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
 | verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
 | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |
-| package_pg_cli_release.sh | Packages the verified manylinux `deltascope-pg` binary into the only approved public PG v1 release archive and emits a checksum sidecar |
 | test_cli_metadata_e2e.sh | Starts Docker fixtures, seeds TiDB, runs metadata-aware CLI e2e flows, and provides JSON assertion helpers |
 | test_mcp_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged MCP metadata-aware e2e smoke tests for direct and connection_ref paths |
 | test_http_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged HTTP metadata-aware e2e smoke tests against the live JSON API |
@@ -22,8 +21,6 @@ Operational scripts for local DeltaScope workflows.
 - `verify_pg_manylinux_baseline.sh`
 - `verify_homebrew_cask.sh`
 - `verify_release_archive.sh`
-- `package_pg_cli_release.sh`
-- `make package-pg-cli-release VERSION=<tag-or-version>`
 - `test_cli_metadata_e2e.sh [mysql|tidb|all]`
 - `test_mcp_metadata_e2e.sh [mysql|tidb|all]`
 - `test_http_metadata_e2e.sh [mysql|tidb|all]`
@@ -58,9 +55,8 @@ Operational scripts for local DeltaScope workflows.
 - The release archive verifier is the final package-level contract gate: cask/install-facing archives must contain version-matched PG-capable binaries before upload.
 - Linux main-archive verification is executed inside the matching manylinux container so the verifier can execute the packaged Linux binaries instead of relying on the host OS.
 - The Homebrew cask verifier ensures the tap update still points at the exact darwin release assets and checksums produced by the release jobs.
-- The manylinux baseline verifier is Phase 7 Slice 3's reusable gate for the only public PG v1 artifact, `deltascope-pg`.
+- The manylinux baseline verifier is the reusable gate for the converged Linux PG-capable binaries and enforces the approved glibc baseline before release packaging.
 - The manylinux verifier and manylinux release packagers inherit host `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` plus Go module env like `GOPROXY` and `GOSUMDB`, so constrained networks can use local proxies or domestic mirrors without patching scripts.
-- The PG release packager is Phase 7 Slice 4's only public PostgreSQL publish helper; it packages `deltascope-pg` and does not emit `deltascope-server-pg` or `deltascope-mcp-pg` archives.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
