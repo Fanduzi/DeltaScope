@@ -327,10 +327,18 @@ func renderJSONResult(result report.Result, runContext *auditRunContext) ([]byte
 		report.Result
 		Context *auditRunContext `json:"context,omitempty"`
 	}{
-		Result:  result,
+		Result:  resultWithoutAggregateExplanations(result),
 		Context: runContext,
 	}
 	return json.Marshal(payload)
+}
+
+func resultWithoutAggregateExplanations(result report.Result) report.Result {
+	result.Explanation = nil
+	for i := range result.Statements {
+		result.Statements[i].Explanation = nil
+	}
+	return result
 }
 
 func renderQuietResult(result report.Result, runContext *auditRunContext) []byte {

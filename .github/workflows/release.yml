@@ -86,6 +86,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build CentOS 7 compatible Linux amd64 main archive
+        run: |
+          set -euo pipefail
+          make package-pg-linux-release-archive-amd64 VERSION="${GITHUB_REF_NAME}"
+
+      - name: Upload CentOS 7 compatible Linux amd64 main archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/deltascope_${GITHUB_REF_NAME#v}_linux_amd64.tar.gz \
+            dist/deltascope_${GITHUB_REF_NAME#v}_linux_amd64_checksums.txt \
+            dist/deltascope_${GITHUB_REF_NAME#v}_checksums.txt \
+            --clobber
+
       - name: Build and package transitional PG CLI compatibility artifact
         run: |
           set -euo pipefail

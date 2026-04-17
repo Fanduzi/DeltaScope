@@ -1,4 +1,4 @@
-.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-arm64 package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
+.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux build-cli-pg smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 package-pg-cli-release test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -114,7 +114,20 @@ verify-pg-linux-release-archive:
 	grep -q '^README_ZH.md$$' "$$archive_contents"; \
 	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
 	grep -q '^SECURITY.md$$' "$$archive_contents"; \
-	grep -q "  $$(basename "$$archive")$$" "$$checksum"
+	grep -q "  $$(basename "$$archive")$$" "$$checksum"; \
+	extract_dir="$$(mktemp -d)"; \
+	trap 'rm -f "$$archive_contents"; rm -rf "$$extract_dir"' EXIT; \
+	tar -xzf "$$archive" -C "$$extract_dir"; \
+	for binary in deltascope deltascope-server deltascope-mcp; do \
+		max_glibc="$$(strings "$$extract_dir/$$binary" | grep -o 'GLIBC_[0-9.]*' | sort -Vu | tail -1 || true)"; \
+		test -n "$$max_glibc"; \
+		if [ "$$(printf '%s\n%s\n' "$(PG_GLIBC_BASELINE)" "$$max_glibc" | sort -V | tail -1)" != "$(PG_GLIBC_BASELINE)" ]; then \
+			echo "glibc baseline check failed for $$binary: found $$max_glibc, expected <= $(PG_GLIBC_BASELINE)" >&2; \
+			exit 1; \
+		fi; \
+	done; \
+	"$$extract_dir/deltascope" --version >/dev/null; \
+	"$$extract_dir/deltascope" audit --dialect postgresql --sql 'create table pg_smoke (id bigint primary key);' --format json --fail-on none >/dev/null
 
 verify-pg-linux-release-archive-arm64:
 	set -eu; \
@@ -145,6 +158,32 @@ verify-pg-linux-release-archive-arm64:
 	grep -q '^CHANGELOG.md$$' "$$archive_contents"; \
 	grep -q '^SECURITY.md$$' "$$archive_contents"; \
 	grep -q "  $$(basename "$$archive")$$" "$$checksum"
+
+package-pg-linux-release-archive-amd64:
+	set -eu; \
+	host_worktree="$$(pwd)"; \
+	rm -rf dist; \
+	mkdir -p dist; \
+	docker run --rm \
+		--platform $(PG_MANYLINUX_PLATFORM) \
+		--user "$$(id -u):$$(id -g)" \
+		-v "$$host_worktree:/work" \
+		-v "$$host_worktree/dist:/out" \
+		-w /work \
+		-e GO_VERSION="$(GO_VERSION)" \
+		-e RELEASE_VERSION="$(VERSION)" \
+		-e HOME=/tmp/deltascope-home \
+		$(PG_MANYLINUX_IMAGE) \
+		bash -lc 'set -euo pipefail; mkdir -p "$$HOME" /tmp/gobin /tmp/release-src; GO_TARBALL="go$${GO_VERSION}.linux-amd64.tar.gz"; curl -fsSLo "/tmp/$${GO_TARBALL}" "https://go.dev/dl/$${GO_TARBALL}"; rm -rf /tmp/go; tar -C /tmp -xzf "/tmp/$${GO_TARBALL}"; export GOBIN=/tmp/gobin; export PATH="/tmp/go/bin:$$GOBIN:$$PATH"; go install github.com/goreleaser/goreleaser/v2@v2.12.7; tar --exclude=.git -C /work -cf - . | tar -C /tmp/release-src -xf -; cd /tmp/release-src; git init -q; git config user.name "release-bot"; git config user.email "release-bot@example.com"; git remote add origin https://github.com/Fanduzi/DeltaScope.git; git add .; git commit -qm "release snapshot"; git tag "$$RELEASE_VERSION"; goreleaser release --config .goreleaser.pg-smoke.yml --clean --skip=publish --skip=announce --skip=sign --skip=sbom; cp dist/deltascope_*_linux_amd64.tar.gz /out/; cp dist/deltascope_*_checksums.txt /out/'; \
+	archive="$$(ls dist/deltascope_*_linux_amd64.tar.gz | head -n 1)"; \
+	archive_base="$$(basename "$$archive")"; \
+	prefix="$${archive_base%_linux_amd64.tar.gz}"; \
+	generic_checksum="dist/$${prefix}_checksums.txt"; \
+	platform_checksum="dist/$${prefix}_linux_amd64_checksums.txt"; \
+	test -f "$$archive"; \
+	test -f "$$generic_checksum"; \
+	cp "$$generic_checksum" "$$platform_checksum"; \
+	grep -q "  $${archive_base}$$" "$$platform_checksum"
 
 package-pg-linux-release-archive-arm64:
 	set -eu; \
@@ -248,6 +287,11 @@ release-surface-gates:
 	fi; \
 	version_no_v="$${version#v}"; \
 	test "$$(node -p 'require("./packages/deltascope-mcp/package.json").version')" = "$$version_no_v"; \
+	grep -q "DefaultVersion = \"$$version\"" pkg/deltascope/version.go; \
+	if grep -Eq 'Pack \(v[0-9]+\.[0-9]+\.[0-9]+\)|Previous milestone|上一里程碑' README.md README_ZH.md; then \
+		echo "README files must not contain release-history milestone sections; use release notes instead" >&2; \
+		exit 1; \
+	fi; \
 	(cd packages/deltascope-mcp && npm pack --dry-run)
 
 # release-version-surface-gates: verify versioned docs surfaces for the current release.

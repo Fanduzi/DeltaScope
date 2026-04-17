@@ -1,9 +1,10 @@
 version: 2
 
-# Release matrix note: GoReleaser publishes the Linux amd64 PG-capable main archive. Linux arm64
-# and Darwin main archives are packaged natively in the release workflow so they can carry
-# PostgreSQL offline support without pretending Linux CGO can cross-build them. The
-# `deltascope-pg` upload remains a transitional compatibility artifact for existing Linux amd64 users.
+# Release matrix note: GoReleaser creates the release and initial Linux amd64 archive. The
+# release workflow then replaces that archive with the manylinux/CentOS 7 compatible build.
+# Linux arm64 and Darwin main archives are packaged natively in the release workflow so they
+# can carry PostgreSQL offline support without pretending Linux CGO can cross-build them.
+# The `deltascope-pg` upload remains a transitional compatibility artifact for existing Linux amd64 users.
 project_name: deltascope
 
 builds:

@@ -1296,7 +1296,7 @@ func TestAuditCommandJSONMetadataContextUsesFlagSchemaSource(t *testing.T) {
 	}
 }
 
-func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
+func TestRenderJSONResultOmitsAggregateExplanations(t *testing.T) {
 	output, err := renderJSONResult(report.Result{
 		Explanation: &report.Explanation{
 			Summary: "Audit produced 1 finding",
@@ -1313,6 +1313,11 @@ func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
 				RuleID:  "dml.where.require",
 				Level:   rule.LevelBlocker,
 				Message: "where clause required",
+				Explanation: &rule.FindingExplanation{
+					Why:        "The shipped policy requires a predicate.",
+					Risk:       "Without a predicate the statement can affect every row.",
+					Suggestion: "Add a WHERE clause that narrows the target rows.",
+				},
 			}},
 		}},
 	}, &auditRunContext{Mode: "offline", Dialect: "mysql", DialectSource: "default"})
@@ -1328,13 +1333,8 @@ func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
 	if !ok || contextValue["mode"] != "offline" {
 		t.Fatalf("expected context object, got %#v", decoded["context"])
 	}
-	resultExplanation, ok := decoded["explanation"].(map[string]any)
-	if !ok || resultExplanation["summary"] != "Audit produced 1 finding" {
-		t.Fatalf("expected result explanation object, got %#v", decoded["explanation"])
-	}
-	resultReasons, ok := resultExplanation["reasons"].([]any)
-	if !ok || len(resultReasons) != 1 || resultReasons[0] != "where clause required" {
-		t.Fatalf("expected result explanation reasons, got %#v", resultExplanation["reasons"])
+	if _, ok := decoded["explanation"]; ok {
+		t.Fatalf("did not expect duplicate result explanation, got %#v", decoded["explanation"])
 	}
 	statements, ok := decoded["statements"].([]any)
 	if !ok || len(statements) != 1 {
@@ -1344,13 +1344,20 @@ func TestRenderJSONResultIncludesContextAndAggregateExplanations(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected statement object, got %#v", statements[0])
 	}
-	statementExplanation, ok := statement["explanation"].(map[string]any)
-	if !ok || statementExplanation["summary"] != "Statement 1 has 1 finding" {
-		t.Fatalf("expected statement explanation object, got %#v", statement["explanation"])
+	if _, ok := statement["explanation"]; ok {
+		t.Fatalf("did not expect duplicate statement explanation, got %#v", statement["explanation"])
 	}
-	statementReasons, ok := statementExplanation["reasons"].([]any)
-	if !ok || len(statementReasons) != 1 || statementReasons[0] != "where clause required" {
-		t.Fatalf("expected statement explanation reasons, got %#v", statementExplanation["reasons"])
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) != 1 {
+		t.Fatalf("expected one finding, got %#v", statement["findings"])
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected finding object, got %#v", findings[0])
+	}
+	findingExplanation, ok := finding["explanation"].(map[string]any)
+	if !ok || findingExplanation["why"] != "The shipped policy requires a predicate." {
+		t.Fatalf("expected finding explanation to remain, got %#v", finding["explanation"])
 	}
 }
 
