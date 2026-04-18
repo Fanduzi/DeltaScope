@@ -82,6 +82,9 @@ jobs:
       - name: Verify tagged PostgreSQL unit test gates
         run: make pg-unit-test-gates
 
+      - name: Verify SQL corpus supported-rule coverage gates
+        run: make sql-corpus-gates
+
   macos-arm64-pg-smoke:
     runs-on: macos-15
     timeout-minutes: 20

@@ -1,4 +1,4 @@
-.PHONY: test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
+.PHONY: test sql-corpus-gates release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -13,8 +13,12 @@ MAIN_VERSION_LDFLAGS = $(if $(VERSION),-ldflags "-X main.Version=$(VERSION)")
 test:
 	go test ./...
 
+sql-corpus-gates:
+	go test ./internal/application/audit -run 'TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -tags postgresql -count=1
+
 release-test-gates:
 	go test ./...
+	$(MAKE) sql-corpus-gates
 	CGO_ENABLED=1 go test -tags postgresql ./internal/application/audit ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
 	npm test --prefix packages/deltascope-mcp
 
