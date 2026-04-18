@@ -1,0 +1,131 @@
+name: rule_coverage_probe
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1
+  findings:
+    include:
+      - ddl.column.blob_text.forbid
+      - ddl.column.comment.require
+      - ddl.column.default.require
+      - ddl.column.name.contains.require
+      - ddl.column.name.keyword.forbid
+      - ddl.column.name.pattern.require
+      - ddl.column.name.prefix.require
+      - ddl.column.name.suffix.require
+      - ddl.column.not_null.require
+      - ddl.constraint.check.name.contains.require
+      - ddl.constraint.check.name.prefix.require
+      - ddl.constraint.check.name.suffix.require
+      - ddl.constraint.unique_key.name.contains.require
+      - ddl.constraint.unique_key.name.prefix.require
+      - ddl.constraint.unique_key.name.suffix.require
+      - ddl.index.name.pattern.require
+      - ddl.index.unique.contains.require
+      - ddl.index.unique.prefix.require
+      - ddl.index.unique.suffix.require
+      - ddl.table.audit_columns.require
+      - ddl.table.charset.allowlist
+      - ddl.table.columns.min_count
+      - ddl.table.comment.require
+      - ddl.table.drop.forbid
+      - ddl.table.name.contains.require
+      - ddl.table.name.keyword.forbid
+      - ddl.table.name.pattern.require
+      - ddl.table.name.prefix.require
+      - ddl.table.name.suffix.require
+      - ddl.table.primary_key.require
+      - ddl.table.truncate.forbid
+      - ddl.view.create.forbid
+      - ddl.view.drop.forbid
+config:
+  rules:
+    ddl.table.name.prefix.require:
+      enabled: true
+      params: {prefix: must_}
+    ddl.table.name.suffix.require:
+      enabled: true
+      params: {suffix: _tbl}
+    ddl.table.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.table.name.pattern.require:
+      enabled: true
+      params: {required: true, pattern: "^must_"}
+    ddl.table.columns.min_count:
+      enabled: true
+      params: {limit: 12}
+    ddl.column.name.prefix.require:
+      enabled: true
+      params: {prefix: c_}
+    ddl.column.name.suffix.require:
+      enabled: true
+      params: {suffix: _col}
+    ddl.column.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.column.name.pattern.require:
+      enabled: true
+      params: {required: true, pattern: "^c_"}
+    ddl.column.varchar.max_length:
+      enabled: true
+      params: {limit: 8}
+    ddl.column.char.max_length:
+      enabled: true
+      params: {limit: 2}
+    ddl.column.blob_text.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.column.json.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.column.bit.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.index.total.max_count:
+      enabled: true
+      params: {limit: 1}
+    ddl.index.columns.max_count:
+      enabled: true
+      params: {limit: 1}
+    ddl.index.name.pattern.require:
+      enabled: true
+      params: {required: true, pattern: "^idx_"}
+    ddl.index.unique.prefix.require:
+      enabled: true
+      params: {required: true, prefix: uniq_}
+    ddl.index.unique.suffix.require:
+      enabled: true
+      params: {suffix: _uk}
+    ddl.index.unique.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.constraint.primary_key.name.prefix.require:
+      enabled: true
+      params: {prefix: pk_}
+    ddl.constraint.primary_key.name.suffix.require:
+      enabled: true
+      params: {suffix: _pk}
+    ddl.constraint.primary_key.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.constraint.unique_key.name.prefix.require:
+      enabled: true
+      params: {prefix: uk_}
+    ddl.constraint.unique_key.name.suffix.require:
+      enabled: true
+      params: {suffix: _uk}
+    ddl.constraint.unique_key.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.constraint.check.name.prefix.require:
+      enabled: true
+      params: {prefix: chk_}
+    ddl.constraint.check.name.suffix.require:
+      enabled: true
+      params: {suffix: _chk}
+    ddl.constraint.check.name.contains.require:
+      enabled: true
+      params: {contains: [core]}

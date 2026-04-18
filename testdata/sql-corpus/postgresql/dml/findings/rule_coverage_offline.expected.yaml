@@ -1,0 +1,16 @@
+name: rule_coverage_offline
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - dml.where.require
+      - dml.insert.select.forbid
+config:
+  rules:
+    dml.insert.rows.max_count:
+      enabled: true
+      params: {limit: 1}

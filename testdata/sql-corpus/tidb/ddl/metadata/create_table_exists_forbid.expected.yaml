@@ -1,0 +1,24 @@
+name: create_table_exists_forbid
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.exists.create.forbid
+      - ddl.table.denylist.forbid
+config:
+  rules:
+    ddl.table.denylist.forbid:
+      enabled: true
+      params:
+        tables: [users]
+metadata:
+  schema: app
+  tables:
+    users:
+      exists: true

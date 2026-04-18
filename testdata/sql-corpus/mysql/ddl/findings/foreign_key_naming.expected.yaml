@@ -1,0 +1,26 @@
+name: foreign_key_naming
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.constraint.foreign_key.name.prefix.require
+      - ddl.constraint.foreign_key.name.suffix.require
+      - ddl.constraint.foreign_key.name.contains.require
+config:
+  rules:
+    ddl.table.foreign_key.forbid:
+      enabled: true
+      params: {forbid: false}
+    ddl.constraint.foreign_key.name.prefix.require:
+      enabled: true
+      params: {prefix: fk_}
+    ddl.constraint.foreign_key.name.suffix.require:
+      enabled: true
+      params: {suffix: _fk}
+    ddl.constraint.foreign_key.name.contains.require:
+      enabled: true
+      params: {contains: [core]}

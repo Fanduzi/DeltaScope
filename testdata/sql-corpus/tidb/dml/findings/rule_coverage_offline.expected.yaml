@@ -1,0 +1,23 @@
+name: rule_coverage_offline
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - dml.where.require
+      - dml.limit.forbid
+      - dml.order_by.forbid
+      - dml.subquery.forbid
+      - dml.join.on.require
+      - dml.insert.rows.max_count
+      - dml.replace.forbid
+      - dml.insert.select.forbid
+      - dml.insert.on_duplicate.forbid
+config:
+  rules:
+    dml.insert.rows.max_count:
+      enabled: true
+      params: {limit: 1}

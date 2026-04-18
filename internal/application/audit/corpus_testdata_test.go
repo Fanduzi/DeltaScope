@@ -16,12 +16,12 @@ type corpusExpected struct {
 	Dialect  string `yaml:"dialect"`
 	Category string `yaml:"category"`
 	Expect   struct {
-		ParseOK        *bool    `yaml:"parse_ok"`
-		StatementKind  string   `yaml:"statement_kind"`
-		Operation      string   `yaml:"operation"`
-		Unsupported    *struct {
-			Count    *int               `yaml:"count"`
-			Include  []string           `yaml:"include,omitempty"`
+		ParseOK       *bool  `yaml:"parse_ok"`
+		StatementKind string `yaml:"statement_kind"`
+		Operation     string `yaml:"operation"`
+		Unsupported   *struct {
+			Count    *int                `yaml:"count"`
+			Include  []string            `yaml:"include,omitempty"`
 			Metadata []corpusUnsupported `yaml:"metadata,omitempty"`
 		} `yaml:"unsupported"`
 		Findings *struct {
@@ -29,12 +29,83 @@ type corpusExpected struct {
 			Exclude []string `yaml:"exclude"`
 		} `yaml:"findings"`
 	} `yaml:"expect"`
-	Facts *corpusFacts `yaml:"facts"`
+	Facts    *corpusFacts    `yaml:"facts"`
+	Config   map[string]any  `yaml:"config,omitempty"`
+	Metadata *corpusMetadata `yaml:"metadata,omitempty"`
 }
 
 // corpusFacts carries expected structural facts for deeper assertions.
 type corpusFacts struct {
 	Constraints []corpusFactConstraint `yaml:"constraints"`
+}
+
+// corpusMetadata carries optional metadata-aware audit fixtures.
+type corpusMetadata struct {
+	Schema      string                         `yaml:"schema,omitempty"`
+	Instance    *corpusInstanceFacts           `yaml:"instance,omitempty"`
+	Tables      map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
+	IndexOwners map[string]string              `yaml:"index_owners,omitempty"`
+}
+
+type corpusInstanceFacts struct {
+	Version                   string `yaml:"version,omitempty"`
+	DefaultCharset            string `yaml:"default_charset,omitempty"`
+	InnoDBLargePrefixEnabled  bool   `yaml:"innodb_large_prefix_enabled,omitempty"`
+	InnoDBDefaultRowFormat    string `yaml:"innodb_default_row_format,omitempty"`
+	InnoDBAdaptiveHashEnabled bool   `yaml:"innodb_adaptive_hash_enabled,omitempty"`
+}
+
+type corpusTableSnapshot struct {
+	Schema      string             `yaml:"schema,omitempty"`
+	Exists      bool               `yaml:"exists"`
+	Table       *corpusTable       `yaml:"table,omitempty"`
+	Columns     []corpusColumn     `yaml:"columns,omitempty"`
+	PrimaryKey  *corpusIndex       `yaml:"primary_key,omitempty"`
+	Indexes     []corpusIndex      `yaml:"indexes,omitempty"`
+	Constraints []corpusConstraint `yaml:"constraints,omitempty"`
+	Options     map[string]string  `yaml:"options,omitempty"`
+}
+
+type corpusTable struct {
+	Schema  string `yaml:"schema,omitempty"`
+	Name    string `yaml:"name"`
+	Comment string `yaml:"comment,omitempty"`
+}
+
+type corpusColumn struct {
+	Name                      string         `yaml:"name"`
+	Type                      string         `yaml:"type,omitempty"`
+	Length                    int            `yaml:"length,omitempty"`
+	Charset                   string         `yaml:"charset,omitempty"`
+	Collation                 string         `yaml:"collation,omitempty"`
+	Comment                   string         `yaml:"comment,omitempty"`
+	Unsigned                  bool           `yaml:"unsigned,omitempty"`
+	NotNull                   bool           `yaml:"not_null,omitempty"`
+	AutoIncrement             bool           `yaml:"auto_increment,omitempty"`
+	HasDefault                bool           `yaml:"has_default,omitempty"`
+	DefaultValue              string         `yaml:"default_value,omitempty"`
+	DefaultIsNull             bool           `yaml:"default_is_null,omitempty"`
+	DefaultIsCurrentTimestamp bool           `yaml:"default_is_current_timestamp,omitempty"`
+	OnUpdateCurrentTimestamp  bool           `yaml:"on_update_current_timestamp,omitempty"`
+	GeneratedWhen             string         `yaml:"generated_when,omitempty"`
+	IsIdentity                bool           `yaml:"is_identity,omitempty"`
+	IdentityOptions           map[string]any `yaml:"identity_options,omitempty"`
+}
+
+type corpusIndex struct {
+	Name        string   `yaml:"name"`
+	Kind        string   `yaml:"kind,omitempty"`
+	Columns     []string `yaml:"columns,omitempty"`
+	Cardinality *int64   `yaml:"cardinality,omitempty"`
+}
+
+type corpusConstraint struct {
+	Type              string   `yaml:"type"`
+	Name              string   `yaml:"name,omitempty"`
+	Columns           []string `yaml:"columns,omitempty"`
+	ReferencedSchema  string   `yaml:"referenced_schema,omitempty"`
+	ReferencedTable   string   `yaml:"referenced_table,omitempty"`
+	ReferencedColumns []string `yaml:"referenced_columns,omitempty"`
 }
 
 // corpusFactConstraint is one expected constraint fact.
@@ -65,8 +136,8 @@ var validCategories = map[string]bool{
 }
 
 var validStatementKinds = map[string]bool{
-	"ddl":    true,
-	"dml":    true,
+	"ddl":     true,
+	"dml":     true,
 	"unknown": true,
 }
 
@@ -137,11 +208,11 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 						t.Fatal("unsupported.include must not contain empty strings")
 					}
 				}
-					for _, m := range tc.Expect.Unsupported.Metadata {
-						if m.Feature == "" {
-							t.Fatal("unsupported.metadata[].feature must not be empty")
-						}
+				for _, m := range tc.Expect.Unsupported.Metadata {
+					if m.Feature == "" {
+						t.Fatal("unsupported.metadata[].feature must not be empty")
 					}
+				}
 			}
 
 			// 5. Validate operation if present — must not be empty.
@@ -185,6 +256,27 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 						if col == "" {
 							t.Fatal("facts.constraints[].referenced_columns must not contain empty strings")
 						}
+					}
+				}
+			}
+
+			// 9. Validate optional inline config shape if present.
+			if tc.Config != nil {
+				if _, ok := tc.Config["rules"]; !ok {
+					t.Fatal("config must contain rules when present")
+				}
+			}
+
+			// 10. Validate optional metadata fixture shape if present.
+			if tc.Metadata != nil {
+				for tableName := range tc.Metadata.Tables {
+					if tableName == "" {
+						t.Fatal("metadata.tables must not contain an empty table key")
+					}
+				}
+				for indexName, tableName := range tc.Metadata.IndexOwners {
+					if indexName == "" || tableName == "" {
+						t.Fatal("metadata.index_owners must not contain empty index or table names")
 					}
 				}
 			}

@@ -1,0 +1,12 @@
+name: primary_key_semantics
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.primary_key.bigint.require
+      - ddl.table.primary_key.unsigned.require
+      - ddl.table.primary_key.auto_increment.require

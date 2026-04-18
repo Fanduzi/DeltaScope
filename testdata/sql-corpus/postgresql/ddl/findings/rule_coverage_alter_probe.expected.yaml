@@ -1,0 +1,23 @@
+name: rule_coverage_alter_probe
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.drop_default.explicit_default_change.forbid
+      - ddl.alter.drop_default.forbid
+      - ddl.alter.drop_not_null.explicit_nullability_change.forbid
+      - ddl.alter.drop_not_null.forbid
+      - ddl.alter.rename_column.forbid
+      - ddl.alter.rename_table.forbid
+      - ddl.alter.set_data_type.forbid
+      - ddl.alter.set_default.explicit_default_change.forbid
+      - ddl.alter.set_default.forbid
+      - ddl.alter.set_not_null.explicit_nullability_change.forbid
+      - ddl.alter.set_not_null.forbid
+      - ddl.pg.alter.add_check.not_valid.require
+      - ddl.pg.alter.set_data_type.rewrite.warn
+      - ddl.pg.create_index.concurrently.require

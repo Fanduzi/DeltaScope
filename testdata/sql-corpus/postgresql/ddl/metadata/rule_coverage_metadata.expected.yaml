@@ -1,0 +1,39 @@
+name: rule_coverage_metadata
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.exists.alter.require
+      - ddl.alter.add_index.exists.forbid
+      - ddl.alter.rename_column.exists.require
+      - ddl.table.drop.exists.require
+      - ddl.table.drop.rows.max_count
+      - ddl.table.truncate.exists.require
+      - ddl.table.truncate.rows.max_count
+config:
+  rules:
+    ddl.table.drop.rows.max_count:
+      enabled: true
+      params: {limit: 100}
+    ddl.table.truncate.rows.max_count:
+      enabled: true
+      params: {limit: 100}
+metadata:
+  schema: public
+  tables:
+    missing_table:
+      exists: false
+    users:
+      exists: true
+      columns:
+        - {name: existing, type: integer}
+      indexes:
+        - {name: existing_idx, kind: unique, columns: [existing]}
+    big_table:
+      exists: true
+      options:
+        table_rows: "1000"

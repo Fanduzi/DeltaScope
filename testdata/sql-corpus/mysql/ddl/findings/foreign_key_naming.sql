@@ -1,0 +1,6 @@
+CREATE TABLE fk_names (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  parent_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT badfk FOREIGN KEY (parent_id) REFERENCES parents(id)
+) COMMENT='fk names';

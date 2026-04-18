@@ -49,9 +49,13 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 			}
 
 			// Run audit pipeline.
+			schema, metadataProvider := corpusMetadataFields(tc)
 			result, auditErr := AuditSQL(context.Background(), Request{
-				SQL:     string(sqlBytes),
-				Dialect: spec.DialectPostgreSQL,
+				SQL:              string(sqlBytes),
+				Dialect:          spec.DialectPostgreSQL,
+				ConfigPath:       corpusConfigPath(t, tc),
+				Schema:           schema,
+				MetadataProvider: metadataProvider,
 			})
 
 			// Determine whether parsing succeeded.

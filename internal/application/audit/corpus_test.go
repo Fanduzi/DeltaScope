@@ -84,9 +84,13 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 			}
 
 			// Run audit pipeline.
+			schema, metadataProvider := corpusMetadataFields(tc)
 			result, err := AuditSQL(context.Background(), Request{
-				SQL:     string(sqlBytes),
-				Dialect: dialect,
+				SQL:              string(sqlBytes),
+				Dialect:          dialect,
+				ConfigPath:       corpusConfigPath(t, tc),
+				Schema:           schema,
+				MetadataProvider: metadataProvider,
 			})
 
 			// Assert parse_ok.

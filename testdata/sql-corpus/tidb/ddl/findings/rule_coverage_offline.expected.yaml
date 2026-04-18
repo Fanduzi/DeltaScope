@@ -1,0 +1,274 @@
+name: rule_coverage_offline
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.add_index.columns.max_count
+      - ddl.alter.add_index.duplicate.forbid
+      - ddl.alter.add_index.fulltext.contains.require
+      - ddl.alter.add_index.fulltext.prefix.require
+      - ddl.alter.add_index.fulltext.suffix.require
+      - ddl.alter.add_index.redundant_left_prefix.forbid
+      - ddl.alter.add_index.secondary.contains.require
+      - ddl.alter.add_index.secondary.prefix.require
+      - ddl.alter.add_index.secondary.suffix.require
+      - ddl.alter.add_index.unique.contains.require
+      - ddl.alter.add_index.unique.prefix.require
+      - ddl.alter.add_index.unique.suffix.require
+      - ddl.alter.change_column.explicit_auto_increment_change.forbid
+      - ddl.alter.change_column.explicit_default_change.forbid
+      - ddl.alter.change_column.explicit_nullability_change.forbid
+      - ddl.alter.change_column.forbid
+      - ddl.alter.change_column.target_type_family.allowlist
+      - ddl.alter.drop_column.forbid
+      - ddl.alter.drop_index.forbid
+      - ddl.alter.drop_primary_key.forbid
+      - ddl.alter.merge.tidb.require
+      - ddl.alter.modify_column.explicit_auto_increment_change.forbid
+      - ddl.alter.modify_column.explicit_default_change.forbid
+      - ddl.alter.modify_column.explicit_nullability_change.forbid
+      - ddl.alter.modify_column.forbid
+      - ddl.alter.modify_column.target_type_family.allowlist
+      - ddl.alter.rename_column.forbid
+      - ddl.alter.rename_index.forbid
+      - ddl.alter.rename_table.forbid
+      - ddl.column.bit.forbid
+      - ddl.column.blob_text.forbid
+      - ddl.column.char.max_length
+      - ddl.column.charset.allowlist
+      - ddl.column.charset_collation.match.require
+      - ddl.column.collation.allowlist
+      - ddl.column.comment.require
+      - ddl.column.default.require
+      - ddl.column.float_double.forbid
+      - ddl.column.json.forbid
+      - ddl.column.name.contains.require
+      - ddl.column.name.keyword.forbid
+      - ddl.column.name.max_length
+      - ddl.column.name.pattern.require
+      - ddl.column.name.prefix.require
+      - ddl.column.name.suffix.require
+      - ddl.column.not_null.require
+      - ddl.column.timestamp.forbid
+      - ddl.column.varchar.max_length
+      - ddl.constraint.check.name.contains.require
+      - ddl.constraint.check.name.prefix.require
+      - ddl.constraint.check.name.suffix.require
+      - ddl.constraint.primary_key.name.contains.require
+      - ddl.constraint.primary_key.name.prefix.require
+      - ddl.constraint.primary_key.name.suffix.require
+      - ddl.constraint.unique_key.name.contains.require
+      - ddl.constraint.unique_key.name.prefix.require
+      - ddl.constraint.unique_key.name.suffix.require
+      - ddl.index.columns.max_count
+      - ddl.index.duplicate.forbid
+      - ddl.index.fulltext.contains.require
+      - ddl.index.fulltext.prefix.require
+      - ddl.index.fulltext.suffix.require
+      - ddl.index.name.keyword.forbid
+      - ddl.index.name.pattern.require
+      - ddl.index.redundant_left_prefix.forbid
+      - ddl.index.redundant_unique_overlap.forbid
+      - ddl.index.secondary.contains.require
+      - ddl.index.secondary.prefix.require
+      - ddl.index.secondary.suffix.require
+      - ddl.index.total.max_count
+      - ddl.index.unique.contains.require
+      - ddl.index.unique.prefix.require
+      - ddl.index.unique.suffix.require
+      - ddl.table.audit_columns.require
+      - ddl.table.auto_increment.init_value.require
+      - ddl.table.charset.allowlist
+      - ddl.table.columns.min_count
+      - ddl.table.comment.max_length
+      - ddl.table.comment.require
+      - ddl.table.create_as.forbid
+      - ddl.table.create_like.forbid
+      - ddl.table.drop.forbid
+      - ddl.table.engine.allowlist
+      - ddl.table.foreign_key.forbid
+      - ddl.table.name.contains.require
+      - ddl.table.name.keyword.forbid
+      - ddl.table.name.max_length
+      - ddl.table.name.pattern.require
+      - ddl.table.name.prefix.require
+      - ddl.table.name.suffix.require
+      - ddl.table.partition.forbid
+      - ddl.table.primary_key.columns.max_count
+      - ddl.table.primary_key.not_null.require
+      - ddl.table.primary_key.require
+      - ddl.table.row_format.allowlist
+      - ddl.table.truncate.forbid
+      - ddl.view.create.forbid
+      - ddl.view.drop.forbid
+config:
+  rules:
+    ddl.table.name.prefix.require:
+      enabled: true
+      params: {prefix: must_}
+    ddl.table.name.suffix.require:
+      enabled: true
+      params: {suffix: _tbl}
+    ddl.table.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.table.name.pattern.require:
+      enabled: true
+      params: {required: true, pattern: "^must_"}
+    ddl.table.comment.max_length:
+      enabled: true
+      params: {limit: 8}
+    ddl.table.columns.min_count:
+      enabled: true
+      params: {limit: 12}
+    ddl.table.engine.allowlist:
+      enabled: true
+      params: {values: [InnoDB], require_explicit: true}
+    ddl.table.charset.allowlist:
+      enabled: true
+      params: {values: [utf8mb4], require_explicit: true}
+    ddl.table.row_format.allowlist:
+      enabled: true
+      params: {values: [DYNAMIC], require_explicit: true}
+    ddl.table.auto_increment.init_value.require:
+      enabled: true
+      params: {value: 1}
+    ddl.column.name.prefix.require:
+      enabled: true
+      params: {prefix: c_}
+    ddl.column.name.suffix.require:
+      enabled: true
+      params: {suffix: _col}
+    ddl.column.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.column.name.pattern.require:
+      enabled: true
+      params: {required: true, pattern: "^c_"}
+    ddl.column.varchar.max_length:
+      enabled: true
+      params: {limit: 8}
+    ddl.column.char.max_length:
+      enabled: true
+      params: {limit: 2}
+    ddl.column.blob_text.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.column.json.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.column.bit.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.column.charset.allowlist:
+      enabled: true
+      params: {values: [utf8mb4]}
+    ddl.column.collation.allowlist:
+      enabled: true
+      params: {values: [utf8mb4_general_ci]}
+    ddl.index.total.max_count:
+      enabled: true
+      params: {limit: 1}
+    ddl.index.columns.max_count:
+      enabled: true
+      params: {limit: 1}
+    ddl.index.name.pattern.require:
+      enabled: true
+      params: {required: true, pattern: "^idx_"}
+    ddl.index.unique.prefix.require:
+      enabled: true
+      params: {required: true, prefix: uniq_}
+    ddl.index.unique.suffix.require:
+      enabled: true
+      params: {suffix: _uk}
+    ddl.index.unique.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.index.secondary.prefix.require:
+      enabled: true
+      params: {required: true, prefix: idx_}
+    ddl.index.secondary.suffix.require:
+      enabled: true
+      params: {suffix: _idx}
+    ddl.index.secondary.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.index.fulltext.prefix.require:
+      enabled: true
+      params: {required: true, prefix: full_}
+    ddl.index.fulltext.suffix.require:
+      enabled: true
+      params: {suffix: _ft}
+    ddl.index.fulltext.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.constraint.primary_key.name.prefix.require:
+      enabled: true
+      params: {prefix: pk_}
+    ddl.constraint.primary_key.name.suffix.require:
+      enabled: true
+      params: {suffix: _pk}
+    ddl.constraint.primary_key.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.constraint.unique_key.name.prefix.require:
+      enabled: true
+      params: {prefix: uk_}
+    ddl.constraint.unique_key.name.suffix.require:
+      enabled: true
+      params: {suffix: _uk}
+    ddl.constraint.unique_key.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.constraint.check.name.prefix.require:
+      enabled: true
+      params: {prefix: chk_}
+    ddl.constraint.check.name.suffix.require:
+      enabled: true
+      params: {suffix: _chk}
+    ddl.constraint.check.name.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.alter.drop_column.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.alter.drop_index.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.alter.modify_column.forbid:
+      enabled: true
+      params: {forbid: true}
+    ddl.alter.add_index.columns.max_count:
+      enabled: true
+      params: {limit: 1}
+    ddl.alter.add_index.unique.suffix.require:
+      enabled: true
+      params: {suffix: _uk}
+    ddl.alter.add_index.unique.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.alter.add_index.secondary.suffix.require:
+      enabled: true
+      params: {suffix: _idx}
+    ddl.alter.add_index.secondary.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.alter.add_index.fulltext.suffix.require:
+      enabled: true
+      params: {suffix: _ft}
+    ddl.alter.add_index.fulltext.contains.require:
+      enabled: true
+      params: {contains: [core]}
+    ddl.alter.modify_column.target_type_family.allowlist:
+      enabled: true
+      params: {required: true, allowed_type_families: [integer]}
+    ddl.alter.change_column.target_type_family.allowlist:
+      enabled: true
+      params: {required: true, allowed_type_families: [integer]}
+    ddl.alter.merge.tidb.require:
+      enabled: true
+      params: {required: true}

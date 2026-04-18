@@ -1,0 +1,20 @@
+name: table_denylist
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  operation: delete
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - dml.table.denylist.forbid
+config:
+  rules:
+    dml.table.denylist.forbid:
+      enabled: true
+      params:
+        tables: [users]
+metadata:
+  schema: app

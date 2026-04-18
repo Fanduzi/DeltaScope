@@ -1,0 +1,12 @@
+ALTER TABLE users RENAME TO users_new;
+ALTER TABLE users RENAME COLUMN name TO full_name;
+ALTER TABLE users DROP COLUMN legacy_name;
+DROP INDEX users_name_idx;
+ALTER TABLE users ALTER COLUMN name TYPE jsonb USING to_jsonb(name);
+ALTER TABLE users ALTER COLUMN name SET DEFAULT 'x';
+ALTER TABLE users ALTER COLUMN name DROP DEFAULT;
+ALTER TABLE users ALTER COLUMN name SET NOT NULL;
+ALTER TABLE users ALTER COLUMN name DROP NOT NULL;
+CREATE INDEX idx_users_name ON users(name);
+ALTER TABLE users ADD COLUMN created_uuid uuid NOT NULL DEFAULT gen_random_uuid();
+ALTER TABLE users ADD CONSTRAINT badcheck CHECK (id > 0);

@@ -1,12 +1,194 @@
 package audit
 
 import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"go.yaml.in/yaml/v3"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+// corpusConfigPath writes an optional inline corpus config to a temporary file
+// and returns the path used by AuditSQL.
+func corpusConfigPath(t *testing.T, tc corpusExpected) string {
+	t.Helper()
+	if len(tc.Config) == 0 {
+		return ""
+	}
+
+	raw, err := yaml.Marshal(tc.Config)
+	if err != nil {
+		t.Fatalf("marshal corpus config: %v", err)
+	}
+
+	path := filepath.Join(t.TempDir(), "deltascope-corpus.yaml")
+	if err := os.WriteFile(path, raw, 0o644); err != nil {
+		t.Fatalf("write corpus config: %v", err)
+	}
+	return path
+}
+
+func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
+	if tc.Metadata == nil {
+		return "", nil
+	}
+	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 {
+		return strings.TrimSpace(tc.Metadata.Schema), nil
+	}
+	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
+}
+
+type corpusFixtureMetadataProvider struct {
+	instance    *spec.InstanceFacts
+	tables      map[string]*spec.TableSnapshot
+	indexOwners map[string]string
+}
+
+func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
+	provider := &corpusFixtureMetadataProvider{
+		tables:      make(map[string]*spec.TableSnapshot, len(metadata.Tables)),
+		indexOwners: make(map[string]string, len(metadata.IndexOwners)),
+	}
+	if metadata.Instance != nil {
+		provider.instance = &spec.InstanceFacts{
+			Version:                   metadata.Instance.Version,
+			DefaultCharset:            metadata.Instance.DefaultCharset,
+			InnoDBLargePrefixEnabled:  metadata.Instance.InnoDBLargePrefixEnabled,
+			InnoDBDefaultRowFormat:    metadata.Instance.InnoDBDefaultRowFormat,
+			InnoDBAdaptiveHashEnabled: metadata.Instance.InnoDBAdaptiveHashEnabled,
+		}
+	}
+	for tableName, snapshot := range metadata.Tables {
+		converted := corpusTableSnapshotToSpec(tableName, metadata.Schema, snapshot)
+		provider.tables[strings.ToLower(strings.TrimSpace(tableName))] = &converted
+	}
+	for indexName, tableName := range metadata.IndexOwners {
+		provider.indexOwners[strings.ToLower(strings.TrimSpace(indexName))] = strings.TrimSpace(tableName)
+	}
+	return provider
+}
+
+func (p *corpusFixtureMetadataProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
+	return p.instance, nil
+}
+
+func (p *corpusFixtureMetadataProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+	snapshot, ok := p.tables[strings.ToLower(strings.TrimSpace(table))]
+	if !ok {
+		return nil, nil
+	}
+	if snapshot.Schema == "" {
+		snapshot.Schema = schema
+	}
+	if snapshot.Table == nil {
+		snapshot.Table = &spec.Table{Schema: snapshot.Schema, Name: table}
+	}
+	return snapshot, nil
+}
+
+func (p *corpusFixtureMetadataProvider) ResolveTableForIndex(_ context.Context, _ spec.Dialect, _ string, index string) (string, error) {
+	return p.indexOwners[strings.ToLower(strings.TrimSpace(index))], nil
+}
+
+func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusTableSnapshot) spec.TableSnapshot {
+	out := spec.TableSnapshot{
+		Schema:      firstNonEmpty(snapshot.Schema, defaultSchema),
+		Exists:      snapshot.Exists,
+		Columns:     make([]spec.Column, 0, len(snapshot.Columns)),
+		Indexes:     make([]spec.Index, 0, len(snapshot.Indexes)),
+		Constraints: make([]spec.Constraint, 0, len(snapshot.Constraints)),
+		Options:     cloneStringMap(snapshot.Options),
+	}
+	if snapshot.Table != nil {
+		out.Table = &spec.Table{
+			Schema:  snapshot.Table.Schema,
+			Name:    snapshot.Table.Name,
+			Comment: snapshot.Table.Comment,
+		}
+	} else if strings.TrimSpace(tableName) != "" {
+		out.Table = &spec.Table{Schema: out.Schema, Name: tableName}
+	}
+	for _, column := range snapshot.Columns {
+		out.Columns = append(out.Columns, corpusColumnToSpec(column))
+	}
+	if snapshot.PrimaryKey != nil {
+		index := corpusIndexToSpec(*snapshot.PrimaryKey)
+		out.PrimaryKey = &index
+	}
+	for _, index := range snapshot.Indexes {
+		out.Indexes = append(out.Indexes, corpusIndexToSpec(index))
+	}
+	for _, constraint := range snapshot.Constraints {
+		out.Constraints = append(out.Constraints, corpusConstraintToSpec(constraint))
+	}
+	return out
+}
+
+func corpusColumnToSpec(column corpusColumn) spec.Column {
+	return spec.Column{
+		Name:                      column.Name,
+		Type:                      column.Type,
+		Length:                    column.Length,
+		Charset:                   column.Charset,
+		Collation:                 column.Collation,
+		Comment:                   column.Comment,
+		Unsigned:                  column.Unsigned,
+		NotNull:                   column.NotNull,
+		AutoIncrement:             column.AutoIncrement,
+		HasDefault:                column.HasDefault,
+		DefaultValue:              column.DefaultValue,
+		DefaultIsNull:             column.DefaultIsNull,
+		DefaultIsCurrentTimestamp: column.DefaultIsCurrentTimestamp,
+		OnUpdateCurrentTimestamp:  column.OnUpdateCurrentTimestamp,
+		GeneratedWhen:             column.GeneratedWhen,
+		IsIdentity:                column.IsIdentity,
+		IdentityOptions:           column.IdentityOptions,
+	}
+}
+
+func corpusIndexToSpec(index corpusIndex) spec.Index {
+	return spec.Index{
+		Name:        index.Name,
+		Kind:        spec.IndexKind(index.Kind),
+		Columns:     append([]string(nil), index.Columns...),
+		Cardinality: index.Cardinality,
+	}
+}
+
+func corpusConstraintToSpec(constraint corpusConstraint) spec.Constraint {
+	return spec.Constraint{
+		Type:              constraint.Type,
+		Name:              constraint.Name,
+		Columns:           append([]string(nil), constraint.Columns...),
+		ReferencedSchema:  constraint.ReferencedSchema,
+		ReferencedTable:   constraint.ReferencedTable,
+		ReferencedColumns: append([]string(nil), constraint.ReferencedColumns...),
+	}
+}
+
+func cloneStringMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
 
 // corpusExtractStatement parses and extracts SQL for a given dialect,
 // returning the first supported spec.Statement. If all statements are

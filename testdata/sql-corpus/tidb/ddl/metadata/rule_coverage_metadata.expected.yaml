@@ -1,0 +1,67 @@
+name: rule_coverage_metadata
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.exists.alter.require
+      - ddl.alter.add_column.exists.forbid
+      - ddl.alter.drop_column.exists.require
+      - ddl.alter.modify_column.exists.require
+      - ddl.alter.change_column.exists.require
+      - ddl.alter.rename_column.exists.require
+      - ddl.alter.add_index.exists.forbid
+      - ddl.alter.drop_index.exists.require
+      - ddl.alter.rename_index.exists.require
+      - ddl.alter.drop_primary_key.exists.require
+      - ddl.alter.modify_column.compatibility.require
+      - ddl.alter.change_column.compatibility.require
+      - ddl.alter.table_option.compatibility.require
+      - ddl.table.drop.exists.require
+      - ddl.table.drop.adaptive_hash.warn
+      - ddl.table.drop.rows.max_count
+      - ddl.table.truncate.exists.require
+      - ddl.table.truncate.adaptive_hash.warn
+      - ddl.table.truncate.rows.max_count
+      - ddl.table.row_size.max_bytes.require
+      - ddl.index.key_length.max_bytes.require
+config:
+  rules:
+    ddl.table.drop.rows.max_count:
+      enabled: true
+      params: {limit: 100}
+    ddl.table.truncate.rows.max_count:
+      enabled: true
+      params: {limit: 100}
+metadata:
+  schema: app
+  instance:
+    default_charset: utf8mb4
+    innodb_default_row_format: COMPACT
+    innodb_large_prefix_enabled: false
+    innodb_adaptive_hash_enabled: true
+  tables:
+    missing_table:
+      exists: false
+    users:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    no_pk:
+      exists: true
+    compat_table:
+      exists: true
+      columns:
+        - {name: amount, type: bigint, unsigned: true, auto_increment: true}
+      options:
+        engine: MyISAM
+        auto_increment: "100"
+    big_table:
+      exists: true
+      options:
+        table_rows: "1000"
