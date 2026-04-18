@@ -1,0 +1,23 @@
+name: unique_index_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.index.secondary.prefix.require
+      - ddl.index.unique.prefix.require
+      - ddl.index.columns.max_count
+config:
+  rules:
+    ddl.index.secondary.prefix.require:
+      enabled: true
+      params: {required: true, prefix: idx_}
+    ddl.index.unique.prefix.require:
+      enabled: true
+      params: {required: true, prefix: uniq_}
+    ddl.index.columns.max_count:
+      enabled: true
+      params: {limit: 1}

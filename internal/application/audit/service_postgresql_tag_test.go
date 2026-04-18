@@ -1552,6 +1552,81 @@ func TestAuditSQLPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.38.0 Task 3: Service tests — standalone CREATE INDEX rule coverage
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLUniqueIndexRuleCoverage proves that standalone
+// CREATE INDEX and CREATE UNIQUE INDEX on PostgreSQL trigger generic index
+// rules through the full AuditSQL pipeline.
+func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "secondary_prefix_on_create_index",
+			sql:        "CREATE INDEX bad_users_email ON users (email);",
+			wantRuleID: "ddl.index.secondary.prefix.require",
+		},
+		{
+			name:       "unique_prefix_on_create_unique_index",
+			sql:        "CREATE UNIQUE INDEX bad_users_email_unique ON users (email);",
+			wantRuleID: "ddl.index.unique.prefix.require",
+		},
+		{
+			name:       "columns_max_count_on_create_index",
+			sql:        "CREATE INDEX idx_wide ON users (c1, c2, c3, c4, c5, c6, c7, c8, c9);",
+			wantRuleID: "ddl.index.columns.max_count",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+
+			// Verify spec-level index facts are populated.
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationCreateIndex {
+				t.Fatalf("expected create_index operation, got %q", stmt.DDL.Operation)
+			}
+			if len(stmt.DDL.Indexes) == 0 {
+				t.Fatal("expected at least one index")
+			}
+		})
+	}
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
