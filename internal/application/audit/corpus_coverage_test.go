@@ -75,8 +75,6 @@ func isPostgreSQLOnlyRule(ruleID string) bool {
 func isMySQLFamilyOnlyRule(ruleID string) bool {
 	switch ruleID {
 	case
-		"ddl.table.primary_key.bigint.require",
-		"ddl.table.primary_key.columns.max_count",
 		"ddl.table.primary_key.not_null.require",
 		"ddl.table.primary_key.unsigned.require",
 		"ddl.table.primary_key.auto_increment.require",

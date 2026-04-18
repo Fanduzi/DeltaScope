@@ -1,0 +1,19 @@
+name: primary_key_semantics
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.primary_key.bigint.require
+      - ddl.table.primary_key.columns.max_count
+config:
+  rules:
+    ddl.table.primary_key.bigint.require:
+      enabled: true
+      params: {required: true}
+    ddl.table.primary_key.columns.max_count:
+      enabled: true
+      params: {limit: 1}

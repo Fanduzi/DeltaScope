@@ -1462,6 +1462,96 @@ func TestAuditSQLPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.37.0 Task 3: Service tests — primary-key rule coverage
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLPrimaryKeyRuleCoverage proves that the PostgreSQL
+// extractor now populates DDL.PrimaryKey facts so existing primary-key rules
+// can fire through the full AuditSQL pipeline.
+func TestAuditSQLPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "bigint_required_non_bigint_pk",
+			sql:        "CREATE TABLE bad_pk_type (id integer PRIMARY KEY, name text);",
+			wantRuleID: "ddl.table.primary_key.bigint.require",
+		},
+		{
+			name:       "composite_pk_exceeds_max_columns",
+			sql:        "CREATE TABLE composite_pk (tenant_id bigint, user_id bigint, PRIMARY KEY (tenant_id, user_id));",
+			wantRuleID: "ddl.table.primary_key.columns.max_count",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			// Must have the expected rule finding.
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+
+			// Verify spec-level primary-key facts are populated.
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
+			}
+			if stmt.DDL.PrimaryKey == nil {
+				t.Fatal("expected DDL.PrimaryKey to be populated")
+			}
+			if stmt.DDL.PrimaryKey.Kind != spec.IndexKindPrimary {
+				t.Fatalf("expected primary key kind, got %q", stmt.DDL.PrimaryKey.Kind)
+			}
+			if len(stmt.DDL.PrimaryKey.Columns) == 0 {
+				t.Fatal("expected at least one primary key column")
+			}
+
+			// Verify PK columns are marked NotNull.
+			for _, pkCol := range stmt.DDL.PrimaryKey.Columns {
+				foundCol := false
+				for _, col := range stmt.DDL.Columns {
+					if col.Name == pkCol {
+						foundCol = true
+						if !col.NotNull {
+							t.Errorf("PK column %q should be NotNull=true", pkCol)
+						}
+					}
+				}
+				if !foundCol {
+					t.Errorf("PK column %q not found in DDL.Columns", pkCol)
+				}
+			}
+		})
+	}
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
