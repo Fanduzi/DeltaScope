@@ -1232,6 +1232,41 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T
 }
 
 // httpMetadataValueEqual compares values with numeric type coercion.
+func TestExecuteAuditRequestPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "CREATE TABLE bad_pk_type (id integer PRIMARY KEY, name text);",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if response.Context == nil || response.Context.Mode != "offline" {
+		t.Fatalf("expected offline context, got %#v", response.Context)
+	}
+	if len(response.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", response.Statements)
+	}
+	if response.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+	}
+	if len(response.Result.Unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", response.Result.Unsupported)
+	}
+
+	found := false
+	for _, f := range response.Statements[0].Findings {
+		if f.RuleID == "ddl.table.primary_key.bigint.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected finding with rule_id ddl.table.primary_key.bigint.require, got %#v", response.Statements[0].Findings)
+	}
+}
+
 func httpMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := httpToFloat64(a)
 	bFloat, bIsNum := httpToFloat64(b)

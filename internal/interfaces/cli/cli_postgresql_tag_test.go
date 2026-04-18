@@ -1749,6 +1749,57 @@ func TestAuditCommandPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T)
 }
 
 // cliMetadataValueEqual compares values with numeric type coercion for JSON-decoded output.
+func TestAuditCommandPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE bad_pk_type (id integer PRIMARY KEY, name text);", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitAudit {
+		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) == 0 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+	found := false
+	for _, f := range findings {
+		finding, ok := f.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.table.primary_key.bigint.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected finding with rule_id ddl.table.primary_key.bigint.require, got %#v", findings)
+	}
+}
+
 func cliMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := cliToFloat64(a)
 	bFloat, bIsNum := cliToFloat64(b)

@@ -1238,6 +1238,36 @@ func TestAuditPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
 }
 
 // pkgMetadataValueEqual compares values with numeric type coercion.
+func TestAuditPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE bad_pk_type (id integer PRIMARY KEY, name text);",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	if result.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+	}
+
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.table.primary_key.bigint.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected finding with rule_id ddl.table.primary_key.bigint.require, got %#v", result.Statements[0].Findings)
+	}
+}
+
 func pkgMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := pkgToFloat64(a)
 	bFloat, bIsNum := pkgToFloat64(b)
