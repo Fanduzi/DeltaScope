@@ -52,7 +52,8 @@ func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
 	findings, err := registry.EvaluateStatement(spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
-			Table: &spec.Table{Name: "orders_archive"},
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "orders_archive"},
 			Columns: []spec.Column{
 				{Name: "display_name", Type: "varchar(255)", Length: 255},
 				{Name: "ratio", Type: "float"},

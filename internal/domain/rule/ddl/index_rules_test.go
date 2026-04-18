@@ -400,9 +400,10 @@ func statementWithIndexes(indexes ...spec.Index) spec.Statement {
 	return spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
-			Table:   &spec.Table{Name: "users"},
-			Columns: []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true}},
-			Indexes: indexes,
+			Operation: spec.DDLOperationCreateTable,
+			Table:     &spec.Table{Name: "users"},
+			Columns:   []spec.Column{{Name: "id", Type: "bigint", Comment: "'id'", NotNull: true, HasDefault: true}},
+			Indexes:   indexes,
 		},
 	}
 }

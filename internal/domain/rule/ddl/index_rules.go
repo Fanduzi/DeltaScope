@@ -33,7 +33,7 @@ func newIndexTotalMaxCountRule(cfg policy.RulePolicy) (rule.StatementRule, error
 func (r indexTotalMaxCountRule) ID() string { return ruleIDIndexTotalMaxCount }
 
 func (r indexTotalMaxCountRule) AppliesTo(statement spec.Statement) bool {
-	return appliesToCreateTableIndexes(statement)
+	return appliesToDDLWithIndexes(statement)
 }
 
 func (r indexTotalMaxCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -75,7 +75,7 @@ func newIndexColumnsMaxCountRule(cfg policy.RulePolicy) (rule.StatementRule, err
 func (r indexColumnsMaxCountRule) ID() string { return ruleIDIndexColumnsMaxCount }
 
 func (r indexColumnsMaxCountRule) AppliesTo(statement spec.Statement) bool {
-	return appliesToCreateTableIndexes(statement)
+	return appliesToDDLWithIndexes(statement)
 }
 
 func (r indexColumnsMaxCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -152,7 +152,7 @@ func newIndexPrefixRequiredRule(ruleID string, kind spec.IndexKind, fallbackPref
 func (r indexPrefixRequiredRule) ID() string { return r.ruleID }
 
 func (r indexPrefixRequiredRule) AppliesTo(statement spec.Statement) bool {
-	return r.prefix != "" && appliesToCreateTableIndexes(statement)
+	return r.prefix != "" && appliesToDDLWithIndexes(statement)
 }
 
 func (r indexPrefixRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -202,7 +202,7 @@ func newIndexSuffixRequiredRule(ruleID string, kind spec.IndexKind, fallbackLeve
 func (r indexSuffixRequiredRule) ID() string { return r.ruleID }
 
 func (r indexSuffixRequiredRule) AppliesTo(statement spec.Statement) bool {
-	return r.suffix != "" && appliesToCreateTableIndexes(statement)
+	return r.suffix != "" && appliesToDDLWithIndexes(statement)
 }
 
 func (r indexSuffixRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -253,7 +253,7 @@ func newIndexContainsRequiredRule(ruleID string, kind spec.IndexKind, fallbackLe
 func (r indexContainsRequiredRule) ID() string { return r.ruleID }
 
 func (r indexContainsRequiredRule) AppliesTo(statement spec.Statement) bool {
-	return len(r.contains) > 0 && appliesToCreateTableIndexes(statement)
+	return len(r.contains) > 0 && appliesToDDLWithIndexes(statement)
 }
 
 func (r indexContainsRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -308,7 +308,7 @@ func newDuplicateIndexForbiddenRule(cfg policy.RulePolicy) (rule.StatementRule, 
 func (r duplicateIndexForbiddenRule) ID() string { return ruleIDIndexDuplicateForbid }
 
 func (r duplicateIndexForbiddenRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToCreateTableIndexes(statement)
+	return r.forbid && appliesToDDLWithIndexes(statement)
 }
 
 func (r duplicateIndexForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -361,7 +361,7 @@ func newRedundantLeftPrefixIndexRule(cfg policy.RulePolicy) (rule.StatementRule,
 func (r redundantLeftPrefixIndexRule) ID() string { return ruleIDIndexRedundantLeftPrefixForbid }
 
 func (r redundantLeftPrefixIndexRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToCreateTableIndexes(statement)
+	return r.forbid && appliesToDDLWithIndexes(statement)
 }
 
 func (r redundantLeftPrefixIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -422,7 +422,7 @@ func newRedundantUniqueOverlapIndexRule(cfg policy.RulePolicy) (rule.StatementRu
 func (r redundantUniqueOverlapIndexRule) ID() string { return ruleIDIndexRedundantUniqueOverlapForbid }
 
 func (r redundantUniqueOverlapIndexRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToCreateTableIndexes(statement)
+	return r.forbid && appliesToDDLWithIndexes(statement)
 }
 
 func (r redundantUniqueOverlapIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {

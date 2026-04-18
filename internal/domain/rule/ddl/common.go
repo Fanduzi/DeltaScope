@@ -182,6 +182,18 @@ func appliesToCreateTableIndexes(statement spec.Statement) bool {
 	return appliesToCreateTable(statement) && statement.DDL != nil
 }
 
+func appliesToDDLWithIndexes(statement spec.Statement) bool {
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil || len(statement.DDL.Indexes) == 0 {
+		return false
+	}
+	switch statement.DDL.Operation {
+	case spec.DDLOperationCreateTable, spec.DDLOperationCreateIndex:
+		return true
+	default:
+		return false
+	}
+}
+
 func appliesToAlterTable(statement spec.Statement) bool {
 	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil || len(statement.DDL.Alter) == 0 {
 		return false
@@ -448,8 +460,9 @@ func alterAddedIndexesByKind(statement spec.Statement, kind spec.IndexKind) []sp
 func projectedAlterIndexesStatement(statement spec.Statement, indexes []spec.Index) spec.Statement {
 	projected := statement
 	projected.DDL = &spec.DDL{
-		Table:   statement.DDL.Table,
-		Indexes: indexes,
+		Operation: spec.DDLOperationCreateTable,
+		Table:     statement.DDL.Table,
+		Indexes:   indexes,
 	}
 	return projected
 }
