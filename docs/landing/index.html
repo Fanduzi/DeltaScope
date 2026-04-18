@@ -638,13 +638,13 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.37.0 — PostgreSQL Primary Key Fact Support Pack</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.38.0 — PostgreSQL Unique/Index Rule Coverage</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL, TiDB, and PostgreSQL SQL
 before it ships</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.
 Starting with the v0.17.0 release line, the supported macOS and Linux main archives ship those three binaries as PG-capable for PostgreSQL offline audit.
-The v0.37.0 release adds PostgreSQL CREATE TABLE primary-key fact support. Inline, table-level, named, and composite primary-key declarations now populate DeltaScope's normalized primary-key contract, allowing existing primary-key rules to audit PostgreSQL CREATE TABLE statements.</p>
+The v0.38.0 release extends PostgreSQL unique/index audit coverage for statement-local unique constraints and simple btree CREATE INDEX forms. Existing index rules now produce findings for approved PostgreSQL forms.</p>
         <div class="hero-actions animate-fade-up" style="animation-delay:0.28s;">
           <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero.ctaPrimary">Install DeltaScope</a>
           <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
@@ -1062,15 +1062,24 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.37.0</div>
+              <div class="release-version">v0.38.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL Primary Key Fact Support Pack</div>
-            <div class="release-copy" data-i18n="releases.items.v0370">PostgreSQL CREATE TABLE inline, table-level, named, and composite primary-key declarations now populate DeltaScope's normalized primary-key contract. Existing primary-key rules (ddl.table.primary_key.bigint.require, ddl.table.primary_key.columns.max_count) audit PostgreSQL CREATE TABLE statements.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.37.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.37.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.37.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL Unique/Index Rule Coverage</div>
+            <div class="release-copy" data-i18n="releases.items.v0380">PostgreSQL standalone CREATE INDEX, CREATE UNIQUE INDEX, and CREATE INDEX CONCURRENTLY statements now trigger existing generic index rules (ddl.index.secondary.prefix.require, ddl.index.unique.prefix.require, ddl.index.columns.max_count) for approved btree forms.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.38.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.38.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.38.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.37.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v0370">Primary Key Fact Support Pack</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v0370">PostgreSQL CREATE TABLE inline, table-level, named, and composite primary-key declarations now populate DeltaScope's normalized primary-key contract. Existing primary-key rules audit PostgreSQL CREATE TABLE statements.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.37.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0370" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.37.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.37.0.zh-CN.md">Open v0.37.0 notes →</a>
+            </article>
+
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.36.1</div>
@@ -1361,9 +1370,10 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           sub: 'You do not need the full changelog here. The current release-focus item tells you what this milestone verifies; earlier milestones show how DeltaScope reached its CLI, HTTP, MCP, and PostgreSQL product shape.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL Primary Key Fact Support Pack',
+          currentTitle: 'PostgreSQL Unique/Index Rule Coverage',
           currentLink: 'Read release notes →',
           labels: {
+            v0370: 'Primary Key Fact Support Pack',
             v0361: 'SQL Corpus Coverage Patch',
             v0360: 'Rule Coverage Pack',
             v0350: 'State-Transition Pack',
@@ -1375,6 +1385,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
             v0290: 'Schema-Aware FK Policy Pack'
           },
           links: {
+            v0370: 'Open v0.37.0 notes →',
             v0360: 'Open v0.36.0 notes →',
             v0350: 'Open v0.35.0 notes →',
             v0340: 'Open v0.34.0 notes →',
@@ -1389,8 +1400,9 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
-            v0361: 'Supported-rule SQL corpus coverage is now enforced through release gates, with an inventory report for rule counts, covered dialect targets, fixture counts, and deferred surfaces.',
+            v0380: 'PostgreSQL standalone CREATE INDEX, CREATE UNIQUE INDEX, and CREATE INDEX CONCURRENTLY statements now trigger existing generic index rules for approved btree forms.',
             v0370: 'PostgreSQL CREATE TABLE inline, table-level, named, and composite primary-key declarations now populate DeltaScope\'s normalized primary-key contract. Existing primary-key rules audit PostgreSQL CREATE TABLE statements.',
+            v0361: 'Supported-rule SQL corpus coverage is now enforced through release gates, with an inventory report for rule counts, covered dialect targets, fixture counts, and deferred surfaces.',
             v0360: 'Three new PostgreSQL-only forbid rules (ddl.alter.drop_expression.forbid, ddl.alter.set_generated.forbid, ddl.alter.drop_identity.forbid) cover generated/identity state-transition forms with explicit rule_id findings.',
             v0350: 'State-transition forms (DROP EXPRESSION, SET GENERATED, DROP IDENTITY) are now supported through the normal audit path.',
             v0340: 'Narrow generated/identity definition forms (CREATE TABLE and ALTER TABLE ADD COLUMN) are now supported through the normal audit path.',
@@ -1560,9 +1572,10 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           sub: '首页只保留当前版本和最近几个 PostgreSQL 里程碑；如果要看完整历史，再进入统一的发布归档入口。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL Primary Key 事实支持包',
+          currentTitle: 'PostgreSQL Unique/Index 规则覆盖',
           currentLink: '查看发布说明 →',
           labels: {
+            v0370: 'Primary Key 事实支持包',
             v0361: 'SQL Corpus 覆盖率补丁',
             v0360: 'Rule Coverage 包',
             v0350: 'State-Transition 包',
@@ -1588,8 +1601,9 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
-            v0361: 'Supported-rule SQL corpus 覆盖现在由 release gates 强制执行，并提供 inventory report 展示 rule 数、已覆盖 dialect targets、fixture 数量与 deferred surfaces。',
+            v0380: 'PostgreSQL 独立 CREATE INDEX、CREATE UNIQUE INDEX 和 CREATE INDEX CONCURRENTLY 语句现在可以触发已有的通用索引规则，适用于已批准的 btree 形态。',
             v0370: 'PostgreSQL CREATE TABLE 的内联、表级、命名和复合主键声明现在填充 DeltaScope 标准化主键契约。已有的主键规则可以审计 PostgreSQL CREATE TABLE 语句。',
+            v0361: 'Supported-rule SQL corpus 覆盖现在由 release gates 强制执行，并提供 inventory report 展示 rule 数、已覆盖 dialect targets、fixture 数量与 deferred surfaces。',
             v0360: '三条新的 PostgreSQL-only forbid 规则（ddl.alter.drop_expression.forbid、ddl.alter.set_generated.forbid、ddl.alter.drop_identity.forbid）覆盖 generated/identity 状态转换形态，产生明确 rule_id findings。',
             v0350: '状态转换形态（DROP EXPRESSION、SET GENERATED、DROP IDENTITY）现在通过正常审核路径处理。',
             v0340: '窄范围 generated/identity 定义形态（CREATE TABLE 和 ALTER TABLE ADD COLUMN）现在通过正常审核路径处理。',

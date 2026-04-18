@@ -54,6 +54,26 @@ Statement 1 has 1 finding(s)
   Statement kind: `ddl`
 ```
 
+## PostgreSQL Unique Index Naming
+
+For PostgreSQL migrations, DeltaScope flags index naming violations on standalone `CREATE INDEX` and `CREATE UNIQUE INDEX` statements:
+
+```bash
+deltascope audit --dialect postgresql --format json \
+  --sql "CREATE UNIQUE INDEX bad_email_unique ON users (email);"
+```
+
+The shipped policy requires unique indexes to start with `uniq_`. The above statement triggers a warning:
+
+```text
+Verdict: review
+Statements: 1
+Blockers: 0
+Warnings: 1
+
+Statement 1: CREATE INDEX
+- [warning] ddl.index.unique.prefix.require: unique index "bad_email_unique" must use prefix "uniq_"
+```
 
 ## Multi-Statement Migration Files
 

@@ -378,6 +378,38 @@ deltascope audit \
 
 `ddl.table.primary_key.not_null.require` 对 PostgreSQL 不产生稳定负例——主键列被有效视为 NOT NULL。
 
+### PostgreSQL Unique/Index 审计（v0.38.0）
+
+从 `v0.38.0` 开始，DeltaScope 将索引规则覆盖扩展到独立的 PostgreSQL `CREATE INDEX` 和 `CREATE UNIQUE INDEX` 语句（已批准的 btree 形态）：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "CREATE UNIQUE INDEX bad_email_unique ON users (email);"
+```
+
+示例 JSON finding：
+
+```json
+{
+  "rule_id": "ddl.index.unique.prefix.require",
+  "level": "warning",
+  "message": "unique index \"bad_email_unique\" must use prefix \"uniq_\"",
+  "statement_kind": "ddl"
+}
+```
+
+现在覆盖 PostgreSQL 独立 `CREATE INDEX` 的规则：
+
+| Rule ID | 触发条件 |
+|---------|---------|
+| `ddl.index.secondary.prefix.require` | 普通索引名未以要求的前缀开头 |
+| `ddl.index.unique.prefix.require` | 唯一索引名未以要求的前缀开头 |
+| `ddl.index.columns.max_count` | 索引包含的列数超过允许的最大值 |
+
+这不代表完整 PostgreSQL 索引支持，不包含 partial index 支持、expression index 支持、INCLUDE 支持、operator class 支持、非 btree 访问方法支持、NULLS NOT DISTINCT 支持或在线 schema 索引内省。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |

@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.37.0 PostgreSQL Primary Key Fact Support Pack
+## Latest Completed Milestone: v0.38.0 PostgreSQL Unique/Index Rule Coverage
+
+**Goal:** extend PostgreSQL unique/index audit coverage for statement-local unique constraints and simple btree `CREATE INDEX` forms. Existing index rules now produce findings for the approved PostgreSQL forms, with corpus, public-surface, and Docker-backed e2e coverage.
+
+### Completed Scope
+
+- Standalone PostgreSQL `CREATE INDEX`, `CREATE UNIQUE INDEX`, and `CREATE INDEX CONCURRENTLY` statements now trigger existing generic index rules for approved btree forms.
+- Rules now covering PostgreSQL standalone `CREATE INDEX`:
+  - `ddl.index.secondary.prefix.require` — flags secondary index names that do not start with the required prefix.
+  - `ddl.index.unique.prefix.require` — flags unique index names that do not start with the required prefix.
+  - `ddl.index.columns.max_count` — flags indexes that exceed the configured column limit.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- Corpus expected outcomes and service-level tests lock PostgreSQL index rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.index.unique.prefix.require`.
+
+### Key Design Decisions
+
+- No new rule IDs — existing generic index rules now cover standalone `CREATE INDEX` through extended applicability gates.
+- Approved forms only — partial indexes, expression indexes, INCLUDE, operator classes, non-btree access methods, and NULLS NOT DISTINCT remain out of scope.
+- No live schema index introspection.
+- No MySQL/TiDB behavior changes.
+
+## Previous Milestone: v0.37.0 PostgreSQL Primary Key Fact Support Pack
 
 **Goal:** add PostgreSQL `CREATE TABLE` primary-key fact support so that inline, table-level, named, and composite primary-key declarations populate DeltaScope's normalized primary-key contract, allowing existing primary-key rules to audit PostgreSQL `CREATE TABLE` statements.
 

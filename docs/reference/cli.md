@@ -418,6 +418,38 @@ Supported PostgreSQL primary-key forms:
 
 `ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL — primary-key columns are treated as effectively NOT NULL.
 
+### PostgreSQL Unique/Index Audit (v0.38.0)
+
+Starting with `v0.38.0`, DeltaScope extends index rule coverage to standalone PostgreSQL `CREATE INDEX` and `CREATE UNIQUE INDEX` statements for approved btree forms:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "CREATE UNIQUE INDEX bad_email_unique ON users (email);"
+```
+
+Example JSON finding:
+
+```json
+{
+  "rule_id": "ddl.index.unique.prefix.require",
+  "level": "warning",
+  "message": "unique index \"bad_email_unique\" must use prefix \"uniq_\"",
+  "statement_kind": "ddl"
+}
+```
+
+Rules now covering PostgreSQL standalone `CREATE INDEX`:
+
+| Rule ID | What It Flags |
+|---------|---------------|
+| `ddl.index.secondary.prefix.require` | Secondary index name does not start with the required prefix |
+| `ddl.index.unique.prefix.require` | Unique index name does not start with the required prefix |
+| `ddl.index.columns.max_count` | Index spans more columns than the allowed maximum |
+
+This does not add full PostgreSQL index support, partial index support, expression index support, INCLUDE support, operator class support, non-btree access method support, NULLS NOT DISTINCT support, or live schema index introspection.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

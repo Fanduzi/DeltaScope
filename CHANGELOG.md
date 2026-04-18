@@ -6,6 +6,20 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.38.0] - 2026-04-18
+
+### Added
+
+- PostgreSQL standalone `CREATE INDEX` and `CREATE UNIQUE INDEX` statements now trigger existing generic index rules for approved btree forms. The following rules now produce findings for PostgreSQL `CREATE INDEX` statements:
+  - `ddl.index.secondary.prefix.require` — flags secondary index names that do not start with the required prefix.
+  - `ddl.index.unique.prefix.require` — flags unique index names that do not start with the required prefix.
+  - `ddl.index.columns.max_count` — flags indexes that exceed the configured column limit.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.index.unique.prefix.require` for statement-local `CREATE UNIQUE INDEX` audit.
+
+### Changed
+
+- Release-facing docs now position `v0.38.0` as extending PostgreSQL unique/index audit coverage for statement-local unique constraints and simple btree `CREATE INDEX` forms. It does not add full PostgreSQL index support, partial index support, expression index support, INCLUDE support, operator class support, non-btree access method support, NULLS NOT DISTINCT support, live schema index introspection, new index rule IDs, or MySQL/TiDB behavior changes.
+
 ## [v0.37.0] - 2026-04-18
 
 ### Added

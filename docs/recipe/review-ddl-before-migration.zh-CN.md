@@ -54,6 +54,26 @@ Statement 1 has 1 finding(s)
   Statement kind: `ddl`
 ```
 
+## PostgreSQL 唯一索引命名
+
+对于 PostgreSQL 迁移，DeltaScope 会对独立的 `CREATE INDEX` 和 `CREATE UNIQUE INDEX` 语句标记索引命名违规：
+
+```bash
+deltascope audit --dialect postgresql --format json \
+  --sql "CREATE UNIQUE INDEX bad_email_unique ON users (email);"
+```
+
+默认策略要求唯一索引以 `uniq_` 开头。上述语句触发一条 warning：
+
+```text
+Verdict: review
+Statements: 1
+Blockers: 0
+Warnings: 1
+
+Statement 1: CREATE INDEX
+- [warning] ddl.index.unique.prefix.require: unique index "bad_email_unique" must use prefix "uniq_"
+```
 
 ## 多语句迁移文件
 
