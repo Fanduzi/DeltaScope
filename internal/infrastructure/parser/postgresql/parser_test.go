@@ -3781,6 +3781,16 @@ func TestExtractCreateTableInlinePrimaryKeyBecomesSupportedFact(t *testing.T) {
 	if len(statement.DDL.PrimaryKey.Columns) != 1 || statement.DDL.PrimaryKey.Columns[0] != "id" {
 		t.Fatalf("expected primary key columns [id], got %v", statement.DDL.PrimaryKey.Columns)
 	}
+
+	// D. NotNull derivation: PK column must be NotNull, non-PK column must not.
+	for _, col := range statement.DDL.Columns {
+		if col.Name == "id" && !col.NotNull {
+			t.Fatal("expected PK column id to have NotNull=true")
+		}
+		if col.Name == "name" && col.NotNull {
+			t.Fatal("expected non-PK column name to have NotNull=false")
+		}
+	}
 }
 
 func TestExtractCreateTableNamedTableLevelPrimaryKeyBecomesSupportedFact(t *testing.T) {
@@ -3811,6 +3821,13 @@ func TestExtractCreateTableNamedTableLevelPrimaryKeyBecomesSupportedFact(t *test
 	if len(statement.DDL.PrimaryKey.Columns) != 1 || statement.DDL.PrimaryKey.Columns[0] != "id" {
 		t.Fatalf("expected primary key columns [id], got %v", statement.DDL.PrimaryKey.Columns)
 	}
+
+	// D. NotNull derivation: PK column must be NotNull.
+	for _, col := range statement.DDL.Columns {
+		if col.Name == "id" && !col.NotNull {
+			t.Fatal("expected PK column id to have NotNull=true")
+		}
+	}
 }
 
 func TestExtractCreateTableUnnamedCompositePrimaryKeyBecomesSupportedFact(t *testing.T) {
@@ -3840,6 +3857,13 @@ func TestExtractCreateTableUnnamedCompositePrimaryKeyBecomesSupportedFact(t *tes
 	}
 	if statement.DDL.PrimaryKey.Columns[0] != "tenant_id" || statement.DDL.PrimaryKey.Columns[1] != "user_id" {
 		t.Fatalf("expected primary key columns [tenant_id, user_id], got %v", statement.DDL.PrimaryKey.Columns)
+	}
+
+	// D. NotNull derivation: both composite PK columns must be NotNull.
+	for _, col := range statement.DDL.Columns {
+		if (col.Name == "tenant_id" || col.Name == "user_id") && !col.NotNull {
+			t.Fatalf("expected composite PK column %s to have NotNull=true", col.Name)
+		}
 	}
 }
 
@@ -3885,5 +3909,10 @@ func TestExtractCreateTableGeneratedIdentityInlinePrimaryKeyBecomesSupportedFact
 	}
 	if len(statement.DDL.PrimaryKey.Columns) != 1 || statement.DDL.PrimaryKey.Columns[0] != "id" {
 		t.Fatalf("expected primary key columns [id], got %v", statement.DDL.PrimaryKey.Columns)
+	}
+
+	// E. NotNull derivation: PK column must be NotNull (alongside identity).
+	if !idCol.NotNull {
+		t.Fatal("expected generated identity PK column id to have NotNull=true")
 	}
 }

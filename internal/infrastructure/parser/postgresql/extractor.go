@@ -470,6 +470,8 @@ func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.
 			ReferencedTable:   rangeVarName(constraint.GetPktable()),
 			ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
 			})
+	case pg_query.ConstrType_CONSTR_PRIMARY:
+		applyPrimaryKey(ddl, constraint.GetConname(), stringValuesFromNodes(constraint.GetKeys()))
 	case pg_query.ConstrType_CONSTR_CHECK:
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
 	case pg_query.ConstrType_CONSTR_EXCLUSION:
@@ -496,10 +498,48 @@ func applyColumnConstraints(ddl *spec.DDL, column *pg_query.ColumnDef) {
 				ReferencedTable:   rangeVarName(constraint.GetPktable()),
 				ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
 			})
+		case pg_query.ConstrType_CONSTR_PRIMARY:
+			applyPrimaryKey(ddl, constraint.GetConname(), []string{column.GetColname()})
 		case pg_query.ConstrType_CONSTR_CHECK:
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: "check", Name: constraint.GetConname(), Columns: columnRefsFromExpr(constraint.GetRawExpr())})
 		}
 	}
+}
+
+func applyPrimaryKey(ddl *spec.DDL, name string, columns []string) {
+	if ddl == nil || len(columns) == 0 {
+		return
+	}
+	constraintName := strings.TrimSpace(name)
+	if constraintName == "" {
+		constraintName = "primary"
+	}
+	ddl.PrimaryKey = &spec.Index{
+		Name:    constraintName,
+		Kind:    spec.IndexKindPrimary,
+		Columns: columns,
+	}
+	markPrimaryKeyColumnsNotNull(ddl, columns)
+}
+
+func markPrimaryKeyColumnsNotNull(ddl *spec.DDL, columns []string) {
+	if ddl == nil || len(columns) == 0 {
+		return
+	}
+	for i := range ddl.Columns {
+		if containsFold(columns, ddl.Columns[i].Name) {
+			ddl.Columns[i].NotNull = true
+		}
+	}
+}
+
+func containsFold(items []string, target string) bool {
+	for _, item := range items {
+		if strings.EqualFold(strings.TrimSpace(item), strings.TrimSpace(target)) {
+			return true
+		}
+	}
+	return false
 }
 
 func hasUnsupportedColumnConstraint(column *pg_query.ColumnDef) *spec.UnsupportedDetail {
