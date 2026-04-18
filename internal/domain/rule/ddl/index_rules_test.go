@@ -413,3 +413,90 @@ func postgresStatementWithIndexes(indexes ...spec.Index) spec.Statement {
 	statement.DDL.Operation = spec.DDLOperationCreateTable
 	return statement
 }
+
+// postgresCreateIndexStatement constructs a spec.Statement representing a
+// standalone CREATE INDEX (DDLOperationCreateIndex). Used by characterization
+// tests to confirm whether generic index rules cover standalone indexes.
+func postgresCreateIndexStatement(indexes ...spec.Index) spec.Statement {
+	statement := statementWithIndexes(indexes...)
+	statement.Dialect = spec.DialectPostgreSQL
+	statement.DDL.Operation = spec.DDLOperationCreateIndex
+	return statement
+}
+
+// TestCreateIndexRuleApplicability verifies that generic index rules currently
+// DO NOT apply to standalone CREATE INDEX statements. These are expected RED
+// tests — they should FAIL if rules are extended to cover CREATE INDEX.
+func TestCreateIndexRuleApplicability(t *testing.T) {
+	t.Run("secondary_prefix_should_trigger_on_bad_create_index", func(t *testing.T) {
+		statement := postgresCreateIndexStatement(spec.Index{
+			Name:    "bad_users_email",
+			Kind:    spec.IndexKindSecondary,
+			Columns: []string{"email"},
+		})
+
+		statementRule, err := newIndexPrefixRequiredRule(
+			ruleIDIndexSecondaryPrefixRequire, spec.IndexKindSecondary,
+			"idx_", rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"required": true, "prefix": "idx_"},
+			},
+		)
+		if err != nil {
+			t.Fatalf("new rule: %v", err)
+		}
+
+		if !statementRule.AppliesTo(statement) {
+			t.Fatalf("expected AppliesTo=true for CREATE INDEX secondary, got false; " +
+				"this is a known applicability gap — Task 2 should extend coverage")
+		}
+	})
+
+	t.Run("unique_prefix_should_trigger_on_bad_create_unique_index", func(t *testing.T) {
+		statement := postgresCreateIndexStatement(spec.Index{
+			Name:    "bad_users_email",
+			Kind:    spec.IndexKindUnique,
+			Columns: []string{"email"},
+		})
+
+		statementRule, err := newIndexPrefixRequiredRule(
+			ruleIDIndexUniquePrefixRequire, spec.IndexKindUnique,
+			"uniq_", rule.LevelWarning, policy.RulePolicy{
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{"required": true, "prefix": "uniq_"},
+			},
+		)
+		if err != nil {
+			t.Fatalf("new rule: %v", err)
+		}
+
+		if !statementRule.AppliesTo(statement) {
+			t.Fatalf("expected AppliesTo=true for CREATE UNIQUE INDEX, got false; " +
+				"this is a known applicability gap — Task 2 should extend coverage")
+		}
+	})
+
+	t.Run("columns_max_count_should_trigger_on_wide_create_index", func(t *testing.T) {
+		statement := postgresCreateIndexStatement(spec.Index{
+			Name:    "idx_users_email_tenant",
+			Kind:    spec.IndexKindSecondary,
+			Columns: []string{"email", "tenant_id", "region_id"},
+		})
+
+		statementRule, err := newIndexColumnsMaxCountRule(policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{"limit": 2},
+		})
+		if err != nil {
+			t.Fatalf("new rule: %v", err)
+		}
+
+		if !statementRule.AppliesTo(statement) {
+			t.Fatalf("expected AppliesTo=true for CREATE INDEX with wide columns, got false; " +
+				"this is a known applicability gap — Task 2 should extend coverage")
+		}
+	})
+}

@@ -529,6 +529,205 @@ func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
 	}
 }
 
+func TestCharacterizePGUniqueIndexFacts(t *testing.T) {
+	tests := []struct {
+		name                string
+		sql                 string
+		wantSupported       bool
+		wantDDLOperation    spec.DDLOperation
+		wantTable           string
+		wantIndex           *spec.Index
+		wantConcurrently   string
+		wantUnsupportedFeat string
+	}{
+		{
+			name:             "inline_column_unique_unnamed",
+			sql:              `create table users (email text unique);`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateTable,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+		},
+		{
+			name:             "inline_column_unique_named",
+			sql:              `create table users (email text constraint users_email_key unique);`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateTable,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "users_email_key",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+		},
+		{
+			name:             "table_level_unique_unnamed",
+			sql:              `create table users (email text, unique (email));`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateTable,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+		},
+		{
+			name:             "table_level_unique_named",
+			sql:              `create table users (email text, constraint users_email_key unique (email));`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateTable,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "users_email_key",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+		},
+		{
+			name:             "standalone_create_index",
+			sql:              `create index idx_users_email on users (email);`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateIndex,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "idx_users_email",
+				Kind:    spec.IndexKindSecondary,
+				Columns: []string{"email"},
+			},
+			wantConcurrently: "false",
+		},
+		{
+			name:             "standalone_create_unique_index",
+			sql:              `create unique index uniq_users_email on users (email);`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateIndex,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "uniq_users_email",
+				Kind:    spec.IndexKindUnique,
+				Columns: []string{"email"},
+			},
+			wantConcurrently: "false",
+		},
+		{
+			name:             "standalone_create_index_concurrently",
+			sql:              `create index concurrently idx_users_email on users (email);`,
+			wantSupported:    true,
+			wantDDLOperation: spec.DDLOperationCreateIndex,
+			wantTable:        "users",
+			wantIndex: &spec.Index{
+				Name:    "idx_users_email",
+				Kind:    spec.IndexKindSecondary,
+				Columns: []string{"email"},
+			},
+			wantConcurrently: "true",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := extractPostgreSQLStatement(t, tt.sql)
+
+			if tt.wantSupported {
+				if statement.Unsupported != nil {
+					t.Fatalf("expected supported, got unsupported %#v", statement.Unsupported)
+				}
+				if statement.Kind != spec.KindDDL {
+					t.Fatalf("expected kind DDL, got %q", statement.Kind)
+				}
+				if statement.DDL == nil || statement.DDL.Operation != tt.wantDDLOperation {
+					t.Fatalf("expected DDL operation %q, got %#v", tt.wantDDLOperation, statement.DDL)
+				}
+				if statement.DDL.Table == nil || statement.DDL.Table.Name != tt.wantTable {
+					t.Fatalf("expected table %q, got %#v", tt.wantTable, statement.DDL.Table)
+				}
+				if len(statement.DDL.Indexes) != 1 {
+					t.Fatalf("expected 1 index, got %d: %#v", len(statement.DDL.Indexes), statement.DDL.Indexes)
+				}
+				got := statement.DDL.Indexes[0]
+				if got.Name != tt.wantIndex.Name {
+					t.Fatalf("expected index name %q, got %q", tt.wantIndex.Name, got.Name)
+				}
+				if got.Kind != tt.wantIndex.Kind {
+					t.Fatalf("expected index kind %q, got %q", tt.wantIndex.Kind, got.Kind)
+				}
+				if len(got.Columns) != len(tt.wantIndex.Columns) {
+					t.Fatalf("expected columns %#v, got %#v", tt.wantIndex.Columns, got.Columns)
+				}
+				for i, col := range tt.wantIndex.Columns {
+					if got.Columns[i] != col {
+						t.Fatalf("expected column[%d] = %q, got %q", i, col, got.Columns[i])
+					}
+				}
+				if tt.wantConcurrently != "" {
+					if statement.DDL.Options["concurrently"] != tt.wantConcurrently {
+						t.Fatalf("expected concurrently=%q, got %q", tt.wantConcurrently, statement.DDL.Options["concurrently"])
+					}
+				}
+			} else {
+				if statement.Unsupported == nil {
+					t.Fatalf("expected unsupported statement, got supported")
+				}
+				if tt.wantUnsupportedFeat != "" && statement.Unsupported.Feature != tt.wantUnsupportedFeat {
+					t.Fatalf("expected unsupported feature %q, got %q", tt.wantUnsupportedFeat, statement.Unsupported.Feature)
+				}
+			}
+		})
+	}
+}
+
+func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
+	tests := []struct {
+		name        string
+		sql         string
+		wantFeature string
+	}{
+		{
+			name:        "partial_index_where_clause",
+			sql:         `create index idx_users_email_partial on users (email) where deleted_at is null;`,
+			wantFeature: "create_index",
+		},
+		{
+			name:        "expression_index",
+			sql:         `create index idx_users_lower_email on users ((lower(email)));`,
+			wantFeature: "create_index",
+		},
+		{
+			name:        "include_clause",
+			sql:         `create index idx_users_email_include on users (email) include (name);`,
+			wantFeature: "create_index",
+		},
+		{
+			name:        "hash_access_method",
+			sql:         `create index idx_users_email_hash on users using hash (email);`,
+			wantFeature: "create_index",
+		},
+		{
+			name:        "nulls_not_distinct",
+			sql:         `create unique index idx_users_email_nulls on users (email) nulls not distinct;`,
+			wantFeature: "create_index",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := extractPostgreSQLStatement(t, tt.sql)
+
+			if statement.Unsupported == nil {
+				t.Fatalf("expected unsupported statement, got supported: %#v", statement)
+			}
+			if statement.Unsupported.Feature != tt.wantFeature {
+				t.Fatalf("expected unsupported feature %q, got %q", tt.wantFeature, statement.Unsupported.Feature)
+			}
+		})
+	}
+}
+
 func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
 	parser := New()
 
