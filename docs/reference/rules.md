@@ -155,6 +155,8 @@ These rules evaluate properties of the `CREATE TABLE` statement as a whole.
 | `ddl.table.primary_key.unsigned.require` | PRIMARY KEY column must be UNSIGNED | blocker | No |
 | `ddl.table.primary_key.auto_increment.require` | PRIMARY KEY column must be AUTO_INCREMENT | blocker | No |
 | `ddl.table.primary_key.not_null.require` | PRIMARY KEY column must be NOT NULL | blocker | No |
+
+**PostgreSQL primary-key availability (v0.37.0):** `ddl.table.primary_key.bigint.require` and `ddl.table.primary_key.columns.max_count` now apply to PostgreSQL `CREATE TABLE` statements. `ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL because PK columns are treated as effectively NOT NULL.
 | `ddl.table.audit_columns.require` | Table must include audit timestamp columns | warning | No |
 | `ddl.table.foreign_key.forbid` | FOREIGN KEY constraints are forbidden | blocker | No |
 | `ddl.table.partition.forbid` | Partitioned tables are forbidden | blocker | No |

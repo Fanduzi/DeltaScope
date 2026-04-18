@@ -337,6 +337,47 @@ deltascope audit \
 
 `VALIDATE CONSTRAINT` 在没有对应规则时产生干净的审计结果——它是 supported 且 auditable 的，但不保证产生 finding。`DROP CONSTRAINT` 针对主键时，仅在 metadata 可用的情况下触发已有的主键规则；在离线模式下，它作为普通 alter 动作通过。`v0.23.0` 的建表覆盖扩展不代表完整 PostgreSQL DDL 支持，也没有新增 CLI flag 或接口契约。
 
+### PostgreSQL 主键审计（v0.37.0）
+
+从 `v0.37.0` 开始，DeltaScope 为 PostgreSQL `CREATE TABLE` 语句填充主键事实。内联、表级、命名和复合主键声明进入标准化主键契约，使已有的主键规则可以审计 PostgreSQL：
+
+```bash
+# 内联主键 — 如果不是 BIGINT，触发 ddl.table.primary_key.bigint.require
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "create table users (id integer primary key, name text not null);"
+```
+
+示例 JSON finding：
+
+```json
+{
+  "rule_id": "ddl.table.primary_key.bigint.require",
+  "level": "warning",
+  "message": "primary key column \"id\" is not BIGINT",
+  "statement_kind": "ddl"
+}
+```
+
+```bash
+# 复合主键 — 如果超过限制，触发 ddl.table.primary_key.columns.max_count
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table order_items (order_id bigint, item_id bigint, quantity int, primary key (order_id, item_id));"
+```
+
+支持的 PostgreSQL 主键形态：
+
+| 形态 | 示例 |
+|------|------|
+| 内联 | `id bigint PRIMARY KEY` |
+| 表级 | `PRIMARY KEY (id)` |
+| 命名 | `CONSTRAINT users_pkey PRIMARY KEY (id)` |
+| 复合 | `PRIMARY KEY (a, b)` |
+
+`ddl.table.primary_key.not_null.require` 对 PostgreSQL 不产生稳定负例——主键列被有效视为 NOT NULL。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |

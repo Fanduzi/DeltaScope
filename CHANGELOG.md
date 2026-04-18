@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.37.0] - 2026-04-18
+
+### Added
+
+- PostgreSQL `CREATE TABLE` primary-key facts: inline (`id bigint PRIMARY KEY`), table-level (`PRIMARY KEY (id)`), named (`CONSTRAINT users_pkey PRIMARY KEY (id)`), and composite primary-key declarations now populate DeltaScope's normalized `DDL.PrimaryKey` contract through the PostgreSQL extractor.
+- Primary-key columns are treated as effectively `NOT NULL` for PostgreSQL `CREATE TABLE` statements, consistent with PostgreSQL's primary-key semantics.
+- Existing primary-key rules now apply to PostgreSQL `CREATE TABLE` statements:
+  - `ddl.table.primary_key.bigint.require` — flags PostgreSQL primary-key columns that are not BIGINT.
+  - `ddl.table.primary_key.columns.max_count` — flags PostgreSQL composite primary keys that exceed the configured column limit.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings for PostgreSQL primary-key rule violations.
+- Corpus expected outcomes and service-level tests lock PostgreSQL primary-key fact extraction and rule coverage with precise assertions.
+
+### Changed
+
+- Release-facing docs now position `v0.37.0` as the **PostgreSQL Primary Key Fact Support Pack**. It does not add full PostgreSQL index support, `ALTER TABLE ADD PRIMARY KEY` support, live schema primary-key introspection, new primary-key rule IDs, or full PostgreSQL constraint/index parity.
+
 ## [v0.36.1] - 2026-04-18
 
 ### Added

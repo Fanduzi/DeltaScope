@@ -428,6 +428,31 @@ Important notes:
 - `v0.24.0` deepens `v0.23.0` foreign-key semantics — `ReferencedTable` and `ReferencedColumns` are parser-owned structural facts, not metadata truth.
 - Inline `REFERENCES` should be described narrowly as parser-owned shared facts, not as a new metadata-aware foreign-key contract.
 
+#### PostgreSQL Primary-Key Facts (`v0.37.0`)
+
+Starting with `v0.37.0`, DeltaScope populates primary-key facts for PostgreSQL `CREATE TABLE` statements. Inline, table-level, named, and composite primary-key declarations flow into the normalized primary-key contract, allowing existing primary-key rules to audit PostgreSQL:
+
+```bash
+# Audit a PostgreSQL CREATE TABLE with an integer primary key
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "create table users (id integer primary key, name text not null);"
+```
+
+The audit returns a `ddl.table.primary_key.bigint.require` finding because the primary-key column is `integer`, not `bigint`.
+
+Rules applicable to PostgreSQL primary keys:
+
+| Rule ID | What It Flags |
+|---------|---------------|
+| `ddl.table.primary_key.bigint.require` | Primary-key column is not BIGINT |
+| `ddl.table.primary_key.columns.max_count` | Composite primary key exceeds the configured column limit |
+
+`ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL because PK columns are treated as effectively NOT NULL.
+
+This is primary-key fact support for `CREATE TABLE` — not full PostgreSQL index support, not `ALTER TABLE ADD PRIMARY KEY`, not live schema introspection, and not full constraint/index parity.
+
 #### PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 
 Starting with `v0.36.0`, the PostgreSQL generated/identity state-transition forms supported in v0.35.0 now produce explicit `rule_id` findings. When reviewing migrations containing these forms, DeltaScope returns standard audit results with explicit rule findings:

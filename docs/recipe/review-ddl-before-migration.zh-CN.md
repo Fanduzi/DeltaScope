@@ -428,6 +428,31 @@ deltascope audit \
 - `v0.24.0` 深化了 `v0.23.0` 的外键语义——`ReferencedTable` 和 `ReferencedColumns` 是解析器拥有的结构事实，不是元数据真相。
 - 对内联 `REFERENCES` 的描述应保持收敛：它只是 parser-owned 的共享事实，不是新的 metadata-aware 外键契约。
 
+##### PostgreSQL Primary Key 事实支持（`v0.37.0`）
+
+从 `v0.37.0` 开始，DeltaScope 为 PostgreSQL `CREATE TABLE` 语句填充主键事实。内联、表级、命名和复合主键声明进入标准化主键契约，使已有的主键规则可以审计 PostgreSQL：
+
+```bash
+# 审计 PostgreSQL CREATE TABLE 使用 integer 主键
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "create table users (id integer primary key, name text not null);"
+```
+
+审计会返回 `ddl.table.primary_key.bigint.require` finding，因为主键列是 `integer` 而非 `bigint`。
+
+适用于 PostgreSQL 主键的规则：
+
+| Rule ID | 触发条件 |
+|---------|---------|
+| `ddl.table.primary_key.bigint.require` | 主键列不是 BIGINT |
+| `ddl.table.primary_key.columns.max_count` | 复合主键超过配置的列数上限 |
+
+`ddl.table.primary_key.not_null.require` 对 PostgreSQL 不产生稳定负例，因为 PK 列被有效视为 NOT NULL。
+
+这是 `CREATE TABLE` 的主键事实支持——不是完整 PostgreSQL 索引支持、不是 `ALTER TABLE ADD PRIMARY KEY`、不是在线 schema 内省、也不是完整约束/索引对等。
+
 ##### PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 
 从 `v0.36.0` 开始，v0.35.0 已支持的 PostgreSQL generated/identity 状态转换形态现在产生明确的 `rule_id` findings。审核包含这些形态的迁移时，DeltaScope 返回带明确规则 findings 的标准审核结果：

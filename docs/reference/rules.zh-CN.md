@@ -153,6 +153,8 @@ deltascope rules search "prefix"
 | `ddl.table.primary_key.unsigned.require` | PRIMARY KEY 列必须为 UNSIGNED | blocker | 否 |
 | `ddl.table.primary_key.auto_increment.require` | PRIMARY KEY 列必须为 AUTO_INCREMENT | blocker | 否 |
 | `ddl.table.primary_key.not_null.require` | PRIMARY KEY 列必须为 NOT NULL | blocker | 否 |
+
+**PostgreSQL 主键可用性（v0.37.0）：** `ddl.table.primary_key.bigint.require` 和 `ddl.table.primary_key.columns.max_count` 现在适用于 PostgreSQL `CREATE TABLE` 语句。`ddl.table.primary_key.not_null.require` 对 PostgreSQL 不产生稳定负例，因为 PK 列被有效视为 NOT NULL。
 | `ddl.table.audit_columns.require` | 表必须包含审计时间戳列 | warning | 否 |
 | `ddl.table.foreign_key.forbid` | 禁止使用 FOREIGN KEY 约束 | blocker | 否 |
 | `ddl.table.partition.forbid` | 禁止使用分区表 | blocker | 否 |

@@ -377,6 +377,47 @@ deltascope audit \
 
 `VALIDATE CONSTRAINT` without a corresponding rule produces a clean audit — it is supported and auditable, but does not guarantee a finding. `DROP CONSTRAINT` on a primary key triggers existing primary-key rules only when metadata is available; in offline mode it passes through as a normal alter action. The `v0.23.0` create-table expansion does not claim full PostgreSQL DDL support and does not add new CLI flags or contracts.
 
+### PostgreSQL Primary-Key Audit (v0.37.0)
+
+Starting with `v0.37.0`, DeltaScope populates primary-key facts for PostgreSQL `CREATE TABLE` statements. Inline, table-level, named, and composite primary-key declarations flow into the normalized primary-key contract, allowing existing primary-key rules to audit PostgreSQL:
+
+```bash
+# Inline primary key — triggers ddl.table.primary_key.bigint.require if not BIGINT
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "create table users (id integer primary key, name text not null);"
+```
+
+Example JSON finding:
+
+```json
+{
+  "rule_id": "ddl.table.primary_key.bigint.require",
+  "level": "warning",
+  "message": "primary key column \"id\" is not BIGINT",
+  "statement_kind": "ddl"
+}
+```
+
+```bash
+# Composite primary key — triggers ddl.table.primary_key.columns.max_count if over limit
+deltascope audit \
+  --dialect postgresql \
+  --sql "create table order_items (order_id bigint, item_id bigint, quantity int, primary key (order_id, item_id));"
+```
+
+Supported PostgreSQL primary-key forms:
+
+| Form | Example |
+|------|---------|
+| Inline | `id bigint PRIMARY KEY` |
+| Table-level | `PRIMARY KEY (id)` |
+| Named | `CONSTRAINT users_pkey PRIMARY KEY (id)` |
+| Composite | `PRIMARY KEY (a, b)` |
+
+`ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL — primary-key columns are treated as effectively NOT NULL.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

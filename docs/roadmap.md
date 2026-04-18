@@ -4,7 +4,36 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.36.0 PostgreSQL Generated/Identity Rule Coverage Pack
+## Latest Completed Milestone: v0.37.0 PostgreSQL Primary Key Fact Support Pack
+
+**Goal:** add PostgreSQL `CREATE TABLE` primary-key fact support so that inline, table-level, named, and composite primary-key declarations populate DeltaScope's normalized primary-key contract, allowing existing primary-key rules to audit PostgreSQL `CREATE TABLE` statements.
+
+### Completed Scope
+
+- PostgreSQL extractor populates shared `DDL.PrimaryKey` for `CREATE TABLE` inline (`id bigint PRIMARY KEY`), table-level (`PRIMARY KEY (id)`), named (`CONSTRAINT users_pkey PRIMARY KEY (id)`), and composite (`PRIMARY KEY (a, b)`) forms.
+- Primary-key columns are treated as effectively `NOT NULL` for PostgreSQL.
+- Existing primary-key rules now apply to PostgreSQL:
+  - `ddl.table.primary_key.bigint.require` — flags non-BIGINT primary-key columns.
+  - `ddl.table.primary_key.columns.max_count` — flags composite primary keys exceeding the column limit.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- Corpus expected outcomes and service-level tests lock PostgreSQL primary-key facts and rule coverage.
+
+### Key Design Decisions
+
+- Primary-key fact support for `CREATE TABLE` only — not `ALTER TABLE ADD PRIMARY KEY`, not full PostgreSQL index support, not live schema primary-key introspection.
+- No new primary-key rule IDs — existing rules now cover PostgreSQL through shared extractor facts.
+- `ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL because PK columns are treated as effectively NOT NULL.
+- No MySQL/TiDB behavior changes.
+
+## Previous Milestone: v0.36.1 SQL Corpus Coverage Patch
+
+**Goal:** make the existing supported-rule corpus contract explicit, visible, and enforced in release validation.
+
+- `make sql-corpus-gates` verifies every currently supported `rule_id × dialect` surface has at least one SQL corpus case.
+- `make sql-corpus-report` prints the current supported-rule coverage inventory.
+- Release gates now include SQL corpus coverage verification.
+
+## Previous Milestone: v0.36.0 PostgreSQL Generated/Identity Rule Coverage Pack
 
 **Goal:** extend PostgreSQL DDL rule coverage to the generated/identity state-transition forms that became supported in v0.35.0, so those forms produce explicit `rule_id` findings instead of passing silently.
 

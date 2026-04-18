@@ -264,6 +264,27 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 
 The corpus does not add new rules, change audit behavior, or affect end-user workflows. It is a release-confidence asset: it answers which SQL patterns have been verified and what the expected results are.
 
+## PostgreSQL Primary Key Facts (`v0.37.0`)
+
+`v0.37.0` is the **PostgreSQL Primary Key Fact Support Pack**. PostgreSQL `CREATE TABLE` inline, table-level, named, and composite primary-key declarations now populate DeltaScope's normalized primary-key contract, allowing existing primary-key rules to audit PostgreSQL `CREATE TABLE` statements.
+
+| Aspect | Detail |
+|--------|--------|
+| Supported forms | Inline (`id bigint PRIMARY KEY`), table-level (`PRIMARY KEY (id)`), named (`CONSTRAINT t_pkey PRIMARY KEY (id)`), composite (`PRIMARY KEY (a, b)`) |
+| Not-null inference | PK columns are treated as effectively NOT NULL |
+| Rules unlocked | `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.columns.max_count` |
+| `ddl.table.primary_key.not_null.require` | No stable negative case for PostgreSQL — PK columns are effectively NOT NULL |
+| Parser/spec changes | PostgreSQL extractor populates shared `DDL.PrimaryKey` contract |
+| New rule IDs | none |
+| New CLI/API flags | none |
+
+### What This Does Not Add
+
+- Full PostgreSQL index support.
+- `ALTER TABLE ADD PRIMARY KEY` support.
+- Live schema primary-key introspection.
+- Full PostgreSQL constraint/index parity.
+
 ## PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 
 `v0.36.0` is the **PostgreSQL Generated/Identity Rule Coverage Pack**. Three new PostgreSQL-only forbid rules cover the generated/identity state-transition forms that became supported in v0.35.0. This is rule coverage — not parser support widening, not spec contract widening, not generated expression evaluation, and not complete PostgreSQL sequence semantics.

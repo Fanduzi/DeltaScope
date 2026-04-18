@@ -250,6 +250,27 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 语料库不新增规则、不改变审计行为、不影响终端用户工作流。它是发布信心资产：回答哪些 SQL 模式已被验证、预期结果是什么。
 
+## PostgreSQL Primary Key 事实支持（`v0.37.0`）
+
+`v0.37.0` 是 **PostgreSQL Primary Key Fact Support Pack**。PostgreSQL `CREATE TABLE` 的内联、表级、命名和复合主键声明现在会填充 DeltaScope 标准化主键契约，使已有的主键规则可以审计 PostgreSQL `CREATE TABLE` 语句。
+
+| 方面 | 范围 |
+|------|------|
+| 已支持形态 | 内联（`id bigint PRIMARY KEY`）、表级（`PRIMARY KEY (id)`）、命名（`CONSTRAINT t_pkey PRIMARY KEY (id)`）、复合（`PRIMARY KEY (a, b)`） |
+| NOT NULL 推导 | PK 列被有效视为 NOT NULL |
+| 解锁规则 | `ddl.table.primary_key.bigint.require`、`ddl.table.primary_key.columns.max_count` |
+| `ddl.table.primary_key.not_null.require` | 对 PostgreSQL 无稳定负例——PK 列有效 NOT NULL |
+| Parser/spec 变更 | PostgreSQL 提取器填充共享 `DDL.PrimaryKey` 契约 |
+| 新 rule ID | 无 |
+| 新 CLI / API 标志 | 无 |
+
+### 不包含的内容
+
+- 完整 PostgreSQL 索引支持。
+- `ALTER TABLE ADD PRIMARY KEY` 支持。
+- 在线 schema 主键内省。
+- 完整 PostgreSQL 约束/索引对等。
+
 ## PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 
 `v0.36.0` 是 **PostgreSQL Generated/Identity Rule Coverage Pack**。三条新的 PostgreSQL-only forbid 规则覆盖了 v0.35.0 已支持的 generated/identity 状态转换形态。这是规则覆盖——不是 parser 支持范围扩展、不是 spec 契约扩展、不是 generated expression 求值、不是完整的 PostgreSQL 序列语义。
