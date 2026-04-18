@@ -1,15 +1,9 @@
 package audit
 
 import (
-	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
-
-	"go.yaml.in/yaml/v3"
-
-	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
 )
 
 func TestSQLCorpusCoversSupportedRuleDialects(t *testing.T) {
@@ -19,33 +13,11 @@ func TestSQLCorpusCoversSupportedRuleDialects(t *testing.T) {
 		t.Fatalf("walk corpus: %v", err)
 	}
 
-	covered := map[string]map[string]string{}
-	for _, path := range files {
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("read %s: %v", path, err)
-		}
-		var tc corpusExpected
-		if err := yaml.Unmarshal(raw, &tc); err != nil {
-			t.Fatalf("parse %s: %v", path, err)
-		}
-		if tc.Expect.Findings == nil {
-			continue
-		}
-		for _, ruleID := range tc.Expect.Findings.Include {
-			if covered[ruleID] == nil {
-				covered[ruleID] = map[string]string{}
-			}
-			covered[ruleID][tc.Dialect] = path
-		}
+	covered, _, err := corpusCoveredRuleDialects(files)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	defaults := domainpolicy.Default()
-	ruleIDs := make([]string, 0, len(defaults.Rules))
-	for ruleID := range defaults.Rules {
-		ruleIDs = append(ruleIDs, ruleID)
-	}
-	sort.Strings(ruleIDs)
+	ruleIDs := corpusDefaultRuleIDs()
 
 	var missing []string
 	for _, ruleID := range ruleIDs {

@@ -7,6 +7,7 @@ Local verification is intentionally split between fast default checks and slower
 ```bash
 make test
 make sql-corpus-gates
+make sql-corpus-report
 make build
 make build-cli
 make build-server
@@ -34,6 +35,7 @@ make test-e2e-http-tidb
 
 - `go test ./...` is the default fast verification path.
 - `make sql-corpus-gates` enforces the SQL corpus contract: every currently supported `rule_id × dialect` surface must have at least one corpus case.
+- `make sql-corpus-report` prints the current supported-rule inventory: rule count, supported `rule_id × dialect` target count, covered count, corpus fixture counts by dialect, and deferred surfaces.
 - That contract is intentionally narrower than “every policy key on every dialect”. The coverage gate tracks the current stable extractor/rule support surface, not theoretical future support.
 - CLI metadata e2e targets require Docker, Go, and Python 3.
 - MCP metadata e2e targets require Docker and Go.
