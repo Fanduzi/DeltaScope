@@ -3614,3 +3614,276 @@ func TestExtractAlterTableDropIdentityBecomesSupported(t *testing.T) {
 		t.Fatalf("expected column.old_name=id, got column=%v", alter.Column)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// v0.37.0 Task 1: PostgreSQL primary-key AST and contract characterization
+// ---------------------------------------------------------------------------
+
+// --- AST-level characterization: prove CONSTR_PRIMARY is stable and readable ---
+
+func TestParseCreateTableInlinePrimaryKeyAST(t *testing.T) {
+	sql := `CREATE TABLE users (id bigint PRIMARY KEY, name text);`
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 2 {
+		t.Fatalf("expected 2 table elements, got %d", len(elts))
+	}
+
+	colNode := elts[0].GetColumnDef()
+	if colNode == nil {
+		t.Fatal("first table element is not a ColumnDef")
+	}
+
+	// FACT: inline PRIMARY KEY appears as CONSTR_PRIMARY in the column constraint list.
+	found := false
+	for _, c := range colNode.GetConstraints() {
+		con := c.GetConstraint()
+		if con != nil && con.GetContype() == pg_query.ConstrType_CONSTR_PRIMARY {
+			found = true
+			t.Logf("inline CONSTR_PRIMARY found on column %q, conname=%q", colNode.GetColname(), con.GetConname())
+			break
+		}
+	}
+	if !found {
+		t.Fatal("expected CONSTR_PRIMARY in column constraint list for inline PRIMARY KEY")
+	}
+}
+
+func TestParseCreateTableNamedTableLevelPrimaryKeyAST(t *testing.T) {
+	sql := `CREATE TABLE users (id bigint, CONSTRAINT users_pkey PRIMARY KEY (id));`
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 2 {
+		t.Fatalf("expected 2 table elements, got %d", len(elts))
+	}
+
+	conNode := elts[1].GetConstraint()
+	if conNode == nil {
+		t.Fatal("second table element is not a Constraint")
+	}
+
+	if conNode.GetContype() != pg_query.ConstrType_CONSTR_PRIMARY {
+		t.Fatalf("expected CONSTR_PRIMARY, got %v", conNode.GetContype())
+	}
+	if conNode.GetConname() != "users_pkey" {
+		t.Fatalf("expected conname=users_pkey, got %q", conNode.GetConname())
+	}
+
+	keys := conNode.GetKeys()
+	if len(keys) != 1 {
+		t.Fatalf("expected 1 key column, got %d", len(keys))
+	}
+	colName := keys[0].GetString_().GetSval()
+	if colName != "id" {
+		t.Fatalf("expected key column id, got %q", colName)
+	}
+	t.Logf("named table-level PRIMARY KEY: conname=%q, keys=[%q]", conNode.GetConname(), colName)
+}
+
+func TestParseCreateTableUnnamedCompositePrimaryKeyAST(t *testing.T) {
+	sql := `CREATE TABLE memberships (tenant_id bigint, user_id bigint, PRIMARY KEY (tenant_id, user_id));`
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 3 {
+		t.Fatalf("expected 3 table elements, got %d", len(elts))
+	}
+
+	conNode := elts[2].GetConstraint()
+	if conNode == nil {
+		t.Fatal("third table element is not a Constraint")
+	}
+
+	if conNode.GetContype() != pg_query.ConstrType_CONSTR_PRIMARY {
+		t.Fatalf("expected CONSTR_PRIMARY, got %v", conNode.GetContype())
+	}
+	if conNode.GetConname() != "" {
+		t.Logf("unnamed composite PK has conname=%q (not empty, noted)", conNode.GetConname())
+	}
+
+	keys := conNode.GetKeys()
+	if len(keys) != 2 {
+		t.Fatalf("expected 2 key columns, got %d", len(keys))
+	}
+	col0 := keys[0].GetString_().GetSval()
+	col1 := keys[1].GetString_().GetSval()
+	if col0 != "tenant_id" || col1 != "user_id" {
+		t.Fatalf("expected keys [tenant_id, user_id], got [%q, %q]", col0, col1)
+	}
+	t.Logf("unnamed composite PRIMARY KEY: keys=[%q, %q]", col0, col1)
+}
+
+func TestParseCreateTableGeneratedIdentityInlinePrimaryKeyAST(t *testing.T) {
+	sql := `CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY);`
+	stmt := parseCreateStmtAST(t, sql)
+
+	elts := stmt.GetTableElts()
+	if len(elts) != 1 {
+		t.Fatalf("expected 1 table element, got %d", len(elts))
+	}
+
+	colNode := elts[0].GetColumnDef()
+	if colNode == nil {
+		t.Fatal("table element is not a ColumnDef")
+	}
+
+	// FACT: both CONSTR_IDENTITY and CONSTR_PRIMARY coexist in the constraint list.
+	var hasIdentity, hasPrimary bool
+	for _, c := range colNode.GetConstraints() {
+		con := c.GetConstraint()
+		if con == nil {
+			continue
+		}
+		switch con.GetContype() {
+		case pg_query.ConstrType_CONSTR_IDENTITY:
+			hasIdentity = true
+			t.Logf("CONSTR_IDENTITY found, GeneratedWhen=%q", con.GetGeneratedWhen())
+		case pg_query.ConstrType_CONSTR_PRIMARY:
+			hasPrimary = true
+			t.Logf("CONSTR_PRIMARY found alongside CONSTR_IDENTITY")
+		}
+	}
+	if !hasIdentity {
+		t.Fatal("expected CONSTR_IDENTITY in column constraints")
+	}
+	if !hasPrimary {
+		t.Fatal("expected CONSTR_PRIMARY in column constraints for generated identity PRIMARY KEY")
+	}
+}
+
+// --- Extractor-level: prove DDL.PrimaryKey is currently nil (red tests) ---
+// These tests FAIL until the extractor populates DDL.PrimaryKey for PostgreSQL.
+
+func TestExtractCreateTableInlinePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	sql := `CREATE TABLE users (id bigint PRIMARY KEY, name text);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	// A. No unsupported.
+	if statement.Unsupported != nil {
+		t.Fatalf("expected no unsupported detail, got feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+	}
+
+	// B. Statement/DDL payload is valid.
+	if statement.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	// C. Primary key fact -- currently nil, will be populated by Task 2.
+	if statement.DDL.PrimaryKey == nil {
+		t.Fatalf("CHARACTERIZATION FAIL: DDL.PrimaryKey is nil for inline PRIMARY KEY; Task 2 must populate it")
+	}
+	if statement.DDL.PrimaryKey.Kind != spec.IndexKindPrimary {
+		t.Fatalf("expected primary key kind %q, got %q", spec.IndexKindPrimary, statement.DDL.PrimaryKey.Kind)
+	}
+	if len(statement.DDL.PrimaryKey.Columns) != 1 || statement.DDL.PrimaryKey.Columns[0] != "id" {
+		t.Fatalf("expected primary key columns [id], got %v", statement.DDL.PrimaryKey.Columns)
+	}
+}
+
+func TestExtractCreateTableNamedTableLevelPrimaryKeyBecomesSupportedFact(t *testing.T) {
+	sql := `CREATE TABLE users (id bigint, CONSTRAINT users_pkey PRIMARY KEY (id));`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	// A. No unsupported.
+	if statement.Unsupported != nil {
+		t.Fatalf("expected no unsupported detail, got feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+	}
+
+	// B. Statement/DDL payload is valid.
+	if statement.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	// C. Primary key fact.
+	if statement.DDL.PrimaryKey == nil {
+		t.Fatalf("CHARACTERIZATION FAIL: DDL.PrimaryKey is nil for named table-level PRIMARY KEY; Task 2 must populate it")
+	}
+	if statement.DDL.PrimaryKey.Kind != spec.IndexKindPrimary {
+		t.Fatalf("expected primary key kind %q, got %q", spec.IndexKindPrimary, statement.DDL.PrimaryKey.Kind)
+	}
+	if statement.DDL.PrimaryKey.Name != "users_pkey" {
+		t.Fatalf("expected primary key name users_pkey, got %q", statement.DDL.PrimaryKey.Name)
+	}
+	if len(statement.DDL.PrimaryKey.Columns) != 1 || statement.DDL.PrimaryKey.Columns[0] != "id" {
+		t.Fatalf("expected primary key columns [id], got %v", statement.DDL.PrimaryKey.Columns)
+	}
+}
+
+func TestExtractCreateTableUnnamedCompositePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	sql := `CREATE TABLE memberships (tenant_id bigint, user_id bigint, PRIMARY KEY (tenant_id, user_id));`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	// A. No unsupported.
+	if statement.Unsupported != nil {
+		t.Fatalf("expected no unsupported detail, got feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+	}
+
+	// B. Statement/DDL payload is valid.
+	if statement.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	// C. Primary key fact.
+	if statement.DDL.PrimaryKey == nil {
+		t.Fatalf("CHARACTERIZATION FAIL: DDL.PrimaryKey is nil for unnamed composite PRIMARY KEY; Task 2 must populate it")
+	}
+	if statement.DDL.PrimaryKey.Kind != spec.IndexKindPrimary {
+		t.Fatalf("expected primary key kind %q, got %q", spec.IndexKindPrimary, statement.DDL.PrimaryKey.Kind)
+	}
+	if len(statement.DDL.PrimaryKey.Columns) != 2 {
+		t.Fatalf("expected 2 primary key columns, got %d", len(statement.DDL.PrimaryKey.Columns))
+	}
+	if statement.DDL.PrimaryKey.Columns[0] != "tenant_id" || statement.DDL.PrimaryKey.Columns[1] != "user_id" {
+		t.Fatalf("expected primary key columns [tenant_id, user_id], got %v", statement.DDL.PrimaryKey.Columns)
+	}
+}
+
+func TestExtractCreateTableGeneratedIdentityInlinePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	sql := `CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY);`
+
+	statement := extractPostgreSQLStatement(t, sql)
+
+	// A. No unsupported.
+	if statement.Unsupported != nil {
+		t.Fatalf("expected no unsupported detail, got feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+	}
+
+	// B. Statement/DDL payload is valid.
+	if statement.DDL == nil {
+		t.Fatal("expected DDL payload")
+	}
+
+	// C. Identity facts still present (no regression).
+	var idCol *spec.Column
+	for i := range statement.DDL.Columns {
+		if statement.DDL.Columns[i].Name == "id" {
+			idCol = &statement.DDL.Columns[i]
+			break
+		}
+	}
+	if idCol == nil {
+		t.Fatal("expected column id in DDL.Columns")
+	}
+	if idCol.GeneratedWhen != "a" {
+		t.Fatalf("expected generated_when=a (ALWAYS), got %q", idCol.GeneratedWhen)
+	}
+	if !idCol.IsIdentity {
+		t.Fatal("expected is_identity=true")
+	}
+
+	// D. Primary key fact.
+	if statement.DDL.PrimaryKey == nil {
+		t.Fatalf("CHARACTERIZATION FAIL: DDL.PrimaryKey is nil for generated identity inline PRIMARY KEY; Task 2 must populate it")
+	}
+	if statement.DDL.PrimaryKey.Kind != spec.IndexKindPrimary {
+		t.Fatalf("expected primary key kind %q, got %q", spec.IndexKindPrimary, statement.DDL.PrimaryKey.Kind)
+	}
+	if len(statement.DDL.PrimaryKey.Columns) != 1 || statement.DDL.PrimaryKey.Columns[0] != "id" {
+		t.Fatalf("expected primary key columns [id], got %v", statement.DDL.PrimaryKey.Columns)
+	}
+}
