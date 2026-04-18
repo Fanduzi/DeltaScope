@@ -6,6 +6,18 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.36.1] - 2026-04-18
+
+### Added
+
+- SQL corpus supported-rule coverage now has a reusable inventory report via `make sql-corpus-report`, showing rule counts, supported `rule_id × dialect` targets, covered targets, fixture counts by dialect, and deferred surfaces.
+- SQL corpus fixtures were expanded across MySQL, TiDB, and PostgreSQL to cover every currently supported rule/dialect surface under the repository coverage contract.
+
+### Changed
+
+- Release test gates now run `make sql-corpus-gates`, so supported-rule corpus coverage drift blocks release validation.
+- Testing docs now distinguish SQL corpus supported-rule coverage from Go line coverage and from theoretical “all policy keys on all dialects” coverage.
+
 ## [v0.36.0] - 2026-04-17
 
 ### Added

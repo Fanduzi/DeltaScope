@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.36.0/install.sh | \
-  DELTASCOPE_VERSION=v0.36.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.36.1/install.sh | \
+  DELTASCOPE_VERSION=v0.36.1 sh
 ```
 
 ### PostgreSQL 支持
