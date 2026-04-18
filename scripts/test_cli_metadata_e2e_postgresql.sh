@@ -278,6 +278,17 @@ run_pg_suite() {
   assert_exit_code "${exit_code}" 1 "case9-drop-col"
   assert_json_rule_present "${stdout_file}" "ddl.alter.drop_column.exists.require"
 
+  # Case 10: CREATE UNIQUE INDEX prefix rule (statement-local, offline)
+  stdout_file="$(mktemp "${TMP_DIR}/pg-unique-idx-prefix.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-unique-idx-prefix.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "CREATE UNIQUE INDEX bad_email_unique ON users (email);" --dialect postgresql --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "case10-unique-idx-prefix"
+  assert_json_rule_present "${stdout_file}" "ddl.index.unique.prefix.require"
+
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }
 
