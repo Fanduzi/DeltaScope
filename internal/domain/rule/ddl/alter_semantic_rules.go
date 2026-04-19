@@ -456,11 +456,11 @@ func allAlterAddedIndexes(statement spec.Statement) []spec.Index {
 
 	indexes := make([]spec.Index, 0)
 	for _, alter := range matchingAlterActions(statement, "add_constraint") {
-		index, ok := alterIndexDefinition(alter)
+		index, ok := alterConstraintIndex(alter)
 		if !ok {
 			continue
 		}
-		indexes = append(indexes, *index)
+		indexes = append(indexes, index)
 	}
 	return indexes
 }

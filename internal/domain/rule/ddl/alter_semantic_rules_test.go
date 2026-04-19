@@ -1429,8 +1429,8 @@ func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *test
 // ---------------------------------------------------------------------------
 
 // TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage proves that the unique
-// index prefix rule does NOT fire on the current PostgreSQL ALTER TABLE ADD CONSTRAINT
-// shape because alter.Index is not populated by the extractor.
+// index prefix rule fires on the PostgreSQL ALTER TABLE ADD CONSTRAINT shape
+// after Task 2 constraint option projection.
 func TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage(t *testing.T) {
 	statementRule, err := newAlterAddedIndexPrefixRule(
 		ruleIDAlterAddIndexUniquePrefixRequire,
@@ -1450,9 +1450,6 @@ func TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	// Current PostgreSQL ALTER TABLE ADD CONSTRAINT shape:
-	// - alter.Index is nil (not populated by alterFromCmd)
-	// - Only alter.Options carries constraint_type and (future) columns
 	statement := spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
@@ -1470,20 +1467,18 @@ func TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage(t *testing.T) {
 		},
 	}
 
-	applies := statementRule.AppliesTo(statement)
-	if applies {
-		t.Fatal("RED UNEXPECTED: rule AppliesTo returned true; " +
-			"if this passes the rule gap is smaller than expected — update the report")
+	if !statementRule.AppliesTo(statement) {
+		t.Fatal("expected rule to apply to ALTER TABLE ADD CONSTRAINT UNIQUE")
 	}
 
 	findings, err := statementRule.Evaluate(statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
-	if len(findings) != 0 {
-		t.Fatalf("RED UNEXPECTED: rule fired with %d findings; "+
-			"if this passes the rule gap is smaller than expected — update the report",
-			len(findings))
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
 	}
-	t.Log("RED CONFIRMED: add_index.unique.prefix.require does not fire on ALTER TABLE ADD CONSTRAINT")
+	if findings[0].RuleID != ruleIDAlterAddIndexUniquePrefixRequire {
+		t.Fatalf("expected rule_id %s, got %s", ruleIDAlterAddIndexUniquePrefixRequire, findings[0].RuleID)
+	}
 }

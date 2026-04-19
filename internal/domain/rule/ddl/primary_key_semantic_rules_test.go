@@ -119,9 +119,8 @@ func primaryKeyStatement(column spec.Column) spec.Statement {
 // ---------------------------------------------------------------------------
 
 // TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage proves that the
-// primary-key bigint rule does NOT fire on the current PostgreSQL ALTER TABLE
-// ADD CONSTRAINT shape because DDL.PrimaryKey and DDL.Columns are not populated
-// by the extractor for ALTER TABLE statements.
+// primary-key bigint rule fires on the PostgreSQL ALTER TABLE ADD CONSTRAINT
+// shape after Task 2 primary-key projection.
 func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 	statementRule, err := newSinglePrimaryKeyColumnRule(
 		ruleIDPrimaryKeyBigintRequire,
@@ -137,10 +136,6 @@ func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	// This is the current PostgreSQL ALTER TABLE ADD CONSTRAINT shape:
-	// - DDL.PrimaryKey is nil (not populated by alterFromCmd)
-	// - DDL.Columns is empty (ALTER TABLE doesn't define columns)
-	// - Only DDL.Alter with Options carries constraint_type and (future) columns
 	statement := spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
@@ -158,20 +153,18 @@ func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 		},
 	}
 
-	applies := statementRule.AppliesTo(statement)
-	if applies {
-		t.Fatal("RED UNEXPECTED: rule AppliesTo returned true; " +
-			"if this passes the rule gap is smaller than expected — update the report")
+	if !statementRule.AppliesTo(statement) {
+		t.Fatal("expected rule to apply to ALTER TABLE ADD CONSTRAINT PRIMARY KEY")
 	}
 
 	findings, err := statementRule.Evaluate(statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
-	if len(findings) != 0 {
-		t.Fatalf("RED UNEXPECTED: rule fired with %d findings; "+
-			"if this passes the rule gap is smaller than expected — update the report",
-			len(findings))
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
 	}
-	t.Log("RED CONFIRMED: primary_key.bigint.require does not fire on ALTER TABLE ADD CONSTRAINT")
+	if findings[0].Level != rule.LevelBlocker {
+		t.Fatalf("expected blocker level, got %s", findings[0].Level)
+	}
 }

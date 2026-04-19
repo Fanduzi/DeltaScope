@@ -82,16 +82,27 @@ func (r primaryKeyColumnCountRule) ID() string {
 }
 
 func (r primaryKeyColumnCountRule) AppliesTo(statement spec.Statement) bool {
-	return appliesToCreateTable(statement)
+	return appliesToCreateTable(statement) || appliesToAlterAddConstraintPrimaryKey(statement)
 }
 
 func (r primaryKeyColumnCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
-	if !r.AppliesTo(statement) || statement.DDL.PrimaryKey == nil {
+	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
-	actual := len(statement.DDL.PrimaryKey.Columns)
-	if actual <= r.limit {
+	var actual int
+	if statement.DDL.PrimaryKey != nil {
+		actual = len(statement.DDL.PrimaryKey.Columns)
+	} else {
+		for _, alter := range statement.DDL.Alter {
+			if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "primary_key" {
+				if cols := splitAlterConstraintColumns(alter.Options["columns"]); len(cols) > 0 {
+					actual = len(cols)
+				}
+			}
+		}
+	}
+	if actual == 0 || actual <= r.limit {
 		return nil, nil
 	}
 

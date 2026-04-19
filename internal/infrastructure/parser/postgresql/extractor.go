@@ -393,6 +393,9 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			"constraint_type": constraintType,
 			"not_valid":       strconv.FormatBool(constraint.GetSkipValidation()),
 		}
+		if cols := stringValuesFromNodes(constraint.GetKeys()); len(cols) > 0 {
+			options["columns"] = strings.Join(cols, ",")
+		}
 		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options}, true, nil
 	case pg_query.AlterTableType_AT_DropConstraint:
 		return spec.Alter{Action: "drop_constraint", Name: cmd.GetName()}, true, nil

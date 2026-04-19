@@ -291,19 +291,47 @@ func containsFold(items []string, target string) bool {
 }
 
 func primaryKeyColumnSpecs(statement spec.Statement) []spec.Column {
-	if statement.DDL == nil || statement.DDL.PrimaryKey == nil {
+	if statement.DDL == nil {
 		return nil
 	}
-	columns := make([]spec.Column, 0, len(statement.DDL.PrimaryKey.Columns))
-	for _, pkName := range statement.DDL.PrimaryKey.Columns {
-		for _, column := range statement.DDL.Columns {
-			if strings.EqualFold(column.Name, pkName) {
-				columns = append(columns, column)
-				break
+	// CREATE TABLE path: match PK columns against declared column types
+	if statement.DDL.PrimaryKey != nil {
+		columns := make([]spec.Column, 0, len(statement.DDL.PrimaryKey.Columns))
+		for _, pkName := range statement.DDL.PrimaryKey.Columns {
+			for _, column := range statement.DDL.Columns {
+				if strings.EqualFold(column.Name, pkName) {
+					columns = append(columns, column)
+					break
+				}
+			}
+		}
+		return columns
+	}
+	// ALTER TABLE ADD CONSTRAINT PRIMARY KEY path: name-only specs (no type info)
+	for _, alter := range statement.DDL.Alter {
+		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "primary_key" {
+			if cols := splitAlterConstraintColumns(alter.Options["columns"]); len(cols) > 0 {
+				columns := make([]spec.Column, 0, len(cols))
+				for _, name := range cols {
+					columns = append(columns, spec.Column{Name: name})
+				}
+				return columns
 			}
 		}
 	}
-	return columns
+	return nil
+}
+
+func appliesToAlterAddConstraintPrimaryKey(statement spec.Statement) bool {
+	if !appliesToAlterTable(statement) {
+		return false
+	}
+	for _, alter := range statement.DDL.Alter {
+		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "primary_key" {
+			return true
+		}
+	}
+	return false
 }
 
 func matchingAlterActions(statement spec.Statement, actions ...string) []spec.Alter {
@@ -448,13 +476,50 @@ func alterAddedIndexesByKind(statement spec.Statement, kind spec.IndexKind) []sp
 
 	indexes := make([]spec.Index, 0)
 	for _, alter := range matchingAlterActions(statement, "add_constraint") {
-		index, ok := alterIndexDefinition(alter)
+		index, ok := alterConstraintIndex(alter)
 		if !ok || index.Kind != kind {
 			continue
 		}
-		indexes = append(indexes, *index)
+		indexes = append(indexes, index)
 	}
 	return indexes
+}
+
+func splitAlterConstraintColumns(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	columns := make([]string, 0, len(parts))
+	for _, part := range parts {
+		column := strings.TrimSpace(part)
+		if column != "" {
+			columns = append(columns, column)
+		}
+	}
+	return columns
+}
+
+func alterConstraintIndex(alter spec.Alter) (spec.Index, bool) {
+	if index, ok := alterIndexDefinition(alter); ok {
+		return *index, true
+	}
+	ct := alter.Options["constraint_type"]
+	if ct != "unique" && ct != "primary_key" {
+		return spec.Index{}, false
+	}
+	cols := splitAlterConstraintColumns(alter.Options["columns"])
+	if len(cols) == 0 {
+		return spec.Index{}, false
+	}
+	kind := spec.IndexKindSecondary
+	switch ct {
+	case "unique":
+		kind = spec.IndexKindUnique
+	case "primary_key":
+		kind = spec.IndexKindPrimary
+	}
+	return spec.Index{Name: alter.Name, Kind: kind, Columns: cols}, true
 }
 
 func projectedAlterIndexesStatement(statement spec.Statement, indexes []spec.Index) spec.Statement {

@@ -40,7 +40,8 @@ func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, mess
 func (r singlePrimaryKeyColumnRule) ID() string { return r.ruleID }
 
 func (r singlePrimaryKeyColumnRule) AppliesTo(statement spec.Statement) bool {
-	return r.required && appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil
+	return r.required && (appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil ||
+		appliesToAlterAddConstraintPrimaryKey(statement))
 }
 
 func (r singlePrimaryKeyColumnRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
