@@ -1298,6 +1298,36 @@ func TestAuditPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	if result.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+	}
+
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.alter.add_index.unique.prefix.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected finding with rule_id ddl.alter.add_index.unique.prefix.require, got %#v", result.Statements[0].Findings)
+	}
+}
+
 func pkgMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := pkgToFloat64(a)
 	bFloat, bIsNum := pkgToFloat64(b)
