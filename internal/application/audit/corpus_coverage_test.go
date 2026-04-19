@@ -147,7 +147,6 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.add_index.columns.max_count",
 		"ddl.alter.add_index.duplicate.forbid",
 		"ddl.alter.add_index.redundant_left_prefix.forbid",
-		"ddl.alter.add_index.unique.prefix.require",
 		"ddl.alter.add_index.unique.suffix.require",
 		"ddl.alter.add_index.unique.contains.require",
 		"dml.limit.forbid",

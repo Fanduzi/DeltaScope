@@ -1627,6 +1627,75 @@ func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "primary_key_bigint_required",
+			sql:        "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);",
+			wantRuleID: "ddl.table.primary_key.bigint.require",
+		},
+		{
+			name:       "unique_prefix_required",
+			sql:        "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);",
+			wantRuleID: "ddl.alter.add_index.unique.prefix.require",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationAlterTable {
+				t.Fatalf("expected alter_table operation, got %q", stmt.DDL.Operation)
+			}
+			if len(stmt.DDL.Alter) != 1 {
+				t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+			}
+			alter := stmt.DDL.Alter[0]
+			if alter.Action != "add_constraint" {
+				t.Fatalf("expected add_constraint action, got %q", alter.Action)
+			}
+			if alter.Options["columns"] == "" {
+				t.Fatal("expected columns option to be populated")
+			}
+		})
+	}
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
