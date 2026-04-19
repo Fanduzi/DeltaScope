@@ -471,7 +471,34 @@ Rules applicable to PostgreSQL primary keys:
 
 `ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL because PK columns are treated as effectively NOT NULL.
 
-This is primary-key fact support for `CREATE TABLE` — not full PostgreSQL index support, not `ALTER TABLE ADD PRIMARY KEY`, not live schema introspection, and not full constraint/index parity.
+This is primary-key fact support for `CREATE TABLE` — not full PostgreSQL index support, not live schema introspection, and not full constraint/index parity.
+
+#### PostgreSQL ALTER TABLE ADD CONSTRAINT (`v0.39.0`)
+
+Starting with `v0.39.0`, DeltaScope extends rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` and `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` forms. These reuse existing shared alter-table index and primary-key rule families — no new rule IDs were added.
+
+| `ALTER TABLE` form | Status |
+|---------------------|--------|
+| `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE (...)` | Supported, auditable; `ddl.alter.add_index.unique.prefix.require` applies |
+| `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY (...)` | Supported, auditable; `ddl.table.primary_key.bigint.require` and `ddl.table.primary_key.columns.max_count` apply |
+
+Example: audit a PostgreSQL ALTER TABLE ADD CONSTRAINT UNIQUE with a bad prefix:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);"
+```
+
+Example: audit a PostgreSQL ALTER TABLE ADD CONSTRAINT PRIMARY KEY with a non-BIGINT column:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+```
+
+This is rule coverage for `ALTER TABLE ... ADD CONSTRAINT` UNIQUE and PRIMARY KEY forms — not full PostgreSQL constraint support, not metadata-aware constraint introspection, and not support for `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` or `ALTER TABLE ... ADD CONSTRAINT ... CHECK`.
 
 #### PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 

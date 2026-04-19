@@ -471,7 +471,34 @@ deltascope audit \
 
 `ddl.table.primary_key.not_null.require` 对 PostgreSQL 不产生稳定负例，因为 PK 列被有效视为 NOT NULL。
 
-这是 `CREATE TABLE` 的主键事实支持——不是完整 PostgreSQL 索引支持、不是 `ALTER TABLE ADD PRIMARY KEY`、不是在线 schema 内省、也不是完整约束/索引对等。
+这是 `CREATE TABLE` 的主键事实支持——不是完整 PostgreSQL 索引支持、不是在线 schema 内省、也不是完整约束/索引对等。
+
+##### PostgreSQL ALTER TABLE ADD CONSTRAINT（`v0.39.0`）
+
+从 `v0.39.0` 开始，DeltaScope 将规则覆盖扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` 和 `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` 形式。这些规则复用已有的共享 alter-table 索引和主键规则族——未新增规则 ID。
+
+| `ALTER TABLE` 形态 | 状态 |
+|--------------------|------|
+| `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE (...)` | 已支持、可审计；`ddl.alter.add_index.unique.prefix.require` 适用 |
+| `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY (...)` | 已支持、可审计；`ddl.table.primary_key.bigint.require` 和 `ddl.table.primary_key.columns.max_count` 适用 |
+
+示例：审计使用错误前缀的 PostgreSQL ALTER TABLE ADD CONSTRAINT UNIQUE：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);"
+```
+
+示例：审计使用非 BIGINT 列的 PostgreSQL ALTER TABLE ADD CONSTRAINT PRIMARY KEY：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+```
+
+这是 `ALTER TABLE ... ADD CONSTRAINT` UNIQUE 和 PRIMARY KEY 形式的规则覆盖——不是完整 PostgreSQL 约束支持、不是元数据感知约束内省、也不包含 `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 或 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 的支持。
 
 ##### PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 

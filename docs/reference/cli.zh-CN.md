@@ -410,6 +410,45 @@ deltascope audit \
 
 这不代表完整 PostgreSQL 索引支持，不包含 partial index 支持、expression index 支持、INCLUDE 支持、operator class 支持、非 btree 访问方法支持、NULLS NOT DISTINCT 支持或在线 schema 索引内省。
 
+### PostgreSQL ALTER TABLE ADD CONSTRAINT 审计（v0.39.0）
+
+从 `v0.39.0` 开始，DeltaScope 将唯一索引前缀和主键规则覆盖扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` 和 `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` 形式：
+
+```bash
+# ALTER TABLE ADD CONSTRAINT UNIQUE — 如果前缀不正确，触发 ddl.alter.add_index.unique.prefix.require
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);"
+```
+
+示例 JSON finding：
+
+```json
+{
+  "rule_id": "ddl.alter.add_index.unique.prefix.require",
+  "level": "warning",
+  "message": "unique index \"bad_email_key\" must use prefix \"uniq_\"",
+  "statement_kind": "ddl"
+}
+```
+
+```bash
+# ALTER TABLE ADD CONSTRAINT PRIMARY KEY — 如果不是 BIGINT，触发 ddl.table.primary_key.bigint.require
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+```
+
+现在覆盖 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT` 的规则：
+
+| Rule ID | 触发条件 |
+|---------|---------|
+| `ddl.alter.add_index.unique.prefix.require` | 唯一约束名未以要求的前缀开头 |
+| `ddl.table.primary_key.bigint.require` | 主键列不是 BIGINT |
+| `ddl.table.primary_key.columns.max_count` | 复合主键超过配置的列数上限 |
+
+这些规则复用已有的共享 alter-table 索引和主键规则族。未新增规则 ID。这不代表完整 PostgreSQL 约束支持、元数据感知约束内省、也不包含 `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 或 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 的支持。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |

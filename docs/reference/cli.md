@@ -450,6 +450,45 @@ Rules now covering PostgreSQL standalone `CREATE INDEX`:
 
 This does not add full PostgreSQL index support, partial index support, expression index support, INCLUDE support, operator class support, non-btree access method support, NULLS NOT DISTINCT support, or live schema index introspection.
 
+### PostgreSQL ALTER TABLE ADD CONSTRAINT Audit (v0.39.0)
+
+Starting with `v0.39.0`, DeltaScope extends unique-index prefix and primary-key rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` and `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` forms:
+
+```bash
+# ALTER TABLE ADD CONSTRAINT UNIQUE — triggers ddl.alter.add_index.unique.prefix.require if prefix is wrong
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);"
+```
+
+Example JSON finding:
+
+```json
+{
+  "rule_id": "ddl.alter.add_index.unique.prefix.require",
+  "level": "warning",
+  "message": "unique index \"bad_email_key\" must use prefix \"uniq_\"",
+  "statement_kind": "ddl"
+}
+```
+
+```bash
+# ALTER TABLE ADD CONSTRAINT PRIMARY KEY — triggers ddl.table.primary_key.bigint.require if not BIGINT
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);"
+```
+
+Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT`:
+
+| Rule ID | What It Flags |
+|---------|---------------|
+| `ddl.alter.add_index.unique.prefix.require` | Unique constraint name does not start with the required prefix |
+| `ddl.table.primary_key.bigint.require` | Primary-key column is not BIGINT |
+| `ddl.table.primary_key.columns.max_count` | Composite primary key exceeds the configured column limit |
+
+These reuse existing shared alter-table index and primary-key rule families. No new rule IDs were added. This does not add full PostgreSQL constraint support, metadata-aware constraint introspection, or support for `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` or `ALTER TABLE ... ADD CONSTRAINT ... CHECK`.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

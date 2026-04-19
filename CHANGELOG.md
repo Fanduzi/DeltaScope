@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.39.0] - 2026-04-19
+
+### Added
+
+- PostgreSQL `ALTER TABLE ... ADD CONSTRAINT` primary-key and unique constraint facts: inline (`ADD PRIMARY KEY`), named (`ADD CONSTRAINT users_pkey PRIMARY KEY`), and unnamed (`ADD UNIQUE`) forms now preserve statement-local constraint metadata through the PostgreSQL extractor and rule projection helpers.
+- Existing primary-key rules now apply to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` statements:
+  - `ddl.table.primary_key.bigint.require` — flags PostgreSQL primary-key columns that are not BIGINT.
+  - `ddl.table.primary_key.columns.max_count` — flags PostgreSQL composite primary keys that exceed the configured column limit.
+- Existing unique/index prefix rule now applies to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` statements:
+  - `ddl.alter.add_index.unique.prefix.require` — flags unique constraint names that do not start with the required prefix.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- Corpus expected outcomes and service-level tests lock PostgreSQL constraint rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.alter.add_index.unique.prefix.require` for statement-local `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` audit.
+
+### Changed
+
+- Release-facing docs now position `v0.39.0` as the PostgreSQL ALTER TABLE Constraint Fact Support Pack. It does not add full `ALTER TABLE ADD CONSTRAINT` support, foreign key/check constraint rule support, deferrable constraint support, constraint validation lifecycle support, partial/expression index support, operator class support, live schema reconstruction, new rule IDs, or MySQL/TiDB behavior changes.
+
 ## [v0.38.0] - 2026-04-18
 
 ### Added

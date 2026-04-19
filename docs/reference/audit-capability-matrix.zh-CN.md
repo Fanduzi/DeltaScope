@@ -89,6 +89,8 @@
 
 **PostgreSQL 索引可用性（v0.38.0）：** `ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require` 和 `ddl.index.columns.max_count` 现在也适用于独立的 PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句（仅限 btree）。Partial index、expression index、INCLUDE、operator class、非 btree 访问方法和 NULLS NOT DISTINCT 仍不在 scope 内。
 
+**PostgreSQL ALTER TABLE 约束可用性 (v0.39.0)：** `ALTER TABLE ... ADD PRIMARY KEY`、`ADD CONSTRAINT ... PRIMARY KEY`、`ADD UNIQUE` 和 `ADD CONSTRAINT ... UNIQUE` 形态现在保留语句级约束元数据。已有的主键规则（`ddl.table.primary_key.bigint.require`、`ddl.table.primary_key.columns.max_count`）和唯一前缀规则（`ddl.alter.add_index.unique.prefix.require`）可以对已批准形态产生 findings。外键、CHECK 约束、排他约束、可延迟性、验证生命周期、partial/expression index 语义、operator class 和在线 schema 重建不在范围内。
+
 ### 约束级检查
 
 约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。

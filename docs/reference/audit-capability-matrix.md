@@ -103,6 +103,8 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **PostgreSQL index availability (v0.38.0):** `ddl.index.secondary.prefix.require`, `ddl.index.unique.prefix.require`, and `ddl.index.columns.max_count` now also apply to standalone PostgreSQL `CREATE INDEX`, `CREATE UNIQUE INDEX`, and `CREATE INDEX CONCURRENTLY` statements (btree only). Partial indexes, expression indexes, INCLUDE, operator classes, non-btree access methods, and NULLS NOT DISTINCT remain out of scope.
 
+**PostgreSQL ALTER TABLE constraint availability (v0.39.0):** `ALTER TABLE ... ADD PRIMARY KEY`, `ADD CONSTRAINT ... PRIMARY KEY`, `ADD UNIQUE`, and `ADD CONSTRAINT ... UNIQUE` forms now preserve statement-local constraint metadata. Existing primary-key rules (`ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.columns.max_count`) and unique prefix rule (`ddl.alter.add_index.unique.prefix.require`) produce findings for approved forms. Foreign keys, check constraints, exclusion constraints, deferrability, validation lifecycle, partial/expression index semantics, operator classes, and live schema reconstruction remain out of scope.
+
 ### Constraint-Level Checks
 
 Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped. Foreign key naming rules are only relevant when foreign keys are allowed by policy; under the shipped default baseline, `ddl.table.foreign_key.forbid` suppresses foreign key naming checks.

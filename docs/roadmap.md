@@ -4,7 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.38.0 PostgreSQL Unique/Index Rule Coverage
+## Latest Completed Milestone: v0.39.0 PostgreSQL ALTER TABLE Constraint Fact Support Pack
+
+**Goal:** preserve statement-local primary-key and unique constraint facts for approved `ALTER TABLE ... ADD CONSTRAINT` forms, allowing existing primary-key and unique/index rules to produce findings across all product surfaces.
+
+### Completed Scope
+
+- PostgreSQL `ALTER TABLE ... ADD CONSTRAINT` primary-key and unique constraint facts: inline, named, and unnamed forms now preserve statement-local constraint metadata through the PostgreSQL extractor and rule projection helpers.
+- Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT`:
+  - `ddl.table.primary_key.bigint.require` — flags PostgreSQL primary-key columns that are not BIGINT.
+  - `ddl.table.primary_key.columns.max_count` — flags PostgreSQL composite primary keys that exceed the configured column limit.
+  - `ddl.alter.add_index.unique.prefix.require` — flags unique constraint names that do not start with the required prefix.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- Corpus expected outcomes and service-level tests lock PostgreSQL constraint rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.alter.add_index.unique.prefix.require`.
+
+### Key Design Decisions
+
+- No new rule IDs — existing rules cover approved forms through extended applicability and projection helpers.
+- Approved forms only — foreign keys, check constraints, exclusion constraints, deferrability, validation lifecycle, partial/expression index semantics, operator classes, and live schema reconstruction remain out of scope.
+- No MySQL/TiDB behavior changes.
+
+## Previous Milestone: v0.38.0 PostgreSQL Unique/Index Rule Coverage
 
 **Goal:** extend PostgreSQL unique/index audit coverage for statement-local unique constraints and simple btree `CREATE INDEX` forms. Existing index rules now produce findings for the approved PostgreSQL forms, with corpus, public-surface, and Docker-backed e2e coverage.
 

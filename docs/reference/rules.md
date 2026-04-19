@@ -156,7 +156,7 @@ These rules evaluate properties of the `CREATE TABLE` statement as a whole.
 | `ddl.table.primary_key.auto_increment.require` | PRIMARY KEY column must be AUTO_INCREMENT | blocker | No |
 | `ddl.table.primary_key.not_null.require` | PRIMARY KEY column must be NOT NULL | blocker | No |
 
-**PostgreSQL primary-key availability (v0.37.0):** `ddl.table.primary_key.bigint.require` and `ddl.table.primary_key.columns.max_count` now apply to PostgreSQL `CREATE TABLE` statements. `ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL because PK columns are treated as effectively NOT NULL.
+**PostgreSQL primary-key availability (v0.37.0, v0.39.0):** `ddl.table.primary_key.bigint.require` and `ddl.table.primary_key.columns.max_count` now apply to PostgreSQL `CREATE TABLE` statements (v0.37.0) and `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` statements (v0.39.0). `ddl.table.primary_key.not_null.require` does not produce a stable negative case for PostgreSQL because PK columns are treated as effectively NOT NULL.
 | `ddl.table.audit_columns.require` | Table must include audit timestamp columns | warning | No |
 | `ddl.table.foreign_key.forbid` | FOREIGN KEY constraints are forbidden | blocker | No |
 | `ddl.table.partition.forbid` | Partitioned tables are forbidden | blocker | No |
@@ -239,6 +239,8 @@ These rules govern the structural operations permitted within an `ALTER TABLE` s
 | `ddl.alter.add_index.unique.prefix.require` | ADD UNIQUE INDEX name prefix requirement | warning | No |
 | `ddl.alter.add_index.secondary.prefix.require` | ADD INDEX name prefix requirement | warning | No |
 | `ddl.alter.add_index.fulltext.prefix.require` | ADD FULLTEXT INDEX name prefix requirement | warning | No |
+
+**PostgreSQL ALTER TABLE ADD CONSTRAINT (v0.39.0):** `ddl.alter.add_index.unique.prefix.require` now also applies to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` forms. `ddl.table.primary_key.bigint.require` and `ddl.table.primary_key.columns.max_count` now also apply to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY`. These reuse existing shared alter-table index and primary-key rule families — no new rule IDs were added.
 
 ### Type Compatibility Rules (11 rules)
 
