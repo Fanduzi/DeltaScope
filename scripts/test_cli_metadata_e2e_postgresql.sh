@@ -289,6 +289,17 @@ run_pg_suite() {
   assert_exit_code "${exit_code}" 0 "case10-unique-idx-prefix"
   assert_json_rule_present "${stdout_file}" "ddl.index.unique.prefix.require"
 
+  # Case 11: ALTER TABLE ADD CONSTRAINT UNIQUE prefix rule (statement-local, offline)
+  stdout_file="$(mktemp "${TMP_DIR}/pg-alter-add-constraint-unique.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-alter-add-constraint-unique.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);" --dialect postgresql --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "case11-alter-add-constraint-unique"
+  assert_json_rule_present "${stdout_file}" "ddl.alter.add_index.unique.prefix.require"
+
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }
 
