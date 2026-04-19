@@ -1423,3 +1423,67 @@ func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *test
 		t.Fatalf("expected 0 findings for MySQL modify_column action, got %d", len(findings))
 	}
 }
+
+// ---------------------------------------------------------------------------
+// v0.39.0 Task 1: Rule applicability — PostgreSQL ALTER TABLE ADD CONSTRAINT
+// ---------------------------------------------------------------------------
+
+// TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage proves that the unique
+// index prefix rule does NOT fire on the current PostgreSQL ALTER TABLE ADD CONSTRAINT
+// shape because alter.Index is not populated by the extractor.
+func TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage(t *testing.T) {
+	statementRule, err := newAlterAddedIndexPrefixRule(
+		ruleIDAlterAddIndexUniquePrefixRequire,
+		spec.IndexKindUnique,
+		"uniq_",
+		rule.LevelWarning,
+		policy.RulePolicy{
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params: map[string]any{
+				"required": true,
+				"prefix":   "uniq_",
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	// Current PostgreSQL ALTER TABLE ADD CONSTRAINT shape:
+	// - alter.Index is nil (not populated by alterFromCmd)
+	// - Only alter.Options carries constraint_type and (future) columns
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{{
+				Action: "add_constraint",
+				Name:   "bad_email_key",
+				Options: map[string]string{
+					"constraint_type": "unique",
+					"columns":         "email",
+				},
+			}},
+		},
+	}
+
+	applies := statementRule.AppliesTo(statement)
+	if applies {
+		t.Fatal("RED UNEXPECTED: rule AppliesTo returned true; " +
+			"if this passes the rule gap is smaller than expected — update the report")
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("RED UNEXPECTED: rule fired with %d findings; "+
+			"if this passes the rule gap is smaller than expected — update the report",
+			len(findings))
+	}
+	t.Log("RED CONFIRMED: add_index.unique.prefix.require does not fire on ALTER TABLE ADD CONSTRAINT")
+}

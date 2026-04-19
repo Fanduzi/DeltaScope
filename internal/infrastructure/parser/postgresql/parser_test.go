@@ -4115,3 +4115,293 @@ func TestExtractCreateTableGeneratedIdentityInlinePrimaryKeyBecomesSupportedFact
 		t.Fatal("expected generated identity PK column id to have NotNull=true")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// v0.39.0 Task 1: AST characterization — ALTER TABLE ADD CONSTRAINT
+// ---------------------------------------------------------------------------
+
+func TestASTAlterTableAddPrimaryKeyUnnamed(t *testing.T) {
+	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD PRIMARY KEY (id);")
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 cmd, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %s", cmd.GetSubtype().String())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_PRIMARY {
+		t.Fatalf("expected CONSTR_PRIMARY, got %s", constraint.GetContype().String())
+	}
+	if constraint.GetConname() != "" {
+		t.Fatalf("expected empty constraint name for unnamed PK, got %q", constraint.GetConname())
+	}
+	keys := constraint.GetKeys()
+	if len(keys) != 1 {
+		t.Fatalf("expected 1 key column, got %d", len(keys))
+	}
+	if keys[0].GetString_().GetSval() != "id" {
+		t.Fatalf("expected key column id, got %q", keys[0].GetString_().GetSval())
+	}
+	t.Logf("SkipValidation=%v", constraint.GetSkipValidation())
+}
+
+func TestASTAlterTableAddNamedPrimaryKey(t *testing.T) {
+	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);")
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 cmd, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %s", cmd.GetSubtype().String())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_PRIMARY {
+		t.Fatalf("expected CONSTR_PRIMARY, got %s", constraint.GetContype().String())
+	}
+	if constraint.GetConname() != "users_pkey" {
+		t.Fatalf("expected constraint name users_pkey, got %q", constraint.GetConname())
+	}
+	keys := constraint.GetKeys()
+	if len(keys) != 1 {
+		t.Fatalf("expected 1 key column, got %d", len(keys))
+	}
+	if keys[0].GetString_().GetSval() != "id" {
+		t.Fatalf("expected key column id, got %q", keys[0].GetString_().GetSval())
+	}
+	t.Logf("SkipValidation=%v", constraint.GetSkipValidation())
+}
+
+func TestASTAlterTableAddUniqueUnnamed(t *testing.T) {
+	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD UNIQUE (email);")
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 cmd, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %s", cmd.GetSubtype().String())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_UNIQUE {
+		t.Fatalf("expected CONSTR_UNIQUE, got %s", constraint.GetContype().String())
+	}
+	if constraint.GetConname() != "" {
+		t.Fatalf("expected empty constraint name for unnamed unique, got %q", constraint.GetConname())
+	}
+	keys := constraint.GetKeys()
+	if len(keys) != 1 {
+		t.Fatalf("expected 1 key column, got %d", len(keys))
+	}
+	if keys[0].GetString_().GetSval() != "email" {
+		t.Fatalf("expected key column email, got %q", keys[0].GetString_().GetSval())
+	}
+	t.Logf("SkipValidation=%v", constraint.GetSkipValidation())
+}
+
+func TestASTAlterTableAddNamedUnique(t *testing.T) {
+	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email);")
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 cmd, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %s", cmd.GetSubtype().String())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_UNIQUE {
+		t.Fatalf("expected CONSTR_UNIQUE, got %s", constraint.GetContype().String())
+	}
+	if constraint.GetConname() != "users_email_key" {
+		t.Fatalf("expected constraint name users_email_key, got %q", constraint.GetConname())
+	}
+	keys := constraint.GetKeys()
+	if len(keys) != 1 {
+		t.Fatalf("expected 1 key column, got %d", len(keys))
+	}
+	if keys[0].GetString_().GetSval() != "email" {
+		t.Fatalf("expected key column email, got %q", keys[0].GetString_().GetSval())
+	}
+	t.Logf("SkipValidation=%v", constraint.GetSkipValidation())
+}
+
+func TestASTAlterTableAddNamedCompositePrimaryKey(t *testing.T) {
+	stmt := parseAlterTableStmtAST(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_pkey PRIMARY KEY (tenant_id, user_id);")
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 cmd, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %s", cmd.GetSubtype().String())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_PRIMARY {
+		t.Fatalf("expected CONSTR_PRIMARY, got %s", constraint.GetContype().String())
+	}
+	if constraint.GetConname() != "memberships_pkey" {
+		t.Fatalf("expected constraint name memberships_pkey, got %q", constraint.GetConname())
+	}
+	keys := constraint.GetKeys()
+	if len(keys) != 2 {
+		t.Fatalf("expected 2 key columns, got %d", len(keys))
+	}
+	if keys[0].GetString_().GetSval() != "tenant_id" {
+		t.Fatalf("expected key column 0 tenant_id, got %q", keys[0].GetString_().GetSval())
+	}
+	if keys[1].GetString_().GetSval() != "user_id" {
+		t.Fatalf("expected key column 1 user_id, got %q", keys[1].GetString_().GetSval())
+	}
+	t.Logf("SkipValidation=%v", constraint.GetSkipValidation())
+}
+
+func TestASTAlterTableAddNamedCompositeUnique(t *testing.T) {
+	stmt := parseAlterTableStmtAST(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_user_key UNIQUE (tenant_id, user_id);")
+	cmds := stmt.GetCmds()
+	if len(cmds) != 1 {
+		t.Fatalf("expected 1 cmd, got %d", len(cmds))
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %s", cmd.GetSubtype().String())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_UNIQUE {
+		t.Fatalf("expected CONSTR_UNIQUE, got %s", constraint.GetContype().String())
+	}
+	if constraint.GetConname() != "memberships_user_key" {
+		t.Fatalf("expected constraint name memberships_user_key, got %q", constraint.GetConname())
+	}
+	keys := constraint.GetKeys()
+	if len(keys) != 2 {
+		t.Fatalf("expected 2 key columns, got %d", len(keys))
+	}
+	if keys[0].GetString_().GetSval() != "tenant_id" {
+		t.Fatalf("expected key column 0 tenant_id, got %q", keys[0].GetString_().GetSval())
+	}
+	if keys[1].GetString_().GetSval() != "user_id" {
+		t.Fatalf("expected key column 1 user_id, got %q", keys[1].GetString_().GetSval())
+	}
+	t.Logf("SkipValidation=%v", constraint.GetSkipValidation())
+}
+
+// ---------------------------------------------------------------------------
+// v0.39.0 Task 1: Extractor red tests — ALTER TABLE ADD CONSTRAINT
+// These tests assert current supported status and characterize the exact
+// fact gap: constraint columns are not preserved in spec.Alter.Options.
+// Task 2 must make these assertions pass without changing public spec.
+// ---------------------------------------------------------------------------
+
+func TestExtractAlterTableAddNamedPrimaryKeyBecomesSupportedFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t, "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table DDL, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected action add_constraint, got %q", alter.Action)
+	}
+	if alter.Name != "users_pkey" {
+		t.Fatalf("expected name users_pkey, got %q", alter.Name)
+	}
+	if alter.Options["constraint_type"] != "primary_key" {
+		t.Fatalf("expected constraint_type=primary_key, got %q", alter.Options["constraint_type"])
+	}
+
+	// RED ASSERTION: columns are not currently preserved.
+	// Task 2 must populate Options["columns"] = "id" for this to pass.
+	if alter.Options["columns"] != "id" {
+		t.Fatalf("RED: expected Options[columns]=id (Task 2 must populate), got %q", alter.Options["columns"])
+	}
+}
+
+func TestExtractAlterTableAddNamedUniqueBecomesSupportedFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t, "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported feature=%q reason=%q", statement.Unsupported.Feature, statement.Unsupported.Reason)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table DDL, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected action add_constraint, got %q", alter.Action)
+	}
+	if alter.Name != "bad_email_key" {
+		t.Fatalf("expected name bad_email_key, got %q", alter.Name)
+	}
+	if alter.Options["constraint_type"] != "unique" {
+		t.Fatalf("expected constraint_type=unique, got %q", alter.Options["constraint_type"])
+	}
+
+	// RED ASSERTION: columns are not currently preserved.
+	if alter.Options["columns"] != "email" {
+		t.Fatalf("RED: expected Options[columns]=email (Task 2 must populate), got %q", alter.Options["columns"])
+	}
+}
+
+func TestExtractAlterTableAddCompositePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_pkey PRIMARY KEY (tenant_id, user_id);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported feature=%q", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Options["constraint_type"] != "primary_key" {
+		t.Fatalf("expected constraint_type=primary_key, got %q", alter.Options["constraint_type"])
+	}
+
+	// RED ASSERTION: composite columns must be comma-separated.
+	if alter.Options["columns"] != "tenant_id,user_id" {
+		t.Fatalf("RED: expected Options[columns]=tenant_id,user_id (Task 2 must populate), got %q", alter.Options["columns"])
+	}
+}
+
+func TestExtractAlterTableAddCompositeUniqueBecomesSupportedFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_user_key UNIQUE (tenant_id, user_id);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported feature=%q", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Options["constraint_type"] != "unique" {
+		t.Fatalf("expected constraint_type=unique, got %q", alter.Options["constraint_type"])
+	}
+
+	// RED ASSERTION: composite columns must be comma-separated.
+	if alter.Options["columns"] != "tenant_id,user_id" {
+		t.Fatalf("RED: expected Options[columns]=tenant_id,user_id (Task 2 must populate), got %q", alter.Options["columns"])
+	}
+}

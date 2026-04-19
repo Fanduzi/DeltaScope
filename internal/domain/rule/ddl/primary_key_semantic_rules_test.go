@@ -113,3 +113,65 @@ func primaryKeyStatement(column spec.Column) spec.Statement {
 		},
 	}
 }
+
+// ---------------------------------------------------------------------------
+// v0.39.0 Task 1: Rule applicability — PostgreSQL ALTER TABLE ADD CONSTRAINT
+// ---------------------------------------------------------------------------
+
+// TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage proves that the
+// primary-key bigint rule does NOT fire on the current PostgreSQL ALTER TABLE
+// ADD CONSTRAINT shape because DDL.PrimaryKey and DDL.Columns are not populated
+// by the extractor for ALTER TABLE statements.
+func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
+	statementRule, err := newSinglePrimaryKeyColumnRule(
+		ruleIDPrimaryKeyBigintRequire,
+		rule.LevelBlocker,
+		"must use bigint",
+		"change the primary key column type to bigint",
+		func(column spec.Column) bool {
+			return baseType(column) == "bigint"
+		},
+		policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}},
+	)
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	// This is the current PostgreSQL ALTER TABLE ADD CONSTRAINT shape:
+	// - DDL.PrimaryKey is nil (not populated by alterFromCmd)
+	// - DDL.Columns is empty (ALTER TABLE doesn't define columns)
+	// - Only DDL.Alter with Options carries constraint_type and (future) columns
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{{
+				Action: "add_constraint",
+				Name:   "users_pkey",
+				Options: map[string]string{
+					"constraint_type": "primary_key",
+					"columns":         "id",
+				},
+			}},
+		},
+	}
+
+	applies := statementRule.AppliesTo(statement)
+	if applies {
+		t.Fatal("RED UNEXPECTED: rule AppliesTo returned true; " +
+			"if this passes the rule gap is smaller than expected — update the report")
+	}
+
+	findings, err := statementRule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("RED UNEXPECTED: rule fired with %d findings; "+
+			"if this passes the rule gap is smaller than expected — update the report",
+			len(findings))
+	}
+	t.Log("RED CONFIRMED: primary_key.bigint.require does not fire on ALTER TABLE ADD CONSTRAINT")
+}
