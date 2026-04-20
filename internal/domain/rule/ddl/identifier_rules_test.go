@@ -1065,3 +1065,113 @@ func postgresStatementWithConstraints(primaryKey *spec.Index, indexes []spec.Ind
 	statement.DDL.Operation = spec.DDLOperationCreateTable
 	return statement
 }
+
+// ---------------------------------------------------------------------------
+// v0.40.0 Task 1: Rule applicability gap tests — ALTER TABLE ADD CONSTRAINT FK
+// These tests prove that ALTER TABLE ADD CONSTRAINT FOREIGN KEY does NOT trigger
+// existing FK naming rules today, because DDL.Constraints is empty.
+// Task 2 must project FK facts from Alter.Options into DDL.Constraints.
+// ---------------------------------------------------------------------------
+
+// postgresAlterTableAddFKConstraint builds a spec.Statement that mirrors what
+// the PostgreSQL extractor currently produces for
+//   ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);
+// Today the extractor puts FK facts only in Alter.Options — DDL.Constraints is empty.
+func postgresAlterTableAddFKConstraint(constraintName string, columns []string, referencedTable string, referencedColumns []string) spec.Statement {
+	options := map[string]string{
+		"constraint_type": "foreign_key",
+		"not_valid":       "false",
+	}
+	if len(columns) > 0 {
+		options["columns"] = strings.Join(columns, ",")
+	}
+	return spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "orders"},
+			Alter: []spec.Alter{{
+				Action:  "add_constraint",
+				Name:    constraintName,
+				Options: options,
+			}},
+			// DDL.Constraints is intentionally empty — this is the current production gap.
+		},
+	}
+}
+
+func TestForeignKeyNamingRuleGapAlterTableAddConstraintFKNotFound(t *testing.T) {
+	// Build a statement that represents ALTER TABLE ADD CONSTRAINT FK.
+	// The constraint name "bad_name" does not follow any naming convention.
+	statement := postgresAlterTableAddFKConstraint("bad_name", []string{"user_id"}, "users", []string{"id"})
+
+	rule, err := newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
+		Params: map[string]any{"prefix": "fk_"},
+		Level:  rule.LevelWarning,
+	}, selectForeignKeyConstraintNames)
+	if err != nil {
+		t.Fatalf("newNamingPrefixRule: %v", err)
+	}
+
+	// GAP ASSERTION: rule does NOT fire because DDL.Constraints is empty.
+	findings, err := rule.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("RED/GAP: expected 0 findings (DDL.Constraints empty = rule can't see FK), got %d — if this fails, Task 2 projection already works", len(findings))
+	}
+	t.Log("Gap confirmed: ALTER TABLE ADD CONSTRAINT FK does not populate DDL.Constraints, so FK naming rules cannot fire")
+}
+
+func TestForeignKeyForbidRuleGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
+	statement := postgresAlterTableAddFKConstraint("fk_orders_user", []string{"user_id"}, "users", []string{"id"})
+
+	rule, err := newTableForeignKeyForbidRule(policy.RulePolicy{
+		Params: map[string]any{"forbid": true},
+		Level:  rule.LevelBlocker,
+	})
+	if err != nil {
+		t.Fatalf("newTableForeignKeyForbidRule: %v", err)
+	}
+
+	// GAP ASSERTION: rule does NOT fire because AppliesTo checks create_table only.
+	if rule.AppliesTo(statement) {
+		t.Fatal("RED/GAP: expected AppliesTo=false for ALTER TABLE (rule only applies to CREATE TABLE)")
+	}
+	t.Log("Gap confirmed: tableForeignKeyForbidRule only AppliesTo create_table, not alter_table")
+}
+
+func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
+	statement := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "orders"},
+			Alter: []spec.Alter{{
+				Action: "add_constraint",
+				Name:   "fk_orders_user",
+				Options: map[string]string{
+					"constraint_type":   "foreign_key",
+					"columns":           "user_id",
+					"referenced_table":  "public.users",
+				},
+			}},
+		},
+	}
+
+	rule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
+		Level: rule.LevelNotice,
+	})
+	if err != nil {
+		t.Fatalf("newTableForeignKeyCrossSchemaAdvisoryRule: %v", err)
+	}
+
+	// GAP ASSERTION: rule does NOT fire because AppliesTo checks create_table only.
+	if rule.AppliesTo(statement) {
+		t.Fatal("RED/GAP: expected AppliesTo=false for ALTER TABLE (cross-schema advisory only applies to CREATE TABLE)")
+	}
+	t.Log("Gap confirmed: crossSchemaAdvisory only AppliesTo create_table, not alter_table")
+}
