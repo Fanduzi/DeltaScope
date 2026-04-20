@@ -1114,15 +1114,18 @@ func TestForeignKeyNamingRuleGapAlterTableAddConstraintFKNotFound(t *testing.T) 
 		t.Fatalf("newNamingPrefixRule: %v", err)
 	}
 
-	// GAP ASSERTION: rule does NOT fire because DDL.Constraints is empty.
+	// Task 2: DDL.Constraints is still empty in the test helper (projection
+	// happens in the extractor, not in hand-built specs), so the naming rule
+	// still cannot fire.  The rule fires on Constraints, not Alter.Options.
+	// Full end-to-end coverage lives in service/corpus tests (Task 3).
 	findings, err := rule.Evaluate(statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
 	if len(findings) != 0 {
-		t.Fatalf("RED/GAP: expected 0 findings (DDL.Constraints empty = rule can't see FK), got %d — if this fails, Task 2 projection already works", len(findings))
+		t.Fatalf("expected 0 findings (DDL.Constraints empty), got %d", len(findings))
 	}
-	t.Log("Gap confirmed: ALTER TABLE ADD CONSTRAINT FK does not populate DDL.Constraints, so FK naming rules cannot fire")
+	t.Log("Naming rule reads DDL.Constraints — helper does not populate it; extractor projection is tested separately")
 }
 
 func TestForeignKeyForbidRuleGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
@@ -1136,11 +1139,11 @@ func TestForeignKeyForbidRuleGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
 		t.Fatalf("newTableForeignKeyForbidRule: %v", err)
 	}
 
-	// GAP ASSERTION: rule does NOT fire because AppliesTo checks create_table only.
-	if rule.AppliesTo(statement) {
-		t.Fatal("RED/GAP: expected AppliesTo=false for ALTER TABLE (rule only applies to CREATE TABLE)")
+	// Task 2: AppliesTo now accepts ALTER TABLE with FK constraints.
+	if !rule.AppliesTo(statement) {
+		t.Fatal("expected AppliesTo=true for ALTER TABLE ADD CONSTRAINT FK")
 	}
-	t.Log("Gap confirmed: tableForeignKeyForbidRule only AppliesTo create_table, not alter_table")
+	t.Log("Task 2: tableForeignKeyForbidRule now AppliesTo ALTER TABLE ADD CONSTRAINT FK")
 }
 
 func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
@@ -1169,9 +1172,9 @@ func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *tes
 		t.Fatalf("newTableForeignKeyCrossSchemaAdvisoryRule: %v", err)
 	}
 
-	// GAP ASSERTION: rule does NOT fire because AppliesTo checks create_table only.
-	if rule.AppliesTo(statement) {
-		t.Fatal("RED/GAP: expected AppliesTo=false for ALTER TABLE (cross-schema advisory only applies to CREATE TABLE)")
+	// Task 2: AppliesTo now accepts ALTER TABLE with FK constraints.
+	if !rule.AppliesTo(statement) {
+		t.Fatal("expected AppliesTo=true for ALTER TABLE ADD CONSTRAINT FK")
 	}
-	t.Log("Gap confirmed: crossSchemaAdvisory only AppliesTo create_table, not alter_table")
+	t.Log("Task 2: crossSchemaAdvisory now AppliesTo ALTER TABLE ADD CONSTRAINT FK")
 }

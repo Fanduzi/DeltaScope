@@ -223,7 +223,7 @@ func newTableForeignKeyForbidRule(cfg policy.RulePolicy) (rule.StatementRule, er
 func (r tableForeignKeyForbidRule) ID() string { return ruleIDTableForeignKeyForbid }
 
 func (r tableForeignKeyForbidRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToCreateTable(statement)
+	return r.forbid && appliesToCreateTableOrAlterFKConstraint(statement)
 }
 
 func (r tableForeignKeyForbidRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -281,7 +281,7 @@ func (r tableForeignKeyCrossSchemaAdvisoryRule) ID() string {
 }
 
 func (r tableForeignKeyCrossSchemaAdvisoryRule) AppliesTo(statement spec.Statement) bool {
-	return statement.Dialect == spec.DialectPostgreSQL && appliesToCreateTable(statement)
+	return statement.Dialect == spec.DialectPostgreSQL && appliesToCreateTableOrAlterFKConstraint(statement)
 }
 
 func (r tableForeignKeyCrossSchemaAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {

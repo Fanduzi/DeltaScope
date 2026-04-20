@@ -153,6 +153,7 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 			return unsupportedStatement(statement, "alter_table", "postgresql alter table command is unsupported in v1")
 		}
 		ddl.Alter = append(ddl.Alter, alter)
+			projectAlterConstraintFK(ddl, alter)
 	}
 
 	statement.DDL = ddl
@@ -393,7 +394,20 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			"constraint_type": constraintType,
 			"not_valid":       strconv.FormatBool(constraint.GetSkipValidation()),
 		}
-		if cols := stringValuesFromNodes(constraint.GetKeys()); len(cols) > 0 {
+		if constraint.GetContype() == pg_query.ConstrType_CONSTR_FOREIGN {
+			if cols := stringValuesFromNodes(constraint.GetFkAttrs()); len(cols) > 0 {
+				options["columns"] = strings.Join(cols, ",")
+			}
+			if refTable := rangeVarName(constraint.GetPktable()); refTable != "" {
+				options["referenced_table"] = refTable
+			}
+			if refCols := stringValuesFromNodes(constraint.GetPkAttrs()); len(refCols) > 0 {
+				options["referenced_columns"] = strings.Join(refCols, ",")
+			}
+			if refSchema := rangeVarSchema(constraint.GetPktable()); refSchema != "" {
+				options["referenced_schema"] = refSchema
+			}
+		} else if cols := stringValuesFromNodes(constraint.GetKeys()); len(cols) > 0 {
 			options["columns"] = strings.Join(cols, ",")
 		}
 		return spec.Alter{Action: "add_constraint", Name: constraint.GetConname(), Options: options}, true, nil
@@ -888,3 +902,35 @@ func columnPtr(column spec.Column) *spec.Column {
 }
 
 var _ = fmt.Sprintf
+
+func projectAlterConstraintFK(ddl *spec.DDL, alter spec.Alter) {
+	if alter.Action != "add_constraint" || alter.Options["constraint_type"] != "foreign_key" {
+		return
+	}
+	cols := splitCSV(alter.Options["columns"])
+	if len(cols) == 0 {
+		return
+	}
+	ddl.Constraints = append(ddl.Constraints, spec.Constraint{
+		Type:              "foreign_key",
+		Name:              alter.Name,
+		Columns:           cols,
+		ReferencedSchema:  alter.Options["referenced_schema"],
+		ReferencedTable:   alter.Options["referenced_table"],
+		ReferencedColumns: splitCSV(alter.Options["referenced_columns"]),
+	})
+}
+
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
