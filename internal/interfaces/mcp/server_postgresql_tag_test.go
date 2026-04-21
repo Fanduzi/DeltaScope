@@ -1766,6 +1766,80 @@ func TestAuditSQLToolPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T)
 	}
 }
 
+func TestAuditSQLToolPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "forbid only",
+			sql:        "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);",
+			wantRuleID: "ddl.table.foreign_key.forbid",
+		},
+		{
+			name:       "cross_schema advisory",
+			sql:        "ALTER TABLE public.orders ADD CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id);",
+			wantRuleID: "ddl.pg.table.foreign_key.cross_schema.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name: "audit_sql",
+				Arguments: map[string]any{
+					"sql":     tt.sql,
+					"dialect": "postgresql",
+				},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %#v", result.StructuredContent)
+			}
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok {
+				t.Fatalf("expected findings array, got %#v", statement["findings"])
+			}
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}
+
 func TestAuditSQLToolPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
 	server := NewServer(Config{Version: "test-version"})
 	session, err := connectClientSession(context.Background(), server)

@@ -1331,6 +1331,59 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintRuleCoverage(t *tes
 	}
 }
 
+func TestExecuteAuditRequestPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "forbid only",
+			sql:        "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);",
+			wantRuleID: "ddl.table.foreign_key.forbid",
+		},
+		{
+			name:       "cross_schema advisory",
+			sql:        "ALTER TABLE public.orders ADD CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id);",
+			wantRuleID: "ddl.pg.table.foreign_key.cross_schema.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     tt.sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			})
+			if err != nil {
+				t.Fatalf("expected postgresql request to succeed, got %v", err)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected one statement result, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+			if len(response.Result.Unsupported) != 0 {
+				t.Fatalf("expected no unsupported entries, got %#v", response.Result.Unsupported)
+			}
+
+			found := false
+			for _, f := range response.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, response.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func httpMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := httpToFloat64(a)
 	bFloat, bIsNum := httpToFloat64(b)
