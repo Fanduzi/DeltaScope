@@ -154,6 +154,7 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 		}
 		ddl.Alter = append(ddl.Alter, alter)
 			projectAlterConstraintFK(ddl, alter)
+			projectAlterConstraintCheck(ddl, alter)
 	}
 
 	statement.DDL = ddl
@@ -406,6 +407,10 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			}
 			if refSchema := rangeVarSchema(constraint.GetPktable()); refSchema != "" {
 				options["referenced_schema"] = refSchema
+			}
+		} else if constraint.GetContype() == pg_query.ConstrType_CONSTR_CHECK {
+			if cols := columnRefsFromExpr(constraint.GetRawExpr()); len(cols) > 0 {
+				options["columns"] = strings.Join(cols, ",")
 			}
 		} else if cols := stringValuesFromNodes(constraint.GetKeys()); len(cols) > 0 {
 			options["columns"] = strings.Join(cols, ",")
@@ -918,6 +923,17 @@ func projectAlterConstraintFK(ddl *spec.DDL, alter spec.Alter) {
 		ReferencedSchema:  alter.Options["referenced_schema"],
 		ReferencedTable:   alter.Options["referenced_table"],
 		ReferencedColumns: splitCSV(alter.Options["referenced_columns"]),
+	})
+}
+
+func projectAlterConstraintCheck(ddl *spec.DDL, alter spec.Alter) {
+	if alter.Action != "add_constraint" || alter.Options["constraint_type"] != "check" {
+		return
+	}
+	ddl.Constraints = append(ddl.Constraints, spec.Constraint{
+		Type:    "check",
+		Name:    alter.Name,
+		Columns: splitCSV(alter.Options["columns"]),
 	})
 }
 

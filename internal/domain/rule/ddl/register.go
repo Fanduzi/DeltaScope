@@ -107,13 +107,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newNamingContainsRule(ruleIDConstraintForeignKeyNameContainsRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintCheckNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames)
+			return newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames, appliesToCreateTableOrAlterCheckConstraint)
 		}},
 		{ruleID: ruleIDConstraintCheckNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingSuffixRule(ruleIDConstraintCheckNameSuffixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames)
+			return newNamingSuffixRule(ruleIDConstraintCheckNameSuffixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames, appliesToCreateTableOrAlterCheckConstraint)
 		}},
 		{ruleID: ruleIDConstraintCheckNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingContainsRule(ruleIDConstraintCheckNameContainsRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames)
+			return newNamingContainsRule(ruleIDConstraintCheckNameContainsRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames, appliesToCreateTableOrAlterCheckConstraint)
 		}},
 		{ruleID: ruleIDColumnVarcharMaxLength, construct: newColumnVarcharMaxLengthRule},
 		{ruleID: ruleIDColumnDefaultRequire, construct: newColumnDefaultRequiredRule},

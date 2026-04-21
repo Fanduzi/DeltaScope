@@ -27,15 +27,16 @@ type identifierSubject struct {
 }
 
 type namingRule struct {
-	ruleID     string
-	subject    string
-	level      rule.Level
-	selects    func(spec.Statement) []identifierSubject
-	matchKind  string
-	prefix     string
-	suffix     string
-	contains   []string
-	suggestion string
+	ruleID      string
+	subject     string
+	level       rule.Level
+	selects     func(spec.Statement) []identifierSubject
+	matchKind   string
+	prefix      string
+	suffix      string
+	contains    []string
+	suggestion  string
+	appliesToFn func(spec.Statement) bool
 }
 
 type identifierPatternRule struct {
@@ -71,7 +72,7 @@ func newIdentifierPatternRule(ruleID, subject string, fallbackLevel rule.Level, 
 	}, nil
 }
 
-func newNamingPrefixRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+func newNamingPrefixRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject, appliesToOverride ...func(spec.Statement) bool) (rule.StatementRule, error) {
 	requirement, err := namingRequirementParam(ruleID, cfg)
 	if err != nil {
 		return nil, err
@@ -80,17 +81,18 @@ func newNamingPrefixRule(ruleID, subject string, fallbackLevel rule.Level, cfg p
 		return namingRule{ruleID: ruleID}, nil
 	}
 	return namingRule{
-		ruleID:     ruleID,
-		subject:    subject,
-		level:      configuredLevel(cfg, fallbackLevel),
-		selects:    selects,
-		matchKind:  "prefix",
-		prefix:     requirement.prefix,
-		suggestion: fmt.Sprintf("rename the %s to start with %q", subject, requirement.prefix),
+		ruleID:      ruleID,
+		subject:     subject,
+		level:       configuredLevel(cfg, fallbackLevel),
+		selects:     selects,
+		matchKind:   "prefix",
+		prefix:      requirement.prefix,
+		suggestion:  fmt.Sprintf("rename the %s to start with %q", subject, requirement.prefix),
+		appliesToFn: firstAppliesTo(appliesToOverride),
 	}, nil
 }
 
-func newNamingSuffixRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+func newNamingSuffixRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject, appliesToOverride ...func(spec.Statement) bool) (rule.StatementRule, error) {
 	requirement, err := namingRequirementParam(ruleID, cfg)
 	if err != nil {
 		return nil, err
@@ -99,17 +101,18 @@ func newNamingSuffixRule(ruleID, subject string, fallbackLevel rule.Level, cfg p
 		return namingRule{ruleID: ruleID}, nil
 	}
 	return namingRule{
-		ruleID:     ruleID,
-		subject:    subject,
-		level:      configuredLevel(cfg, fallbackLevel),
-		selects:    selects,
-		matchKind:  "suffix",
-		suffix:     requirement.suffix,
-		suggestion: fmt.Sprintf("rename the %s to end with %q", subject, requirement.suffix),
+		ruleID:      ruleID,
+		subject:     subject,
+		level:       configuredLevel(cfg, fallbackLevel),
+		selects:     selects,
+		matchKind:   "suffix",
+		suffix:      requirement.suffix,
+		suggestion:  fmt.Sprintf("rename the %s to end with %q", subject, requirement.suffix),
+		appliesToFn: firstAppliesTo(appliesToOverride),
 	}, nil
 }
 
-func newNamingContainsRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+func newNamingContainsRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject, appliesToOverride ...func(spec.Statement) bool) (rule.StatementRule, error) {
 	requirement, err := namingRequirementParam(ruleID, cfg)
 	if err != nil {
 		return nil, err
@@ -118,17 +121,25 @@ func newNamingContainsRule(ruleID, subject string, fallbackLevel rule.Level, cfg
 		return namingRule{ruleID: ruleID}, nil
 	}
 	return namingRule{
-		ruleID:     ruleID,
-		subject:    subject,
-		level:      configuredLevel(cfg, fallbackLevel),
-		selects:    selects,
-		matchKind:  "contains",
-		contains:   append([]string(nil), requirement.contains...),
-		suggestion: fmt.Sprintf("rename the %s to include one of: %s", subject, strings.Join(requirement.contains, ", ")),
+		ruleID:      ruleID,
+		subject:     subject,
+		level:       configuredLevel(cfg, fallbackLevel),
+		selects:     selects,
+		matchKind:   "contains",
+		contains:    append([]string(nil), requirement.contains...),
+		suggestion:  fmt.Sprintf("rename the %s to include one of: %s", subject, strings.Join(requirement.contains, ", ")),
+		appliesToFn: firstAppliesTo(appliesToOverride),
 	}, nil
 }
 
 func (r identifierPatternRule) ID() string { return r.ruleID }
+
+func firstAppliesTo(overrides []func(spec.Statement) bool) func(spec.Statement) bool {
+	if len(overrides) > 0 {
+		return overrides[0]
+	}
+	return nil
+}
 
 func (r namingRule) ID() string { return r.ruleID }
 
@@ -137,7 +148,11 @@ func (r identifierPatternRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r namingRule) AppliesTo(statement spec.Statement) bool {
-	if !appliesToCreateTable(statement) {
+	fn := r.appliesToFn
+	if fn == nil {
+		fn = appliesToCreateTable
+	}
+	if !fn(statement) {
 		return false
 	}
 	switch r.matchKind {

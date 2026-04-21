@@ -1226,53 +1226,51 @@ func postgresAlterTableAddCheckConstraintWithProjection(constraintName string, c
 	return stmt
 }
 
-func TestCheckNamingRuleGap_AlterTableAddConstraintCheckNotSeenDueToEmptyConstraints(t *testing.T) {
-	// Build a statement that represents ALTER TABLE ADD CONSTRAINT CHECK.
-	// The constraint name "bad_name" does not follow any naming convention.
-	statement := postgresAlterTableAddCheckConstraint("bad_name", []string{"amount"})
-
-	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
-		Params: map[string]any{"prefix": "ck_"},
-		Level:  rule.LevelWarning,
-	}, selectCheckConstraintNames)
-	if err != nil {
-		t.Fatalf("newNamingPrefixRule: %v", err)
-	}
-
-	// namingRule.AppliesTo calls appliesToCreateTable which returns false for ALTER TABLE.
-	if r.AppliesTo(statement) {
-		t.Fatal("expected AppliesTo=false for ALTER TABLE (appliesToCreateTable gate)")
-	}
-
-	// Even Evaluate won't fire because AppliesTo is false.
-	findings, err := r.Evaluate(statement)
-	if err != nil {
-		t.Fatalf("evaluate: %v", err)
-	}
-	if len(findings) != 0 {
-		t.Fatalf("expected 0 findings (AppliesTo gate + empty DDL.Constraints), got %d", len(findings))
-	}
-	t.Log("Check naming rule blocked by appliesToCreateTable gate AND empty DDL.Constraints")
-}
-
-func TestCheckNamingRuleGap_AlterTableWithProjectedConstraintStillBlockedByAppliesTo(t *testing.T) {
-	// Even with projected DDL.Constraints, the naming rule's AppliesTo
-	// still calls appliesToCreateTable which returns false for ALTER TABLE.
+func TestCheckNamingRule_AlterTableProjectedCheckNowFires(t *testing.T) {
+	// With extractor projecting CHECK into DDL.Constraints and the appliesTo
+	// gate widened via appliesToCreateTableOrAlterCheckConstraint, the naming
+	// rule now fires on ALTER TABLE ADD CONSTRAINT CHECK.
 	statement := postgresAlterTableAddCheckConstraintWithProjection("bad_name", []string{"amount"})
 
 	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
 		Params: map[string]any{"prefix": "ck_"},
 		Level:  rule.LevelWarning,
-	}, selectCheckConstraintNames)
+	}, selectCheckConstraintNames, appliesToCreateTableOrAlterCheckConstraint)
 	if err != nil {
 		t.Fatalf("newNamingPrefixRule: %v", err)
 	}
 
-	// AppliesTo still returns false because appliesToCreateTable rejects ALTER TABLE.
-	if r.AppliesTo(statement) {
-		t.Fatal("RED: AppliesTo unexpectedly true for ALTER TABLE even with projected Constraints — appliesToCreateTable must be widened")
+	if !r.AppliesTo(statement) {
+		t.Fatal("expected AppliesTo=true for ALTER TABLE ADD CONSTRAINT CHECK with widened gate")
 	}
-	t.Log("RED: namingRule.AppliesTo calls appliesToCreateTable which rejects ALTER TABLE — Task 2 must widen AppliesTo")
+
+	findings, err := r.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for projected ALTER CHECK with bad name, got %d", len(findings))
+	}
+	t.Log("Projected ALTER TABLE CHECK constraint now fires naming rule")
+}
+
+func TestCheckNamingRule_AlterTableProjectedCheckAppliesToNowWidened(t *testing.T) {
+	// With the widened appliesTo gate, ALTER TABLE ADD CONSTRAINT CHECK with
+	// projected constraints is now accepted by AppliesTo.
+	statement := postgresAlterTableAddCheckConstraintWithProjection("bad_name", []string{"amount"})
+
+	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
+		Params: map[string]any{"prefix": "ck_"},
+		Level:  rule.LevelWarning,
+	}, selectCheckConstraintNames, appliesToCreateTableOrAlterCheckConstraint)
+	if err != nil {
+		t.Fatalf("newNamingPrefixRule: %v", err)
+	}
+
+	if !r.AppliesTo(statement) {
+		t.Fatal("expected AppliesTo=true for ALTER TABLE with projected CHECK constraint")
+	}
+	t.Log("Widened appliesTo gate accepts ALTER TABLE ADD CONSTRAINT CHECK")
 }
 
 func TestCheckNamingRuleGap_ProjectedConstraintWouldFireWithFixedAppliesTo(t *testing.T) {
@@ -1305,8 +1303,8 @@ func TestCheckNamingRuleGap_ProjectedConstraintWouldFireWithFixedAppliesTo(t *te
 	t.Log("Naming rule fires correctly on CREATE TABLE with projected check constraint")
 }
 
-func TestCheckNamingRuleGap_UnnamedCheckSkippedEvenWithProjection(t *testing.T) {
-	// Unnamed checks (empty Name) should be skipped by naming rules.
+func TestCheckNamingRule_UnnamedProjectedCheckStillSkipped(t *testing.T) {
+	// Unnamed checks (empty Name) should be skipped by naming rules even with widened gate.
 	statement := postgresStatementWithConstraints(nil, nil,
 		spec.Constraint{Type: "check", Name: "", Columns: []string{"amount"}})
 
@@ -1328,14 +1326,9 @@ func TestCheckNamingRuleGap_UnnamedCheckSkippedEvenWithProjection(t *testing.T) 
 	t.Log("Unnamed check constraints correctly skipped by naming rules")
 }
 
-func TestCheckNamingRuleGap_AlterTableAddConstraintCheckAppliesToPrecedent(t *testing.T) {
-	// Document the precedent: appliesToCreateTableOrAlterFKConstraint already exists
-	// for FK rules. Check naming rules need an analogous appliesTo function.
-	// This test documents the pattern; it does NOT test production code.
-
-	// The FK precedent function accepts both CREATE TABLE and ALTER TABLE ADD CONSTRAINT FK.
-	// For check constraints, Task 2 should create appliesToCreateTableOrAlterCheckConstraint
-	// following the same pattern.
+func TestCheckNamingRule_AlterTableAppliesToGatePrecedent(t *testing.T) {
+	// Both FK and CHECK naming rules now use analogous appliesTo functions
+	// that accept CREATE TABLE and their respective ALTER TABLE ADD CONSTRAINT forms.
 
 	fkAlterStmt := spec.Statement{
 		Kind:    spec.KindDDL,
@@ -1367,9 +1360,9 @@ func TestCheckNamingRuleGap_AlterTableAddConstraintCheckAppliesToPrecedent(t *te
 			}},
 		},
 	}
-	// appliesToCreateTable rejects ALTER TABLE — this is the gap.
-	if appliesToCreateTable(checkAlterStmt) {
-		t.Fatal("expected appliesToCreateTable to reject ALTER TABLE — gap confirmed")
+	// appliesToCreateTableOrAlterCheckConstraint now accepts ALTER TABLE ADD CONSTRAINT CHECK.
+	if !appliesToCreateTableOrAlterCheckConstraint(checkAlterStmt) {
+		t.Fatal("expected appliesToCreateTableOrAlterCheckConstraint to accept ALTER TABLE ADD CONSTRAINT CHECK")
 	}
-	t.Log("Precedent confirmed: appliesToCreateTableOrAlterFKConstraint exists; check needs analogous function")
+	t.Log("Both FK and CHECK appliesTo gates accept their respective ALTER TABLE ADD CONSTRAINT forms")
 }

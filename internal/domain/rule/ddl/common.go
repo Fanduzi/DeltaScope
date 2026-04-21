@@ -337,6 +337,21 @@ func appliesToCreateTableOrAlterFKConstraint(statement spec.Statement) bool {
 	return false
 }
 
+func appliesToCreateTableOrAlterCheckConstraint(statement spec.Statement) bool {
+	if appliesToCreateTable(statement) {
+		return true
+	}
+	if !appliesToAlterTable(statement) {
+		return false
+	}
+	for _, alter := range statement.DDL.Alter {
+		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "check" {
+			return true
+		}
+	}
+	return false
+}
+
 func appliesToAlterAddConstraintPrimaryKey(statement spec.Statement) bool {
 	if !appliesToAlterTable(statement) {
 		return false
