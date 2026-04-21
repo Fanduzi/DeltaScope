@@ -312,6 +312,28 @@ run_pg_suite() {
   assert_json_rule_present "${stdout_file}" "ddl.table.foreign_key.forbid"
   assert_json_rule_present "${stdout_file}" "ddl.pg.table.foreign_key.cross_schema.advisory"
 
+  # Case 13: ALTER TABLE ADD CONSTRAINT CHECK — not_valid advisory + prefix naming (with config)
+  local check_config
+  check_config="$(mktemp "${TMP_DIR}/pg-check-policy.XXXXXX.yaml")"
+  cat >"${check_config}" <<'CFG'
+rules:
+  ddl.constraint.check.name.prefix.require:
+    enabled: true
+    params:
+      prefix: ck_
+CFG
+
+  stdout_file="$(mktemp "${TMP_DIR}/pg-alter-add-check.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-alter-add-check.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);" --dialect postgresql --config "${check_config}" --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "case13-alter-add-check"
+  assert_json_rule_present "${stdout_file}" "ddl.pg.alter.add_check.not_valid.require"
+  assert_json_rule_present "${stdout_file}" "ddl.constraint.check.name.prefix.require"
+
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }
 
