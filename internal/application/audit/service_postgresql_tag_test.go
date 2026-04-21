@@ -1696,6 +1696,142 @@ func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.40.0 Task 3: Service tests — ALTER TABLE ADD CONSTRAINT FOREIGN KEY rule coverage
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLAlterTableForeignKeyRuleCoverage proves that ALTER
+// TABLE ADD CONSTRAINT FOREIGN KEY triggers the FK forbid and cross-schema
+// advisory rules through the full AuditSQL pipeline, with correct DDL/Alter
+// facts preserved.
+func TestAuditSQLPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name                string
+		sql                 string
+		wantRuleID          string
+		wantColumns         []string
+		wantRefTable        string
+		wantRefColumns      []string
+		wantRefSchema       string
+		wantConstraintType  string
+		wantCrossSchemaRule bool
+	}{
+		{
+			name:                "fk_forbid_bare_reference",
+			sql:                 "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);",
+			wantRuleID:          "ddl.table.foreign_key.forbid",
+			wantColumns:         []string{"user_id"},
+			wantRefTable:        "users",
+			wantRefColumns:      []string{"id"},
+			wantConstraintType:  "foreign_key",
+			wantCrossSchemaRule: false,
+		},
+		{
+			name:                "fk_cross_schema_advisory",
+			sql:                 "ALTER TABLE public.orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES auth.users(id);",
+			wantRuleID:          "ddl.table.foreign_key.forbid",
+			wantColumns:         []string{"user_id"},
+			wantRefTable:        "users",
+			wantRefColumns:      []string{"id"},
+			wantRefSchema:       "auth",
+			wantConstraintType:  "foreign_key",
+			wantCrossSchemaRule: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			// Must have the FK forbid finding.
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+
+			// Cross-schema advisory check.
+			if tt.wantCrossSchemaRule {
+				advisoryFound := false
+				for _, f := range result.Statements[0].Findings {
+					if f.RuleID == "ddl.pg.table.foreign_key.cross_schema.advisory" {
+						advisoryFound = true
+						break
+					}
+				}
+				if !advisoryFound {
+					t.Fatalf("expected cross-schema advisory finding, got %#v", result.Statements[0].Findings)
+				}
+			}
+
+			// Verify spec-level DDL/Alter facts.
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationAlterTable {
+				t.Fatalf("expected alter_table operation, got %q", stmt.DDL.Operation)
+			}
+			if len(stmt.DDL.Alter) != 1 {
+				t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+			}
+			alter := stmt.DDL.Alter[0]
+			if alter.Action != "add_constraint" {
+				t.Fatalf("expected add_constraint action, got %q", alter.Action)
+			}
+			if alter.Options["constraint_type"] != tt.wantConstraintType {
+				t.Fatalf("expected constraint_type %q, got %q", tt.wantConstraintType, alter.Options["constraint_type"])
+			}
+			if alter.Options["columns"] == "" {
+				t.Fatal("expected columns option to be populated")
+			}
+
+			// Verify DDL.Constraints contains the FK constraint with correct facts.
+			fkFound := false
+			for _, c := range stmt.DDL.Constraints {
+				if c.Type == "foreign_key" && c.Name == "fk_orders_user" {
+					fkFound = true
+					if len(c.Columns) != len(tt.wantColumns) || c.Columns[0] != tt.wantColumns[0] {
+						t.Errorf("expected Columns %v, got %v", tt.wantColumns, c.Columns)
+					}
+					if c.ReferencedTable != tt.wantRefTable {
+						t.Errorf("expected ReferencedTable %q, got %q", tt.wantRefTable, c.ReferencedTable)
+					}
+					if len(c.ReferencedColumns) != len(tt.wantRefColumns) || c.ReferencedColumns[0] != tt.wantRefColumns[0] {
+						t.Errorf("expected ReferencedColumns %v, got %v", tt.wantRefColumns, c.ReferencedColumns)
+					}
+					if tt.wantRefSchema != "" && c.ReferencedSchema != tt.wantRefSchema {
+						t.Errorf("expected ReferencedSchema %q, got %q", tt.wantRefSchema, c.ReferencedSchema)
+					}
+				}
+			}
+			if !fkFound {
+				t.Fatalf("expected foreign_key constraint fk_orders_user in %+v", stmt.DDL.Constraints)
+			}
+		})
+	}
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
