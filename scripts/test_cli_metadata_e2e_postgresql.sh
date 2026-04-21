@@ -300,6 +300,18 @@ run_pg_suite() {
   assert_exit_code "${exit_code}" 0 "case11-alter-add-constraint-unique"
   assert_json_rule_present "${stdout_file}" "ddl.alter.add_index.unique.prefix.require"
 
+  # Case 12: ALTER TABLE ADD CONSTRAINT FOREIGN KEY — forbid + cross-schema advisory (statement-local, offline)
+  stdout_file="$(mktemp "${TMP_DIR}/pg-alter-add-fk.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-alter-add-fk.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "ALTER TABLE public.orders ADD CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id);" --dialect postgresql --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 1 "case12-alter-add-fk"
+  assert_json_rule_present "${stdout_file}" "ddl.table.foreign_key.forbid"
+  assert_json_rule_present "${stdout_file}" "ddl.pg.table.foreign_key.cross_schema.advisory"
+
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }
 
