@@ -5,6 +5,8 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -1975,6 +1977,68 @@ func TestAuditCommandPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
 				t.Fatalf("expected no unsupported entries, got %#v", unsupported)
 			}
 		})
+	}
+}
+
+func TestAuditCommandPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "policy.yaml")
+	if err := os.WriteFile(configPath, []byte("rules:\n  ddl.constraint.check.name.prefix.require:\n    enabled: true\n    params:\n      prefix: ck_\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);", "--dialect", "postgresql", "--format", "json", "--config", configPath},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) == 0 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+
+	wantRuleIDs := map[string]bool{
+		"ddl.constraint.check.name.prefix.require": false,
+		"ddl.pg.alter.add_check.not_valid.require": false,
+	}
+	for _, f := range findings {
+		finding, ok := f.(map[string]any)
+		if !ok {
+			continue
+		}
+		ruleID, _ := finding["rule_id"].(string)
+		if _, expected := wantRuleIDs[ruleID]; expected {
+			wantRuleIDs[ruleID] = true
+		}
+	}
+	for ruleID, found := range wantRuleIDs {
+		if !found {
+			t.Fatalf("expected finding with rule_id %s, got %#v", ruleID, findings)
+		}
 	}
 }
 

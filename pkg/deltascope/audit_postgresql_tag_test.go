@@ -5,6 +5,8 @@ package deltascope
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -1376,6 +1378,46 @@ func TestAuditPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
 				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, result.Statements[0].Findings)
 			}
 		})
+	}
+}
+
+func TestAuditPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "policy.yaml")
+	if err := os.WriteFile(configPath, []byte("rules:\n  ddl.constraint.check.name.prefix.require:\n    enabled: true\n    params:\n      prefix: ck_\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	result, err := Audit(context.Background(), Request{
+		SQL:        "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);",
+		Dialect:    DialectPostgreSQL,
+		ConfigPath: configPath,
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", result.Unsupported)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected one statement result, got %#v", result.Statements)
+	}
+	if result.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+	}
+
+	wantRuleIDs := map[string]bool{
+		"ddl.constraint.check.name.prefix.require": false,
+		"ddl.pg.alter.add_check.not_valid.require": false,
+	}
+	for _, f := range result.Statements[0].Findings {
+		if _, expected := wantRuleIDs[f.RuleID]; expected {
+			wantRuleIDs[f.RuleID] = true
+		}
+	}
+	for ruleID, found := range wantRuleIDs {
+		if !found {
+			t.Fatalf("expected finding with rule_id %s, got %#v", ruleID, result.Statements[0].Findings)
+		}
 	}
 }
 
