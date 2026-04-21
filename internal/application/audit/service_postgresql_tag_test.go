@@ -1832,6 +1832,160 @@ func TestAuditSQLPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.41.0 Task 3: Service tests — ALTER TABLE ADD CONSTRAINT CHECK rule coverage
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLAlterTableCheckRuleCoverage proves that ALTER TABLE ADD
+// CONSTRAINT CHECK triggers check naming and not_valid rules through the full
+// AuditSQL pipeline, with correct DDL/Alter/Constraint facts preserved.
+func TestAuditSQLPostgreSQLAlterTableCheckRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name                  string
+		sql                   string
+		enablePrefixRule      bool
+		wantRuleIDs           []string
+		wantNotAbsentRuleIDs  []string
+		wantColumns           string
+		wantConstraintName    string
+		wantConstraintColumns []string
+		wantNotValid          string
+	}{
+		{
+			name:                  "naming_prefix_and_not_valid_warning",
+			sql:                   "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);",
+			enablePrefixRule:      true,
+			wantRuleIDs:           []string{"ddl.constraint.check.name.prefix.require", "ddl.pg.alter.add_check.not_valid.require"},
+			wantNotAbsentRuleIDs:  nil,
+			wantColumns:           "amount",
+			wantConstraintName:    "amount_positive",
+			wantConstraintColumns: []string{"amount"},
+			wantNotValid:          "false",
+		},
+		{
+			name:                  "not_valid_suppresses_not_valid_rule",
+			sql:                   "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0) NOT VALID;",
+			enablePrefixRule:      true,
+			wantRuleIDs:           []string{"ddl.constraint.check.name.prefix.require"},
+			wantNotAbsentRuleIDs:  []string{"ddl.pg.alter.add_check.not_valid.require"},
+			wantColumns:           "amount",
+			wantConstraintName:    "amount_positive",
+			wantConstraintColumns: []string{"amount"},
+			wantNotValid:          "true",
+		},
+		{
+			name:                  "multi_column_check_preserves_columns",
+			sql:                   "ALTER TABLE orders ADD CONSTRAINT amount_tax_positive CHECK (amount + tax >= 0);",
+			enablePrefixRule:      true,
+			wantRuleIDs:           []string{"ddl.constraint.check.name.prefix.require", "ddl.pg.alter.add_check.not_valid.require"},
+			wantNotAbsentRuleIDs:  nil,
+			wantColumns:           "amount,tax",
+			wantConstraintName:    "amount_tax_positive",
+			wantConstraintColumns: []string{"amount", "tax"},
+			wantNotValid:          "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			}
+			if tt.enablePrefixRule {
+				req.ConfigPath = corpusConfigPath(t, corpusExpected{
+					Config: map[string]any{
+						"rules": map[string]any{
+							"ddl.constraint.check.name.prefix.require": map[string]any{
+								"enabled": true,
+								"params":  map[string]any{"prefix": "ck_"},
+							},
+						},
+					},
+				})
+			}
+
+			result, err := AuditSQL(context.Background(), req)
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			// Collect finding rule IDs.
+			findingIDs := make(map[string]struct{})
+			for _, f := range result.Statements[0].Findings {
+				findingIDs[f.RuleID] = struct{}{}
+			}
+
+			// Assert expected findings present.
+			for _, want := range tt.wantRuleIDs {
+				if _, ok := findingIDs[want]; !ok {
+					t.Fatalf("expected finding %q, got findings: %v", want, sortedKeys(findingIDs))
+				}
+			}
+
+			// Assert absent findings.
+			for _, absent := range tt.wantNotAbsentRuleIDs {
+				if _, ok := findingIDs[absent]; ok {
+					t.Fatalf("expected rule %q to be absent, but it was present", absent)
+				}
+			}
+
+			// Verify spec-level facts.
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationAlterTable {
+				t.Fatalf("expected alter_table operation, got %q", stmt.DDL.Operation)
+			}
+			if len(stmt.DDL.Alter) != 1 {
+				t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+			}
+			alter := stmt.DDL.Alter[0]
+			if alter.Action != "add_constraint" {
+				t.Fatalf("expected add_constraint action, got %q", alter.Action)
+			}
+			if alter.Options["constraint_type"] != "check" {
+				t.Fatalf("expected constraint_type check, got %q", alter.Options["constraint_type"])
+			}
+			if alter.Options["columns"] != tt.wantColumns {
+				t.Fatalf("expected columns %q, got %q", tt.wantColumns, alter.Options["columns"])
+			}
+			if alter.Options["not_valid"] != tt.wantNotValid {
+				t.Fatalf("expected not_valid %q, got %q", tt.wantNotValid, alter.Options["not_valid"])
+			}
+
+			// Verify DDL.Constraints contains the check constraint.
+			ckFound := false
+			for _, c := range stmt.DDL.Constraints {
+				if c.Type == "check" && c.Name == tt.wantConstraintName {
+					ckFound = true
+					if len(c.Columns) != len(tt.wantConstraintColumns) {
+						t.Errorf("expected %d columns, got %d", len(tt.wantConstraintColumns), len(c.Columns))
+					}
+					for i, want := range tt.wantConstraintColumns {
+						if i >= len(c.Columns) || c.Columns[i] != want {
+							t.Errorf("expected column[%d]=%q, got %v", i, want, c.Columns)
+						}
+					}
+				}
+			}
+			if !ckFound {
+				t.Fatalf("expected check constraint %q in %+v", tt.wantConstraintName, stmt.DDL.Constraints)
+			}
+		})
+	}
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
