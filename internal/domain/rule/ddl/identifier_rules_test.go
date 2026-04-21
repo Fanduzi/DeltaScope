@@ -1178,3 +1178,198 @@ func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *tes
 	}
 	t.Log("Task 2: crossSchemaAdvisory now AppliesTo ALTER TABLE ADD CONSTRAINT FK")
 }
+
+// ---------------------------------------------------------------------------
+// v0.41.0 Task 1: Rule applicability gap tests — ALTER TABLE ADD CONSTRAINT CHECK
+// These tests prove that ALTER TABLE ADD CONSTRAINT CHECK does NOT trigger
+// existing check naming rules today, because:
+//   1) namingRule.AppliesTo calls appliesToCreateTable which returns false for ALTER TABLE
+//   2) DDL.Constraints is empty on the ALTER CHECK path
+// Task 2 must: (a) project check facts into DDL.Constraints, (b) widen AppliesTo.
+// ---------------------------------------------------------------------------
+
+// postgresAlterTableAddCheckConstraint builds a spec.Statement that mirrors what
+// the PostgreSQL extractor currently produces for
+//   ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);
+// Today the extractor puts check facts only in Alter.Options — DDL.Constraints is empty.
+func postgresAlterTableAddCheckConstraint(constraintName string, columns []string) spec.Statement {
+	options := map[string]string{
+		"constraint_type": "check",
+		"not_valid":       "false",
+	}
+	if len(columns) > 0 {
+		options["columns"] = strings.Join(columns, ",")
+	}
+	return spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "orders"},
+			Alter: []spec.Alter{{
+				Action:  "add_constraint",
+				Name:    constraintName,
+				Options: options,
+			}},
+			// DDL.Constraints is intentionally empty — this is the current production gap.
+		},
+	}
+}
+
+// postgresAlterTableAddCheckConstraintWithProjection builds the same ALTER CHECK
+// statement but WITH projected DDL.Constraints — simulating post-Task-2 extractor output.
+func postgresAlterTableAddCheckConstraintWithProjection(constraintName string, columns []string) spec.Statement {
+	stmt := postgresAlterTableAddCheckConstraint(constraintName, columns)
+	stmt.DDL.Constraints = []spec.Constraint{
+		{Type: "check", Name: constraintName, Columns: columns},
+	}
+	return stmt
+}
+
+func TestCheckNamingRuleGap_AlterTableAddConstraintCheckNotSeenDueToEmptyConstraints(t *testing.T) {
+	// Build a statement that represents ALTER TABLE ADD CONSTRAINT CHECK.
+	// The constraint name "bad_name" does not follow any naming convention.
+	statement := postgresAlterTableAddCheckConstraint("bad_name", []string{"amount"})
+
+	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
+		Params: map[string]any{"prefix": "ck_"},
+		Level:  rule.LevelWarning,
+	}, selectCheckConstraintNames)
+	if err != nil {
+		t.Fatalf("newNamingPrefixRule: %v", err)
+	}
+
+	// namingRule.AppliesTo calls appliesToCreateTable which returns false for ALTER TABLE.
+	if r.AppliesTo(statement) {
+		t.Fatal("expected AppliesTo=false for ALTER TABLE (appliesToCreateTable gate)")
+	}
+
+	// Even Evaluate won't fire because AppliesTo is false.
+	findings, err := r.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings (AppliesTo gate + empty DDL.Constraints), got %d", len(findings))
+	}
+	t.Log("Check naming rule blocked by appliesToCreateTable gate AND empty DDL.Constraints")
+}
+
+func TestCheckNamingRuleGap_AlterTableWithProjectedConstraintStillBlockedByAppliesTo(t *testing.T) {
+	// Even with projected DDL.Constraints, the naming rule's AppliesTo
+	// still calls appliesToCreateTable which returns false for ALTER TABLE.
+	statement := postgresAlterTableAddCheckConstraintWithProjection("bad_name", []string{"amount"})
+
+	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
+		Params: map[string]any{"prefix": "ck_"},
+		Level:  rule.LevelWarning,
+	}, selectCheckConstraintNames)
+	if err != nil {
+		t.Fatalf("newNamingPrefixRule: %v", err)
+	}
+
+	// AppliesTo still returns false because appliesToCreateTable rejects ALTER TABLE.
+	if r.AppliesTo(statement) {
+		t.Fatal("RED: AppliesTo unexpectedly true for ALTER TABLE even with projected Constraints — appliesToCreateTable must be widened")
+	}
+	t.Log("RED: namingRule.AppliesTo calls appliesToCreateTable which rejects ALTER TABLE — Task 2 must widen AppliesTo")
+}
+
+func TestCheckNamingRuleGap_ProjectedConstraintWouldFireWithFixedAppliesTo(t *testing.T) {
+	// Simulate a CREATE TABLE statement with the same projected constraint.
+	// This proves the naming rule WOULD fire if AppliesTo accepted ALTER TABLE.
+	statement := postgresStatementWithConstraints(nil, nil,
+		spec.Constraint{Type: "check", Name: "bad_name", Columns: []string{"amount"}})
+
+	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
+		Params: map[string]any{"prefix": "ck_"},
+		Level:  rule.LevelWarning,
+	}, selectCheckConstraintNames)
+	if err != nil {
+		t.Fatalf("newNamingPrefixRule: %v", err)
+	}
+
+	if !r.AppliesTo(statement) {
+		t.Fatal("expected AppliesTo=true for CREATE TABLE with check constraint")
+	}
+	findings, err := r.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for bad_name on CREATE TABLE, got %d", len(findings))
+	}
+	if findings[0].RuleID != ruleIDConstraintCheckNamePrefixRequire {
+		t.Fatalf("expected rule ID %s, got %s", ruleIDConstraintCheckNamePrefixRequire, findings[0].RuleID)
+	}
+	t.Log("Naming rule fires correctly on CREATE TABLE with projected check constraint")
+}
+
+func TestCheckNamingRuleGap_UnnamedCheckSkippedEvenWithProjection(t *testing.T) {
+	// Unnamed checks (empty Name) should be skipped by naming rules.
+	statement := postgresStatementWithConstraints(nil, nil,
+		spec.Constraint{Type: "check", Name: "", Columns: []string{"amount"}})
+
+	r, err := newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, policy.RulePolicy{
+		Params: map[string]any{"prefix": "ck_"},
+		Level:  rule.LevelWarning,
+	}, selectCheckConstraintNames)
+	if err != nil {
+		t.Fatalf("newNamingPrefixRule: %v", err)
+	}
+
+	findings, err := r.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for unnamed check, got %d", len(findings))
+	}
+	t.Log("Unnamed check constraints correctly skipped by naming rules")
+}
+
+func TestCheckNamingRuleGap_AlterTableAddConstraintCheckAppliesToPrecedent(t *testing.T) {
+	// Document the precedent: appliesToCreateTableOrAlterFKConstraint already exists
+	// for FK rules. Check naming rules need an analogous appliesTo function.
+	// This test documents the pattern; it does NOT test production code.
+
+	// The FK precedent function accepts both CREATE TABLE and ALTER TABLE ADD CONSTRAINT FK.
+	// For check constraints, Task 2 should create appliesToCreateTableOrAlterCheckConstraint
+	// following the same pattern.
+
+	fkAlterStmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "orders"},
+			Alter: []spec.Alter{{
+				Action:  "add_constraint",
+				Name:    "fk_orders_user",
+				Options: map[string]string{"constraint_type": "foreign_key"},
+			}},
+		},
+	}
+	if !appliesToCreateTableOrAlterFKConstraint(fkAlterStmt) {
+		t.Fatal("FK precedent: appliesToCreateTableOrAlterFKConstraint should accept ALTER TABLE ADD CONSTRAINT FK")
+	}
+
+	checkAlterStmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "orders"},
+			Alter: []spec.Alter{{
+				Action:  "add_constraint",
+				Name:    "amount_positive",
+				Options: map[string]string{"constraint_type": "check"},
+			}},
+		},
+	}
+	// appliesToCreateTable rejects ALTER TABLE — this is the gap.
+	if appliesToCreateTable(checkAlterStmt) {
+		t.Fatal("expected appliesToCreateTable to reject ALTER TABLE — gap confirmed")
+	}
+	t.Log("Precedent confirmed: appliesToCreateTableOrAlterFKConstraint exists; check needs analogous function")
+}

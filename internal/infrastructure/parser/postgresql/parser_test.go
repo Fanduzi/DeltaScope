@@ -4,6 +4,8 @@ package postgresql
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -4782,5 +4784,290 @@ func TestExtractAlterTableAddForeignKeySchemaQualifiedReference(t *testing.T) {
 	fk := statement.DDL.Constraints[0]
 	if fk.ReferencedSchema != "public" {
 		t.Fatalf("RED: expected referenced schema public, got %q", fk.ReferencedSchema)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.41.0 Task 1: AST characterization + extractor red tests
+// for PostgreSQL ALTER TABLE ... ADD CONSTRAINT ... CHECK
+// ---------------------------------------------------------------------------
+
+// --- AST characterization tests ---
+
+func TestAlterTableAddCheckASTCharacterize_NamedCheck(t *testing.T) {
+	ast := parseAlterTableStmtAST(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0);")
+
+	cmds := ast.GetCmds()
+	if len(cmds) == 0 {
+		t.Fatal("expected at least one AlterTableCmd")
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd == nil {
+		t.Fatal("expected AlterTableCmd node")
+	}
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %v", cmd.GetSubtype())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint == nil {
+		t.Fatal("expected Constraint node")
+	}
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_CHECK {
+		t.Fatalf("expected CONSTR_CHECK, got %v", constraint.GetContype())
+	}
+	if constraint.GetConname() != "chk_orders_amount" {
+		t.Fatalf("expected conname chk_orders_amount, got %q", constraint.GetConname())
+	}
+	if constraint.GetSkipValidation() {
+		t.Fatal("expected skipValidation=false for check without NOT VALID")
+	}
+	if constraint.GetRawExpr() == nil {
+		t.Fatal("expected non-nil RawExpr")
+	}
+	cols := columnRefsFromExpr(constraint.GetRawExpr())
+	sort.Strings(cols)
+	if !reflect.DeepEqual(cols, []string{"amount"}) {
+		t.Fatalf("expected column refs [amount], got %v", cols)
+	}
+}
+
+func TestAlterTableAddCheckASTCharacterize_UnnamedCheck(t *testing.T) {
+	ast := parseAlterTableStmtAST(t,
+		"ALTER TABLE orders ADD CHECK (amount >= 0);")
+
+	cmds := ast.GetCmds()
+	if len(cmds) == 0 {
+		t.Fatal("expected at least one AlterTableCmd")
+	}
+	cmd := cmds[0].GetAlterTableCmd()
+	if cmd.GetSubtype() != pg_query.AlterTableType_AT_AddConstraint {
+		t.Fatalf("expected AT_AddConstraint, got %v", cmd.GetSubtype())
+	}
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_CHECK {
+		t.Fatalf("expected CONSTR_CHECK, got %v", constraint.GetContype())
+	}
+	if constraint.GetConname() != "" {
+		t.Fatalf("expected empty conname for unnamed check, got %q", constraint.GetConname())
+	}
+	if constraint.GetRawExpr() == nil {
+		t.Fatal("expected non-nil RawExpr for unnamed check")
+	}
+	cols := columnRefsFromExpr(constraint.GetRawExpr())
+	sort.Strings(cols)
+	if !reflect.DeepEqual(cols, []string{"amount"}) {
+		t.Fatalf("expected column refs [amount], got %v", cols)
+	}
+}
+
+func TestAlterTableAddCheckASTCharacterize_NotValid(t *testing.T) {
+	ast := parseAlterTableStmtAST(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;")
+
+	cmds := ast.GetCmds()
+	cmd := cmds[0].GetAlterTableCmd()
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_CHECK {
+		t.Fatalf("expected CONSTR_CHECK, got %v", constraint.GetContype())
+	}
+	if constraint.GetConname() != "chk_orders_amount" {
+		t.Fatalf("expected conname chk_orders_amount, got %q", constraint.GetConname())
+	}
+	if !constraint.GetSkipValidation() {
+		t.Fatal("expected skipValidation=true for NOT VALID")
+	}
+	if constraint.GetRawExpr() == nil {
+		t.Fatal("expected non-nil RawExpr")
+	}
+	cols := columnRefsFromExpr(constraint.GetRawExpr())
+	sort.Strings(cols)
+	if !reflect.DeepEqual(cols, []string{"amount"}) {
+		t.Fatalf("expected column refs [amount], got %v", cols)
+	}
+}
+
+func TestAlterTableAddCheckASTCharacterize_MultiColumnExpr(t *testing.T) {
+	ast := parseAlterTableStmtAST(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_total CHECK (amount + tax >= 0);")
+
+	cmds := ast.GetCmds()
+	cmd := cmds[0].GetAlterTableCmd()
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_CHECK {
+		t.Fatalf("expected CONSTR_CHECK, got %v", constraint.GetContype())
+	}
+	if constraint.GetRawExpr() == nil {
+		t.Fatal("expected non-nil RawExpr")
+	}
+	cols := columnRefsFromExpr(constraint.GetRawExpr())
+	sort.Strings(cols)
+	if !reflect.DeepEqual(cols, []string{"amount", "tax"}) {
+		t.Fatalf("expected column refs [amount tax], got %v", cols)
+	}
+}
+
+func TestAlterTableAddCheckASTCharacterize_EnumListExpr(t *testing.T) {
+	ast := parseAlterTableStmtAST(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_status CHECK (status IN ('open', 'closed'));")
+
+	cmds := ast.GetCmds()
+	cmd := cmds[0].GetAlterTableCmd()
+	constraint := cmd.GetDef().GetConstraint()
+	if constraint.GetContype() != pg_query.ConstrType_CONSTR_CHECK {
+		t.Fatalf("expected CONSTR_CHECK, got %v", constraint.GetContype())
+	}
+	if constraint.GetRawExpr() == nil {
+		t.Fatal("expected non-nil RawExpr")
+	}
+	cols := columnRefsFromExpr(constraint.GetRawExpr())
+	sort.Strings(cols)
+	if !reflect.DeepEqual(cols, []string{"status"}) {
+		t.Fatalf("expected column refs [status], got %v", cols)
+	}
+}
+
+// --- Extractor red tests (expected FAIL until Task 2) ---
+
+func TestExtractAlterTableAddNamedCheckBecomesProjectedConstraintFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t,
+		"ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter table DDL, got %#v", statement.DDL)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" || alter.Name != "amount_positive" {
+		t.Fatalf("expected add_constraint amount_positive, got %#v", alter)
+	}
+	if alter.Options["constraint_type"] != "check" {
+		t.Fatalf("expected constraint_type=check, got %#v", alter.Options)
+	}
+
+	// RED: columns option not populated for ALTER CHECK (uses GetKeys which is empty for CHECK).
+	if alter.Options["columns"] != "amount" {
+		t.Fatalf("RED: expected columns=amount, got %q", alter.Options["columns"])
+	}
+
+	// RED: DDL.Constraints not projected for ALTER CHECK.
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("RED: expected one projected check constraint, got %d", len(statement.DDL.Constraints))
+	}
+	c := statement.DDL.Constraints[0]
+	if c.Type != "check" || c.Name != "amount_positive" {
+		t.Fatalf("RED: expected projected check constraint amount_positive, got %#v", c)
+	}
+	if !reflect.DeepEqual(c.Columns, []string{"amount"}) {
+		t.Fatalf("RED: expected projected columns [amount], got %v", c.Columns)
+	}
+}
+
+func TestExtractAlterTableAddUnnamedCheckBecomesProjectedConstraintFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t,
+		"ALTER TABLE orders ADD CHECK (amount >= 0);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported %#v", statement.Unsupported)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected add_constraint, got %q", alter.Action)
+	}
+	if alter.Options["constraint_type"] != "check" {
+		t.Fatalf("expected constraint_type=check, got %#v", alter.Options)
+	}
+
+	// RED: columns option not populated for ALTER CHECK.
+	if alter.Options["columns"] != "amount" {
+		t.Fatalf("RED: expected columns=amount, got %q", alter.Options["columns"])
+	}
+
+	// RED: DDL.Constraints not projected for ALTER CHECK.
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("RED: expected one projected check constraint, got %d", len(statement.DDL.Constraints))
+	}
+	c := statement.DDL.Constraints[0]
+	if c.Type != "check" {
+		t.Fatalf("RED: expected projected check constraint, got %#v", c)
+	}
+	// Unnamed checks have empty Name.
+	if !reflect.DeepEqual(c.Columns, []string{"amount"}) {
+		t.Fatalf("RED: expected projected columns [amount], got %v", c.Columns)
+	}
+}
+
+func TestExtractAlterTableAddCheckNotValidStillProjectsConstraint(t *testing.T) {
+	statement := extractPostgreSQLStatement(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported %#v", statement.Unsupported)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+
+	// Existing behavior: not_valid flag must be preserved.
+	if alter.Options["not_valid"] != "true" {
+		t.Fatalf("expected not_valid=true, got %q", alter.Options["not_valid"])
+	}
+	if alter.Options["constraint_type"] != "check" {
+		t.Fatalf("expected constraint_type=check, got %q", alter.Options["constraint_type"])
+	}
+
+	// RED: columns still not populated even for NOT VALID variant.
+	if alter.Options["columns"] != "amount" {
+		t.Fatalf("RED: expected columns=amount, got %q", alter.Options["columns"])
+	}
+
+	// RED: projection must exist even with NOT VALID.
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("RED: expected one projected check constraint, got %d", len(statement.DDL.Constraints))
+	}
+	c := statement.DDL.Constraints[0]
+	if c.Type != "check" || c.Name != "chk_orders_amount" {
+		t.Fatalf("RED: expected projected check constraint chk_orders_amount, got %#v", c)
+	}
+	if !reflect.DeepEqual(c.Columns, []string{"amount"}) {
+		t.Fatalf("RED: expected projected columns [amount], got %v", c.Columns)
+	}
+}
+
+func TestExtractAlterTableAddCheckMultiColumnBecomesProjectedConstraintFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_total CHECK (amount + tax >= 0);")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported %#v", statement.Unsupported)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+
+	// RED: multi-column expression columns not populated.
+	colsOpt := alter.Options["columns"]
+	if colsOpt != "amount,tax" && colsOpt != "tax,amount" {
+		t.Fatalf("RED: expected columns=amount,tax, got %q", colsOpt)
+	}
+
+	// RED: DDL.Constraints not projected.
+	if len(statement.DDL.Constraints) != 1 {
+		t.Fatalf("RED: expected one projected check constraint, got %d", len(statement.DDL.Constraints))
+	}
+	c := statement.DDL.Constraints[0]
+	sort.Strings(c.Columns)
+	if !reflect.DeepEqual(c.Columns, []string{"amount", "tax"}) {
+		t.Fatalf("RED: expected projected columns [amount tax], got %v", c.Columns)
 	}
 }
