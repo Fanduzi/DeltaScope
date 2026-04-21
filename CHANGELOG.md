@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.40.0] - 2026-04-21
+
+### Added
+
+- PostgreSQL `ALTER TABLE ... ADD CONSTRAINT FOREIGN KEY` statement-local FK facts: named and unnamed FK forms now preserve local columns, referenced table, referenced columns, and referenced schema (for schema-qualified references) through the PostgreSQL extractor. The `DDL.Constraints` projection allows existing FK rules to trigger on ALTER TABLE FK additions.
+- Existing FK rules now apply to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` statements:
+  - `ddl.table.foreign_key.forbid` — flags foreign key constraints as forbidden under the default policy.
+  - `ddl.pg.table.foreign_key.cross_schema.advisory` — emits a notice when the owning table schema and referenced schema are both explicit and different.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings for ALTER TABLE FK additions.
+- Corpus expected outcomes and service-level tests lock PostgreSQL ALTER TABLE FK fact extraction and rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.table.foreign_key.forbid` for statement-local `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` audit.
+
+### Changed
+
+- Release-facing docs now position `v0.40.0` as the PostgreSQL ALTER TABLE Foreign Key Fact Support Pack. It does not add live schema FK existence validation, new FK rule IDs, deferrable constraint support, MATCH FULL policy expansion, full constraint/index parity, or MySQL/TiDB behavior changes.
+
 ## [v0.39.0] - 2026-04-19
 
 ### Added

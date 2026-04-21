@@ -500,6 +500,25 @@ deltascope audit \
 
 This is rule coverage for `ALTER TABLE ... ADD CONSTRAINT` UNIQUE and PRIMARY KEY forms — not full PostgreSQL constraint support, not metadata-aware constraint introspection, and not support for `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` or `ALTER TABLE ... ADD CONSTRAINT ... CHECK`.
 
+#### PostgreSQL ALTER TABLE ADD CONSTRAINT FOREIGN KEY (`v0.40.0`)
+
+Starting with `v0.40.0`, DeltaScope extends FK rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` forms. Existing FK rules now produce findings for ALTER TABLE FK additions:
+
+| Form | Rule ID |
+|------|---------|
+| `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY (...) REFERENCES ...` | `ddl.table.foreign_key.forbid` (blocker) |
+| `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY (...) REFERENCES schema.table(...)` | `ddl.table.foreign_key.forbid` (blocker) + `ddl.pg.table.foreign_key.cross_schema.advisory` (notice) |
+
+Example: audit a PostgreSQL ALTER TABLE ADD CONSTRAINT FOREIGN KEY:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);"
+```
+
+This is FK rule coverage for ALTER TABLE FK additions — not live schema FK existence validation, not deferrable constraint support, not MATCH FULL policy expansion, and no new rule IDs.
+
 #### PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 
 Starting with `v0.36.0`, the PostgreSQL generated/identity state-transition forms supported in v0.35.0 now produce explicit `rule_id` findings. When reviewing migrations containing these forms, DeltaScope returns standard audit results with explicit rule findings:

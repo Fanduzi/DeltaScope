@@ -458,6 +458,21 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 - **Metadata surface**——finding 可包含 `table_schema`、`referenced_schema`、`referenced_table`、`referenced_columns`；`referenced_table` 始终规范化为 `"users"`，不会写成 `"auth.users"`。
 - **边界**——这不是完整的 PostgreSQL 外键支持，也不是跨 schema 校验引擎。
 
+### PostgreSQL ALTER TABLE FK 事实支持（v0.40.0）
+
+`v0.40.0` 将 FK 规则覆盖扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 形态。已有 FK 规则现在可以对 ALTER TABLE FK 添加产生 findings，与已有的 `CREATE TABLE` FK 路径并列覆盖。
+
+| Rule ID | 触发条件 | 覆盖路径 |
+|---------|---------|---------|
+| `ddl.table.foreign_key.forbid` | 默认策略下外键约束被禁止 | `CREATE TABLE` + `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` |
+| `ddl.pg.table.foreign_key.cross_schema.advisory` | cross-schema FK 引用（owning 与 referenced schema 不同） | `CREATE TABLE` + `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` |
+
+- **不新增 rule ID**——已有规则通过 `DDL.Constraints` 投影覆盖 ALTER TABLE FK 添加。
+- **保留事实**——本地列、被引用表、被引用列、referenced schema（schema-qualified 引用时）。
+- **不做在线 schema FK 存在性验证**——仅语句级事实。
+- **不做可延迟/MATCH FULL 策略扩展**。
+- **无 MySQL/TiDB 行为变更**。
+
 | 特性 | 提取器标签 |
 |------|-----------|
 | Identity 列（`GENERATED ... AS IDENTITY`） | `generated_as_identity` |

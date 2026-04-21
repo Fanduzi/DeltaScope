@@ -489,6 +489,37 @@ Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT`:
 
 These reuse existing shared alter-table index and primary-key rule families. No new rule IDs were added. This does not add full PostgreSQL constraint support, metadata-aware constraint introspection, or support for `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` or `ALTER TABLE ... ADD CONSTRAINT ... CHECK`.
 
+### PostgreSQL ALTER TABLE ADD CONSTRAINT FOREIGN KEY Audit (v0.40.0)
+
+Starting with `v0.40.0`, DeltaScope extends FK rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` forms:
+
+```bash
+# ALTER TABLE ADD CONSTRAINT FOREIGN KEY — triggers ddl.table.foreign_key.forbid under default policy
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);"
+```
+
+Example JSON finding:
+
+```json
+{
+  "rule_id": "ddl.table.foreign_key.forbid",
+  "level": "blocker",
+  "message": "foreign key constraints are not allowed",
+  "statement_kind": "ddl"
+}
+```
+
+Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY`:
+
+| Rule ID | What It Flags |
+|---------|---------------|
+| `ddl.table.foreign_key.forbid` | Foreign key constraints are forbidden under the default policy |
+| `ddl.pg.table.foreign_key.cross_schema.advisory` | Cross-schema FK reference when owning and referenced schemas differ |
+
+These reuse existing shared FK rule families. No new rule IDs were added. This does not add live schema FK existence validation, deferrable constraint support, MATCH FULL policy expansion, or MySQL/TiDB behavior changes.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

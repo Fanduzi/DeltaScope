@@ -470,6 +470,21 @@ See the [capability matrix](audit-capability-matrix.md) for the authoritative st
 - **Metadata contract** — the finding may include `table_schema`, `referenced_schema`, `referenced_table`, and `referenced_columns`; `referenced_table` remains normalized as `"users"`, never `"auth.users"`.
 - **Boundary** — this is the first schema-aware FK policy step, not a broad PostgreSQL FK implementation and not a cross-schema validation workflow.
 
+### PostgreSQL ALTER TABLE FK Fact Support (v0.40.0)
+
+`v0.40.0` extends FK rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` forms. Existing FK rules now produce findings for ALTER TABLE FK additions in addition to the `CREATE TABLE` FK path already covered.
+
+| Rule ID | What It Flags | Covered Path |
+|---------|---------------|-------------|
+| `ddl.table.foreign_key.forbid` | Foreign key constraints are forbidden under the default policy | `CREATE TABLE` + `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` |
+| `ddl.pg.table.foreign_key.cross_schema.advisory` | Cross-schema FK reference (owning and referenced schemas differ) | `CREATE TABLE` + `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` |
+
+- **No new rule IDs** — existing rules now cover ALTER TABLE FK additions through the `DDL.Constraints` projection.
+- **Preserved facts** — local columns, referenced table, referenced columns, referenced schema (for schema-qualified references).
+- **No live schema FK existence validation** — statement-local facts only.
+- **No deferrable/MATCH FULL policy expansion**.
+- **No MySQL/TiDB behavior changes**.
+
 | Feature | Extractor Tag |
 |---------|---------------|
 | Identity columns (`GENERATED ... AS IDENTITY`) | `generated_as_identity` |

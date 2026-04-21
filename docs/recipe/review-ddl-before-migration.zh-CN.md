@@ -500,6 +500,25 @@ deltascope audit \
 
 这是 `ALTER TABLE ... ADD CONSTRAINT` UNIQUE 和 PRIMARY KEY 形式的规则覆盖——不是完整 PostgreSQL 约束支持、不是元数据感知约束内省、也不包含 `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 或 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 的支持。
 
+##### PostgreSQL ALTER TABLE ADD CONSTRAINT FOREIGN KEY（`v0.40.0`）
+
+从 `v0.40.0` 开始，DeltaScope 将 FK 规则覆盖扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 形式。已有 FK 规则现在可以对 ALTER TABLE FK 添加产生 findings：
+
+| 形式 | Rule ID |
+|------|---------|
+| `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY (...) REFERENCES ...` | `ddl.table.foreign_key.forbid`（blocker） |
+| `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY (...) REFERENCES schema.table(...)` | `ddl.table.foreign_key.forbid`（blocker）+ `ddl.pg.table.foreign_key.cross_schema.advisory`（notice） |
+
+示例：审计 PostgreSQL ALTER TABLE ADD CONSTRAINT FOREIGN KEY：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);"
+```
+
+这是 ALTER TABLE FK 添加的 FK 规则覆盖——不是在线 schema FK 存在性验证、不是可延迟约束支持、不是 MATCH FULL 策略扩展，也没有新增规则 ID。
+
 ##### PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 
 从 `v0.36.0` 开始，v0.35.0 已支持的 PostgreSQL generated/identity 状态转换形态现在产生明确的 `rule_id` findings。审核包含这些形态的迁移时，DeltaScope 返回带明确规则 findings 的标准审核结果：

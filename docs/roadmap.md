@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.39.0 PostgreSQL ALTER TABLE Constraint Fact Support Pack
+## Latest Completed Milestone: v0.40.0 PostgreSQL ALTER TABLE Foreign Key Fact Support Pack
+
+**Goal:** preserve statement-local foreign key facts for approved PostgreSQL `ALTER TABLE ... ADD CONSTRAINT FOREIGN KEY` forms, allowing existing FK rules to produce findings across all product surfaces.
+
+### Completed Scope
+
+- PostgreSQL `ALTER TABLE ... ADD CONSTRAINT FOREIGN KEY` statement-local FK facts: named and unnamed FK forms now preserve local columns, referenced table, referenced columns, and referenced schema (for schema-qualified references) through the PostgreSQL extractor.
+- The `DDL.Constraints` projection allows existing FK rules to trigger on ALTER TABLE FK additions.
+- Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY`:
+  - `ddl.table.foreign_key.forbid` — flags foreign key constraints as forbidden under the default policy.
+  - `ddl.pg.table.foreign_key.cross_schema.advisory` — emits a notice when owning and referenced schemas differ.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- Corpus expected outcomes and service-level tests lock PostgreSQL ALTER TABLE FK fact extraction and rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.table.foreign_key.forbid`.
+
+### Key Design Decisions
+
+- No new rule IDs — existing FK rules cover ALTER TABLE FK additions through extended applicability and the `DDL.Constraints` projection.
+- No live schema FK existence validation — statement-local facts only.
+- No deferrable constraint support, MATCH FULL policy expansion, or full constraint/index parity claim.
+- No MySQL/TiDB behavior changes.
+
+## Previous Milestone: v0.39.0 PostgreSQL ALTER TABLE Constraint Fact Support Pack
 
 **Goal:** preserve statement-local primary-key and unique constraint facts for approved `ALTER TABLE ... ADD CONSTRAINT` forms, allowing existing primary-key and unique/index rules to produce findings across all product surfaces.
 

@@ -449,6 +449,37 @@ deltascope audit \
 
 这些规则复用已有的共享 alter-table 索引和主键规则族。未新增规则 ID。这不代表完整 PostgreSQL 约束支持、元数据感知约束内省、也不包含 `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 或 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 的支持。
 
+### PostgreSQL ALTER TABLE ADD CONSTRAINT FOREIGN KEY 审计（v0.40.0）
+
+从 `v0.40.0` 开始，DeltaScope 将 FK 规则覆盖扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 形式：
+
+```bash
+# ALTER TABLE ADD CONSTRAINT FOREIGN KEY —— 默认策略下触发 ddl.table.foreign_key.forbid
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);"
+```
+
+示例 JSON finding：
+
+```json
+{
+  "rule_id": "ddl.table.foreign_key.forbid",
+  "level": "blocker",
+  "message": "foreign key constraints are not allowed",
+  "statement_kind": "ddl"
+}
+```
+
+现在覆盖 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 的规则：
+
+| Rule ID | 触发条件 |
+|---------|---------|
+| `ddl.table.foreign_key.forbid` | 默认策略下外键约束被禁止 |
+| `ddl.pg.table.foreign_key.cross_schema.advisory` | owning 与 referenced schema 不同时的 cross-schema FK 引用 |
+
+这些规则复用已有的共享 FK 规则族。未新增规则 ID。这不代表在线 schema FK 存在性验证、可延迟约束支持、MATCH FULL 策略扩展或 MySQL/TiDB 行为变更。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |
