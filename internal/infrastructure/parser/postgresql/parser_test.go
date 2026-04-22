@@ -539,7 +539,7 @@ func TestCharacterizePGUniqueIndexFacts(t *testing.T) {
 		wantDDLOperation    spec.DDLOperation
 		wantTable           string
 		wantIndex           *spec.Index
-		wantConcurrently   string
+		wantConcurrently    string
 		wantUnsupportedFeat string
 	}{
 		{
@@ -1328,6 +1328,115 @@ func TestExtractCreateTableInlineReferencesPreservesReferencedTableAndColumns(t 
 	}
 	if len(constraint.ReferencedColumns) != 1 || constraint.ReferencedColumns[0] != "id" {
 		t.Fatalf("expected referenced columns [id], got %#v", constraint.ReferencedColumns)
+	}
+}
+
+func TestExtractValidateConstraintSchemaQualifiedFact(t *testing.T) {
+	parser := New()
+	result, err := parser.Parse("ALTER TABLE public.orders VALIDATE CONSTRAINT chk_orders_amount;")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported statement, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter table DDL, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil {
+		t.Fatal("expected table fact")
+	}
+	if statement.DDL.Table.Schema != "public" || statement.DDL.Table.Name != "orders" {
+		t.Fatalf("expected public.orders, got %#v", statement.DDL.Table)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter action, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "validate_constraint" || alter.Name != "chk_orders_amount" {
+		t.Fatalf("expected validate_constraint chk_orders_amount, got %#v", alter)
+	}
+}
+
+func TestExtractAlterAddCheckNotValidConstraintFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t,
+		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter table, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil || statement.DDL.Table.Name != "orders" {
+		t.Fatalf("expected table orders, got %#v", statement.DDL.Table)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected add_constraint, got %q", alter.Action)
+	}
+	if alter.Name != "chk_orders_amount" {
+		t.Fatalf("expected constraint name chk_orders_amount, got %q", alter.Name)
+	}
+	if alter.Options["constraint_type"] != "check" {
+		t.Fatalf("expected constraint_type=check, got %q", alter.Options["constraint_type"])
+	}
+	if alter.Options["not_valid"] != "true" {
+		t.Fatalf("expected not_valid=true, got %q", alter.Options["not_valid"])
+	}
+}
+
+func TestExtractAlterAddForeignKeyNotValidConstraintFact(t *testing.T) {
+	statement := extractPostgreSQLStatement(t,
+		"ALTER TABLE public.orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) NOT VALID;")
+
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported %#v", statement.Unsupported)
+	}
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter table, got %#v", statement.DDL)
+	}
+	if statement.DDL.Table == nil {
+		t.Fatal("expected table fact")
+	}
+	if statement.DDL.Table.Schema != "public" || statement.DDL.Table.Name != "orders" {
+		t.Fatalf("expected public.orders, got %#v", statement.DDL.Table)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		t.Fatalf("expected one alter, got %d", len(statement.DDL.Alter))
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "add_constraint" {
+		t.Fatalf("expected add_constraint, got %q", alter.Action)
+	}
+	if alter.Name != "fk_orders_user" {
+		t.Fatalf("expected constraint name fk_orders_user, got %q", alter.Name)
+	}
+	if alter.Options["constraint_type"] != "foreign_key" {
+		t.Fatalf("expected constraint_type=foreign_key, got %q", alter.Options["constraint_type"])
+	}
+	if alter.Options["not_valid"] != "true" {
+		t.Fatalf("expected not_valid=true, got %q", alter.Options["not_valid"])
+	}
+	if alter.Options["columns"] != "user_id" {
+		t.Fatalf("expected columns=user_id, got %q", alter.Options["columns"])
+	}
+	if alter.Options["referenced_table"] != "users" {
+		t.Fatalf("expected referenced_table=users, got %q", alter.Options["referenced_table"])
+	}
+	if alter.Options["referenced_columns"] != "id" {
+		t.Fatalf("expected referenced_columns=id, got %q", alter.Options["referenced_columns"])
 	}
 }
 
