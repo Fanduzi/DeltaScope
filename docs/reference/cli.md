@@ -572,6 +572,40 @@ Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK`:
 
 These reuse existing shared check naming rule families and the PostgreSQL migration-safety rule. `ddl.pg.alter.add_check.not_valid.require` was already registered; check naming rules cover the ALTER CHECK path through extended applicability. This does not add live schema CHECK existence validation, `NOT VALID` validation enforcement, deferred constraint support, or MySQL/TiDB behavior changes.
 
+### PostgreSQL NOT VALID Constraint Validation Pairing (v0.42.0)
+
+Starting with `v0.42.0`, DeltaScope adds a PostgreSQL-only GlobalRule for named CHECK and FOREIGN KEY constraints added with `NOT VALID`. The rule warns when the same audited SQL batch does not contain a later matching `ALTER TABLE ... VALIDATE CONSTRAINT ...` using the same schema, table, and constraint name.
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;"
+```
+
+Example JSON excerpt:
+
+```json
+{
+  "global_findings": [
+    {
+      "rule_id": "ddl.pg.alter.not_valid_constraint.validate.require",
+      "level": "warning",
+      "message": "NOT VALID constraint \"chk_orders_amount\" on table \"orders\" should be followed by VALIDATE CONSTRAINT in the audited migration batch"
+    }
+  ]
+}
+```
+
+The finding is suppressed when the batch includes a later matching validation:
+
+```sql
+ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
+```
+
+This does not add first-time `VALIDATE CONSTRAINT` parser support, live database validation-state lookup, cross-file deployment tracking, unnamed-constraint matching, CHECK expression validation, FK referenced-table validation, MySQL/TiDB behavior changes, or a new public API contract.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

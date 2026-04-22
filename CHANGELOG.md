@@ -6,6 +6,20 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.42.0] - 2026-04-22
+
+### Added
+
+- v0.42.0 adds PostgreSQL NOT VALID constraint validation pairing. DeltaScope now warns when a named `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK or FOREIGN KEY constraint is not followed by a later matching `ALTER TABLE ... VALIDATE CONSTRAINT ...` statement in the same audited SQL batch.
+- New PostgreSQL-only GlobalRule: `ddl.pg.alter.not_valid_constraint.validate.require`.
+- The rule defaults to `warning`, applies to named CHECK / FOREIGN KEY `NOT VALID` constraints, and suppresses when a later matching validation uses the same schema + table + constraint name.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces expose the result as a global finding.
+- SQL corpus coverage and Docker-backed PostgreSQL e2e now lock the release-facing contract for this pairing rule.
+
+### Changed
+
+- Release-facing docs now position `v0.42.0` as the PostgreSQL NOT VALID Constraint Validation Pairing Pack. This does not add first-time `VALIDATE CONSTRAINT` support, live database validation-state lookup, cross-file or cross-deployment tracking, unnamed-constraint matching, CHECK expression validation, FK referenced-table correctness validation, MySQL/TiDB behavior changes, or a new public API contract.
+
 ## [v0.41.0] - 2026-04-22
 
 ### Added

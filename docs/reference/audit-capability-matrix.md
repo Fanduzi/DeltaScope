@@ -109,6 +109,8 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **PostgreSQL ALTER TABLE CHECK availability (v0.41.0):** `ALTER TABLE ... ADD CONSTRAINT ... CHECK` forms now preserve statement-local check constraint metadata (constraint name, check expression). Existing check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) and the PostgreSQL `NOT VALID` advisory (`ddl.pg.alter.add_check.not_valid.require`) produce findings for ALTER TABLE CHECK additions. Exclusion constraints, deferrability, `NOT VALID` validation enforcement, live schema CHECK existence validation, and full constraint/index parity remain out of scope.
 
+**PostgreSQL NOT VALID validation pairing (v0.42.0):** named PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK and FOREIGN KEY additions now participate in a batch-level GlobalRule (`ddl.pg.alter.not_valid_constraint.validate.require`). DeltaScope warns when the same audited SQL batch does not contain a later matching `ALTER TABLE ... VALIDATE CONSTRAINT ...` statement using the same schema, table, and constraint name. This is not first-time `VALIDATE CONSTRAINT` parser support, does not query live validation state, does not track cross-file deployment windows, skips unnamed constraints, and does not change MySQL/TiDB behavior.
+
 ### Constraint-Level Checks
 
 Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped. Foreign key naming rules are only relevant when foreign keys are allowed by policy; under the shipped default baseline, `ddl.table.foreign_key.forbid` suppresses foreign key naming checks.
@@ -226,6 +228,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint without `NOT VALID` requires a full table scan with `ACCESS EXCLUSIVE` lock | ✓ | ✗ | warning |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion | ✓ | ✗ | warning |
+| `ddl.pg.alter.not_valid_constraint.validate.require` | Named CHECK/FK `NOT VALID` constraint lacks a later matching `VALIDATE CONSTRAINT` in the same audited SQL batch | ✓ | ✗ | warning |
 
 ---
 
@@ -577,7 +580,7 @@ These rules fire only for MySQL and TiDB targets. For PostgreSQL, they are not a
 |---------|---------------|
 | `EXPLAIN`-based planner estimation | `dml.impact.estimate` and downstream impact rules may use the PostgreSQL planner to refine `UPDATE`/`DELETE` row estimates. This is a read-only `EXPLAIN` — DeltaScope does not execute `EXPLAIN ANALYZE`. |
 | `DROP CONSTRAINT` → primary key mapping | `ALTER TABLE … DROP CONSTRAINT` that targets the primary key is recognized and triggers `ddl.alter.drop_primary_key.forbid` and `ddl.alter.primary_key.drop.exists`. |
-| Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn` — offline PostgreSQL-specific rules that flag lock contention and table-rewrite risks. |
+| Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn`, `ddl.pg.alter.not_valid_constraint.validate.require` — offline PostgreSQL-specific rules that flag lock contention, table-rewrite risks, and missing same-batch validation follow-up for named `NOT VALID` constraints. |
 
 ---
 

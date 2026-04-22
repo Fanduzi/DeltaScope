@@ -532,6 +532,40 @@ deltascope audit \
 
 这些规则复用已有的共享 CHECK 命名规则族和 PostgreSQL 迁移安全规则。`ddl.pg.alter.add_check.not_valid.require` 已注册；CHECK 命名规则通过扩展适用性覆盖 ALTER CHECK 路径。这不代表在线 schema CHECK 存在性验证、`NOT VALID` 校验强制、可延迟约束支持或 MySQL/TiDB 行为变更。
 
+### PostgreSQL NOT VALID 约束校验配对（v0.42.0）
+
+从 `v0.42.0` 开始，DeltaScope 为使用 `NOT VALID` 添加的命名 CHECK 和 FOREIGN KEY 约束新增 PostgreSQL-only GlobalRule。当同一次审计 SQL 批次中没有后续匹配的 `ALTER TABLE ... VALIDATE CONSTRAINT ...`（匹配键为相同 schema、table 和 constraint name）时，该规则会发出 warning。
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;"
+```
+
+示例 JSON 片段：
+
+```json
+{
+  "global_findings": [
+    {
+      "rule_id": "ddl.pg.alter.not_valid_constraint.validate.require",
+      "level": "warning",
+      "message": "NOT VALID constraint \"chk_orders_amount\" on table \"orders\" should be followed by VALIDATE CONSTRAINT in the audited migration batch"
+    }
+  ]
+}
+```
+
+当同一批次中存在后续匹配的 validation 时，该 finding 会被 suppress：
+
+```sql
+ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
+```
+
+这不代表首次支持 `VALIDATE CONSTRAINT` 解析、live database validation-state lookup、跨文件部署追踪、未命名约束匹配、CHECK 表达式验证、FK referenced-table 校验、MySQL/TiDB 行为变更或新的 public API contract。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |

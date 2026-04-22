@@ -547,6 +547,42 @@ deltascope audit \
 
 这是 ALTER TABLE CHECK 添加的 CHECK 约束事实和命名规则覆盖——不是在线 schema CHECK 存在性验证、不是 `NOT VALID` 校验强制、不是可延迟约束支持，也没有新增规则 ID。
 
+##### PostgreSQL NOT VALID 约束校验配对（`v0.42.0`）
+
+从 `v0.42.0` 开始，DeltaScope 会检查命名的 PostgreSQL CHECK 或 FOREIGN KEY `NOT VALID` 约束是否在同一次审计 SQL 批次中被后续匹配的 validation 跟随。
+
+| 模式 | Rule ID |
+|------|---------|
+| `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` 后面缺少匹配 validation | `ddl.pg.alter.not_valid_constraint.validate.require`（warning） |
+| 后续存在相同 schema + table + constraint name 的 `ALTER TABLE ... VALIDATE CONSTRAINT ...` | suppress warning |
+
+示例：下面的批次会产生 global warning：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;"
+```
+
+期望 finding 出现在 `global_findings`：
+
+```json
+{
+  "rule_id": "ddl.pg.alter.not_valid_constraint.validate.require",
+  "level": "warning"
+}
+```
+
+示例：下面的配对批次会 suppress warning：
+
+```sql
+ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
+```
+
+这是针对命名 CHECK/FK `NOT VALID` 约束的同批次配对建议——不是首次支持 `VALIDATE CONSTRAINT`，不是 live validation-state lookup，不追踪跨文件部署，不匹配未命名约束，也不改变 MySQL/TiDB 行为。
+
 ##### PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 
 从 `v0.36.0` 开始，v0.35.0 已支持的 PostgreSQL generated/identity 状态转换形态现在产生明确的 `rule_id` findings。审核包含这些形态的迁移时，DeltaScope 返回带明确规则 findings 的标准审核结果：

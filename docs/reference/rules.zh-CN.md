@@ -295,7 +295,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：全局规则（2 条）
+## DDL：全局规则（3 条）
 
 全局规则在所有语句级规则执行完毕后，对**批次中的全部语句**进行跨语句评估。单条语句无法单独触发这类规则。
 
@@ -303,12 +303,15 @@ deltascope rules search "prefix"
 |---------|------|:--------:|:--------------:|
 | `ddl.alter.merge.mysql.require` | 对同一张表的多条 ALTER TABLE 语句应合并（MySQL） | warning | 否 |
 | `ddl.alter.merge.tidb.require` | 对同一张表的多条 ALTER TABLE 语句指导建议（TiDB，默认禁用） | warning | 否 |
+| `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 PostgreSQL CHECK/FK `NOT VALID` 约束应在同一次审计 SQL 批次中被后续匹配的 `VALIDATE CONSTRAINT` 跟随 | warning | 否 |
 
 > **说明：** `ddl.alter.merge.mysql.require` 在同一输入中存在两条或更多针对同一张表的 `ALTER TABLE` 语句时触发。在 MySQL 中，每条 `ALTER TABLE` 都会引发表重建；将它们合并为一条语句可大幅减少停机时间。在 TiDB 中，多条 ALTER 通常开销较小，因此 `ddl.alter.merge.tidb.require` 在默认策略中处于禁用状态。
+>
+> 从 `v0.42.0` 开始，`ddl.pg.alter.not_valid_constraint.validate.require` 作为 PostgreSQL-only GlobalRule 触发。它扫描同一次审计 SQL 批次中命名的 `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK 或 FOREIGN KEY 约束；只有后续存在 schema、table、constraint name 都匹配的 `ALTER TABLE ... VALIDATE CONSTRAINT ...` 时才会 suppress warning。这不是首次支持 `VALIDATE CONSTRAINT`，不查询 live validation state，跳过未命名约束，也不追踪跨文件部署窗口。
 
 ---
 
-## DDL：PostgreSQL 迁移安全规则（4 条）
+## DDL：PostgreSQL 迁移安全规则（5 条）
 
 这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
 
@@ -318,8 +321,9 @@ deltascope rules search "prefix"
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带有 volatile 默认值的 `NOT NULL` 列可能触发全表重写 | warning | 否 |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` 约束应使用 `NOT VALID` 以避免持 `ACCESS EXCLUSIVE` 锁的全表扫描 | warning | 否 |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换） | warning | 否 |
+| `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。从 `v0.41.0` 开始，`ddl.pg.alter.add_check.not_valid.require` 也对 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 语句触发。CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）在配置后同样覆盖 ALTER TABLE CHECK 路径。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。从 `v0.41.0` 开始，`ddl.pg.alter.add_check.not_valid.require` 也对 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 语句触发。从 `v0.42.0` 开始，`ddl.pg.alter.not_valid_constraint.validate.require` 对命名 CHECK 和 FOREIGN KEY `NOT VALID` 约束执行同批次校验配对检查。CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）在配置后同样覆盖 ALTER TABLE CHECK 路径。
 
 ---
 

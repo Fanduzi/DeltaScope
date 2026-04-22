@@ -547,6 +547,42 @@ deltascope audit \
 
 This is CHECK constraint fact and naming rule coverage for ALTER TABLE CHECK additions — not live schema CHECK existence validation, not `NOT VALID` validation enforcement, not deferred constraint support, and no new rule IDs.
 
+#### PostgreSQL NOT VALID Constraint Validation Pairing (`v0.42.0`)
+
+Starting with `v0.42.0`, DeltaScope checks whether named PostgreSQL CHECK or FOREIGN KEY constraints added with `NOT VALID` are followed by a later matching validation in the same audited SQL batch.
+
+| Pattern | Rule ID |
+|---------|---------|
+| `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` without later matching validation | `ddl.pg.alter.not_valid_constraint.validate.require` (warning) |
+| Later `ALTER TABLE ... VALIDATE CONSTRAINT ...` with same schema + table + constraint name | suppresses the warning |
+
+Example: this batch produces a global warning:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --format json \
+  --sql "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;"
+```
+
+The expected finding appears in `global_findings`:
+
+```json
+{
+  "rule_id": "ddl.pg.alter.not_valid_constraint.validate.require",
+  "level": "warning"
+}
+```
+
+Example: this paired batch suppresses the warning:
+
+```sql
+ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
+```
+
+This is same-batch pairing guidance for named CHECK/FK `NOT VALID` constraints — not first-time `VALIDATE CONSTRAINT` support, not live validation-state lookup, not cross-file deployment tracking, not unnamed-constraint matching, and not MySQL/TiDB behavior.
+
 #### PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 
 Starting with `v0.36.0`, the PostgreSQL generated/identity state-transition forms supported in v0.35.0 now produce explicit `rule_id` findings. When reviewing migrations containing these forms, DeltaScope returns standard audit results with explicit rule findings:

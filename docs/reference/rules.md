@@ -300,7 +300,7 @@ These rules govern `DROP TABLE` and `TRUNCATE TABLE` operations.
 
 ---
 
-## DDL: Global Rules (2 rules)
+## DDL: Global Rules (3 rules)
 
 Global rules evaluate across **all statements in a batch** after all statement-scoped rules have
 completed. They cannot fire on a single statement in isolation.
@@ -309,15 +309,18 @@ completed. They cannot fire on a single statement in isolation.
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.alter.merge.mysql.require` | Multiple ALTER TABLE on the same table should be merged (MySQL) | warning | No |
 | `ddl.alter.merge.tidb.require` | Multiple ALTER TABLE on the same table guidance (TiDB, disabled by default) | warning | No |
+| `ddl.pg.alter.not_valid_constraint.validate.require` | Named PostgreSQL CHECK/FK `NOT VALID` constraint should be followed by a later matching `VALIDATE CONSTRAINT` in the same audited SQL batch | warning | No |
 
 > **Note:** `ddl.alter.merge.mysql.require` fires when two or more `ALTER TABLE` statements in the same
 > input target the same table. In MySQL, each `ALTER TABLE` causes a table rebuild; merging them into a
 > single statement dramatically reduces downtime. In TiDB, multiple alters are generally lighter-weight,
 > so `ddl.alter.merge.tidb.require` is disabled in the default policy.
+>
+> Starting with `v0.42.0`, `ddl.pg.alter.not_valid_constraint.validate.require` fires as a PostgreSQL-only GlobalRule. It scans the same audited SQL batch for named `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK or FOREIGN KEY constraints and suppresses the warning only when a later `ALTER TABLE ... VALIDATE CONSTRAINT ...` matches the same schema, table, and constraint name. This is not first-time `VALIDATE CONSTRAINT` support, does not query live validation state, skips unnamed constraints, and does not track cross-file deployment windows.
 
 ---
 
-## DDL: PostgreSQL Migration-Safety Rules (4 rules)
+## DDL: PostgreSQL Migration-Safety Rules (5 rules)
 
 These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -327,8 +330,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite | warning | No |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint should use `NOT VALID` to avoid a full table scan with `ACCESS EXCLUSIVE` lock | warning | No |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion | warning | No |
+| `ddl.pg.alter.not_valid_constraint.validate.require` | Named CHECK/FK `NOT VALID` constraint lacks a later matching `VALIDATE CONSTRAINT` in the same audited SQL batch | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Starting with `v0.41.0`, `ddl.pg.alter.add_check.not_valid.require` also fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements. Check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) also cover the ALTER TABLE CHECK path when configured.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Starting with `v0.41.0`, `ddl.pg.alter.add_check.not_valid.require` also fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements. Starting with `v0.42.0`, `ddl.pg.alter.not_valid_constraint.validate.require` checks same-batch validation pairing for named CHECK and FOREIGN KEY `NOT VALID` constraints. Check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) also cover the ALTER TABLE CHECK path when configured.
 
 ---
 

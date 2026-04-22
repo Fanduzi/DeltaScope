@@ -95,6 +95,8 @@
 
 **PostgreSQL ALTER TABLE CHECK 可用性 (v0.41.0)：** `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 形态现在保留语句级 CHECK 约束元数据（约束名称、CHECK 表达式）。已有的 CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）和 PostgreSQL `NOT VALID` 建议规则（`ddl.pg.alter.add_check.not_valid.require`）可以对 ALTER TABLE CHECK 添加产生 findings。排他约束、可延迟性、`NOT VALID` 校验强制、在线 schema CHECK 存在性验证和完整约束/索引对等不在范围内。
 
+**PostgreSQL NOT VALID 校验配对 (v0.42.0)：** 命名的 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK 和 FOREIGN KEY 添加现在会参与批次级 GlobalRule（`ddl.pg.alter.not_valid_constraint.validate.require`）。当同一次审计 SQL 批次中没有后续匹配的 `ALTER TABLE ... VALIDATE CONSTRAINT ...`（匹配键为相同 schema、table 和 constraint name）时，DeltaScope 会发出 warning。这不是首次支持 `VALIDATE CONSTRAINT` 解析，不查询 live validation state，不追踪跨文件/跨发布窗口，跳过未命名约束，也不改变 MySQL/TiDB 行为。
+
 ### 约束级检查
 
 约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。
@@ -212,6 +214,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带 volatile 默认值的 `NOT NULL` 列可能触发全表重写 | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_check.not_valid.require` | 不带 `NOT VALID` 的 `ADD CHECK` 需要持 `ACCESS EXCLUSIVE` 锁的全表扫描 | ✓ | ✗ | warning |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换） | ✓ | ✗ | warning |
+| `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | ✓ | ✗ | warning |
 
 ---
 
