@@ -1421,6 +1421,32 @@ func TestAuditPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(result.GlobalFindings) == 0 {
+		t.Fatalf("expected at least one global finding, got none")
+	}
+	found := false
+	for _, f := range result.GlobalFindings {
+		if f.RuleID == "ddl.pg.alter.not_valid_constraint.validate.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected global finding with rule_id ddl.pg.alter.not_valid_constraint.validate.require, got %#v", result.GlobalFindings)
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", result.Unsupported)
+	}
+}
+
 func pkgMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := pkgToFloat64(a)
 	bFloat, bIsNum := pkgToFloat64(b)

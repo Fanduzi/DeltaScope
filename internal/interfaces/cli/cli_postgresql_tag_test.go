@@ -2051,6 +2051,53 @@ func cliMetadataValueEqual(a, b any) bool {
 	return a == b
 }
 
+func TestAuditCommandPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;", "--dialect", "postgresql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code %d, got %d\nstdout=%q\nstderr=%q", exitOK, code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	globalFindings, ok := decoded["global_findings"].([]any)
+	if !ok || len(globalFindings) == 0 {
+		t.Fatalf("expected at least one global finding, got %#v", decoded["global_findings"])
+	}
+	found := false
+	for _, f := range globalFindings {
+		finding, ok := f.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.pg.alter.not_valid_constraint.validate.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected global finding with rule_id ddl.pg.alter.not_valid_constraint.validate.require, got %#v", globalFindings)
+	}
+	unsupported, ok := decoded["unsupported"].([]any)
+	if ok && len(unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", unsupported)
+	}
+}
+
 func cliToFloat64(v any) (float64, bool) {
 	switch n := v.(type) {
 	case int:

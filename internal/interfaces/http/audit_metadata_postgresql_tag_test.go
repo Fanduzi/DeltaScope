@@ -1424,6 +1424,34 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t
 	}
 }
 
+func TestExecuteAuditRequestPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("expected postgresql request to succeed, got %v", err)
+	}
+	if len(response.GlobalFindings) == 0 {
+		t.Fatalf("expected at least one global finding, got none")
+	}
+	found := false
+	for _, f := range response.GlobalFindings {
+		if f.RuleID == "ddl.pg.alter.not_valid_constraint.validate.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected global finding with rule_id ddl.pg.alter.not_valid_constraint.validate.require, got %#v", response.GlobalFindings)
+	}
+	if len(response.Unsupported) != 0 {
+		t.Fatalf("expected no unsupported entries, got %#v", response.Unsupported)
+	}
+}
+
 func httpMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := httpToFloat64(a)
 	bFloat, bIsNum := httpToFloat64(b)

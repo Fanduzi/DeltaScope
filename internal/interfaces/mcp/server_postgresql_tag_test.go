@@ -2002,3 +2002,48 @@ func TestAuditSQLToolPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t *testi
 		}
 	}
 }
+
+func TestAuditSQLToolPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql":     "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
+			"dialect": "postgresql",
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	body, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured content, got %#v", result.StructuredContent)
+	}
+	globalFindings, ok := body["global_findings"].([]any)
+	if !ok || len(globalFindings) == 0 {
+		t.Fatalf("expected at least one global finding, got %#v", body["global_findings"])
+	}
+	found := false
+	for _, item := range globalFindings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.pg.alter.not_valid_constraint.validate.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected global finding with rule_id ddl.pg.alter.not_valid_constraint.validate.require, got %#v", globalFindings)
+	}
+}
