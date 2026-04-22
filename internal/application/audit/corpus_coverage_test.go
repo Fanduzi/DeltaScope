@@ -166,8 +166,7 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 	switch ruleID {
 	case
 		"ddl.alter.add_index.redundant_unique_overlap.forbid",
-		"ddl.pg.alter.add_column.non_null_default.rewrite.warn",
-		"ddl.pg.alter.not_valid_constraint.validate.require":
+		"ddl.pg.alter.add_column.non_null_default.rewrite.warn":
 		return true
 	default:
 		return false

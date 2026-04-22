@@ -7,6 +7,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -1981,6 +1982,90 @@ func TestAuditSQLPostgreSQLAlterTableCheckRuleCoverage(t *testing.T) {
 			}
 			if !ckFound {
 				t.Fatalf("expected check constraint %q in %+v", tt.wantConstraintName, stmt.DDL.Constraints)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.42.0 Task 3: Service tests — NOT VALID constraint validation rule coverage
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLNotValidConstraintValidationRuleCoverage proves that
+// the GlobalRule ddl.pg.alter.not_valid_constraint.validate.require fires
+// through the full AuditSQL pipeline when a named NOT VALID CHECK/FK is not
+// followed by a matching VALIDATE CONSTRAINT.
+func TestAuditSQLPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	const ruleID = "ddl.pg.alter.not_valid_constraint.validate.require"
+
+	tests := []struct {
+		name              string
+		sql               string
+		wantGlobalFinding bool
+		wantConstraint    string
+		wantTable         string
+	}{
+		{
+			name: "check_not_valid_without_validate_fires",
+			sql:  "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
+			wantGlobalFinding: true,
+			wantConstraint:    "chk_orders_amount",
+			wantTable:         "orders",
+		},
+		{
+			name: "check_not_valid_with_later_validate_suppressed",
+			sql: `ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;
+ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;`,
+			wantGlobalFinding: false,
+		},
+		{
+			name: "fk_not_valid_without_validate_fires",
+			sql:  "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) NOT VALID;",
+			wantGlobalFinding: true,
+			wantConstraint:    "fk_orders_user",
+			wantTable:         "orders",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+
+			var found *rule.Finding
+			for i := range result.GlobalFindings {
+				if result.GlobalFindings[i].RuleID == ruleID {
+					f := result.GlobalFindings[i]
+					found = &f
+					break
+				}
+			}
+
+			if tt.wantGlobalFinding {
+				if found == nil {
+					t.Fatalf("expected global finding %q, got global findings: %+v", ruleID, result.GlobalFindings)
+				}
+				if found.Metadata["constraint"] != tt.wantConstraint {
+					t.Errorf("expected constraint %q, got %v", tt.wantConstraint, found.Metadata["constraint"])
+				}
+				if found.Metadata["table"] != tt.wantTable {
+					t.Errorf("expected table %q, got %v", tt.wantTable, found.Metadata["table"])
+				}
+				if found.Metadata["dialect"] != "postgresql" {
+					t.Errorf("expected dialect postgresql, got %v", found.Metadata["dialect"])
+				}
+			} else {
+				if found != nil {
+					t.Fatalf("expected no global finding %q, got %+v", ruleID, found)
+				}
 			}
 		})
 	}
