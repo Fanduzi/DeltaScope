@@ -402,12 +402,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterDropPrimaryKeyExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, cfg)
 		}},
-			// PostgreSQL migration-safety rules (PG-only).
-			{ruleID: ruleIDPGCreateIndexConcurrentlyRequire, construct: newCreateIndexConcurrentlyRequiredRule},
-			{ruleID: ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn, construct: newAddColumnNonNullDefaultRewriteWarnRule},
-			{ruleID: ruleIDPGAlterAddCheckNotValidRequire, construct: newAddCheckNotValidRequiredRule},
-			{ruleID: ruleIDPGAlterSetDataTypeRewriteWarn, construct: newSetDataTypeRewriteWarnRule},
-				{ruleID: ruleIDPGTableForeignKeyCrossSchemaAdvisory, construct: newTableForeignKeyCrossSchemaAdvisoryRule},
+		// PostgreSQL migration-safety rules (PG-only).
+		{ruleID: ruleIDPGCreateIndexConcurrentlyRequire, construct: newCreateIndexConcurrentlyRequiredRule},
+		{ruleID: ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn, construct: newAddColumnNonNullDefaultRewriteWarnRule},
+		{ruleID: ruleIDPGAlterAddCheckNotValidRequire, construct: newAddCheckNotValidRequiredRule},
+		{ruleID: ruleIDPGAlterSetDataTypeRewriteWarn, construct: newSetDataTypeRewriteWarnRule},
+		{ruleID: ruleIDPGTableForeignKeyCrossSchemaAdvisory, construct: newTableForeignKeyCrossSchemaAdvisoryRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {
@@ -436,6 +436,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterMergeTiDBRequire, construct: func(cfg policy.RulePolicy) (rule.GlobalRule, error) {
 			return newMergeAlterRule(ruleIDAlterMergeTiDBRequire, spec.DialectTiDB, rule.LevelWarning, cfg)
 		}},
+		{ruleID: ruleIDPGAlterNotValidConstraintValidateRequire, construct: newNotValidConstraintValidateRequiredRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

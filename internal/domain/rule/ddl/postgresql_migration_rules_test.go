@@ -524,10 +524,10 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 			t.Fatalf("evaluate: %v", err)
 		}
 		pgRuleIDs := map[string]bool{
-			ruleIDPGCreateIndexConcurrentlyRequire:        true,
+			ruleIDPGCreateIndexConcurrentlyRequire:          true,
 			ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn: true,
-			ruleIDPGAlterAddCheckNotValidRequire:          true,
-			ruleIDPGAlterSetDataTypeRewriteWarn:           true,
+			ruleIDPGAlterAddCheckNotValidRequire:            true,
+			ruleIDPGAlterSetDataTypeRewriteWarn:             true,
 		}
 		for _, f := range findings {
 			if pgRuleIDs[f.RuleID] {
@@ -717,4 +717,104 @@ func mustNewSetDataTypeRewriteWarnRule(t *testing.T, cfg policy.RulePolicy) rule
 		t.Fatalf("new rule: %v", err)
 	}
 	return r
+}
+
+// ---------------------------------------------------------------------------
+// Rule 5 (v0.42.0): ddl.pg.alter.not_valid_constraint.validate.require
+//
+// Converted from Task 1 gap tests to real executable assertions.
+// ---------------------------------------------------------------------------
+
+func TestNotValidConstraintValidateRequiredRule_RegisteredAndFires(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	statements := []spec.Statement{{
+		Dialect: spec.DialectPostgreSQL,
+		Kind:    spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "orders"},
+			Alter: []spec.Alter{{
+				Action: "add_constraint",
+				Name:   "chk_orders_amount",
+				Options: map[string]string{
+					"constraint_type": "check",
+					"not_valid":       "true",
+				},
+			}},
+		},
+	}}
+
+	globalFindings, err := registry.EvaluateGlobal(statements)
+	if err != nil {
+		t.Fatalf("evaluate global: %v", err)
+	}
+	found := false
+	for _, f := range globalFindings {
+		if f.RuleID == ruleIDPGAlterNotValidConstraintValidateRequire {
+			found = true
+			if f.Metadata["constraint"] != "chk_orders_amount" {
+				t.Fatalf("expected constraint metadata chk_orders_amount, got %v", f.Metadata["constraint"])
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected global finding with rule ID %q", ruleIDPGAlterNotValidConstraintValidateRequire)
+	}
+}
+
+func TestNotValidConstraintValidateRequiredRule_LaterValidateSuppressesViaRegistry(t *testing.T) {
+	registry := rule.NewRegistry()
+	cfg := policy.Default()
+
+	if err := Register(registry, cfg); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	statements := []spec.Statement{
+		{
+			Dialect: spec.DialectPostgreSQL,
+			Kind:    spec.KindDDL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "orders"},
+				Alter: []spec.Alter{{
+					Action: "add_constraint",
+					Name:   "chk_orders_amount",
+					Options: map[string]string{
+						"constraint_type": "check",
+						"not_valid":       "true",
+					},
+				}},
+			},
+		},
+		{
+			Dialect: spec.DialectPostgreSQL,
+			Kind:    spec.KindDDL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "orders"},
+				Alter: []spec.Alter{{
+					Action: "validate_constraint",
+					Name:   "chk_orders_amount",
+				}},
+			},
+		},
+	}
+
+	globalFindings, err := registry.EvaluateGlobal(statements)
+	if err != nil {
+		t.Fatalf("evaluate global: %v", err)
+	}
+	for _, f := range globalFindings {
+		if f.RuleID == ruleIDPGAlterNotValidConstraintValidateRequire {
+			t.Fatalf("expected no finding when later validate exists, got %#v", f)
+		}
+	}
 }

@@ -685,6 +685,13 @@ func Default() Policy {
 				Level:   rule.LevelNotice,
 				Params:  map[string]any{},
 			},
+			"ddl.pg.alter.not_valid_constraint.validate.require": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params: map[string]any{
+					"required": true,
+				},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
