@@ -107,6 +107,8 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **PostgreSQL ALTER TABLE FK availability (v0.40.0):** `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` forms now preserve statement-local FK facts (local columns, referenced table, referenced columns, referenced schema for schema-qualified references). Existing FK rules (`ddl.table.foreign_key.forbid`, `ddl.pg.table.foreign_key.cross_schema.advisory`) produce findings for ALTER TABLE FK additions. Check constraints, exclusion constraints, deferrability, MATCH FULL policy, live schema FK existence validation, and full constraint/index parity remain out of scope.
 
+**PostgreSQL ALTER TABLE CHECK availability (v0.41.0):** `ALTER TABLE ... ADD CONSTRAINT ... CHECK` forms now preserve statement-local check constraint metadata (constraint name, check expression). Existing check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) and the PostgreSQL `NOT VALID` advisory (`ddl.pg.alter.add_check.not_valid.require`) produce findings for ALTER TABLE CHECK additions. Exclusion constraints, deferrability, `NOT VALID` validation enforcement, live schema CHECK existence validation, and full constraint/index parity remain out of scope.
+
 ### Constraint-Level Checks
 
 Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped. Foreign key naming rules are only relevant when foreign keys are allowed by policy; under the shipped default baseline, `ddl.table.foreign_key.forbid` suppresses foreign key naming checks.

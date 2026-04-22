@@ -520,6 +520,58 @@ Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY`:
 
 These reuse existing shared FK rule families. No new rule IDs were added. This does not add live schema FK existence validation, deferrable constraint support, MATCH FULL policy expansion, or MySQL/TiDB behavior changes.
 
+### PostgreSQL ALTER TABLE ADD CONSTRAINT CHECK Audit (v0.41.0)
+
+Starting with `v0.41.0`, DeltaScope extends check constraint naming and `NOT VALID` advisory rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` forms:
+
+```bash
+# ALTER TABLE ADD CONSTRAINT CHECK — triggers ddl.pg.alter.add_check.not_valid.require by default
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+Example JSON finding:
+
+```json
+{
+  "rule_id": "ddl.pg.alter.add_check.not_valid.require",
+  "level": "warning",
+  "message": "ADD CHECK constraint should use NOT VALID to avoid full table scan with ACCESS EXCLUSIVE lock",
+  "statement_kind": "ddl"
+}
+```
+
+```bash
+# ALTER TABLE ADD CONSTRAINT CHECK — triggers naming rule when prefix is configured
+deltascope audit \
+  --dialect postgresql \
+  --config deltascope.yaml \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+With a config file enabling `ddl.constraint.check.name.prefix.require` with `prefix: ck_`, the above produces:
+
+```json
+{
+  "rule_id": "ddl.constraint.check.name.prefix.require",
+  "level": "warning",
+  "message": "check constraint \"amount_positive\" must use prefix \"ck_\"",
+  "statement_kind": "ddl"
+}
+```
+
+Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK`:
+
+| Rule ID | What It Flags |
+|---------|---------------|
+| `ddl.pg.alter.add_check.not_valid.require` | ADD CHECK constraint should use `NOT VALID` to avoid full table scan |
+| `ddl.constraint.check.name.prefix.require` | Check constraint name does not start with the required prefix (when configured) |
+| `ddl.constraint.check.name.suffix.require` | Check constraint name does not end with the required suffix (when configured) |
+| `ddl.constraint.check.name.contains.require` | Check constraint name does not contain any configured token (when configured) |
+
+These reuse existing shared check naming rule families and the PostgreSQL migration-safety rule. `ddl.pg.alter.add_check.not_valid.require` was already registered; check naming rules cover the ALTER CHECK path through extended applicability. This does not add live schema CHECK existence validation, `NOT VALID` validation enforcement, deferred constraint support, or MySQL/TiDB behavior changes.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

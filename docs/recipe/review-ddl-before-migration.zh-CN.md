@@ -519,6 +519,34 @@ deltascope audit \
 
 这是 ALTER TABLE FK 添加的 FK 规则覆盖——不是在线 schema FK 存在性验证、不是可延迟约束支持、不是 MATCH FULL 策略扩展，也没有新增规则 ID。
 
+##### PostgreSQL ALTER TABLE ADD CONSTRAINT CHECK（`v0.41.0`）
+
+从 `v0.41.0` 开始，DeltaScope 将 CHECK 约束命名和 `NOT VALID` 建议规则覆盖扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 形式。已有的 CHECK 命名规则和 PostgreSQL 迁移安全 `NOT VALID` 规则现在可以对 ALTER TABLE CHECK 添加产生 findings：
+
+| 形式 | Rule ID |
+|------|---------|
+| `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` | `ddl.pg.alter.add_check.not_valid.require`（warning） |
+| `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` + 命名配置 | `ddl.constraint.check.name.prefix.require` / `suffix.require` / `contains.require`（warning） |
+
+示例：审计不带 `NOT VALID` 的 PostgreSQL ALTER TABLE ADD CONSTRAINT CHECK：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+示例：启用命名治理后审计：
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --config deltascope.yaml \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+这是 ALTER TABLE CHECK 添加的 CHECK 约束事实和命名规则覆盖——不是在线 schema CHECK 存在性验证、不是 `NOT VALID` 校验强制、不是可延迟约束支持，也没有新增规则 ID。
+
 ##### PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 
 从 `v0.36.0` 开始，v0.35.0 已支持的 PostgreSQL generated/identity 状态转换形态现在产生明确的 `rule_id` findings。审核包含这些形态的迁移时，DeltaScope 返回带明确规则 findings 的标准审核结果：

@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.40.0/install.sh | \
-  DELTASCOPE_VERSION=v0.40.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.41.0/install.sh | \
+  DELTASCOPE_VERSION=v0.41.0 sh
 ```
 
 ### PostgreSQL 支持
@@ -46,6 +46,7 @@ DeltaScope 通过 CLI、HTTP、MCP 和 `pkg/deltascope` 四条产品面支持 Po
 - **独立 CREATE INDEX 的唯一/索引规则覆盖**——PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句现在可以触发已有的通用索引规则（`ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require`、`ddl.index.columns.max_count`），适用于已批准的 btree 形态。
 - **ALTER TABLE ADD CONSTRAINT 事实支持**——PostgreSQL `ALTER TABLE ... ADD PRIMARY KEY`、`ADD CONSTRAINT ... PRIMARY KEY`、`ADD UNIQUE` 和 `ADD CONSTRAINT ... UNIQUE` 形态现在保留语句级约束元数据。已有的主键规则（`ddl.table.primary_key.bigint.require`、`ddl.table.primary_key.columns.max_count`）和唯一前缀规则（`ddl.alter.add_index.unique.prefix.require`）可以对已批准形态产生 findings。
 - **ALTER TABLE ADD CONSTRAINT FOREIGN KEY 事实支持**——PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 形态现在保留语句级 FK 事实（本地列、被引用表、被引用列、schema-qualified 引用时保留 referenced_schema）。已有的 FK 规则（`ddl.table.foreign_key.forbid`、`ddl.pg.table.foreign_key.cross_schema.advisory`）可以对 ALTER TABLE FK 添加产生 findings。
+- **ALTER TABLE ADD CONSTRAINT CHECK 事实支持**——PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 形态现在保留语句级 CHECK 约束元数据（约束名称、CHECK 表达式）。已有的 CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）和 PostgreSQL `NOT VALID` 建议规则（`ddl.pg.alter.add_check.not_valid.require`）可以对 ALTER TABLE CHECK 添加产生 findings。
 - **Generated expression 文本**不做求值或保留，DeltaScope 仍不建模完整的 generated/identity 生命周期支持或完整 PostgreSQL 序列语义。
 
 详见 [审核能力矩阵](docs/reference/audit-capability-matrix.zh-CN.md) 了解各面契约，[发行说明](docs/releases/README.md) 了解版本演进。

@@ -480,6 +480,58 @@ deltascope audit \
 
 这些规则复用已有的共享 FK 规则族。未新增规则 ID。这不代表在线 schema FK 存在性验证、可延迟约束支持、MATCH FULL 策略扩展或 MySQL/TiDB 行为变更。
 
+### PostgreSQL ALTER TABLE ADD CONSTRAINT CHECK 审计（v0.41.0）
+
+从 `v0.41.0` 开始，DeltaScope 将 CHECK 约束命名和 `NOT VALID` 建议规则覆盖范围扩展到 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 形态：
+
+```bash
+# ALTER TABLE ADD CONSTRAINT CHECK — 默认触发 ddl.pg.alter.add_check.not_valid.require
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+示例 JSON finding：
+
+```json
+{
+  "rule_id": "ddl.pg.alter.add_check.not_valid.require",
+  "level": "warning",
+  "message": "ADD CHECK constraint should use NOT VALID to avoid full table scan with ACCESS EXCLUSIVE lock",
+  "statement_kind": "ddl"
+}
+```
+
+```bash
+# ALTER TABLE ADD CONSTRAINT CHECK — 配置前缀后触发命名规则
+deltascope audit \
+  --dialect postgresql \
+  --config deltascope.yaml \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+使用启用 `ddl.constraint.check.name.prefix.require` 且 `prefix: ck_` 的配置文件时，上述语句产生：
+
+```json
+{
+  "rule_id": "ddl.constraint.check.name.prefix.require",
+  "level": "warning",
+  "message": "check constraint \"amount_positive\" must use prefix \"ck_\"",
+  "statement_kind": "ddl"
+}
+```
+
+现在覆盖 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 的规则：
+
+| Rule ID | 触发条件 |
+|---------|---------|
+| `ddl.pg.alter.add_check.not_valid.require` | ADD CHECK 约束应使用 `NOT VALID` 以避免全表扫描 |
+| `ddl.constraint.check.name.prefix.require` | CHECK 约束名称未以要求的前缀开头（配置后生效） |
+| `ddl.constraint.check.name.suffix.require` | CHECK 约束名称未以要求的后缀结尾（配置后生效） |
+| `ddl.constraint.check.name.contains.require` | CHECK 约束名称未包含任一已配置的 token（配置后生效） |
+
+这些规则复用已有的共享 CHECK 命名规则族和 PostgreSQL 迁移安全规则。`ddl.pg.alter.add_check.not_valid.require` 已注册；CHECK 命名规则通过扩展适用性覆盖 ALTER CHECK 路径。这不代表在线 schema CHECK 存在性验证、`NOT VALID` 校验强制、可延迟约束支持或 MySQL/TiDB 行为变更。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |

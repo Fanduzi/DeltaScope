@@ -34,8 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.40.0/install.sh | \
-  DELTASCOPE_VERSION=v0.40.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.41.0/install.sh | \
+  DELTASCOPE_VERSION=v0.41.0 sh
 ```
 
 ### PostgreSQL Support
@@ -48,6 +48,7 @@ DeltaScope supports PostgreSQL offline audit across CLI, HTTP, MCP, and `pkg/del
 - **Unique/index rule coverage for standalone CREATE INDEX** — PostgreSQL `CREATE INDEX`, `CREATE UNIQUE INDEX`, and `CREATE INDEX CONCURRENTLY` statements now trigger existing generic index rules (`ddl.index.secondary.prefix.require`, `ddl.index.unique.prefix.require`, `ddl.index.columns.max_count`) for approved btree forms.
 - **ALTER TABLE ADD CONSTRAINT fact support** — PostgreSQL `ALTER TABLE ... ADD PRIMARY KEY`, `ADD CONSTRAINT ... PRIMARY KEY`, `ADD UNIQUE`, and `ADD CONSTRAINT ... UNIQUE` forms now preserve statement-local constraint metadata. Existing primary-key rules (`ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.columns.max_count`) and unique prefix rule (`ddl.alter.add_index.unique.prefix.require`) produce findings for approved forms.
 - **ALTER TABLE ADD CONSTRAINT FOREIGN KEY fact support** — PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` forms now preserve statement-local FK facts (local columns, referenced table, referenced columns, referenced schema for schema-qualified references). Existing FK rules (`ddl.table.foreign_key.forbid`, `ddl.pg.table.foreign_key.cross_schema.advisory`) produce findings for ALTER TABLE FK additions.
+- **ALTER TABLE ADD CONSTRAINT CHECK fact support** — PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` forms now preserve statement-local check constraint metadata (constraint name, check expression). Existing check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) and the PostgreSQL `NOT VALID` advisory (`ddl.pg.alter.add_check.not_valid.require`) produce findings for ALTER TABLE CHECK additions.
 - **Generated expression text** is not evaluated or preserved, and DeltaScope still does not model full generated/identity lifecycle support or complete PostgreSQL sequence semantics.
 
 See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for detailed surface contracts and [release notes](docs/releases/README.md) for version-by-version changes.

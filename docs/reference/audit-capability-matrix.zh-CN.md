@@ -93,6 +93,8 @@
 
 **PostgreSQL ALTER TABLE FK 可用性 (v0.40.0)：** `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` 形态现在保留语句级 FK 事实（本地列、被引用表、被引用列、schema-qualified 引用时保留 referenced_schema）。已有的 FK 规则（`ddl.table.foreign_key.forbid`、`ddl.pg.table.foreign_key.cross_schema.advisory`）可以对 ALTER TABLE FK 添加产生 findings。CHECK 约束、排他约束、可延迟性、MATCH FULL 策略、在线 schema FK 存在性验证和完整约束/索引对等不在范围内。
 
+**PostgreSQL ALTER TABLE CHECK 可用性 (v0.41.0)：** `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 形态现在保留语句级 CHECK 约束元数据（约束名称、CHECK 表达式）。已有的 CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）和 PostgreSQL `NOT VALID` 建议规则（`ddl.pg.alter.add_check.not_valid.require`）可以对 ALTER TABLE CHECK 添加产生 findings。排他约束、可延迟性、`NOT VALID` 校验强制、在线 schema CHECK 存在性验证和完整约束/索引对等不在范围内。
+
 ### 约束级检查
 
 约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。

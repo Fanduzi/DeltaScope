@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.41.0] - 2026-04-22
+
+### Added
+
+- PostgreSQL `ALTER TABLE ... ADD CONSTRAINT CHECK` statement-local check constraint facts: named CHECK forms now preserve constraint name and check expression through the PostgreSQL extractor. The `DDL.Constraints` projection allows existing check naming rules and the PostgreSQL `NOT VALID` advisory to trigger on ALTER TABLE CHECK additions.
+- Existing check naming rules now apply to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements:
+  - `ddl.constraint.check.name.prefix.require` — flags explicitly named check constraints that do not start with the required prefix (when configured).
+  - `ddl.constraint.check.name.suffix.require` — flags explicitly named check constraints that do not end with the required suffix (when configured).
+  - `ddl.constraint.check.name.contains.require` — flags explicitly named check constraints that do not contain any configured token (when configured).
+- `ddl.pg.alter.add_check.not_valid.require` now fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements by default when `--dialect postgresql` is set.
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings for ALTER TABLE CHECK additions.
+- Corpus expected outcomes and service-level tests lock PostgreSQL ALTER TABLE CHECK fact extraction and rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.pg.alter.add_check.not_valid.require` and `ddl.constraint.check.name.prefix.require` for statement-local `ALTER TABLE ... ADD CONSTRAINT ... CHECK` audit.
+
+### Changed
+
+- Release-facing docs now position `v0.41.0` as the PostgreSQL ALTER TABLE CHECK Fact Support Pack. It does not add live schema CHECK existence validation, new rule IDs, `NOT VALID` validation enforcement, deferred constraint support, or MySQL/TiDB behavior changes.
+
 ## [v0.40.0] - 2026-04-21
 
 ### Added

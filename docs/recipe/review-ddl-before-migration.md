@@ -519,6 +519,34 @@ deltascope audit \
 
 This is FK rule coverage for ALTER TABLE FK additions — not live schema FK existence validation, not deferrable constraint support, not MATCH FULL policy expansion, and no new rule IDs.
 
+#### PostgreSQL ALTER TABLE ADD CONSTRAINT CHECK (`v0.41.0`)
+
+Starting with `v0.41.0`, DeltaScope extends check constraint naming and `NOT VALID` advisory rule coverage to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` forms. Existing check naming rules and the PostgreSQL migration-safety `NOT VALID` rule now produce findings for ALTER TABLE CHECK additions:
+
+| Form | Rule ID |
+|------|---------|
+| `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` | `ddl.pg.alter.add_check.not_valid.require` (warning) |
+| `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` with naming config | `ddl.constraint.check.name.prefix.require` / `suffix.require` / `contains.require` (warning) |
+
+Example: audit a PostgreSQL ALTER TABLE ADD CONSTRAINT CHECK without `NOT VALID`:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+Example: audit with naming governance enabled:
+
+```bash
+deltascope audit \
+  --dialect postgresql \
+  --config deltascope.yaml \
+  --sql "ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);"
+```
+
+This is CHECK constraint fact and naming rule coverage for ALTER TABLE CHECK additions — not live schema CHECK existence validation, not `NOT VALID` validation enforcement, not deferred constraint support, and no new rule IDs.
+
 #### PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 
 Starting with `v0.36.0`, the PostgreSQL generated/identity state-transition forms supported in v0.35.0 now produce explicit `rule_id` findings. When reviewing migrations containing these forms, DeltaScope returns standard audit results with explicit rule findings:

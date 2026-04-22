@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.40.0 PostgreSQL ALTER TABLE Foreign Key Fact Support Pack
+## Latest Completed Milestone: v0.41.0 PostgreSQL ALTER TABLE CHECK Fact Support Pack
+
+**Goal:** preserve statement-local check constraint facts for approved PostgreSQL `ALTER TABLE ... ADD CONSTRAINT CHECK` forms, allowing existing check naming rules and the PostgreSQL `NOT VALID` advisory to produce findings across all product surfaces.
+
+### Completed Scope
+
+- PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statement-local check constraint facts: named CHECK forms now preserve constraint name and check expression through the PostgreSQL extractor.
+- The `DDL.Constraints` projection allows existing check naming rules and the PostgreSQL `NOT VALID` advisory to trigger on ALTER TABLE CHECK additions.
+- Rules now covering PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK`:
+  - `ddl.pg.alter.add_check.not_valid.require` — flags ADD CHECK constraints that do not use `NOT VALID`.
+  - `ddl.constraint.check.name.prefix.require` — flags check constraint names that do not start with the required prefix (when configured).
+  - `ddl.constraint.check.name.suffix.require` — flags check constraint names that do not end with the required suffix (when configured).
+  - `ddl.constraint.check.name.contains.require` — flags check constraint names that do not contain any configured token (when configured).
+- CLI, HTTP, MCP, and `pkg/deltascope` surfaces produce explicit `rule_id` findings.
+- Corpus expected outcomes and service-level tests lock PostgreSQL ALTER TABLE CHECK fact extraction and rule coverage.
+- Docker-backed PostgreSQL CLI e2e covers `ddl.pg.alter.add_check.not_valid.require` and `ddl.constraint.check.name.prefix.require`.
+
+### Key Design Decisions
+
+- No new rule IDs — `ddl.pg.alter.add_check.not_valid.require` was already registered; check naming rules cover ALTER CHECK through extended applicability.
+- No live schema CHECK existence validation — statement-local facts only.
+- No `NOT VALID` validation enforcement, deferred constraint support, or full constraint/index parity claim.
+- No MySQL/TiDB behavior changes.
+
+## Previous Milestone: v0.40.0 PostgreSQL ALTER TABLE Foreign Key Fact Support Pack
 
 **Goal:** preserve statement-local foreign key facts for approved PostgreSQL `ALTER TABLE ... ADD CONSTRAINT FOREIGN KEY` forms, allowing existing FK rules to produce findings across all product surfaces.
 
