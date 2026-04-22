@@ -334,6 +334,17 @@ CFG
   assert_json_rule_present "${stdout_file}" "ddl.pg.alter.add_check.not_valid.require"
   assert_json_rule_present "${stdout_file}" "ddl.constraint.check.name.prefix.require"
 
+  # Case 14: ALTER TABLE ADD CONSTRAINT NOT VALID requires later VALIDATE (global rule, offline)
+  stdout_file="$(mktemp "${TMP_DIR}/pg-not-valid-validate.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-not-valid-validate.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;" --dialect postgresql --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "case14-not-valid-validate"
+  assert_json_rule_present "${stdout_file}" "ddl.pg.alter.not_valid_constraint.validate.require"
+
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }
 
