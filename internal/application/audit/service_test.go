@@ -7,8 +7,10 @@ package audit
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -16,6 +18,39 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+const defaultPolicyMySQLDialectHygieneSmokeSQL = `CREATE TABLE smoke_users (
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+	PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='user records';`
+
+var defaultPolicyDialectHygienePostgreSQLOnlyRuleIDs = []string{
+	"ddl.alter.set_data_type.forbid",
+	"ddl.alter.set_default.forbid",
+	"ddl.alter.drop_default.forbid",
+	"ddl.alter.set_not_null.forbid",
+	"ddl.alter.drop_not_null.forbid",
+	"ddl.alter.drop_expression.forbid",
+	"ddl.alter.set_generated.forbid",
+	"ddl.alter.drop_identity.forbid",
+	"ddl.alter.set_default.explicit_default_change.forbid",
+	"ddl.alter.drop_default.explicit_default_change.forbid",
+	"ddl.alter.set_not_null.explicit_nullability_change.forbid",
+	"ddl.alter.drop_not_null.explicit_nullability_change.forbid",
+}
+
+var defaultPolicyDialectHygienePostgreSQLOnlyRemediationTokens = []string{
+	"VALIDATE CONSTRAINT",
+	"NOT VALID",
+	"CONCURRENTLY",
+	"DROP EXPRESSION",
+	"SET GENERATED",
+	"DROP IDENTITY",
+	"generated expression",
+	"rewrite",
+}
 
 const postgreSQLSyntaxNoticeRuleID = "dialect.postgresql.syntax.detected.notice"
 
@@ -325,6 +360,34 @@ func TestAuditSQLUsesDefaultPolicy(t *testing.T) {
 	if len(result.Statements[0].Findings) == 0 {
 		t.Fatal("expected statement findings from default policy")
 	}
+}
+
+func TestAuditSQLMySQLDefaultPolicyDialectHygiene(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     defaultPolicyMySQLDialectHygieneSmokeSQL,
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+
+	assertAuditResultHasNoRuleIDPrefix(t, result, "ddl.pg.")
+	assertAuditResultHasNoRuleIDs(t, result, defaultPolicyDialectHygienePostgreSQLOnlyRuleIDs)
+	assertAuditResultTextHasNoTokens(t, result, defaultPolicyDialectHygienePostgreSQLOnlyRemediationTokens)
+}
+
+func TestAuditSQLTiDBDefaultPolicyDialectHygiene(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     defaultPolicyMySQLDialectHygieneSmokeSQL,
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+
+	assertAuditResultHasNoRuleIDPrefix(t, result, "ddl.pg.")
+	assertAuditResultHasNoRuleIDs(t, result, defaultPolicyDialectHygienePostgreSQLOnlyRuleIDs)
+	assertAuditResultTextHasNoTokens(t, result, defaultPolicyDialectHygienePostgreSQLOnlyRemediationTokens)
 }
 
 func TestAuditSQLAppliesConfigOverride(t *testing.T) {
@@ -846,5 +909,97 @@ func TestEnrichStatementsWithMetadataKeepsOfflinePathWhenProviderIsAbsent(t *tes
 	}
 	if enriched[0].Metadata != nil {
 		t.Fatalf("expected offline path to keep metadata nil, got %#v", enriched[0].Metadata)
+	}
+}
+
+func collectAuditResultRuleIDs(result report.Result) []string {
+	ruleIDs := make([]string, 0, len(result.GlobalFindings))
+	for _, finding := range result.GlobalFindings {
+		ruleIDs = append(ruleIDs, finding.RuleID)
+	}
+	for _, statement := range result.Statements {
+		for _, finding := range statement.Findings {
+			ruleIDs = append(ruleIDs, finding.RuleID)
+		}
+	}
+	sort.Strings(ruleIDs)
+	return ruleIDs
+}
+
+func collectAuditResultText(result report.Result) string {
+	parts := make([]string, 0)
+	appendFindingText := func(finding rule.Finding) {
+		if finding.Message != "" {
+			parts = append(parts, finding.Message)
+		}
+		if finding.Explanation != nil {
+			if finding.Explanation.Why != "" {
+				parts = append(parts, finding.Explanation.Why)
+			}
+			if finding.Explanation.Risk != "" {
+				parts = append(parts, finding.Explanation.Risk)
+			}
+			if finding.Explanation.Suggestion != "" {
+				parts = append(parts, finding.Explanation.Suggestion)
+			}
+		}
+	}
+	for _, finding := range result.GlobalFindings {
+		appendFindingText(finding)
+	}
+	for _, statement := range result.Statements {
+		for _, finding := range statement.Findings {
+			appendFindingText(finding)
+		}
+	}
+	return strings.Join(parts, "\n")
+}
+
+func assertAuditResultHasNoRuleIDs(t *testing.T, result report.Result, forbidden []string) {
+	t.Helper()
+	ruleIDs := collectAuditResultRuleIDs(result)
+	seen := make(map[string]struct{}, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		seen[ruleID] = struct{}{}
+	}
+	leaked := make([]string, 0)
+	for _, ruleID := range forbidden {
+		if _, ok := seen[ruleID]; ok {
+			leaked = append(leaked, ruleID)
+		}
+	}
+	if len(leaked) > 0 {
+		sort.Strings(leaked)
+		t.Fatalf("expected no forbidden rule IDs; leaked=%v all=%v", leaked, ruleIDs)
+	}
+}
+
+func assertAuditResultHasNoRuleIDPrefix(t *testing.T, result report.Result, prefix string) {
+	t.Helper()
+	ruleIDs := collectAuditResultRuleIDs(result)
+	leaked := make([]string, 0)
+	for _, ruleID := range ruleIDs {
+		if strings.HasPrefix(ruleID, prefix) {
+			leaked = append(leaked, ruleID)
+		}
+	}
+	if len(leaked) > 0 {
+		sort.Strings(leaked)
+		t.Fatalf("expected no rule IDs with prefix %q; leaked=%v all=%v", prefix, leaked, ruleIDs)
+	}
+}
+
+func assertAuditResultTextHasNoTokens(t *testing.T, result report.Result, forbidden []string) {
+	t.Helper()
+	text := collectAuditResultText(result)
+	normalizedText := strings.ToLower(text)
+	matched := make([]string, 0)
+	for _, token := range forbidden {
+		if strings.Contains(normalizedText, strings.ToLower(token)) {
+			matched = append(matched, token)
+		}
+	}
+	if len(matched) > 0 {
+		t.Fatalf("expected finding text to exclude forbidden tokens; matched=%v text=%s", matched, fmt.Sprintf("%q", text))
 	}
 }

@@ -5,11 +5,41 @@ package audit
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+var defaultPolicyDialectHygienePostgreSQLForbiddenRuleIDs = []string{
+	"ddl.table.primary_key.unsigned.require",
+	"ddl.table.primary_key.auto_increment.require",
+	"ddl.table.charset.allowlist",
+	"ddl.column.charset.allowlist",
+	"ddl.column.collation.allowlist",
+	"ddl.column.charset_collation.match.require",
+	"ddl.table.engine.allowlist",
+	"ddl.table.row_format.allowlist",
+	"ddl.table.primary_key.bigint.require",
+}
+
+var defaultPolicyDialectHygienePostgreSQLForbiddenTokens = []string{
+	"UNSIGNED",
+	"AUTO_INCREMENT",
+	"auto_increment",
+	"CHARSET",
+	"charset",
+	"COLLATE",
+	"collation",
+	"ENGINE",
+	"ROW_FORMAT",
+	"ON UPDATE CURRENT_TIMESTAMP",
+	"adaptive hash",
+	"large prefix",
+}
 
 // --- v0.29.0 Task 1: Schema-Aware FK Policy Characterization Tests ---
 //
@@ -2068,6 +2098,42 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;`,
 				}
 			}
 		})
+	}
+}
+
+func TestAuditSQLPostgreSQLDefaultPolicyDialectHygiene(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE TABLE pg_smoke (id bigint primary key);",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+
+	ruleIDs := collectAuditResultRuleIDs(result)
+	seen := make(map[string]struct{}, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		seen[ruleID] = struct{}{}
+	}
+	leakedRuleIDs := make([]string, 0)
+	for _, ruleID := range defaultPolicyDialectHygienePostgreSQLForbiddenRuleIDs {
+		if _, ok := seen[ruleID]; ok {
+			leakedRuleIDs = append(leakedRuleIDs, ruleID)
+		}
+	}
+	sort.Strings(leakedRuleIDs)
+
+	text := collectAuditResultText(result)
+	normalizedText := strings.ToLower(text)
+	matchedTokens := make([]string, 0)
+	for _, token := range defaultPolicyDialectHygienePostgreSQLForbiddenTokens {
+		if strings.Contains(normalizedText, strings.ToLower(token)) {
+			matchedTokens = append(matchedTokens, token)
+		}
+	}
+
+	if len(leakedRuleIDs) > 0 || len(matchedTokens) > 0 {
+		t.Fatalf("expected PostgreSQL default-policy audit hygiene; leaked_rule_ids=%v matched_tokens=%v all_rule_ids=%v text=%s", leakedRuleIDs, matchedTokens, ruleIDs, fmt.Sprintf("%q", text))
 	}
 }
 

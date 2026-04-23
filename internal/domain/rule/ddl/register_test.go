@@ -6,12 +6,48 @@
 package ddl
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
+
+// Dialect hygiene characterization keeps explicit rule buckets in-test so we can
+// detect out-of-dialect leakage at registry level without touching production
+// registration logic. The rule lists intentionally mirror the audit-layer lists
+// because registry-level and service-level characterization should fail independently.
+var defaultPolicyDialectHygieneRegistryMySQLFamilyOnlyRuleIDs = []string{
+	"ddl.table.primary_key.not_null.require",
+	"ddl.table.primary_key.unsigned.require",
+	"ddl.table.primary_key.auto_increment.require",
+	"ddl.table.engine.allowlist",
+	"ddl.table.charset.allowlist",
+	"ddl.table.row_format.allowlist",
+	"ddl.column.charset.allowlist",
+	"ddl.column.collation.allowlist",
+	"ddl.column.charset_collation.match.require",
+	"ddl.alter.change_column.forbid",
+	"ddl.alter.modify_column.forbid",
+	"ddl.alter.modify_column.explicit_default_change.forbid",
+	"ddl.alter.change_column.explicit_default_change.forbid",
+}
+
+var defaultPolicyDialectHygieneRegistryPostgreSQLOnlyRuleIDs = []string{
+	"ddl.alter.set_data_type.forbid",
+	"ddl.alter.set_default.forbid",
+	"ddl.alter.drop_default.forbid",
+	"ddl.alter.set_not_null.forbid",
+	"ddl.alter.drop_not_null.forbid",
+	"ddl.alter.drop_expression.forbid",
+	"ddl.alter.set_generated.forbid",
+	"ddl.alter.drop_identity.forbid",
+	"ddl.alter.set_default.explicit_default_change.forbid",
+	"ddl.alter.drop_default.explicit_default_change.forbid",
+	"ddl.alter.set_not_null.explicit_nullability_change.forbid",
+	"ddl.alter.drop_not_null.explicit_nullability_change.forbid",
+}
 
 func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
 	registry := rule.NewRegistry()
@@ -412,6 +448,87 @@ func TestRegisterRejectsInvalidDDLRuleConfig(t *testing.T) {
 	if err := Register(registry, cfg); err == nil {
 		t.Fatal("expected invalid config to be rejected")
 	}
+}
+
+func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
+	registry := rule.NewRegistry()
+	if err := Register(registry, policy.Default()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	t.Run("postgresql_create_table_excludes_mysql_family_only_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationCreateTable,
+				Table:     &spec.Table{Name: "pg_smoke"},
+				Columns: []spec.Column{{Name: "id", Type: "bigint", NotNull: true}},
+				PrimaryKey: &spec.Index{Name: "pg_smoke_pkey", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+			},
+		}
+
+		eval, err := registry.EvaluateStatementDetailed(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		assertNoAppliedDDLRuleIDs(t, eval.AppliedRuleIDs, defaultPolicyDialectHygieneRegistryMySQLFamilyOnlyRuleIDs)
+		assertNoDDLRuleIDs(t, eval.Findings, defaultPolicyDialectHygieneRegistryMySQLFamilyOnlyRuleIDs)
+	})
+
+	t.Run("mysql_alter_excludes_postgresql_only_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectMySQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "smoke_users"},
+				Alter: []spec.Alter{{
+					Action: "modify_column",
+					Name:   "status",
+					Column: &spec.AlterColumn{
+						OldName:    "status",
+						Definition: &spec.Column{Name: "status", Type: "varchar(32)"},
+						Change:     &spec.AlterColumnChange{TouchesDefault: true, TouchesNullability: true},
+					},
+				}},
+			},
+		}
+
+		eval, err := registry.EvaluateStatementDetailed(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		assertNoAppliedDDLRuleIDs(t, eval.AppliedRuleIDs, defaultPolicyDialectHygieneRegistryPostgreSQLOnlyRuleIDs)
+		assertNoDDLRuleIDs(t, eval.Findings, defaultPolicyDialectHygieneRegistryPostgreSQLOnlyRuleIDs)
+	})
+
+	t.Run("tidb_alter_excludes_postgresql_only_rules", func(t *testing.T) {
+		stmt := spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectTiDB,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "smoke_users"},
+				Alter: []spec.Alter{{
+					Action: "modify_column",
+					Name:   "status",
+					Column: &spec.AlterColumn{
+						OldName:    "status",
+						Definition: &spec.Column{Name: "status", Type: "varchar(32)"},
+						Change:     &spec.AlterColumnChange{TouchesDefault: true, TouchesNullability: true},
+					},
+				}},
+			},
+		}
+
+		eval, err := registry.EvaluateStatementDetailed(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		assertNoAppliedDDLRuleIDs(t, eval.AppliedRuleIDs, defaultPolicyDialectHygieneRegistryPostgreSQLOnlyRuleIDs)
+		assertNoDDLRuleIDs(t, eval.Findings, defaultPolicyDialectHygieneRegistryPostgreSQLOnlyRuleIDs)
+	})
 }
 
 func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
@@ -894,5 +1011,46 @@ func TestRegisterPGExplicitNullabilityChangeDoesNotBreakExistingMySQLRules(t *te
 	}
 	if !mysqlNullabilityFound {
 		t.Fatal("expected existing MySQL modify_column explicit_nullability_change rule to still fire")
+	}
+}
+
+func assertNoDDLRuleIDs(t *testing.T, findings []rule.Finding, forbidden []string) {
+	t.Helper()
+	all := make([]string, 0, len(findings))
+	seen := make(map[string]struct{}, len(findings))
+	for _, finding := range findings {
+		all = append(all, finding.RuleID)
+		seen[finding.RuleID] = struct{}{}
+	}
+	sort.Strings(all)
+	leaked := make([]string, 0)
+	for _, ruleID := range forbidden {
+		if _, ok := seen[ruleID]; ok {
+			leaked = append(leaked, ruleID)
+		}
+	}
+	if len(leaked) > 0 {
+		sort.Strings(leaked)
+		t.Fatalf("expected no forbidden finding rule IDs; leaked=%v all=%v", leaked, all)
+	}
+}
+
+func assertNoAppliedDDLRuleIDs(t *testing.T, applied []string, forbidden []string) {
+	t.Helper()
+	all := append([]string(nil), applied...)
+	sort.Strings(all)
+	seen := make(map[string]struct{}, len(all))
+	for _, ruleID := range all {
+		seen[ruleID] = struct{}{}
+	}
+	leaked := make([]string, 0)
+	for _, ruleID := range forbidden {
+		if _, ok := seen[ruleID]; ok {
+			leaked = append(leaked, ruleID)
+		}
+	}
+	if len(leaked) > 0 {
+		sort.Strings(leaked)
+		t.Fatalf("expected no forbidden applied rule IDs; leaked=%v applied=%v", leaked, all)
 	}
 }
