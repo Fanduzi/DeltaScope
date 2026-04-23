@@ -27,6 +27,12 @@ func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, mess
 	if err != nil {
 		return nil, err
 	}
+	if ruleID == ruleIDPrimaryKeyBigintRequire {
+		basePredicate := predicate
+		predicate = func(column spec.Column) bool {
+			return basePredicate(column) || isPrimaryKeyBigintLike(column)
+		}
+	}
 	return singlePrimaryKeyColumnRule{
 		ruleID:    ruleID,
 		level:     configuredLevel(cfg, fallbackLevel),
@@ -40,8 +46,11 @@ func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, mess
 func (r singlePrimaryKeyColumnRule) ID() string { return r.ruleID }
 
 func (r singlePrimaryKeyColumnRule) AppliesTo(statement spec.Statement) bool {
-	return r.required && (appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil ||
-		appliesToAlterAddConstraintPrimaryKey(statement))
+	if !r.required || isPostgreSQLDialectGatedPrimaryKeyRule(r.ruleID, statement.Dialect) {
+		return false
+	}
+	return appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil ||
+		appliesToAlterAddConstraintPrimaryKey(statement)
 }
 
 func (r singlePrimaryKeyColumnRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -83,7 +92,7 @@ func newPrimaryKeyNotNullRule(cfg policy.RulePolicy) (rule.StatementRule, error)
 func (r primaryKeyNotNullRule) ID() string { return ruleIDPrimaryKeyNotNullRequire }
 
 func (r primaryKeyNotNullRule) AppliesTo(statement spec.Statement) bool {
-	return r.required && appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil
+	return r.required && !isPostgreSQLDialectGatedPrimaryKeyRule(ruleIDPrimaryKeyNotNullRequire, statement.Dialect) && appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil
 }
 
 func (r primaryKeyNotNullRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
@@ -106,4 +115,25 @@ func (r primaryKeyNotNullRule) Evaluate(statement spec.Statement) ([]rule.Findin
 		})
 	}
 	return findings, nil
+}
+
+func isPrimaryKeyBigintLike(column spec.Column) bool {
+	switch baseType(column) {
+	case "bigint", "int8", "pg_catalog.int8":
+		return true
+	default:
+		return false
+	}
+}
+
+func isPostgreSQLDialectGatedPrimaryKeyRule(ruleID string, dialect spec.Dialect) bool {
+	if dialect != spec.DialectPostgreSQL {
+		return false
+	}
+	switch ruleID {
+	case ruleIDPrimaryKeyUnsignedRequire, ruleIDPrimaryKeyAutoIncrementRequire, ruleIDPrimaryKeyNotNullRequire:
+		return true
+	default:
+		return false
+	}
 }

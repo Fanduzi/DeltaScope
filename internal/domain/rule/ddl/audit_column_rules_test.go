@@ -54,3 +54,28 @@ func TestAuditColumnsRequiredRuleAcceptsCreatedAndUpdatedPatterns(t *testing.T) 
 		t.Fatalf("expected no findings, got %d", len(findings))
 	}
 }
+
+func TestAuditColumnsRequiredRulePostgreSQLOnlyRequiresCreatedPattern(t *testing.T) {
+	ruleUnderTest, err := newTableAuditColumnsRequiredRule(policy.RulePolicy{
+		Enabled: true,
+		Level:   rule.LevelWarning,
+		Params:  map[string]any{"required": true},
+	})
+	if err != nil {
+		t.Fatalf("construct rule: %v", err)
+	}
+
+	statement := createTableWithColumns(
+		"users",
+		spec.Column{Name: "created_at", Type: "timestamp", Comment: "'created'", DefaultIsCurrentTimestamp: true, HasDefault: true, DefaultValue: "current_timestamp", NotNull: true},
+	)
+	statement.Dialect = spec.DialectPostgreSQL
+
+	findings, err := ruleUnderTest.Evaluate(statement)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings, got %d", len(findings))
+	}
+}

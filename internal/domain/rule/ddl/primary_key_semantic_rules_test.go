@@ -103,6 +103,27 @@ func TestPrimaryKeySemanticRulesSkipCompositePrimaryKeys(t *testing.T) {
 	}
 }
 
+func TestPrimaryKeyBigintRuleAcceptsPostgreSQLBigIntAliases(t *testing.T) {
+	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyBigintRequire, rule.LevelBlocker, "must use bigint", "change the primary key column type to bigint", func(column spec.Column) bool {
+		return baseType(column) == "bigint"
+	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
+	if err != nil {
+		t.Fatalf("new rule: %v", err)
+	}
+
+	for _, columnType := range []string{"int8", "pg_catalog.int8"} {
+		statement := primaryKeyStatement(spec.Column{Name: "id", Type: columnType, NotNull: true})
+		statement.Dialect = spec.DialectPostgreSQL
+		findings, err := statementRule.Evaluate(statement)
+		if err != nil {
+			t.Fatalf("evaluate %s: %v", columnType, err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings for %s, got %d", columnType, len(findings))
+		}
+	}
+}
+
 func primaryKeyStatement(column spec.Column) spec.Statement {
 	return spec.Statement{
 		Kind: spec.KindDDL,

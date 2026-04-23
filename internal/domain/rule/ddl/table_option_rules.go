@@ -87,8 +87,11 @@ func newTableOptionAllowlistRule(ruleID, optionKey, label string, fallback []str
 func (r tableOptionAllowlistRule) ID() string { return r.ruleID }
 
 func (r tableOptionAllowlistRule) AppliesTo(statement spec.Statement) bool {
-	if statement.Dialect == spec.DialectPostgreSQL && (r.ruleID == ruleIDTableEngineAllowlist || r.ruleID == ruleIDTableRowFormatAllowlist) {
-		return false
+	if statement.Dialect == spec.DialectPostgreSQL {
+		switch r.ruleID {
+		case ruleIDTableEngineAllowlist, ruleIDTableCharsetAllowlist, ruleIDTableRowFormatAllowlist:
+			return false
+		}
 	}
 	return appliesToCreateTable(statement)
 }

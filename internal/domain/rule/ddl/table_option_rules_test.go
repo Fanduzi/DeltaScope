@@ -143,7 +143,7 @@ func TestTableRowFormatAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	}
 }
 
-func TestTableCharsetAllowlistRuleStillAppliesToPostgreSQL(t *testing.T) {
+func TestTableCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -160,8 +160,8 @@ func TestTableCharsetAllowlistRuleStillAppliesToPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
-	if len(findings) != 1 {
-		t.Fatalf("expected PostgreSQL table charset rule to still apply, got %d findings", len(findings))
+	if len(findings) != 0 {
+		t.Fatalf("expected PostgreSQL table charset rule to be skipped, got %d findings", len(findings))
 	}
 }
 

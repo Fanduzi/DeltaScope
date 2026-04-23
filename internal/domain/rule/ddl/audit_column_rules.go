@@ -41,6 +41,7 @@ func (r tableAuditColumnsRequiredRule) Evaluate(statement spec.Statement) ([]rul
 
 	var hasCreatedAudit bool
 	var hasUpdatedAudit bool
+	requiresUpdatedAudit := statement.Dialect != spec.DialectPostgreSQL
 	for _, column := range statement.DDL.Columns {
 		if !isTimeLike(column) || !column.DefaultIsCurrentTimestamp {
 			continue
@@ -64,7 +65,7 @@ func (r tableAuditColumnsRequiredRule) Evaluate(statement spec.Statement) ([]rul
 			},
 		})
 	}
-	if !hasUpdatedAudit {
+	if requiresUpdatedAudit && !hasUpdatedAudit {
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
 			Message:    "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",

@@ -192,7 +192,7 @@ func newColumnCharsetCollationMatchRule(cfg policy.RulePolicy) (rule.StatementRu
 func (r columnCharsetCollationMatchRule) ID() string { return ruleIDColumnCharsetCollationMatchRequire }
 
 func (r columnCharsetCollationMatchRule) AppliesTo(statement spec.Statement) bool {
-	return r.required && appliesToCreateTableColumns(statement)
+	return r.required && statement.Dialect != spec.DialectPostgreSQL && appliesToCreateTableColumns(statement)
 }
 
 func (r columnCharsetCollationMatchRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
