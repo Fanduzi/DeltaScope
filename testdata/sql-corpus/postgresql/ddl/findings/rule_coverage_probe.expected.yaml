@@ -27,7 +27,6 @@ expect:
       - ddl.index.unique.prefix.require
       - ddl.index.unique.suffix.require
       - ddl.table.audit_columns.require
-      - ddl.table.charset.allowlist
       - ddl.table.columns.min_count
       - ddl.table.comment.require
       - ddl.table.drop.forbid
@@ -40,6 +39,17 @@ expect:
       - ddl.table.truncate.forbid
       - ddl.view.create.forbid
       - ddl.view.drop.forbid
+    exclude:
+      - ddl.table.charset.allowlist
+      - ddl.table.engine.allowlist
+      - ddl.table.row_format.allowlist
+      - ddl.table.auto_increment.init_value.require
+      - ddl.table.primary_key.unsigned.require
+      - ddl.table.primary_key.auto_increment.require
+      - ddl.column.charset.allowlist
+      - ddl.column.collation.allowlist
+      - ddl.column.charset_collation.match.require
+      - ddl.index.key_length.max_bytes.require
 config:
   rules:
     ddl.table.name.prefix.require:
