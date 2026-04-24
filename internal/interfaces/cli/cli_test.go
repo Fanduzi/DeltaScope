@@ -1940,3 +1940,79 @@ func TestMarkdownPathWithRuleSummaryDoesNotRegress(t *testing.T) {
 		t.Fatalf("expected rule summary section, got %q", rendered)
 	}
 }
+
+func TestAuditCommandDefaultPolicyDialectHygieneMySQLExcludesPostgreSQLRules(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';", "--dialect", "mysql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+	_ = code
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	assertCLIPayloadNoPGRuleIDs(t, decoded)
+}
+
+func TestAuditCommandDefaultPolicyDialectHygieneTiDBExcludesPostgreSQLRules(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';", "--dialect", "tidb", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+	_ = code
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	assertCLIPayloadNoPGRuleIDs(t, decoded)
+}
+
+func assertCLIPayloadNoPGRuleIDs(t *testing.T, decoded map[string]any) {
+	t.Helper()
+	statements, ok := decoded["statements"].([]any)
+	if !ok {
+		return
+	}
+	for _, rawStmt := range statements {
+		stmt, ok := rawStmt.(map[string]any)
+		if !ok {
+			continue
+		}
+		findings, ok := stmt["findings"].([]any)
+		if !ok {
+			continue
+		}
+		for _, rawFinding := range findings {
+			finding, ok := rawFinding.(map[string]any)
+			if !ok {
+				continue
+			}
+			if ruleID, _ := finding["rule_id"].(string); strings.HasPrefix(ruleID, "ddl.pg.") {
+				t.Errorf("MySQL/TiDB default CLI audit should not emit PG-only rule %q", ruleID)
+			}
+		}
+	}
+	globalFindings, ok := decoded["global_findings"].([]any)
+	if !ok {
+		return
+	}
+	for _, rawFinding := range globalFindings {
+		finding, ok := rawFinding.(map[string]any)
+		if !ok {
+			continue
+		}
+		if ruleID, _ := finding["rule_id"].(string); strings.HasPrefix(ruleID, "ddl.pg.") {
+			t.Errorf("MySQL/TiDB default CLI audit should not emit PG-only rule %q in global findings", ruleID)
+		}
+	}
+}

@@ -557,6 +557,44 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	}
 }
 
+func TestAuditDefaultPolicyDialectHygieneMySQLExcludesPostgreSQLRules(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	assertNoPGRuleIDs(t, result)
+}
+
+func TestAuditDefaultPolicyDialectHygieneTiDBExcludesPostgreSQLRules(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';",
+		Dialect: DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	assertNoPGRuleIDs(t, result)
+}
+
+func assertNoPGRuleIDs(t *testing.T, result Result) {
+	t.Helper()
+	for _, stmt := range result.Statements {
+		for _, finding := range stmt.Findings {
+			if strings.HasPrefix(finding.RuleID, "ddl.pg.") {
+				t.Errorf("MySQL/TiDB default audit should not emit PG-only rule %q", finding.RuleID)
+			}
+		}
+	}
+	for _, finding := range result.GlobalFindings {
+		if strings.HasPrefix(finding.RuleID, "ddl.pg.") {
+			t.Errorf("MySQL/TiDB default audit should not emit PG-only rule %q in global findings", finding.RuleID)
+		}
+	}
+}
+
 func ptrInt64(value int64) *int64 {
 	return &value
 }

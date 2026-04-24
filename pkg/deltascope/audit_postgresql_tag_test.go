@@ -1447,6 +1447,47 @@ func TestAuditPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditDefaultPolicyDialectHygienePostgreSQLExcludesMySQLFamilyRules(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE TABLE pg_smoke (id bigint primary key);",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	mysqlOnly := []string{
+		"ddl.table.engine.allowlist",
+		"ddl.table.charset.allowlist",
+		"ddl.table.row_format.allowlist",
+		"ddl.table.auto_increment_init.value",
+		"ddl.primary_key.unsigned.require",
+		"ddl.primary_key.auto_increment.require",
+		"ddl.primary_key.not_null.require",
+	}
+	for _, stmt := range result.Statements {
+		for _, finding := range stmt.Findings {
+			for _, id := range mysqlOnly {
+				if finding.RuleID == id {
+					t.Errorf("PG default audit should not emit MySQL-only rule %q", id)
+				}
+			}
+			combined := strings.ToUpper(finding.Message + " " + finding.Suggestion)
+			for _, pattern := range []string{"UNSIGNED", "AUTO_INCREMENT", "ON UPDATE CURRENT_TIMESTAMP"} {
+				if strings.Contains(combined, pattern) {
+					t.Errorf("PG default audit should not contain MySQL-specific text %q", pattern)
+				}
+			}
+		}
+	}
+	for _, finding := range result.GlobalFindings {
+		for _, id := range mysqlOnly {
+			if finding.RuleID == id {
+				t.Errorf("PG default audit should not emit MySQL-only rule %q in global findings", id)
+			}
+		}
+	}
+}
+
 func pkgMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := pkgToFloat64(a)
 	bFloat, bIsNum := pkgToFloat64(b)

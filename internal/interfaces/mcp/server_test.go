@@ -968,3 +968,99 @@ func (metadataOnlyClientWithDialect) ResolveTableForIndex(context.Context, spec.
 func (metadataOnlyClient) Close() error { return nil }
 
 func (metadataOnlyClientWithDialect) Close() error { return nil }
+
+func TestAuditSQLToolDefaultPolicyDialectHygieneMySQLExcludesPostgreSQLRules(t *testing.T) {
+	t.Parallel()
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "audit_sql",
+		Arguments: map[string]any{"sql": "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';", "dialect": "mysql"},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+
+	body, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured content, got %T", result.StructuredContent)
+	}
+	assertMCPPayloadNoPGRuleIDs(t, body)
+}
+
+func TestAuditSQLToolDefaultPolicyDialectHygieneTiDBExcludesPostgreSQLRules(t *testing.T) {
+	t.Parallel()
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "audit_sql",
+		Arguments: map[string]any{"sql": "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';", "dialect": "tidb"},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+
+	body, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured content, got %T", result.StructuredContent)
+	}
+	assertMCPPayloadNoPGRuleIDs(t, body)
+}
+
+func assertMCPPayloadNoPGRuleIDs(t *testing.T, body map[string]any) {
+	t.Helper()
+	statements, ok := body["statements"].([]any)
+	if !ok {
+		return
+	}
+	for _, rawStmt := range statements {
+		stmt, ok := rawStmt.(map[string]any)
+		if !ok {
+			continue
+		}
+		findings, ok := stmt["findings"].([]any)
+		if !ok {
+			continue
+		}
+		for _, rawFinding := range findings {
+			finding, ok := rawFinding.(map[string]any)
+			if !ok {
+				continue
+			}
+			if ruleID, _ := finding["rule_id"].(string); strings.HasPrefix(ruleID, "ddl.pg.") {
+				t.Errorf("MySQL/TiDB default MCP audit should not emit PG-only rule %q", ruleID)
+			}
+		}
+	}
+	globalFindings, ok := body["global_findings"].([]any)
+	if !ok {
+		return
+	}
+	for _, rawFinding := range globalFindings {
+		finding, ok := rawFinding.(map[string]any)
+		if !ok {
+			continue
+		}
+		if ruleID, _ := finding["rule_id"].(string); strings.HasPrefix(ruleID, "ddl.pg.") {
+			t.Errorf("MySQL/TiDB default MCP audit should not emit PG-only rule %q in global findings", ruleID)
+		}
+	}
+}

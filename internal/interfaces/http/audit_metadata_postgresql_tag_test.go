@@ -1452,6 +1452,49 @@ func TestExecuteAuditRequestPostgreSQLNotValidConstraintValidationRuleCoverage(t
 	}
 }
 
+func TestExecuteAuditRequestDefaultPolicyDialectHygienePostgreSQLExcludesMySQLFamilyRules(t *testing.T) {
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:     "CREATE TABLE pg_smoke (id bigint primary key);",
+		Dialect: deltascope.DialectPostgreSQL,
+	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Audit(ctx, request)
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	mysqlOnly := []string{
+		"ddl.table.engine.allowlist",
+		"ddl.table.charset.allowlist",
+		"ddl.table.row_format.allowlist",
+		"ddl.table.auto_increment_init.value",
+		"ddl.primary_key.unsigned.require",
+		"ddl.primary_key.auto_increment.require",
+		"ddl.primary_key.not_null.require",
+	}
+	for _, stmt := range response.Statements {
+		for _, finding := range stmt.Findings {
+			for _, id := range mysqlOnly {
+				if finding.RuleID == id {
+					t.Errorf("PG default HTTP audit should not emit MySQL-only rule %q", id)
+				}
+			}
+			combined := strings.ToUpper(finding.Message + " " + finding.Suggestion)
+			for _, pattern := range []string{"UNSIGNED", "AUTO_INCREMENT", "ON UPDATE CURRENT_TIMESTAMP"} {
+				if strings.Contains(combined, pattern) {
+					t.Errorf("PG default HTTP audit should not contain MySQL-specific text %q", pattern)
+				}
+			}
+		}
+	}
+	for _, finding := range response.GlobalFindings {
+		for _, id := range mysqlOnly {
+			if finding.RuleID == id {
+				t.Errorf("PG default HTTP audit should not emit MySQL-only rule %q in global findings", id)
+			}
+		}
+	}
+}
+
 func httpMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := httpToFloat64(a)
 	bFloat, bIsNum := httpToFloat64(b)
