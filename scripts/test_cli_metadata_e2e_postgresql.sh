@@ -140,6 +140,45 @@ if not any(item.get("rule_id") == rule_id for item in findings):
 PY
 }
 
+assert_json_rule_absent() {
+  local json_file="$1"
+  local rule_id="$2"
+
+  python3 - "$json_file" "$rule_id" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    data = json.load(handle)
+rule_id = sys.argv[2]
+findings = list(data.get("global_findings", []))
+for statement in data.get("statements", []):
+    findings.extend(statement.get("findings", []))
+if any(item.get("rule_id") == rule_id for item in findings):
+    raise SystemExit(f"did not expect rule_id {rule_id} in findings")
+PY
+}
+
+assert_findings_text_absent() {
+  local json_file="$1"
+  local text="$2"
+
+  python3 - "$json_file" "$text" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    data = json.load(f)
+text = sys.argv[2]
+findings = list(data.get("global_findings", []))
+for stmt in data.get("statements", []):
+    findings.extend(stmt.get("findings", []))
+block = json.dumps(findings, ensure_ascii=False)
+if text in block:
+    raise SystemExit(f"did not expect '{text}' in findings")
+PY
+}
+
 assert_json_field_exists() {
   local json_file="$1"
   local field_path="$2"
@@ -344,6 +383,36 @@ CFG
   fi
   assert_exit_code "${exit_code}" 0 "case14-not-valid-validate"
   assert_json_rule_present "${stdout_file}" "ddl.pg.alter.not_valid_constraint.validate.require"
+
+  # Case 15: default-policy dialect hygiene — no MySQL-family leakage under PG dialect
+  stdout_file="$(mktemp "${TMP_DIR}/pg-hygiene.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-hygiene.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "CREATE TABLE pg_smoke (id bigint primary key);" --dialect postgresql --format json --fail-on none; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "case15-pg-hygiene"
+  for rule_id in \
+    ddl.table.charset.allowlist \
+    ddl.table.engine.allowlist \
+    ddl.table.row_format.allowlist \
+    ddl.table.auto_increment.init_value.require \
+    ddl.table.primary_key.unsigned.require \
+    ddl.table.primary_key.auto_increment.require \
+    ddl.table.primary_key.bigint.require \
+    ddl.column.charset.allowlist \
+    ddl.column.collation.allowlist \
+    ddl.column.charset_collation.match.require \
+    ddl.index.key_length.max_bytes.require; do
+    assert_json_rule_absent "${stdout_file}" "${rule_id}"
+  done
+  for token in \
+    UNSIGNED AUTO_INCREMENT auto_increment \
+    CHARSET charset COLLATE collation \
+    ENGINE ROW_FORMAT "ON UPDATE CURRENT_TIMESTAMP"; do
+    assert_findings_text_absent "${stdout_file}" "${token}"
+  done
 
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }

@@ -163,6 +163,47 @@ if any(item.get("rule_id") == rule_id for item in findings):
 PY
 }
 
+assert_findings_text_absent() {
+  local json_file="$1"
+  local text="$2"
+
+  python3 - "$json_file" "$text" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    data = json.load(f)
+text = sys.argv[2]
+findings = list(data.get("global_findings", []))
+for stmt in data.get("statements", []):
+    findings.extend(stmt.get("findings", []))
+block = json.dumps(findings, ensure_ascii=False)
+if text in block:
+    raise SystemExit(f"did not expect '{text}' in findings")
+PY
+}
+
+assert_no_rule_prefix() {
+  local json_file="$1"
+  local prefix="$2"
+
+  python3 - "$json_file" "$prefix" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as f:
+    data = json.load(f)
+prefix = sys.argv[2]
+findings = list(data.get("global_findings", []))
+for stmt in data.get("statements", []):
+    findings.extend(stmt.get("findings", []))
+for item in findings:
+    rid = item.get("rule_id", "")
+    if rid.startswith(prefix):
+        raise SystemExit(f"did not expect rule_id with prefix '{prefix}', found: {rid}")
+PY
+}
+
 start_mysql_stack() {
   log "starting MySQL fixtures"
   compose up -d mysql
@@ -268,6 +309,38 @@ run_mysql_suite() {
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
   assert_json_rule_present "${stdout_file}" "ddl.table.row_size.max_bytes.require"
   assert_json_rule_absent "${stdout_file}" "ddl.table.exists.create.forbid"
+
+  # Hygiene: default-policy dialect — no PG-only leakage under MySQL dialect
+  stdout_file="$(mktemp "${TMP_DIR}/mysql-hygiene.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/mysql-hygiene.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';" --dialect mysql --format json --fail-on none; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "mysql-hygiene"
+  assert_no_rule_prefix "${stdout_file}" "ddl.pg."
+  for rule_id in \
+    ddl.alter.set_data_type.forbid \
+    ddl.alter.set_default.forbid \
+    ddl.alter.drop_default.forbid \
+    ddl.alter.set_not_null.forbid \
+    ddl.alter.drop_not_null.forbid \
+    ddl.alter.drop_expression.forbid \
+    ddl.alter.set_generated.forbid \
+    ddl.alter.drop_identity.forbid \
+    ddl.alter.set_default.explicit_default_change.forbid \
+    ddl.alter.drop_default.explicit_default_change.forbid \
+    ddl.alter.set_not_null.explicit_nullability_change.forbid \
+    ddl.alter.drop_not_null.explicit_nullability_change.forbid; do
+    assert_json_rule_absent "${stdout_file}" "${rule_id}"
+  done
+  for token in \
+    "VALIDATE CONSTRAINT" "NOT VALID" CONCURRENTLY \
+    "DROP EXPRESSION" "SET GENERATED" "DROP IDENTITY" \
+    "generated expression" rewrite; do
+    assert_findings_text_absent "${stdout_file}" "${token}"
+  done
 }
 
 run_tidb_suite() {
@@ -341,6 +414,38 @@ run_tidb_suite() {
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
   assert_json_rule_present "${stdout_file}" "ddl.table.row_size.max_bytes.require"
   assert_json_rule_absent "${stdout_file}" "ddl.table.exists.create.forbid"
+
+  # Hygiene: default-policy dialect — no PG-only leakage under TiDB dialect
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-hygiene.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-hygiene.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "CREATE TABLE smoke_users (id bigint unsigned NOT NULL AUTO_INCREMENT, name varchar(64) NOT NULL DEFAULT '', created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='smoke users';" --dialect tidb --format json --fail-on none; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "tidb-hygiene"
+  assert_no_rule_prefix "${stdout_file}" "ddl.pg."
+  for rule_id in \
+    ddl.alter.set_data_type.forbid \
+    ddl.alter.set_default.forbid \
+    ddl.alter.drop_default.forbid \
+    ddl.alter.set_not_null.forbid \
+    ddl.alter.drop_not_null.forbid \
+    ddl.alter.drop_expression.forbid \
+    ddl.alter.set_generated.forbid \
+    ddl.alter.drop_identity.forbid \
+    ddl.alter.set_default.explicit_default_change.forbid \
+    ddl.alter.drop_default.explicit_default_change.forbid \
+    ddl.alter.set_not_null.explicit_nullability_change.forbid \
+    ddl.alter.drop_not_null.explicit_nullability_change.forbid; do
+    assert_json_rule_absent "${stdout_file}" "${rule_id}"
+  done
+  for token in \
+    "VALIDATE CONSTRAINT" "NOT VALID" CONCURRENTLY \
+    "DROP EXPRESSION" "SET GENERATED" "DROP IDENTITY" \
+    "generated expression" rewrite; do
+    assert_findings_text_absent "${stdout_file}" "${token}"
+  done
 }
 
 main() {
