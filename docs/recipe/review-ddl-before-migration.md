@@ -583,6 +583,16 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
 
 This is same-batch pairing guidance for named CHECK/FK `NOT VALID` constraints — not first-time `VALIDATE CONSTRAINT` support, not live validation-state lookup, not cross-file deployment tracking, not unnamed-constraint matching, and not MySQL/TiDB behavior.
 
+#### Default Policy Dialect Isolation (`v0.43.0`)
+
+Starting with `v0.43.0`, DeltaScope isolates rules by `--dialect` in the shipped default policy. When auditing PostgreSQL SQL, MySQL/TiDB-only rules (engine, charset, row format, unsigned/auto_increment primary-key requirements, partition, create_as/create_like, column charset/collation, change/modify column) are automatically skipped. When auditing MySQL or TiDB SQL, `ddl.pg.*` and PostgreSQL-only dialect-gated rules are automatically skipped.
+
+This means:
+
+- `--dialect postgresql` audits no longer produce findings about missing `UNSIGNED`, `AUTO_INCREMENT`, `CHARSET`, `ENGINE`, `ROW_FORMAT`, or `ON UPDATE CURRENT_TIMESTAMP`.
+- `--dialect mysql` and `--dialect tidb` audits no longer produce `ddl.pg.*` findings.
+- Isolation is enforced at the rule `AppliesTo` gate level, not by post-filtering reports.
+
 #### PostgreSQL Generated/Identity Rule Coverage (`v0.36.0`)
 
 Starting with `v0.36.0`, the PostgreSQL generated/identity state-transition forms supported in v0.35.0 now produce explicit `rule_id` findings. When reviewing migrations containing these forms, DeltaScope returns standard audit results with explicit rule findings:

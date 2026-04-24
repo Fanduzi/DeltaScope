@@ -638,13 +638,13 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.42.0 — PostgreSQL NOT VALID Constraint Validation Pairing</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.43.0 — Default Policy Dialect Isolation</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">Audit risky MySQL, TiDB, and PostgreSQL SQL
 before it ships</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">DeltaScope exposes one unified product surface: `deltascope`, `deltascope-server`, and `deltascope-mcp`.
 Starting with the v0.17.0 release line, the supported macOS and Linux main archives ship those three binaries as PG-capable for PostgreSQL offline audit.
-The v0.42.0 release adds PostgreSQL NOT VALID constraint validation pairing as a batch-level global finding.</p>
+The v0.43.0 release adds default policy dialect isolation — PostgreSQL audits no longer emit MySQL/TiDB-only rule IDs, and MySQL/TiDB audits no longer emit PostgreSQL-only rules.</p>
         <div class="hero-actions animate-fade-up" style="animation-delay:0.28s;">
           <a href="https://github.com/Fanduzi/DeltaScope#install" class="btn-primary" target="_blank" rel="noopener" data-i18n="hero.ctaPrimary">Install DeltaScope</a>
           <a href="#scenarios" class="btn-secondary" data-i18n="hero.ctaSecondary">See Real Workflows</a>
@@ -1062,15 +1062,24 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.42.0</div>
+              <div class="release-version">v0.43.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL NOT VALID Constraint Validation Pairing</div>
-            <div class="release-copy" data-i18n="releases.items.v0420">Named PostgreSQL CHECK and FOREIGN KEY NOT VALID constraints now produce a global warning when the same audited SQL batch lacks a later matching VALIDATE CONSTRAINT.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Default Policy Dialect Isolation</div>
+            <div class="release-copy" data-i18n="releases.items.v0430">The shipped default policy now isolates rules by --dialect. PostgreSQL audits no longer emit MySQL/TiDB-only rule IDs, and MySQL/TiDB audits no longer emit PostgreSQL-only rules.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.43.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.43.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.43.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.42.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v0420">NOT VALID Validation Pairing</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v0420">Named PostgreSQL CHECK and FOREIGN KEY NOT VALID constraints now produce a global warning when the same audited SQL batch lacks a later matching VALIDATE CONSTRAINT.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0420" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.zh-CN.md">Open v0.42.0 notes →</a>
+            </article>
+
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.41.0</div>
@@ -1096,15 +1105,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v0390">PostgreSQL ALTER TABLE ADD CONSTRAINT primary-key and unique forms now preserve statement-local constraint metadata. Existing primary-key and unique prefix rules produce findings.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.39.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0390" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.39.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.39.0.zh-CN.md">Open v0.39.0 notes →</a>
-            </article>
-
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.38.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v0380">Unique/Index Rule Coverage</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v0380">PostgreSQL standalone CREATE INDEX, CREATE UNIQUE INDEX, and CREATE INDEX CONCURRENTLY statements now trigger existing generic index rules for approved btree forms.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.38.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0380" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.38.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.38.0.zh-CN.md">Open v0.38.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1154,7 +1154,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.42.0.zh-CN.md">Release Notes v0.42.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.43.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.43.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.43.0.zh-CN.md">Release Notes v0.43.0</a></li>
             </ul>
           </div>
           <div class="footer-col">

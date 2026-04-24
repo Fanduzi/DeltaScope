@@ -583,6 +583,16 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
 
 这是针对命名 CHECK/FK `NOT VALID` 约束的同批次配对建议——不是首次支持 `VALIDATE CONSTRAINT`，不是 live validation-state lookup，不追踪跨文件部署，不匹配未命名约束，也不改变 MySQL/TiDB 行为。
 
+##### 默认策略方言隔离（`v0.43.0`）
+
+从 `v0.43.0` 开始，DeltaScope 在默认策略中按 `--dialect` 隔离规则。审核 PostgreSQL SQL 时，MySQL/TiDB-only 规则（engine、charset、row format、unsigned/auto_increment 主键要求、partition、create_as/create_like、column charset/collation、change/modify column）自动跳过。审核 MySQL 或 TiDB SQL 时，`ddl.pg.*` 和 PostgreSQL-only 方言门控规则自动跳过。
+
+这意味着：
+
+- `--dialect postgresql` 审核不再产生关于缺少 `UNSIGNED`、`AUTO_INCREMENT`、`CHARSET`、`ENGINE`、`ROW_FORMAT` 或 `ON UPDATE CURRENT_TIMESTAMP` 的 findings。
+- `--dialect mysql` 和 `--dialect tidb` 审核不再产生 `ddl.pg.*` findings。
+- 隔离在规则 `AppliesTo` 门控层实现，不是后期过滤。
+
 ##### PostgreSQL Generated/Identity Rule Coverage（`v0.36.0`）
 
 从 `v0.36.0` 开始，v0.35.0 已支持的 PostgreSQL generated/identity 状态转换形态现在产生明确的 `rule_id` findings。审核包含这些形态的迁移时，DeltaScope 返回带明确规则 findings 的标准审核结果：

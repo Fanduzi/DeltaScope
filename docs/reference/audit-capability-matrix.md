@@ -111,6 +111,8 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 **PostgreSQL NOT VALID validation pairing (v0.42.0):** named PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK and FOREIGN KEY additions now participate in a batch-level GlobalRule (`ddl.pg.alter.not_valid_constraint.validate.require`). DeltaScope warns when the same audited SQL batch does not contain a later matching `ALTER TABLE ... VALIDATE CONSTRAINT ...` statement using the same schema, table, and constraint name. This is not first-time `VALIDATE CONSTRAINT` parser support, does not query live validation state, does not track cross-file deployment windows, skips unnamed constraints, and does not change MySQL/TiDB behavior.
 
+**Default policy dialect isolation (v0.43.0):** The shipped default policy now isolates rules by `--dialect`. When `--dialect postgresql` is set, MySQL/TiDB-only rules (engine, charset, row format, unsigned/auto_increment primary-key requirements, partition, create_as/create_like, column charset/collation, change/modify column) and MySQL-only remediation text (`UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE CURRENT_TIMESTAMP`) are excluded. When `--dialect mysql` or `--dialect tidb` is set, `ddl.pg.*` and PostgreSQL-only dialect-gated rules are excluded. Isolation is enforced at the rule `AppliesTo` gate level, not by post-filtering.
+
 ### Constraint-Level Checks
 
 Structured naming governance for constraints only evaluates explicitly named objects. Unnamed or implicit names are skipped. Foreign key naming rules are only relevant when foreign keys are allowed by policy; under the shipped default baseline, `ddl.table.foreign_key.forbid` suppresses foreign key naming checks.

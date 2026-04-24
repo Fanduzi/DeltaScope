@@ -606,6 +606,24 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
 
 This does not add first-time `VALIDATE CONSTRAINT` parser support, live database validation-state lookup, cross-file deployment tracking, unnamed-constraint matching, CHECK expression validation, FK referenced-table validation, MySQL/TiDB behavior changes, or a new public API contract.
 
+### Default Policy Dialect Isolation (v0.43.0)
+
+Starting with `v0.43.0`, the shipped default policy isolates rules by `--dialect`. PostgreSQL audits no longer emit MySQL/TiDB-only rule IDs or MySQL-specific remediation text. MySQL/TiDB audits no longer emit PostgreSQL-only rule IDs.
+
+```bash
+# PostgreSQL audit — no MySQL-only rules appear
+deltascope audit \
+  --dialect postgresql \
+  --sql "CREATE TABLE users (id bigint PRIMARY KEY, name varchar(64) NOT NULL);"
+
+# MySQL audit — no ddl.pg.* rules appear
+deltascope audit \
+  --dialect mysql \
+  --sql "CREATE TABLE users (id bigint unsigned NOT NULL AUTO_INCREMENT, PRIMARY KEY (id)) ENGINE=InnoDB;"
+```
+
+This does not add new rule IDs, parser features, public API contracts, live schema validation, cross-database tracking, or MySQL/TiDB behavior changes beyond dialect isolation.
+
 ## Repository Confidence Targets
 
 | Target | Purpose |

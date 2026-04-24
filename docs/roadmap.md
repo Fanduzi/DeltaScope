@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.42.0 PostgreSQL NOT VALID Constraint Validation Pairing Pack
+## Latest Completed Milestone: v0.43.0 Default Policy Dialect Hygiene Pack
+
+**Goal:** make the shipped default policy respect the user-selected SQL dialect across MySQL, TiDB, and PostgreSQL, so that PostgreSQL audits never emit MySQL/TiDB-only rule IDs or remediation text and MySQL/TiDB audits never emit PostgreSQL-only rule IDs.
+
+### Completed Scope
+
+- Default policy isolates rules by `--dialect` across MySQL, TiDB, and PostgreSQL.
+- PostgreSQL audits skip MySQL-family rules: engine allowlist, charset allowlist, row format allowlist, auto_increment init value, unsigned/auto_increment/not_null primary-key requirements, partition forbid, create_as/create_like forbid, column charset/collation allowlists, column charset_collation match, change_column/modify_column forbid, and the `ON UPDATE CURRENT_TIMESTAMP` audit-column suggestion.
+- MySQL/TiDB audits exclude all `ddl.pg.*` rules and PostgreSQL-only dialect-gated rules.
+- Isolation is enforced at the rule `AppliesTo` gate level, not by post-filtering reports.
+- Service-level tests assert cross-dialect rule ID isolation and remediation text isolation.
+- SQL corpus PostgreSQL probe includes a negative `exclude:` block listing MySQL-family rules that must never appear.
+
+### Key Design Decisions
+
+- No new rule IDs, parser features, or public API contracts.
+- Isolation at the `AppliesTo` gate level, not report-level filtering, so rule accounting and `Applicable` counts remain accurate.
+- No live schema validation, cross-database tracking, or MySQL/TiDB behavior changes beyond dialect isolation.
+- PostgreSQL type canonicalization (`pg_catalog.int8` normalization) remains out of scope for this milestone.
+
+## Previous Milestone: v0.42.0 PostgreSQL NOT VALID Constraint Validation Pairing Pack
 
 **Goal:** add a PostgreSQL-only global audit rule that warns when a named `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK or FOREIGN KEY constraint is not followed by a later matching `ALTER TABLE ... VALIDATE CONSTRAINT ...` statement in the same audited SQL batch.
 

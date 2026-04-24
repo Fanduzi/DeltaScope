@@ -566,6 +566,24 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;
 
 这不代表首次支持 `VALIDATE CONSTRAINT` 解析、live database validation-state lookup、跨文件部署追踪、未命名约束匹配、CHECK 表达式验证、FK referenced-table 校验、MySQL/TiDB 行为变更或新的 public API contract。
 
+### 默认策略方言隔离（v0.43.0）
+
+从 `v0.43.0` 开始，默认策略按 `--dialect` 隔离规则。PostgreSQL 审核不再发出 MySQL/TiDB-only 规则 ID 或 MySQL 特有的修复建议文本。MySQL/TiDB 审核不再发出 PostgreSQL-only 规则 ID。
+
+```bash
+# PostgreSQL 审核——不出现 MySQL-only 规则
+deltascope audit \
+  --dialect postgresql \
+  --sql "CREATE TABLE users (id bigint PRIMARY KEY, name varchar(64) NOT NULL);"
+
+# MySQL 审核——不出现 ddl.pg.* 规则
+deltascope audit \
+  --dialect mysql \
+  --sql "CREATE TABLE users (id bigint unsigned NOT NULL AUTO_INCREMENT, PRIMARY KEY (id)) ENGINE=InnoDB;"
+```
+
+这不新增规则 ID、解析器功能、public API contract、live schema 校验、跨数据库追踪，或除方言隔离外的 MySQL/TiDB 行为变更。
+
 ## 仓库级 Confidence Targets
 
 | Target | 作用 |

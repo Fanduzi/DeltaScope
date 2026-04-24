@@ -97,6 +97,8 @@
 
 **PostgreSQL NOT VALID 校验配对 (v0.42.0)：** 命名的 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... NOT VALID` CHECK 和 FOREIGN KEY 添加现在会参与批次级 GlobalRule（`ddl.pg.alter.not_valid_constraint.validate.require`）。当同一次审计 SQL 批次中没有后续匹配的 `ALTER TABLE ... VALIDATE CONSTRAINT ...`（匹配键为相同 schema、table 和 constraint name）时，DeltaScope 会发出 warning。这不是首次支持 `VALIDATE CONSTRAINT` 解析，不查询 live validation state，不追踪跨文件/跨发布窗口，跳过未命名约束，也不改变 MySQL/TiDB 行为。
 
+**默认策略方言隔离（v0.43.0）：** 从 v0.43.0 开始，默认策略按 `--dialect` 隔离规则。设置 `--dialect postgresql` 时，MySQL/TiDB-only 规则（engine、charset、row format、unsigned/auto_increment 主键要求、partition、create_as/create_like、column charset/collation、change/modify column）和 MySQL-only 修复建议文本（`UNSIGNED`、`AUTO_INCREMENT`、`ON UPDATE CURRENT_TIMESTAMP`）被排除。设置 `--dialect mysql` 或 `--dialect tidb` 时，`ddl.pg.*` 和 PostgreSQL-only 方言门控规则被排除。隔离在规则 `AppliesTo` 门控层实现，不是后期过滤。
+
 ### 约束级检查
 
 约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。

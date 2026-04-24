@@ -6,6 +6,21 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.43.0] - 2026-04-24
+
+### Added
+
+- Default policy now isolates rules by `--dialect`. PostgreSQL audits no longer emit MySQL/TiDB-only rule IDs or remediation text; MySQL/TiDB audits no longer emit PostgreSQL-only rule IDs. This is enforced at the rule `AppliesTo` gate level, not by post-filtering reports.
+- PostgreSQL audits now skip MySQL-family rules: `ddl.table.engine.allowlist`, `ddl.table.charset.allowlist`, `ddl.table.row_format.allowlist`, `ddl.table.auto_increment.init_value.require`, `ddl.table.primary_key.unsigned.require`, `ddl.table.primary_key.auto_increment.require`, `ddl.table.primary_key.not_null.require`, `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid`, `ddl.column.charset.allowlist`, `ddl.column.collation.allowlist`, `ddl.column.charset_collation.match.require`, `ddl.alter.change_column.forbid`, `ddl.alter.modify_column.forbid`.
+- PostgreSQL `CREATE TABLE` audits no longer suggest MySQL-only `ON UPDATE CURRENT_TIMESTAMP` for the updated-time audit column check.
+- MySQL/TiDB audits now exclude all `ddl.pg.*` rules and PostgreSQL-only unprefixed dialect-gated rules.
+- Service-level tests assert cross-dialect rule isolation: `TestPostgreSQLDefaultAuditExcludesMySQLFamilyRules`, `TestPostgreSQLDefaultAuditExcludesMySQLRemediationText`, `TestMySQLDefaultAuditExcludesPostgreSQLRules`.
+- SQL corpus PostgreSQL probe now includes a negative `exclude:` block listing MySQL-family rules that must never appear.
+
+### Changed
+
+- Release-facing docs now position `v0.43.0` as the Default Policy Dialect Hygiene Pack. This does not add new rule IDs, new parser features, new public API contracts, live schema validation, cross-database tracking, or MySQL/TiDB behavior changes beyond the dialect isolation fixes.
+
 ## [v0.42.0] - 2026-04-22
 
 ### Added

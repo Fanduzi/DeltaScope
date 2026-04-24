@@ -34,8 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.42.0/install.sh | \
-  DELTASCOPE_VERSION=v0.42.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.43.0/install.sh | \
+  DELTASCOPE_VERSION=v0.43.0 sh
 ```
 
 ### PostgreSQL Support
@@ -49,6 +49,7 @@ DeltaScope supports PostgreSQL offline audit across CLI, HTTP, MCP, and `pkg/del
 - **ALTER TABLE ADD CONSTRAINT fact support** — PostgreSQL `ALTER TABLE ... ADD PRIMARY KEY`, `ADD CONSTRAINT ... PRIMARY KEY`, `ADD UNIQUE`, and `ADD CONSTRAINT ... UNIQUE` forms now preserve statement-local constraint metadata. Existing primary-key rules (`ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.columns.max_count`) and unique prefix rule (`ddl.alter.add_index.unique.prefix.require`) produce findings for approved forms.
 - **ALTER TABLE ADD CONSTRAINT FOREIGN KEY fact support** — PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY` forms now preserve statement-local FK facts (local columns, referenced table, referenced columns, referenced schema for schema-qualified references). Existing FK rules (`ddl.table.foreign_key.forbid`, `ddl.pg.table.foreign_key.cross_schema.advisory`) produce findings for ALTER TABLE FK additions.
 - **ALTER TABLE constraint validation pairing** — PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... CHECK` facts remain available for shared naming rules, and DeltaScope now adds the PostgreSQL-only GlobalRule `ddl.pg.alter.not_valid_constraint.validate.require` (default `warning`). It warns when a named CHECK or FOREIGN KEY `NOT VALID` constraint is not followed by a later matching `ALTER TABLE ... VALIDATE CONSTRAINT ...` in the same audited SQL batch, using the same schema + table + constraint name as the matching key. The warning is suppressed by a later match and is visible as a global finding across CLI, HTTP, MCP, and `pkg/deltascope`.
+- **Default policy dialect isolation** — When `--dialect postgresql` is set, DeltaScope no longer emits MySQL/TiDB-only rule IDs (engine, charset, row format, unsigned/auto_increment primary-key requirements, partition, create_as/create_like, column charset/collation, change/modify column) or MySQL-only remediation text (`UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE CURRENT_TIMESTAMP`). When `--dialect mysql` or `--dialect tidb` is set, DeltaScope no longer emits `ddl.pg.*` or PostgreSQL-only dialect-gated rules. Isolation is enforced at the rule `AppliesTo` gate level, not by post-filtering.
 - **Generated expression text** is not evaluated or preserved, and DeltaScope still does not model full generated/identity lifecycle support or complete PostgreSQL sequence semantics.
 
 See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for detailed surface contracts and [release notes](docs/releases/README.md) for version-by-version changes.
