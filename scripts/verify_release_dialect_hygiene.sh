@@ -16,49 +16,60 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
 }
 
-# Python helper for checking findings.
+# Extract findings arrays from audit JSON as a flat text block.
+# DeltaScope JSON has global_findings (top-level array) and
+# statements[].findings (per-statement array).  Other top-level
+# keys like rule_summary contain all evaluated rule IDs and must
+# not be searched.
+extract_findings() {
+  local json_file="$1"
+  grep -o '"findings":\[[^]]*\]' "${json_file}" || true
+  grep -o '"global_findings":\[[^]]*\]' "${json_file}" || true
+}
+
+# Pure-bash helper for checking findings via grep.
 # Modes: no-rule, no-prefix, no-text
 check_findings() {
   local json_file="$1"
   local mode="$2"
   shift 2
 
-  python3 - "$json_file" "$mode" "$@" <<'PY'
-import json
-import sys
+  local leaked=()
 
-json_file = sys.argv[1]
-mode = sys.argv[2]
-values = sys.argv[3:]
+  case "${mode}" in
+    no-rule)
+      for v in "$@"; do
+        if grep -q "\"rule_id\":\"${v}\"" "${json_file}"; then
+          leaked+=("${v}")
+        fi
+      done
+      ;;
+    no-prefix)
+      for v in "$@"; do
+        if grep -q "\"rule_id\":\"${v}" "${json_file}"; then
+          leaked+=("${v}")
+        fi
+      done
+      ;;
+    no-text)
+      for v in "$@"; do
+        if grep -qF "${v}" "${json_file}"; then
+          leaked+=("${v}")
+        fi
+      done
+      ;;
+    *)
+      fail "unknown mode: ${mode}"
+      ;;
+  esac
 
-with open(json_file, "r", encoding="utf-8") as handle:
-    data = json.load(handle)
-
-findings = list(data.get("global_findings", []))
-for statement in data.get("statements", []):
-    findings.extend(statement.get("findings", []))
-
-if mode == "no-rule":
-    rule_ids = {item.get("rule_id", "") for item in findings}
-    leaked = [v for v in values if v in rule_ids]
-    if leaked:
-        raise SystemExit(f"forbidden rule IDs present: {leaked}")
-elif mode == "no-prefix":
-    leaked = [
-        item.get("rule_id", "")
-        for item in findings
-        if any(item.get("rule_id", "").startswith(v) for v in values)
-    ]
-    if leaked:
-        raise SystemExit(f"forbidden rule ID prefixes present: {leaked}")
-elif mode == "no-text":
-    block = json.dumps(findings, ensure_ascii=False)
-    leaked = [v for v in values if v in block]
-    if leaked:
-        raise SystemExit(f"forbidden finding text present: {leaked}")
-else:
-    raise SystemExit(f"unknown mode: {mode}")
-PY
+  if [ ${#leaked[@]} -gt 0 ]; then
+    case "${mode}" in
+      no-rule)   fail "forbidden rule IDs present: ${leaked[*]}" ;;
+      no-prefix) fail "forbidden rule ID prefixes present: ${leaked[*]}" ;;
+      no-text)   fail "forbidden finding text present: ${leaked[*]}" ;;
+    esac
+  fi
 }
 
 PG_SQL='CREATE TABLE pg_smoke (id bigint primary key);'
@@ -125,7 +136,6 @@ PG_ONLY_TOKENS=(
 )
 
 main() {
-  require_cmd python3
   require_cmd mktemp
 
   [[ -x "${DELTASCOPE_BIN}" ]] || fail "deltascope binary not found or not executable: ${DELTASCOPE_BIN}"
@@ -137,25 +147,31 @@ main() {
   # --- PostgreSQL smoke ---
   local pg_json="${tmp_dir}/pg.json"
   "${DELTASCOPE_BIN}" audit --dialect postgresql --format json --fail-on none --sql "${PG_SQL}" >"${pg_json}"
+  local pg_findings="${tmp_dir}/pg_findings.txt"
+  extract_findings "${pg_json}" >"${pg_findings}"
 
-  check_findings "${pg_json}" no-rule "${PG_FORBIDDEN_RULES[@]}"
-  check_findings "${pg_json}" no-text "${PG_FORBIDDEN_TOKENS[@]}"
+  check_findings "${pg_findings}" no-rule "${PG_FORBIDDEN_RULES[@]}"
+  check_findings "${pg_findings}" no-text "${PG_FORBIDDEN_TOKENS[@]}"
 
   # --- MySQL smoke ---
   local mysql_json="${tmp_dir}/mysql.json"
   "${DELTASCOPE_BIN}" audit --dialect mysql --format json --fail-on none --sql "${MYSQL_SQL}" >"${mysql_json}"
+  local mysql_findings="${tmp_dir}/mysql_findings.txt"
+  extract_findings "${mysql_json}" >"${mysql_findings}"
 
-  check_findings "${mysql_json}" no-prefix "ddl.pg."
-  check_findings "${mysql_json}" no-rule "${PG_ONLY_RULES[@]}"
-  check_findings "${mysql_json}" no-text "${PG_ONLY_TOKENS[@]}"
+  check_findings "${mysql_findings}" no-prefix "ddl.pg."
+  check_findings "${mysql_findings}" no-rule "${PG_ONLY_RULES[@]}"
+  check_findings "${mysql_findings}" no-text "${PG_ONLY_TOKENS[@]}"
 
   # --- TiDB smoke ---
   local tidb_json="${tmp_dir}/tidb.json"
   "${DELTASCOPE_BIN}" audit --dialect tidb --format json --fail-on none --sql "${MYSQL_SQL}" >"${tidb_json}"
+  local tidb_findings="${tmp_dir}/tidb_findings.txt"
+  extract_findings "${tidb_json}" >"${tidb_findings}"
 
-  check_findings "${tidb_json}" no-prefix "ddl.pg."
-  check_findings "${tidb_json}" no-rule "${PG_ONLY_RULES[@]}"
-  check_findings "${tidb_json}" no-text "${PG_ONLY_TOKENS[@]}"
+  check_findings "${tidb_findings}" no-prefix "ddl.pg."
+  check_findings "${tidb_findings}" no-rule "${PG_ONLY_RULES[@]}"
+  check_findings "${tidb_findings}" no-text "${PG_ONLY_TOKENS[@]}"
 }
 
 main "$@"
