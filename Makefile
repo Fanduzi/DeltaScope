@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates
+.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -287,17 +287,6 @@ release-surface-gates:
 # release-version-surface-gates: verify versioned docs surfaces for the current release.
 # This stays separate from the release-blocking package contract so docs wording can evolve independently.
 release-version-surface-gates:
-	@set -eu; \
-	version="$(VERSION)"; \
-	test -n "$$version"; \
-	en_notes="docs/releases/release-notes-$${version}.md"; \
-	zh_notes="docs/releases/release-notes-$${version}.zh-CN.md"; \
-	test -f "$$en_notes"; \
-	test -f "$$zh_notes"; \
-	grep -q "^# DeltaScope $${version} Release Notes$$" "$$en_notes"; \
-	grep -q "^# DeltaScope $${version} 发行说明$$" "$$zh_notes"; \
-	grep -q "https://raw.githubusercontent.com/Fanduzi/DeltaScope/$${version}/install.sh" README.md; \
-	grep -q "DELTASCOPE_VERSION=$${version} sh" README.md; \
-	grep -q "https://raw.githubusercontent.com/Fanduzi/DeltaScope/$${version}/install.sh" README_ZH.md; \
-	grep -q "DELTASCOPE_VERSION=$${version} sh" README_ZH.md; \
-	grep -q "release-notes-$${version}.md" docs/landing/index.html
+	@VERSION="$(VERSION)" bash ./scripts/verify_release_version_surfaces.sh
+
+release-version-contract-gates: release-version-surface-gates
