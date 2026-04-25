@@ -10,6 +10,8 @@ CHECKSUM="${CHECKSUM:-}"
 VERSION="${VERSION:-}"
 GLIBC_BASELINE="${GLIBC_BASELINE:-}"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 fail() {
   printf '[release-archive-verify][FAIL] %s\n' "$*" >&2
   exit 1
@@ -81,6 +83,8 @@ main() {
     --sql 'create table pg_smoke (id bigint primary key);' \
     --format json \
     --fail-on none >/dev/null
+
+  DELTASCOPE_BIN="${extract_dir}/deltascope" bash "${SCRIPT_DIR}/verify_release_dialect_hygiene.sh"
 
   if [[ -n "${GLIBC_BASELINE}" ]]; then
     require_cmd file

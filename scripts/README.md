@@ -10,6 +10,7 @@ Operational scripts for local DeltaScope workflows.
 | verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
 | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |
 | verify_release_version_surfaces.sh | Checks that source version constants, package docs, npm launcher package version, README install pins, release notes, release index links, and landing current-version surfaces all match VERSION |
+| verify_release_dialect_hygiene.sh | Runs release-blocking MySQL, TiDB, and PostgreSQL default-policy dialect smoke checks against a built or extracted deltascope binary |
 | test_cli_metadata_e2e.sh | Starts Docker fixtures, seeds TiDB, runs metadata-aware CLI e2e flows, and provides JSON assertion helpers |
 | test_mcp_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged MCP metadata-aware e2e smoke tests for direct and connection_ref paths |
 | test_http_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged HTTP metadata-aware e2e smoke tests against the live JSON API |
@@ -46,6 +47,7 @@ Operational scripts for local DeltaScope workflows.
 - `make release-surface-gates VERSION=<tag-or-version>`
 - `make release-version-surface-gates VERSION=<tag-or-version>`
 - `make release-version-contract-gates VERSION=<tag-or-version>`
+- `make release-dialect-hygiene-gates`
 
 ## Dependencies
 - Upstream: local developers, `Makefile`, and release-verification workflows
