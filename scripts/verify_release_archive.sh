@@ -39,6 +39,11 @@ main() {
   [[ -n "${VERSION}" ]] || fail "VERSION is required"
   [[ -f "${ARCHIVE}" ]] || fail "archive not found: ${ARCHIVE}"
 
+  local raw_version archive_base
+  raw_version="${VERSION#v}"
+  archive_base="$(basename "${ARCHIVE}")"
+  [[ "${archive_base}" == deltascope_"${raw_version}"_*_*.tar.gz ]] || fail "archive name does not match versioned contract: ${archive_base}, expected deltascope_${raw_version}_<os>_<arch>.tar.gz"
+
   if [[ -n "${CHECKSUM}" ]]; then
     [[ -f "${CHECKSUM}" ]] || fail "checksum sidecar not found: ${CHECKSUM}"
     grep -q "  $(basename "${ARCHIVE}")$" "${CHECKSUM}" || fail "checksum sidecar does not mention $(basename "${ARCHIVE}")"

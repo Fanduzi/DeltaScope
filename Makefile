@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates
+.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -290,3 +290,12 @@ release-version-surface-gates:
 	@VERSION="$(VERSION)" bash ./scripts/verify_release_version_surfaces.sh
 
 release-version-contract-gates: release-version-surface-gates
+
+# release-local-version-smoke: build all binaries with VERSION ldflags and verify version output.
+release-local-version-smoke:
+	@test -n "$(VERSION)" || (echo "VERSION is required" >&2; exit 1)
+	$(MAKE) build VERSION="$(VERSION)"
+	$(BUILD_DIR)/deltascope --version | grep -q "$(VERSION)"
+	$(BUILD_DIR)/deltascope --version | grep -q "postgresql"
+	$(BUILD_DIR)/deltascope-server --version | grep -q "^$(VERSION)$$"
+	$(BUILD_DIR)/deltascope-mcp -version | grep -q "^$(VERSION)$$"

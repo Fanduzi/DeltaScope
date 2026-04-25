@@ -33,6 +33,13 @@ test("resolvePlatform rejects unsupported hosts", () => {
   );
 });
 
+test("resolveDeltaScopeVersion maps package version to release tag", () => {
+  assert.equal(
+    resolveDeltaScopeVersion({ packageVersion: "0.44.0" }),
+    "v0.44.0",
+  );
+});
+
 test("resolveDeltaScopeVersion prefers env override and prefixes v", () => {
   assert.equal(
     resolveDeltaScopeVersion({ packageVersion: "0.7.0", envVersion: "" }),
@@ -105,6 +112,21 @@ test("resolveArchiveName and resolveArchiveURL follow the release contract", () 
       version: "v0.16.0",
     }),
     "https://github.com/Fanduzi/DeltaScope/releases/download/v0.16.0/deltascope_0.16.0_checksums.txt",
+  );
+});
+
+test("archive and checksum names follow release contract", () => {
+  assert.equal(
+    resolveArchiveName({ version: "v0.44.0", os: "linux", arch: "amd64" }),
+    "deltascope_0.44.0_linux_amd64.tar.gz",
+  );
+  assert.equal(
+    resolveChecksumsName({ version: "v0.44.0", os: "linux", arch: "amd64" }),
+    "deltascope_0.44.0_linux_amd64_checksums.txt",
+  );
+  assert.equal(
+    resolveChecksumsName({ version: "v0.44.0" }),
+    "deltascope_0.44.0_checksums.txt",
   );
 });
 
