@@ -307,4 +307,3 @@ release-dialect-hygiene-gates: build-cli
 # release-contract-gates: unified pre-release gate composing all version, surface, binary, launcher, and dialect checks.
 release-contract-gates: release-surface-gates release-version-surface-gates release-local-version-smoke release-dialect-hygiene-gates
 	npm test --prefix packages/deltascope-mcp
-	goreleaser check

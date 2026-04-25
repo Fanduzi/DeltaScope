@@ -38,13 +38,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.44.0/install.
   DELTASCOPE_VERSION=v0.44.0 sh
 ```
 
-### PostgreSQL Support
+### Dialects & Release Archives
 
-All main archives include PostgreSQL offline audit — no separate installer needed. Use `--dialect postgresql` to enable PG-specific rules and dialect isolation. See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for covered surfaces and [release notes](docs/releases/README.md) for version-by-version changes.
-
-### Release Contract
-
-Every tag produces core archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing the `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries. The supported `darwin/amd64`, `darwin/arm64`, `linux/amd64`, and `linux/arm64` main archives are PG-capable and support PostgreSQL offline across all three binaries. The installer script, Homebrew Cask, and npm MCP launcher all resolve those platform-specific main archives from GitHub Release assets. See the npm package metadata for the current `@fanduzi/deltascope-mcp` package version.
+Every tag publishes archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing `deltascope`, `deltascope-server`, and `deltascope-mcp`. All archives support MySQL, TiDB, and PostgreSQL offline audit via `--dialect mysql|tidb|postgresql`. The installer script, Homebrew Cask, and npm MCP launcher all resolve platform-specific archives from GitHub Release assets. See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for per-dialect coverage and [release notes](docs/releases/README.md) for version-by-version changes.
 
 ## Quick Start
 
@@ -121,60 +117,42 @@ Example JSON shape:
 }
 ```
 
-Audit a PostgreSQL migration with CI-native output:
+Audit a TiDB statement:
 
 ```bash
-deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
+deltascope audit --dialect tidb --sql "alter table users add column email varchar(255) not null"
 ```
 
-Audit a PostgreSQL `CREATE TABLE` statement with named and inline constraints:
+Audit a PostgreSQL `CREATE TABLE` with constraints:
 
 ```bash
 deltascope audit \
   --dialect postgresql \
-  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0), constraint uniq_orders_user unique (user_id), constraint chk_orders_amount check (amount >= 0));"
-```
-
-Audit a PostgreSQL `CREATE TABLE` with a named foreign key referencing another table:
-
-```bash
-deltascope audit \
-  --dialect postgresql \
-  --sql "create table orders (user_id bigint, constraint fk_orders_user foreign key (user_id) references users(id));"
-```
-
-Audit a PostgreSQL phased migration follow-up statement:
-
-```bash
-deltascope audit \
-  --dialect postgresql \
-  --sql "alter table users alter column status set default 'active';"
-```
-
-Audit a PostgreSQL constraint lifecycle statement:
-
-```bash
-deltascope audit \
-  --dialect postgresql \
-  --sql "alter table users validate constraint chk_amount;"
-```
-
-Generate SARIF output for GitHub Code Scanning:
-
-```bash
-deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
+  --sql "create table orders (id bigint primary key, user_id bigint references users(id), amount numeric not null check (amount >= 0))"
 ```
 
 When SQL looks like PostgreSQL but the dialect is set to MySQL, DeltaScope emits an advisory notice without auto-switching:
 
 ```bash
-deltascope audit --sql "insert into users(id) values (1) returning id;" --format markdown
+deltascope audit --sql "insert into users(id) values (1) returning id;"
 ```
 
 To audit PostgreSQL SQL explicitly:
 
 ```bash
 deltascope audit --dialect postgresql --sql "insert into users(id) values (1) returning id;"
+```
+
+Generate SARIF output for GitHub Code Scanning:
+
+```bash
+deltascope audit --file ./migrations.sql --format sarif > deltascope.sarif
+```
+
+Use CI-native output with any dialect:
+
+```bash
+deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
 ## DML Impact Estimation
