@@ -41,3 +41,9 @@ make test-e2e-http-tidb
 - MCP metadata e2e targets require Docker and Go.
 - HTTP metadata e2e targets require Docker and Go.
 - Release readiness should verify both the normal test path and the artifact/build path.
+
+## Release Contract Gates
+
+Run `make release-contract-gates VERSION=vX.Y.Z` before tagging a release. This target verifies source version constants, package docs, npm launcher package version, README install pins, release notes, release index links, landing current-version surfaces, local binary version output, npm launcher tests, GoReleaser configuration, and default-policy dialect hygiene smoke.
+
+Use this alongside `make release-test-gates` when preparing a release. The GitHub release workflow also runs the contract gate for the tag version before publishing release assets.

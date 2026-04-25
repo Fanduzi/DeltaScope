@@ -43,6 +43,9 @@ jobs:
       - name: Verify release version surfaces
         run: make release-version-surface-gates VERSION="${GITHUB_REF_NAME}"
 
+      - name: Verify release contract gates
+        run: make release-contract-gates VERSION="${GITHUB_REF_NAME}"
+
       - name: Verify converged Linux amd64 PG release archive shape
         run: make verify-pg-linux-release-archive VERSION="${GITHUB_REF_NAME}"
 
