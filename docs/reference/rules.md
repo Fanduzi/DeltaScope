@@ -536,6 +536,8 @@ Each boundary is backed by corpus cases and surface parity tests across CLI, HTT
 - **CLI usage** — [cli.md](cli.md)
 - **Capability matrix** — [audit-capability-matrix.md](audit-capability-matrix.md)
 
+Starting with `v0.44.0`, `make release-contract-gates VERSION=vX.Y.Z` verifies version surfaces, binary version output, default policy dialect isolation, and archive integrity as a unified pre-publish gate. No new rule IDs, parser features, or public API contracts were added.
+
 ---
 
 ### PostgreSQL Generated/Identity Rule Coverage (v0.36.0)

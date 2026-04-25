@@ -722,3 +722,7 @@ This is intentionally narrow:
 - DeltaScope does not infer `public`.
 - DeltaScope does not model PostgreSQL `search_path`.
 - This is not a cross-schema validation workflow and not a broad PostgreSQL FK implementation.
+
+## Release Contract Gates
+
+Starting with `v0.44.0`, every tagged release passes `make release-contract-gates VERSION=vX.Y.Z` which verifies version surfaces, binary version output, default policy dialect isolation, and archive integrity. The default policy dialect isolation gate ensures that PostgreSQL migration reviews never emit MySQL/TiDB-only findings and vice versa — the same guarantee enforced at the binary level before publish.

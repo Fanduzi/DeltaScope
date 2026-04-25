@@ -594,7 +594,9 @@ deltascope audit \
 | `make release-surface-gates VERSION=vX.Y.Z` | 校验该版本的 package/release 合同 |
 | `make release-version-surface-gates VERSION=vX.Y.Z` | 校验带版本的文档/安装面和双语 release notes |
 
-`v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。 
+`v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。
+
+从 `v0.44.0` 开始，`make release-contract-gates VERSION=vX.Y.Z` 将版本面校验、二进制版本 smoke、默认策略方言隔离 smoke 和 archive 校验合并为单一的 pre-publish gate。完整 gate 清单参见 release notes。
 
 ---
 

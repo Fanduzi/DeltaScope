@@ -709,3 +709,7 @@ FK forbid finding 现在显示约束引用的表和 schema，使迁移审查中�
 - DeltaScope 不推断 `public`。
 - DeltaScope 不建模 PostgreSQL `search_path`。
 - 这不是跨 schema 校验引擎，也不是完整的 PostgreSQL 外键支持。
+
+## Release Contract Gates
+
+从 `v0.44.0` 开始，每次 tagged release 都会通过 `make release-contract-gates VERSION=vX.Y.Z`，校验版本面、二进制版本输出、默认策略方言隔离和 archive 完整性。默认策略方言隔离 gate 确保 PostgreSQL 迁移审查不会发出 MySQL/TiDB-only 的 findings，反之亦然——这是在二进制级别发布前强制执行的保证。

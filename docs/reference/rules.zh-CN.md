@@ -524,6 +524,8 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 - **CLI 用法** — [cli.zh-CN.md](cli.zh-CN.md)
 - **能力矩阵** — [audit-capability-matrix.zh-CN.md](audit-capability-matrix.zh-CN.md)
 
+从 `v0.44.0` 开始，`make release-contract-gates VERSION=vX.Y.Z` 将版本面校验、二进制版本输出、默认策略方言隔离和 archive 完整性合并为统一的 pre-publish gate。未新增规则 ID、解析器功能或公共 API 契约。
+
 ---
 
 ### PostgreSQL Generated/Identity Rule Coverage（v0.36.0）

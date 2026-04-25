@@ -254,6 +254,10 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 - `make release-surface-gates VERSION=vX.Y.Z` —— package/release 合同校验
 - `make release-version-surface-gates VERSION=vX.Y.Z` —— 带版本的文档/安装/release-notes 校验
 
+## Release Contract Gates（`v0.44.0`）
+
+`v0.44.0` 新增 **Release Contract Hardening Pack** — 统一的 `make release-contract-gates VERSION=vX.Y.Z` 在每次 tagged release 前校验版本面、二进制版本输出、默认策略方言隔离和 archive 完整性。未新增规则 ID、解析器功能或公共 API 契约。
+
 ## 语料库支撑的置信度（`v0.25.0`）
 
 `v0.25.0` 是 **SQL 语料库与边界置信度包**。它新增了跨方言的 SQL 语料库（`testdata/sql-corpus/`），通过现有审计应用层运行代表性的 MySQL、TiDB 和 PostgreSQL 用例，并在两个层面断言预期结果：

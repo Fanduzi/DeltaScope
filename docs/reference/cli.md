@@ -636,6 +636,8 @@ This does not add new rule IDs, parser features, public API contracts, live sche
 
 `v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints. `v0.23.0` then extends the documented PostgreSQL `CREATE TABLE` coverage while keeping these release-surface gates as the canonical verification path.
 
+Starting with `v0.44.0`, `make release-contract-gates VERSION=vX.Y.Z` combines version surface verification, binary version smoke, default policy dialect isolation smoke, and archive verification into a single pre-publish gate. See the release notes for the full gate inventory.
+
 #### Quiet Mode
 
 `--quiet` changes markdown output only. With markdown output, DeltaScope suppresses the normal report body and prints each finding as a single line. With `--format json`, the JSON contract is unchanged.

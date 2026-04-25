@@ -268,6 +268,10 @@ All newly normalized PostgreSQL DDL actions and `v0.23.0`/`v0.24.0` create-table
 - `make release-surface-gates VERSION=vX.Y.Z` — package/release contract verification
 - `make release-version-surface-gates VERSION=vX.Y.Z` — versioned docs/install/release-notes verification
 
+## Release Contract Gates (`v0.44.0`)
+
+`v0.44.0` adds the **Release Contract Hardening Pack** — a unified `make release-contract-gates VERSION=vX.Y.Z` that verifies version surfaces, binary version output, default policy dialect isolation, and archive integrity before every tagged release. No new rule IDs, parser features, or public API contracts were added.
+
 ## Corpus-Backed Confidence (`v0.25.0`)
 
 `v0.25.0` is the **SQL Corpus & Boundary Confidence Pack**. It adds a dialect-wide SQL corpus harness (`testdata/sql-corpus/`) that runs representative MySQL, TiDB, and PostgreSQL cases through the existing audit application layer and asserts expected outcomes at two layers:

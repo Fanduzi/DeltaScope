@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.43.0 Default Policy Dialect Hygiene Pack
+## Latest Completed Milestone: v0.44.0 Release Contract Hardening Pack
+
+**Goal:** harden the release contract surface with unified gates, binary version smoke, default policy dialect isolation smoke, and archive verification so every tagged release passes a deterministic pre-publish check.
+
+### Completed Scope
+
+- Unified `make release-contract-gates VERSION=vX.Y.Z` combining version surface, binary version smoke, default policy dialect isolation, and archive verification.
+- `scripts/verify_release_version_surfaces.sh` — verifies source constants, npm package, README install pins, release notes, and landing DOM/JS i18n against the tagged version.
+- `scripts/verify_release_version.sh` — builds all three binaries with ldflags and asserts CLI, server, and MCP version output.
+- `scripts/verify_release_dialect_hygiene.sh` — asserts PostgreSQL audits do not emit MySQL/TiDB-only rule IDs and MySQL/TiDB audits do not emit PostgreSQL-only rule IDs.
+- `scripts/verify_release_archive.sh` — builds cross-compiled archive, verifies filename contract, checksum, binary version, and dialect hygiene against extracted binary.
+- Default policy dialect hygiene e2e test added to the release test gate suite.
+- Release workflow wired to run `release-contract-gates` before publish.
+- Local go-release skill checklist updated with gate verification steps.
+
+### Key Design Decisions
+
+- No production Go code changes — all gates are scripts and tests.
+- No new rule IDs, parser features, or public API contracts.
+- Dialect hygiene gate tests at the binary level, not the unit level.
+- Archive verification uses the cross-compiled Linux amd64 binary to match the release artifact.
+
+## Previous Milestone: v0.43.0 Default Policy Dialect Hygiene Pack
 
 **Goal:** make the shipped default policy respect the user-selected SQL dialect across MySQL, TiDB, and PostgreSQL, so that PostgreSQL audits never emit MySQL/TiDB-only rule IDs or remediation text and MySQL/TiDB audits never emit PostgreSQL-only rule IDs.
 
