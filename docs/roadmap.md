@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.44.0 Release Contract Hardening Pack
+## Latest Completed Milestone: v0.45.0 GitLab CI Integration Pack
+
+**Goal:** add GitLab Code Quality report output so merge-request pipelines can surface SQL audit findings as inline code-quality annotations without any post-processing.
+
+### Completed Scope
+
+- `--format gitlab-codequality` CLI flag produces a JSON array matching the GitLab Code Quality report contract.
+- Each DeltaScope finding maps to a Code Quality entry with `check_name`, `description`, `severity`, `fingerprint`, and `location` fields.
+- File paths from `--file` propagate to `location.path`; inline SQL uses the audit input filename.
+- Contract characterization tests lock the required JSON shape and semantic field guarantees.
+- Unit tests cover the renderer with zero findings, single finding, and multiple finding cases.
+- `make release-gitlab-codequality-smoke` gate validates the built CLI binary against the contract in the release pipeline.
+- `make release-contract-gates` now includes the GitLab Code Quality smoke.
+- Recipe: Using DeltaScope in GitLab CI with step-by-step `.gitlab-ci.yml` setup.
+- CLI reference updated with `--format` flag documentation.
+- Audit capability matrix updated to list GitLab Code Quality as a supported output format.
+
+### Key Design Decisions
+
+- No parser, spec, domain-rule, or policy changes.
+- No HTTP, MCP, or `pkg/deltascope` production-code changes.
+- No new dependencies.
+- GitLab Code Quality renderer is a pure output adapter in `internal/infrastructure/output/gitlabcodequality`.
+
+## Previous Milestone: v0.44.0 Release Contract Hardening Pack
 
 **Goal:** harden the release contract surface with unified gates, binary version smoke, default policy dialect isolation smoke, and archive verification so every tagged release passes a deterministic pre-publish check.
 

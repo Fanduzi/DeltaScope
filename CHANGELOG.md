@@ -6,6 +6,23 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.45.0] - 2026-04-26
+
+### Added
+
+- `--format gitlab-codequality` CLI flag emits a JSON array matching the GitLab Code Quality report contract so merge-request pipelines can surface SQL audit findings as inline code-quality annotations.
+- Contract characterization tests lock the required JSON shape and semantic field guarantees for the GitLab Code Quality renderer.
+- Unit tests cover the GitLab Code Quality renderer with zero findings, single finding, and multiple finding cases.
+- `make release-gitlab-codequality-smoke` release gate validates the built CLI binary against the GitLab Code Quality output contract.
+- `make release-contract-gates` now includes the GitLab Code Quality smoke.
+- Recipe: [Using DeltaScope in GitLab CI](docs/recipe/use-deltascope-in-gitlab-ci.md) with step-by-step `.gitlab-ci.yml` setup.
+- CLI reference updated with `--format` flag documentation.
+- Audit capability matrix updated to list GitLab Code Quality as a supported output format.
+
+### Changed
+
+- Release-facing docs now position `v0.45.0` as the GitLab CI Integration Pack. This does not add new rule IDs, parser features, public API contracts, domain logic changes, MySQL/TiDB or PostgreSQL audit behavior changes, HTTP/MCP/pkg production code changes, or new dependencies.
+
 ## [v0.44.0] - 2026-04-25
 
 ### Added
