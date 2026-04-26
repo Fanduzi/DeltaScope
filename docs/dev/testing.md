@@ -44,6 +44,19 @@ make test-e2e-http-tidb
 
 ## Release Contract Gates
 
-Run `make release-contract-gates VERSION=vX.Y.Z` before tagging a release. This target verifies source version constants, package docs, npm launcher package version, README install pins, release notes, release index links, landing current-version surfaces, local binary version output, npm launcher tests, GoReleaser configuration, and default-policy dialect hygiene smoke.
+Run `make release-contract-gates VERSION=vX.Y.Z` before tagging a release. This target verifies source version constants, package docs, npm launcher package version, README install pins, release notes, release index links, landing current-version surfaces, local binary version output, npm launcher tests, GoReleaser configuration, default-policy dialect hygiene smoke, and GitLab Code Quality output contract smoke.
 
 Use this alongside `make release-test-gates` when preparing a release. The GitHub release workflow also runs the contract gate for the tag version before publishing release assets.
+
+### GitLab Code Quality Smoke
+
+`make release-gitlab-codequality-smoke` validates the `--format gitlab-codequality` output against the GitLab Code Quality JSON contract. It requires no Docker and no GitLab API connection — it runs the built CLI binary locally and checks:
+
+- Output is a valid JSON array with at least one issue
+- Each issue has required fields (`description`, `check_name`, `fingerprint`, `severity`, `location.path`, `location.lines.begin`)
+- `fingerprint` is a 64-character hex string
+- `severity` is one of `info`, `minor`, `major`, `critical`, `blocker`
+- Inline SQL (`--sql`) produces `location.path` = `deltascope.sql`
+- File path (`--file`) propagates the user-supplied path into `location.path`
+
+This gate is included in `make release-contract-gates`.
