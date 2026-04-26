@@ -45,10 +45,10 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			switch options.Format {
-			case "markdown", "json", "github-actions", "sarif":
+			case "markdown", "json", "github-actions", "sarif", "gitlab-codequality":
 			default:
 				*exitCode = exitUser
-				return newUserError("format must be markdown, json, github-actions, or sarif")
+				return newUserError("format must be markdown, json, github-actions, sarif, or gitlab-codequality")
 			}
 
 			switch options.FailOn {

@@ -20,6 +20,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
@@ -97,7 +98,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return mapAuditError(exitCode, auditErr)
 			}
 
-			output, err := renderResult(options.Format, options.Quiet, result, runContext)
+			output, err := renderResult(options.Format, options.Quiet, result, runContext, filePath)
 			if err != nil {
 				*exitCode = exitInternal
 				return err
@@ -272,7 +273,7 @@ func hasRenderableAuditResult(result report.Result) bool {
 	return len(result.Statements) > 0 || len(result.GlobalFindings) > 0 || len(result.Unsupported) > 0 || result.RuleSummary != nil || result.Explanation != nil || result.Verdict != "" || result.Summary != (report.Summary{})
 }
 
-func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext) ([]byte, error) {
+func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string) ([]byte, error) {
 	switch format {
 	case "json":
 		return renderJSONResult(result, runContext)
@@ -280,6 +281,8 @@ func renderResult(format string, quiet bool, result report.Result, runContext *a
 		return githubactions.Render(result)
 	case "sarif":
 		return sarif.Render(result)
+	case "gitlab-codequality":
+		return gitlabcodequality.Render(result, gitlabcodequality.Options{Path: sourcePath})
 	case "markdown":
 		if quiet {
 			return renderQuietResult(result, runContext), nil

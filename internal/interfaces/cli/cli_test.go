@@ -1469,7 +1469,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		}},
 	}
 
-	quietOutput, err := renderResult("markdown", true, result, nil)
+	quietOutput, err := renderResult("markdown", true, result, nil, "")
 	if err != nil {
 		t.Fatalf("render quiet result: %v", err)
 	}
@@ -1477,7 +1477,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		t.Fatalf("expected quiet finding output, got %q", string(quietOutput))
 	}
 
-	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"})
+	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"}, "")
 	if err != nil {
 		t.Fatalf("render json result: %v", err)
 	}
@@ -1490,7 +1490,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		t.Fatalf("expected json context payload, got %#v", decoded["context"])
 	}
 
-	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil)
+	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil, "")
 	if err != nil {
 		t.Fatalf("render fallback markdown result: %v", err)
 	}
@@ -1763,6 +1763,99 @@ func TestAuditCommandSupportsSARIFFormat(t *testing.T) {
 	runs, ok := decoded["runs"].([]any)
 	if !ok || len(runs) == 0 {
 		t.Fatalf("expected runs array in SARIF output, got %v", decoded["runs"])
+	}
+}
+
+func TestAuditCommandSupportsGitLabCodeQualityFormatWithSQL(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal gitlab-codequality output: %v\noutput=%s", err, stdout.String())
+	}
+	if len(issues) == 0 {
+		t.Fatal("expected at least one issue for DELETE without WHERE")
+	}
+
+	issue := issues[0]
+	if issue["check_name"] != "dml.where.require" {
+		t.Errorf("check_name = %v, want dml.where.require", issue["check_name"])
+	}
+	loc, ok := issue["location"].(map[string]any)
+	if !ok {
+		t.Fatal("location is not an object")
+	}
+	if loc["path"] != "deltascope.sql" {
+		t.Errorf("location.path = %v, want deltascope.sql", loc["path"])
+	}
+	lines, ok := loc["lines"].(map[string]any)
+	if !ok {
+		t.Fatal("location.lines is not an object")
+	}
+	if lines["begin"] == nil {
+		t.Error("location.lines.begin is missing")
+	}
+	if issue["severity"] == "" {
+		t.Error("severity is empty")
+	}
+	if issue["fingerprint"] == "" {
+		t.Error("fingerprint is empty")
+	}
+}
+
+func TestAuditCommandGitLabCodeQualityFormatWithFile(t *testing.T) {
+	dir := t.TempDir()
+	filePath := dir + "/migrations.sql"
+	if err := os.WriteFile(filePath, []byte("CREATE TABLE t (id INT);"), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", filePath, "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d, stderr=%s", code, stderr.String())
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal: %v\noutput=%s", err, stdout.String())
+	}
+	if len(issues) == 0 {
+		t.Fatal("expected at least one issue")
+	}
+
+	loc := issues[0]["location"].(map[string]any)
+	path := loc["path"].(string)
+	if path == "" {
+		t.Error("location.path should not be empty")
+	}
+	if path == "deltascope.sql" {
+		t.Errorf("location.path should use file path, not synthetic, got %s", path)
 	}
 }
 
