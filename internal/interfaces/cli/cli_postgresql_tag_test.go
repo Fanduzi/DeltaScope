@@ -2187,3 +2187,58 @@ func cliToFloat64(v any) (float64, bool) {
 	}
 	return 0, false
 }
+
+func TestAuditCommandPostgreSQLGitLabCodeQualityRendersGlobalFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;", "--dialect", "postgresql", "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d, stderr=%s", code, stderr.String())
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal: %v\noutput=%s", err, stdout.String())
+	}
+
+	hasNotValid := false
+	for _, issue := range issues {
+		cn, _ := issue["check_name"].(string)
+		if cn == "ddl.pg.alter.not_valid_constraint.validate.require" {
+			hasNotValid = true
+			loc, _ := issue["location"].(map[string]any)
+			if loc == nil {
+				t.Fatal("global finding missing location")
+			}
+			if loc["path"] != "deltascope.sql" {
+				t.Errorf("location.path = %v, want deltascope.sql", loc["path"])
+			}
+			sev, _ := issue["severity"].(string)
+			if sev == "" {
+				t.Error("severity is empty")
+			}
+			fp, _ := issue["fingerprint"].(string)
+			if len(fp) != 64 {
+				t.Errorf("fingerprint length = %d, want 64", len(fp))
+			}
+			break
+		}
+	}
+	if !hasNotValid {
+		t.Errorf("expected ddl.pg.alter.not_valid_constraint.validate.require in issues, got check_names: %v", func() []string {
+			var names []string
+			for _, issue := range issues {
+				names = append(names, issue["check_name"].(string))
+			}
+			return names
+		}())
+	}
+}

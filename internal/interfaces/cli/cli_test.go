@@ -1859,6 +1859,91 @@ func TestAuditCommandGitLabCodeQualityFormatWithFile(t *testing.T) {
 	}
 }
 
+func TestAuditCommandGitLabCodeQualityRendersDDLFinding(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "CREATE TABLE t (id INT);", "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d, stderr=%s", code, stderr.String())
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal: %v\noutput=%s", err, stdout.String())
+	}
+	if len(issues) == 0 {
+		t.Fatal("expected at least one DDL issue for bare CREATE TABLE")
+	}
+
+	hasDDL := false
+	for _, issue := range issues {
+		cn := issue["check_name"].(string)
+		if strings.HasPrefix(cn, "ddl.") {
+			hasDDL = true
+			break
+		}
+	}
+	if !hasDDL {
+		t.Error("expected at least one issue with check_name starting with ddl.")
+	}
+}
+
+func TestAuditCommandGitLabCodeQualityRelativeFilePath(t *testing.T) {
+	dir := t.TempDir()
+	sub := dir + "/migrations"
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	filePath := sub + "/gitlab.sql"
+	if err := os.WriteFile(filePath, []byte("CREATE TABLE t (id INT);"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	// Run from a working directory inside the temp dir so the path is relative.
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origDir)
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", "migrations/gitlab.sql", "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d, stderr=%s", code, stderr.String())
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(issues) == 0 {
+		t.Fatal("expected at least one issue")
+	}
+
+	loc := issues[0]["location"].(map[string]any)
+	path := loc["path"].(string)
+	if path != "migrations/gitlab.sql" {
+		t.Errorf("location.path = %q, want migrations/gitlab.sql", path)
+	}
+}
+
 func TestAuditCommandJSONFormatDoesNotRegress(t *testing.T) {
 	stdout := &strings.Builder{}
 

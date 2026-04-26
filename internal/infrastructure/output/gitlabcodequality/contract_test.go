@@ -97,7 +97,7 @@ func TestEmptyResultProducesEmptyJSONArray(t *testing.T) {
 
 // --- Contract: severity mapping ---
 
-func TestSeverityMapping(t *testing.T) {
+func TestContractSeverityMapping(t *testing.T) {
 	cases := []struct {
 		level    rule.Level
 		expected string
