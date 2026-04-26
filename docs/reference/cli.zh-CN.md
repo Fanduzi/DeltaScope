@@ -246,6 +246,36 @@ deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > d
 
 输出包含规则元数据（来自 explanation suggestion 的帮助文本）放在 `tool.driver.rules` 下，严重级别映射：`blocker` → `error`、`warning` → `warning`、`notice` → `note`。
 
+#### GitLab Code Quality 输出
+
+使用 `--format gitlab-codequality` 生成 GitLab Code Quality 报告，可在合并请求的 Code Quality 小组件和差异标注中展示。所有 GitLab 套餐（Free+）均可用。
+
+```bash
+deltascope audit --file migrations.sql --format gitlab-codequality --fail-on none > gl-code-quality-report.json
+```
+
+在 `.gitlab-ci.yml` 中将报告发布为制品：
+
+```yaml
+artifacts:
+  reports:
+    codequality: gl-code-quality-report.json
+  when: always
+```
+
+字段映射：
+
+| DeltaScope | GitLab Code Quality |
+|-----------|---------------------|
+| 规则 ID | `check_name` |
+| 消息 + 建议 | `description` |
+| blocker → major、warning → minor、notice → info | `severity` |
+| `--file` 路径或 `deltascope.sql` | `location.path` |
+| 发现所在行号或 1 | `location.lines.begin` |
+| SHA-256 哈希 | `fingerprint` |
+
+Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追踪发现。不支持的语句（解析器诊断）不会作为 Code Quality 问题输出。完整示例见 [use-deltascope-in-gitlab-ci.zh-CN.md](../recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。
+
 #### 规则摘要
 
 JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现；在 markdown 中渲染为 `## Rule Summary` 和 `## Skipped Rules` 区段。GitHub Actions 和 SARIF 输出不包含规则摘要。

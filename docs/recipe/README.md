@@ -20,3 +20,4 @@ These docs are intended to be copied into real terminal sessions. Each recipe sh
 | [use-with-ai-agents.md](use-with-ai-agents.md) | Feed DeltaScope JSON into scripts and agent loops |
 | [inspect-rules-and-config.md](inspect-rules-and-config.md) | Explore shipped rules and config defaults quickly |
 | [troubleshoot-metadata-aware-audit.md](troubleshoot-metadata-aware-audit.md) | Diagnose schema inference, connection, and metadata-aware audit failures |
+| [use-deltascope-in-gitlab-ci.md](use-deltascope-in-gitlab-ci.md) | Publish SQL audit findings as GitLab Code Quality reports in merge requests |

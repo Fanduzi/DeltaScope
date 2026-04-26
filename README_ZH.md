@@ -153,6 +153,8 @@ deltascope audit --file ./migrations.sql --format sarif > deltascope.sarif
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
+在 GitLab CI 中使用 `--format gitlab-codequality` 并将 `gl-code-quality-report.json` 发布为 Code Quality 制品；详见 [use-deltascope-in-gitlab-ci.zh-CN.md](docs/recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。
+
 ## DML 影响估算
 
 对于 `DELETE FROM users WHERE id = 42` 这类选择性较强的 DML，DeltaScope 可能会在该语句结果上附加一个 `impact` 对象。这个对象以保守估算为原则，包含 `estimated_rows`、`estimated_ratio`、`risk_level`、`confidence`、`source`、`reason_codes`，以及可选的 `notes`。

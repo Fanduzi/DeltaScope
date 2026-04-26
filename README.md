@@ -155,6 +155,8 @@ Use CI-native output with any dialect:
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
+For GitLab CI, use `--format gitlab-codequality` and publish `gl-code-quality-report.json` as a Code Quality artifact; see [use-deltascope-in-gitlab-ci.md](docs/recipe/use-deltascope-in-gitlab-ci.md).
+
 ## DML Impact Estimation
 
 For a selective DML such as `DELETE FROM users WHERE id = 42`, DeltaScope may add an `impact` object to the statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.

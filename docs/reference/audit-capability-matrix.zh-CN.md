@@ -544,3 +544,4 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | 离线信任上下文可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告审计上下文：markdown 包含 `## Audit Context` 区段和信任提示；JSON 包含 `context` 对象；quiet 包含 `[context]` 行。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含上下文元数据。 |
 | 规则摘要 / 跳过规则可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告已加载、适用和跳过的规则计数，方便确认当前方言下哪些规则运行了。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含规则摘要元数据。 |
 | 启发式误报排除 | 已覆盖 | PostgreSQL 语法启发式不对字符串字面量、双引号标识符、反引号标识符、行注释或块注释中的标记触发。 |
+| GitLab Code Quality 输出 | 已覆盖 | `--format gitlab-codequality` 生成 GitLab Code Quality 报告（`gl-code-quality-report.json`），用于合并请求小组件和差异标注。所有套餐（Free+）。见 [use-deltascope-in-gitlab-ci.zh-CN.md](../recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。 |

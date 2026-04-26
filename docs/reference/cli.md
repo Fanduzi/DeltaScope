@@ -286,6 +286,36 @@ deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > d
 
 The output includes rule metadata (help text from explanation suggestions) under `tool.driver.rules` and maps severity levels to SARIF levels: `blocker` → `error`, `warning` → `warning`, `notice` → `note`.
 
+#### GitLab Code Quality Output
+
+Use `--format gitlab-codequality` to produce a GitLab Code Quality report for merge request Code Quality widgets and diff annotations. Available in all GitLab tiers (Free+).
+
+```bash
+deltascope audit --file migrations.sql --format gitlab-codequality --fail-on none > gl-code-quality-report.json
+```
+
+In `.gitlab-ci.yml`, publish the report as an artifact:
+
+```yaml
+artifacts:
+  reports:
+    codequality: gl-code-quality-report.json
+  when: always
+```
+
+Field mapping:
+
+| DeltaScope | GitLab Code Quality |
+|-----------|---------------------|
+| Rule ID | `check_name` |
+| Message + suggestion | `description` |
+| blocker → major, warning → minor, notice → info | `severity` |
+| `--file` path or `deltascope.sql` | `location.path` |
+| Finding line or 1 | `location.lines.begin` |
+| SHA-256 hash | `fingerprint` |
+
+Fingerprints are stable across runs so GitLab can track findings across pipelines. Unsupported statements (parser diagnostics) are not emitted as Code Quality issues. See [use-deltascope-in-gitlab-ci.md](../recipe/use-deltascope-in-gitlab-ci.md) for a complete recipe.
+
 #### Rule Summary
 
 JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`; in markdown it renders as `## Rule Summary` and `## Skipped Rules` sections. GitHub Actions and SARIF output do not include rule summary.
