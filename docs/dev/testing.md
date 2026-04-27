@@ -60,3 +60,31 @@ Use this alongside `make release-test-gates` when preparing a release. The GitHu
 - File path (`--file`) propagates the user-supplied path into `location.path`
 
 This gate is included in `make release-contract-gates`.
+
+### Homebrew Verification Hygiene
+
+The release workflow runs a `verify-homebrew-cask-install` job on macOS that performs a real Homebrew install from the published tap. It verifies:
+
+- The cask can be installed from `fanduzi/deltascope`
+- `deltascope --version` contains the release tag
+- The binary includes PostgreSQL support
+- A PostgreSQL audit smoke passes
+
+A successful run must not produce Homebrew `unavailable` error annotations. The cleanup logic uses conditional execution instead of `|| true`:
+
+```bash
+# CORRECT: conditional cleanup
+if brew list --cask deltascope >/dev/null 2>&1; then
+  brew uninstall --cask deltascope
+fi
+
+if brew tap | grep -Fxq "fanduzi/deltascope"; then
+  brew untap fanduzi/deltascope
+fi
+```
+
+`|| true` must not appear on cleanup commands. It swallows the exit code but not stderr; GitHub Actions still promotes stderr to error annotations on successful runs.
+
+The tap/install/version-check/audit commands must also not use `|| true` — real failures must block the release.
+
+`make release-workflow-hygiene-gates` (included in `release-contract-gates`) statically checks the release workflow for these violations.
