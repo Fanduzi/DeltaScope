@@ -136,3 +136,58 @@ func TestSourceLocationTiDBSameAsMySQL(t *testing.T) {
 		t.Errorf("TiDB delete statement Column=%d, want 1", deleteStmt.Column)
 	}
 }
+
+// TestSourceLocationRuleProvidedLocationPreserved verifies that EvaluateStatements
+// does NOT overwrite a Finding.Location already set by a rule. When the rule
+// returns Location.Line=42 and the statement has Line=9, the final finding
+// must retain Line=42.
+func TestSourceLocationRuleProvidedLocationPreserved(t *testing.T) {
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(&locationOverrideRule{}); err != nil {
+		t.Fatalf("register rule: %v", err)
+	}
+
+	statements := []spec.Statement{
+		{Kind: spec.KindDML, RawSQL: "delete from users;", Line: 9, Column: 1},
+	}
+
+	result, err := EvaluateStatements(registry, statements)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement result, got %d", len(result.Statements))
+	}
+	findings := result.Statements[0].Findings
+	if len(findings) == 0 {
+		t.Fatal("expected at least 1 finding from locationOverrideRule")
+	}
+
+	f := findings[0]
+	if f.Location == nil {
+		t.Fatal("finding Location is nil")
+	}
+	if f.Location.Line != 42 {
+		t.Errorf("finding Location.Line=%d, want 42 (rule-provided, not overwritten by statement Line=9)", f.Location.Line)
+	}
+	if f.Location.Column != 7 {
+		t.Errorf("finding Location.Column=%d, want 7 (rule-provided)", f.Location.Column)
+	}
+}
+
+// locationOverrideRule is a test-only rule that always fires and sets a
+// Finding.Location to prove EvaluateStatements preserves rule-provided locations.
+type locationOverrideRule struct{}
+
+func (locationOverrideRule) ID() string { return "test.location-override" }
+func (locationOverrideRule) AppliesTo(_ spec.Statement) bool { return true }
+func (locationOverrideRule) Evaluate(_ spec.Statement) ([]rule.Finding, error) {
+	return []rule.Finding{
+		{
+			RuleID:   "test.location-override",
+			Level:    rule.LevelWarning,
+			Message:  "test finding with location",
+			Location: &rule.Location{Line: 42, Column: 7},
+		},
+	}, nil
+}

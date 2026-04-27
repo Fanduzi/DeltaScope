@@ -2364,3 +2364,51 @@ func TestLocationFidelityGitLabCodeQualityLineReal(t *testing.T) {
 		t.Errorf("expected lines.begin=9 (delete statement start line), got %v", begin)
 	}
 }
+
+// TestLocationFidelityTiDBGitLabCodeQualityLineReal verifies that explicit
+// --dialect tidb with --format gitlab-codequality produces the same correct
+// statement-start line numbers as the default MySQL dialect.
+func TestLocationFidelityTiDBGitLabCodeQualityLineReal(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", sqlPath, "--dialect", "tidb", "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal gitlab-codequality: %v\noutput=%s", err, stdout.String())
+	}
+
+	var whereIssue map[string]any
+	for _, issue := range issues {
+		if issue["check_name"] == "dml.where.require" {
+			whereIssue = issue
+			break
+		}
+	}
+	if whereIssue == nil {
+		t.Fatal("expected dml.where.require issue")
+	}
+
+	loc, _ := whereIssue["location"].(map[string]any)
+	lines, _ := loc["lines"].(map[string]any)
+	begin := lines["begin"]
+
+	beginFloat, _ := begin.(float64)
+	if beginFloat != 9 {
+		t.Errorf("TiDB: expected lines.begin=9 (delete statement start line), got %v", begin)
+	}
+}

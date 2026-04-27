@@ -595,6 +595,50 @@ func assertNoPGRuleIDs(t *testing.T, result Result) {
 	}
 }
 
+func TestAuditReturnsSourceLocationsForMultiStatementFileLikeSQL(t *testing.T) {
+	sql := `create table ok_users (
+  id bigint unsigned not null auto_increment comment 'id',
+  name varchar(32) not null default '' comment 'name',
+  created_at datetime not null default current_timestamp comment 'created',
+  updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated',
+  primary key (id)
+) comment='ok users';
+
+delete from users;`
+
+	result, err := Audit(context.Background(), Request{
+		SQL:     sql,
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) < 2 {
+		t.Fatalf("expected at least 2 statements, got %d", len(result.Statements))
+	}
+
+	deleteStmt := result.Statements[1]
+	var whereFinding *Finding
+	for i := range deleteStmt.Findings {
+		if deleteStmt.Findings[i].RuleID == "dml.where.require" {
+			whereFinding = &deleteStmt.Findings[i]
+			break
+		}
+	}
+	if whereFinding == nil {
+		t.Fatal("expected dml.where.require finding for 'delete from users'")
+	}
+	if whereFinding.Location == nil {
+		t.Fatal("dml.where.require finding Location is nil, expected {Line:9,Column:1}")
+	}
+	if whereFinding.Location.Line != 9 {
+		t.Errorf("finding Location.Line=%d, want 9", whereFinding.Location.Line)
+	}
+	if whereFinding.Location.Column != 1 {
+		t.Errorf("finding Location.Column=%d, want 1", whereFinding.Location.Column)
+	}
+}
+
 func ptrInt64(value int64) *int64 {
 	return &value
 }
