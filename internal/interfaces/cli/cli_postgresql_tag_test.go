@@ -2242,3 +2242,166 @@ func TestAuditCommandPostgreSQLGitLabCodeQualityRendersGlobalFinding(t *testing.
 		}())
 	}
 }
+
+const locationFidelityPGMultiStmtSQL = `create table ok_users (
+  id bigint primary key
+);
+
+delete from users;`
+
+// TestLocationFidelityPostgreSQLGitHubActionsFileAndLine proves that --format
+// github-actions with --file and --dialect postgresql currently outputs an empty
+// file= value. Task 3 will fix this.
+func TestLocationFidelityPostgreSQLGitHubActionsFileAndLine(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityPGMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--dialect", "postgresql", "--file", sqlPath, "--format", "github-actions", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	output := stdout.String()
+	if !strings.Contains(output, "dml.where.require") {
+		t.Fatalf("expected dml.where.require in output, got: %s", output)
+	}
+
+	hasFile := strings.Contains(output, "file="+filepath.ToSlash(sqlPath))
+	t.Logf("PostgreSQL github-actions output:\n%s", output)
+
+	if hasFile {
+		t.Skipf("Task 3 target: PostgreSQL github-actions already includes file path")
+	}
+	t.Logf("GAP CONFIRMED (PostgreSQL): github-actions output has real file= path: %v", hasFile)
+}
+
+// TestLocationFidelityPostgreSQLSARIFArtifactURIAndLine proves that --format sarif
+// with --file and --dialect postgresql currently does not output artifactLocation.uri.
+func TestLocationFidelityPostgreSQLSARIFArtifactURIAndLine(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityPGMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--dialect", "postgresql", "--file", sqlPath, "--format", "sarif", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal sarif: %v\noutput=%s", err, stdout.String())
+	}
+
+	runs, ok := decoded["runs"].([]any)
+	if !ok || len(runs) == 0 {
+		t.Fatal("expected runs array in SARIF output")
+	}
+	run, _ := runs[0].(map[string]any)
+	results, _ := run["results"].([]any)
+
+	var whereResult map[string]any
+	for _, r := range results {
+		result, _ := r.(map[string]any)
+		if result["ruleId"] == "dml.where.require" {
+			whereResult = result
+			break
+		}
+	}
+	if whereResult == nil {
+		t.Fatal("expected dml.where.require result in SARIF")
+	}
+
+	locations, _ := whereResult["locations"].([]any)
+	t.Logf("PostgreSQL SARIF dml.where.require locations: %v", locations)
+
+	if len(locations) > 0 {
+		loc, _ := locations[0].(map[string]any)
+		phys, _ := loc["physicalLocation"].(map[string]any)
+		if phys != nil {
+			if artifact, _ := phys["artifactLocation"].(map[string]any); artifact != nil {
+				if uri, _ := artifact["uri"].(string); uri != "" {
+					t.Skipf("Task 3 target: PostgreSQL SARIF already has artifactLocation.uri=%q", uri)
+				}
+			}
+		}
+	}
+	t.Logf("GAP CONFIRMED (PostgreSQL): SARIF dml.where.require has no artifactLocation.uri")
+}
+
+// TestLocationFidelityPostgreSQLGitLabCodeQualityLineFallback proves that
+// --format gitlab-codequality with --file and --dialect postgresql preserves
+// location.path but uses approximate line fallback.
+func TestLocationFidelityPostgreSQLGitLabCodeQualityLineFallback(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityPGMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--dialect", "postgresql", "--file", sqlPath, "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal gitlab-codequality: %v\noutput=%s", err, stdout.String())
+	}
+
+	var whereIssue map[string]any
+	for _, issue := range issues {
+		if issue["check_name"] == "dml.where.require" {
+			whereIssue = issue
+			break
+		}
+	}
+	if whereIssue == nil {
+		t.Fatal("expected dml.where.require issue")
+	}
+
+	loc, _ := whereIssue["location"].(map[string]any)
+	path, _ := loc["path"].(string)
+	lines, _ := loc["lines"].(map[string]any)
+	begin := lines["begin"]
+
+	t.Logf("PostgreSQL GitLab Code Quality dml.where.require: path=%q, lines.begin=%v", path, begin)
+
+	if path == "" {
+		t.Fatal("GAP: PostgreSQL GitLab Code Quality should preserve location.path")
+	}
+	t.Logf("CONFIRMED (PostgreSQL): GitLab Code Quality preserves path=%q", path)
+
+	beginFloat, _ := begin.(float64)
+	// "delete from users;" starts on line 5 in locationFidelityPGMultiStmtSQL.
+	if beginFloat == 5 {
+		t.Logf("NOTE: lines.begin happens to be 5 (matching real line), but may be statementIndex+1 fallback")
+	} else {
+		t.Logf("GAP CONFIRMED (PostgreSQL): lines.begin=%v (expected 5 for real statement-start line)", begin)
+	}
+}

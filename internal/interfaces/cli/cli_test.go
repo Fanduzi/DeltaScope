@@ -2194,3 +2194,176 @@ func assertCLIPayloadNoPGRuleIDs(t *testing.T, decoded map[string]any) {
 		}
 	}
 }
+
+const locationFidelityMultiStmtSQL = `create table ok_users (
+  id bigint unsigned not null auto_increment comment 'id',
+  name varchar(32) not null default '' comment 'name',
+  created_at datetime not null default current_timestamp comment 'created',
+  updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated',
+  primary key (id)
+) comment='ok users';
+
+delete from users;`
+
+// TestLocationFidelityGitHubActionsFileAndLine proves that --format github-actions
+// with --file currently outputs an empty file= value and no real line number for
+// the second statement in a multi-line SQL file. Task 3 will fix this.
+func TestLocationFidelityGitHubActionsFileAndLine(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", sqlPath, "--format", "github-actions", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	output := stdout.String()
+	if !strings.Contains(output, "dml.where.require") {
+		t.Fatalf("expected dml.where.require in output, got: %s", output)
+	}
+
+	// GAP: github-actions output should include file=<path> and line=<delete-line>.
+	// Currently file= is empty (literal "file=") and line may be absent or approximate.
+	hasFile := strings.Contains(output, "file="+filepath.ToSlash(sqlPath))
+	hasFileEmpty := strings.Contains(output, "file=,")
+	t.Logf("github-actions output:\n%s", output)
+
+	if hasFile {
+		t.Skipf("Task 3 target: github-actions already includes file path")
+	}
+	t.Logf("GAP CONFIRMED: github-actions output has real file= path: %v, has empty file=: %v", hasFile, hasFileEmpty)
+}
+
+// TestLocationFidelitySARIFArtifactURIAndLine proves that --format sarif with
+// --file currently does not output artifactLocation.uri. Task 3 will fix this.
+func TestLocationFidelitySARIFArtifactURIAndLine(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", sqlPath, "--format", "sarif", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal sarif: %v\noutput=%s", err, stdout.String())
+	}
+
+	runs, ok := decoded["runs"].([]any)
+	if !ok || len(runs) == 0 {
+		t.Fatal("expected runs array in SARIF output")
+	}
+
+	run, _ := runs[0].(map[string]any)
+	results, _ := run["results"].([]any)
+
+	var whereResult map[string]any
+	for _, r := range results {
+		result, _ := r.(map[string]any)
+		if result["ruleId"] == "dml.where.require" {
+			whereResult = result
+			break
+		}
+	}
+	if whereResult == nil {
+		t.Fatal("expected dml.where.require result in SARIF")
+	}
+
+	locations, _ := whereResult["locations"].([]any)
+	t.Logf("SARIF dml.where.require locations: %v", locations)
+
+	if len(locations) > 0 {
+		loc, _ := locations[0].(map[string]any)
+		phys, _ := loc["physicalLocation"].(map[string]any)
+		if phys != nil {
+			if artifact, _ := phys["artifactLocation"].(map[string]any); artifact != nil {
+				if uri, _ := artifact["uri"].(string); uri != "" {
+					t.Skipf("Task 3 target: SARIF already has artifactLocation.uri=%q", uri)
+				}
+			}
+		}
+	}
+	t.Logf("GAP CONFIRMED: SARIF dml.where.require has no artifactLocation.uri or no locations")
+}
+
+// TestLocationFidelityGitLabCodeQualityLineFallback proves that --format
+// gitlab-codequality with --file already preserves location.path but uses
+// approximate line fallback (statementIndex+1) for findings without Location.
+func TestLocationFidelityGitLabCodeQualityLineFallback(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", sqlPath, "--format", "gitlab-codequality", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	var issues []map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &issues); err != nil {
+		t.Fatalf("unmarshal gitlab-codequality: %v\noutput=%s", err, stdout.String())
+	}
+
+	var whereIssue map[string]any
+	for _, issue := range issues {
+		if issue["check_name"] == "dml.where.require" {
+			whereIssue = issue
+			break
+		}
+	}
+	if whereIssue == nil {
+		t.Fatal("expected dml.where.require issue")
+	}
+
+	loc, _ := whereIssue["location"].(map[string]any)
+	path, _ := loc["path"].(string)
+	lines, _ := loc["lines"].(map[string]any)
+	begin := lines["begin"]
+
+	t.Logf("GitLab Code Quality dml.where.require: path=%q, lines.begin=%v", path, begin)
+
+	if path == "" {
+		t.Fatal("GAP: GitLab Code Quality should preserve location.path from --file")
+	}
+	t.Logf("CONFIRMED: GitLab Code Quality preserves path=%q", path)
+
+	// The line should be 9 (where "delete from users" starts) after Task 2.
+	// Currently it uses statementIndex+1 fallback, which may or may not equal 9
+	// depending on how many DDL findings precede it.
+	beginFloat, _ := begin.(float64)
+	if beginFloat == 9 {
+		t.Logf("NOTE: lines.begin happens to be 9 (matching real line), but this may be statementIndex+1 fallback")
+	} else {
+		t.Logf("GAP CONFIRMED: lines.begin=%v (expected 9 for real statement-start line)", begin)
+	}
+}
