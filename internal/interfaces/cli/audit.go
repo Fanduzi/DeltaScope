@@ -278,9 +278,9 @@ func renderResult(format string, quiet bool, result report.Result, runContext *a
 	case "json":
 		return renderJSONResult(result, runContext)
 	case "github-actions":
-		return githubactions.Render(result)
+		return githubactions.Render(result, githubactions.Options{Path: sourcePath})
 	case "sarif":
-		return sarif.Render(result)
+		return sarif.Render(result, sarif.Options{Path: sourcePath})
 	case "gitlab-codequality":
 		return gitlabcodequality.Render(result, gitlabcodequality.Options{Path: sourcePath})
 	case "markdown":

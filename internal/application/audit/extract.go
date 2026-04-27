@@ -26,6 +26,8 @@ func Extract(parsed ParsedSQL) ([]spec.Statement, error) {
 			extracted.DML.Impact = estimateStatementImpact(extracted)
 		}
 		statements = append(statements, extracted)
+		statements[len(statements)-1].Line = stmt.Line
+		statements[len(statements)-1].Column = stmt.Column
 	}
 	return statements, nil
 }

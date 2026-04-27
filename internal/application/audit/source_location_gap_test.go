@@ -18,10 +18,9 @@ const locationFidelityMultiStmtSQL = `create table ok_users (
 
 delete from users;`
 
-// TestSourceLocationStatementLineNotPopulated proves that spec.Statement.Line
-// is currently zero after Parse+Extract for multi-line SQL. Task 2 will populate
-// real statement-start line numbers.
-func TestSourceLocationStatementLineNotPopulated(t *testing.T) {
+// TestSourceLocationStatementLinePopulated verifies that Parse+Extract
+// populates spec.Statement.Line with the correct statement-start line number.
+func TestSourceLocationStatementLinePopulated(t *testing.T) {
 	parsed, err := Parse(locationFidelityMultiStmtSQL, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -35,25 +34,27 @@ func TestSourceLocationStatementLineNotPopulated(t *testing.T) {
 		t.Fatalf("extract: %v", err)
 	}
 
-	for i, stmt := range statements {
-		if stmt.Line != 0 {
-			t.Logf("statement %d Line=%d (unexpectedly populated)", i, stmt.Line)
-		}
+	// First statement (CREATE TABLE) starts at line 1.
+	if statements[0].Line != 1 {
+		t.Errorf("first statement Line=%d, want 1", statements[0].Line)
+	}
+	if statements[0].Column != 1 {
+		t.Errorf("first statement Column=%d, want 1", statements[0].Column)
 	}
 
-	// Red test: prove Line is zero for the second statement (delete from users).
-	// After Task 2: stmt.Line should be the real line number (9).
+	// Second statement (DELETE FROM) starts at line 9.
 	deleteStmt := statements[1]
-	if deleteStmt.Line != 0 {
-		t.Skipf("Task 2 target: statement Line should be 9, got %d — location propagation already implemented", deleteStmt.Line)
+	if deleteStmt.Line != 9 {
+		t.Errorf("delete statement Line=%d, want 9", deleteStmt.Line)
 	}
-	t.Logf("GAP CONFIRMED: second statement Line=%d, Column=%d (expected 0,0 before Task 2)", deleteStmt.Line, deleteStmt.Column)
+	if deleteStmt.Column != 1 {
+		t.Errorf("delete statement Column=%d, want 1", deleteStmt.Column)
+	}
 }
 
-// TestSourceLocationFindingLocationNotPopulated proves that rule.Finding.Location
-// is currently nil for DML findings from multi-line SQL. Task 2 will propagate
-// statement-start locations to findings that lack explicit locations.
-func TestSourceLocationFindingLocationNotPopulated(t *testing.T) {
+// TestSourceLocationFindingLocationPopulated verifies that rule.Finding.Location
+// is populated for DML findings from multi-line SQL.
+func TestSourceLocationFindingLocationPopulated(t *testing.T) {
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     locationFidelityMultiStmtSQL,
 		Dialect: spec.DialectMySQL,
@@ -62,7 +63,6 @@ func TestSourceLocationFindingLocationNotPopulated(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 
-	// Find the dml.where.require finding on the delete statement.
 	var whereFinding *rule.Finding
 	for i := range result.Statements {
 		for _, f := range result.Statements[i].Findings {
@@ -76,10 +76,15 @@ func TestSourceLocationFindingLocationNotPopulated(t *testing.T) {
 		t.Fatal("expected dml.where.require finding for 'delete from users'")
 	}
 
-	if whereFinding.Location != nil {
-		t.Skipf("Task 2 target: finding Location should be {Line:9,Column:1}, got %+v — location propagation already implemented", whereFinding.Location)
+	if whereFinding.Location == nil {
+		t.Fatal("dml.where.require finding Location is nil, expected {Line:9,Column:1}")
 	}
-	t.Logf("GAP CONFIRMED: dml.where.require finding Location=%v (expected nil before Task 2)", whereFinding.Location)
+	if whereFinding.Location.Line != 9 {
+		t.Errorf("finding Location.Line=%d, want 9", whereFinding.Location.Line)
+	}
+	if whereFinding.Location.Column != 1 {
+		t.Errorf("finding Location.Column=%d, want 1", whereFinding.Location.Column)
+	}
 }
 
 // TestSourceLocationParsedStatementHasRawSQL confirms that RawSQL is populated
@@ -101,7 +106,6 @@ func TestSourceLocationParsedStatementHasRawSQL(t *testing.T) {
 		}
 	}
 
-	// Verify RawSQL for the delete statement is "delete from users" (normalized).
 	deleteRaw := parsed.Statements[1].RawSQL
 	if deleteRaw == "" {
 		t.Fatal("delete statement RawSQL is empty — progressive matching needs RawSQL")
@@ -109,8 +113,9 @@ func TestSourceLocationParsedStatementHasRawSQL(t *testing.T) {
 	t.Logf("delete RawSQL available for source mapper: %q", deleteRaw)
 }
 
-// TestSourceLocationTiDBSameGapAsMySQL proves the same location gap exists for TiDB.
-func TestSourceLocationTiDBSameGapAsMySQL(t *testing.T) {
+// TestSourceLocationTiDBSameAsMySQL verifies that TiDB also gets correct
+// statement-start line numbers through the same source mapper.
+func TestSourceLocationTiDBSameAsMySQL(t *testing.T) {
 	parsed, err := Parse(locationFidelityMultiStmtSQL, spec.DialectTiDB)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -124,8 +129,10 @@ func TestSourceLocationTiDBSameGapAsMySQL(t *testing.T) {
 	}
 
 	deleteStmt := statements[1]
-	if deleteStmt.Line != 0 {
-		t.Skipf("Task 2 target: TiDB statement Line already populated=%d", deleteStmt.Line)
+	if deleteStmt.Line != 9 {
+		t.Errorf("TiDB delete statement Line=%d, want 9", deleteStmt.Line)
 	}
-	t.Logf("GAP CONFIRMED (TiDB): second statement Line=%d, Column=%d", deleteStmt.Line, deleteStmt.Column)
+	if deleteStmt.Column != 1 {
+		t.Errorf("TiDB delete statement Column=%d, want 1", deleteStmt.Column)
+	}
 }

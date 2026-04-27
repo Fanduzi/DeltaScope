@@ -16,6 +16,8 @@ import (
 type ParsedStatement struct {
 	Kind      spec.Kind               `json:"kind"`
 	RawSQL    string                  `json:"raw_sql"`
+	Line      int                     `json:"line,omitempty"`
+	Column    int                     `json:"col,omitempty"`
 	Extractor spec.StatementExtractor `json:"-"`
 }
 
@@ -66,6 +68,8 @@ func parseTiDB(sql string, dialect spec.Dialect) (ParsedSQL, error) {
 			Extractor: stmt.Extractor,
 		})
 	}
+
+	attachParsedStatementLocations(parsed.Statements, sql)
 
 	return parsed, nil
 }

@@ -27,7 +27,7 @@ func TestRenderIncludesVersion(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -61,7 +61,7 @@ func TestRenderIncludesRuleMetadata(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestRenderIncludesResults(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestRenderSeverityMapping(t *testing.T) {
 				}},
 			}
 
-			output, err := Render(result)
+			output, err := Render(result, Options{})
 			if err != nil {
 				t.Fatalf("render: %v", err)
 			}
@@ -184,7 +184,7 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -198,10 +198,38 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 	}
 }
 
+func TestRenderIncludesArtifactLocationWhenPathProvided(t *testing.T) {
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:   "dml.where.require",
+				Level:    rule.LevelBlocker,
+				Message:  "where clause is required",
+				Location: &rule.Location{Line: 9, Column: 1},
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{Path: "migrations/001.sql"})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, `"uri":"migrations/001.sql"`) {
+		t.Fatalf("expected artifactLocation.uri in SARIF, got %s", rendered)
+	}
+	if !strings.Contains(rendered, `"startLine":9`) {
+		t.Fatalf("expected startLine 9 in SARIF location, got %s", rendered)
+	}
+}
+
 func TestRenderEmptyResultProducesValidSARIF(t *testing.T) {
 	result := report.Result{Verdict: report.VerdictPass}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -238,7 +266,7 @@ func TestRenderIncludesHelpFromExplanation(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}

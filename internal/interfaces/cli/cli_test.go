@@ -2205,9 +2205,8 @@ const locationFidelityMultiStmtSQL = `create table ok_users (
 
 delete from users;`
 
-// TestLocationFidelityGitHubActionsFileAndLine proves that --format github-actions
-// with --file currently outputs an empty file= value and no real line number for
-// the second statement in a multi-line SQL file. Task 3 will fix this.
+// TestLocationFidelityGitHubActionsFileAndLine verifies that --format github-actions
+// with --file outputs the file path and real statement-start line number.
 func TestLocationFidelityGitHubActionsFileAndLine(t *testing.T) {
 	dir := t.TempDir()
 	sqlPath := filepath.Join(dir, "migrations.sql")
@@ -2232,20 +2231,16 @@ func TestLocationFidelityGitHubActionsFileAndLine(t *testing.T) {
 		t.Fatalf("expected dml.where.require in output, got: %s", output)
 	}
 
-	// GAP: github-actions output should include file=<path> and line=<delete-line>.
-	// Currently file= is empty (literal "file=") and line may be absent or approximate.
-	hasFile := strings.Contains(output, "file="+filepath.ToSlash(sqlPath))
-	hasFileEmpty := strings.Contains(output, "file=,")
-	t.Logf("github-actions output:\n%s", output)
-
-	if hasFile {
-		t.Skipf("Task 3 target: github-actions already includes file path")
+	if !strings.Contains(output, "file="+filepath.ToSlash(sqlPath)) {
+		t.Errorf("expected file=%s in annotation, got: %s", filepath.ToSlash(sqlPath), output)
 	}
-	t.Logf("GAP CONFIRMED: github-actions output has real file= path: %v, has empty file=: %v", hasFile, hasFileEmpty)
+	if !strings.Contains(output, "line=9") {
+		t.Errorf("expected line=9 (delete statement start) in annotation, got: %s", output)
+	}
 }
 
-// TestLocationFidelitySARIFArtifactURIAndLine proves that --format sarif with
-// --file currently does not output artifactLocation.uri. Task 3 will fix this.
+// TestLocationFidelitySARIFArtifactURIAndLine verifies that --format sarif with
+// --file outputs artifactLocation.uri and real statement-start line numbers.
 func TestLocationFidelitySARIFArtifactURIAndLine(t *testing.T) {
 	dir := t.TempDir()
 	sqlPath := filepath.Join(dir, "migrations.sql")
@@ -2291,26 +2286,36 @@ func TestLocationFidelitySARIFArtifactURIAndLine(t *testing.T) {
 	}
 
 	locations, _ := whereResult["locations"].([]any)
-	t.Logf("SARIF dml.where.require locations: %v", locations)
-
-	if len(locations) > 0 {
-		loc, _ := locations[0].(map[string]any)
-		phys, _ := loc["physicalLocation"].(map[string]any)
-		if phys != nil {
-			if artifact, _ := phys["artifactLocation"].(map[string]any); artifact != nil {
-				if uri, _ := artifact["uri"].(string); uri != "" {
-					t.Skipf("Task 3 target: SARIF already has artifactLocation.uri=%q", uri)
-				}
-			}
-		}
+	if len(locations) == 0 {
+		t.Fatal("expected locations array in dml.where.require result")
 	}
-	t.Logf("GAP CONFIRMED: SARIF dml.where.require has no artifactLocation.uri or no locations")
+
+	loc, _ := locations[0].(map[string]any)
+	phys, _ := loc["physicalLocation"].(map[string]any)
+	if phys == nil {
+		t.Fatal("expected physicalLocation in SARIF location")
+	}
+
+	artifact, _ := phys["artifactLocation"].(map[string]any)
+	if artifact == nil {
+		t.Fatal("expected artifactLocation in SARIF physicalLocation")
+	}
+	uri, _ := artifact["uri"].(string)
+	if uri == "" {
+		t.Error("expected artifactLocation.uri to be populated")
+	}
+
+	region, _ := phys["region"].(map[string]any)
+	startLine, _ := region["startLine"].(float64)
+	if startLine != 9 {
+		t.Errorf("expected startLine=9 (delete statement start), got %v", startLine)
+	}
 }
 
-// TestLocationFidelityGitLabCodeQualityLineFallback proves that --format
-// gitlab-codequality with --file already preserves location.path but uses
-// approximate line fallback (statementIndex+1) for findings without Location.
-func TestLocationFidelityGitLabCodeQualityLineFallback(t *testing.T) {
+// TestLocationFidelityGitLabCodeQualityLineReal verifies that --format
+// gitlab-codequality with --file preserves location.path and uses real
+// statement-start line numbers instead of statementIndex+1 fallback.
+func TestLocationFidelityGitLabCodeQualityLineReal(t *testing.T) {
 	dir := t.TempDir()
 	sqlPath := filepath.Join(dir, "migrations.sql")
 	if err := os.WriteFile(sqlPath, []byte(locationFidelityMultiStmtSQL), 0o644); err != nil {
@@ -2350,20 +2355,12 @@ func TestLocationFidelityGitLabCodeQualityLineFallback(t *testing.T) {
 	lines, _ := loc["lines"].(map[string]any)
 	begin := lines["begin"]
 
-	t.Logf("GitLab Code Quality dml.where.require: path=%q, lines.begin=%v", path, begin)
-
 	if path == "" {
-		t.Fatal("GAP: GitLab Code Quality should preserve location.path from --file")
+		t.Fatal("expected location.path to be populated from --file")
 	}
-	t.Logf("CONFIRMED: GitLab Code Quality preserves path=%q", path)
 
-	// The line should be 9 (where "delete from users" starts) after Task 2.
-	// Currently it uses statementIndex+1 fallback, which may or may not equal 9
-	// depending on how many DDL findings precede it.
 	beginFloat, _ := begin.(float64)
-	if beginFloat == 9 {
-		t.Logf("NOTE: lines.begin happens to be 9 (matching real line), but this may be statementIndex+1 fallback")
-	} else {
-		t.Logf("GAP CONFIRMED: lines.begin=%v (expected 9 for real statement-start line)", begin)
+	if beginFloat != 9 {
+		t.Errorf("expected lines.begin=9 (delete statement start line), got %v", begin)
 	}
 }

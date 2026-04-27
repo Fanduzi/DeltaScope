@@ -13,17 +13,23 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 )
 
+// Options carries renderer configuration.
+type Options struct {
+	// Path is the source file path. When empty, annotations omit the file parameter.
+	Path string
+}
+
 // Render formats an audit result into GitHub Actions annotation commands.
-func Render(result report.Result) ([]byte, error) {
+func Render(result report.Result, options Options) ([]byte, error) {
 	var lines []string
 
 	for _, stmt := range result.Statements {
 		for _, finding := range stmt.Findings {
-			lines = append(lines, formatAnnotation(finding))
+			lines = append(lines, formatAnnotation(finding, options))
 		}
 	}
 	for _, finding := range result.GlobalFindings {
-		lines = append(lines, formatAnnotation(finding))
+		lines = append(lines, formatAnnotation(finding, options))
 	}
 	for _, item := range result.Unsupported {
 		lines = append(lines, fmt.Sprintf("::notice title=Unsupported Statement %d::%s: %s", item.Index+1, item.Feature, item.Reason))
@@ -35,7 +41,7 @@ func Render(result report.Result) ([]byte, error) {
 	return []byte(strings.Join(lines, "\n")), nil
 }
 
-func formatAnnotation(finding rule.Finding) string {
+func formatAnnotation(finding rule.Finding, options Options) string {
 	level := mapLevel(finding.Level)
 	title := escapeValue(finding.RuleID)
 	message := escapeValue(finding.Message)
@@ -44,7 +50,10 @@ func formatAnnotation(finding rule.Finding) string {
 	}
 
 	if finding.Location != nil {
-		return fmt.Sprintf("::%s file=,line=%d,col=%d,title=%s::%s", level, finding.Location.Line, finding.Location.Column, title, message)
+		if options.Path != "" {
+			return fmt.Sprintf("::%s file=%s,line=%d,col=%d,title=%s::%s", level, escapeValue(options.Path), finding.Location.Line, finding.Location.Column, title, message)
+		}
+		return fmt.Sprintf("::%s line=%d,col=%d,title=%s::%s", level, finding.Location.Line, finding.Location.Column, title, message)
 	}
 	return fmt.Sprintf("::%s title=%s::%s", level, title, message)
 }

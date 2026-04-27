@@ -45,6 +45,14 @@ func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (r
 			findings[i].StatementKind = statement.Kind.String()
 		}
 		findings = enrichFindings(findings, &statement)
+		for i := range findings {
+			if findings[i].Location == nil && (statement.Line > 0 || statement.Column > 0) {
+				findings[i].Location = &rule.Location{
+					Line:   statement.Line,
+					Column: statement.Column,
+				}
+			}
+		}
 
 		for _, id := range eval.AppliedRuleIDs {
 			appliedIDs[id] = struct{}{}

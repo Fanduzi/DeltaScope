@@ -15,9 +15,15 @@ import (
 
 const sarifSchema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
 
+// Options carries renderer configuration.
+type Options struct {
+	// Path is the source file URI. When empty, locations omit artifactLocation.
+	Path string
+}
+
 // Render formats an audit result into SARIF 2.1.0 JSON.
 // Unsupported statements are not included in SARIF output.
-func Render(result report.Result) ([]byte, error) {
+func Render(result report.Result, options Options) ([]byte, error) {
 	ruleMeta := make(map[string]*sarifRule)
 	var results []sarifResult
 
@@ -25,7 +31,7 @@ func Render(result report.Result) ([]byte, error) {
 		if _, exists := ruleMeta[finding.RuleID]; !exists {
 			ruleMeta[finding.RuleID] = buildRuleMeta(finding)
 		}
-		results = append(results, toSARIFResult(finding))
+		results = append(results, toSARIFResult(finding, options))
 	}
 
 	for _, stmt := range result.Statements {
@@ -80,7 +86,7 @@ func buildRuleMeta(finding rule.Finding) *sarifRule {
 	return sr
 }
 
-func toSARIFResult(finding rule.Finding) sarifResult {
+func toSARIFResult(finding rule.Finding, options Options) sarifResult {
 	sr := sarifResult{
 		RuleID:  finding.RuleID,
 		Level:   mapLevel(finding.Level),
@@ -104,14 +110,20 @@ func toSARIFResult(finding rule.Finding) sarifResult {
 	}
 
 	if finding.Location != nil {
-		sr.Locations = []sarifLocation{{
+		loc := sarifLocation{
 			PhysicalLocation: sarifPhysicalLocation{
 				Region: sarifRegion{
 					StartLine:   finding.Location.Line,
 					StartColumn: finding.Location.Column,
 				},
 			},
-		}}
+		}
+		if options.Path != "" {
+			loc.PhysicalLocation.ArtifactLocation = &sarifArtifactLocation{
+				URI: options.Path,
+			}
+		}
+		sr.Locations = []sarifLocation{loc}
 	}
 
 	return sr
@@ -181,7 +193,12 @@ type sarifLocation struct {
 }
 
 type sarifPhysicalLocation struct {
-	Region sarifRegion `json:"region"`
+	ArtifactLocation *sarifArtifactLocation `json:"artifactLocation,omitempty"`
+	Region           sarifRegion            `json:"region"`
+}
+
+type sarifArtifactLocation struct {
+	URI string `json:"uri"`
 }
 
 type sarifRegion struct {

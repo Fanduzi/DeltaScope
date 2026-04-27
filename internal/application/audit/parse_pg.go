@@ -27,5 +27,7 @@ func parsePostgreSQL(sql string) (ParsedSQL, error) {
 		})
 	}
 
+	attachParsedStatementLocations(parsed.Statements, sql)
+
 	return parsed, nil
 }

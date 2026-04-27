@@ -2249,9 +2249,9 @@ const locationFidelityPGMultiStmtSQL = `create table ok_users (
 
 delete from users;`
 
-// TestLocationFidelityPostgreSQLGitHubActionsFileAndLine proves that --format
-// github-actions with --file and --dialect postgresql currently outputs an empty
-// file= value. Task 3 will fix this.
+// TestLocationFidelityPostgreSQLGitHubActionsFileAndLine verifies that --format
+// github-actions with --file and --dialect postgresql outputs the file path
+// and real statement-start line number.
 func TestLocationFidelityPostgreSQLGitHubActionsFileAndLine(t *testing.T) {
 	dir := t.TempDir()
 	sqlPath := filepath.Join(dir, "migrations.sql")
@@ -2276,17 +2276,17 @@ func TestLocationFidelityPostgreSQLGitHubActionsFileAndLine(t *testing.T) {
 		t.Fatalf("expected dml.where.require in output, got: %s", output)
 	}
 
-	hasFile := strings.Contains(output, "file="+filepath.ToSlash(sqlPath))
-	t.Logf("PostgreSQL github-actions output:\n%s", output)
-
-	if hasFile {
-		t.Skipf("Task 3 target: PostgreSQL github-actions already includes file path")
+	if !strings.Contains(output, "file="+filepath.ToSlash(sqlPath)) {
+		t.Errorf("expected file=%s in annotation, got: %s", filepath.ToSlash(sqlPath), output)
 	}
-	t.Logf("GAP CONFIRMED (PostgreSQL): github-actions output has real file= path: %v", hasFile)
+	// "delete from users;" starts on line 5 in locationFidelityPGMultiStmtSQL.
+	if !strings.Contains(output, "line=5") {
+		t.Errorf("expected line=5 (delete statement start) in annotation, got: %s", output)
+	}
 }
 
-// TestLocationFidelityPostgreSQLSARIFArtifactURIAndLine proves that --format sarif
-// with --file and --dialect postgresql currently does not output artifactLocation.uri.
+// TestLocationFidelityPostgreSQLSARIFArtifactURIAndLine verifies that --format sarif
+// with --file and --dialect postgresql outputs artifactLocation.uri and real line numbers.
 func TestLocationFidelityPostgreSQLSARIFArtifactURIAndLine(t *testing.T) {
 	dir := t.TempDir()
 	sqlPath := filepath.Join(dir, "migrations.sql")
@@ -2331,26 +2331,37 @@ func TestLocationFidelityPostgreSQLSARIFArtifactURIAndLine(t *testing.T) {
 	}
 
 	locations, _ := whereResult["locations"].([]any)
-	t.Logf("PostgreSQL SARIF dml.where.require locations: %v", locations)
-
-	if len(locations) > 0 {
-		loc, _ := locations[0].(map[string]any)
-		phys, _ := loc["physicalLocation"].(map[string]any)
-		if phys != nil {
-			if artifact, _ := phys["artifactLocation"].(map[string]any); artifact != nil {
-				if uri, _ := artifact["uri"].(string); uri != "" {
-					t.Skipf("Task 3 target: PostgreSQL SARIF already has artifactLocation.uri=%q", uri)
-				}
-			}
-		}
+	if len(locations) == 0 {
+		t.Fatal("expected locations array in dml.where.require result")
 	}
-	t.Logf("GAP CONFIRMED (PostgreSQL): SARIF dml.where.require has no artifactLocation.uri")
+
+	loc, _ := locations[0].(map[string]any)
+	phys, _ := loc["physicalLocation"].(map[string]any)
+	if phys == nil {
+		t.Fatal("expected physicalLocation in SARIF location")
+	}
+
+	artifact, _ := phys["artifactLocation"].(map[string]any)
+	if artifact == nil {
+		t.Fatal("expected artifactLocation in SARIF physicalLocation")
+	}
+	uri, _ := artifact["uri"].(string)
+	if uri == "" {
+		t.Error("expected artifactLocation.uri to be populated")
+	}
+
+	region, _ := phys["region"].(map[string]any)
+	startLine, _ := region["startLine"].(float64)
+	// "delete from users;" starts on line 5 in locationFidelityPGMultiStmtSQL.
+	if startLine != 5 {
+		t.Errorf("expected startLine=5 (delete statement start), got %v", startLine)
+	}
 }
 
-// TestLocationFidelityPostgreSQLGitLabCodeQualityLineFallback proves that
-// --format gitlab-codequality with --file and --dialect postgresql preserves
-// location.path but uses approximate line fallback.
-func TestLocationFidelityPostgreSQLGitLabCodeQualityLineFallback(t *testing.T) {
+// TestLocationFidelityPostgreSQLGitLabCodeQualityLineReal verifies that --format
+// gitlab-codequality with --file and --dialect postgresql preserves location.path
+// and uses real statement-start line numbers.
+func TestLocationFidelityPostgreSQLGitLabCodeQualityLineReal(t *testing.T) {
 	dir := t.TempDir()
 	sqlPath := filepath.Join(dir, "migrations.sql")
 	if err := os.WriteFile(sqlPath, []byte(locationFidelityPGMultiStmtSQL), 0o644); err != nil {
@@ -2390,18 +2401,13 @@ func TestLocationFidelityPostgreSQLGitLabCodeQualityLineFallback(t *testing.T) {
 	lines, _ := loc["lines"].(map[string]any)
 	begin := lines["begin"]
 
-	t.Logf("PostgreSQL GitLab Code Quality dml.where.require: path=%q, lines.begin=%v", path, begin)
-
 	if path == "" {
-		t.Fatal("GAP: PostgreSQL GitLab Code Quality should preserve location.path")
+		t.Fatal("expected location.path to be populated from --file")
 	}
-	t.Logf("CONFIRMED (PostgreSQL): GitLab Code Quality preserves path=%q", path)
 
 	beginFloat, _ := begin.(float64)
 	// "delete from users;" starts on line 5 in locationFidelityPGMultiStmtSQL.
-	if beginFloat == 5 {
-		t.Logf("NOTE: lines.begin happens to be 5 (matching real line), but may be statementIndex+1 fallback")
-	} else {
-		t.Logf("GAP CONFIRMED (PostgreSQL): lines.begin=%v (expected 5 for real statement-start line)", begin)
+	if beginFloat != 5 {
+		t.Errorf("expected lines.begin=5 (delete statement start line), got %v", begin)
 	}
 }

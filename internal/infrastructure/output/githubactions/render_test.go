@@ -27,7 +27,7 @@ func TestRenderMapsBlockerToError(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestRenderMapsWarningToWarning(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestRenderMapsNoticeToNotice(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -116,6 +116,37 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "col=1") {
 		t.Fatalf("expected col=1 in annotation, got %q", rendered)
+	}
+}
+
+func TestRenderIncludesFilePathWhenProvided(t *testing.T) {
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause is required",
+				Location: &rule.Location{
+					Line:   9,
+					Column: 1,
+				},
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{Path: "migrations/001.sql"})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "file=migrations/001.sql") {
+		t.Fatalf("expected file=migrations/001.sql in annotation, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "line=9") {
+		t.Fatalf("expected line=9 in annotation, got %q", rendered)
 	}
 }
 
@@ -132,7 +163,7 @@ func TestRenderOmitsLocationWhenAbsent(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -150,7 +181,7 @@ func TestRenderUnsupportedAsNotice(t *testing.T) {
 		},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -167,7 +198,7 @@ func TestRenderUnsupportedAsNotice(t *testing.T) {
 func TestRenderEmptyResultProducesNoAnnotations(t *testing.T) {
 	result := report.Result{Verdict: report.VerdictPass}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -190,7 +221,7 @@ func TestRenderEscapesSpecialCharacters(t *testing.T) {
 		}},
 	}
 
-	output, err := Render(result)
+	output, err := Render(result, Options{})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
