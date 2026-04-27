@@ -2412,3 +2412,77 @@ func TestLocationFidelityTiDBGitLabCodeQualityLineReal(t *testing.T) {
 		t.Errorf("TiDB: expected lines.begin=9 (delete statement start line), got %v", begin)
 	}
 }
+
+// TestLocationFidelityTiDBSARIFArtifactURIAndLine verifies that explicit
+// --dialect tidb with --format sarif produces correct artifactLocation.uri
+// and statement-start line numbers, locking non-default dialect SARIF output.
+func TestLocationFidelityTiDBSARIFArtifactURIAndLine(t *testing.T) {
+	dir := t.TempDir()
+	sqlPath := filepath.Join(dir, "migrations.sql")
+	if err := os.WriteFile(sqlPath, []byte(locationFidelityMultiStmtSQL), 0o644); err != nil {
+		t.Fatalf("write temp file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--dialect", "tidb", "--file", sqlPath, "--format", "sarif", "--fail-on", "none"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d", code)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal sarif: %v\noutput=%s", err, stdout.String())
+	}
+
+	runs, ok := decoded["runs"].([]any)
+	if !ok || len(runs) == 0 {
+		t.Fatal("expected runs array in SARIF output")
+	}
+
+	run, _ := runs[0].(map[string]any)
+	results, _ := run["results"].([]any)
+
+	var whereResult map[string]any
+	for _, r := range results {
+		result, _ := r.(map[string]any)
+		if result["ruleId"] == "dml.where.require" {
+			whereResult = result
+			break
+		}
+	}
+	if whereResult == nil {
+		t.Fatal("expected dml.where.require result in SARIF")
+	}
+
+	locations, _ := whereResult["locations"].([]any)
+	if len(locations) == 0 {
+		t.Fatal("expected locations array in dml.where.require result")
+	}
+
+	loc, _ := locations[0].(map[string]any)
+	phys, _ := loc["physicalLocation"].(map[string]any)
+	if phys == nil {
+		t.Fatal("expected physicalLocation in SARIF location")
+	}
+
+	artifact, _ := phys["artifactLocation"].(map[string]any)
+	if artifact == nil {
+		t.Fatal("expected artifactLocation in SARIF physicalLocation")
+	}
+	uri, _ := artifact["uri"].(string)
+	if uri == "" {
+		t.Error("expected artifactLocation.uri to be populated from --file")
+	}
+
+	region, _ := phys["region"].(map[string]any)
+	startLine, _ := region["startLine"].(float64)
+	if startLine != 9 {
+		t.Errorf("TiDB: expected startLine=9 (delete statement start), got %v", startLine)
+	}
+}

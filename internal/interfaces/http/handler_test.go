@@ -1289,3 +1289,68 @@ func assertExplanationFieldString(t *testing.T, object map[string]any, key strin
 	}
 	return value
 }
+
+func TestHandlerAuditReturnsSourceLocationInFindings(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	sql := `create table ok_users (
+  id bigint unsigned not null auto_increment comment 'id',
+  name varchar(32) not null default '' comment 'name',
+  created_at datetime not null default current_timestamp comment 'created',
+  updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated',
+  primary key (id)
+) comment='ok users';
+
+delete from users;`
+
+	body, _ := json.Marshal(map[string]string{"sql": sql, "dialect": "mysql"})
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	statements, _ := payload["statements"].([]any)
+	if len(statements) < 2 {
+		t.Fatalf("expected at least 2 statements, got %d", len(statements))
+	}
+
+	deleteStmt, _ := statements[1].(map[string]any)
+	findings, _ := deleteStmt["findings"].([]any)
+
+	var whereFinding map[string]any
+	for _, f := range findings {
+		finding, _ := f.(map[string]any)
+		if finding["rule_id"] == "dml.where.require" {
+			whereFinding = finding
+			break
+		}
+	}
+	if whereFinding == nil {
+		t.Fatal("expected dml.where.require finding in delete statement")
+	}
+
+	loc, _ := whereFinding["location"].(map[string]any)
+	if loc == nil {
+		t.Fatal("expected location object in dml.where.require finding")
+	}
+	line, _ := loc["line"].(float64)
+	if line != 9 {
+		t.Errorf("expected location.line=9, got %v", loc["line"])
+	}
+	column, _ := loc["column"].(float64)
+	if column != 1 {
+		t.Errorf("expected location.column=1, got %v", loc["column"])
+	}
+}

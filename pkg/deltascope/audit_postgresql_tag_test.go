@@ -1510,3 +1510,43 @@ func pkgToFloat64(v any) (float64, bool) {
 	}
 	return 0, false
 }
+
+func TestAuditPostgreSQLReturnsSourceLocationsForMultiStatementSQL(t *testing.T) {
+	sql := `create table ok_users (
+  id bigint primary key
+);
+
+delete from users;`
+
+	result, err := Audit(context.Background(), Request{
+		SQL:     sql,
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) < 2 {
+		t.Fatalf("expected at least 2 statements, got %d", len(result.Statements))
+	}
+
+	deleteStmt := result.Statements[1]
+	var whereFinding *Finding
+	for i := range deleteStmt.Findings {
+		if deleteStmt.Findings[i].RuleID == "dml.where.require" {
+			whereFinding = &deleteStmt.Findings[i]
+			break
+		}
+	}
+	if whereFinding == nil {
+		t.Fatal("expected dml.where.require finding for 'delete from users'")
+	}
+	if whereFinding.Location == nil {
+		t.Fatal("dml.where.require finding Location is nil, expected {Line:5,Column:1}")
+	}
+	if whereFinding.Location.Line != 5 {
+		t.Errorf("finding Location.Line=%d, want 5", whereFinding.Location.Line)
+	}
+	if whereFinding.Location.Column != 1 {
+		t.Errorf("finding Location.Column=%d, want 1", whereFinding.Location.Column)
+	}
+}

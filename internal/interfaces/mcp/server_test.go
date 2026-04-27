@@ -1064,3 +1064,73 @@ func assertMCPPayloadNoPGRuleIDs(t *testing.T, body map[string]any) {
 		}
 	}
 }
+
+func TestAuditSQLToolReturnsSourceLocationInFindings(t *testing.T) {
+	t.Parallel()
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	sql := `create table ok_users (
+  id bigint unsigned not null auto_increment comment 'id',
+  name varchar(32) not null default '' comment 'name',
+  created_at datetime not null default current_timestamp comment 'created',
+  updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated',
+  primary key (id)
+) comment='ok users';
+
+delete from users;`
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "audit_sql",
+		Arguments: map[string]any{"sql": sql},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+
+	body, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured map result, got %T", result.StructuredContent)
+	}
+
+	statements, _ := body["statements"].([]any)
+	if len(statements) < 2 {
+		t.Fatalf("expected at least 2 statements, got %d", len(statements))
+	}
+
+	deleteStmt, _ := statements[1].(map[string]any)
+	findings, _ := deleteStmt["findings"].([]any)
+
+	var whereFinding map[string]any
+	for _, f := range findings {
+		finding, _ := f.(map[string]any)
+		if finding["rule_id"] == "dml.where.require" {
+			whereFinding = finding
+			break
+		}
+	}
+	if whereFinding == nil {
+		t.Fatal("expected dml.where.require finding in delete statement")
+	}
+
+	loc, _ := whereFinding["location"].(map[string]any)
+	if loc == nil {
+		t.Fatal("expected location object in dml.where.require finding")
+	}
+	line, _ := loc["line"].(float64)
+	if line != 9 {
+		t.Errorf("expected location.line=9, got %v", loc["line"])
+	}
+	column, _ := loc["column"].(float64)
+	if column != 1 {
+		t.Errorf("expected location.column=1, got %v", loc["column"])
+	}
+}

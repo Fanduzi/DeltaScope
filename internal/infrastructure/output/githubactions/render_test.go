@@ -174,6 +174,40 @@ func TestRenderOmitsLocationWhenAbsent(t *testing.T) {
 	}
 }
 
+func TestRenderLocationWithoutPathOmitsFile(t *testing.T) {
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause is required",
+				Location: &rule.Location{
+					Line:   5,
+					Column: 2,
+				},
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if strings.Contains(rendered, "file=") {
+		t.Fatalf("expected no file= when path is empty, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "line=5") {
+		t.Fatalf("expected line=5 in annotation, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "col=2") {
+		t.Fatalf("expected col=2 in annotation, got %q", rendered)
+	}
+}
+
 func TestRenderUnsupportedAsNotice(t *testing.T) {
 	result := report.Result{
 		Unsupported: []spec.UnsupportedDetail{

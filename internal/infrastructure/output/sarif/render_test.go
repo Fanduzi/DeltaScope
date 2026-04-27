@@ -226,6 +226,34 @@ func TestRenderIncludesArtifactLocationWhenPathProvided(t *testing.T) {
 	}
 }
 
+func TestRenderOmitsArtifactLocationWhenPathEmpty(t *testing.T) {
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:   "dml.where.require",
+				Level:    rule.LevelBlocker,
+				Message:  "where clause is required",
+				Location: &rule.Location{Line: 3, Column: 1},
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if strings.Contains(rendered, `"artifactLocation"`) {
+		t.Fatalf("expected no artifactLocation when path is empty, got %s", rendered)
+	}
+	if !strings.Contains(rendered, `"startLine":3`) {
+		t.Fatalf("expected startLine 3 in SARIF location, got %s", rendered)
+	}
+}
+
 func TestRenderEmptyResultProducesValidSARIF(t *testing.T) {
 	result := report.Result{Verdict: report.VerdictPass}
 
