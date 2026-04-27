@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.46.0] - 2026-04-27
+
+### Changed
+
+- Cleaned Homebrew cask install verification output in the release workflow. The `verify-homebrew-cask-install` job now uses conditional cleanup probes instead of tolerated failure fallbacks (`|| true`) so successful runs no longer show misleading Homebrew tap/cask unavailable error annotations.
+- Added `release-workflow-hygiene-gates` static gate that enforces conditional cleanup probes, lowercase tap names, and rejects tolerated failure patterns in the release workflow. Included in `release-contract-gates`.
+- Documented Homebrew verification hygiene contract for release maintainers.
+
+### Non-Goals
+
+- No SQL audit behavior changes.
+- No parser, rule, or policy changes.
+- No formatter changes.
+- No release asset naming changes.
+- No npm launcher behavior changes.
+
 ## [v0.45.0] - 2026-04-26
 
 ### Added

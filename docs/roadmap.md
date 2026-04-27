@@ -4,7 +4,23 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.45.0 GitLab CI Integration Pack
+## Latest Completed Milestone: v0.46.0 Homebrew Verification Hygiene Pack
+
+**Goal:** clean the Homebrew cask install verification path so successful release workflows no longer show misleading Homebrew tap/cask unavailable error annotations.
+
+### Completed Scope
+
+- Replaced noisy tolerated cleanup (`|| true`) with conditional cleanup probes in the `verify-homebrew-cask-install` release workflow job.
+- Added `make release-workflow-hygiene-gates` static gate that enforces conditional cleanup probes, lowercase tap names, and rejects tolerated failure patterns.
+- Documented the Homebrew verification hygiene contract in developer testing docs.
+
+### Key Design Decisions
+
+- No SQL audit behavior, parser, rule, or policy changes.
+- No formatter, HTTP, MCP, or `pkg/deltascope` production-code changes.
+- No release asset naming or npm launcher behavior changes.
+
+## Previous Milestone: v0.45.0 GitLab CI Integration Pack
 
 **Goal:** add GitLab Code Quality report output so merge-request pipelines can surface SQL audit findings as inline code-quality annotations without any post-processing.
 
