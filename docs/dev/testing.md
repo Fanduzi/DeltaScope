@@ -61,6 +61,19 @@ Use this alongside `make release-test-gates` when preparing a release. The GitHu
 
 This gate is included in `make release-contract-gates`.
 
+### Source Location Fidelity Smoke
+
+`make release-source-location-smoke` validates that the built CLI correctly propagates source locations (file path, statement-start line, column) through all CI renderer outputs. It requires no Docker — it runs the built CLI binary locally and checks:
+
+- GitHub Actions: `file=<path>`, `line=9`, `col=1` for `dml.where.require`; no empty `file=,`
+- SARIF: `artifactLocation.uri=<path>`, `startLine=9`, `startColumn=1` for `dml.where.require`
+- GitLab Code Quality: `location.path=<path>`, `location.lines.begin=9` for `dml.where.require`
+- TiDB SARIF: same assertions as MySQL SARIF with explicit `--dialect tidb`
+
+The SQL fixture places `delete from users;` on line 9 inside a multi-statement migration file. If the progressive source mapper regresses to statement-index fallback, the line number would be 2 instead of 9 and the gate would fail.
+
+This gate is included in `make release-contract-gates`.
+
 ### Homebrew Verification Hygiene
 
 The release workflow runs a `verify-homebrew-cask-install` job on macOS that performs a real Homebrew install from the published tap. It verifies:

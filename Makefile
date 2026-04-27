@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-workflow-hygiene-gates release-contract-gates
+.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -308,10 +308,14 @@ release-dialect-hygiene-gates: build-cli
 release-gitlab-codequality-smoke: build-cli
 	DELTASCOPE_BIN="$(BUILD_DIR)/deltascope" bash ./scripts/verify_gitlab_codequality_output.sh
 
+# release-source-location-smoke: validate source location fidelity across GitHub Actions, SARIF, GitLab Code Quality, and TiDB outputs.
+release-source-location-smoke: build-cli
+	DELTASCOPE_BIN="$(BUILD_DIR)/deltascope" bash ./scripts/verify_source_location_fidelity.sh
+
 # release-workflow-hygiene-gates: validate release workflow avoids noisy tolerated Homebrew cleanup.
 release-workflow-hygiene-gates:
 	bash ./scripts/verify_release_workflow_hygiene.sh
 
-# release-contract-gates: unified pre-release gate composing all version, surface, binary, launcher, dialect, and output format checks.
-release-contract-gates: release-surface-gates release-version-surface-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-workflow-hygiene-gates
+# release-contract-gates: unified pre-release gate composing all version, surface, binary, launcher, dialect, output format, and source location checks.
+release-contract-gates: release-surface-gates release-version-surface-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates
 	npm test --prefix packages/deltascope-mcp
