@@ -271,10 +271,14 @@ jobs:
       - name: Verify installed Homebrew cask binary contract
         run: |
           set -euo pipefail
-          brew uninstall --cask deltascope || true
-          brew untap Fanduzi/deltascope || true
-          brew tap Fanduzi/deltascope
-          brew install --cask Fanduzi/deltascope/deltascope
+          if brew list --cask deltascope >/dev/null 2>&1; then
+            brew uninstall --cask deltascope
+          fi
+          if brew tap | grep -Fxq "fanduzi/deltascope"; then
+            brew untap fanduzi/deltascope
+          fi
+          brew tap fanduzi/deltascope
+          brew install --cask deltascope
           version_output="$(deltascope --version)"
           printf '%s\n' "${version_output}"
           case "${version_output}" in
