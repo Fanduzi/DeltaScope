@@ -438,7 +438,7 @@ deltascope audit \
 | `ddl.index.unique.prefix.require` | 唯一索引名未以要求的前缀开头 |
 | `ddl.index.columns.max_count` | 索引包含的列数超过允许的最大值 |
 
-这不代表完整 PostgreSQL 索引支持，不包含 partial index 支持、expression index 支持、INCLUDE 支持、operator class 支持、非 btree 访问方法支持、NULLS NOT DISTINCT 支持或在线 schema 索引内省。
+`v0.49.0` 扩展了 PostgreSQL `CREATE INDEX` 路径：partial index、expression index、`INCLUDE` 覆盖索引以及非 btree 访问方法现在会以粗粒度事实形式完成规范化。DeltaScope 会记录访问方法、包含列、谓词是否存在、表达式键是否存在及数量，但不会渲染或语义分析谓词 SQL 或表达式 SQL。Operator class、NULLS NOT DISTINCT 和在线 schema 索引内省仍不在 scope 内。
 
 ### PostgreSQL ALTER TABLE ADD CONSTRAINT 审计（v0.39.0）
 

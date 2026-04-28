@@ -478,7 +478,7 @@ Rules now covering PostgreSQL standalone `CREATE INDEX`:
 | `ddl.index.unique.prefix.require` | Unique index name does not start with the required prefix |
 | `ddl.index.columns.max_count` | Index spans more columns than the allowed maximum |
 
-This does not add full PostgreSQL index support, partial index support, expression index support, INCLUDE support, operator class support, non-btree access method support, NULLS NOT DISTINCT support, or live schema index introspection.
+`v0.49.0` extends the PostgreSQL `CREATE INDEX` path so partial indexes, expression indexes, `INCLUDE` covering indexes, and non-btree access methods are normalized at a coarse fact level. DeltaScope records access method, included columns, predicate presence, and expression-key presence/count, but it does not render or semantically analyze predicate SQL or expression SQL. Operator classes, NULLS NOT DISTINCT, and live schema index introspection remain out of scope.
 
 ### PostgreSQL ALTER TABLE ADD CONSTRAINT Audit (v0.39.0)
 
