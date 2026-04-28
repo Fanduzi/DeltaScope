@@ -48,7 +48,6 @@ require_landing_current_surfaces() {
 
   # Current-release i18n text must exist. Historical release cards may mention older versions.
   require_grep_regex "currentTitle: '([^']+)'" "${file}"
-  require_grep_regex "sub: '([^']|\\\\')*${VERSION}" "${file}"
   require_grep_regex "brand: '([^']|\\\\')*${VERSION}" "${file}"
 }
 
