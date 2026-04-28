@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.47.0 Source Location Fidelity Pack
+## Latest Completed Milestone: v0.48.0 PostgreSQL DDL Coverage Census & Gap Closure Pack
+
+**Goal:** systematically audit 56 representative PostgreSQL DDL forms through the full pipeline, identify coverage gaps, and close them with new PostgreSQL-only rules, an extractor fix, and expanded SQL corpus coverage.
+
+### Completed Scope
+
+- Census characterization: 56 representative PostgreSQL DDL forms audited through the full pipeline (parse → enrich → evaluate → report).
+- Census inventory locked: total 56, parseable 56, classified 34, normalized 34, finding-covered 31, normalized-silent-pass 3, unsupported-explicit 22, parser-error 0.
+- Four new PostgreSQL-only DDL rules:
+  - `ddl.pg.drop_index.advisory` — notice when `DROP INDEX` removes an index.
+  - `ddl.pg.alter.add_column.non_null_no_default.warn` — warning when `ALTER TABLE ADD COLUMN` adds `NOT NULL` without `DEFAULT`.
+  - `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` — notice suggesting concurrent index creation for `ALTER TABLE ADD UNIQUE CONSTRAINT`.
+  - `ddl.pg.alter.drop_constraint.advisory` — notice when `ALTER TABLE DROP CONSTRAINT` removes a CHECK, UNIQUE, or FOREIGN KEY constraint.
+- PostgreSQL extractor fix: `CONSTR_NOTNULL` and `CONSTR_DEFAULT` on `ALTER TABLE ADD COLUMN` now populate column `NotNull` and `Default` fields.
+- SQL corpus expanded with new PostgreSQL DDL finding cases covering all four new rules.
+
+### Key Design Decisions
+
+- No new MySQL or TiDB rule IDs, parser features, or policy changes.
+- `CREATE INDEX CONCURRENTLY`, `ALTER TABLE VALIDATE CONSTRAINT`, and `ALTER TABLE DROP COLUMN` remain normalized silent pass for this milestone.
+- `hasColumnConstraint` is an internal helper, not a public export.
+- No public API contract changes.
+
+## Previous Milestone: v0.47.0 Source Location Fidelity Pack
 
 **Goal:** make CI renderers (GitHub Actions, SARIF, GitLab Code Quality) carry the original file path and statement-start line number for each finding, so inline annotations point at the exact SQL statement instead of the first line of the migration file.
 

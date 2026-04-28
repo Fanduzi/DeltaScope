@@ -217,6 +217,10 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.alter.add_check.not_valid.require` | 不带 `NOT VALID` 的 `ADD CHECK` 需要持 `ACCESS EXCLUSIVE` 锁的全表扫描 | ✓ | ✗ | warning |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换） | ✓ | ✗ | warning |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | ✓ | ✗ | warning |
+| `ddl.pg.drop_index.advisory` | `DROP INDEX` 移除索引，建议审查依赖查询 | ✓ | ✗ | notice |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | 添加 `NOT NULL` 列但未指定 `DEFAULT`，可能导致大表全表重写 | ✓ | ✗ | warning |
+| `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` 不含 `NOT VALID` 且后续没有并发索引创建，建议使用并发索引 | ✓ | ✗ | notice |
+| `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` 移除 CHECK/UNIQUE/FK 约束，建议审查数据完整性 | ✓ | ✗ | notice |
 
 ---
 

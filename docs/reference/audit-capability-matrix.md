@@ -231,6 +231,10 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint without `NOT VALID` requires a full table scan with `ACCESS EXCLUSIVE` lock | ✓ | ✗ | warning |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion | ✓ | ✗ | warning |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | Named CHECK/FK `NOT VALID` constraint lacks a later matching `VALIDATE CONSTRAINT` in the same audited SQL batch | ✓ | ✗ | warning |
+| `ddl.pg.drop_index.advisory` | `DROP INDEX` removes an index — advises review of dependent queries | ✓ | ✗ | notice |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | Adding a `NOT NULL` column without `DEFAULT` can cause a full table rewrite on large tables | ✓ | ✗ | warning |
+| `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` without `NOT VALID` and no subsequent `CREATE UNIQUE INDEX CONCURRENTLY` — advises concurrent index creation | ✓ | ✗ | notice |
+| `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` removes a CHECK, UNIQUE, or FK constraint — advises review of data integrity | ✓ | ✗ | notice |
 
 ---
 
@@ -586,7 +590,7 @@ These rules fire only for MySQL and TiDB targets. For PostgreSQL, they are not a
 |---------|---------------|
 | `EXPLAIN`-based planner estimation | `dml.impact.estimate` and downstream impact rules may use the PostgreSQL planner to refine `UPDATE`/`DELETE` row estimates. This is a read-only `EXPLAIN` — DeltaScope does not execute `EXPLAIN ANALYZE`. |
 | `DROP CONSTRAINT` → primary key mapping | `ALTER TABLE … DROP CONSTRAINT` that targets the primary key is recognized and triggers `ddl.alter.drop_primary_key.forbid` and `ddl.alter.primary_key.drop.exists`. |
-| Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn`, `ddl.pg.alter.not_valid_constraint.validate.require` — offline PostgreSQL-specific rules that flag lock contention, table-rewrite risks, and missing same-batch validation follow-up for named `NOT VALID` constraints. |
+| Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn`, `ddl.pg.alter.not_valid_constraint.validate.require`, `ddl.pg.drop_index.advisory`, `ddl.pg.alter.add_column.non_null_no_default.warn`, `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory`, `ddl.pg.alter.drop_constraint.advisory` — offline PostgreSQL-specific rules that flag lock contention, table-rewrite risks, index/constraint removal, and missing same-batch validation follow-up for named `NOT VALID` constraints. |
 
 ---
 

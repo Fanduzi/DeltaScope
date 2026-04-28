@@ -322,7 +322,7 @@ completed. They cannot fire on a single statement in isolation.
 
 ---
 
-## DDL: PostgreSQL Migration-Safety Rules (5 rules)
+## DDL: PostgreSQL Migration-Safety Rules (9 rules)
 
 These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -333,6 +333,10 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint should use `NOT VALID` to avoid a full table scan with `ACCESS EXCLUSIVE` lock | warning | No |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion | warning | No |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | Named CHECK/FK `NOT VALID` constraint lacks a later matching `VALIDATE CONSTRAINT` in the same audited SQL batch | warning | No |
+| `ddl.pg.drop_index.advisory` | `DROP INDEX` removes an index — advises review of dependent queries | notice | No |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | Adding a `NOT NULL` column without a `DEFAULT` can cause a full table rewrite on large tables | warning | No |
+| `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` without `NOT VALID` and no subsequent `CREATE UNIQUE INDEX CONCURRENTLY` — advises concurrent index creation for zero-downtime deployments | notice | No |
+| `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` removes a CHECK, UNIQUE, or FOREIGN KEY constraint — advises review of dependent queries and data integrity | notice | No |
 
 > **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Starting with `v0.41.0`, `ddl.pg.alter.add_check.not_valid.require` also fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements. Starting with `v0.42.0`, `ddl.pg.alter.not_valid_constraint.validate.require` checks same-batch validation pairing for named CHECK and FOREIGN KEY `NOT VALID` constraints. Check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) also cover the ALTER TABLE CHECK path when configured.
 

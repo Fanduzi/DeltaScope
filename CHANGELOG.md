@@ -6,6 +6,32 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.48.0] - 2026-04-28
+
+### Added
+
+- PostgreSQL DDL coverage census: 56 representative PostgreSQL DDL forms characterized through the full audit pipeline (parse → extract → rule evaluation), establishing a reproducible baseline for gap analysis.
+- Four new PostgreSQL-only advisory and warning rules covering previously silent-pass gap forms:
+  - `ddl.pg.drop_index.advisory` — advisory notice when `DROP INDEX` is executed without `CONCURRENTLY` on PostgreSQL.
+  - `ddl.pg.alter.add_column.non_null_no_default.warn` — warns when `ALTER TABLE ADD COLUMN` adds a `NOT NULL` column without a `DEFAULT` value, which can cause table rewrites on large tables.
+  - `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` — advisory notice when `ADD UNIQUE CONSTRAINT` is added without using a concurrent index build strategy.
+  - `ddl.pg.alter.drop_constraint.advisory` — advisory notice when `DROP CONSTRAINT` removes a constraint, flagging potential data-integrity implications.
+- PostgreSQL extractor now recognizes `CONSTR_NOTNULL` and `CONSTR_DEFAULT` column constraints from pg_query for `ALTER TABLE ADD COLUMN` statements, correctly populating `Column.NotNull` and `Column.HasDefault` in the normalized statement model.
+- Census report locked at: total 56, parseable 56, classified 34, normalized 34, finding-covered 31, normalized-silent-pass 3, unsupported-explicit 22, parser-error 0, corpus-covered 19/56.
+- Corpus improvements for PostgreSQL DDL coverage validation.
+
+### Changed
+
+- Release-facing docs now position `v0.48.0` as the PostgreSQL DDL Coverage Census & Gap Closure Pack.
+
+### Non-Goals
+
+- No MySQL/TiDB rule behavior change.
+- No SQL parser grammar change.
+- No public API request type change.
+- No release asset naming or npm launcher behavior change.
+- Remaining unsupported PG DDL forms (22) remain explicit boundaries, not silently claimed as covered.
+
 ## [v0.47.0] - 2026-04-28
 
 ### Changed

@@ -313,7 +313,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL 迁移安全规则（5 条）
+## DDL：PostgreSQL 迁移安全规则（9 条）
 
 这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
 
@@ -324,6 +324,10 @@ deltascope rules search "prefix"
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` 约束应使用 `NOT VALID` 以避免持 `ACCESS EXCLUSIVE` 锁的全表扫描 | warning | 否 |
 | `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换） | warning | 否 |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | warning | 否 |
+| `ddl.pg.drop_index.advisory` | `DROP INDEX` 移除索引，建议审查依赖查询 | notice | 否 |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | 添加 `NOT NULL` 列但未指定 `DEFAULT`，可能导致大表全表重写 | warning | 否 |
+| `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` 不含 `NOT VALID` 且后续没有 `CREATE UNIQUE INDEX CONCURRENTLY`，建议使用并发索引创建以实现零停机部署 | notice | 否 |
+| `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` 移除 CHECK、UNIQUE 或 FOREIGN KEY 约束，建议审查依赖查询和数据完整性影响 | notice | 否 |
 
 > **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。从 `v0.41.0` 开始，`ddl.pg.alter.add_check.not_valid.require` 也对 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 语句触发。从 `v0.42.0` 开始，`ddl.pg.alter.not_valid_constraint.validate.require` 对命名 CHECK 和 FOREIGN KEY `NOT VALID` 约束执行同批次校验配对检查。CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）在配置后同样覆盖 ALTER TABLE CHECK 路径。
 

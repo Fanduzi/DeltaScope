@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs and `hasColumnConstraint` helper for column-constraint checks |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -18,6 +18,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | index_rules.go | Implements create-table index count, prefix, suffix, contains, and duplicate-index rules |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
+| postgresql_migration_rules.go | Implements PostgreSQL-only migration-safety rules: concurrent index, NOT NULL without default, concurrent unique constraint, drop constraint advisory, NOT VALID validation, set-data-type rewrite, add-column with volatile default, and add-check without NOT VALID |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
@@ -183,6 +184,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.drop_index.exists.require`
 - `ddl.alter.rename_index.exists.require`
 - `ddl.alter.drop_primary_key.exists.require`
+- `ddl.pg.drop_index.advisory`
+- `ddl.pg.alter.add_column.non_null_no_default.warn`
+- `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory`
+- `ddl.pg.alter.drop_constraint.advisory`
 
 ## Milestone 4 Planned Create-Table Surface
 
