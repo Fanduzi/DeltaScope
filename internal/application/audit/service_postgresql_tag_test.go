@@ -2137,6 +2137,209 @@ func TestAuditSQLPostgreSQLDefaultPolicyDialectHygiene(t *testing.T) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// v0.48.0 Task 3: Service tests — PG migration-safety gap closure rules
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLDropIndexAdvisory proves that DROP INDEX triggers the
+// PG-only advisory alongside the existing cross-dialect drop_index.exists.require
+// (when metadata is provided). Both findings coexist as expected.
+func TestAuditSQLPostgreSQLDropIndexAdvisory(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "DROP INDEX idx_users_email;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.drop_index.advisory" {
+			found = true
+			if f.Level != "warning" {
+				t.Errorf("expected warning level, got %q", f.Level)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.pg.drop_index.advisory finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+// TestAuditSQLPostgreSQLAddColumnNonNullNoDefaultWarn covers the three
+// behavioral branches for ALTER TABLE ADD COLUMN:
+//   - NOT NULL without DEFAULT → fires the PG warning
+//   - NOT NULL with DEFAULT → does NOT fire the new rule (may fire existing rewrite warning)
+//   - nullable → does NOT fire the new rule
+func TestAuditSQLPostgreSQLAddColumnNonNullNoDefaultWarn(t *testing.T) {
+	tests := []struct {
+		name              string
+		sql               string
+		wantRulePresent   bool
+		wantRuleAbsent    bool
+	}{
+		{
+			name:            "not_null_no_default_fires",
+			sql:             "ALTER TABLE users ADD COLUMN bio text NOT NULL;",
+			wantRulePresent: true,
+		},
+		{
+			name:           "not_null_with_default_does_not_fire",
+			sql:            "ALTER TABLE users ADD COLUMN email text NOT NULL DEFAULT '';",
+			wantRuleAbsent: true,
+		},
+		{
+			name:           "nullable_does_not_fire",
+			sql:            "ALTER TABLE users ADD COLUMN bio text;",
+			wantRuleAbsent: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == "ddl.pg.alter.add_column.non_null_no_default.warn" {
+					found = true
+					break
+				}
+			}
+
+			if tt.wantRulePresent && !found {
+				t.Fatalf("expected ddl.pg.alter.add_column.non_null_no_default.warn, got %#v", result.Statements[0].Findings)
+			}
+			if tt.wantRuleAbsent && found {
+				t.Fatalf("expected rule to be absent for %q, but it fired", tt.name)
+			}
+		})
+	}
+}
+
+// TestAuditSQLPostgreSQLAddUniqueConstraintAdvisory proves that ADD CONSTRAINT
+// UNIQUE triggers the PG-only concurrent-index advisory.
+func TestAuditSQLPostgreSQLAddUniqueConstraintAdvisory(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "ALTER TABLE users ADD CONSTRAINT uniq_users_email UNIQUE (email);",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory" {
+			found = true
+			if f.Level != "warning" {
+				t.Errorf("expected warning level, got %q", f.Level)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.pg.alter.add_unique_constraint.concurrent_index.advisory finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+// TestAuditSQLPostgreSQLDropConstraintAdvisory proves that DROP CONSTRAINT
+// triggers the PG-only advisory.
+func TestAuditSQLPostgreSQLDropConstraintAdvisory(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "ALTER TABLE users DROP CONSTRAINT uniq_email;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.drop_constraint.advisory" {
+			found = true
+			if f.Level != "warning" {
+				t.Errorf("expected warning level, got %q", f.Level)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.pg.alter.drop_constraint.advisory finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+// TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL proves that none of the
+// four new ddl.pg.* rules fire when dialect is MySQL. This complements the
+// domain-level PG-only tests in postgresql_migration_rules_test.go.
+func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
+	pgOnlyRuleIDs := []string{
+		"ddl.pg.drop_index.advisory",
+		"ddl.pg.alter.add_column.non_null_no_default.warn",
+		"ddl.pg.alter.add_unique_constraint.concurrent_index.advisory",
+		"ddl.pg.alter.drop_constraint.advisory",
+	}
+
+	tests := []struct {
+		name string
+		sql  string
+	}{
+		{name: "drop_index_mysql", sql: "DROP INDEX idx_users_email ON users;"},
+		{name: "add_column_nn_mysql", sql: "ALTER TABLE users ADD COLUMN bio text NOT NULL;"},
+		{name: "add_unique_mysql", sql: "ALTER TABLE users ADD CONSTRAINT uniq_email UNIQUE (email);"},
+		{name: "drop_constraint_mysql", sql: "ALTER TABLE users DROP CONSTRAINT uniq_email;"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectMySQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+
+			for _, stmt := range result.Statements {
+				for _, f := range stmt.Findings {
+					for _, pgID := range pgOnlyRuleIDs {
+						if f.RuleID == pgID {
+							t.Fatalf("PG-only rule %q fired on MySQL for SQL: %s", pgID, tt.sql)
+						}
+					}
+				}
+			}
+			for _, f := range result.GlobalFindings {
+				for _, pgID := range pgOnlyRuleIDs {
+					if f.RuleID == pgID {
+						t.Fatalf("PG-only rule %q fired as global finding on MySQL for SQL: %s", pgID, tt.sql)
+					}
+				}
+			}
+		})
+	}
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)

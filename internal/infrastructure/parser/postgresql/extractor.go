@@ -572,16 +572,16 @@ func columnFromDef(column *pg_query.ColumnDef) spec.Column {
 	result := spec.Column{
 		Name:       column.GetColname(),
 		Type:       typeNameString(column.GetTypeName()),
-		NotNull:    column.GetIsNotNull() || hasNotNullConstraint(column),
-		HasDefault: column.GetRawDefault() != nil || column.GetCookedDefault() != nil,
+		NotNull:    column.GetIsNotNull() || hasColumnConstraint(column, pg_query.ConstrType_CONSTR_NOTNULL),
+		HasDefault: column.GetRawDefault() != nil || column.GetCookedDefault() != nil || hasColumnConstraint(column, pg_query.ConstrType_CONSTR_DEFAULT),
 	}
 	applyGeneratedIdentityFacts(&result, column)
 	return result
 }
 
-func hasNotNullConstraint(column *pg_query.ColumnDef) bool {
+func hasColumnConstraint(column *pg_query.ColumnDef, wantType pg_query.ConstrType) bool {
 	for _, item := range column.GetConstraints() {
-		if c := item.GetConstraint(); c != nil && c.GetContype() == pg_query.ConstrType_CONSTR_NOTNULL {
+		if c := item.GetConstraint(); c != nil && c.GetContype() == wantType {
 			return true
 		}
 	}
