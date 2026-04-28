@@ -1,4 +1,4 @@
-# DeltaScope v0.49.0 发布说明
+# DeltaScope v0.49.0 发行说明
 
 ## 概要
 
