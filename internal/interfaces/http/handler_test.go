@@ -1354,3 +1354,70 @@ delete from users;`
 		t.Errorf("expected location.column=1, got %v", loc["column"])
 	}
 }
+
+func TestHandlerAuditPostgreSQLAdvancedIndexFormsSupportedAndCovered(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+		t.Skip("skipping: PG-capable build required for advanced index normalization test")
+	}
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"CREATE INDEX idx_users_active_email ON users (email) WHERE active = true","dialect":"postgresql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	if unsupported, ok := payload["unsupported"].([]any); ok && len(unsupported) != 0 {
+		t.Fatalf("expected no unsupported details, got %#v", unsupported)
+	}
+
+	contextValue, ok := payload["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", payload["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
+	}
+	if contextValue["dialect"] != "postgresql" {
+		t.Fatalf("expected postgresql dialect, got %#v", contextValue["dialect"])
+	}
+
+	statements, ok := payload["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", payload["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) == 0 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+	found := false
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if finding["rule_id"] == "ddl.pg.create_index.concurrently.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected finding with rule_id ddl.pg.create_index.concurrently.require, got %#v", findings)
+	}
+}

@@ -1550,3 +1550,33 @@ delete from users;`
 		t.Errorf("finding Location.Column=%d, want 1", whereFinding.Location.Column)
 	}
 }
+
+func TestAuditPostgreSQLAdvancedIndexFormsAreSupportedAndCovered(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE INDEX idx_users_active_email ON users (email) WHERE active = true",
+		Dialect: DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	if result.Statements[0].Kind != "ddl" {
+		t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+	}
+
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_index.concurrently.require" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected concurrently.require finding, got %#v", result.Statements[0].Findings)
+	}
+}
