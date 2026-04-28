@@ -408,6 +408,10 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterAddCheckNotValidRequire, construct: newAddCheckNotValidRequiredRule},
 		{ruleID: ruleIDPGAlterSetDataTypeRewriteWarn, construct: newSetDataTypeRewriteWarnRule},
 		{ruleID: ruleIDPGTableForeignKeyCrossSchemaAdvisory, construct: newTableForeignKeyCrossSchemaAdvisoryRule},
+		{ruleID: ruleIDPGDropIndexAdvisory, construct: newDropIndexAdvisoryRule},
+		{ruleID: ruleIDPGAlterAddColumnNonNullNoDefaultWarn, construct: newAddColumnNonNullNoDefaultWarnRule},
+		{ruleID: ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory, construct: newAddUniqueConstraintAdvisoryRule},
+		{ruleID: ruleIDPGAlterDropConstraintAdvisory, construct: newDropConstraintAdvisoryRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

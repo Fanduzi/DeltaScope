@@ -1,0 +1,10 @@
+name: add_unique_constraint_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.alter.add_unique_constraint.concurrent_index.advisory

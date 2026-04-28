@@ -266,11 +266,15 @@ func TestRegisterAddsStandalonePostgreSQLDropIndexRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
-	if len(findings) != 1 {
-		t.Fatalf("expected 1 finding, got %d", len(findings))
+	if len(findings) < 1 {
+		t.Fatalf("expected at least 1 finding, got %d", len(findings))
 	}
-	if findings[0].RuleID != "ddl.alter.drop_index.forbid" {
-		t.Fatalf("expected standalone drop index to reuse existing rule id, got %q", findings[0].RuleID)
+	ruleIDs := make(map[string]bool, len(findings))
+	for _, f := range findings {
+		ruleIDs[f.RuleID] = true
+	}
+	if !ruleIDs["ddl.alter.drop_index.forbid"] {
+		t.Fatalf("expected standalone drop index to reuse existing rule id, got %v", ruleIDs)
 	}
 }
 

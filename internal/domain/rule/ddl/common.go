@@ -159,6 +159,10 @@ const (
 	ruleIDPGAlterSetDataTypeRewriteWarn                      = "ddl.pg.alter.set_data_type.rewrite.warn"
 	ruleIDPGTableForeignKeyCrossSchemaAdvisory               = "ddl.pg.table.foreign_key.cross_schema.advisory"
 	ruleIDPGAlterNotValidConstraintValidateRequire           = "ddl.pg.alter.not_valid_constraint.validate.require"
+	ruleIDPGDropIndexAdvisory                                = "ddl.pg.drop_index.advisory"
+	ruleIDPGAlterAddColumnNonNullNoDefaultWarn              = "ddl.pg.alter.add_column.non_null_no_default.warn"
+	ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory = "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
+	ruleIDPGAlterDropConstraintAdvisory                     = "ddl.pg.alter.drop_constraint.advisory"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
