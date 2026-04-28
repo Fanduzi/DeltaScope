@@ -45,8 +45,8 @@ func TestAuditSQLToolAcceptsPostgreSQLOfflineRequests(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected structured map result, got %T", result.StructuredContent)
 	}
-	if body["verdict"] != "review" {
-		t.Fatalf("expected review verdict (ddl.pg.drop_index.advisory fires on DROP INDEX), got %#v", body["verdict"])
+	if body["verdict"] != "pass" {
+		t.Fatalf("expected pass verdict (ddl.pg.drop_index.advisory fires at notice level, which does not elevate verdict), got %#v", body["verdict"])
 	}
 
 	contextValue, ok := body["context"].(map[string]any)

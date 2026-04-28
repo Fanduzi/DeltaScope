@@ -344,7 +344,7 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 		},
 			{
 				name: "drop_index_advisory",
-				r:    mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+				r:    mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 				stmt: spec.Statement{
 					Kind: spec.KindDDL,
 					DDL: &spec.DDL{
@@ -366,7 +366,7 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 			},
 			{
 				name: "add_unique_constraint_advisory",
-				r:    mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+				r:    mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 				stmt: alterStatement(
 					spec.Alter{
 						Action:  "add_constraint",
@@ -377,7 +377,7 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 			},
 			{
 				name: "drop_constraint_advisory",
-				r:    mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+				r:    mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 				stmt: alterStatement(
 					spec.Alter{Action: "drop_constraint", Name: "chk_amount"},
 				),
@@ -844,7 +844,7 @@ func TestSetDataTypeRewriteWarnRuleProvidesPhasedMigrationSuggestion(t *testing.
 // ---------------------------------------------------------------------------
 
 func TestDropIndexAdvisoryRule(t *testing.T) {
-	r := mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	r := mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
 		Kind:    spec.KindDDL,
@@ -866,8 +866,8 @@ func TestDropIndexAdvisoryRule(t *testing.T) {
 		t.Fatalf("expected 1 finding, got %d", len(findings))
 	}
 	f := findings[0]
-	if f.Level != rule.LevelWarning {
-		t.Fatalf("expected warning level, got %q", f.Level)
+	if f.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", f.Level)
 	}
 	if f.Explanation == nil {
 		t.Fatal("expected non-nil explanation")
@@ -878,7 +878,7 @@ func TestDropIndexAdvisoryRule(t *testing.T) {
 }
 
 func TestDropIndexAdvisoryRuleSkipsNonPG(t *testing.T) {
-	r := mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	r := mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
 		Kind:    spec.KindDDL,
@@ -998,7 +998,7 @@ func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenHasDefault(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddUniqueConstraintAdvisoryRule(t *testing.T) {
-	r := mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	r := mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 		spec.Alter{
@@ -1027,7 +1027,7 @@ func TestAddUniqueConstraintAdvisoryRule(t *testing.T) {
 }
 
 func TestAddUniqueConstraintAdvisoryRuleSkipsNonUniqueConstraint(t *testing.T) {
-	r := mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	r := mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 		spec.Alter{
@@ -1053,7 +1053,7 @@ func TestAddUniqueConstraintAdvisoryRuleSkipsNonUniqueConstraint(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDropConstraintAdvisoryRule(t *testing.T) {
-	r := mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	r := mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 		spec.Alter{
@@ -1079,7 +1079,7 @@ func TestDropConstraintAdvisoryRule(t *testing.T) {
 }
 
 func TestDropConstraintAdvisoryRuleSkipsNonDropAction(t *testing.T) {
-	r := mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	r := mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 		spec.Alter{

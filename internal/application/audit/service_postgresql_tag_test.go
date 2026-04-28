@@ -2160,8 +2160,8 @@ func TestAuditSQLPostgreSQLDropIndexAdvisory(t *testing.T) {
 	for _, f := range result.Statements[0].Findings {
 		if f.RuleID == "ddl.pg.drop_index.advisory" {
 			found = true
-			if f.Level != "warning" {
-				t.Errorf("expected warning level, got %q", f.Level)
+			if f.Level != "notice" {
+				t.Errorf("expected notice level, got %q", f.Level)
 			}
 			break
 		}
@@ -2249,8 +2249,8 @@ func TestAuditSQLPostgreSQLAddUniqueConstraintAdvisory(t *testing.T) {
 	for _, f := range result.Statements[0].Findings {
 		if f.RuleID == "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory" {
 			found = true
-			if f.Level != "warning" {
-				t.Errorf("expected warning level, got %q", f.Level)
+			if f.Level != "notice" {
+				t.Errorf("expected notice level, got %q", f.Level)
 			}
 			break
 		}
@@ -2278,8 +2278,8 @@ func TestAuditSQLPostgreSQLDropConstraintAdvisory(t *testing.T) {
 	for _, f := range result.Statements[0].Findings {
 		if f.RuleID == "ddl.pg.alter.drop_constraint.advisory" {
 			found = true
-			if f.Level != "warning" {
-				t.Errorf("expected warning level, got %q", f.Level)
+			if f.Level != "notice" {
+				t.Errorf("expected notice level, got %q", f.Level)
 			}
 			break
 		}

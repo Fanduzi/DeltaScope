@@ -243,7 +243,7 @@ type dropIndexAdvisoryRule struct {
 
 func newDropIndexAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return dropIndexAdvisoryRule{
-		level: configuredLevel(cfg, rule.LevelWarning),
+		level: configuredLevel(cfg, rule.LevelNotice),
 	}, nil
 }
 
@@ -350,7 +350,7 @@ type addUniqueConstraintAdvisoryRule struct {
 
 func newAddUniqueConstraintAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return addUniqueConstraintAdvisoryRule{
-		level: configuredLevel(cfg, rule.LevelWarning),
+		level: configuredLevel(cfg, rule.LevelNotice),
 	}, nil
 }
 
@@ -402,7 +402,7 @@ type dropConstraintAdvisoryRule struct {
 
 func newDropConstraintAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return dropConstraintAdvisoryRule{
-		level: configuredLevel(cfg, rule.LevelWarning),
+		level: configuredLevel(cfg, rule.LevelNotice),
 	}, nil
 }
 
