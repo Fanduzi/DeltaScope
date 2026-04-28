@@ -87,7 +87,7 @@
 | `ddl.index.redundant_unique_overlap.forbid` | 某个非唯一索引被重叠的唯一索引覆盖，因此冗余 | ✓ | ✗ | warning |
 | `ddl.index.key_length.max_bytes.require` | 根据实例的 `innodb_large_prefix` 设置，索引键长度超过 InnoDB 限制 | ✗ | ✓ | warning |
 
-**PostgreSQL 索引可用性（v0.38.0）：** `ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require` 和 `ddl.index.columns.max_count` 现在也适用于独立的 PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句（仅限 btree）。Partial index、expression index、INCLUDE、operator class、非 btree 访问方法和 NULLS NOT DISTINCT 仍不在 scope 内。
+**PostgreSQL 索引可用性（v0.38.0，v0.49.0 更新）：** `ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require` 和 `ddl.index.columns.max_count` 现在也适用于独立的 PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句。自 v0.49.0 起，partial index、expression index、INCLUDE 覆盖索引和非 btree 访问方法（GIN、hash 等）走规范化路径而非返回 unsupported。Operator class 和 NULLS NOT DISTINCT 仍不在 scope 内。
 
 **PostgreSQL ALTER TABLE 约束可用性 (v0.39.0)：** `ALTER TABLE ... ADD PRIMARY KEY`、`ADD CONSTRAINT ... PRIMARY KEY`、`ADD UNIQUE` 和 `ADD CONSTRAINT ... UNIQUE` 形态现在保留语句级约束元数据。已有的主键规则（`ddl.table.primary_key.bigint.require`、`ddl.table.primary_key.columns.max_count`）和唯一前缀规则（`ddl.alter.add_index.unique.prefix.require`）可以对已批准形态产生 findings。外键、CHECK 约束、排他约束、可延迟性、验证生命周期、partial/expression index 语义、operator class 和在线 schema 重建不在范围内。
 

@@ -206,7 +206,7 @@ deltascope rules search "prefix"
 | `ddl.index.redundant_unique_overlap.forbid` | 禁止被其他 UNIQUE 索引覆盖的冗余 UNIQUE 索引 | warning | 否 |
 | `ddl.index.key_length.max_bytes.require` | 索引键长度不得超过实例限制 | blocker | **是** |
 
-**PostgreSQL 索引可用性（v0.38.0）：** `ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require` 和 `ddl.index.columns.max_count` 现在也适用于独立的 PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句（仅限 btree）。Partial index、expression index、INCLUDE、operator class、非 btree 访问方法和 NULLS NOT DISTINCT 仍不在 scope 内。
+**PostgreSQL 索引可用性（v0.38.0，v0.49.0 更新）：** `ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require` 和 `ddl.index.columns.max_count` 现在也适用于独立的 PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句。自 v0.49.0 起，partial index、expression index、INCLUDE 覆盖索引和非 btree 访问方法（GIN、hash 等）走规范化路径而非返回 unsupported。Operator class 和 NULLS NOT DISTINCT 仍不在 scope 内。
 
 ### 视图规则（1 条）
 

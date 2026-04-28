@@ -4,7 +4,39 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.48.0 PostgreSQL DDL Coverage Census & Gap Closure Pack
+## Latest Completed Milestone: v0.49.0 PostgreSQL Advanced CREATE INDEX Normalization Pack
+
+**Goal:** normalize PostgreSQL partial indexes, expression indexes, INCLUDE covering indexes, and non-btree access methods through the audit pipeline instead of returning unsupported, reducing unsupported-explicit from 22 to 18.
+
+### Completed Scope
+
+- PostgreSQL extractor no longer returns unsupported for partial, expression, INCLUDE, or non-btree `CREATE INDEX` variants.
+- `spec.Index` extended with five new fields: `AccessMethod`, `IncludedColumns`, `HasPredicate`, `HasExpressionKeys`, `ExpressionCount`.
+- Existing `ddl.pg.create_index.concurrently.require` rule now fires for the newly normalized forms.
+- Service-level tests for all five advanced index forms through `AuditSQL`.
+- Corpus fixtures for partial, expression, INCLUDE, and GIN index forms.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+
+### Key Design Decisions
+
+- No new rule IDs — the existing `ddl.pg.create_index.concurrently.require` rule now covers the newly normalized forms.
+- No default policy changes.
+- No MySQL/TiDB behavior changes.
+- No predicate SQL or expression SQL semantic analysis — DeltaScope preserves coarse presence/count flags only.
+- Public response types do not expose full internal `spec.Index` advanced fields yet (future surface extension).
+- Remaining 18 unsupported PG DDL forms remain explicit boundaries.
+
+### Census Movement (v0.48 → v0.49)
+
+| Metric | v0.48 | v0.49 |
+|--------|-------|-------|
+| finding-covered | 31 | 35 |
+| unsupported-explicit | 22 | 18 |
+| classified DDL | 34 | 38 |
+| normalized | 34 | 38 |
+| corpus-covered | 19/56 | 23/56 |
+
+## Previous Milestone: v0.48.0 PostgreSQL DDL Coverage Census & Gap Closure Pack
 
 **Goal:** systematically audit 56 representative PostgreSQL DDL forms through the full pipeline, identify coverage gaps, and close them with new PostgreSQL-only rules, an extractor fix, and expanded SQL corpus coverage.
 

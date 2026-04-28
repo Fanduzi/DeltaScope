@@ -208,7 +208,7 @@ These rules evaluate index definitions within a `CREATE TABLE` statement.
 | `ddl.index.redundant_unique_overlap.forbid` | UNIQUE index made redundant by another UNIQUE index is forbidden | warning | No |
 | `ddl.index.key_length.max_bytes.require` | Index key length must not exceed instance limits | blocker | **Yes** |
 
-**PostgreSQL index availability (v0.38.0):** `ddl.index.secondary.prefix.require`, `ddl.index.unique.prefix.require`, and `ddl.index.columns.max_count` now also apply to standalone PostgreSQL `CREATE INDEX`, `CREATE UNIQUE INDEX`, and `CREATE INDEX CONCURRENTLY` statements (btree only). Partial indexes, expression indexes, INCLUDE, operator classes, non-btree access methods, and NULLS NOT DISTINCT remain out of scope.
+**PostgreSQL index availability (v0.38.0, updated v0.49.0):** `ddl.index.secondary.prefix.require`, `ddl.index.unique.prefix.require`, and `ddl.index.columns.max_count` now also apply to standalone PostgreSQL `CREATE INDEX`, `CREATE UNIQUE INDEX`, and `CREATE INDEX CONCURRENTLY` statements. Since v0.49.0, partial indexes, expression indexes, INCLUDE covering indexes, and non-btree access methods (GIN, hash, etc.) normalize through the audit pipeline instead of returning unsupported. Operator classes and NULLS NOT DISTINCT remain out of scope.
 
 ### View Rules (1 rule)
 

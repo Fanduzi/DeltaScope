@@ -6,6 +6,29 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.49.0] - 2026-04-28
+
+### Added
+
+- PostgreSQL advanced `CREATE INDEX` normalization: partial indexes, expression indexes, INCLUDE covering indexes, and non-btree access methods now normalize into coarse index facts instead of returning unsupported.
+- `spec.Index` extended with `AccessMethod`, `IncludedColumns`, `HasPredicate`, `HasExpressionKeys`, and `ExpressionCount` fields.
+- Service-level tests for all five advanced index forms through `AuditSQL`.
+- Corpus fixtures for partial, expression, INCLUDE, and GIN index forms.
+- Public surface tests across `pkg/deltascope`, CLI, HTTP handler, and MCP tool.
+
+### Changed
+
+- PostgreSQL extractor widened: removed unsupported guards for partial, expression, INCLUDE, and non-btree `CREATE INDEX` variants.
+- Census movement: finding-covered 31→35, unsupported-explicit 22→18, normalized 34→38, corpus-covered 19/56→23/56.
+
+### Non-Goals
+
+- No new rule IDs. Existing `ddl.pg.create_index.concurrently.require` now covers the newly normalized forms.
+- No default policy changes.
+- No MySQL/TiDB behavior changes.
+- No predicate or expression SQL semantic analysis.
+- Public response types do not expose full `spec.Index` advanced fields yet.
+
 ## [v0.48.0] - 2026-04-28
 
 ### Added

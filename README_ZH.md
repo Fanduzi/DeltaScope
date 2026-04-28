@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.48.0/install.sh | \
-  DELTASCOPE_VERSION=v0.48.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.49.0/install.sh | \
+  DELTASCOPE_VERSION=v0.49.0 sh
 ```
 
 ### 方言选择 & 发布产物
