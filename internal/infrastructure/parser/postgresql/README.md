@@ -24,6 +24,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 
 ## Notes
 - The extractor populates `CONSTR_NOTNULL` and `CONSTR_DEFAULT` constraints on `ALTER TABLE ADD COLUMN` into the normalized spec column fields, enabling rules that depend on these facts.
+- The extractor normalizes advanced PostgreSQL `CREATE INDEX` forms (partial, expression, INCLUDE, non-btree access methods) into coarse `spec.Index` facts. DeltaScope does not render or semantically analyze predicate SQL or expression SQL.
 - This adapter only establishes the parser seam and normalized statement extraction.
 - Rich PostgreSQL statement extraction continues to expand across phases.
 

@@ -119,9 +119,9 @@ func TestPostgreSQLIndexASTCensus(t *testing.T) {
 		concurrent := stmt.GetConcurrent()
 		unique := stmt.GetUnique()
 		hasWhere := stmt.GetWhereClause() != nil
-		keyNames := indexElemNames(stmt.GetIndexParams())
-		includeNames := indexElemNames(stmt.GetIndexIncludingParams())
-		exprCount := expressionIndexElemCount(stmt.GetIndexParams())
+		keyNames := testIndexElemNames(stmt.GetIndexParams())
+		includeNames := testIndexElemNames(stmt.GetIndexIncludingParams())
+		exprCount := testExpressionIndexElemCount(stmt.GetIndexParams())
 
 		allOK := true
 
@@ -164,9 +164,8 @@ func TestPostgreSQLIndexASTCensus(t *testing.T) {
 	}
 }
 
-// indexElemNames returns the Name field of each IndexElem node. Non-IndexElem
-// nodes (expression entries) produce empty strings and are excluded.
-func indexElemNames(nodes []*pg_query.Node) []string {
+// testIndexElemNames returns the Name field of each IndexElem node.
+func testIndexElemNames(nodes []*pg_query.Node) []string {
 	var names []string
 	for _, n := range nodes {
 		elem := n.GetIndexElem()
@@ -177,9 +176,7 @@ func indexElemNames(nodes []*pg_query.Node) []string {
 	return names
 }
 
-// expressionIndexElemCount counts index params that are expression entries
-// (no IndexElem wrapper, or IndexElem with a non-nil Expr).
-func expressionIndexElemCount(nodes []*pg_query.Node) int {
+func testExpressionIndexElemCount(nodes []*pg_query.Node) int {
 	count := 0
 	for _, n := range nodes {
 		elem := n.GetIndexElem()

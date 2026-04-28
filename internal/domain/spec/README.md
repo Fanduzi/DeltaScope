@@ -76,6 +76,11 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `Column.Name` for column-level rules
   - `PrimaryKey.Name` plus `PrimaryKey.Kind`
   - `Indexes[].Name` plus `Indexes[].Kind` for unique, secondary, and fulltext index rules
+  - `Indexes[].AccessMethod` for access method (defaults to `btree` when empty)
+  - `Indexes[].IncludedColumns` for INCLUDE clause column names
+  - `Indexes[].HasPredicate` for partial index predicate presence
+  - `Indexes[].HasExpressionKeys` for expression index key presence
+  - `Indexes[].ExpressionCount` for count of expression key entries
   - `PrimaryKey.Cardinality` plus `Indexes[].Cardinality` for additive metadata-aware selectivity hints, where `nil` means unknown and a present `0` remains distinguishable at the JSON boundary
   - `Constraints[].Name` plus `Constraints[].Type` for non-index constraints such as foreign keys and checks when extraction provides explicit names
 - `DML` now preserves additive impact-estimation facts without changing existing rule inputs:

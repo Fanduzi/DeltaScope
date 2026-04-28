@@ -658,6 +658,92 @@ func TestUnsupportedDetailOmitsMetadataWhenNil(t *testing.T) {
 	}
 }
 
+func TestIndexPreservesAdvancedFactsInJSON(t *testing.T) {
+	idx := Index{
+		Name:              "idx_active",
+		Kind:              IndexKindSecondary,
+		Columns:           []string{"email"},
+		AccessMethod:      "btree",
+		IncludedColumns:   []string{"name"},
+		HasPredicate:      true,
+		HasExpressionKeys: true,
+		ExpressionCount:   1,
+	}
+
+	data, err := json.Marshal(idx)
+	if err != nil {
+		t.Fatalf("marshal index: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+
+	if got := payload["access_method"]; got != "btree" {
+		t.Fatalf("expected access_method 'btree', got %#v", got)
+	}
+	if got := payload["has_predicate"]; got != true {
+		t.Fatalf("expected has_predicate true, got %#v", got)
+	}
+	if got := payload["has_expression_keys"]; got != true {
+		t.Fatalf("expected has_expression_keys true, got %#v", got)
+	}
+	if got := payload["expression_count"]; got != float64(1) {
+		t.Fatalf("expected expression_count 1, got %#v", got)
+	}
+
+	incRaw, ok := payload["included_columns"].([]any)
+	if !ok || len(incRaw) != 1 || incRaw[0] != "name" {
+		t.Fatalf("expected included_columns [name], got %#v", payload["included_columns"])
+	}
+
+	var roundTrip Index
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal round-trip: %v", err)
+	}
+	if roundTrip.AccessMethod != "btree" {
+		t.Fatalf("expected access_method to round-trip, got %q", roundTrip.AccessMethod)
+	}
+	if !roundTrip.HasPredicate {
+		t.Fatal("expected HasPredicate to round-trip")
+	}
+}
+
+func TestIndexOmitsAdvancedFactsWhenZero(t *testing.T) {
+	idx := Index{
+		Name:  "idx_simple",
+		Kind:  IndexKindSecondary,
+		Columns: []string{"email"},
+	}
+
+	data, err := json.Marshal(idx)
+	if err != nil {
+		t.Fatalf("marshal index: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+
+	if _, ok := payload["access_method"]; ok {
+		t.Fatalf("expected access_method omitted when empty, got %#v", payload)
+	}
+	if _, ok := payload["included_columns"]; ok {
+		t.Fatalf("expected included_columns omitted when nil, got %#v", payload)
+	}
+	if _, ok := payload["has_predicate"]; ok {
+		t.Fatalf("expected has_predicate omitted when false, got %#v", payload)
+	}
+	if _, ok := payload["has_expression_keys"]; ok {
+		t.Fatalf("expected has_expression_keys omitted when false, got %#v", payload)
+	}
+	if _, ok := payload["expression_count"]; ok {
+		t.Fatalf("expected expression_count omitted when zero, got %#v", payload)
+	}
+}
+
 func ptrInt64(value int64) *int64 {
 	return &value
 }

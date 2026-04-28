@@ -247,20 +247,8 @@ func extractIndexStmt(statement spec.Statement, stmt *pg_query.IndexStmt) spec.S
 	if stmt == nil {
 		return unsupportedStatement(statement, "create_index", "postgresql create index statement payload is missing")
 	}
-	if stmt.GetWhereClause() != nil {
-		return unsupportedStatement(statement, "create_index", "postgresql partial index is unsupported in this milestone")
-	}
-	if len(stmt.GetIndexIncludingParams()) > 0 {
-		return unsupportedStatement(statement, "create_index", "postgresql create index include clause is unsupported in this milestone")
-	}
-	if am := stmt.GetAccessMethod(); am != "" && am != "btree" {
-		return unsupportedStatement(statement, "create_index", "postgresql create index with non-btree access method is unsupported in this milestone")
-	}
 	if stmt.GetNullsNotDistinct() {
 		return unsupportedStatement(statement, "create_index", "postgresql create index nulls not distinct is unsupported in this milestone")
-	}
-	if hasExpressionIndexColumn(stmt.GetIndexParams()) {
-		return unsupportedStatement(statement, "create_index", "postgresql expression index is unsupported in this milestone")
 	}
 
 	columns := indexColumnsFromIndexParams(stmt.GetIndexParams())
@@ -269,11 +257,28 @@ func extractIndexStmt(statement spec.Statement, stmt *pg_query.IndexStmt) spec.S
 		kind = spec.IndexKindUnique
 	}
 
+	accessMethod := stmt.GetAccessMethod()
+	if accessMethod == "" {
+		accessMethod = "btree"
+	}
+
+	exprCount := expressionIndexElemCount(stmt.GetIndexParams())
+	includedColumns := indexElemNames(stmt.GetIndexIncludingParams())
+
 	statement.DDL = &spec.DDL{
 		Operation: spec.DDLOperationCreateIndex,
 		Table:     tableFromRangeVar(stmt.GetRelation()),
 		Indexes: []spec.Index{
-			{Name: stmt.GetIdxname(), Kind: kind, Columns: columns},
+			{
+				Name:              stmt.GetIdxname(),
+				Kind:              kind,
+				Columns:           columns,
+				AccessMethod:      accessMethod,
+				IncludedColumns:   includedColumns,
+				HasPredicate:      stmt.GetWhereClause() != nil,
+				HasExpressionKeys: exprCount > 0,
+				ExpressionCount:   exprCount,
+			},
 		},
 		Options: map[string]string{
 			"concurrently": strconv.FormatBool(stmt.GetConcurrent()),
@@ -282,27 +287,30 @@ func extractIndexStmt(statement spec.Statement, stmt *pg_query.IndexStmt) spec.S
 	return statement
 }
 
-func hasExpressionIndexColumn(params []*pg_query.Node) bool {
-	for _, param := range params {
-		elem := param.GetIndexElem()
-		if elem == nil {
-			return true
-		}
-		if elem.GetExpr() != nil {
-			return true
+func expressionIndexElemCount(params []*pg_query.Node) int {
+	count := 0
+	for _, n := range params {
+		elem := n.GetIndexElem()
+		if elem == nil || elem.GetExpr() != nil {
+			count++
 		}
 	}
-	return false
+	return count
+}
+
+func indexElemNames(nodes []*pg_query.Node) []string {
+	var names []string
+	for _, n := range nodes {
+		elem := n.GetIndexElem()
+		if elem != nil && elem.GetName() != "" {
+			names = append(names, elem.GetName())
+		}
+	}
+	return names
 }
 
 func indexColumnsFromIndexParams(params []*pg_query.Node) []string {
-	columns := make([]string, 0, len(params))
-	for _, param := range params {
-		if name := param.GetIndexElem().GetName(); name != "" {
-			columns = append(columns, name)
-		}
-	}
-	return columns
+	return indexElemNames(params)
 }
 
 func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) spec.Statement {

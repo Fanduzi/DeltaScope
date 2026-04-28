@@ -410,7 +410,7 @@ func TestExtractCreateUniqueIndex(t *testing.T) {
 	}
 }
 
-func TestExtractCreateIndexRejectsPartialIndex(t *testing.T) {
+func TestExtractCreateIndexNormalizesPartialIndex(t *testing.T) {
 	parser := New()
 
 	result, err := parser.Parse("create index idx_active on public.users (email) where active = true;")
@@ -425,15 +425,21 @@ func TestExtractCreateIndexRejectsPartialIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown for partial index, got %q", statement.Kind)
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected DDL kind for partial index, got %q", statement.Kind)
 	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
-		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Reason)
+	}
+	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+		t.Fatal("expected DDL with index")
+	}
+	if !statement.DDL.Indexes[0].HasPredicate {
+		t.Fatal("expected HasPredicate true")
 	}
 }
 
-func TestExtractCreateIndexRejectsExpressionIndex(t *testing.T) {
+func TestExtractCreateIndexNormalizesExpressionIndex(t *testing.T) {
 	parser := New()
 
 	result, err := parser.Parse("create index idx_lower_email on public.users (lower(email));")
@@ -448,15 +454,21 @@ func TestExtractCreateIndexRejectsExpressionIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown for expression index, got %q", statement.Kind)
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected DDL kind for expression index, got %q", statement.Kind)
 	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
-		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Reason)
+	}
+	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+		t.Fatal("expected DDL with index")
+	}
+	if !statement.DDL.Indexes[0].HasExpressionKeys {
+		t.Fatal("expected HasExpressionKeys true")
 	}
 }
 
-func TestExtractCreateIndexRejectsIncludeClause(t *testing.T) {
+func TestExtractCreateIndexNormalizesIncludeClause(t *testing.T) {
 	parser := New()
 
 	result, err := parser.Parse("create index idx_users_email on public.users (email) include (name);")
@@ -471,15 +483,21 @@ func TestExtractCreateIndexRejectsIncludeClause(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown for include clause, got %q", statement.Kind)
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected DDL kind for include clause, got %q", statement.Kind)
 	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
-		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Reason)
+	}
+	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+		t.Fatal("expected DDL with index")
+	}
+	if len(statement.DDL.Indexes[0].IncludedColumns) != 1 || statement.DDL.Indexes[0].IncludedColumns[0] != "name" {
+		t.Fatalf("expected included [name], got %v", statement.DDL.Indexes[0].IncludedColumns)
 	}
 }
 
-func TestExtractCreateIndexRejectsNonBtreeAccessMethod(t *testing.T) {
+func TestExtractCreateIndexNormalizesNonBtreeAccessMethod(t *testing.T) {
 	parser := New()
 
 	result, err := parser.Parse("create index idx_users_email_hash on public.users using hash (email);")
@@ -494,14 +512,17 @@ func TestExtractCreateIndexRejectsNonBtreeAccessMethod(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown for non-btree access method, got %q", statement.Kind)
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected DDL kind for non-btree index, got %q", statement.Kind)
 	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_index" {
-		t.Fatalf("expected unsupported create_index, got %#v", statement.Unsupported)
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Reason)
 	}
-	if statement.Unsupported.Reason == "" {
-		t.Fatalf("expected non-empty reason for non-btree access method, got %#v", statement.Unsupported)
+	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+		t.Fatal("expected DDL with index")
+	}
+	if statement.DDL.Indexes[0].AccessMethod != "hash" {
+		t.Fatalf("expected access method hash, got %q", statement.DDL.Indexes[0].AccessMethod)
 	}
 }
 
@@ -689,26 +710,6 @@ func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
 		sql         string
 		wantFeature string
 	}{
-		{
-			name:        "partial_index_where_clause",
-			sql:         `create index idx_users_email_partial on users (email) where deleted_at is null;`,
-			wantFeature: "create_index",
-		},
-		{
-			name:        "expression_index",
-			sql:         `create index idx_users_lower_email on users ((lower(email)));`,
-			wantFeature: "create_index",
-		},
-		{
-			name:        "include_clause",
-			sql:         `create index idx_users_email_include on users (email) include (name);`,
-			wantFeature: "create_index",
-		},
-		{
-			name:        "hash_access_method",
-			sql:         `create index idx_users_email_hash on users using hash (email);`,
-			wantFeature: "create_index",
-		},
 		{
 			name:        "nulls_not_distinct",
 			sql:         `create unique index idx_users_email_nulls on users (email) nulls not distinct;`,

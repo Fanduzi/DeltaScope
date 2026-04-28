@@ -79,10 +79,15 @@ const (
 
 // Index describes an index declaration.
 type Index struct {
-	Name        string    `json:"name"`
-	Kind        IndexKind `json:"kind,omitempty"`
-	Columns     []string  `json:"columns,omitempty"`
-	Cardinality *int64    `json:"cardinality,omitempty"`
+	Name              string    `json:"name"`
+	Kind              IndexKind `json:"kind,omitempty"`
+	Columns           []string  `json:"columns,omitempty"`
+	Cardinality       *int64    `json:"cardinality,omitempty"`
+	AccessMethod      string    `json:"access_method,omitempty"`
+	IncludedColumns   []string  `json:"included_columns,omitempty"`
+	HasPredicate      bool      `json:"has_predicate,omitempty"`
+	HasExpressionKeys bool      `json:"has_expression_keys,omitempty"`
+	ExpressionCount   int       `json:"expression_count,omitempty"`
 }
 
 // Constraint describes a non-index table constraint worth preserving for later rules.
