@@ -1658,6 +1658,136 @@ func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditSQLPostgreSQLAdvancedIndexFormsNormalizedAndCovered(t *testing.T) {
+	tests := []struct {
+		name                string
+		sql                 string
+		wantAccessMethod    string
+		wantHasPredicate   bool
+		wantHasExprKeys    bool
+		wantExprCount      int
+		wantIncludedCols   []string
+		wantConcurrently   string // "true", "false", or "" to skip
+		wantFindingCovered bool
+	}{
+		{
+			name:                "partial_index",
+			sql:                 "CREATE INDEX idx_users_active_email ON users (email) WHERE active = true",
+			wantAccessMethod:    "btree",
+			wantHasPredicate:   true,
+			wantFindingCovered: true,
+			wantConcurrently:   "false",
+		},
+		{
+			name:                "expression_index",
+			sql:                 "CREATE INDEX idx_users_lower_email ON users (LOWER(email))",
+			wantAccessMethod:    "btree",
+			wantHasExprKeys:    true,
+			wantExprCount:      1,
+			wantFindingCovered: true,
+			wantConcurrently:   "false",
+		},
+		{
+			name:                "include_index",
+			sql:                 "CREATE INDEX idx_users_email_cover ON users (email) INCLUDE (name, active)",
+			wantAccessMethod:    "btree",
+			wantIncludedCols:   []string{"name", "active"},
+			wantFindingCovered: true,
+			wantConcurrently:   "false",
+		},
+		{
+			name:                "gin_index",
+			sql:                 "CREATE INDEX idx_docs_body ON docs USING gin (body)",
+			wantAccessMethod:    "gin",
+			wantFindingCovered: true,
+			wantConcurrently:   "false",
+		},
+		{
+			name:                "concurrent_partial",
+			sql:                 "CREATE INDEX CONCURRENTLY idx_users_active_email ON users (email) WHERE active = true",
+			wantAccessMethod:    "btree",
+			wantHasPredicate:   true,
+			wantConcurrently:   "true",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Service-level audit: verify finding coverage.
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			if tt.wantFindingCovered {
+				found := false
+				for _, f := range result.Statements[0].Findings {
+					if f.RuleID == "ddl.pg.create_index.concurrently.require" {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("expected concurrently.require finding, got %v", collectAuditResultRuleIDs(result))
+				}
+			}
+
+			// Spec-level: verify coarse index facts.
+			stmt, ok := corpusExtractStatement(t, tt.sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL payload")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationCreateIndex {
+				t.Fatalf("expected create_index operation, got %q", stmt.DDL.Operation)
+			}
+			if len(stmt.DDL.Indexes) == 0 {
+				t.Fatal("expected at least one index")
+			}
+			idx := stmt.DDL.Indexes[0]
+			if idx.AccessMethod != tt.wantAccessMethod {
+				t.Errorf("access method = %q, want %q", idx.AccessMethod, tt.wantAccessMethod)
+			}
+			if idx.HasPredicate != tt.wantHasPredicate {
+				t.Errorf("HasPredicate = %v, want %v", idx.HasPredicate, tt.wantHasPredicate)
+			}
+			if idx.HasExpressionKeys != tt.wantHasExprKeys {
+				t.Errorf("HasExpressionKeys = %v, want %v", idx.HasExpressionKeys, tt.wantHasExprKeys)
+			}
+			if tt.wantExprCount > 0 && idx.ExpressionCount != tt.wantExprCount {
+				t.Errorf("ExpressionCount = %d, want %d", idx.ExpressionCount, tt.wantExprCount)
+			}
+			if tt.wantIncludedCols != nil {
+				if len(idx.IncludedColumns) != len(tt.wantIncludedCols) {
+					t.Fatalf("IncludedColumns = %v, want %v", idx.IncludedColumns, tt.wantIncludedCols)
+				}
+				for i, col := range tt.wantIncludedCols {
+					if idx.IncludedColumns[i] != col {
+						t.Errorf("IncludedColumns[%d] = %q, want %q", i, idx.IncludedColumns[i], col)
+					}
+				}
+			}
+			if tt.wantConcurrently != "" {
+				got := stmt.DDL.Options["concurrently"]
+				if got != tt.wantConcurrently {
+					t.Errorf("concurrently = %q, want %q", got, tt.wantConcurrently)
+				}
+			}
+		})
+	}
+}
+
 func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name       string

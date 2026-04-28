@@ -1,0 +1,15 @@
+name: expression_index_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.create_index.concurrently.require
+config:
+  rules:
+    ddl.pg.create_index.concurrently.require:
+      enabled: true
+      params: {required: true}
