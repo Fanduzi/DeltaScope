@@ -34,8 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.46.0/install.sh | \
-  DELTASCOPE_VERSION=v0.46.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.47.0/install.sh | \
+  DELTASCOPE_VERSION=v0.47.0 sh
 ```
 
 ### Dialects & Release Archives
@@ -204,6 +204,7 @@ SQL mistakes are cheap to catch before they run and expensive after. DeltaScope 
 - DML protections for `WHERE`, `LIMIT`, `ORDER BY`, subqueries, join conditions, bulk insert patterns, denylisted objects, and conservative affected-row impact estimation.
 - Stable product surfaces: `deltascope` CLI, `deltascope-server`, `deltascope-mcp`, and `pkg/deltascope`.
 - `deltascope-mcp` is the official MCP stdio server and exposes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.
+- CI outputs preserve source file path and statement-start line numbers for GitHub Actions, SARIF, and GitLab Code Quality formats.
 
 ## MCP Quick Start
 

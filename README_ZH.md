@@ -32,8 +32,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.46.0/install.sh | \
-  DELTASCOPE_VERSION=v0.46.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.47.0/install.sh | \
+  DELTASCOPE_VERSION=v0.47.0 sh
 ```
 
 ### 方言选择 & 发布产物
@@ -202,6 +202,7 @@ SQL 错误在落库前发现代价极低，落库后代价极高。DeltaScope �
 - DML 保护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、JOIN 条件、批量写入模式、黑名单对象，以及保守的影响行数估算。
 - 稳定产品接口：`deltascope` CLI、`deltascope-server`、`deltascope-mcp`、`pkg/deltascope`。
 - `deltascope-mcp` 是官方 MCP stdio 服务，暴露 `audit_sql`、`describe_rule`、`list_rules`、`get_capabilities`。
+- CI 输出保留源文件路径和语句起始行号（支持 GitHub Actions、SARIF 和 GitLab Code Quality 格式）。
 
 ## MCP 快速接入
 

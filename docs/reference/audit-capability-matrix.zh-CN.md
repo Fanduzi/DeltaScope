@@ -545,3 +545,4 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | 规则摘要 / 跳过规则可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告已加载、适用和跳过的规则计数，方便确认当前方言下哪些规则运行了。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含规则摘要元数据。 |
 | 启发式误报排除 | 已覆盖 | PostgreSQL 语法启发式不对字符串字面量、双引号标识符、反引号标识符、行注释或块注释中的标记触发。 |
 | GitLab Code Quality 输出 | 已覆盖 | `--format gitlab-codequality` 生成 GitLab Code Quality 报告（`gl-code-quality-report.json`），用于合并请求小组件和差异标注。所有套餐（Free+）。见 [use-deltascope-in-gitlab-ci.zh-CN.md](../recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。 |
+| 源码位置保真 | 已覆盖 | CI 渲染器（GitHub Actions、SARIF、GitLab Code Quality）通过渐进式源码映射器为每条发现携带原始文件路径和语句起始行号。支持 MySQL、TiDB 和 PostgreSQL 方言的多语句迁移文件。 |

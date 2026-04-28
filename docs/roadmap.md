@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.46.0 Homebrew Verification Hygiene Pack
+## Latest Completed Milestone: v0.47.0 Source Location Fidelity Pack
+
+**Goal:** make CI renderers (GitHub Actions, SARIF, GitLab Code Quality) carry the original file path and statement-start line number for each finding, so inline annotations point at the exact SQL statement instead of the first line of the migration file.
+
+### Completed Scope
+
+- Progressive source mapper that scans the original SQL buffer forward, matches each `RawSQL` text, and counts newlines — replacing the previous statement-index fallback.
+- `Finding.Location` populated from statement location in the evaluation layer (only when the rule does not already provide a custom location).
+- GitHub Actions output emits `file=<path>,line=N,col=N` with correct statement-start line; `file=` omitted when no `--file` path.
+- SARIF output includes `artifactLocation.uri`, `startLine`, `startColumn` per result; `artifactLocation` omitted when no `--file` path.
+- GitLab Code Quality output carries correct statement-start line number in `location.lines.begin`.
+- Dedicated unit tests for the progressive source mapper (multi-line, repeated-statement, blank-line, fallback cases).
+- Public API tests for MySQL, TiDB, and PostgreSQL source location fidelity.
+- CLI integration tests for TiDB SARIF and TiDB GitLab Code Quality.
+- HTTP and MCP integration tests for structured `location` in findings.
+- `make release-source-location-smoke` gate validates cross-renderer source location fidelity.
+
+### Key Design Decisions
+
+- No new rule IDs, parser features, or policy changes.
+- No domain logic changes beyond statement location propagation.
+- No HTTP/MCP transport protocol changes beyond auto-serialized `location`.
+
+## Previous Milestone: v0.46.0 Homebrew Verification Hygiene Pack
 
 **Goal:** clean the Homebrew cask install verification path so successful release workflows no longer show misleading Homebrew tap/cask unavailable error annotations.
 

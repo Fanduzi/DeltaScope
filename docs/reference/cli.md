@@ -274,7 +274,7 @@ Use `--format github-actions` to produce inline CI annotations that render in th
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
-Each finding maps to a GitHub Actions workflow command (`::error`, `::warning`, or `::notice`) based on the rule severity. Special characters in titles and messages are escaped per the GitHub workflow command specification.
+Each finding maps to a GitHub Actions workflow command (`::error`, `::warning`, or `::notice`) based on the rule severity. Special characters in titles and messages are escaped per the GitHub workflow command specification. When `--file` is provided, each annotation includes `file=<path>,line=N,col=N` pointing at the exact statement that triggered the finding.
 
 #### SARIF Output
 
@@ -284,7 +284,7 @@ Use `--format sarif` to produce valid SARIF 2.1.0 JSON for GitHub Code Scanning,
 deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
 ```
 
-The output includes rule metadata (help text from explanation suggestions) under `tool.driver.rules` and maps severity levels to SARIF levels: `blocker` → `error`, `warning` → `warning`, `notice` → `note`.
+The output includes rule metadata (help text from explanation suggestions) under `tool.driver.rules` and maps severity levels to SARIF levels: `blocker` → `error`, `warning` → `warning`, `notice` → `note`. When `--file` is provided, each result includes `artifactLocation.uri`, `startLine`, and `startColumn` pointing at the exact statement.
 
 #### GitLab Code Quality Output
 
@@ -314,7 +314,7 @@ Field mapping:
 | Finding line or 1 | `location.lines.begin` |
 | SHA-256 hash | `fingerprint` |
 
-Fingerprints are stable across runs so GitLab can track findings across pipelines. Unsupported statements (parser diagnostics) are not emitted as Code Quality issues. See [use-deltascope-in-gitlab-ci.md](../recipe/use-deltascope-in-gitlab-ci.md) for a complete recipe.
+Fingerprints are stable across runs so GitLab can track findings across pipelines. Unsupported statements (parser diagnostics) are not emitted as Code Quality issues. `location.lines.begin` carries the statement-start line number from the source mapper. See [use-deltascope-in-gitlab-ci.md](../recipe/use-deltascope-in-gitlab-ci.md) for a complete recipe.
 
 #### Rule Summary
 

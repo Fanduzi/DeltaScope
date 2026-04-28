@@ -234,7 +234,7 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
-每条发现根据规则严重级别映射为 GitHub Actions 工作流命令（`::error`、`::warning` 或 `::notice`）。标题和消息中的特殊字符按照 GitHub 工作流命令规范进行转义。
+每条发现根据规则严重级别映射为 GitHub Actions 工作流命令（`::error`、`::warning` 或 `::notice`）。标题和消息中的特殊字符按照 GitHub 工作流命令规范进行转义。当提供 `--file` 时，每条注解包含 `file=<path>,line=N,col=N`，指向触发发现的具体语句。
 
 #### SARIF 输出
 
@@ -244,7 +244,7 @@ deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql
 deltascope audit --file ./migrations.sql --dialect postgresql --format sarif > deltascope.sarif
 ```
 
-输出包含规则元数据（来自 explanation suggestion 的帮助文本）放在 `tool.driver.rules` 下，严重级别映射：`blocker` → `error`、`warning` → `warning`、`notice` → `note`。
+输出包含规则元数据（来自 explanation suggestion 的帮助文本）放在 `tool.driver.rules` 下，严重级别映射：`blocker` → `error`、`warning` → `warning`、`notice` → `note`。当提供 `--file` 时，每个结果包含 `artifactLocation.uri`、`startLine` 和 `startColumn`，指向具体语句。
 
 #### GitLab Code Quality 输出
 
@@ -274,7 +274,7 @@ artifacts:
 | 发现所在行号或 1 | `location.lines.begin` |
 | SHA-256 哈希 | `fingerprint` |
 
-Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追踪发现。不支持的语句（解析器诊断）不会作为 Code Quality 问题输出。完整示例见 [use-deltascope-in-gitlab-ci.zh-CN.md](../recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。
+Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追踪发现。不支持的语句（解析器诊断）不会作为 Code Quality 问题输出。`location.lines.begin` 携带来自源码映射器的语句起始行号。完整示例见 [use-deltascope-in-gitlab-ci.zh-CN.md](../recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。
 
 #### 规则摘要
 

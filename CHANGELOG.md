@@ -6,6 +6,25 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.47.0] - 2026-04-28
+
+### Changed
+
+- Source location fidelity: the audit pipeline now populates `Line` and `Column` on each parsed statement using a progressive source mapper that scans the original SQL buffer forward, matching each `RawSQL` text and counting newlines — replacing the previous statement-index fallback.
+- `Finding.Location` is now populated from statement location in the evaluation layer (only when the rule does not already provide a custom location), so all CI renderers automatically pick up source coordinates.
+- GitHub Actions output (`--format github-actions`) now emits `file=<path>,line=N,col=N` with the correct statement-start line; when no `--file` path is provided, `file=` is omitted entirely.
+- SARIF output (`--format sarif`) now includes `artifactLocation.uri` and `startLine`/`startColumn` for each result; when no `--file` path is provided, `artifactLocation` is omitted.
+- GitLab Code Quality output (`--format gitlab-codequality`) now carries the correct statement-start line number in `location.lines.begin`.
+- Added `make release-source-location-smoke` gate for cross-renderer source location verification; included in `release-contract-gates`.
+
+### Non-Goals
+
+- No new rule IDs, parser features, or policy changes.
+- No domain logic changes beyond statement location propagation.
+- No MySQL/TiDB/PostgreSQL audit behavior changes.
+- No HTTP/MCP transport protocol changes beyond auto-serialized `location`.
+- No release asset naming changes.
+
 ## [v0.46.0] - 2026-04-27
 
 ### Changed
