@@ -238,6 +238,40 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL Object Lifecycle (v0.50.0)
+
+`v0.50.0` normalizes PostgreSQL object lifecycle DDL — schema, sequence, and materialized view CREATE/DROP/ALTER operations — through the audit pipeline instead of returning unsupported. Nine new PostgreSQL-only rules guard against cascade drops, sequence wraparound, and sequence counter resets. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| PostgreSQL DDL Action | Normalized As | Supported | Auditable | Rule-Mapped |
+|-----------------------|---------------|:---------:|:---------:|:-----------:|
+| `CREATE SCHEMA` | `create_schema` | ✓ | ✓ | — |
+| `DROP SCHEMA` | `drop_schema` | ✓ | ✓ | ✓ |
+| `CREATE SEQUENCE` | `create_sequence` | ✓ | ✓ | ✓ |
+| `ALTER SEQUENCE` | `alter_sequence` | ✓ | ✓ | ✓ |
+| `DROP SEQUENCE` | `drop_sequence` | ✓ | ✓ | ✓ |
+| `CREATE MATERIALIZED VIEW` | `create_materialized_view` | ✓ | ✓ | — |
+| `DROP MATERIALIZED VIEW` | `drop_materialized_view` | ✓ | ✓ | ✓ |
+
+### Object Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | ✓ | ✗ | notice |
+| `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+| `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` may cause sequence value wraparound | ✓ | ✗ | warning |
+| `ddl.pg.alter_sequence.restart.warn` | `ALTER SEQUENCE ... RESTART` resets the sequence counter — may conflict with existing rows | ✓ | ✗ | warning |
+| `ddl.pg.alter_sequence.cycle.warn` | `ALTER SEQUENCE ... CYCLE` enables value wraparound on an existing sequence | ✓ | ✗ | warning |
+| `ddl.pg.drop_sequence.advisory` | `DROP SEQUENCE` removes a sequence — advises review of dependent columns | ✓ | ✗ | notice |
+| `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+| `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` removes a materialized view — advises review of dependent queries | ✓ | ✗ | notice |
+| `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+
+> **Note:** `REFRESH MATERIALIZED VIEW` is not yet supported and remains an explicit boundary. This is not complete PostgreSQL object lifecycle coverage — remaining unsupported DDL forms (trigger, function, extension, etc.) are still explicit boundaries.
+
+---
+
 ## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0 / v0.24.0)
 
 `v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns` through the shared `spec.Constraint` model. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results with progressively richer semantics. No new rules are introduced — existing shared rule families apply where relevant.
@@ -591,6 +625,7 @@ These rules fire only for MySQL and TiDB targets. For PostgreSQL, they are not a
 | `EXPLAIN`-based planner estimation | `dml.impact.estimate` and downstream impact rules may use the PostgreSQL planner to refine `UPDATE`/`DELETE` row estimates. This is a read-only `EXPLAIN` — DeltaScope does not execute `EXPLAIN ANALYZE`. |
 | `DROP CONSTRAINT` → primary key mapping | `ALTER TABLE … DROP CONSTRAINT` that targets the primary key is recognized and triggers `ddl.alter.drop_primary_key.forbid` and `ddl.alter.primary_key.drop.exists`. |
 | Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn`, `ddl.pg.alter.not_valid_constraint.validate.require`, `ddl.pg.drop_index.advisory`, `ddl.pg.alter.add_column.non_null_no_default.warn`, `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory`, `ddl.pg.alter.drop_constraint.advisory` — offline PostgreSQL-specific rules that flag lock contention, table-rewrite risks, index/constraint removal, and missing same-batch validation follow-up for named `NOT VALID` constraints. |
+| Object lifecycle rules (v0.50.0) | `ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`, `ddl.pg.create_sequence.cycle.warn`, `ddl.pg.alter_sequence.restart.warn`, `ddl.pg.alter_sequence.cycle.warn`, `ddl.pg.drop_sequence.advisory`, `ddl.pg.drop_sequence.cascade.warn`, `ddl.pg.drop_materialized_view.advisory`, `ddl.pg.drop_materialized_view.cascade.warn` — offline PostgreSQL-specific rules that guard against cascade drops, sequence wraparound, and counter resets for schema, sequence, and materialized view lifecycle DDL. |
 
 ---
 

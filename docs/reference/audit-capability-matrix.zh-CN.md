@@ -224,6 +224,40 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL 对象生命周期（v0.50.0）
+
+`v0.50.0` 将 PostgreSQL 对象生命周期 DDL——schema、sequence 和 materialized view 的 CREATE/DROP/ALTER 操作——通过审核管线进行标准化处理，不再返回 unsupported。九条新 PostgreSQL-only 规则防护级联删除、序列值回绕和序列计数器重置。仅在设置 `--dialect postgresql` 时生效。
+
+### 标准化操作
+
+| PostgreSQL DDL 动作 | 标准化为 | 已支持 | 可审计 | 规则映射 |
+|---------------------|---------|:------:|:------:|:--------:|
+| `CREATE SCHEMA` | `create_schema` | ✓ | ✓ | — |
+| `DROP SCHEMA` | `drop_schema` | ✓ | ✓ | ✓ |
+| `CREATE SEQUENCE` | `create_sequence` | ✓ | ✓ | ✓ |
+| `ALTER SEQUENCE` | `alter_sequence` | ✓ | ✓ | ✓ |
+| `DROP SEQUENCE` | `drop_sequence` | ✓ | ✓ | ✓ |
+| `CREATE MATERIALIZED VIEW` | `create_materialized_view` | ✓ | ✓ | — |
+| `DROP MATERIALIZED VIEW` | `drop_materialized_view` | ✓ | ✓ | ✓ |
+
+### 对象生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
+|---------|---------|:----:|:--------:|---------|
+| `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` 移除 schema，建议审查依赖对象 | ✓ | ✗ | notice |
+| `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
+| `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` 可能导致序列值回绕 | ✓ | ✗ | warning |
+| `ddl.pg.alter_sequence.restart.warn` | `ALTER SEQUENCE ... RESTART` 重置序列计数器，可能与已有行冲突 | ✓ | ✗ | warning |
+| `ddl.pg.alter_sequence.cycle.warn` | `ALTER SEQUENCE ... CYCLE` 在已有序列上启用值回绕 | ✓ | ✗ | warning |
+| `ddl.pg.drop_sequence.advisory` | `DROP SEQUENCE` 移除序列，建议审查依赖列 | ✓ | ✗ | notice |
+| `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
+| `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` 移除物化视图，建议审查依赖查询 | ✓ | ✗ | notice |
+| `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
+
+> **说明：** `REFRESH MATERIALIZED VIEW` 尚未支持，仍为显式边界。这不是完整的 PostgreSQL 对象生命周期覆盖——剩余 unsupported DDL 形式（trigger、function、extension 等）仍为显式边界。
+
+---
+
 ## DDL：PostgreSQL 覆盖范围扩展（v0.21.0 / v0.23.0 / v0.24.0）
 
 `v0.21.0` 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。`v0.23.0` 进一步扩展了 PostgreSQL `CREATE TABLE` 常见约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的 `ReferencedTable` 和 `ReferencedColumns`。这些功能面此前会落入能力边界错误或结构不完整；现在会产生带有渐进丰富语义的正常审计结果。不引入新规则——已有的共享规则族在适用时自动生效。

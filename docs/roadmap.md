@@ -4,7 +4,26 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.49.0 PostgreSQL Advanced CREATE INDEX Normalization Pack
+## Latest Completed Milestone: v0.50.0 PostgreSQL Object Lifecycle DDL Pack
+
+**Goal:** normalize PostgreSQL schema, sequence, and materialized view lifecycle DDL through the audit pipeline, and add nine PostgreSQL-only rules covering cascade drops, sequence cycling, and sequence restarts.
+
+### Completed Scope
+
+- PostgreSQL object lifecycle DDL normalization: `CREATE SCHEMA`, `DROP SCHEMA`, `CREATE SEQUENCE`, `ALTER SEQUENCE`, `DROP SEQUENCE`, `CREATE MATERIALIZED VIEW`, `DROP MATERIALIZED VIEW`.
+- Nine new PostgreSQL-only rules covering advisory notices for drops and warnings for cascades, sequence cycling, and sequence restarts.
+- Service-level tests for all lifecycle operations through `AuditSQL`.
+- Corpus fixtures for schema, sequence, and materialized view lifecycle forms.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+
+### Key Design Decisions
+
+- `REFRESH MATERIALIZED VIEW` remains unsupported/deferred.
+- This is not full PostgreSQL object lifecycle coverage. Remaining unsupported DDL forms (triggers, functions, extensions, etc.) remain explicit boundaries.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the nine new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.49.0 PostgreSQL Advanced CREATE INDEX Normalization Pack
 
 **Goal:** normalize PostgreSQL partial indexes, expression indexes, INCLUDE covering indexes, and non-btree access methods through the audit pipeline instead of returning unsupported, reducing unsupported-explicit from 22 to 18.
 

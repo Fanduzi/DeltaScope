@@ -338,6 +338,26 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` without `NOT VALID` and no subsequent `CREATE UNIQUE INDEX CONCURRENTLY` — advises concurrent index creation for zero-downtime deployments | notice | No |
 | `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` removes a CHECK, UNIQUE, or FOREIGN KEY constraint — advises review of dependent queries and data integrity | notice | No |
 
+---
+
+## DDL: PostgreSQL Object Lifecycle Rules (9 rules)
+
+These rules guard against risky PostgreSQL object lifecycle DDL operations — schema, sequence, and materialized view CREATE/DROP/ALTER. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | notice | No |
+| `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+| `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` may cause sequence value wraparound | warning | No |
+| `ddl.pg.alter_sequence.restart.warn` | `ALTER SEQUENCE ... RESTART` resets the sequence counter — may conflict with existing rows | warning | No |
+| `ddl.pg.alter_sequence.cycle.warn` | `ALTER SEQUENCE ... CYCLE` enables value wraparound on an existing sequence | warning | No |
+| `ddl.pg.drop_sequence.advisory` | `DROP SEQUENCE` removes a sequence — advises review of dependent columns | notice | No |
+| `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+| `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` removes a materialized view — advises review of dependent queries | notice | No |
+| `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `REFRESH MATERIALIZED VIEW` is not yet supported and remains as an explicit boundary.
+
 > **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Starting with `v0.41.0`, `ddl.pg.alter.add_check.not_valid.require` also fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements. Starting with `v0.42.0`, `ddl.pg.alter.not_valid_constraint.validate.require` checks same-batch validation pairing for named CHECK and FOREIGN KEY `NOT VALID` constraints. Check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) also cover the ALTER TABLE CHECK path when configured.
 
 ---

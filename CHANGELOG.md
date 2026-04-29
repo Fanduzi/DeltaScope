@@ -6,6 +6,21 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.50.0] - 2026-04-30
+
+### Added
+
+- PostgreSQL object lifecycle DDL normalization: schemas, sequences, and materialized views now pass through the audit pipeline instead of returning unsupported.
+- Newly normalized operations: `CREATE SCHEMA`, `DROP SCHEMA`, `CREATE SEQUENCE`, `ALTER SEQUENCE`, `DROP SEQUENCE`, `CREATE MATERIALIZED VIEW`, `DROP MATERIALIZED VIEW`.
+- Nine new PostgreSQL-only rules: `ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`, `ddl.pg.create_sequence.cycle.warn`, `ddl.pg.alter_sequence.restart.warn`, `ddl.pg.alter_sequence.cycle.warn`, `ddl.pg.drop_sequence.advisory`, `ddl.pg.drop_sequence.cascade.warn`, `ddl.pg.drop_materialized_view.advisory`, `ddl.pg.drop_materialized_view.cascade.warn`.
+- Service-level, corpus, SDK, CLI, HTTP, and MCP test coverage for all lifecycle operations.
+
+### Non-Goals
+
+- `REFRESH MATERIALIZED VIEW` remains unsupported/deferred.
+- Not full PostgreSQL object lifecycle coverage.
+- No MySQL/TiDB behavior changes.
+
 ## [v0.49.0] - 2026-04-28
 
 ### Added
