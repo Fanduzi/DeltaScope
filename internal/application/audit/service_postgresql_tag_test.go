@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -2468,6 +2469,236 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.50.0 Task 4: Service tests — PG object lifecycle rule coverage
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLObjectLifecycleRules proves that all nine PG object
+// lifecycle rules fire through the full AuditSQL pipeline with correct rule IDs,
+// levels, and metadata.
+func TestAuditSQLPostgreSQLObjectLifecycleRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+		wantLevel  rule.Level
+	}{
+		{
+			name:       "drop_schema_advisory",
+			sql:        "DROP SCHEMA staging;",
+			wantRuleID: "ddl.pg.drop_schema.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "drop_schema_cascade_warn",
+			sql:        "DROP SCHEMA staging CASCADE;",
+			wantRuleID: "ddl.pg.drop_schema.cascade.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "create_sequence_cycle_warn",
+			sql:        "CREATE SEQUENCE order_seq START WITH 1 INCREMENT BY 1 CYCLE;",
+			wantRuleID: "ddl.pg.create_sequence.cycle.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "alter_sequence_restart_warn",
+			sql:        "ALTER SEQUENCE order_seq RESTART WITH 100;",
+			wantRuleID: "ddl.pg.alter_sequence.restart.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "alter_sequence_cycle_warn",
+			sql:        "ALTER SEQUENCE order_seq CYCLE;",
+			wantRuleID: "ddl.pg.alter_sequence.cycle.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "drop_sequence_advisory",
+			sql:        "DROP SEQUENCE order_seq;",
+			wantRuleID: "ddl.pg.drop_sequence.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "drop_sequence_cascade_warn",
+			sql:        "DROP SEQUENCE order_seq CASCADE;",
+			wantRuleID: "ddl.pg.drop_sequence.cascade.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "drop_materialized_view_advisory",
+			sql:        "DROP MATERIALIZED VIEW mv_daily_sales;",
+			wantRuleID: "ddl.pg.drop_materialized_view.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "drop_materialized_view_cascade_warn",
+			sql:        "DROP MATERIALIZED VIEW mv_daily_sales CASCADE;",
+			wantRuleID: "ddl.pg.drop_materialized_view.cascade.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					if f.Level != tt.wantLevel {
+						t.Errorf("expected level %q, got %q", tt.wantLevel, f.Level)
+					}
+					if f.Metadata["object_type"] == nil {
+						t.Errorf("expected object_type metadata, got nil")
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding %q, got %v", tt.wantRuleID, collectAuditResultRuleIDs(result))
+			}
+		})
+	}
+}
+
+// TestAuditSQLPostgreSQLObjectLifecycleNegativeCases proves that lifecycle
+// rules do NOT fire for: non-PG dialects, operations without the required
+// option, and operations that are not lifecycle-related.
+func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
+	pgLifecycleRuleIDs := []string{
+		"ddl.pg.drop_schema.advisory",
+		"ddl.pg.drop_schema.cascade.warn",
+		"ddl.pg.create_sequence.cycle.warn",
+		"ddl.pg.alter_sequence.restart.warn",
+		"ddl.pg.alter_sequence.cycle.warn",
+		"ddl.pg.drop_sequence.advisory",
+		"ddl.pg.drop_sequence.cascade.warn",
+		"ddl.pg.drop_materialized_view.advisory",
+		"ddl.pg.drop_materialized_view.cascade.warn",
+	}
+
+	assertNoPGLifecycleFindings := func(t *testing.T, result *report.Result) {
+		t.Helper()
+		for _, stmt := range result.Statements {
+			for _, f := range stmt.Findings {
+				for _, pgID := range pgLifecycleRuleIDs {
+					if f.RuleID == pgID {
+						t.Fatalf("PG lifecycle rule %q should not fire, but did", pgID)
+					}
+				}
+			}
+		}
+	}
+
+	t.Run("mysql_dialect_does_not_fire_lifecycle_rules", func(t *testing.T) {
+		tests := []struct {
+			name           string
+			sql            string
+			expectParseErr bool
+		}{
+			{name: "drop_schema", sql: "DROP SCHEMA staging;"},
+			{name: "drop_sequence", sql: "DROP SEQUENCE order_seq;"},
+			{name: "drop_materialized_view", sql: "DROP MATERIALIZED VIEW mv_daily_sales;", expectParseErr: true},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result, err := AuditSQL(context.Background(), Request{
+					SQL:     tt.sql,
+					Dialect: spec.DialectMySQL,
+				})
+				if tt.expectParseErr {
+					if err == nil {
+						t.Fatalf("expected parse error for MySQL-incompatible SQL, got nil")
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("audit sql: %v", err)
+				}
+				assertNoPGLifecycleFindings(t, &result)
+			})
+		}
+	})
+
+	t.Run("create_schema_default_no_finding", func(t *testing.T) {
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     "CREATE SCHEMA staging;",
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		assertNoPGLifecycleFindings(t, &result)
+	})
+
+	t.Run("create_sequence_without_cycle_no_lifecycle_finding", func(t *testing.T) {
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     "CREATE SEQUENCE order_seq START WITH 1 INCREMENT BY 1;",
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		for _, stmt := range result.Statements {
+			for _, f := range stmt.Findings {
+				for _, pgID := range pgLifecycleRuleIDs {
+					if f.RuleID == pgID {
+						t.Fatalf("PG lifecycle rule %q should not fire for CREATE SEQUENCE without CYCLE", pgID)
+					}
+				}
+			}
+		}
+	})
+
+	t.Run("drop_schema_without_cascade_no_cascade_warn", func(t *testing.T) {
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     "DROP SCHEMA staging;",
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		for _, stmt := range result.Statements {
+			for _, f := range stmt.Findings {
+				if f.RuleID == "ddl.pg.drop_schema.cascade.warn" {
+					t.Fatalf("cascade warn should not fire without CASCADE option")
+				}
+			}
+		}
+	})
+
+	t.Run("drop_materialized_view_without_cascade_no_cascade_warn", func(t *testing.T) {
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     "DROP MATERIALIZED VIEW mv_daily_sales;",
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		for _, stmt := range result.Statements {
+			for _, f := range stmt.Findings {
+				if f.RuleID == "ddl.pg.drop_materialized_view.cascade.warn" {
+					t.Fatalf("cascade warn should not fire without CASCADE option")
+				}
+			}
+		}
+	})
 }
 
 func serviceMetadataValueEqual(a, b any) bool {
