@@ -19,6 +19,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
 | postgresql_migration_rules.go | Implements PostgreSQL-only migration-safety rules: concurrent index, NOT NULL without default, concurrent unique constraint, drop constraint advisory, NOT VALID validation, set-data-type rewrite, add-column with volatile default, and add-check without NOT VALID |
+| postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
@@ -45,6 +46,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
+| postgresql_object_lifecycle_rules_test.go | Verifies PG object lifecycle rules with positive, negative, cross-dialect, and registration coverage |
 
 ## Exports
 
@@ -188,6 +190,15 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter.add_column.non_null_no_default.warn`
 - `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory`
 - `ddl.pg.alter.drop_constraint.advisory`
+- `ddl.pg.drop_schema.advisory`
+- `ddl.pg.drop_schema.cascade.warn`
+- `ddl.pg.create_sequence.cycle.warn`
+- `ddl.pg.alter_sequence.restart.warn`
+- `ddl.pg.alter_sequence.cycle.warn`
+- `ddl.pg.drop_sequence.advisory`
+- `ddl.pg.drop_sequence.cascade.warn`
+- `ddl.pg.drop_materialized_view.advisory`
+- `ddl.pg.drop_materialized_view.cascade.warn`
 
 ## Milestone 4 Planned Create-Table Surface
 

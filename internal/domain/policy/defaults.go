@@ -712,6 +712,52 @@ func Default() Policy {
 				Level:   rule.LevelNotice,
 				Params:  map[string]any{},
 			},
+			// PG object lifecycle rules (PostgreSQL-only).
+			"ddl.pg.drop_schema.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_schema.cascade.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.create_sequence.cycle.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter_sequence.restart.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter_sequence.cycle.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_sequence.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_sequence.cascade.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_materialized_view.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_materialized_view.cascade.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

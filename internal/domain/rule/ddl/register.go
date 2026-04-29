@@ -412,6 +412,16 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterAddColumnNonNullNoDefaultWarn, construct: newAddColumnNonNullNoDefaultWarnRule},
 		{ruleID: ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory, construct: newAddUniqueConstraintAdvisoryRule},
 		{ruleID: ruleIDPGAlterDropConstraintAdvisory, construct: newDropConstraintAdvisoryRule},
+		// PostgreSQL object lifecycle rules (PG-only).
+		{ruleID: ruleIDPGDropSchemaAdvisory, construct: newDropSchemaAdvisoryRule},
+		{ruleID: ruleIDPGDropSchemaCascadeWarn, construct: newDropSchemaCascadeWarnRule},
+		{ruleID: ruleIDPGCreateSequenceCycleWarn, construct: newCreateSequenceCycleWarnRule},
+		{ruleID: ruleIDPGAlterSequenceRestartWarn, construct: newAlterSequenceRestartWarnRule},
+		{ruleID: ruleIDPGAlterSequenceCycleWarn, construct: newAlterSequenceCycleWarnRule},
+		{ruleID: ruleIDPGDropSequenceAdvisory, construct: newDropSequenceAdvisoryRule},
+		{ruleID: ruleIDPGDropSequenceCascadeWarn, construct: newDropSequenceCascadeWarnRule},
+		{ruleID: ruleIDPGDropMaterializedViewAdvisory, construct: newDropMaterializedViewAdvisoryRule},
+		{ruleID: ruleIDPGDropMaterializedViewCascadeWarn, construct: newDropMaterializedViewCascadeWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

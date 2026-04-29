@@ -163,6 +163,15 @@ const (
 	ruleIDPGAlterAddColumnNonNullNoDefaultWarn              = "ddl.pg.alter.add_column.non_null_no_default.warn"
 	ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory = "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
 	ruleIDPGAlterDropConstraintAdvisory                     = "ddl.pg.alter.drop_constraint.advisory"
+	ruleIDPGDropSchemaAdvisory                              = "ddl.pg.drop_schema.advisory"
+	ruleIDPGDropSchemaCascadeWarn                           = "ddl.pg.drop_schema.cascade.warn"
+	ruleIDPGCreateSequenceCycleWarn                         = "ddl.pg.create_sequence.cycle.warn"
+	ruleIDPGAlterSequenceRestartWarn                        = "ddl.pg.alter_sequence.restart.warn"
+	ruleIDPGAlterSequenceCycleWarn                          = "ddl.pg.alter_sequence.cycle.warn"
+	ruleIDPGDropSequenceAdvisory                            = "ddl.pg.drop_sequence.advisory"
+	ruleIDPGDropSequenceCascadeWarn                         = "ddl.pg.drop_sequence.cascade.warn"
+	ruleIDPGDropMaterializedViewAdvisory                    = "ddl.pg.drop_materialized_view.advisory"
+	ruleIDPGDropMaterializedViewCascadeWarn                 = "ddl.pg.drop_materialized_view.cascade.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
