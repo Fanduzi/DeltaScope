@@ -2468,3 +2468,93 @@ func TestAuditCommandPostgreSQLAdvancedIndexFormsSupportedAndCovered(t *testing.
 		t.Fatalf("expected finding with rule_id ddl.pg.create_index.concurrently.require, got %#v", findings)
 	}
 }
+
+func TestAuditCommandPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "drop_schema_advisory",
+			sql:        "DROP SCHEMA IF EXISTS staging;",
+			wantRuleID: "ddl.pg.drop_schema.advisory",
+		},
+		{
+			name:       "drop_schema_cascade_warn",
+			sql:        "DROP SCHEMA IF EXISTS staging CASCADE;",
+			wantRuleID: "ddl.pg.drop_schema.cascade.warn",
+		},
+		{
+			name:       "alter_sequence_restart_warn",
+			sql:        "ALTER SEQUENCE seq_order_id RESTART WITH 100;",
+			wantRuleID: "ddl.pg.alter_sequence.restart.warn",
+		},
+		{
+			name:       "drop_sequence_advisory",
+			sql:        "DROP SEQUENCE IF EXISTS seq_order_id;",
+			wantRuleID: "ddl.pg.drop_sequence.advisory",
+		},
+		{
+			name:       "drop_materialized_view_advisory",
+			sql:        "DROP MATERIALIZED VIEW IF EXISTS mv_stats;",
+			wantRuleID: "ddl.pg.drop_materialized_view.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tt.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			if unsupported, ok := decoded["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, f := range findings {
+				finding, ok := f.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}

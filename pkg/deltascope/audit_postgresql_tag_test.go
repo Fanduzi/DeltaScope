@@ -1580,3 +1580,69 @@ func TestAuditPostgreSQLAdvancedIndexFormsAreSupportedAndCovered(t *testing.T) {
 		t.Fatalf("expected concurrently.require finding, got %#v", result.Statements[0].Findings)
 	}
 }
+
+func TestAuditPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "drop_schema_advisory",
+			sql:        "DROP SCHEMA IF EXISTS staging;",
+			wantRuleID: "ddl.pg.drop_schema.advisory",
+		},
+		{
+			name:       "drop_schema_cascade_warn",
+			sql:        "DROP SCHEMA IF EXISTS staging CASCADE;",
+			wantRuleID: "ddl.pg.drop_schema.cascade.warn",
+		},
+		{
+			name:       "alter_sequence_restart_warn",
+			sql:        "ALTER SEQUENCE seq_order_id RESTART WITH 100;",
+			wantRuleID: "ddl.pg.alter_sequence.restart.warn",
+		},
+		{
+			name:       "drop_sequence_advisory",
+			sql:        "DROP SEQUENCE IF EXISTS seq_order_id;",
+			wantRuleID: "ddl.pg.drop_sequence.advisory",
+		},
+		{
+			name:       "drop_materialized_view_advisory",
+			sql:        "DROP MATERIALIZED VIEW IF EXISTS mv_stats;",
+			wantRuleID: "ddl.pg.drop_materialized_view.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}

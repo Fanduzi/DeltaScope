@@ -1517,3 +1517,74 @@ func httpToFloat64(v any) (float64, bool) {
 	}
 	return 0, false
 }
+
+func TestExecuteAuditRequestPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "drop_schema_advisory",
+			sql:        "DROP SCHEMA IF EXISTS staging;",
+			wantRuleID: "ddl.pg.drop_schema.advisory",
+		},
+		{
+			name:       "drop_schema_cascade_warn",
+			sql:        "DROP SCHEMA IF EXISTS staging CASCADE;",
+			wantRuleID: "ddl.pg.drop_schema.cascade.warn",
+		},
+		{
+			name:       "alter_sequence_restart_warn",
+			sql:        "ALTER SEQUENCE seq_order_id RESTART WITH 100;",
+			wantRuleID: "ddl.pg.alter_sequence.restart.warn",
+		},
+		{
+			name:       "drop_sequence_advisory",
+			sql:        "DROP SEQUENCE IF EXISTS seq_order_id;",
+			wantRuleID: "ddl.pg.drop_sequence.advisory",
+		},
+		{
+			name:       "drop_materialized_view_advisory",
+			sql:        "DROP MATERIALIZED VIEW IF EXISTS mv_stats;",
+			wantRuleID: "ddl.pg.drop_materialized_view.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     tt.sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if response.Context == nil || response.Context.Mode != "offline" {
+				t.Fatalf("expected offline context, got %#v", response.Context)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+			if len(response.Result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", response.Result.Unsupported)
+			}
+
+			found := false
+			for _, f := range response.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, response.Statements[0].Findings)
+			}
+		})
+	}
+}
