@@ -751,3 +751,70 @@ func ptrInt64(value int64) *int64 {
 func ptrFloat64(value float64) *float64 {
 	return &value
 }
+
+func TestDDLObjectLifecycleFieldsSerializeCorrectly(t *testing.T) {
+	ddl := &DDL{
+		Operation:  DDLOperationDropSchema,
+		ObjectName: "staging",
+		ObjectType: "schema",
+		Options:    map[string]string{"if_exists": "true", "cascade": "true"},
+	}
+
+	data, err := json.Marshal(ddl)
+	if err != nil {
+		t.Fatalf("marshal ddl: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+
+	if got := payload["object_name"]; got != "staging" {
+		t.Fatalf("expected object_name 'staging', got %#v", got)
+	}
+	if got := payload["object_type"]; got != "schema" {
+		t.Fatalf("expected object_type 'schema', got %#v", got)
+	}
+	if got := payload["operation"]; got != "drop_schema" {
+		t.Fatalf("expected operation 'drop_schema', got %#v", got)
+	}
+
+	opts, ok := payload["options"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected options map, got %#v", payload["options"])
+	}
+	if got := opts["if_exists"]; got != "true" {
+		t.Fatalf("expected if_exists 'true', got %#v", got)
+	}
+	if got := opts["cascade"]; got != "true" {
+		t.Fatalf("expected cascade 'true', got %#v", got)
+	}
+}
+
+func TestDDLObjectFieldsOmitWhenEmpty(t *testing.T) {
+	ddl := &DDL{
+		Operation: DDLOperationCreateIndex,
+		Table:     &Table{Name: "users"},
+		Indexes: []Index{
+			{Name: "idx_email", Kind: IndexKindSecondary, Columns: []string{"email"}},
+		},
+	}
+
+	data, err := json.Marshal(ddl)
+	if err != nil {
+		t.Fatalf("marshal ddl: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+
+	if _, ok := payload["object_name"]; ok {
+		t.Fatalf("expected object_name to be omitted when empty, got %#v", payload)
+	}
+	if _, ok := payload["object_type"]; ok {
+		t.Fatalf("expected object_type to be omitted when empty, got %#v", payload)
+	}
+}

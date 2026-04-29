@@ -5181,3 +5181,137 @@ func TestExtractAlterTableAddCheckMultiColumnBecomesProjectedConstraintFact(t *t
 		t.Fatalf("RED: expected projected columns [amount tax], got %v", c.Columns)
 	}
 }
+
+func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
+	cases := []struct {
+		Name       string
+		SQL        string
+		Operation  spec.DDLOperation
+		ObjectName string
+		ObjectType string
+		Options    map[string]string
+		HasSelect  bool
+	}{
+		{
+			Name:       "CREATE SCHEMA",
+			SQL:        "CREATE SCHEMA staging",
+			Operation:  spec.DDLOperationCreateSchema,
+			ObjectName: "staging",
+			ObjectType: "schema",
+		},
+		{
+			Name:       "DROP SCHEMA IF EXISTS CASCADE",
+			SQL:        "DROP SCHEMA IF EXISTS staging CASCADE",
+			Operation:  spec.DDLOperationDropSchema,
+			ObjectName: "staging",
+			ObjectType: "schema",
+			Options:    map[string]string{"if_exists": "true", "cascade": "true"},
+		},
+		{
+			Name:       "CREATE SEQUENCE CYCLE",
+			SQL:        "CREATE SEQUENCE seq_order_id CYCLE",
+			Operation:  spec.DDLOperationCreateSequence,
+			ObjectName: "seq_order_id",
+			ObjectType: "sequence",
+			Options:    map[string]string{"cycle": "true"},
+		},
+		{
+			Name:       "ALTER SEQUENCE RESTART",
+			SQL:        "ALTER SEQUENCE seq_order_id RESTART WITH 100",
+			Operation:  spec.DDLOperationAlterSequence,
+			ObjectName: "seq_order_id",
+			ObjectType: "sequence",
+			Options:    map[string]string{"restart": "true"},
+		},
+		{
+			Name:       "DROP SEQUENCE IF EXISTS CASCADE",
+			SQL:        "DROP SEQUENCE IF EXISTS seq_order_id CASCADE",
+			Operation:  spec.DDLOperationDropSequence,
+			ObjectName: "seq_order_id",
+			ObjectType: "sequence",
+			Options:    map[string]string{"if_exists": "true", "cascade": "true"},
+		},
+		{
+			Name:       "CREATE MATERIALIZED VIEW WITH NO DATA",
+			SQL:        "CREATE MATERIALIZED VIEW mv_stats AS SELECT COUNT(*) FROM users WITH NO DATA",
+			Operation:  spec.DDLOperationCreateMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"with_no_data": "true"},
+			HasSelect:  true,
+		},
+		{
+			Name:       "DROP MATERIALIZED VIEW IF EXISTS CASCADE",
+			SQL:        "DROP MATERIALIZED VIEW IF EXISTS mv_stats CASCADE",
+			Operation:  spec.DDLOperationDropMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"if_exists": "true", "cascade": "true"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			p := New()
+			result, err := p.Parse(tc.SQL)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+			if extractErr != nil {
+				t.Fatalf("extract: %v", extractErr)
+			}
+
+			if stmt.Unsupported != nil {
+				t.Fatalf("expected supported statement, got unsupported: %s: %s", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+			}
+			if stmt.Kind != spec.KindDDL {
+				t.Fatalf("expected kind DDL, got %q", stmt.Kind)
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL metadata")
+			}
+			if stmt.DDL.Operation != tc.Operation {
+				t.Fatalf("expected operation %q, got %q", tc.Operation, stmt.DDL.Operation)
+			}
+			if stmt.DDL.ObjectName != tc.ObjectName {
+				t.Fatalf("expected object_name %q, got %q", tc.ObjectName, stmt.DDL.ObjectName)
+			}
+			if stmt.DDL.ObjectType != tc.ObjectType {
+				t.Fatalf("expected object_type %q, got %q", tc.ObjectType, stmt.DDL.ObjectType)
+			}
+			if stmt.DDL.HasSelect != tc.HasSelect {
+				t.Fatalf("expected has_select %v, got %v", tc.HasSelect, stmt.DDL.HasSelect)
+			}
+			for k, v := range tc.Options {
+				if got := stmt.DDL.Options[k]; got != v {
+					t.Fatalf("expected options[%q] = %q, got %q", k, v, got)
+				}
+			}
+		})
+	}
+}
+
+func TestPGExtractorRefreshMaterializedViewRemainsUnsupported(t *testing.T) {
+	p := New()
+	result, err := p.Parse("REFRESH MATERIALIZED VIEW mv_stats")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+
+	if stmt.Unsupported == nil {
+		t.Fatal("expected REFRESH MATERIALIZED VIEW to be unsupported")
+	}
+}

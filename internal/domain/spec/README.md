@@ -70,7 +70,8 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `CREATE TABLE ... LIKE`
   - `CREATE TABLE ... AS SELECT`
   - partitioned tables
-- `DDL.Operation` now distinguishes `create_table`, `create_view`, `alter_table`, `drop_table`, `drop_index`, `drop_view`, and `truncate_table` so lifecycle rules do not rely on structural guesswork.
+- `DDL` has optional `ObjectName` / `ObjectType` for object lifecycle DDL (schema, sequence, materialized view create/drop).
+- `DDL.Operation` now distinguishes `create_table`, `create_view`, `alter_table`, `drop_table`, `drop_index`, `drop_view`, `truncate_table`, `create_schema`, `drop_schema`, `create_sequence`, `alter_sequence`, `drop_sequence`, `create_materialized_view`, and `drop_materialized_view` so lifecycle rules do not rely on structural guesswork.
 - `DDL` preserves explicit naming-governance subjects directly on the normalized model:
   - `Table.Name` for table-level rules
   - `Column.Name` for column-level rules

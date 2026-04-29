@@ -75,8 +75,16 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_RenameStmt,
 		*pg_query.Node_DropStmt,
 		*pg_query.Node_IndexStmt,
-		*pg_query.Node_TruncateStmt:
+		*pg_query.Node_TruncateStmt,
+		*pg_query.Node_CreateSchemaStmt,
+		*pg_query.Node_CreateSeqStmt,
+		*pg_query.Node_AlterSeqStmt:
 		return spec.KindDDL
+	case *pg_query.Node_CreateTableAsStmt:
+		if n := node.GetCreateTableAsStmt(); n != nil && n.GetObjtype() == pg_query.ObjectType_OBJECT_MATVIEW {
+			return spec.KindDDL
+		}
+		return spec.KindUnknown
 	case *pg_query.Node_InsertStmt,
 		*pg_query.Node_UpdateStmt,
 		*pg_query.Node_DeleteStmt:

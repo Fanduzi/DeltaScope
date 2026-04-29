@@ -19,6 +19,8 @@ type DDL struct {
 	HasReferTable bool              `json:"has_refer_table,omitempty"`
 	HasSelect     bool              `json:"has_select,omitempty"`
 	HasPartition  bool              `json:"has_partition,omitempty"`
+	ObjectName    string            `json:"object_name,omitempty"`
+	ObjectType    string            `json:"object_type,omitempty"`
 }
 
 // DDLOperation identifies the normalized DDL operation represented by a statement.
@@ -35,6 +37,14 @@ const (
 	DDLOperationCreateIndex   DDLOperation = "create_index"
 	DDLOperationDropView      DDLOperation = "drop_view"
 	DDLOperationTruncateTable DDLOperation = "truncate_table"
+
+	DDLOperationCreateSchema           DDLOperation = "create_schema"
+	DDLOperationDropSchema             DDLOperation = "drop_schema"
+	DDLOperationCreateSequence         DDLOperation = "create_sequence"
+	DDLOperationAlterSequence          DDLOperation = "alter_sequence"
+	DDLOperationDropSequence           DDLOperation = "drop_sequence"
+	DDLOperationCreateMaterializedView DDLOperation = "create_materialized_view"
+	DDLOperationDropMaterializedView   DDLOperation = "drop_materialized_view"
 )
 
 // Table describes a table-level object.

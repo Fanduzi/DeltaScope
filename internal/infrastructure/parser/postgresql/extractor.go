@@ -49,6 +49,14 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractIndexStmt(statement, node.IndexStmt), nil
 	case *pg_query.Node_TruncateStmt:
 		return extractTruncateStmt(statement, node.TruncateStmt), nil
+	case *pg_query.Node_CreateSchemaStmt:
+		return extractCreateSchemaStmt(statement, node.CreateSchemaStmt), nil
+	case *pg_query.Node_CreateSeqStmt:
+		return extractCreateSeqStmt(statement, node.CreateSeqStmt), nil
+	case *pg_query.Node_AlterSeqStmt:
+		return extractAlterSeqStmt(statement, node.AlterSeqStmt), nil
+	case *pg_query.Node_CreateTableAsStmt:
+		return extractCreateTableAsStmt(statement, node.CreateTableAsStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
@@ -237,6 +245,39 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			Operation: spec.DDLOperationDropIndex,
 			Alter:     []spec.Alter{{Action: "drop_index", Name: objectNameFromObjectName(stmt.GetObjects()), Options: options}},
 		}
+	case pg_query.ObjectType_OBJECT_SCHEMA:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropSchema,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "schema",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_SEQUENCE:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropSequence,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "sequence",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_MATVIEW:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropMaterializedView,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "materialized_view",
+			Options:    options,
+		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}
@@ -319,6 +360,123 @@ func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) 
 	}
 	statement.DDL = &spec.DDL{Operation: spec.DDLOperationTruncateTable, Table: tableFromRelationNodeList(stmt.GetRelations())}
 	return statement
+}
+
+func extractCreateSchemaStmt(statement spec.Statement, stmt *pg_query.CreateSchemaStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_schema", "postgresql create schema statement payload is missing")
+	}
+	options := map[string]string{}
+	if stmt.GetIfNotExists() {
+		options["if_not_exists"] = "true"
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateSchema,
+		ObjectName: stmt.GetSchemaname(),
+		ObjectType: "schema",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractCreateSeqStmt(statement spec.Statement, stmt *pg_query.CreateSeqStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_sequence", "postgresql create sequence statement payload is missing")
+	}
+	options := map[string]string{}
+	if stmt.GetIfNotExists() {
+		options["if_not_exists"] = "true"
+	}
+	for _, opt := range stmt.GetOptions() {
+		elem := opt.GetDefElem()
+		if elem == nil {
+			continue
+		}
+		if elem.GetDefname() == "cycle" {
+			if arg := elem.GetArg(); arg != nil {
+				if b := arg.GetBoolean(); b != nil && b.GetBoolval() {
+					options["cycle"] = "true"
+				}
+			}
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateSequence,
+		ObjectName: rangeVarName(stmt.GetSequence()),
+		ObjectType: "sequence",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractAlterSeqStmt(statement spec.Statement, stmt *pg_query.AlterSeqStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_sequence", "postgresql alter sequence statement payload is missing")
+	}
+	options := map[string]string{}
+	for _, opt := range stmt.GetOptions() {
+		elem := opt.GetDefElem()
+		if elem == nil {
+			continue
+		}
+		switch elem.GetDefname() {
+		case "restart":
+			options["restart"] = "true"
+		case "cycle":
+			if arg := elem.GetArg(); arg != nil {
+				if b := arg.GetBoolean(); b != nil && b.GetBoolval() {
+					options["cycle"] = "true"
+				}
+			}
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterSequence,
+		ObjectName: rangeVarName(stmt.GetSequence()),
+		ObjectType: "sequence",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractCreateTableAsStmt(statement spec.Statement, stmt *pg_query.CreateTableAsStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_table_as", "postgresql create table as statement payload is missing")
+	}
+	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_MATVIEW {
+		return unsupportedStatement(statement, "create_table_as", "postgresql create table as select is unsupported in v1")
+	}
+	into := stmt.GetInto()
+	relName := ""
+	skipData := false
+	if into != nil {
+		relName = rangeVarName(into.GetRel())
+		skipData = into.GetSkipData()
+	}
+	options := map[string]string{}
+	if skipData {
+		options["with_no_data"] = "true"
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateMaterializedView,
+		ObjectName: relName,
+		ObjectType: "materialized_view",
+		HasSelect:  stmt.GetQuery() != nil,
+		Options:    options,
+	}
+	return statement
+}
+
+func dropTargetName(stmt *pg_query.DropStmt) string {
+	if name := objectNameFromObjectName(stmt.GetObjects()); name != "" {
+		return name
+	}
+	for _, obj := range stmt.GetObjects() {
+		if s := obj.GetString_(); s != nil && s.GetSval() != "" {
+			return s.GetSval()
+		}
+	}
+	return ""
 }
 
 func extractInsert(stmt *pg_query.InsertStmt) *spec.DML {
