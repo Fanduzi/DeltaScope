@@ -713,6 +713,21 @@ func Default() Policy {
 				Params:  map[string]any{},
 			},
 			// PG object lifecycle rules (PostgreSQL-only).
+			"ddl.pg.alter.drop_column.advisory": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.validate_constraint.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.add_column.nullable.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
 			"ddl.pg.drop_schema.advisory": {
 				Enabled: true,
 				Level:   rule.LevelNotice,

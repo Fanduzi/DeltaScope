@@ -413,6 +413,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory, construct: newAddUniqueConstraintAdvisoryRule},
 		{ruleID: ruleIDPGAlterDropConstraintAdvisory, construct: newDropConstraintAdvisoryRule},
 		// PostgreSQL object lifecycle rules (PG-only).
+		{ruleID: ruleIDPGAlterDropColumnAdvisory, construct: newDropColumnAdvisoryRule},
+		{ruleID: ruleIDPGAlterValidateConstraintAdvisory, construct: newValidateConstraintAdvisoryRule},
+		{ruleID: ruleIDPGAlterAddColumnNullableNotice, construct: newAddColumnNullableNoticeRule},
 		{ruleID: ruleIDPGDropSchemaAdvisory, construct: newDropSchemaAdvisoryRule},
 		{ruleID: ruleIDPGDropSchemaCascadeWarn, construct: newDropSchemaCascadeWarnRule},
 		{ruleID: ruleIDPGCreateSequenceCycleWarn, construct: newCreateSequenceCycleWarnRule},
