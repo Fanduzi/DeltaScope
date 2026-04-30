@@ -2420,6 +2420,86 @@ func TestAuditSQLPostgreSQLDropConstraintAdvisory(t *testing.T) {
 	}
 }
 
+// TestAuditSQLPostgreSQLAlterTableGapRules proves that the three PG-only
+// alter-table gap rules from Task 2 fire through the full AuditSQL pipeline
+// with correct rule IDs and levels.
+func TestAuditSQLPostgreSQLAlterTableGapRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+		wantLevel  rule.Level
+	}{
+		{
+			name:       "drop_column_advisory",
+			sql:        "ALTER TABLE users DROP COLUMN email;",
+			wantRuleID: "ddl.pg.alter.drop_column.advisory",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "validate_constraint_advisory",
+			sql:        "ALTER TABLE users VALIDATE CONSTRAINT chk_price;",
+			wantRuleID: "ddl.pg.alter.validate_constraint.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "add_column_nullable_notice",
+			sql:        "ALTER TABLE users ADD COLUMN bio text;",
+			wantRuleID: "ddl.pg.alter.add_column.nullable.notice",
+			wantLevel:  rule.LevelNotice,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					if f.Level != tt.wantLevel {
+						t.Errorf("expected level %q, got %q", tt.wantLevel, f.Level)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected %s finding, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
+// TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull proves that the nullable
+// notice rule does NOT fire when the added column has NOT NULL.
+func TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull(t *testing.T) {
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "ALTER TABLE users ADD COLUMN bio text NOT NULL;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter.add_column.nullable.notice" {
+			t.Fatal("nullable notice should not fire for NOT NULL column")
+		}
+	}
+}
+
 // TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL proves that none of the
 // four new ddl.pg.* rules fire when dialect is MySQL. This complements the
 // domain-level PG-only tests in postgresql_migration_rules_test.go.
@@ -2429,6 +2509,9 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 		"ddl.pg.alter.add_column.non_null_no_default.warn",
 		"ddl.pg.alter.add_unique_constraint.concurrent_index.advisory",
 		"ddl.pg.alter.drop_constraint.advisory",
+		"ddl.pg.alter.drop_column.advisory",
+		"ddl.pg.alter.validate_constraint.advisory",
+		"ddl.pg.alter.add_column.nullable.notice",
 	}
 
 	tests := []struct {
@@ -2439,6 +2522,8 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 		{name: "add_column_nn_mysql", sql: "ALTER TABLE users ADD COLUMN bio text NOT NULL;"},
 		{name: "add_unique_mysql", sql: "ALTER TABLE users ADD CONSTRAINT uniq_email UNIQUE (email);"},
 		{name: "drop_constraint_mysql", sql: "ALTER TABLE users DROP CONSTRAINT uniq_email;"},
+		{name: "drop_column_mysql", sql: "ALTER TABLE users DROP COLUMN email;"},
+		{name: "add_column_nullable_mysql", sql: "ALTER TABLE users ADD COLUMN bio text;"},
 	}
 
 	for _, tt := range tests {
