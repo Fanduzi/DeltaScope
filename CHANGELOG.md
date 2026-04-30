@@ -6,6 +6,21 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.51.0] - 2026-04-30
+
+### Added
+
+- Three new PostgreSQL-only ALTER TABLE gap-fill rules: `ddl.pg.alter.drop_column.advisory` (warning), `ddl.pg.alter.validate_constraint.advisory` (notice), `ddl.pg.alter.add_column.nullable.notice` (notice).
+- Corpus fixtures for each rule's trigger forms.
+- Service-level tests through `AuditSQL` for all three rules.
+- Public surface tests across `pkg/deltascope`, CLI, HTTP handler, and MCP tool.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE coverage. Remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `DISABLE TRIGGER`) remain explicit boundaries.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the three new PostgreSQL-only rule entries.
+
 ## [v0.50.0] - 2026-04-30
 
 ### Added

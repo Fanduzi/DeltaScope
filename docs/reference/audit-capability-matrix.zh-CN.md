@@ -258,6 +258,22 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0）
+
+`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
+
+### ALTER TABLE 覆盖规则
+
+| 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
+|---------|---------|:----:|:--------:|---------|
+| `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` 移除列，建议审查依赖查询和应用逻辑 | ✓ | ✗ | warning |
+| `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` 执行验证扫描，提醒注意大表上的表级锁持有时长 | ✓ | ✗ | notice |
+| `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` 添加不带 DEFAULT 的可空列，注意下游代码可能遇到意外 NULL 值 | ✓ | ✗ | notice |
+
+> **说明：** 这不是完整的 PostgreSQL ALTER TABLE 覆盖。剩余 ALTER TABLE 子命令（如 `ALTER COLUMN TYPE`、`ADD CONSTRAINT ... NOT VALID`、`DISABLE TRIGGER` 等）仍为显式边界。这些规则均为离线规则，不需要数据库连接。
+
+---
+
 ## DDL：PostgreSQL 覆盖范围扩展（v0.21.0 / v0.23.0 / v0.24.0）
 
 `v0.21.0` 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。`v0.23.0` 进一步扩展了 PostgreSQL `CREATE TABLE` 常见约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的 `ReferencedTable` 和 `ReferencedColumns`。这些功能面此前会落入能力边界错误或结构不完整；现在会产生带有渐进丰富语义的正常审计结果。不引入新规则——已有的共享规则族在适用时自动生效。

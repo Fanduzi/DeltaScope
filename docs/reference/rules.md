@@ -362,6 +362,20 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 
 ---
 
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (3 rules)
+
+These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` removes a column — advises review of dependent queries and application logic | warning | No |
+| `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` runs a validation scan — advises awareness of table-level lock duration on large tables | notice | No |
+| `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` adds a nullable column without a DEFAULT — note that downstream code may encounter unexpected NULL values | notice | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. This is not full PostgreSQL ALTER TABLE coverage — remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `DISABLE TRIGGER`) remain explicit boundaries.
+
+---
+
 ## DML Rules (10 rules)
 
 These rules evaluate DML statements: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and `REPLACE`.

@@ -4,7 +4,24 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.50.0 PostgreSQL Object Lifecycle DDL Pack
+## Latest Completed Milestone: v0.51.0 PostgreSQL ALTER TABLE Coverage Pack
+
+**Goal:** extend PostgreSQL ALTER TABLE audit coverage with three gap-fill rules covering the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families.
+
+### Completed Scope
+
+- Three new PostgreSQL-only rules: `ddl.pg.alter.drop_column.advisory`, `ddl.pg.alter.validate_constraint.advisory`, `ddl.pg.alter.add_column.nullable.notice`.
+- Corpus fixtures for each rule's trigger forms.
+- Service-level tests through `AuditSQL` for all three rules.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+
+### Key Design Decisions
+
+- This is not full PostgreSQL ALTER TABLE coverage. Remaining ALTER TABLE sub-commands remain explicit boundaries.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the three new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.50.0 PostgreSQL Object Lifecycle DDL Pack
 
 **Goal:** normalize PostgreSQL schema, sequence, and materialized view lifecycle DDL through the audit pipeline, and add nine PostgreSQL-only rules covering cascade drops, sequence cycling, and sequence restarts.
 

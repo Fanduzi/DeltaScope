@@ -353,6 +353,20 @@ deltascope rules search "prefix"
 
 ---
 
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（3 条）
+
+这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` 移除列，建议审查依赖查询和应用逻辑 | warning | 否 |
+| `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` 执行验证扫描，提醒注意大表上的表级锁持有时长 | notice | 否 |
+| `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` 添加不带 DEFAULT 的可空列，注意下游代码可能遇到意外 NULL 值 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这不是完整的 PostgreSQL ALTER TABLE 覆盖——剩余 ALTER TABLE 子命令（如 `ALTER COLUMN TYPE`、`ADD CONSTRAINT ... NOT VALID`、`DISABLE TRIGGER` 等）仍为显式边界。
+
+---
+
 ## DML 规则（10 条）
 
 这些规则对 DML 语句进行评估：`SELECT`、`INSERT`、`UPDATE`、`DELETE`、`REPLACE`。

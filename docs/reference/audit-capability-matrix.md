@@ -272,6 +272,22 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0)
+
+`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
+
+### ALTER TABLE Coverage Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` removes a column — advises review of dependent queries and application logic | ✓ | ✗ | warning |
+| `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` runs a validation scan — advises awareness of table-level lock duration on large tables | ✓ | ✗ | notice |
+| `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` adds a nullable column without a DEFAULT — note that downstream code may encounter unexpected NULL values | ✓ | ✗ | notice |
+
+> **Note:** This is not full PostgreSQL ALTER TABLE coverage. Remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `DISABLE TRIGGER`) remain explicit boundaries. These rules are offline-only and do not require a database connection.
+
+---
+
 ## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0 / v0.24.0)
 
 `v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns` through the shared `spec.Constraint` model. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results with progressively richer semantics. No new rules are introduced — existing shared rule families apply where relevant.
