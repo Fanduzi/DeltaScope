@@ -1646,3 +1646,59 @@ func TestAuditPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "drop_column_advisory",
+			sql:        "ALTER TABLE users DROP COLUMN email;",
+			wantRuleID: "ddl.pg.alter.drop_column.advisory",
+		},
+		{
+			name:       "validate_constraint_advisory",
+			sql:        "ALTER TABLE users VALIDATE CONSTRAINT chk_price;",
+			wantRuleID: "ddl.pg.alter.validate_constraint.advisory",
+		},
+		{
+			name:       "add_column_nullable_notice",
+			sql:        "ALTER TABLE users ADD COLUMN bio text;",
+			wantRuleID: "ddl.pg.alter.add_column.nullable.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
