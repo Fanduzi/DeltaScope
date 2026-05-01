@@ -172,6 +172,8 @@ const (
 	ruleIDPGDropSequenceCascadeWarn                         = "ddl.pg.drop_sequence.cascade.warn"
 	ruleIDPGDropMaterializedViewAdvisory                    = "ddl.pg.drop_materialized_view.advisory"
 	ruleIDPGDropMaterializedViewCascadeWarn                 = "ddl.pg.drop_materialized_view.cascade.warn"
+	ruleIDPGRefreshMaterializedViewConcurrentlyWarn         = "ddl.pg.refresh_materialized_view.concurrently.warn"
+	ruleIDPGRefreshMaterializedViewNoDataNotice              = "ddl.pg.refresh_materialized_view.no_data.notice"
 	ruleIDPGAlterDropColumnAdvisory                        = "ddl.pg.alter.drop_column.advisory"
 	ruleIDPGAlterValidateConstraintAdvisory                = "ddl.pg.alter.validate_constraint.advisory"
 	ruleIDPGAlterAddColumnNullableNotice                   = "ddl.pg.alter.add_column.nullable.notice"

@@ -20,6 +20,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
 | postgresql_migration_rules.go | Implements PostgreSQL-only migration-safety rules: concurrent index, NOT NULL without default, concurrent unique constraint, drop constraint advisory, NOT VALID validation, set-data-type rewrite, add-column with volatile default, and add-check without NOT VALID |
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
+| postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
@@ -48,6 +49,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
 | register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
 | postgresql_object_lifecycle_rules_test.go | Verifies PG object lifecycle rules with positive, negative, cross-dialect, and registration coverage |
+| postgresql_materialized_view_refresh_rules_test.go | Verifies PG refresh materialized view rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_alter_table_rules_test.go | Verifies PG alter table gap rules with positive, negative, cross-dialect, registration, and defaults coverage |
 
 ## Exports
@@ -201,6 +203,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.drop_sequence.cascade.warn`
 - `ddl.pg.drop_materialized_view.advisory`
 - `ddl.pg.drop_materialized_view.cascade.warn`
+- `ddl.pg.refresh_materialized_view.concurrently.warn`
+- `ddl.pg.refresh_materialized_view.no_data.notice`
 - `ddl.pg.alter.drop_column.advisory`
 - `ddl.pg.alter.validate_constraint.advisory`
 - `ddl.pg.alter.add_column.nullable.notice`

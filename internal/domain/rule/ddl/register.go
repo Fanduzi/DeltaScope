@@ -431,6 +431,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropSequenceCascadeWarn, construct: newDropSequenceCascadeWarnRule},
 		{ruleID: ruleIDPGDropMaterializedViewAdvisory, construct: newDropMaterializedViewAdvisoryRule},
 		{ruleID: ruleIDPGDropMaterializedViewCascadeWarn, construct: newDropMaterializedViewCascadeWarnRule},
+		{ruleID: ruleIDPGRefreshMaterializedViewConcurrentlyWarn, construct: newRefreshMaterializedViewConcurrentlyWarnRule},
+		{ruleID: ruleIDPGRefreshMaterializedViewNoDataNotice, construct: newRefreshMaterializedViewNoDataNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

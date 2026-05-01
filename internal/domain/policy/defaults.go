@@ -803,6 +803,16 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params:  map[string]any{},
 			},
+			"ddl.pg.refresh_materialized_view.concurrently.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.refresh_materialized_view.no_data.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
