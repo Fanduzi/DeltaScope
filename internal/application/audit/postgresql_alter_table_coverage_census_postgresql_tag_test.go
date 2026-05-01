@@ -69,6 +69,14 @@ var pgAlterTableCensusCases = []struct {
 	{Name: "OWNER TO", SQL: "ALTER TABLE users OWNER TO app_owner"},
 	{Name: "ENABLE TRIGGER", SQL: "ALTER TABLE users ENABLE TRIGGER trg_users_audit"},
 	{Name: "DISABLE TRIGGER", SQL: "ALTER TABLE users DISABLE TRIGGER trg_users_audit"},
+	{Name: "ENABLE TRIGGER ALL", SQL: "ALTER TABLE users ENABLE TRIGGER ALL"},
+	{Name: "ENABLE TRIGGER USER", SQL: "ALTER TABLE users ENABLE TRIGGER USER"},
+	{Name: "DISABLE TRIGGER ALL", SQL: "ALTER TABLE users DISABLE TRIGGER ALL"},
+	{Name: "DISABLE TRIGGER USER", SQL: "ALTER TABLE users DISABLE TRIGGER USER"},
+	{Name: "REPLICA IDENTITY DEFAULT", SQL: "ALTER TABLE users REPLICA IDENTITY DEFAULT"},
+	{Name: "REPLICA IDENTITY FULL", SQL: "ALTER TABLE users REPLICA IDENTITY FULL"},
+	{Name: "REPLICA IDENTITY NOTHING", SQL: "ALTER TABLE users REPLICA IDENTITY NOTHING"},
+	{Name: "REPLICA IDENTITY USING INDEX", SQL: "ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx"},
 	{Name: "ATTACH PARTITION", SQL: "ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')"},
 	{Name: "DETACH PARTITION", SQL: "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04"},
 }
@@ -116,12 +124,12 @@ func TestPostgreSQLAlterTableCoverageCensus(t *testing.T) {
 	t.Logf("Unclassified:               %d", unclassified)
 
 	const (
-		expectTotal            = 31
-		expectParseable        = 31
+		expectTotal            = 39
+		expectParseable        = 39
 		expectParserErrors     = 0
 		expectUnsupported      = 0
-		expectFindingCovered   = 31
-		expectNormalizedSilent = 0
+		expectFindingCovered   = 35
+		expectNormalizedSilent = 4
 	)
 
 	if got := len(results); got != expectTotal {

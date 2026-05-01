@@ -648,16 +648,34 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "change_owner", Options: map[string]string{"owner": owner}}, true, nil
 	case pg_query.AlterTableType_AT_EnableTrig:
 		name := cmd.GetName()
-		if name == "" {
-			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "enabletrig", Reason: "postgresql alter table enable trigger name is missing"}
+		if name != "" {
+			return spec.Alter{Action: "enable_trigger", Name: name, Options: map[string]string{"trigger": name}}, true, nil
 		}
-		return spec.Alter{Action: "enable_trigger", Name: name, Options: map[string]string{"trigger": name}}, true, nil
+		return spec.Alter{Action: "enable_trigger", Options: map[string]string{"trigger_scope": "user"}}, true, nil
+	case pg_query.AlterTableType_AT_EnableTrigAll:
+		return spec.Alter{Action: "enable_trigger", Options: map[string]string{"trigger_scope": "all"}}, true, nil
+	case pg_query.AlterTableType_AT_EnableTrigUser:
+		return spec.Alter{Action: "enable_trigger", Options: map[string]string{"trigger_scope": "user"}}, true, nil
 	case pg_query.AlterTableType_AT_DisableTrig:
 		name := cmd.GetName()
-		if name == "" {
-			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "disabletrig", Reason: "postgresql alter table disable trigger name is missing"}
+		if name != "" {
+			return spec.Alter{Action: "disable_trigger", Name: name, Options: map[string]string{"trigger": name}}, true, nil
 		}
-		return spec.Alter{Action: "disable_trigger", Name: name, Options: map[string]string{"trigger": name}}, true, nil
+		return spec.Alter{Action: "disable_trigger", Options: map[string]string{"trigger_scope": "user"}}, true, nil
+	case pg_query.AlterTableType_AT_DisableTrigAll:
+		return spec.Alter{Action: "disable_trigger", Options: map[string]string{"trigger_scope": "all"}}, true, nil
+	case pg_query.AlterTableType_AT_DisableTrigUser:
+		return spec.Alter{Action: "disable_trigger", Options: map[string]string{"trigger_scope": "user"}}, true, nil
+	case pg_query.AlterTableType_AT_ReplicaIdentity:
+		identity, indexName := replicaIdentityFromDef(cmd.GetDef())
+		if identity == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "replicaidentity", Reason: "postgresql alter table replica identity payload is missing"}
+		}
+		options := map[string]string{"identity": identity}
+		if indexName != "" {
+			options["index"] = indexName
+		}
+		return spec.Alter{Action: "replica_identity", Name: indexName, Options: options}, true, nil
 	case pg_query.AlterTableType_AT_AttachPartition:
 		partName := ""
 		hasBounds := false
@@ -712,6 +730,29 @@ func generatedWhenFromDef(defNode *pg_query.Node) string {
 		}
 	}
 	return ""
+}
+
+func replicaIdentityFromDef(defNode *pg_query.Node) (identity string, indexName string) {
+	if defNode == nil {
+		return "", ""
+	}
+	riNode, ok := defNode.GetNode().(*pg_query.Node_ReplicaIdentityStmt)
+	if !ok || riNode.ReplicaIdentityStmt == nil {
+		return "", ""
+	}
+	ri := riNode.ReplicaIdentityStmt
+	switch ri.GetIdentityType() {
+	case "d":
+		return "default", ""
+	case "f":
+		return "full", ""
+	case "n":
+		return "nothing", ""
+	case "i":
+		return "using_index", ri.GetName()
+	default:
+		return "", ""
+	}
 }
 
 func supportedConstraintType(kind pg_query.ConstrType) (string, bool) {

@@ -378,11 +378,16 @@ func TestPostgreSQLAlterTableResidualCurrentExtractionBaseline(t *testing.T) {
 		t.Logf("%-28s | %-8s | %-12s | %-25s | %s",
 			baseline.Name, "kind", status, baseline.UnsupportedFeature, detail)
 
-		// All 8 residual candidates are currently unsupported.
-		// This assertion documents the current baseline — Task 2 will change it.
-		if !baseline.Unsupported {
-			t.Errorf("case %q: expected unsupported=true at baseline, but got DDL operation=%q actions=%v",
-				tc.name, baseline.DDLOperation, baseline.AlterActions)
+		// All 8 residual candidates are now normalized.
+		if baseline.Unsupported {
+			t.Errorf("case %q: expected normalized (unsupported=false), but got unsupported feature=%q reason=%q",
+				tc.name, baseline.UnsupportedFeature, baseline.UnsupportedReason)
+		}
+		if baseline.DDLOperation != string(spec.DDLOperationAlterTable) {
+			t.Errorf("case %q: expected DDL operation=%q, got %q", tc.name, spec.DDLOperationAlterTable, baseline.DDLOperation)
+		}
+		if len(baseline.AlterActions) != 1 {
+			t.Errorf("case %q: expected 1 alter action, got %d", tc.name, len(baseline.AlterActions))
 		}
 	}
 }
