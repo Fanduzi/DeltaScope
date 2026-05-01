@@ -272,9 +272,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0)
+## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0)
 
-`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
+`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
 
 ### ALTER TABLE Coverage Rules
 
@@ -283,8 +283,14 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` removes a column — advises review of dependent queries and application logic | ✓ | ✗ | warning |
 | `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` runs a validation scan — advises awareness of table-level lock duration on large tables | ✓ | ✗ | notice |
 | `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` adds a nullable column without a DEFAULT — note that downstream code may encounter unexpected NULL values | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_schema.advisory` | `ALTER TABLE ... SET SCHEMA` moves the table to a different schema — advises review of dependent queries and application connections | ✓ | ✗ | notice |
+| `ddl.pg.alter.owner.advisory` | `ALTER TABLE ... OWNER TO` changes the table owner — advises review of permission implications | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_trigger.notice` | `ALTER TABLE ... ENABLE TRIGGER name` re-enables a specific trigger — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter.disable_trigger.warn` | `ALTER TABLE ... DISABLE TRIGGER name` disables a specific trigger — warns that triggers will not fire on the table | ✓ | ✗ | warning |
+| `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` attaches a partition to a partitioned table — advises review of partition boundary and data routing | ✓ | ✗ | notice |
+| `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` detaches a partition — warns that queries targeting the partition may fail | ✓ | ✗ | warning |
 
-> **Note:** This is not full PostgreSQL ALTER TABLE coverage. Remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `DISABLE TRIGGER`) remain explicit boundaries. These rules are offline-only and do not require a database connection.
+> **Note:** This is not full PostgreSQL ALTER TABLE coverage. Remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `ENABLE/DISABLE TRIGGER ALL/USER`, `REPLICA IDENTITY`) remain explicit boundaries. These rules are offline-only and do not require a database connection.
 
 ---
 

@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.52.0] - 2026-05-01
+
+### Added
+
+- Six new PostgreSQL-only ALTER TABLE unsupported-action rules: `ddl.pg.alter.set_schema.advisory` (notice), `ddl.pg.alter.owner.advisory` (notice), `ddl.pg.alter.enable_trigger.notice` (notice), `ddl.pg.alter.disable_trigger.warn` (warning), `ddl.pg.alter.attach_partition.advisory` (notice), `ddl.pg.alter.detach_partition.warn` (warning).
+- Parser/extractor normalization for all six ALTER TABLE action types (SET SCHEMA, OWNER TO, ENABLE/DISABLE TRIGGER name, ATTACH/DETACH PARTITION).
+- Corpus fixtures covering each rule's trigger forms.
+- Service-level tests through `AuditSQL` for all six rules.
+- Public surface tests across `pkg/deltascope`, CLI, HTTP handler, and MCP tool.
+- AST census tests documenting stable parser facts for each action type.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE grammar support. Remaining sub-commands (e.g., `ALTER COLUMN TYPE`, `ENABLE/DISABLE TRIGGER ALL/USER`, `REPLICA IDENTITY`) are explicit boundaries.
+- Partition bound semantic analysis is not performed.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the six new PostgreSQL-only rule entries.
+
 ## [v0.51.0] - 2026-04-30
 
 ### Added

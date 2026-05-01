@@ -258,9 +258,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0）
+## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0）
 
-`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
+`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
 
 ### ALTER TABLE 覆盖规则
 
@@ -269,8 +269,14 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` 移除列，建议审查依赖查询和应用逻辑 | ✓ | ✗ | warning |
 | `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` 执行验证扫描，提醒注意大表上的表级锁持有时长 | ✓ | ✗ | notice |
 | `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` 添加不带 DEFAULT 的可空列，注意下游代码可能遇到意外 NULL 值 | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_schema.advisory` | `ALTER TABLE ... SET SCHEMA` 将表移至不同 schema，建议审查依赖查询和应用连接 | ✓ | ✗ | notice |
+| `ddl.pg.alter.owner.advisory` | `ALTER TABLE ... OWNER TO` 更改表所有者，建议审查权限影响 | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_trigger.notice` | `ALTER TABLE ... ENABLE TRIGGER name` 重新启用指定触发器，信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter.disable_trigger.warn` | `ALTER TABLE ... DISABLE TRIGGER name` 禁用指定触发器，警告该表上的触发器将不再执行 | ✓ | ✗ | warning |
+| `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` 将分区挂载到分区表，建议审查分区边界和数据路由 | ✓ | ✗ | notice |
+| `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` 分离分区，警告针对该分区的查询可能失败 | ✓ | ✗ | warning |
 
-> **说明：** 这不是完整的 PostgreSQL ALTER TABLE 覆盖。剩余 ALTER TABLE 子命令（如 `ALTER COLUMN TYPE`、`ADD CONSTRAINT ... NOT VALID`、`DISABLE TRIGGER` 等）仍为显式边界。这些规则均为离线规则，不需要数据库连接。
+> **说明：** 这不是完整的 PostgreSQL ALTER TABLE 覆盖。剩余 ALTER TABLE 子命令（如 `ALTER COLUMN TYPE`、`ADD CONSTRAINT ... NOT VALID`、`ENABLE/DISABLE TRIGGER ALL/USER`、`REPLICA IDENTITY` 等）仍为显式边界。这些规则均为离线规则，不需要数据库连接。
 
 ---
 

@@ -362,7 +362,7 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (3 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (9 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -371,8 +371,14 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.drop_column.advisory` | `ALTER TABLE ... DROP COLUMN` removes a column — advises review of dependent queries and application logic | warning | No |
 | `ddl.pg.alter.validate_constraint.advisory` | `ALTER TABLE ... VALIDATE CONSTRAINT` runs a validation scan — advises awareness of table-level lock duration on large tables | notice | No |
 | `ddl.pg.alter.add_column.nullable.notice` | `ALTER TABLE ... ADD COLUMN` adds a nullable column without a DEFAULT — note that downstream code may encounter unexpected NULL values | notice | No |
+| `ddl.pg.alter.set_schema.advisory` | `ALTER TABLE ... SET SCHEMA` moves the table to a different schema — advises review of dependent queries and application connections | notice | No |
+| `ddl.pg.alter.owner.advisory` | `ALTER TABLE ... OWNER TO` changes the table owner — advises review of permission implications | notice | No |
+| `ddl.pg.alter.enable_trigger.notice` | `ALTER TABLE ... ENABLE TRIGGER name` re-enables a specific trigger — informational notice | notice | No |
+| `ddl.pg.alter.disable_trigger.warn` | `ALTER TABLE ... DISABLE TRIGGER name` disables a specific trigger — warns that triggers will not fire on the table | warning | No |
+| `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` attaches a partition to a partitioned table — advises review of partition boundary and data routing | notice | No |
+| `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` detaches a partition — warns that queries targeting the partition may fail | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. This is not full PostgreSQL ALTER TABLE coverage — remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `DISABLE TRIGGER`) remain explicit boundaries.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. This is not full PostgreSQL ALTER TABLE coverage — remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `ENABLE/DISABLE TRIGGER ALL/USER`, `REPLICA IDENTITY`) remain explicit boundaries.
 
 ---
 

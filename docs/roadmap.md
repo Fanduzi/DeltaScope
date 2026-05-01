@@ -4,7 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.51.0 PostgreSQL ALTER TABLE Coverage Pack
+## Latest Completed Milestone: v0.52.0 PostgreSQL ALTER TABLE Unsupported-Action Pack
+
+**Goal:** normalize six previously unsupported PostgreSQL ALTER TABLE actions and add six PostgreSQL-only rules providing actionable findings for schema moves, ownership changes, named trigger toggles, and partition attach/detach operations.
+
+### Completed Scope
+
+- Six new PostgreSQL-only rules: `ddl.pg.alter.set_schema.advisory` (notice), `ddl.pg.alter.owner.advisory` (notice), `ddl.pg.alter.enable_trigger.notice` (notice), `ddl.pg.alter.disable_trigger.warn` (warning), `ddl.pg.alter.attach_partition.advisory` (notice), `ddl.pg.alter.detach_partition.warn` (warning).
+- Parser/extractor normalization for all six ALTER TABLE action types (SET SCHEMA, OWNER TO, ENABLE/DISABLE TRIGGER name, ATTACH/DETACH PARTITION).
+- Corpus fixtures covering each rule's trigger forms.
+- Service-level tests through `AuditSQL` for all six rules.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for each action type.
+
+### Key Design Decisions
+
+- This is not full PostgreSQL ALTER TABLE grammar support. Remaining ALTER TABLE sub-commands remain explicit boundaries.
+- `ENABLE/DISABLE TRIGGER ALL` and `ENABLE/DISABLE TRIGGER USER` variants remain deferred.
+- Partition bound semantic analysis is not performed.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the six new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.51.0 PostgreSQL ALTER TABLE Coverage Pack
 
 **Goal:** extend PostgreSQL ALTER TABLE audit coverage with three gap-fill rules covering the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families.
 
@@ -444,3 +465,12 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 
 - Decide whether schema-aware FK policy should expand beyond the explicit cross-schema advisory shipped in `v0.29.0`.
 - Decide later whether explicit generated/identity unsupported boundaries should ever become real PostgreSQL generated-column or identity-column support.
+
+## Future Direction
+
+Areas that may be addressed in future milestones (no dates committed):
+
+- Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `ALTER COLUMN TYPE`, `REPLICA IDENTITY`, `ENABLE/DISABLE TRIGGER ALL/USER`, `SET LOGGED/UNLOGGED`).
+- `REFRESH MATERIALIZED VIEW` normalization and rule coverage.
+- PostgreSQL type lifecycle rules (`CREATE TYPE`, `DROP TYPE`, `ALTER TYPE`).
+- PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`, `CREATE EXTENSION`).
