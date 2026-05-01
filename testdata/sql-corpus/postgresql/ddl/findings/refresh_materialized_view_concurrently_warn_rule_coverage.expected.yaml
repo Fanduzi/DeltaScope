@@ -1,0 +1,10 @@
+name: refresh_materialized_view_concurrently_warn_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.refresh_materialized_view.concurrently.warn

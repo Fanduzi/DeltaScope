@@ -2864,6 +2864,178 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 	})
 }
 
+// TestAuditSQLPostgreSQLRefreshMaterializedViewRules proves that the two
+// PG-only refresh materialized view rules fire through the full AuditSQL
+// pipeline with correct rule IDs, levels, and metadata.
+func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
+	t.Run("basic_refresh_fires_concurrently_warn_only", func(t *testing.T) {
+		const sql = "REFRESH MATERIALIZED VIEW mv_stats;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		// Verify normalization.
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationRefreshMaterializedView {
+			t.Fatalf("expected refresh_materialized_view operation")
+		}
+
+		var foundConcurrent bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				foundConcurrent = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "refresh_materialized_view" {
+					t.Errorf("expected operation metadata, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object"] != "mv_stats" {
+					t.Errorf("expected object=mv_stats, got %v", f.Metadata["object"])
+				}
+			}
+			if f.RuleID == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				t.Error("no-data notice should not fire for basic refresh")
+			}
+		}
+		if !foundConcurrent {
+			t.Fatalf("expected concurrently.warn finding, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("concurrent_refresh_no_findings", func(t *testing.T) {
+		const sql = "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_stats;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationRefreshMaterializedView {
+			t.Fatalf("expected refresh_materialized_view operation")
+		}
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.refresh_materialized_view.concurrently.warn" ||
+				f.RuleID == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				t.Errorf("concurrent refresh should produce no findings, got %s", f.RuleID)
+			}
+		}
+	})
+
+	t.Run("with_data_fires_concurrently_warn_only", func(t *testing.T) {
+		const sql = "REFRESH MATERIALIZED VIEW mv_stats WITH DATA;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationRefreshMaterializedView {
+			t.Fatalf("expected refresh_materialized_view operation")
+		}
+
+		var foundConcurrent bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				foundConcurrent = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+			}
+			if f.RuleID == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				t.Error("no-data notice should not fire for WITH DATA")
+			}
+		}
+		if !foundConcurrent {
+			t.Fatalf("expected concurrently.warn finding, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("with_no_data_fires_both", func(t *testing.T) {
+		const sql = "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationRefreshMaterializedView {
+			t.Fatalf("expected refresh_materialized_view operation")
+		}
+
+		var foundConcurrent, foundNoData bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				foundConcurrent = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+			}
+			if f.RuleID == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				foundNoData = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+			}
+		}
+		if !foundConcurrent {
+			t.Fatalf("expected concurrently.warn finding, got %v", collectAuditResultRuleIDs(result))
+		}
+		if !foundNoData {
+			t.Fatalf("expected no_data.notice finding, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
