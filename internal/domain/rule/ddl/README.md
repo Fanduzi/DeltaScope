@@ -20,7 +20,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
 | postgresql_migration_rules.go | Implements PostgreSQL-only migration-safety rules: concurrent index, NOT NULL without default, concurrent unique constraint, drop constraint advisory, NOT VALID validation, set-data-type rewrite, add-column with volatile default, and add-check without NOT VALID |
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
-| postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice |
+| postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
@@ -204,6 +204,12 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter.drop_column.advisory`
 - `ddl.pg.alter.validate_constraint.advisory`
 - `ddl.pg.alter.add_column.nullable.notice`
+- `ddl.pg.alter.set_schema.advisory`
+- `ddl.pg.alter.owner.advisory`
+- `ddl.pg.alter.enable_trigger.notice`
+- `ddl.pg.alter.disable_trigger.warn`
+- `ddl.pg.alter.attach_partition.advisory`
+- `ddl.pg.alter.detach_partition.warn`
 
 ## Milestone 4 Planned Create-Table Surface
 

@@ -165,3 +165,69 @@ func newValidateConstraintAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRul
 		cfg,
 	)
 }
+
+func newSetSchemaAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterSetSchemaAdvisory, rule.LevelNotice, "set_schema", "schema",
+		"ALTER TABLE SET SCHEMA moves table %q to a different schema on PostgreSQL",
+		"SET SCHEMA changes the schema containing the table. Dependent objects (views, foreign keys, functions referencing the table by schema-qualified name) may break after the move.",
+		"Applications that reference the table by its old schema-qualified name will fail. Existing prepared statements may be invalidated.",
+		"Verify all schema-qualified references are updated after the move. Consider whether renaming or a synonym would be less disruptive.",
+		cfg,
+	)
+}
+
+func newOwnerAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterOwnerAdvisory, rule.LevelNotice, "change_owner", "owner",
+		"ALTER TABLE OWNER TO changes ownership of table %q on PostgreSQL",
+		"OWNER TO transfers table ownership to a different role. Permissions, default privileges, and role-based access policies may be affected.",
+		"The new owner gains full control over the table. Scripts or policies expecting the previous owner may behave differently.",
+		"Verify the new role has appropriate permissions and that no automation depends on the current owner.",
+		cfg,
+	)
+}
+
+func newEnableTriggerNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterEnableTriggerNotice, rule.LevelNotice, "enable_trigger", "trigger",
+		"Trigger %q enabled on PostgreSQL — verify intent",
+		"Enabling a trigger re-activates its firing logic for all subsequent DML operations on the table. This may change data mutation behavior immediately.",
+		"Application code that relied on the trigger being disabled will now observe side effects from the trigger.",
+		"Confirm the trigger logic is compatible with current data and application expectations before enabling.",
+		cfg,
+	)
+}
+
+func newDisableTriggerWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterDisableTriggerWarn, rule.LevelWarning, "disable_trigger", "trigger",
+		"Trigger %q disabled on PostgreSQL — data integrity may be affected",
+		"Disabling a trigger stops its firing logic for all subsequent DML operations. Audit trails, data validation, or business-logic triggers will no longer execute.",
+		"Data integrity constraints enforced by the trigger are no longer active. Rows modified while the trigger is disabled will bypass its checks.",
+		"Re-enable the trigger as soon as the maintenance window ends. Document the reason for disabling and verify data consistency after re-enabling.",
+		cfg,
+	)
+}
+
+func newAttachPartitionAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterAttachPartitionAdvisory, rule.LevelNotice, "attach_partition", "partition",
+		"Partition %q attached on PostgreSQL — verify boundary and data",
+		"ATTACH PARTITION makes an existing table a partition of the parent table. PostgreSQL validates that existing data satisfies the partition bound, which may trigger a full table scan.",
+		"On large tables the validation scan holds a SHARE UPDATE EXCLUSIVE lock. Incorrect boundaries can cause future DML to route to the wrong partition.",
+		"Verify the partition bound covers exactly the intended data range. Schedule during low-traffic periods for large tables.",
+		cfg,
+	)
+}
+
+func newDetachPartitionWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterDetachPartitionWarn, rule.LevelWarning, "detach_partition", "partition",
+		"Partition %q detached on PostgreSQL — queries targeting parent may lose coverage",
+		"DETACH PARTITION removes a partition from the parent table. Queries against the parent table will no longer include data from the detached partition.",
+		"Applications expecting the detached partition's data to appear in parent-table queries will see missing rows. Referential integrity constraints referencing the detached data may be affected.",
+		"Verify no queries depend on the detached partition's data being visible through the parent. Consider whether archiving or dropping the detached table is appropriate.",
+		cfg,
+	)
+}

@@ -728,6 +728,36 @@ func Default() Policy {
 				Level:   rule.LevelNotice,
 				Params:  map[string]any{},
 			},
+			"ddl.pg.alter.set_schema.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.owner.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.enable_trigger.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.disable_trigger.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.attach_partition.advisory": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.detach_partition.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
 			"ddl.pg.drop_schema.advisory": {
 				Enabled: true,
 				Level:   rule.LevelNotice,

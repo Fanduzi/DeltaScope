@@ -175,6 +175,12 @@ const (
 	ruleIDPGAlterDropColumnAdvisory                        = "ddl.pg.alter.drop_column.advisory"
 	ruleIDPGAlterValidateConstraintAdvisory                = "ddl.pg.alter.validate_constraint.advisory"
 	ruleIDPGAlterAddColumnNullableNotice                   = "ddl.pg.alter.add_column.nullable.notice"
+	ruleIDPGAlterSetSchemaAdvisory                         = "ddl.pg.alter.set_schema.advisory"
+	ruleIDPGAlterOwnerAdvisory                             = "ddl.pg.alter.owner.advisory"
+	ruleIDPGAlterEnableTriggerNotice                       = "ddl.pg.alter.enable_trigger.notice"
+	ruleIDPGAlterDisableTriggerWarn                        = "ddl.pg.alter.disable_trigger.warn"
+	ruleIDPGAlterAttachPartitionAdvisory                   = "ddl.pg.alter.attach_partition.advisory"
+	ruleIDPGAlterDetachPartitionWarn                       = "ddl.pg.alter.detach_partition.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

@@ -218,6 +218,190 @@ func TestAddColumnNullableSkipsHasDefault(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Positive tests for unsupported-action rules
+// ---------------------------------------------------------------------------
+
+func TestSetSchemaAdvisoryFiresForPG(t *testing.T) {
+	r := mustNewSetSchemaAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_schema", Name: "archive"},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "set_schema" {
+		t.Fatalf("expected action=set_schema, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestOwnerAdvisoryFiresForPG(t *testing.T) {
+	r := mustNewOwnerAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "change_owner", Name: "app_owner"},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "change_owner" {
+		t.Fatalf("expected action=change_owner, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestEnableTriggerNoticeFiresForPG(t *testing.T) {
+	r := mustNewEnableTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "enable_trigger", Name: "trg_audit"},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "enable_trigger" {
+		t.Fatalf("expected action=enable_trigger, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestDisableTriggerWarnFiresForPG(t *testing.T) {
+	r := mustNewDisableTriggerWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "disable_trigger", Name: "trg_audit"},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "disable_trigger" {
+		t.Fatalf("expected action=disable_trigger, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestAttachPartitionAdvisoryFiresForPG(t *testing.T) {
+	r := mustNewAttachPartitionAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "measurement"},
+			Alter: []spec.Alter{
+				{Action: "attach_partition", Name: "measurement_y2026m04"},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "attach_partition" {
+		t.Fatalf("expected action=attach_partition, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestDetachPartitionWarnFiresForPG(t *testing.T) {
+	r := mustNewDetachPartitionWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "measurement"},
+			Alter: []spec.Alter{
+				{Action: "detach_partition", Name: "measurement_y2026m04"},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "detach_partition" {
+		t.Fatalf("expected action=detach_partition, got %v", findings[0].Metadata["action"])
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Cross-dialect negative tests
 // ---------------------------------------------------------------------------
 
@@ -276,6 +460,78 @@ func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
 							},
 						},
 					},
+				},
+			},
+		},
+		{
+			name: "set_schema_advisory",
+			r:    mustNewSetSchemaAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_schema", Name: "archive"}},
+				},
+			},
+		},
+		{
+			name: "owner_advisory",
+			r:    mustNewOwnerAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "change_owner", Name: "app_owner"}},
+				},
+			},
+		},
+		{
+			name: "enable_trigger_notice",
+			r:    mustNewEnableTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_trigger", Name: "trg_audit"}},
+				},
+			},
+		},
+		{
+			name: "disable_trigger_warn",
+			r:    mustNewDisableTriggerWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "disable_trigger", Name: "trg_audit"}},
+				},
+			},
+		},
+		{
+			name: "attach_partition_advisory",
+			r:    mustNewAttachPartitionAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "measurement"},
+					Alter:     []spec.Alter{{Action: "attach_partition", Name: "measurement_y2026m04"}},
+				},
+			},
+		},
+		{
+			name: "detach_partition_warn",
+			r:    mustNewDetachPartitionWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "measurement"},
+					Alter:     []spec.Alter{{Action: "detach_partition", Name: "measurement_y2026m04"}},
 				},
 			},
 		},
@@ -340,6 +596,12 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		ruleIDPGAlterDropColumnAdvisory,
 		ruleIDPGAlterValidateConstraintAdvisory,
 		ruleIDPGAlterAddColumnNullableNotice,
+		ruleIDPGAlterSetSchemaAdvisory,
+		ruleIDPGAlterOwnerAdvisory,
+		ruleIDPGAlterEnableTriggerNotice,
+		ruleIDPGAlterDisableTriggerWarn,
+		ruleIDPGAlterAttachPartitionAdvisory,
+		ruleIDPGAlterDetachPartitionWarn,
 	}
 	for _, ruleID := range pgAlterRuleIDs {
 		cfg.Rules[ruleID] = policy.RulePolicy{
@@ -418,10 +680,16 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
-		pgRuleIDs := map[string]bool{
-			ruleIDPGAlterDropColumnAdvisory:         true,
-			ruleIDPGAlterValidateConstraintAdvisory: true,
-			ruleIDPGAlterAddColumnNullableNotice:    true,
+			pgRuleIDs := map[string]bool{
+				ruleIDPGAlterDropColumnAdvisory:         true,
+				ruleIDPGAlterValidateConstraintAdvisory: true,
+				ruleIDPGAlterAddColumnNullableNotice:    true,
+				ruleIDPGAlterSetSchemaAdvisory:          true,
+				ruleIDPGAlterOwnerAdvisory:              true,
+				ruleIDPGAlterEnableTriggerNotice:        true,
+				ruleIDPGAlterDisableTriggerWarn:         true,
+				ruleIDPGAlterAttachPartitionAdvisory:    true,
+				ruleIDPGAlterDetachPartitionWarn:        true,
 		}
 		for _, f := range findings {
 			if pgRuleIDs[f.RuleID] {
@@ -442,6 +710,12 @@ func TestDefaultPolicyIncludesPGAlterTableRules(t *testing.T) {
 		{ruleIDPGAlterDropColumnAdvisory, rule.LevelWarning, true},
 		{ruleIDPGAlterValidateConstraintAdvisory, rule.LevelNotice, true},
 		{ruleIDPGAlterAddColumnNullableNotice, rule.LevelNotice, true},
+		{ruleIDPGAlterSetSchemaAdvisory, rule.LevelNotice, true},
+		{ruleIDPGAlterOwnerAdvisory, rule.LevelNotice, true},
+		{ruleIDPGAlterEnableTriggerNotice, rule.LevelNotice, true},
+		{ruleIDPGAlterDisableTriggerWarn, rule.LevelWarning, true},
+		{ruleIDPGAlterAttachPartitionAdvisory, rule.LevelNotice, true},
+		{ruleIDPGAlterDetachPartitionWarn, rule.LevelWarning, true},
 	}
 
 	for _, exp := range expected {
@@ -487,6 +761,60 @@ func mustNewAddColumnNullableNoticeRule(t *testing.T, cfg policy.RulePolicy) rul
 	r, err := newAddColumnNullableNoticeRule(cfg)
 	if err != nil {
 		t.Fatalf("new add column nullable notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetSchemaAdvisoryRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetSchemaAdvisoryRule(cfg)
+	if err != nil {
+		t.Fatalf("new set schema advisory rule: %v", err)
+	}
+	return r
+}
+
+func mustNewOwnerAdvisoryRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newOwnerAdvisoryRule(cfg)
+	if err != nil {
+		t.Fatalf("new owner advisory rule: %v", err)
+	}
+	return r
+}
+
+func mustNewEnableTriggerNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newEnableTriggerNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new enable trigger notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewDisableTriggerWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newDisableTriggerWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new disable trigger warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAttachPartitionAdvisoryRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAttachPartitionAdvisoryRule(cfg)
+	if err != nil {
+		t.Fatalf("new attach partition advisory rule: %v", err)
+	}
+	return r
+}
+
+func mustNewDetachPartitionWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newDetachPartitionWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new detach partition warn rule: %v", err)
 	}
 	return r
 }
