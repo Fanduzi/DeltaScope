@@ -107,6 +107,10 @@ var pgDDLCensusCases = []censusCase{
 	{Name: "DROP TYPE", SQL: "DROP TYPE color"},
 	{Name: "CREATE MATERIALIZED VIEW", SQL: "CREATE MATERIALIZED VIEW mv_stats AS SELECT COUNT(*) FROM users"},
 	{Name: "DROP MATERIALIZED VIEW", SQL: "DROP MATERIALIZED VIEW mv_stats"},
+	{Name: "REFRESH MATERIALIZED VIEW basic", SQL: "REFRESH MATERIALIZED VIEW mv_stats"},
+	{Name: "REFRESH MATERIALIZED VIEW CONCURRENTLY", SQL: "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_stats"},
+	{Name: "REFRESH MATERIALIZED VIEW WITH DATA", SQL: "REFRESH MATERIALIZED VIEW mv_stats WITH DATA"},
+	{Name: "REFRESH MATERIALIZED VIEW WITH NO DATA", SQL: "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA"},
 
 	// --- GOVERNANCE / ANNOTATION ---
 	{Name: "COMMENT ON TABLE", SQL: "COMMENT ON TABLE users IS 'user accounts'"},
@@ -170,6 +174,10 @@ var pgCorpusCovered = map[string]bool{
 	"DROP TYPE":                                  false,
 	"CREATE MATERIALIZED VIEW":                   false,
 	"DROP MATERIALIZED VIEW":                     true,
+	"REFRESH MATERIALIZED VIEW basic":            false,
+	"REFRESH MATERIALIZED VIEW CONCURRENTLY":     false,
+	"REFRESH MATERIALIZED VIEW WITH DATA":        false,
+	"REFRESH MATERIALIZED VIEW WITH NO DATA":     false,
 	"COMMENT ON TABLE":                           false,
 	"GRANT SELECT ON TABLE":                      false,
 	"REVOKE SELECT ON TABLE":                     false,

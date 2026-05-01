@@ -59,6 +59,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractAlterSeqStmt(statement, node.AlterSeqStmt), nil
 	case *pg_query.Node_CreateTableAsStmt:
 		return extractCreateTableAsStmt(statement, node.CreateTableAsStmt), nil
+	case *pg_query.Node_RefreshMatViewStmt:
+		return extractRefreshMatViewStmt(statement, node.RefreshMatViewStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
@@ -480,6 +482,22 @@ func extractCreateTableAsStmt(statement spec.Statement, stmt *pg_query.CreateTab
 		ObjectType: "materialized_view",
 		HasSelect:  stmt.GetQuery() != nil,
 		Options:    options,
+	}
+	return statement
+}
+
+func extractRefreshMatViewStmt(statement spec.Statement, stmt *pg_query.RefreshMatViewStmt) spec.Statement {
+	if stmt == nil || stmt.GetRelation() == nil {
+		return unsupportedStatement(statement, "refresh_materialized_view", "postgresql refresh materialized view target is missing")
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationRefreshMaterializedView,
+		ObjectName: rangeVarName(stmt.GetRelation()),
+		ObjectType: "materialized_view",
+		Options: map[string]string{
+			"concurrently": strconv.FormatBool(stmt.GetConcurrent()),
+			"with_no_data": strconv.FormatBool(stmt.GetSkipData()),
+		},
 	}
 	return statement
 }
@@ -1115,6 +1133,8 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "create_index"
 	case *pg_query.Node_TruncateStmt:
 		return "truncate"
+	case *pg_query.Node_RefreshMatViewStmt:
+		return "refresh_materialized_view"
 	case *pg_query.Node_InsertStmt:
 		return "insert"
 	case *pg_query.Node_UpdateStmt:

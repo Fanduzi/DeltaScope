@@ -26,7 +26,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 - The extractor populates `CONSTR_NOTNULL` and `CONSTR_DEFAULT` constraints on `ALTER TABLE ADD COLUMN` into the normalized spec column fields, enabling rules that depend on these facts.
 - The extractor normalizes advanced PostgreSQL `CREATE INDEX` forms (partial, expression, INCLUDE, non-btree access methods) into coarse `spec.Index` facts. DeltaScope does not render or semantically analyze predicate SQL or expression SQL.
 - The extractor normalizes `ALTER TABLE SET SCHEMA` (dispatched via `AlterObjectSchemaStmt`), `OWNER TO`, named trigger enable/disable, and partition attach/detach into `spec.Alter` actions. These 6 normalized actions are covered by dedicated PG-only advisory/warning/notice rules. Trigger ALL/USER variants and partition bound semantics are not interpreted.
-- The extractor normalizes schema, sequence, and materialized view create/drop lifecycle forms into `spec.DDL` with `ObjectName` / `ObjectType`. Sequence numeric values and materialized view query semantics are not interpreted. `REFRESH MATERIALIZED VIEW` remains out of scope.
+- The extractor normalizes schema, sequence, and materialized view create/drop lifecycle forms into `spec.DDL` with `ObjectName` / `ObjectType`. Sequence numeric values and materialized view query semantics are not interpreted. `REFRESH MATERIALIZED VIEW` is normalized with `concurrently` and `with_no_data` coarse facts. DeltaScope does not verify unique-index requirements for concurrent refresh or analyze materialized view query SQL.
 - This adapter only establishes the parser seam and normalized statement extraction.
 - Rich PostgreSQL statement extraction continues to expand across phases.
 

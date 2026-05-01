@@ -45,6 +45,7 @@ const (
 	DDLOperationDropSequence           DDLOperation = "drop_sequence"
 	DDLOperationCreateMaterializedView DDLOperation = "create_materialized_view"
 	DDLOperationDropMaterializedView   DDLOperation = "drop_materialized_view"
+	DDLOperationRefreshMaterializedView DDLOperation = "refresh_materialized_view"
 )
 
 // Table describes a table-level object.

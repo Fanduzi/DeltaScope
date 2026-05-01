@@ -5248,6 +5248,38 @@ func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
 			ObjectType: "materialized_view",
 			Options:    map[string]string{"if_exists": "true", "cascade": "true"},
 		},
+		{
+			Name:       "REFRESH MATERIALIZED VIEW basic",
+			SQL:        "REFRESH MATERIALIZED VIEW mv_stats",
+			Operation:  spec.DDLOperationRefreshMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"concurrently": "false", "with_no_data": "false"},
+		},
+		{
+			Name:       "REFRESH MATERIALIZED VIEW CONCURRENTLY",
+			SQL:        "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_stats",
+			Operation:  spec.DDLOperationRefreshMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"concurrently": "true", "with_no_data": "false"},
+		},
+		{
+			Name:       "REFRESH MATERIALIZED VIEW WITH DATA",
+			SQL:        "REFRESH MATERIALIZED VIEW mv_stats WITH DATA",
+			Operation:  spec.DDLOperationRefreshMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"concurrently": "false", "with_no_data": "false"},
+		},
+		{
+			Name:       "REFRESH MATERIALIZED VIEW WITH NO DATA",
+			SQL:        "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA",
+			Operation:  spec.DDLOperationRefreshMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"concurrently": "false", "with_no_data": "true"},
+		},
 	}
 
 	for _, tc := range cases {
@@ -5296,7 +5328,7 @@ func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
 	}
 }
 
-func TestPGExtractorRefreshMaterializedViewRemainsUnsupported(t *testing.T) {
+func TestPGExtractorRefreshMaterializedViewNormalized(t *testing.T) {
 	p := New()
 	result, err := p.Parse("REFRESH MATERIALIZED VIEW mv_stats")
 	if err != nil {
@@ -5311,8 +5343,23 @@ func TestPGExtractorRefreshMaterializedViewRemainsUnsupported(t *testing.T) {
 		t.Fatalf("extract: %v", extractErr)
 	}
 
-	if stmt.Unsupported == nil {
-		t.Fatal("expected REFRESH MATERIALIZED VIEW to be unsupported")
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected normalized statement, got unsupported: %s: %s", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.Kind != spec.KindDDL {
+		t.Fatalf("expected kind DDL, got %q", stmt.Kind)
+	}
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL metadata")
+	}
+	if stmt.DDL.Operation != spec.DDLOperationRefreshMaterializedView {
+		t.Fatalf("expected operation %q, got %q", spec.DDLOperationRefreshMaterializedView, stmt.DDL.Operation)
+	}
+	if stmt.DDL.ObjectName != "mv_stats" {
+		t.Fatalf("expected object_name %q, got %q", "mv_stats", stmt.DDL.ObjectName)
+	}
+	if stmt.DDL.ObjectType != "materialized_view" {
+		t.Fatalf("expected object_type %q, got %q", "materialized_view", stmt.DDL.ObjectType)
 	}
 }
 

@@ -113,23 +113,25 @@ func refreshMatViewAssertASTFacts(t *testing.T, name string, node *pg_query.Node
 }
 
 // TestPostgreSQLRefreshMaterializedViewCurrentExtractionBaseline proves the
-// current DeltaScope parser/extractor returns unsupported-explicit for all
-// REFRESH MATERIALIZED VIEW variants. No production code is modified.
+// DeltaScope parser/extractor normalizes all REFRESH MATERIALIZED VIEW
+// variants into DDL with the refresh_materialized_view operation.
 func TestPostgreSQLRefreshMaterializedViewCurrentExtractionBaseline(t *testing.T) {
 	cases := []struct {
-		name string
-		sql  string
+		name         string
+		sql          string
+		concurrently string
+		withNoData   string
 	}{
-		{name: "refresh_basic", sql: "REFRESH MATERIALIZED VIEW mv_stats"},
-		{name: "refresh_concurrently", sql: "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_stats"},
-		{name: "refresh_with_data", sql: "REFRESH MATERIALIZED VIEW mv_stats WITH DATA"},
-		{name: "refresh_with_no_data", sql: "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA"},
+		{name: "refresh_basic", sql: "REFRESH MATERIALIZED VIEW mv_stats", concurrently: "false", withNoData: "false"},
+		{name: "refresh_concurrently", sql: "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_stats", concurrently: "true", withNoData: "false"},
+		{name: "refresh_with_data", sql: "REFRESH MATERIALIZED VIEW mv_stats WITH DATA", concurrently: "false", withNoData: "false"},
+		{name: "refresh_with_no_data", sql: "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA", concurrently: "false", withNoData: "true"},
 	}
 
 	t.Log("")
 	t.Log("=== PostgreSQL REFRESH MATERIALIZED VIEW Current Extraction Baseline ===")
-	t.Logf("%-25s | %-8s | %-12s | %-20s | %s",
-		"Case", "Kind", "Unsupported?", "Feature", "Reason")
+	t.Logf("%-25s | %-8s | %-12s | %-30s | %s",
+		"Case", "Kind", "Unsupported?", "Operation", "Options")
 	t.Log(string(make([]byte, 0, 140)))
 
 	for _, tc := range cases {
@@ -149,25 +151,46 @@ func TestPostgreSQLRefreshMaterializedViewCurrentExtractionBaseline(t *testing.T
 		}
 
 		unsupported := "no"
-		feature := ""
-		reason := ""
+		detail := ""
 		if stmt.Unsupported != nil {
 			unsupported = "yes"
-			feature = stmt.Unsupported.Feature
-			reason = stmt.Unsupported.Reason
+			detail = fmt.Sprintf("%s: %s", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+		} else if stmt.DDL != nil {
+			detail = string(stmt.DDL.Operation)
 		}
 
-		t.Logf("%-25s | %-8s | %-12s | %-20s | %s",
-			tc.name, stmt.Kind, unsupported, feature, reason)
+		optsStr := ""
+		if stmt.DDL != nil {
+			optsStr = fmt.Sprintf("concurrently=%s with_no_data=%s", stmt.DDL.Options["concurrently"], stmt.DDL.Options["with_no_data"])
+		}
 
-		// All refresh variants must currently be unsupported-explicit.
-		if stmt.Unsupported == nil {
-			t.Errorf("%s: expected unsupported result, got DDL op=%s", tc.name, stmt.DDL.Operation)
-		} else {
-			// classify returns KindUnknown for unrecognised nodes.
-			if stmt.Kind != spec.KindUnknown {
-				t.Errorf("%s: expected kind=%s, got %s", tc.name, spec.KindUnknown, stmt.Kind)
-			}
+		t.Logf("%-25s | %-8s | %-12s | %-30s | %s",
+			tc.name, stmt.Kind, unsupported, detail, optsStr)
+
+		// All refresh variants must be normalized as DDL.
+		if stmt.Unsupported != nil {
+			t.Fatalf("%s: expected normalized DDL, got unsupported: %s: %s", tc.name, stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+		}
+		if stmt.Kind != spec.KindDDL {
+			t.Errorf("%s: expected kind=%s, got %s", tc.name, spec.KindDDL, stmt.Kind)
+		}
+		if stmt.DDL == nil {
+			t.Fatalf("%s: expected DDL metadata", tc.name)
+		}
+		if stmt.DDL.Operation != spec.DDLOperationRefreshMaterializedView {
+			t.Errorf("%s: expected operation %q, got %q", tc.name, spec.DDLOperationRefreshMaterializedView, stmt.DDL.Operation)
+		}
+		if stmt.DDL.ObjectName != "mv_stats" {
+			t.Errorf("%s: expected object_name %q, got %q", tc.name, "mv_stats", stmt.DDL.ObjectName)
+		}
+		if stmt.DDL.ObjectType != "materialized_view" {
+			t.Errorf("%s: expected object_type %q, got %q", tc.name, "materialized_view", stmt.DDL.ObjectType)
+		}
+		if stmt.DDL.Options["concurrently"] != tc.concurrently {
+			t.Errorf("%s: expected concurrently=%q, got %q", tc.name, tc.concurrently, stmt.DDL.Options["concurrently"])
+		}
+		if stmt.DDL.Options["with_no_data"] != tc.withNoData {
+			t.Errorf("%s: expected with_no_data=%q, got %q", tc.name, tc.withNoData, stmt.DDL.Options["with_no_data"])
 		}
 	}
 }
