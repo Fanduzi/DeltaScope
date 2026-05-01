@@ -2639,6 +2639,110 @@ func TestAuditCommandPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditCommandPostgreSQLRefreshMaterializedViewRuleCoverage(t *testing.T) {
+	t.Run("basic_refresh_concurrently_warn", func(t *testing.T) {
+		stdout := &strings.Builder{}
+		stderr := &strings.Builder{}
+
+		code := Execute(
+			context.Background(),
+			[]string{"audit", "--sql", "REFRESH MATERIALIZED VIEW mv_stats;", "--dialect", "postgresql", "--format", "json"},
+			strings.NewReader(""),
+			stdout,
+			stderr,
+		)
+		if code != 0 {
+			t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+		}
+
+		var decoded map[string]any
+		if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+			t.Fatalf("unmarshal json output: %v", err)
+		}
+		if unsupported, ok := decoded["unsupported"].([]any); ok && len(unsupported) != 0 {
+			t.Fatalf("expected no unsupported, got %#v", unsupported)
+		}
+		statements, ok := decoded["statements"].([]any)
+		if !ok || len(statements) != 1 {
+			t.Fatalf("expected one statement, got %#v", decoded["statements"])
+		}
+		statement, ok := statements[0].(map[string]any)
+		if !ok {
+			t.Fatalf("expected statement object, got %#v", statements[0])
+		}
+		findings, ok := statement["findings"].([]any)
+		if !ok || len(findings) == 0 {
+			t.Fatalf("expected findings, got %#v", statement["findings"])
+		}
+		found := false
+		for _, f := range findings {
+			finding, ok := f.(map[string]any)
+			if !ok {
+				continue
+			}
+			if finding["rule_id"] == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected concurrently.warn, got %#v", findings)
+		}
+	})
+
+	t.Run("with_no_data_both_rules", func(t *testing.T) {
+		stdout := &strings.Builder{}
+		stderr := &strings.Builder{}
+
+		code := Execute(
+			context.Background(),
+			[]string{"audit", "--sql", "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA;", "--dialect", "postgresql", "--format", "json"},
+			strings.NewReader(""),
+			stdout,
+			stderr,
+		)
+		if code != 0 {
+			t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+		}
+
+		var decoded map[string]any
+		if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+			t.Fatalf("unmarshal json output: %v", err)
+		}
+		statements, ok := decoded["statements"].([]any)
+		if !ok || len(statements) != 1 {
+			t.Fatalf("expected one statement, got %#v", decoded["statements"])
+		}
+		statement, ok := statements[0].(map[string]any)
+		if !ok {
+			t.Fatalf("expected statement object, got %#v", statements[0])
+		}
+		findings, ok := statement["findings"].([]any)
+		if !ok || len(findings) < 2 {
+			t.Fatalf("expected at least 2 findings, got %#v", statement["findings"])
+		}
+		var foundConcurrent, foundNoData bool
+		for _, f := range findings {
+			finding, ok := f.(map[string]any)
+			if !ok {
+				continue
+			}
+			if finding["rule_id"] == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				foundConcurrent = true
+			}
+			if finding["rule_id"] == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				foundNoData = true
+			}
+		}
+		if !foundConcurrent {
+			t.Fatalf("expected concurrently.warn, got %#v", findings)
+		}
+		if !foundNoData {
+			t.Fatalf("expected no_data.notice, got %#v", findings)
+		}
+	})
+}
+
 func TestAuditCommandPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name       string

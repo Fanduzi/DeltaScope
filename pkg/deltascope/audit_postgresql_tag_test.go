@@ -1703,6 +1703,65 @@ func TestAuditPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLRefreshMaterializedViewRuleCoverage(t *testing.T) {
+	t.Run("basic_refresh_concurrently_warn", func(t *testing.T) {
+		result, err := Audit(context.Background(), Request{
+			SQL:     "REFRESH MATERIALIZED VIEW mv_stats;",
+			Dialect: DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+		found := false
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected concurrently.warn, got %#v", result.Statements[0].Findings)
+		}
+	})
+
+	t.Run("with_no_data_both_rules", func(t *testing.T) {
+		result, err := Audit(context.Background(), Request{
+			SQL:     "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA;",
+			Dialect: DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+		var foundConcurrent, foundNoData bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				foundConcurrent = true
+			}
+			if f.RuleID == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				foundNoData = true
+			}
+		}
+		if !foundConcurrent {
+			t.Fatalf("expected concurrently.warn, got %#v", result.Statements[0].Findings)
+		}
+		if !foundNoData {
+			t.Fatalf("expected no_data.notice, got %#v", result.Statements[0].Findings)
+		}
+	})
+}
+
 func TestAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name       string

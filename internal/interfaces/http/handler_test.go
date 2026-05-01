@@ -1504,6 +1504,110 @@ func TestHandlerAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testin
 	}
 }
 
+func TestHandlerAuditPostgreSQLRefreshMaterializedViewRuleCoverage(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+		t.Skip("skipping: PG-capable build required for refresh materialized view rule coverage test")
+	}
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	t.Run("basic_refresh_concurrently_warn", func(t *testing.T) {
+		body := `{"sql":"REFRESH MATERIALIZED VIEW mv_stats;","dialect":"postgresql"}`
+		req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var payload map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		if unsupported, ok := payload["unsupported"].([]any); ok && len(unsupported) != 0 {
+			t.Fatalf("expected no unsupported, got %#v", unsupported)
+		}
+		statements, ok := payload["statements"].([]any)
+		if !ok || len(statements) != 1 {
+			t.Fatalf("expected one statement, got %#v", payload["statements"])
+		}
+		statement, ok := statements[0].(map[string]any)
+		if !ok {
+			t.Fatalf("expected statement object, got %#v", statements[0])
+		}
+		findings, ok := statement["findings"].([]any)
+		if !ok || len(findings) == 0 {
+			t.Fatalf("expected findings, got %#v", statement["findings"])
+		}
+		found := false
+		for _, item := range findings {
+			finding, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			if finding["rule_id"] == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected concurrently.warn, got %#v", findings)
+		}
+	})
+
+	t.Run("with_no_data_both_rules", func(t *testing.T) {
+		body := `{"sql":"REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA;","dialect":"postgresql"}`
+		req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+		}
+
+		var payload map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		statements, ok := payload["statements"].([]any)
+		if !ok || len(statements) != 1 {
+			t.Fatalf("expected one statement, got %#v", payload["statements"])
+		}
+		statement, ok := statements[0].(map[string]any)
+		if !ok {
+			t.Fatalf("expected statement object, got %#v", statements[0])
+		}
+		findings, ok := statement["findings"].([]any)
+		if !ok || len(findings) < 2 {
+			t.Fatalf("expected at least 2 findings, got %#v", statement["findings"])
+		}
+		var foundConcurrent, foundNoData bool
+		for _, item := range findings {
+			finding, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			if finding["rule_id"] == "ddl.pg.refresh_materialized_view.concurrently.warn" {
+				foundConcurrent = true
+			}
+			if finding["rule_id"] == "ddl.pg.refresh_materialized_view.no_data.notice" {
+				foundNoData = true
+			}
+		}
+		if !foundConcurrent {
+			t.Fatalf("expected concurrently.warn, got %#v", findings)
+		}
+		if !foundNoData {
+			t.Fatalf("expected no_data.notice, got %#v", findings)
+		}
+	})
+}
+
 func TestHandlerAuditPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
 	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for alter table gap rule coverage test")
