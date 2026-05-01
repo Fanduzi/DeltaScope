@@ -2480,6 +2480,84 @@ func TestAuditSQLPostgreSQLAlterTableGapRules(t *testing.T) {
 	}
 }
 
+// TestAuditSQLPostgreSQLAlterTableUnsupportedActionRules proves that the six
+// PG-only alter-table unsupported-action rules fire through the full AuditSQL
+// pipeline with correct rule IDs and levels.
+func TestAuditSQLPostgreSQLAlterTableUnsupportedActionRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+		wantLevel  rule.Level
+	}{
+		{
+			name:       "set_schema_advisory",
+			sql:        "ALTER TABLE users SET SCHEMA archive;",
+			wantRuleID: "ddl.pg.alter.set_schema.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "owner_advisory",
+			sql:        "ALTER TABLE users OWNER TO app_owner;",
+			wantRuleID: "ddl.pg.alter.owner.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "enable_trigger_notice",
+			sql:        "ALTER TABLE users ENABLE TRIGGER trg_users_audit;",
+			wantRuleID: "ddl.pg.alter.enable_trigger.notice",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "disable_trigger_warn",
+			sql:        "ALTER TABLE users DISABLE TRIGGER trg_users_audit;",
+			wantRuleID: "ddl.pg.alter.disable_trigger.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+		{
+			name:       "attach_partition_advisory",
+			sql:        "ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');",
+			wantRuleID: "ddl.pg.alter.attach_partition.advisory",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "detach_partition_warn",
+			sql:        "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04;",
+			wantRuleID: "ddl.pg.alter.detach_partition.warn",
+			wantLevel:  rule.LevelWarning,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					if f.Level != tt.wantLevel {
+						t.Errorf("expected level %q, got %q", tt.wantLevel, f.Level)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected %s finding, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 // TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull proves that the nullable
 // notice rule does NOT fire when the added column has NOT NULL.
 func TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull(t *testing.T) {
