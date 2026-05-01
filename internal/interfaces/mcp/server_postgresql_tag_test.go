@@ -2288,6 +2288,88 @@ func TestAuditSQLToolPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditSQLToolPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "set_schema_advisory",
+			sql:        "ALTER TABLE users SET SCHEMA archive;",
+			wantRuleID: "ddl.pg.alter.set_schema.advisory",
+		},
+		{
+			name:       "disable_trigger_warn",
+			sql:        "ALTER TABLE users DISABLE TRIGGER trg_users_audit;",
+			wantRuleID: "ddl.pg.alter.disable_trigger.warn",
+		},
+		{
+			name:       "detach_partition_warn",
+			sql:        "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04;",
+			wantRuleID: "ddl.pg.alter.detach_partition.warn",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := NewServer(Config{Version: "test-version"})
+			session, err := connectClientSession(context.Background(), server)
+			if err != nil {
+				t.Fatalf("connect session: %v", err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name:      "audit_sql",
+				Arguments: map[string]any{"sql": tt.sql, "dialect": "postgresql"},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %T", result.StructuredContent)
+			}
+
+			if unsupported, ok := body["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok {
+				t.Fatalf("expected findings array, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}
+
 func TestAuditSQLToolPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name       string
