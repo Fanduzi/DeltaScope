@@ -402,6 +402,269 @@ func TestDetachPartitionWarnFiresForPG(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Positive tests: replica identity rules
+// ---------------------------------------------------------------------------
+
+func TestReplicaIdentityFullWarnFiresForPG(t *testing.T) {
+	r := mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "replica_identity", Options: map[string]string{"identity": "full"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["identity"] != "full" {
+		t.Fatalf("expected identity=full, got %v", findings[0].Metadata["identity"])
+	}
+}
+
+func TestReplicaIdentityNothingWarnFiresForPG(t *testing.T) {
+	r := mustNewReplicaIdentityNothingWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "replica_identity", Options: map[string]string{"identity": "nothing"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+}
+
+func TestReplicaIdentityUsingIndexNoticeFiresForPG(t *testing.T) {
+	r := mustNewReplicaIdentityUsingIndexNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "replica_identity", Options: map[string]string{"identity": "using_index", "index": "users_replica_identity_idx"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["index"] != "users_replica_identity_idx" {
+		t.Fatalf("expected index=users_replica_identity_idx, got %v", findings[0].Metadata["index"])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Negative tests: replica identity rules
+// ---------------------------------------------------------------------------
+
+func TestReplicaIdentityDefaultDoesNotFire(t *testing.T) {
+	rules := []rule.StatementRule{
+		mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewReplicaIdentityNothingWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewReplicaIdentityUsingIndexNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+	}
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "replica_identity", Options: map[string]string{"identity": "default"}},
+			},
+		},
+	}
+
+	for i, r := range rules {
+		findings, err := r.Evaluate(stmt)
+		if err != nil {
+			t.Fatalf("rule %d evaluate: %v", i, err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("rule %d: expected 0 findings for DEFAULT identity, got %d", i, len(findings))
+		}
+	}
+}
+
+func TestReplicaIdentityRulesSkipWrongAction(t *testing.T) {
+	r := mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "drop_column", Name: "email"},
+			},
+		},
+	}
+
+	if r.AppliesTo(stmt) {
+		t.Fatalf("expected AppliesTo() == false for wrong action")
+	}
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for wrong action, got %d", len(findings))
+	}
+}
+
+func TestReplicaIdentityRulesSkipWrongIdentityOption(t *testing.T) {
+	r := mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "replica_identity", Options: map[string]string{"identity": "nothing"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for wrong identity option, got %d", len(findings))
+	}
+}
+
+func TestReplicaIdentityRulesSkipNonPGDialects(t *testing.T) {
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	replicaStmt := spec.Statement{
+		Kind: spec.KindDDL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "replica_identity", Options: map[string]string{"identity": "full"}},
+			},
+		},
+	}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+	}{
+		{"full_warn", mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})},
+		{"nothing_warn", mustNewReplicaIdentityNothingWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})},
+		{"using_index_notice", mustNewReplicaIdentityUsingIndexNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				stmt := replicaStmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestTriggerRulesStillFireOnceForTriggerALL(t *testing.T) {
+	enableRule := mustNewEnableTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+	disableRule := mustNewDisableTriggerWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	enableStmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "enable_trigger", Name: "ALL"}},
+		},
+	}
+
+	findings, err := enableRule.Evaluate(enableStmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for ENABLE TRIGGER ALL, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+
+	disableStmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "disable_trigger", Name: "USER"}},
+		},
+	}
+
+	findings, err = disableRule.Evaluate(disableStmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding for DISABLE TRIGGER USER, got %d", len(findings))
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Cross-dialect negative tests
 // ---------------------------------------------------------------------------
 
@@ -535,6 +798,42 @@ func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "replica_identity_full_warn",
+			r:    mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "replica_identity", Options: map[string]string{"identity": "full"}}},
+				},
+			},
+		},
+		{
+			name: "replica_identity_nothing_warn",
+			r:    mustNewReplicaIdentityNothingWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "replica_identity", Options: map[string]string{"identity": "nothing"}}},
+				},
+			},
+		},
+		{
+			name: "replica_identity_using_index_notice",
+			r:    mustNewReplicaIdentityUsingIndexNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "replica_identity", Options: map[string]string{"identity": "using_index", "index": "idx"}}},
+				},
+			},
+		},
 	}
 
 	for _, rl := range rules {
@@ -602,6 +901,9 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		ruleIDPGAlterDisableTriggerWarn,
 		ruleIDPGAlterAttachPartitionAdvisory,
 		ruleIDPGAlterDetachPartitionWarn,
+			ruleIDPGAlterReplicaIdentityFullWarn,
+			ruleIDPGAlterReplicaIdentityNothingWarn,
+			ruleIDPGAlterReplicaIdentityUsingIndexNotice,
 	}
 	for _, ruleID := range pgAlterRuleIDs {
 		cfg.Rules[ruleID] = policy.RulePolicy{
@@ -815,6 +1117,33 @@ func mustNewDetachPartitionWarnRule(t *testing.T, cfg policy.RulePolicy) rule.St
 	r, err := newDetachPartitionWarnRule(cfg)
 	if err != nil {
 		t.Fatalf("new detach partition warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewReplicaIdentityFullWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newReplicaIdentityFullWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new replica identity full warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewReplicaIdentityNothingWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newReplicaIdentityNothingWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new replica identity nothing warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewReplicaIdentityUsingIndexNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newReplicaIdentityUsingIndexNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new replica identity using index notice rule: %v", err)
 	}
 	return r
 }

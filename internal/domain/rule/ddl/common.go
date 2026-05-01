@@ -183,6 +183,9 @@ const (
 	ruleIDPGAlterDisableTriggerWarn                        = "ddl.pg.alter.disable_trigger.warn"
 	ruleIDPGAlterAttachPartitionAdvisory                   = "ddl.pg.alter.attach_partition.advisory"
 	ruleIDPGAlterDetachPartitionWarn                       = "ddl.pg.alter.detach_partition.warn"
+	ruleIDPGAlterReplicaIdentityFullWarn                   = "ddl.pg.alter.replica_identity_full.warn"
+	ruleIDPGAlterReplicaIdentityNothingWarn                = "ddl.pg.alter.replica_identity_nothing.warn"
+	ruleIDPGAlterReplicaIdentityUsingIndexNotice           = "ddl.pg.alter.replica_identity_using_index.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

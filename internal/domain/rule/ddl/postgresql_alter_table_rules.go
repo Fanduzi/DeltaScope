@@ -231,3 +231,116 @@ func newDetachPartitionWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 		cfg,
 	)
 }
+
+// ---------------------------------------------------------------------------
+// Generic PG-only alter action+option rule
+// Covers: replica_identity_full, replica_identity_nothing, replica_identity_using_index
+// ---------------------------------------------------------------------------
+
+type pgAlterActionOptionRule struct {
+	id          string
+	level       rule.Level
+	action      string
+	optionKey   string
+	optionValue string
+	message     string
+	why         string
+	risk        string
+	suggestion  string
+}
+
+func newPGAlterActionOptionRule(id string, level rule.Level, action, optionKey, optionValue, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return pgAlterActionOptionRule{
+		id:          id,
+		level:       configuredLevel(cfg, level),
+		action:      action,
+		optionKey:   optionKey,
+		optionValue: optionValue,
+		message:     message,
+		why:         why,
+		risk:        risk,
+		suggestion:  suggestion,
+	}, nil
+}
+
+func (r pgAlterActionOptionRule) ID() string { return r.id }
+
+func (r pgAlterActionOptionRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectPostgreSQL &&
+		appliesToAlterActions(statement, r.action)
+}
+
+func (r pgAlterActionOptionRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, r.action) {
+		if alter.Options[r.optionKey] != r.optionValue {
+			continue
+		}
+		metadata := map[string]any{
+			"operation": "alter_table",
+			"action":    r.action,
+			r.optionKey: r.optionValue,
+		}
+		if statement.DDL != nil && statement.DDL.Table != nil {
+			metadata["table"] = statement.DDL.Table.Name
+		}
+		if idx := alter.Options["index"]; idx != "" {
+			metadata["index"] = idx
+		}
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: r.message,
+			Explanation: &rule.FindingExplanation{
+				Why:        r.why,
+				Risk:       r.risk,
+				Suggestion: r.suggestion,
+			},
+			Metadata: metadata,
+		})
+	}
+	return findings, nil
+}
+
+// ---------------------------------------------------------------------------
+// Constructors for replica identity rules
+// ---------------------------------------------------------------------------
+
+func newReplicaIdentityFullWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionOptionRule(
+		ruleIDPGAlterReplicaIdentityFullWarn, rule.LevelWarning,
+		"replica_identity", "identity", "full",
+		"REPLICA IDENTITY FULL enabled on PostgreSQL — logical replication may emit full row images",
+		"REPLICA IDENTITY FULL causes PostgreSQL to use the entire old row as replica identity for UPDATE and DELETE when no suitable key is available.",
+		"Logical replication or CDC streams can grow significantly for wide or high-churn tables.",
+		"Prefer DEFAULT or USING INDEX when a stable key exists. Use FULL only when downstream consumers require it and the write volume is acceptable.",
+		cfg,
+	)
+}
+
+func newReplicaIdentityNothingWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionOptionRule(
+		ruleIDPGAlterReplicaIdentityNothingWarn, rule.LevelWarning,
+		"replica_identity", "identity", "nothing",
+		"REPLICA IDENTITY NOTHING enabled on PostgreSQL — UPDATE/DELETE row identity may be unavailable",
+		"REPLICA IDENTITY NOTHING records no row identity for logical decoding of UPDATE and DELETE operations.",
+		"Downstream CDC or logical replication consumers may be unable to identify changed or deleted rows.",
+		"Use DEFAULT or USING INDEX unless downstream systems explicitly do not require UPDATE/DELETE identity.",
+		cfg,
+	)
+}
+
+func newReplicaIdentityUsingIndexNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionOptionRule(
+		ruleIDPGAlterReplicaIdentityUsingIndexNotice, rule.LevelNotice,
+		"replica_identity", "identity", "using_index",
+		"REPLICA IDENTITY USING INDEX configured on PostgreSQL — verify the selected index",
+		"USING INDEX makes a specific index the replica identity for logical decoding.",
+		"DeltaScope audits offline and cannot verify whether the named index exists, is valid, unique, not partial, and suitable for replica identity.",
+		"Confirm the index is valid and intentionally chosen before relying on this replica identity configuration.",
+		cfg,
+	)
+}
