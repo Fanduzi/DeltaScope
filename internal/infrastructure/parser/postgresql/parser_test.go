@@ -5315,3 +5315,222 @@ func TestPGExtractorRefreshMaterializedViewRemainsUnsupported(t *testing.T) {
 		t.Fatal("expected REFRESH MATERIALIZED VIEW to be unsupported")
 	}
 }
+
+func TestPGExtractorAlterTableSetSchemaNormalized(t *testing.T) {
+	p := New()
+	result, err := p.Parse("ALTER TABLE users SET SCHEMA archive")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	if result.Statements[0].Kind != spec.KindDDL {
+		t.Fatalf("expected DDL kind, got %q", result.Statements[0].Kind)
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL")
+	}
+	if stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got %q", stmt.DDL.Operation)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Name != "users" {
+		t.Fatalf("expected table name 'users', got %v", stmt.DDL.Table)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "set_schema" {
+		t.Fatalf("expected action 'set_schema', got %q", alter.Action)
+	}
+	if alter.Options["new_schema"] != "archive" {
+		t.Fatalf("expected options['new_schema']='archive', got %q", alter.Options["new_schema"])
+	}
+}
+
+func TestPGExtractorAlterTableOwnerToNormalized(t *testing.T) {
+	p := New()
+	result, err := p.Parse("ALTER TABLE users OWNER TO app_owner")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Name != "users" {
+		t.Fatalf("expected table name 'users', got %v", stmt.DDL.Table)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "change_owner" {
+		t.Fatalf("expected action 'change_owner', got %q", alter.Action)
+	}
+	if alter.Options["owner"] != "app_owner" {
+		t.Fatalf("expected options['owner']='app_owner', got %q", alter.Options["owner"])
+	}
+}
+
+func TestPGExtractorAlterTableEnableTriggerNormalized(t *testing.T) {
+	p := New()
+	result, err := p.Parse("ALTER TABLE users ENABLE TRIGGER trg_users_audit")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "enable_trigger" {
+		t.Fatalf("expected action 'enable_trigger', got %q", alter.Action)
+	}
+	if alter.Name != "trg_users_audit" {
+		t.Fatalf("expected name 'trg_users_audit', got %q", alter.Name)
+	}
+	if alter.Options["trigger"] != "trg_users_audit" {
+		t.Fatalf("expected options['trigger']='trg_users_audit', got %q", alter.Options["trigger"])
+	}
+}
+
+func TestPGExtractorAlterTableDisableTriggerNormalized(t *testing.T) {
+	p := New()
+	result, err := p.Parse("ALTER TABLE users DISABLE TRIGGER trg_users_audit")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "disable_trigger" {
+		t.Fatalf("expected action 'disable_trigger', got %q", alter.Action)
+	}
+	if alter.Name != "trg_users_audit" {
+		t.Fatalf("expected name 'trg_users_audit', got %q", alter.Name)
+	}
+	if alter.Options["trigger"] != "trg_users_audit" {
+		t.Fatalf("expected options['trigger']='trg_users_audit', got %q", alter.Options["trigger"])
+	}
+}
+
+func TestPGExtractorAlterTableAttachPartitionNormalized(t *testing.T) {
+	p := New()
+	result, err := p.Parse("ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Name != "measurement" {
+		t.Fatalf("expected table name 'measurement', got %v", stmt.DDL.Table)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "attach_partition" {
+		t.Fatalf("expected action 'attach_partition', got %q", alter.Action)
+	}
+	if alter.Name != "measurement_y2026m04" {
+		t.Fatalf("expected name 'measurement_y2026m04', got %q", alter.Name)
+	}
+	if alter.Options["has_bounds"] != "true" {
+		t.Fatalf("expected options['has_bounds']='true', got %q", alter.Options["has_bounds"])
+	}
+}
+
+func TestPGExtractorAlterTableDetachPartitionNormalized(t *testing.T) {
+	p := New()
+	result, err := p.Parse("ALTER TABLE measurement DETACH PARTITION measurement_y2026m04")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Name != "measurement" {
+		t.Fatalf("expected table name 'measurement', got %v", stmt.DDL.Table)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "detach_partition" {
+		t.Fatalf("expected action 'detach_partition', got %q", alter.Action)
+	}
+	if alter.Name != "measurement_y2026m04" {
+		t.Fatalf("expected name 'measurement_y2026m04', got %q", alter.Name)
+	}
+}

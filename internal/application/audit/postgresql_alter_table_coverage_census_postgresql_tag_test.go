@@ -117,11 +117,11 @@ func TestPostgreSQLAlterTableCoverageCensus(t *testing.T) {
 
 	const (
 		expectTotal            = 31
-		expectParseable        = 25
+		expectParseable        = 31
 		expectParserErrors     = 0
-		expectUnsupported      = 6
+		expectUnsupported      = 0
 		expectFindingCovered   = 25
-		expectNormalizedSilent = 0
+		expectNormalizedSilent = 6
 	)
 
 	if got := len(results); got != expectTotal {

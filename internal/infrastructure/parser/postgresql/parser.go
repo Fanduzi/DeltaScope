@@ -72,6 +72,7 @@ func classify(node *pg_query.Node) spec.Kind {
 	case *pg_query.Node_CreateStmt,
 		*pg_query.Node_ViewStmt,
 		*pg_query.Node_AlterTableStmt,
+		*pg_query.Node_AlterObjectSchemaStmt,
 		*pg_query.Node_RenameStmt,
 		*pg_query.Node_DropStmt,
 		*pg_query.Node_IndexStmt,

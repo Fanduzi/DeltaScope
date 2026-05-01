@@ -270,31 +270,10 @@ func TestPostgreSQLAlterTableUnsupportedCurrentExtractionBaseline(t *testing.T) 
 			s.Name, s.Unsupported, s.UnsupportedFeat, s.UnsupportedWhy)
 	}
 
-	// All 6 forms must be unsupported.
+	// All 6 forms are now normalized (no longer unsupported).
 	for _, s := range statuses {
-		if !s.Unsupported {
-			t.Errorf("case %q: expected unsupported = true, got false", s.Name)
-		}
-	}
-
-	// Assert expected current feature names from v0.51.0.
-	expectedFeatures := map[string]string{
-		"set_schema":           "unknown",
-		"owner_to":             "changeowner",
-		"enable_trigger_named": "enabletrig",
-		"disable_trigger_named":"disabletrig",
-		"attach_partition":     "attachpartition",
-		"detach_partition":     "detachpartition",
-	}
-
-	for _, s := range statuses {
-		exp, ok := expectedFeatures[s.Name]
-		if !ok {
-			continue
-		}
-		if s.UnsupportedFeat != exp {
-			t.Errorf("case %q: feature = %q, want %q (actual output: feature=%q reason=%q)",
-				s.Name, s.UnsupportedFeat, exp, s.UnsupportedFeat, s.UnsupportedWhy)
+		if s.Unsupported {
+			t.Errorf("case %q: expected unsupported = false, got true (feature=%q reason=%q)", s.Name, s.UnsupportedFeat, s.UnsupportedWhy)
 		}
 	}
 }

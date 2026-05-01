@@ -41,6 +41,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractViewStmt(statement, node.ViewStmt), nil
 	case *pg_query.Node_AlterTableStmt:
 		return extractAlterTableStmt(statement, node.AlterTableStmt), nil
+	case *pg_query.Node_AlterObjectSchemaStmt:
+		return extractAlterObjectSchemaStmt(statement, node.AlterObjectSchemaStmt), nil
 	case *pg_query.Node_RenameStmt:
 		return extractRenameStmt(statement, node.RenameStmt), nil
 	case *pg_query.Node_DropStmt:
@@ -217,6 +219,21 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	default:
 		return unsupportedStatement(statement, "rename", "postgresql rename target is not in the approved v1 subset")
 	}
+}
+
+func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.AlterObjectSchemaStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_table", "postgresql alter object schema statement payload is missing")
+	}
+	statement.DDL = &spec.DDL{
+		Operation: spec.DDLOperationAlterTable,
+		Table:     tableFromRangeVar(stmt.GetRelation()),
+		Alter: []spec.Alter{{
+			Action:  "set_schema",
+			Options: map[string]string{"new_schema": stmt.GetNewschema()},
+		}},
+	}
+	return statement
 }
 
 func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Statement {
@@ -602,6 +619,55 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "set_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: true}, Change: &spec.AlterColumnChange{TouchesNullability: true}}}, true, nil
 	case pg_query.AlterTableType_AT_DropNotNull:
 		return spec.Alter{Action: "drop_not_null", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), NotNull: false}, Change: &spec.AlterColumnChange{TouchesNullability: true}}}, true, nil
+	case pg_query.AlterTableType_AT_ChangeOwner:
+		owner := ""
+		if no := cmd.GetNewowner(); no != nil {
+			owner = no.GetRolename()
+		}
+		if owner == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "changeowner", Reason: "postgresql alter table owner role is missing"}
+		}
+		return spec.Alter{Action: "change_owner", Options: map[string]string{"owner": owner}}, true, nil
+	case pg_query.AlterTableType_AT_EnableTrig:
+		name := cmd.GetName()
+		if name == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "enabletrig", Reason: "postgresql alter table enable trigger name is missing"}
+		}
+		return spec.Alter{Action: "enable_trigger", Name: name, Options: map[string]string{"trigger": name}}, true, nil
+	case pg_query.AlterTableType_AT_DisableTrig:
+		name := cmd.GetName()
+		if name == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "disabletrig", Reason: "postgresql alter table disable trigger name is missing"}
+		}
+		return spec.Alter{Action: "disable_trigger", Name: name, Options: map[string]string{"trigger": name}}, true, nil
+	case pg_query.AlterTableType_AT_AttachPartition:
+		partName := ""
+		hasBounds := false
+		if def := cmd.GetDef(); def != nil {
+			if pc := def.GetPartitionCmd(); pc != nil {
+				if rv := pc.GetName(); rv != nil {
+					partName = rv.GetRelname()
+				}
+				hasBounds = pc.GetBound() != nil
+			}
+		}
+		if partName == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "attachpartition", Reason: "postgresql alter table attach partition name is missing"}
+		}
+		return spec.Alter{Action: "attach_partition", Name: partName, Options: map[string]string{"partition": partName, "has_bounds": strconv.FormatBool(hasBounds)}}, true, nil
+	case pg_query.AlterTableType_AT_DetachPartition:
+		partName := ""
+		if def := cmd.GetDef(); def != nil {
+			if pc := def.GetPartitionCmd(); pc != nil {
+				if rv := pc.GetName(); rv != nil {
+					partName = rv.GetRelname()
+				}
+			}
+		}
+		if partName == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "detachpartition", Reason: "postgresql alter table detach partition name is missing"}
+		}
+		return spec.Alter{Action: "detach_partition", Name: partName, Options: map[string]string{"partition": partName}}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}
@@ -1036,6 +1102,8 @@ func featureNameForNode(node *pg_query.Node) string {
 	case *pg_query.Node_SelectStmt:
 		return "select"
 	case *pg_query.Node_AlterTableStmt:
+		return "alter_table"
+	case *pg_query.Node_AlterObjectSchemaStmt:
 		return "alter_table"
 	case *pg_query.Node_CreateStmt:
 		return "create_table"
