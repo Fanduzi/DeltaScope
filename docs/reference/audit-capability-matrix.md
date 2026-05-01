@@ -253,6 +253,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `DROP SEQUENCE` | `drop_sequence` | ✓ | ✓ | ✓ |
 | `CREATE MATERIALIZED VIEW` | `create_materialized_view` | ✓ | ✓ | — |
 | `DROP MATERIALIZED VIEW` | `drop_materialized_view` | ✓ | ✓ | ✓ |
+| `REFRESH MATERIALIZED VIEW` | `refresh_materialized_view` | ✓ | ✓ | ✓ |
 
 ### Object Lifecycle Rules
 
@@ -267,8 +268,10 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
 | `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` removes a materialized view — advises review of dependent queries | ✓ | ✗ | notice |
 | `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+| `ddl.pg.refresh_materialized_view.concurrently.warn` | Non-concurrent `REFRESH MATERIALIZED VIEW` holds an exclusive lock — warns on default or explicit `WITH DATA` refreshes | ✓ | ✗ | warning |
+| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` empties the view — downstream readers may see empty results | ✓ | ✗ | notice |
 
-> **Note:** `REFRESH MATERIALIZED VIEW` is not yet supported and remains an explicit boundary. This is not complete PostgreSQL object lifecycle coverage — remaining unsupported DDL forms (trigger, function, extension, etc.) are still explicit boundaries.
+> **Note:** `CONCURRENTLY` refreshes pass both rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view. This is not complete PostgreSQL object lifecycle coverage — remaining unsupported DDL forms (trigger, function, extension, etc.) are still explicit boundaries.
 
 ---
 

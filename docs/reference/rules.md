@@ -355,8 +355,10 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 | `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 | `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` removes a materialized view — advises review of dependent queries | notice | No |
 | `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+| `ddl.pg.refresh_materialized_view.concurrently.warn` | Non-concurrent `REFRESH MATERIALIZED VIEW` (default or explicit `WITH DATA`) holds an exclusive lock | warning | No |
+| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` empties the view — downstream readers may see empty results | notice | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `REFRESH MATERIALIZED VIEW` is not yet supported and remains as an explicit boundary.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CONCURRENTLY` refreshes pass both rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view.
 
 > **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Starting with `v0.41.0`, `ddl.pg.alter.add_check.not_valid.require` also fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements. Starting with `v0.42.0`, `ddl.pg.alter.not_valid_constraint.validate.require` checks same-batch validation pairing for named CHECK and FOREIGN KEY `NOT VALID` constraints. Check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) also cover the ALTER TABLE CHECK path when configured.
 

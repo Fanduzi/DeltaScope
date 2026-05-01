@@ -346,8 +346,10 @@ deltascope rules search "prefix"
 | `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 | `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` 移除物化视图，建议审查依赖查询 | notice | 否 |
 | `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+| `ddl.pg.refresh_materialized_view.concurrently.warn` | 非并发 `REFRESH MATERIALIZED VIEW`（默认或显式 `WITH DATA`）持有排他锁 | warning | 否 |
+| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` 清空物化视图——下游读取方可能看到空结果 | notice | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`REFRESH MATERIALIZED VIEW` 尚未支持，仍为显式边界。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CONCURRENTLY` 刷新通过两条规则均不产生 finding。`WITH NO DATA` 同时触发两条规则，因为它也是非并发的。这不是 `CONCURRENTLY` 所需的唯一索引在线验证——DeltaScope 不会检查物化视图上是否存在唯一索引。
 
 > **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。从 `v0.41.0` 开始，`ddl.pg.alter.add_check.not_valid.require` 也对 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 语句触发。从 `v0.42.0` 开始，`ddl.pg.alter.not_valid_constraint.validate.require` 对命名 CHECK 和 FOREIGN KEY `NOT VALID` 约束执行同批次校验配对检查。CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）在配置后同样覆盖 ALTER TABLE CHECK 路径。
 

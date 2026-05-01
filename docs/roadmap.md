@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.52.0 PostgreSQL ALTER TABLE Unsupported-Action Pack
+## Latest Completed Milestone: v0.53.0 PostgreSQL REFRESH MATERIALIZED VIEW Pack
+
+**Goal:** normalize all four `REFRESH MATERIALIZED VIEW` variants through the audit pipeline and add two PostgreSQL-only rules warning on non-concurrent refreshes and surfacing `WITH NO DATA` refreshes.
+
+### Completed Scope
+
+- Two new PostgreSQL-only rules: `ddl.pg.refresh_materialized_view.concurrently.warn` (warning) and `ddl.pg.refresh_materialized_view.no_data.notice` (notice).
+- Parser/extractor normalization for all four refresh variants (basic, `CONCURRENTLY`, `WITH DATA`, `WITH NO DATA`).
+- Corpus fixtures covering both rules' trigger forms.
+- Service-level tests through `AuditSQL` for all four refresh variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all four refresh variants.
+
+### Key Design Decisions
+
+- This is not live unique-index validation for `CONCURRENTLY`. DeltaScope does not verify whether a unique index exists on the materialized view.
+- No query, cost, or dependency analysis is performed on the underlying view query.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the two new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.52.0 PostgreSQL ALTER TABLE Unsupported-Action Pack
 
 **Goal:** normalize six previously unsupported PostgreSQL ALTER TABLE actions and add six PostgreSQL-only rules providing actionable findings for schema moves, ownership changes, named trigger toggles, and partition attach/detach operations.
 

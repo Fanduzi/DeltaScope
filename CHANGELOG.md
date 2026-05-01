@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.53.0] - 2026-05-01
+
+### Added
+
+- PostgreSQL `REFRESH MATERIALIZED VIEW` normalization: all four variants (basic, `CONCURRENTLY`, `WITH DATA`, `WITH NO DATA`) now pass through the audit pipeline instead of returning unsupported.
+- Two new PostgreSQL-only rules: `ddl.pg.refresh_materialized_view.concurrently.warn` (warning) and `ddl.pg.refresh_materialized_view.no_data.notice` (notice).
+- Corpus fixtures covering both rules' trigger forms.
+- Service-level tests through `AuditSQL` for all four refresh variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all four refresh variants.
+
+### Non-Goals
+
+- Not live unique-index validation for `CONCURRENTLY`. DeltaScope does not verify whether a unique index exists on the materialized view.
+- No query, cost, or dependency analysis is performed on the underlying view query.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the two new PostgreSQL-only rule entries.
+
 ## [v0.52.0] - 2026-05-01
 
 ### Added

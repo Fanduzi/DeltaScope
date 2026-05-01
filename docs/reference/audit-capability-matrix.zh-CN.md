@@ -239,6 +239,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `DROP SEQUENCE` | `drop_sequence` | ✓ | ✓ | ✓ |
 | `CREATE MATERIALIZED VIEW` | `create_materialized_view` | ✓ | ✓ | — |
 | `DROP MATERIALIZED VIEW` | `drop_materialized_view` | ✓ | ✓ | ✓ |
+| `REFRESH MATERIALIZED VIEW` | `refresh_materialized_view` | ✓ | ✓ | ✓ |
 
 ### 对象生命周期规则
 
@@ -253,8 +254,10 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.drop_sequence.cascade.warn` | `DROP SEQUENCE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
 | `ddl.pg.drop_materialized_view.advisory` | `DROP MATERIALIZED VIEW` 移除物化视图，建议审查依赖查询 | ✓ | ✗ | notice |
 | `ddl.pg.drop_materialized_view.cascade.warn` | `DROP MATERIALIZED VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
+| `ddl.pg.refresh_materialized_view.concurrently.warn` | 非并发 `REFRESH MATERIALIZED VIEW` 持有排他锁——对默认或显式 `WITH DATA` 刷新发出警告 | ✓ | ✗ | warning |
+| `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` 清空物化视图——下游读取方可能看到空结果 | ✓ | ✗ | notice |
 
-> **说明：** `REFRESH MATERIALIZED VIEW` 尚未支持，仍为显式边界。这不是完整的 PostgreSQL 对象生命周期覆盖——剩余 unsupported DDL 形式（trigger、function、extension 等）仍为显式边界。
+> **说明：** `CONCURRENTLY` 刷新通过两条规则均不产生 finding。`WITH NO DATA` 同时触发两条规则，因为它也是非并发的。这不是 `CONCURRENTLY` 所需的唯一索引在线验证——DeltaScope 不会检查物化视图上是否存在唯一索引。这不是完整的 PostgreSQL 对象生命周期覆盖——剩余 unsupported DDL 形式（trigger、function、extension 等）仍为显式边界。
 
 ---
 
