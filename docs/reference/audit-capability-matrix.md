@@ -275,9 +275,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0)
+## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0)
 
-`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
+`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
 
 ### ALTER TABLE Coverage Rules
 
@@ -292,8 +292,11 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.disable_trigger.warn` | `ALTER TABLE ... DISABLE TRIGGER name` disables a specific trigger — warns that triggers will not fire on the table | ✓ | ✗ | warning |
 | `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` attaches a partition to a partitioned table — advises review of partition boundary and data routing | ✓ | ✗ | notice |
 | `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` detaches a partition — warns that queries targeting the partition may fail | ✓ | ✗ | warning |
+| `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` writes full old-row images to WAL — warns about replication overhead | ✓ | ✗ | warning |
+| `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` writes no old-row images to WAL — warns that logical replication will not work | ✓ | ✗ | warning |
+| `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` uses a specific index for WAL old-row images — informational notice | ✓ | ✗ | notice |
 
-> **Note:** This is not full PostgreSQL ALTER TABLE coverage. Remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `ENABLE/DISABLE TRIGGER ALL/USER`, `REPLICA IDENTITY`) remain explicit boundaries. These rules are offline-only and do not require a database connection.
+> **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. Remaining sub-commands (e.g., `ALTER COLUMN TYPE`, `SET LOGGED/UNLOGGED`) remain explicit boundaries. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index.
 
 ---
 
@@ -651,6 +654,7 @@ These rules fire only for MySQL and TiDB targets. For PostgreSQL, they are not a
 | `DROP CONSTRAINT` → primary key mapping | `ALTER TABLE … DROP CONSTRAINT` that targets the primary key is recognized and triggers `ddl.alter.drop_primary_key.forbid` and `ddl.alter.primary_key.drop.exists`. |
 | Migration-safety rules | `ddl.pg.create_index.concurrently.require`, `ddl.pg.alter.add_column.non_null_default.rewrite.warn`, `ddl.pg.alter.add_check.not_valid.require`, `ddl.pg.alter.set_data_type.rewrite.warn`, `ddl.pg.alter.not_valid_constraint.validate.require`, `ddl.pg.drop_index.advisory`, `ddl.pg.alter.add_column.non_null_no_default.warn`, `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory`, `ddl.pg.alter.drop_constraint.advisory` — offline PostgreSQL-specific rules that flag lock contention, table-rewrite risks, index/constraint removal, and missing same-batch validation follow-up for named `NOT VALID` constraints. |
 | Object lifecycle rules (v0.50.0) | `ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`, `ddl.pg.create_sequence.cycle.warn`, `ddl.pg.alter_sequence.restart.warn`, `ddl.pg.alter_sequence.cycle.warn`, `ddl.pg.drop_sequence.advisory`, `ddl.pg.drop_sequence.cascade.warn`, `ddl.pg.drop_materialized_view.advisory`, `ddl.pg.drop_materialized_view.cascade.warn` — offline PostgreSQL-specific rules that guard against cascade drops, sequence wraparound, and counter resets for schema, sequence, and materialized view lifecycle DDL. |
+| ALTER TABLE coverage rules (v0.51.0 / v0.52.0 / v0.54.0) | `ddl.pg.alter.drop_column.advisory`, `ddl.pg.alter.validate_constraint.advisory`, `ddl.pg.alter.add_column.nullable.notice`, `ddl.pg.alter.set_schema.advisory`, `ddl.pg.alter.owner.advisory`, `ddl.pg.alter.enable_trigger.notice`, `ddl.pg.alter.disable_trigger.warn`, `ddl.pg.alter.attach_partition.advisory`, `ddl.pg.alter.detach_partition.warn`, `ddl.pg.alter.replica_identity_full.warn`, `ddl.pg.alter.replica_identity_nothing.warn`, `ddl.pg.alter.replica_identity_using_index.notice` — offline PostgreSQL-specific rules covering ALTER TABLE safety patterns. Trigger-scope forms (`ALL/USER`) normalized since v0.54.0. `REPLICA IDENTITY DEFAULT` normalized and intentionally silent. Offline only — DeltaScope does not verify `REPLICA IDENTITY USING INDEX` index validity. |
 
 ---
 

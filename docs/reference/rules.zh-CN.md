@@ -355,7 +355,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖规则（9 条）
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（12 条）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
 
@@ -371,7 +371,15 @@ deltascope rules search "prefix"
 | `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` 将分区挂载到分区表，建议审查分区边界和数据路由 | notice | 否 |
 | `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` 分离分区，警告针对该分区的查询可能失败 | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这不是完整的 PostgreSQL ALTER TABLE 覆盖——剩余 ALTER TABLE 子命令（如 `ALTER COLUMN TYPE`、`ADD CONSTRAINT ... NOT VALID`、`ENABLE/DISABLE TRIGGER ALL/USER`、`REPLICA IDENTITY` 等）仍为显式边界。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用这些相同规则。这不是完整的 PostgreSQL ALTER TABLE 覆盖——剩余子命令（如 `ALTER COLUMN TYPE`、`SET LOGGED/UNLOGGED`）仍为显式边界。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` 写入完整旧行镜像到 WAL——警告复制开销 | warning | 否 |
+| `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` 不写入旧行镜像到 WAL——警告逻辑复制将不可用 | warning | 否 |
+| `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` 使用指定索引用于 WAL 旧行镜像——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。
 
 ---
 

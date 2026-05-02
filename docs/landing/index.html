@@ -638,7 +638,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.53.0 — PostgreSQL REFRESH MATERIALIZED VIEW auditing</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.54.0 — PostgreSQL ALTER TABLE trigger scope & replica identity coverage</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1059,12 +1059,12 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.53.0</div>
+              <div class="release-version">v0.54.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
             <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL REFRESH MATERIALIZED VIEW Auditing</div>
-            <div class="release-copy" data-i18n="releases.items.v0530">v0.53.0 adds PostgreSQL REFRESH MATERIALIZED VIEW auditing, warning on non-concurrent refreshes and surfacing WITH NO DATA refreshes before they surprise readers.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.53.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.53.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.53.0.zh-CN.md">Read release notes →</a>
+            <div class="release-copy" data-i18n="releases.items.v0540">v0.54.0 expands PostgreSQL ALTER TABLE coverage for trigger scope operations and replica identity configuration, with new findings for risky replica identity modes.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.54.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.54.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.54.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
@@ -1121,7 +1121,7 @@ Statement 1: CREATE TABLE
               <span class="nav-logo-text">DeltaScope</span>
             </a>
             <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.
-Starting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.53.0 release adds PostgreSQL REFRESH MATERIALIZED VIEW auditing with two new guardrail rules.</p>
+Starting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.54.0 release expands PostgreSQL ALTER TABLE coverage for trigger scope operations and replica identity configuration with three new guardrail rules.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1133,7 +1133,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.53.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.53.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.53.0.zh-CN.md">Release Notes v0.53.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.54.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.54.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.54.0.zh-CN.md">Release Notes v0.54.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1177,7 +1177,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: 'Install'
         },
         hero: {
-          badge: 'v0.53.0 — PostgreSQL REFRESH MATERIALIZED VIEW auditing',
+          badge: 'v0.54.0 — PostgreSQL ALTER TABLE trigger scope & replica identity coverage',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1318,7 +1318,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
-            v0530: 'v0.53.0 adds PostgreSQL REFRESH MATERIALIZED VIEW auditing, warning on non-concurrent refreshes and surfacing WITH NO DATA refreshes before they surprise readers.',
+            v0540: 'v0.54.0 expands PostgreSQL ALTER TABLE coverage for trigger scope operations and replica identity configuration, with new findings for risky replica identity modes.',
             v0520: 'v0.52.0 brings six previously unsupported PostgreSQL ALTER TABLE actions into the audit pipeline — SET SCHEMA, OWNER TO, ENABLE/DISABLE TRIGGER, and ATTACH/DETACH PARTITION — with dedicated rules and corpus coverage.',
             v0510: 'v0.51.0 extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules — DROP COLUMN, VALIDATE CONSTRAINT, and nullable ADD COLUMN — closing the most common ALTER TABLE safety gaps.'
           }
@@ -1330,14 +1330,14 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.\nStarting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.53.0 release adds PostgreSQL REFRESH MATERIALIZED VIEW auditing with two new guardrail rules.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.\nStarting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.54.0 release expands PostgreSQL ALTER TABLE coverage for trigger scope operations and replica identity configuration with three new guardrail rules.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.53.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.54.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1355,7 +1355,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: '安装'
         },
         hero: {
-          badge: 'v0.53.0 —— PostgreSQL REFRESH MATERIALIZED VIEW 审核',
+          badge: 'v0.54.0 —— PostgreSQL ALTER TABLE 触发器范围与 replica identity 覆盖',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1496,7 +1496,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
-            v0530: 'v0.53.0 新增 PostgreSQL REFRESH MATERIALIZED VIEW 审核，对非并发刷新给出警告，并提示 WITH NO DATA 刷新可能影响读取方。',
+            v0540: 'v0.54.0 扩展 PostgreSQL ALTER TABLE 覆盖，纳入触发器范围操作与 replica identity 配置，并为高风险 replica identity 模式提供新发现。',
             v0520: 'v0.52.0 将六类此前 unsupported 的 PostgreSQL ALTER TABLE 动作纳入审核管线——SET SCHEMA、OWNER TO、ENABLE/DISABLE TRIGGER 和 ATTACH/DETACH PARTITION——配有独立规则和语料库覆盖。',
             v0510: 'v0.51.0 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则——DROP COLUMN、VALIDATE CONSTRAINT 和 nullable ADD COLUMN——覆盖最常见的 ALTER TABLE 安全盲区。'
           }
@@ -1506,14 +1506,14 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux release asset 都会收敛到统一的 `deltascope` / `deltascope-server` / `deltascope-mcp` PostgreSQL offline 产品面。`v0.53.0` 新增 PostgreSQL REFRESH MATERIALIZED VIEW 审核，配有两条新防护规则。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux release asset 都会收敛到统一的 `deltascope` / `deltascope-server` / `deltascope-mcp` PostgreSQL offline 产品面。`v0.54.0` 扩展 PostgreSQL ALTER TABLE 覆盖，纳入触发器范围操作与 replica identity 配置，配有三条新防护规则。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.53.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.54.0 发行说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

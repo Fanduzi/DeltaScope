@@ -364,7 +364,7 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (9 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (12 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -380,7 +380,15 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` attaches a partition to a partitioned table — advises review of partition boundary and data routing | notice | No |
 | `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` detaches a partition — warns that queries targeting the partition may fail | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. This is not full PostgreSQL ALTER TABLE coverage — remaining ALTER TABLE sub-commands (e.g., `ALTER COLUMN TYPE`, `ADD CONSTRAINT ... NOT VALID`, `ENABLE/DISABLE TRIGGER ALL/USER`, `REPLICA IDENTITY`) remain explicit boundaries.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse these same rules. This is not full PostgreSQL ALTER TABLE coverage — remaining sub-commands (e.g., `ALTER COLUMN TYPE`, `SET LOGGED/UNLOGGED`) remain explicit boundaries.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` writes full old-row images to WAL — warns about replication overhead | warning | No |
+| `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` writes no old-row images to WAL — warns that logical replication will not work | warning | No |
+| `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` uses a specific index for WAL old-row images — informational notice | notice | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index.
 
 ---
 

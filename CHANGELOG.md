@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.54.0] - 2026-05-02
+
+### Added
+
+- PostgreSQL ALTER TABLE trigger-scope normalization: `ENABLE/DISABLE TRIGGER ALL` and `ENABLE/DISABLE TRIGGER USER` now pass through the audit pipeline, reusing existing `ddl.pg.alter.enable_trigger.notice` and `ddl.pg.alter.disable_trigger.warn` rules.
+- PostgreSQL ALTER TABLE replica identity normalization: all four `REPLICA IDENTITY` variants (`DEFAULT`, `FULL`, `NOTHING`, `USING INDEX ...`) now pass through the audit pipeline instead of returning unsupported.
+- Three new PostgreSQL-only rules: `ddl.pg.alter.replica_identity_full.warn` (warning), `ddl.pg.alter.replica_identity_nothing.warn` (warning), `ddl.pg.alter.replica_identity_using_index.notice` (notice).
+- `REPLICA IDENTITY DEFAULT` normalizes as a clean silent pass — no rule fires.
+- Corpus fixtures covering all three new rules' trigger forms.
+- Service-level tests through `AuditSQL` for replica identity and trigger-scope variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all eight residual forms.
+
+### Non-Goals
+
+- DeltaScope does not inspect live trigger state or validate trigger definitions or functions.
+- DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index.
+- This is not full PostgreSQL ALTER TABLE grammar support.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the three new PostgreSQL-only rule entries.
+
 ## [v0.53.0] - 2026-05-01
 
 ### Added

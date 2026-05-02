@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.53.0 PostgreSQL REFRESH MATERIALIZED VIEW Pack
+## Latest Completed Milestone: v0.54.0 PostgreSQL ALTER TABLE Residual Coverage Pack
+
+**Goal:** close the remaining high-value PostgreSQL ALTER TABLE residual coverage around trigger-scope operations and replica identity configuration, normalizing eight previously deferred forms and adding three PostgreSQL-only replica identity rules.
+
+### Completed Scope
+
+- Eight PostgreSQL ALTER TABLE residual forms now normalized through the audit pipeline: `ENABLE TRIGGER ALL`, `ENABLE TRIGGER USER`, `DISABLE TRIGGER ALL`, `DISABLE TRIGGER USER`, `REPLICA IDENTITY DEFAULT`, `REPLICA IDENTITY FULL`, `REPLICA IDENTITY NOTHING`, `REPLICA IDENTITY USING INDEX ...`.
+- Three new PostgreSQL-only rules: `ddl.pg.alter.replica_identity_full.warn` (warning), `ddl.pg.alter.replica_identity_nothing.warn` (warning), `ddl.pg.alter.replica_identity_using_index.notice` (notice).
+- Trigger-scope forms reuse existing `ddl.pg.alter.enable_trigger.notice` and `ddl.pg.alter.disable_trigger.warn` rules.
+- `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent.
+- Corpus fixtures covering all three new rules.
+- Service-level tests through `AuditSQL` for all variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all eight residual forms.
+
+### Key Design Decisions
+
+- DeltaScope does not inspect live trigger state or validate trigger definitions or functions.
+- DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index.
+- This is not full PostgreSQL ALTER TABLE grammar support.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the three new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.53.0 PostgreSQL REFRESH MATERIALIZED VIEW Pack
 
 **Goal:** normalize all four `REFRESH MATERIALIZED VIEW` variants through the audit pipeline and add two PostgreSQL-only rules warning on non-concurrent refreshes and surfacing `WITH NO DATA` refreshes.
 
@@ -14,7 +37,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Parser/extractor normalization for all four refresh variants (basic, `CONCURRENTLY`, `WITH DATA`, `WITH NO DATA`).
 - Corpus fixtures covering both rules' trigger forms.
 - Service-level tests through `AuditSQL` for all four refresh variants.
-- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- Public surface tests across all four surfaces.
 - AST census tests documenting stable parser facts for all four refresh variants.
 
 ### Key Design Decisions
@@ -31,16 +54,15 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 ### Completed Scope
 
 - Six new PostgreSQL-only rules: `ddl.pg.alter.set_schema.advisory` (notice), `ddl.pg.alter.owner.advisory` (notice), `ddl.pg.alter.enable_trigger.notice` (notice), `ddl.pg.alter.disable_trigger.warn` (warning), `ddl.pg.alter.attach_partition.advisory` (notice), `ddl.pg.alter.detach_partition.warn` (warning).
-- Parser/extractor normalization for all six ALTER TABLE action types (SET SCHEMA, OWNER TO, ENABLE/DISABLE TRIGGER name, ATTACH/DETACH PARTITION).
+- Parser/extractor normalization for all six ALTER TABLE action types.
 - Corpus fixtures covering each rule's trigger forms.
 - Service-level tests through `AuditSQL` for all six rules.
-- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- Public surface tests across all four surfaces.
 - AST census tests documenting stable parser facts for each action type.
 
 ### Key Design Decisions
 
 - This is not full PostgreSQL ALTER TABLE grammar support. Remaining ALTER TABLE sub-commands remain explicit boundaries.
-- `ENABLE/DISABLE TRIGGER ALL` and `ENABLE/DISABLE TRIGGER USER` variants remain deferred.
 - Partition bound semantic analysis is not performed.
 - No MySQL/TiDB behavior changes.
 - No default policy changes beyond the six new PostgreSQL-only rule entries.
@@ -490,7 +512,6 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 
 Areas that may be addressed in future milestones (no dates committed):
 
-- Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `ALTER COLUMN TYPE`, `REPLICA IDENTITY`, `ENABLE/DISABLE TRIGGER ALL/USER`, `SET LOGGED/UNLOGGED`).
-- `REFRESH MATERIALIZED VIEW` normalization and rule coverage.
+- Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `ALTER COLUMN TYPE`, `SET LOGGED/UNLOGGED`).
 - PostgreSQL type lifecycle rules (`CREATE TYPE`, `DROP TYPE`, `ALTER TYPE`).
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`, `CREATE EXTENSION`).
