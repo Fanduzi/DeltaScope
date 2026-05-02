@@ -1779,6 +1779,21 @@ func TestAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
 			wantRuleID: "ddl.pg.alter.disable_trigger.warn",
 		},
 		{
+			name:       "disable_trigger_all_warn",
+			sql:        "ALTER TABLE users DISABLE TRIGGER ALL;",
+			wantRuleID: "ddl.pg.alter.disable_trigger.warn",
+		},
+		{
+			name:       "replica_identity_full_warn",
+			sql:        "ALTER TABLE users REPLICA IDENTITY FULL;",
+			wantRuleID: "ddl.pg.alter.replica_identity_full.warn",
+		},
+		{
+			name:       "replica_identity_using_index_notice",
+			sql:        "ALTER TABLE users REPLICA IDENTITY USING INDEX users_pkey;",
+			wantRuleID: "ddl.pg.alter.replica_identity_using_index.notice",
+		},
+		{
 			name:       "detach_partition_warn",
 			sql:        "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04;",
 			wantRuleID: "ddl.pg.alter.detach_partition.warn",
