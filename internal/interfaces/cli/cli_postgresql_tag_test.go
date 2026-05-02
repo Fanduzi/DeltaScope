@@ -2837,3 +2837,87 @@ func TestAuditCommandPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testin
 		})
 	}
 }
+
+func TestAuditCommandPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_type_enum_notice",
+			sql:         "CREATE TYPE color AS ENUM ('red', 'green', 'blue');",
+			wantRuleIDs: []string{"ddl.pg.create_type.enum.notice"},
+		},
+		{
+			name:        "alter_type_add_value_with_position",
+			sql:         "ALTER TYPE color ADD VALUE 'yellow' AFTER 'green';",
+			wantRuleIDs: []string{"ddl.pg.alter_type.add_value.advisory", "ddl.pg.alter_type.add_value.position.notice"},
+		},
+		{
+			name:        "drop_type_cascade",
+			sql:         "DROP TYPE IF EXISTS color CASCADE;",
+			wantRuleIDs: []string{"ddl.pg.drop_type.advisory", "ddl.pg.drop_type.cascade.warn"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tt.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			if unsupported, ok := decoded["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, f := range findings {
+				finding, ok := f.(map[string]any)
+				if !ok {
+					continue
+				}
+				if _, expected := wantRuleIDs[finding["rule_id"].(string)]; expected {
+					wantRuleIDs[finding["rule_id"].(string)] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule_id %s, got %#v", ruleID, findings)
+				}
+			}
+		})
+	}
+}

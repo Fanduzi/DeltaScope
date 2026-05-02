@@ -1832,3 +1832,63 @@ func TestAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_type_enum_notice",
+			sql:         "CREATE TYPE color AS ENUM ('red', 'green', 'blue');",
+			wantRuleIDs: []string{"ddl.pg.create_type.enum.notice"},
+		},
+		{
+			name:        "alter_type_add_value_with_position",
+			sql:         "ALTER TYPE color ADD VALUE 'yellow' AFTER 'green';",
+			wantRuleIDs: []string{"ddl.pg.alter_type.add_value.advisory", "ddl.pg.alter_type.add_value.position.notice"},
+		},
+		{
+			name:        "drop_type_cascade",
+			sql:         "DROP TYPE IF EXISTS color CASCADE;",
+			wantRuleIDs: []string{"ddl.pg.drop_type.advisory", "ddl.pg.drop_type.cascade.warn"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, f := range result.Statements[0].Findings {
+				if _, expected := wantRuleIDs[f.RuleID]; expected {
+					wantRuleIDs[f.RuleID] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule %q, got %#v", ruleID, result.Statements[0].Findings)
+				}
+			}
+		})
+	}
+}
