@@ -436,6 +436,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropMaterializedViewCascadeWarn, construct: newDropMaterializedViewCascadeWarnRule},
 		{ruleID: ruleIDPGRefreshMaterializedViewConcurrentlyWarn, construct: newRefreshMaterializedViewConcurrentlyWarnRule},
 		{ruleID: ruleIDPGRefreshMaterializedViewNoDataNotice, construct: newRefreshMaterializedViewNoDataNoticeRule},
+		// PostgreSQL type lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateTypeEnumNotice, construct: newCreateTypeEnumNoticeRule},
+		{ruleID: ruleIDPGAlterTypeAddValueAdvisory, construct: newAlterTypeAddValueAdvisoryRule},
+		{ruleID: ruleIDPGAlterTypeAddValuePositionNotice, construct: newAlterTypeAddValuePositionNoticeRule},
+		{ruleID: ruleIDPGDropTypeAdvisory, construct: newDropTypeAdvisoryRule},
+		{ruleID: ruleIDPGDropTypeCascadeWarn, construct: newDropTypeCascadeWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

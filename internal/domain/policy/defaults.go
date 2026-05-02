@@ -828,6 +828,32 @@ func Default() Policy {
 				Level:   rule.LevelNotice,
 				Params:  map[string]any{},
 			},
+			// PG type lifecycle rules (PostgreSQL-only).
+			"ddl.pg.create_type.enum.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter_type.add_value.advisory": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter_type.add_value.position.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_type.advisory": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.drop_type.cascade.warn": {
+				Enabled: true,
+				Level:   rule.LevelWarning,
+				Params:  map[string]any{},
+			},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,

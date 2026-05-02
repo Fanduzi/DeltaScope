@@ -186,6 +186,11 @@ const (
 	ruleIDPGAlterReplicaIdentityFullWarn                   = "ddl.pg.alter.replica_identity_full.warn"
 	ruleIDPGAlterReplicaIdentityNothingWarn                = "ddl.pg.alter.replica_identity_nothing.warn"
 	ruleIDPGAlterReplicaIdentityUsingIndexNotice           = "ddl.pg.alter.replica_identity_using_index.notice"
+	ruleIDPGCreateTypeEnumNotice                           = "ddl.pg.create_type.enum.notice"
+	ruleIDPGAlterTypeAddValueAdvisory                      = "ddl.pg.alter_type.add_value.advisory"
+	ruleIDPGAlterTypeAddValuePositionNotice                = "ddl.pg.alter_type.add_value.position.notice"
+	ruleIDPGDropTypeAdvisory                               = "ddl.pg.drop_type.advisory"
+	ruleIDPGDropTypeCascadeWarn                            = "ddl.pg.drop_type.cascade.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
