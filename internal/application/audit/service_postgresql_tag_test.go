@@ -3036,6 +3036,158 @@ func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
 	})
 }
 
+func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
+	t.Run("replica_identity_full_warn", func(t *testing.T) {
+		const sql = "ALTER TABLE users REPLICA IDENTITY FULL;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter.replica_identity_full.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["action"] != "replica_identity" {
+					t.Errorf("expected action=replica_identity, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["identity"] != "full" {
+					t.Errorf("expected identity=full, got %v", f.Metadata["identity"])
+				}
+				if f.Metadata["table"] != "users" {
+					t.Errorf("expected table=users, got %v", f.Metadata["table"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected replica_identity_full.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("replica_identity_nothing_warn", func(t *testing.T) {
+		const sql = "ALTER TABLE users REPLICA IDENTITY NOTHING;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter.replica_identity_nothing.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["action"] != "replica_identity" {
+					t.Errorf("expected action=replica_identity, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["identity"] != "nothing" {
+					t.Errorf("expected identity=nothing, got %v", f.Metadata["identity"])
+				}
+				if f.Metadata["table"] != "users" {
+					t.Errorf("expected table=users, got %v", f.Metadata["table"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected replica_identity_nothing.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("replica_identity_using_index_notice", func(t *testing.T) {
+		const sql = "ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter.replica_identity_using_index.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["action"] != "replica_identity" {
+					t.Errorf("expected action=replica_identity, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["identity"] != "using_index" {
+					t.Errorf("expected identity=using_index, got %v", f.Metadata["identity"])
+				}
+				if f.Metadata["index"] != "users_replica_identity_idx" {
+					t.Errorf("expected index=users_replica_identity_idx, got %v", f.Metadata["index"])
+				}
+				if f.Metadata["table"] != "users" {
+					t.Errorf("expected table=users, got %v", f.Metadata["table"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected replica_identity_using_index.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("replica_identity_default_silent", func(t *testing.T) {
+		const sql = "ALTER TABLE users REPLICA IDENTITY DEFAULT;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+			t.Fatalf("expected alter_table operation")
+		}
+		for _, f := range result.Statements[0].Findings {
+			if strings.HasPrefix(f.RuleID, "ddl.pg.alter.replica_identity") {
+				t.Errorf("DEFAULT should be silent, got finding %s", f.RuleID)
+			}
+		}
+	})
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)

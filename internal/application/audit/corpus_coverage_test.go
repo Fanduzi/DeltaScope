@@ -166,11 +166,7 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 	switch ruleID {
 	case
 		"ddl.alter.add_index.redundant_unique_overlap.forbid",
-		"ddl.pg.alter.add_column.non_null_default.rewrite.warn",
-			// Task 4 removes these after corpus fixtures are added.
-			"ddl.pg.alter.replica_identity_full.warn",
-			"ddl.pg.alter.replica_identity_nothing.warn",
-			"ddl.pg.alter.replica_identity_using_index.notice":
+		"ddl.pg.alter.add_column.non_null_default.rewrite.warn":
 		return true
 	default:
 		return false
