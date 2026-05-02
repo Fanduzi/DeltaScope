@@ -1,0 +1,11 @@
+name: alter_type_add_value_position_notice_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.alter_type.add_value.advisory
+      - ddl.pg.alter_type.add_value.position.notice

@@ -3188,6 +3188,249 @@ func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
 	})
 }
 
+func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
+	t.Run("create_type_enum_notice", func(t *testing.T) {
+		const sql = "CREATE TYPE color AS ENUM ('red', 'green', 'blue');"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_type.enum.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "create_type" {
+					t.Errorf("expected operation=create_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_type"] != "type" {
+					t.Errorf("expected object_type=type, got %v", f.Metadata["object_type"])
+				}
+				if f.Metadata["object_name"] != "color" {
+					t.Errorf("expected object_name=color, got %v", f.Metadata["object_name"])
+				}
+				if f.Metadata["type_kind"] != "enum" {
+					t.Errorf("expected type_kind=enum, got %v", f.Metadata["type_kind"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_type.enum.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_type_add_value_advisory", func(t *testing.T) {
+		const sql = "ALTER TYPE color ADD VALUE 'yellow';"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.add_value.advisory" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["action"] != "add_value" {
+					t.Errorf("expected action=add_value, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["value"] != "yellow" {
+					t.Errorf("expected value=yellow, got %v", f.Metadata["value"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected add_value.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_type_add_value_position_notice", func(t *testing.T) {
+		const sql = "ALTER TYPE color ADD VALUE 'yellow' AFTER 'green';"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var foundAdvisory, foundPosition bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.add_value.advisory" {
+				foundAdvisory = true
+			}
+			if f.RuleID == "ddl.pg.alter_type.add_value.position.notice" {
+				foundPosition = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["placement"] != "after" {
+					t.Errorf("expected placement=after, got %v", f.Metadata["placement"])
+				}
+				if f.Metadata["neighbor"] != "green" {
+					t.Errorf("expected neighbor=green, got %v", f.Metadata["neighbor"])
+				}
+			}
+		}
+		if !foundAdvisory {
+			t.Fatalf("expected add_value.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+		if !foundPosition {
+			t.Fatalf("expected add_value.position.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_type_advisory", func(t *testing.T) {
+		const sql = "DROP TYPE color;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_type.advisory" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "drop_type" {
+					t.Errorf("expected operation=drop_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "color" {
+					t.Errorf("expected object_name=color, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected drop_type.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_type_cascade_warn", func(t *testing.T) {
+		const sql = "DROP TYPE IF EXISTS color CASCADE;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var foundAdvisory, foundCascade bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_type.advisory" {
+				foundAdvisory = true
+			}
+			if f.RuleID == "ddl.pg.drop_type.cascade.warn" {
+				foundCascade = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["cascade"] != "true" {
+					t.Errorf("expected cascade=true, got %v", f.Metadata["cascade"])
+				}
+				if f.Metadata["if_exists"] != "true" {
+					t.Errorf("expected if_exists=true, got %v", f.Metadata["if_exists"])
+				}
+			}
+		}
+		if !foundAdvisory {
+			t.Fatalf("expected drop_type.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+		if !foundCascade {
+			t.Fatalf("expected drop_type.cascade.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("create_type_composite_unsupported", func(t *testing.T) {
+		const sql = "CREATE TYPE address AS (street text, city text);"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if !errors.Is(err, ErrUnsupportedStatement) {
+			t.Fatalf("expected unsupported statement sentinel, got %v", err)
+		}
+		if len(result.Unsupported) != 1 {
+			t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+		}
+		if result.Unsupported[0].Feature != "create_type_composite" {
+			t.Fatalf("expected unsupported feature create_type_composite, got %#v", result.Unsupported[0])
+		}
+		if result.Unsupported[0].Reason == "" {
+			t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+		}
+	})
+
+	t.Run("create_domain_unsupported", func(t *testing.T) {
+		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if !errors.Is(err, ErrUnsupportedStatement) {
+			t.Fatalf("expected unsupported statement sentinel, got %v", err)
+		}
+		if len(result.Unsupported) != 1 {
+			t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+		}
+		if result.Unsupported[0].Feature != "create_domain" {
+			t.Fatalf("expected unsupported feature create_domain, got %#v", result.Unsupported[0])
+		}
+		if result.Unsupported[0].Reason == "" {
+			t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+		}
+	})
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)

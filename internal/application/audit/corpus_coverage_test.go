@@ -168,14 +168,6 @@ func isDeferredCorpusCoverageRule(ruleID string) bool {
 		"ddl.alter.add_index.redundant_unique_overlap.forbid",
 		"ddl.pg.alter.add_column.non_null_default.rewrite.warn":
 		return true
-	// PG type lifecycle rules — deferred until Task 4 adds corpus fixtures.
-	case
-		"ddl.pg.create_type.enum.notice",
-		"ddl.pg.alter_type.add_value.advisory",
-		"ddl.pg.alter_type.add_value.position.notice",
-		"ddl.pg.drop_type.advisory",
-		"ddl.pg.drop_type.cascade.warn":
-		return true
 	default:
 		return false
 	}
