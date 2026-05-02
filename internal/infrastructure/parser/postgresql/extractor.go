@@ -61,6 +61,14 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateTableAsStmt(statement, node.CreateTableAsStmt), nil
 	case *pg_query.Node_RefreshMatViewStmt:
 		return extractRefreshMatViewStmt(statement, node.RefreshMatViewStmt), nil
+	case *pg_query.Node_CreateEnumStmt:
+		return extractCreateEnumStmt(statement, node.CreateEnumStmt), nil
+	case *pg_query.Node_AlterEnumStmt:
+		return extractAlterEnumStmt(statement, node.AlterEnumStmt), nil
+	case *pg_query.Node_CompositeTypeStmt:
+		return unsupportedStatement(statement, "create_type_composite", "postgresql composite type creation is not in the approved v0.55.0 subset"), nil
+	case *pg_query.Node_CreateDomainStmt:
+		return unsupportedStatement(statement, "create_domain", "postgresql domain creation is not in the approved v0.55.0 subset"), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
@@ -295,6 +303,17 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			Operation:  spec.DDLOperationDropMaterializedView,
 			ObjectName: dropTargetName(stmt),
 			ObjectType: "materialized_view",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_TYPE:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropType,
+			ObjectName: dropTypeNameFromObjects(stmt.GetObjects()),
+			ObjectType: "type",
 			Options:    options,
 		}
 	default:
@@ -1153,6 +1172,93 @@ func unsupportedStatementWithDetail(statement spec.Statement, detail *spec.Unsup
 	return statement
 }
 
+func extractCreateEnumStmt(statement spec.Statement, stmt *pg_query.CreateEnumStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_type", "postgresql create enum type statement payload is missing")
+	}
+	objectName := firstStringFromTypeNameNodes(stmt.GetTypeName())
+	if objectName == "" {
+		return unsupportedStatement(statement, "create_type", "postgresql create enum type name is missing")
+	}
+	var labels []string
+	for _, v := range stmt.GetVals() {
+		if s := v.GetString_(); s != nil && s.GetSval() != "" {
+			labels = append(labels, s.GetSval())
+		}
+	}
+	options := map[string]string{"type_kind": "enum"}
+	if len(labels) > 0 {
+		options["labels"] = strings.Join(labels, ",")
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateType,
+		ObjectName: objectName,
+		ObjectType: "type",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractAlterEnumStmt(statement spec.Statement, stmt *pg_query.AlterEnumStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_type", "postgresql alter enum type statement payload is missing")
+	}
+	objectName := firstStringFromTypeNameNodes(stmt.GetTypeName())
+	if objectName == "" {
+		return unsupportedStatement(statement, "alter_type", "postgresql alter enum type name is missing")
+	}
+	newVal := stmt.GetNewVal()
+	if newVal == "" {
+		return unsupportedStatement(statement, "alter_type", "postgresql alter enum type new value is missing")
+	}
+	options := map[string]string{
+		"type_kind":     "enum",
+		"action":        "add_value",
+		"value":         newVal,
+		"if_not_exists": strconv.FormatBool(stmt.GetSkipIfNewValExists()),
+	}
+	neighbor := stmt.GetNewValNeighbor()
+	if neighbor != "" {
+		if stmt.GetNewValIsAfter() {
+			options["placement"] = "after"
+		} else {
+			options["placement"] = "before"
+		}
+		options["neighbor"] = neighbor
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterType,
+		ObjectName: objectName,
+		ObjectType: "type",
+		Options:    options,
+	}
+	return statement
+}
+
+func firstStringFromTypeNameNodes(nodes []*pg_query.Node) string {
+	for _, n := range nodes {
+		if s := n.GetString_(); s != nil && s.GetSval() != "" {
+			return s.GetSval()
+		}
+	}
+	return ""
+}
+
+func dropTypeNameFromObjects(objects []*pg_query.Node) string {
+	for _, obj := range objects {
+		tn := obj.GetTypeName()
+		if tn == nil {
+			continue
+		}
+		for _, name := range tn.GetNames() {
+			if s := name.GetString_(); s != nil && s.GetSval() != "" {
+				return s.GetSval()
+			}
+		}
+	}
+	return ""
+}
+
 func featureNameForNode(node *pg_query.Node) string {
 	if node == nil {
 		return "unknown"
@@ -1182,6 +1288,14 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "update"
 	case *pg_query.Node_DeleteStmt:
 		return "delete"
+	case *pg_query.Node_CreateEnumStmt:
+		return "create_type"
+	case *pg_query.Node_AlterEnumStmt:
+		return "alter_type"
+	case *pg_query.Node_CompositeTypeStmt:
+		return "create_type_composite"
+	case *pg_query.Node_CreateDomainStmt:
+		return "create_domain"
 	default:
 		return "unknown"
 	}

@@ -792,6 +792,72 @@ func TestDDLObjectLifecycleFieldsSerializeCorrectly(t *testing.T) {
 	}
 }
 
+func TestDDLTypeLifecycleOperationsSerializeCorrectly(t *testing.T) {
+	createType := &DDL{
+		Operation:  DDLOperationCreateType,
+		ObjectName: "color",
+		ObjectType: "type",
+		Options:    map[string]string{"type_kind": "enum", "labels": "red,green,blue"},
+	}
+	data, err := json.Marshal(createType)
+	if err != nil {
+		t.Fatalf("marshal create_type ddl: %v", err)
+	}
+	var rt DDL
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal create_type ddl: %v", err)
+	}
+	if rt.Operation != "create_type" {
+		t.Fatalf("expected operation create_type, got %q", rt.Operation)
+	}
+	if rt.ObjectName != "color" {
+		t.Fatalf("expected object_name color, got %q", rt.ObjectName)
+	}
+	if rt.Options["labels"] != "red,green,blue" {
+		t.Fatalf("expected labels red,green,blue, got %q", rt.Options["labels"])
+	}
+
+	alterType := &DDL{
+		Operation:  DDLOperationAlterType,
+		ObjectName: "color",
+		ObjectType: "type",
+		Options:    map[string]string{"type_kind": "enum", "action": "add_value", "value": "yellow", "if_not_exists": "true", "placement": "after", "neighbor": "green"},
+	}
+	data, err = json.Marshal(alterType)
+	if err != nil {
+		t.Fatalf("marshal alter_type ddl: %v", err)
+	}
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal alter_type ddl: %v", err)
+	}
+	if rt.Operation != "alter_type" {
+		t.Fatalf("expected operation alter_type, got %q", rt.Operation)
+	}
+	if rt.Options["placement"] != "after" {
+		t.Fatalf("expected placement after, got %q", rt.Options["placement"])
+	}
+
+	dropType := &DDL{
+		Operation:  DDLOperationDropType,
+		ObjectName: "color",
+		ObjectType: "type",
+		Options:    map[string]string{"if_exists": "true", "cascade": "true"},
+	}
+	data, err = json.Marshal(dropType)
+	if err != nil {
+		t.Fatalf("marshal drop_type ddl: %v", err)
+	}
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal drop_type ddl: %v", err)
+	}
+	if rt.Operation != "drop_type" {
+		t.Fatalf("expected operation drop_type, got %q", rt.Operation)
+	}
+	if rt.Options["cascade"] != "true" {
+		t.Fatalf("expected cascade true, got %q", rt.Options["cascade"])
+	}
+}
+
 func TestDDLObjectFieldsOmitWhenEmpty(t *testing.T) {
 	ddl := &DDL{
 		Operation: DDLOperationCreateIndex,

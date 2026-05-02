@@ -194,8 +194,9 @@ func assertTypeLifecycleASTFacts(t *testing.T, fact typeLifecycleASTFact) {
 }
 
 // TestTypeLifecycleDeltaScopeBaseline characterizes how the current DeltaScope
-// pipeline classifies and extracts type lifecycle DDL candidates before any
-// production changes. No production code is modified.
+// pipeline classifies and extracts type lifecycle DDL candidates.
+// After Task 2, the 7 supported forms normalize through spec.DDL and the 2
+// deferred forms (composite type, domain) return explicit unsupported details.
 func TestTypeLifecycleDeltaScopeBaseline(t *testing.T) {
 	t.Log("")
 	t.Log("=== PostgreSQL Type Lifecycle DeltaScope Baseline ===")
@@ -257,6 +258,57 @@ func TestTypeLifecycleDeltaScopeBaseline(t *testing.T) {
 		// All candidates must parse successfully via DeltaScope.
 		if parseErr != nil {
 			t.Errorf("%s: must parse successfully", tc.Name)
+		}
+
+		// Task 2 normalization assertions.
+		assertTypeLifecycleBaseline(t, baseline)
+	}
+}
+
+func assertTypeLifecycleBaseline(t *testing.T, fact typeLifecycleBaselineFact) {
+	t.Helper()
+	switch fact.Name {
+	case "create_type_enum":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "create_type" {
+			t.Errorf("%s: expected create_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["type_kind"] != "enum" {
+			t.Errorf("%s: expected type_kind=enum, got %q", fact.Name, fact.DDLOptions["type_kind"])
+		}
+	case "alter_type_add_value", "alter_type_add_value_if_not_exists",
+		"alter_type_add_value_before", "alter_type_add_value_after":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "add_value" {
+			t.Errorf("%s: expected action=add_value, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+	case "drop_type", "drop_type_if_exists_cascade":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "drop_type" {
+			t.Errorf("%s: expected drop_type, got %q", fact.Name, fact.DDLOperation)
+		}
+	case "create_type_composite":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported, got normalized", fact.Name)
+		}
+		if fact.UnsupportedFeature != "create_type_composite" {
+			t.Errorf("%s: expected feature create_type_composite, got %q", fact.Name, fact.UnsupportedFeature)
+		}
+	case "create_domain":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported, got normalized", fact.Name)
+		}
+		if fact.UnsupportedFeature != "create_domain" {
+			t.Errorf("%s: expected feature create_domain, got %q", fact.Name, fact.UnsupportedFeature)
 		}
 	}
 }

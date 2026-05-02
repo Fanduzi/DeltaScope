@@ -46,6 +46,10 @@ const (
 	DDLOperationCreateMaterializedView DDLOperation = "create_materialized_view"
 	DDLOperationDropMaterializedView   DDLOperation = "drop_materialized_view"
 	DDLOperationRefreshMaterializedView DDLOperation = "refresh_materialized_view"
+
+	DDLOperationCreateType DDLOperation = "create_type"
+	DDLOperationAlterType  DDLOperation = "alter_type"
+	DDLOperationDropType   DDLOperation = "drop_type"
 )
 
 // Table describes a table-level object.
