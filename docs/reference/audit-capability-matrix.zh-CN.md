@@ -261,6 +261,36 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL 类型生命周期（v0.55.0）
+
+`v0.55.0` 新增 PostgreSQL 类型生命周期覆盖，支持 enum 类型创建、加值和类型删除。DeltaScope 规范化 `CREATE TYPE ... AS ENUM`、`ALTER TYPE ... ADD VALUE` 和 `DROP TYPE`，新增五条 PostgreSQL-only 发现，并将复合类型和域作为显式不支持边界。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 标准化操作
+
+| SQL | 标准化操作 |
+|-----|-----------|
+| `CREATE TYPE color AS ENUM ('red', 'green', 'blue')` | `create_type` (type_kind=enum, labels=red,green,blue) |
+| `ALTER TYPE color ADD VALUE 'yellow'` | `alter_type` (type_kind=enum, action=add_value, value=yellow) |
+| `ALTER TYPE color ADD VALUE IF NOT EXISTS 'yellow'` | `alter_type` (type_kind=enum, action=add_value, value=yellow, if_not_exists=true) |
+| `ALTER TYPE color ADD VALUE 'yellow' BEFORE 'green'` | `alter_type` (type_kind=enum, action=add_value, value=yellow, placement=before, neighbor=green) |
+| `ALTER TYPE color ADD VALUE 'yellow' AFTER 'green'` | `alter_type` (type_kind=enum, action=add_value, value=yellow, placement=after, neighbor=green) |
+| `DROP TYPE color` | `drop_type` |
+| `DROP TYPE IF EXISTS color CASCADE` | `drop_type` (if_exists=true, cascade=true) |
+
+### 类型生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
+|---------|---------|:----:|:--------:|---------|
+| `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` 引入新的 enum 类型——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` 向已有 enum 追加值——建议审查应用使用情况 | ✓ | ✗ | warning |
+| `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` 定位新 enum 值——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_type.advisory` | `DROP TYPE` 移除用户定义类型——建议审查依赖列和函数 | ✓ | ✗ | warning |
+| `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。这不是完整的 PostgreSQL 类型生命周期覆盖。复合类型（`CREATE TYPE ... AS (...)`）和域（`CREATE DOMAIN ...`）仍为显式不支持边界。不影响 MySQL/TiDB 行为。
+
+---
+
 ## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0）
 
 `v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。

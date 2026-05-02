@@ -364,6 +364,22 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 
 ---
 
+## DDL: PostgreSQL Type Lifecycle Rules (5 rules)
+
+These rules guard against risky PostgreSQL type lifecycle DDL operations — enum type creation, value addition, and type drops. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` introduces a new enum type — informational notice | notice | No |
+| `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` appends a value to an existing enum — advises review of application usage | warning | No |
+| `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` positions a new enum value — informational notice | notice | No |
+| `ddl.pg.drop_type.advisory` | `DROP TYPE` removes a user-defined type — advises review of dependent columns and functions | warning | No |
+| `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. Composite types (`CREATE TYPE ... AS (...)`) and domains (`CREATE DOMAIN ...`) are explicitly unsupported boundaries in this release.
+
+---
+
 ## DDL: PostgreSQL ALTER TABLE Coverage Rules (12 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.

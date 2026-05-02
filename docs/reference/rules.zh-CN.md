@@ -355,6 +355,22 @@ deltascope rules search "prefix"
 
 ---
 
+## DDL：PostgreSQL 类型生命周期规则（5 条）
+
+这些规则用于防范 PostgreSQL 类型生命周期 DDL 操作中的风险——enum 类型创建、加值和类型删除。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` 引入新的 enum 类型——信息性提示 | notice | 否 |
+| `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` 向已有 enum 追加值——建议审查应用使用情况 | warning | 否 |
+| `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` 定位新 enum 值——信息性提示 | notice | 否 |
+| `ddl.pg.drop_type.advisory` | `DROP TYPE` 移除用户定义类型——建议审查依赖列和函数 | warning | 否 |
+| `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。复合类型（`CREATE TYPE ... AS (...)`）和域（`CREATE DOMAIN ...`）在本版本中为显式不支持边界。
+
+---
+
 ## DDL：PostgreSQL ALTER TABLE 覆盖规则（12 条）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。

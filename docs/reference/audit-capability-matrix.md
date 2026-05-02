@@ -275,6 +275,36 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL Type Lifecycle (v0.55.0)
+
+`v0.55.0` adds PostgreSQL type lifecycle coverage for enum types and type drops. DeltaScope normalizes `CREATE TYPE ... AS ENUM`, `ALTER TYPE ... ADD VALUE`, and `DROP TYPE`, adds five PostgreSQL-only findings, and keeps composite types and domains as explicit unsupported boundaries. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE TYPE color AS ENUM ('red', 'green', 'blue')` | `create_type` (type_kind=enum, labels=red,green,blue) |
+| `ALTER TYPE color ADD VALUE 'yellow'` | `alter_type` (type_kind=enum, action=add_value, value=yellow) |
+| `ALTER TYPE color ADD VALUE IF NOT EXISTS 'yellow'` | `alter_type` (type_kind=enum, action=add_value, value=yellow, if_not_exists=true) |
+| `ALTER TYPE color ADD VALUE 'yellow' BEFORE 'green'` | `alter_type` (type_kind=enum, action=add_value, value=yellow, placement=before, neighbor=green) |
+| `ALTER TYPE color ADD VALUE 'yellow' AFTER 'green'` | `alter_type` (type_kind=enum, action=add_value, value=yellow, placement=after, neighbor=green) |
+| `DROP TYPE color` | `drop_type` |
+| `DROP TYPE IF EXISTS color CASCADE` | `drop_type` (if_exists=true, cascade=true) |
+
+### Type Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_type.enum.notice` | `CREATE TYPE ... AS ENUM` introduces a new enum type — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.add_value.advisory` | `ALTER TYPE ... ADD VALUE` appends a value to an existing enum — advises review of application usage | ✓ | ✗ | warning |
+| `ddl.pg.alter_type.add_value.position.notice` | `ALTER TYPE ... ADD VALUE ... BEFORE/AFTER` positions a new enum value — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_type.advisory` | `DROP TYPE` removes a user-defined type — advises review of dependent columns and functions | ✓ | ✗ | warning |
+| `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. This is not full PostgreSQL type lifecycle coverage. Composite types (`CREATE TYPE ... AS (...)`) and domains (`CREATE DOMAIN ...`) remain explicit unsupported boundaries. No MySQL/TiDB behavior changes.
+
+---
+
 ## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0)
 
 `v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.

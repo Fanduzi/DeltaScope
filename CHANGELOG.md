@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.55.0] - 2026-05-02
+
+### Added
+
+- PostgreSQL type lifecycle DDL normalization: `CREATE TYPE ... AS ENUM`, `ALTER TYPE ... ADD VALUE` (including `IF NOT EXISTS`, `BEFORE`, `AFTER` variants), and `DROP TYPE` (including `IF EXISTS ... CASCADE`) now pass through the audit pipeline instead of returning unsupported.
+- Five new PostgreSQL-only rules: `ddl.pg.create_type.enum.notice` (notice), `ddl.pg.alter_type.add_value.advisory` (warning), `ddl.pg.alter_type.add_value.position.notice` (notice), `ddl.pg.drop_type.advisory` (warning), `ddl.pg.drop_type.cascade.warn` (warning).
+- Corpus fixtures covering all five new rules' trigger forms.
+- Service-level tests through `AuditSQL` for type lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all seven supported type lifecycle forms and two deferred forms.
+
+### Non-Goals
+
+- DeltaScope does not inspect live dependent objects.
+- DeltaScope does not validate whether enum values are already used by data or application code.
+- DeltaScope does not model full PostgreSQL type system semantics.
+- This is not full PostgreSQL type lifecycle support.
+- `CREATE TYPE ... AS (...)` composite types remain explicit unsupported as `create_type_composite`.
+- `CREATE DOMAIN ...` remains explicit unsupported as `create_domain`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the five new PostgreSQL-only rule entries.
+
 ## [v0.54.0] - 2026-05-02
 
 ### Added

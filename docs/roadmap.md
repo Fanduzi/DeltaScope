@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.54.0 PostgreSQL ALTER TABLE Residual Coverage Pack
+## Latest Completed Milestone: v0.55.0 PostgreSQL Type Lifecycle Pack
+
+**Goal:** normalize PostgreSQL enum type creation, enum value additions, and type drops through the audit pipeline, adding five PostgreSQL-only findings for migration review while keeping composite types and domains as explicit unsupported boundaries.
+
+### Completed Scope
+
+- Seven PostgreSQL type lifecycle forms normalized through the audit pipeline: `CREATE TYPE ... AS ENUM`, `ALTER TYPE ... ADD VALUE`, `ALTER TYPE ... ADD VALUE IF NOT EXISTS`, `ALTER TYPE ... ADD VALUE ... BEFORE`, `ALTER TYPE ... ADD VALUE ... AFTER`, `DROP TYPE`, `DROP TYPE IF EXISTS ... CASCADE`.
+- Five new PostgreSQL-only rules: `ddl.pg.create_type.enum.notice` (notice), `ddl.pg.alter_type.add_value.advisory` (warning), `ddl.pg.alter_type.add_value.position.notice` (notice), `ddl.pg.drop_type.advisory` (warning), `ddl.pg.drop_type.cascade.warn` (warning).
+- Corpus fixtures covering all five new rules.
+- Service-level tests through `AuditSQL` for type lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all seven supported forms and two deferred forms.
+
+### Key Design Decisions
+
+- DeltaScope does not inspect live dependent objects.
+- DeltaScope does not validate whether enum values are already used by data or application code.
+- DeltaScope does not model full PostgreSQL type system semantics.
+- This is not full PostgreSQL type lifecycle support.
+- Composite types remain explicit unsupported as `create_type_composite`.
+- Domains remain explicit unsupported as `create_domain`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the five new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.54.0 PostgreSQL ALTER TABLE Residual Coverage Pack
 
 **Goal:** close the remaining high-value PostgreSQL ALTER TABLE residual coverage around trigger-scope operations and replica identity configuration, normalizing eight previously deferred forms and adding three PostgreSQL-only replica identity rules.
 
@@ -513,5 +537,5 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 Areas that may be addressed in future milestones (no dates committed):
 
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `ALTER COLUMN TYPE`, `SET LOGGED/UNLOGGED`).
-- PostgreSQL type lifecycle rules (`CREATE TYPE`, `DROP TYPE`, `ALTER TYPE`).
+- PostgreSQL composite type and domain support.
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`, `CREATE EXTENSION`).
