@@ -302,6 +302,7 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 		feature      string
 		ddlOp        string
 		alterActions []string
+		alterOpts    []map[string]string
 	}
 
 	expected := map[string]baselineExpectation{
@@ -315,19 +316,25 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 			unsupported:  false,
 			ddlOp:        string(spec.DDLOperationAlterTable),
 			alterActions: []string{"set_data_type"},
+			alterOpts:    []map[string]string{{"has_using": "true"}},
 		},
-		// SET LOGGED / SET UNLOGGED / SET TABLESPACE are currently unsupported.
+		// SET LOGGED / SET UNLOGGED are now normalized.
 		"set_logged": {
-			unsupported: true,
-			feature:     "setlogged",
+			unsupported:  false,
+			ddlOp:        string(spec.DDLOperationAlterTable),
+			alterActions: []string{"set_logged"},
+			alterOpts:    []map[string]string{{"logged": "true"}},
 		},
 		"set_unlogged": {
-			unsupported: true,
-			feature:     "setunlogged",
+			unsupported:  false,
+			ddlOp:        string(spec.DDLOperationAlterTable),
+			alterActions: []string{"set_unlogged"},
+			alterOpts:    []map[string]string{{"logged": "false"}},
 		},
+		// SET TABLESPACE remains explicitly unsupported.
 		"set_tablespace": {
 			unsupported: true,
-			feature:     "settablespace",
+			feature:     "set_tablespace",
 		},
 	}
 
@@ -366,6 +373,9 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 		if baseline.Unsupported != exp.unsupported {
 			t.Errorf("case %q: unsupported = %v, want %v", tc.name, baseline.Unsupported, exp.unsupported)
 		}
+		if baseline.Unsupported && exp.feature != "" && baseline.UnsupportedFeat != exp.feature {
+			t.Errorf("case %q: unsupported feature = %q, want %q", tc.name, baseline.UnsupportedFeat, exp.feature)
+		}
 		if !baseline.Unsupported {
 			if baseline.DDLOperation != exp.ddlOp {
 				t.Errorf("case %q: DDL operation = %q, want %q", tc.name, baseline.DDLOperation, exp.ddlOp)
@@ -376,6 +386,22 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 				for i, got := range baseline.AlterActions {
 					if got != exp.alterActions[i] {
 						t.Errorf("case %q: alter[%d].action = %q, want %q", tc.name, i, got, exp.alterActions[i])
+					}
+				}
+			}
+			if len(exp.alterOpts) > 0 {
+				for i, wantOpts := range exp.alterOpts {
+					if i >= len(baseline.AlterOptions) {
+						t.Errorf("case %q: missing alter options at index %d", tc.name, i)
+						continue
+					}
+					gotOpts := baseline.AlterOptions[i]
+					for k, v := range wantOpts {
+						if gotOpts == nil {
+							t.Errorf("case %q: alter[%d].options nil, want %s=%s", tc.name, i, k, v)
+						} else if gotOpts[k] != v {
+							t.Errorf("case %q: alter[%d].options[%q] = %q, want %q", tc.name, i, k, gotOpts[k], v)
+						}
 					}
 				}
 			}
@@ -542,11 +568,11 @@ func TestPostgreSQLAlterTableRemainingExistingRuleCoverage(t *testing.T) {
 	// not create a new action or re-normalize.
 
 	cases := []struct {
-		name          string
-		sql           string
-		wantAction    string
-		wantType      string
-		wantHasUsing  bool
+		name         string
+		sql          string
+		wantAction   string
+		wantType     string
+		wantHasUsing bool
 	}{
 		{
 			name:         "alter_column_type_basic",
@@ -560,7 +586,7 @@ func TestPostgreSQLAlterTableRemainingExistingRuleCoverage(t *testing.T) {
 			sql:          "ALTER TABLE users ALTER COLUMN name TYPE jsonb USING to_jsonb(name)",
 			wantAction:   "set_data_type",
 			wantType:     "jsonb",
-			wantHasUsing: false, // Current extractor does NOT capture USING
+			wantHasUsing: true,
 		},
 	}
 
@@ -602,19 +628,10 @@ func TestPostgreSQLAlterTableRemainingExistingRuleCoverage(t *testing.T) {
 			t.Errorf("%s: type = %q, want %q", tc.name, alter.Column.Definition.Type, tc.wantType)
 		}
 
-		// Record that USING is NOT currently captured
-		if tc.wantHasUsing {
-			hasUsingOpt := false
-			if alter.Options != nil {
-				if v, ok := alter.Options["using"]; ok && v != "" {
-					hasUsingOpt = true
-				}
-			}
-			if hasUsingOpt {
-				t.Logf("  NOTE: USING clause IS captured in options (unexpected, verify)")
-			} else {
-				t.Logf("  CONFIRMED: USING clause NOT captured in current extractor")
-			}
+		// Verify has_using option presence
+		hasUsingOpt := alter.Options != nil && alter.Options["has_using"] == "true"
+		if hasUsingOpt != tc.wantHasUsing {
+			t.Errorf("%s: has_using = %v, want %v (options=%v)", tc.name, hasUsingOpt, tc.wantHasUsing, alter.Options)
 		}
 	}
 }

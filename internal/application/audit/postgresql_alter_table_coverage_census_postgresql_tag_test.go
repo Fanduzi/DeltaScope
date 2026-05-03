@@ -79,6 +79,9 @@ var pgAlterTableCensusCases = []struct {
 	{Name: "REPLICA IDENTITY USING INDEX", SQL: "ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx"},
 	{Name: "ATTACH PARTITION", SQL: "ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')"},
 	{Name: "DETACH PARTITION", SQL: "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04"},
+	{Name: "SET LOGGED", SQL: "ALTER TABLE users SET LOGGED"},
+	{Name: "SET UNLOGGED", SQL: "ALTER TABLE users SET UNLOGGED"},
+	{Name: "SET TABLESPACE", SQL: "ALTER TABLE users SET TABLESPACE fastspace"},
 }
 
 func TestPostgreSQLAlterTableCoverageCensus(t *testing.T) {
@@ -124,12 +127,12 @@ func TestPostgreSQLAlterTableCoverageCensus(t *testing.T) {
 	t.Logf("Unclassified:               %d", unclassified)
 
 	const (
-		expectTotal            = 39
-		expectParseable        = 39
+		expectTotal            = 42
+		expectParseable        = 41
 		expectParserErrors     = 0
-		expectUnsupported      = 0
+		expectUnsupported      = 1
 		expectFindingCovered   = 38
-		expectNormalizedSilent = 1
+		expectNormalizedSilent = 3
 	)
 
 	if got := len(results); got != expectTotal {

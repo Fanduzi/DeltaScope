@@ -190,6 +190,112 @@ func TestParserPreservesSetDataTypeActionForPostgreSQL(t *testing.T) {
 	}
 }
 
+func TestParserSetDataTypeBasicHasNoUsingOption(t *testing.T) {
+	parser := New()
+	result, err := parser.Parse("ALTER TABLE users ALTER COLUMN name TYPE text")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_data_type" {
+		t.Fatalf("action = %q, want set_data_type", alter.Action)
+	}
+	if alter.Options != nil {
+		t.Fatalf("expected nil options for basic ALTER COLUMN TYPE, got %v", alter.Options)
+	}
+}
+
+func TestParserSetDataTypeUsingAddsHasUsingOption(t *testing.T) {
+	parser := New()
+	result, err := parser.Parse("ALTER TABLE users ALTER COLUMN name TYPE jsonb USING to_jsonb(name)")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_data_type" {
+		t.Fatalf("action = %q, want set_data_type", alter.Action)
+	}
+	if alter.Options == nil || alter.Options["has_using"] != "true" {
+		t.Fatalf("expected has_using=true in options, got %v", alter.Options)
+	}
+}
+
+func TestParserSetLoggedNormalizesAction(t *testing.T) {
+	parser := New()
+	result, err := parser.Parse("ALTER TABLE users SET LOGGED")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_logged" {
+		t.Fatalf("action = %q, want set_logged", alter.Action)
+	}
+	if alter.Options["logged"] != "true" {
+		t.Fatalf("expected logged=true, got %v", alter.Options)
+	}
+}
+
+func TestParserSetUnloggedNormalizesAction(t *testing.T) {
+	parser := New()
+	result, err := parser.Parse("ALTER TABLE users SET UNLOGGED")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_unlogged" {
+		t.Fatalf("action = %q, want set_unlogged", alter.Action)
+	}
+	if alter.Options["logged"] != "false" {
+		t.Fatalf("expected logged=false, got %v", alter.Options)
+	}
+}
+
+func TestParserSetTablespaceStillUnsupported(t *testing.T) {
+	parser := New()
+	result, err := parser.Parse("ALTER TABLE users SET TABLESPACE fastspace")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported == nil {
+		t.Fatal("expected unsupported for SET TABLESPACE, got nil")
+	}
+	if statement.Unsupported.Feature != "set_tablespace" {
+		t.Fatalf("unsupported feature = %q, want set_tablespace", statement.Unsupported.Feature)
+	}
+}
+
 func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
 	parser := New()
 

@@ -645,7 +645,11 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		if column == nil || column.GetTypeName() == nil {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alter_column_type", Reason: "postgresql alter column type payload is missing"}
 		}
-		return spec.Alter{Action: "set_data_type", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), Type: typeNameString(column.GetTypeName())}}}, true, nil
+		alter := spec.Alter{Action: "set_data_type", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName(), Definition: &spec.Column{Name: cmd.GetName(), Type: typeNameString(column.GetTypeName())}}}
+		if column.GetRawDefault() != nil {
+			alter.Options = map[string]string{"has_using": "true"}
+		}
+		return alter, true, nil
 	case pg_query.AlterTableType_AT_ColumnDefault:
 		action := "set_default"
 		if cmd.GetDef() == nil {
@@ -723,6 +727,12 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "detachpartition", Reason: "postgresql alter table detach partition name is missing"}
 		}
 		return spec.Alter{Action: "detach_partition", Name: partName, Options: map[string]string{"partition": partName}}, true, nil
+	case pg_query.AlterTableType_AT_SetLogged:
+		return spec.Alter{Action: "set_logged", Options: map[string]string{"logged": "true"}}, true, nil
+	case pg_query.AlterTableType_AT_SetUnLogged:
+		return spec.Alter{Action: "set_unlogged", Options: map[string]string{"logged": "false"}}, true, nil
+	case pg_query.AlterTableType_AT_SetTableSpace:
+		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "set_tablespace", Reason: "postgresql alter table set tablespace is not in the approved v1 whitelist"}
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}
