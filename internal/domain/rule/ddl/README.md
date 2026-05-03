@@ -216,6 +216,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter.disable_trigger.warn`
 - `ddl.pg.alter.attach_partition.advisory`
 - `ddl.pg.alter.detach_partition.warn`
+- `ddl.pg.alter.set_logged.notice`
+- `ddl.pg.alter.set_unlogged.notice`
 - `ddl.pg.alter.replica_identity_full.warn`
 - `ddl.pg.alter.replica_identity_nothing.warn`
 - `ddl.pg.alter.replica_identity_using_index.notice`

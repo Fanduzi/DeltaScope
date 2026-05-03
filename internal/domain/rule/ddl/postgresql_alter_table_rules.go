@@ -233,6 +233,32 @@ func newDetachPartitionWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 }
 
 // ---------------------------------------------------------------------------
+// Constructors for logged-state rules
+// ---------------------------------------------------------------------------
+
+func newSetLoggedNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterLoggedNotice, rule.LevelNotice, "set_logged", "table",
+		"ALTER TABLE SET LOGGED on table %q — table will be crash-safe on PostgreSQL",
+		"SET LOGGED marks the table as logged, meaning writes are written to the write-ahead log and survive crashes. This is the default for permanent tables.",
+		"Temporary or unlogged tables switched to logged will begin generating WAL. On large tables this may increase WAL volume significantly.",
+		"Verify that the increased WAL volume is acceptable for the replication and backup infrastructure.",
+		cfg,
+	)
+}
+
+func newSetUnloggedNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterActionAdvisoryRule(
+		ruleIDPGAlterUnloggedNotice, rule.LevelNotice, "set_unlogged", "table",
+		"ALTER TABLE SET UNLOGGED on table %q — table will NOT survive crashes on PostgreSQL",
+		"SET UNLOGGED marks the table as unlogged, meaning writes are not written to the write-ahead log. The table is automatically truncated after a crash or unclean shutdown.",
+		"All data in this table will be lost after a crash, power failure, or unclean restart. Replication streams will not include changes to this table.",
+		"Ensure no business-critical data is stored in this table. Use unlogged tables only for ephemeral data (caches, session stores, temporary computation results) that can be rebuilt.",
+		cfg,
+	)
+}
+
+// ---------------------------------------------------------------------------
 // Generic PG-only alter action+option rule
 // Covers: replica_identity_full, replica_identity_nothing, replica_identity_using_index
 // ---------------------------------------------------------------------------

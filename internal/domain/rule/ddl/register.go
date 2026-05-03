@@ -422,6 +422,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDisableTriggerWarn, construct: newDisableTriggerWarnRule},
 		{ruleID: ruleIDPGAlterAttachPartitionAdvisory, construct: newAttachPartitionAdvisoryRule},
 		{ruleID: ruleIDPGAlterDetachPartitionWarn, construct: newDetachPartitionWarnRule},
+		{ruleID: ruleIDPGAlterLoggedNotice, construct: newSetLoggedNoticeRule},
+		{ruleID: ruleIDPGAlterUnloggedNotice, construct: newSetUnloggedNoticeRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityFullWarn, construct: newReplicaIdentityFullWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityNothingWarn, construct: newReplicaIdentityNothingWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityUsingIndexNotice, construct: newReplicaIdentityUsingIndexNoticeRule},

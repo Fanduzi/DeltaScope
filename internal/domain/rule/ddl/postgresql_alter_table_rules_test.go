@@ -402,6 +402,151 @@ func TestDetachPartitionWarnFiresForPG(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Positive tests: logged-state rules
+// ---------------------------------------------------------------------------
+
+func TestSetLoggedNoticeFiresForPG(t *testing.T) {
+	r := mustNewSetLoggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_logged", Options: map[string]string{"logged": "true"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "set_logged" {
+		t.Fatalf("expected action=set_logged, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestSetUnloggedNoticeFiresForPG(t *testing.T) {
+	r := mustNewSetUnloggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_unlogged", Options: map[string]string{"logged": "false"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "set_unlogged" {
+		t.Fatalf("expected action=set_unlogged, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestSetLoggedRulesSkipNonPGDialects(t *testing.T) {
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "set_logged_notice",
+			r:    mustNewSetLoggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_logged", Options: map[string]string{"logged": "true"}}},
+				},
+			},
+		},
+		{
+			name: "set_unlogged_notice",
+			r:    mustNewSetUnloggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_unlogged", Options: map[string]string{"logged": "false"}}},
+				},
+			},
+		},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				stmt := rl.stmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestSetLoggedRulesDoNotFireForSetTablespace(t *testing.T) {
+	loggedRule := mustNewSetLoggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+	unloggedRule := mustNewSetUnloggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "unsupported-explicit", Name: "fastspace", Options: map[string]string{"feature": "set_tablespace"}},
+			},
+		},
+	}
+
+	for _, r := range []rule.StatementRule{loggedRule, unloggedRule} {
+		findings, err := r.Evaluate(stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings for SET TABLESPACE, got %d", len(findings))
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Positive tests: replica identity rules
 // ---------------------------------------------------------------------------
 
@@ -799,6 +944,30 @@ func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
 			},
 		},
 		{
+			name: "set_logged_notice",
+			r:    mustNewSetLoggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_logged", Options: map[string]string{"logged": "true"}}},
+				},
+			},
+		},
+		{
+			name: "set_unlogged_notice",
+			r:    mustNewSetUnloggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_unlogged", Options: map[string]string{"logged": "false"}}},
+				},
+			},
+		},
+		{
 			name: "replica_identity_full_warn",
 			r:    mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
 			stmt: spec.Statement{
@@ -901,6 +1070,8 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		ruleIDPGAlterDisableTriggerWarn,
 		ruleIDPGAlterAttachPartitionAdvisory,
 		ruleIDPGAlterDetachPartitionWarn,
+		ruleIDPGAlterLoggedNotice,
+		ruleIDPGAlterUnloggedNotice,
 			ruleIDPGAlterReplicaIdentityFullWarn,
 			ruleIDPGAlterReplicaIdentityNothingWarn,
 			ruleIDPGAlterReplicaIdentityUsingIndexNotice,
@@ -992,6 +1163,8 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 				ruleIDPGAlterDisableTriggerWarn:         true,
 				ruleIDPGAlterAttachPartitionAdvisory:    true,
 				ruleIDPGAlterDetachPartitionWarn:        true,
+				ruleIDPGAlterLoggedNotice:               true,
+				ruleIDPGAlterUnloggedNotice:             true,
 		}
 		for _, f := range findings {
 			if pgRuleIDs[f.RuleID] {
@@ -1144,6 +1317,24 @@ func mustNewReplicaIdentityUsingIndexNoticeRule(t *testing.T, cfg policy.RulePol
 	r, err := newReplicaIdentityUsingIndexNoticeRule(cfg)
 	if err != nil {
 		t.Fatalf("new replica identity using index notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetLoggedNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetLoggedNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set logged notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetUnloggedNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetUnloggedNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set unlogged notice rule: %v", err)
 	}
 	return r
 }

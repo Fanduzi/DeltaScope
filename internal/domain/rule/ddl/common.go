@@ -186,6 +186,8 @@ const (
 	ruleIDPGAlterReplicaIdentityFullWarn                   = "ddl.pg.alter.replica_identity_full.warn"
 	ruleIDPGAlterReplicaIdentityNothingWarn                = "ddl.pg.alter.replica_identity_nothing.warn"
 	ruleIDPGAlterReplicaIdentityUsingIndexNotice           = "ddl.pg.alter.replica_identity_using_index.notice"
+	ruleIDPGAlterLoggedNotice                               = "ddl.pg.alter.set_logged.notice"
+	ruleIDPGAlterUnloggedNotice                             = "ddl.pg.alter.set_unlogged.notice"
 	ruleIDPGCreateTypeEnumNotice                           = "ddl.pg.create_type.enum.notice"
 	ruleIDPGAlterTypeAddValueAdvisory                      = "ddl.pg.alter_type.add_value.advisory"
 	ruleIDPGAlterTypeAddValuePositionNotice                = "ddl.pg.alter_type.add_value.position.notice"

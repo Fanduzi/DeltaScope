@@ -758,6 +758,16 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params:  map[string]any{},
 			},
+			"ddl.pg.alter.set_logged.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
+			"ddl.pg.alter.set_unlogged.notice": {
+				Enabled: true,
+				Level:   rule.LevelNotice,
+				Params:  map[string]any{},
+			},
 			"ddl.pg.alter.replica_identity_full.warn": {
 				Enabled: true,
 				Level:   rule.LevelWarning,
