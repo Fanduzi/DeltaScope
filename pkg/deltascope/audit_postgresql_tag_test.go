@@ -1833,6 +1833,60 @@ func TestAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLAlterTableLoggedStateRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "set_logged_notice",
+			sql:        "ALTER TABLE users SET LOGGED;",
+			wantRuleID: "ddl.pg.alter.set_logged.notice",
+		},
+		{
+			name:       "set_unlogged_notice",
+			sql:        "ALTER TABLE users SET UNLOGGED;",
+			wantRuleID: "ddl.pg.alter.set_unlogged.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					if f.Level != "notice" {
+						t.Errorf("expected level notice, got %q", f.Level)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name        string
