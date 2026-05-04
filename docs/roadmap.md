@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.55.0 PostgreSQL Type Lifecycle Pack
+## Latest Completed Milestone: v0.56.0 PostgreSQL ALTER TABLE Remaining Grammar Pack
+
+**Goal:** normalize PostgreSQL ALTER TABLE logged-state transitions and capture ALTER COLUMN TYPE USING metadata, adding two PostgreSQL-only findings for logged-state review while keeping SET TABLESPACE as an explicit unsupported boundary.
+
+### Completed Scope
+
+- Two PostgreSQL ALTER TABLE logged-state forms normalized through the audit pipeline: `ALTER TABLE ... SET LOGGED`, `ALTER TABLE ... SET UNLOGGED`.
+- Two new PostgreSQL-only rules: `ddl.pg.alter.set_logged.notice` (notice) and `ddl.pg.alter.set_unlogged.notice` (notice).
+- ALTER COLUMN TYPE USING metadata: the USING expression is now captured in normalized alter metadata.
+- Corpus fixtures covering both new rules.
+- Service-level tests through `AuditSQL` for logged-state variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for logged-state forms.
+
+### Key Design Decisions
+
+- DeltaScope does not verify whether the target table is currently logged or unlogged.
+- DeltaScope does not evaluate WAL or replication implications of logged-state transitions.
+- This is not full PostgreSQL ALTER TABLE grammar support.
+- SET TABLESPACE remains explicit unsupported as `alter_set_tablespace`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the two new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.55.0 PostgreSQL Type Lifecycle Pack
 
 **Goal:** normalize PostgreSQL enum type creation, enum value additions, and type drops through the audit pipeline, adding five PostgreSQL-only findings for migration review while keeping composite types and domains as explicit unsupported boundaries.
 

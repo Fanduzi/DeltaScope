@@ -371,7 +371,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖规则（12 条）
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（14 条）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
 
@@ -386,8 +386,10 @@ deltascope rules search "prefix"
 | `ddl.pg.alter.disable_trigger.warn` | `ALTER TABLE ... DISABLE TRIGGER name` 禁用指定触发器，警告该表上的触发器将不再执行 | warning | 否 |
 | `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` 将分区挂载到分区表，建议审查分区边界和数据路由 | notice | 否 |
 | `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` 分离分区，警告针对该分区的查询可能失败 | warning | 否 |
+| `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` 将 unlogged 表转为 logged——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` 将 logged 表转为 unlogged——信息性提示 | notice | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用这些相同规则。这不是完整的 PostgreSQL ALTER TABLE 覆盖——剩余子命令（如 `ALTER COLUMN TYPE`、`SET LOGGED/UNLOGGED`）仍为显式边界。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用这些相同规则。这不是完整的 PostgreSQL ALTER TABLE 覆盖——`SET TABLESPACE` 仍为显式边界。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|

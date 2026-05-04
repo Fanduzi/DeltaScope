@@ -380,7 +380,7 @@ These rules guard against risky PostgreSQL type lifecycle DDL operations — enu
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (12 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (14 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -395,8 +395,10 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.disable_trigger.warn` | `ALTER TABLE ... DISABLE TRIGGER name` disables a specific trigger — warns that triggers will not fire on the table | warning | No |
 | `ddl.pg.alter.attach_partition.advisory` | `ALTER TABLE ... ATTACH PARTITION` attaches a partition to a partitioned table — advises review of partition boundary and data routing | notice | No |
 | `ddl.pg.alter.detach_partition.warn` | `ALTER TABLE ... DETACH PARTITION` detaches a partition — warns that queries targeting the partition may fail | warning | No |
+| `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` changes an unlogged table to logged — informational notice | notice | No |
+| `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` changes a logged table to unlogged — informational notice | notice | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse these same rules. This is not full PostgreSQL ALTER TABLE coverage — remaining sub-commands (e.g., `ALTER COLUMN TYPE`, `SET LOGGED/UNLOGGED`) remain explicit boundaries.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse these same rules. This is not full PostgreSQL ALTER TABLE coverage — `SET TABLESPACE` remains an explicit boundary. DeltaScope does not verify whether the target table is currently logged or unlogged.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|

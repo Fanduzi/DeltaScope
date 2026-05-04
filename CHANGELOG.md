@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.56.0] - 2026-05-04
+
+### Added
+
+- PostgreSQL ALTER TABLE logged-state normalization: `ALTER TABLE ... SET LOGGED` and `ALTER TABLE ... SET UNLOGGED` now pass through the audit pipeline instead of returning unsupported.
+- Two new PostgreSQL-only rules: `ddl.pg.alter.set_logged.notice` (notice) and `ddl.pg.alter.set_unlogged.notice` (notice).
+- ALTER COLUMN TYPE USING metadata: the USING expression is now captured in normalized alter metadata for visibility during review.
+- Corpus fixtures covering both new rules' trigger forms.
+- Service-level tests through `AuditSQL` for logged-state variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for logged-state forms.
+
+### Non-Goals
+
+- DeltaScope does not verify whether the target table is currently logged or unlogged.
+- DeltaScope does not evaluate WAL or replication implications of logged-state transitions.
+- This is not full PostgreSQL ALTER TABLE grammar support.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the two new PostgreSQL-only rule entries.
+
 ## [v0.55.0] - 2026-05-02
 
 ### Added
