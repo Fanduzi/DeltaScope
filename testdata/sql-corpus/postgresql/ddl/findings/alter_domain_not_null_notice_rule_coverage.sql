@@ -1,0 +1,1 @@
+ALTER DOMAIN email SET NOT NULL;

@@ -3457,6 +3457,413 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 			})
 }
 
+func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
+	t.Run("create_domain_with_check", func(t *testing.T) {
+		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_domain.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "create_domain" {
+					t.Errorf("expected operation=create_domain, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "email" {
+					t.Errorf("expected object_name=email, got %v", f.Metadata["object_name"])
+				}
+				if f.Metadata["base_type"] != "text" {
+					t.Errorf("expected base_type=text, got %v", f.Metadata["base_type"])
+				}
+				if f.Metadata["has_check"] != "true" {
+					t.Errorf("expected has_check=true, got %v", f.Metadata["has_check"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_domain.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("create_domain_not_null_default_named_check", func(t *testing.T) {
+		const sql = "CREATE DOMAIN email AS text NOT NULL DEFAULT 'n/a' CONSTRAINT email_not_empty CHECK (VALUE <> '');"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_domain.notice" {
+				found = true
+				if f.Metadata["not_null"] != "true" {
+					t.Errorf("expected not_null=true, got %v", f.Metadata["not_null"])
+				}
+				if f.Metadata["has_default"] != "true" {
+					t.Errorf("expected has_default=true, got %v", f.Metadata["has_default"])
+				}
+				if f.Metadata["has_check"] != "true" {
+					t.Errorf("expected has_check=true, got %v", f.Metadata["has_check"])
+				}
+				if f.Metadata["constraint"] != "email_not_empty" {
+					t.Errorf("expected constraint=email_not_empty, got %v", f.Metadata["constraint"])
+				}
+				if f.Metadata["base_type"] != "text" {
+					t.Errorf("expected base_type=text, got %v", f.Metadata["base_type"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_domain.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_set_default", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email SET DEFAULT 'unknown@example.com';"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.default.notice" {
+				found = true
+				if f.Metadata["action"] != "set_default" {
+					t.Errorf("expected action=set_default, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["has_default"] != "true" {
+					t.Errorf("expected has_default=true, got %v", f.Metadata["has_default"])
+				}
+				if f.Metadata["object_name"] != "email" {
+					t.Errorf("expected object_name=email, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.default.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_drop_default", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email DROP DEFAULT;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.default.notice" {
+				found = true
+				if f.Metadata["action"] != "drop_default" {
+					t.Errorf("expected action=drop_default, got %v", f.Metadata["action"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.default.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_set_not_null", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email SET NOT NULL;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.not_null.notice" {
+				found = true
+				if f.Metadata["action"] != "set_not_null" {
+					t.Errorf("expected action=set_not_null, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["not_null"] != "true" {
+					t.Errorf("expected not_null=true, got %v", f.Metadata["not_null"])
+				}
+				if f.Metadata["object_name"] != "email" {
+					t.Errorf("expected object_name=email, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.not_null.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_drop_not_null", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email DROP NOT NULL;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.not_null.notice" {
+				found = true
+				if f.Metadata["action"] != "drop_not_null" {
+					t.Errorf("expected action=drop_not_null, got %v", f.Metadata["action"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.not_null.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_add_constraint", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email ADD CONSTRAINT email_not_empty CHECK (VALUE <> '');"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.constraint.notice" {
+				found = true
+				if f.Metadata["action"] != "add_constraint" {
+					t.Errorf("expected action=add_constraint, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["has_check"] != "true" {
+					t.Errorf("expected has_check=true, got %v", f.Metadata["has_check"])
+				}
+				if f.Metadata["object_name"] != "email" {
+					t.Errorf("expected object_name=email, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.constraint.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_drop_constraint", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email DROP CONSTRAINT email_not_empty;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.constraint.notice" {
+				found = true
+				if f.Metadata["action"] != "drop_constraint" {
+					t.Errorf("expected action=drop_constraint, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["constraint"] != "email_not_empty" {
+					t.Errorf("expected constraint=email_not_empty, got %v", f.Metadata["constraint"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.constraint.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_validate_constraint", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email VALIDATE CONSTRAINT email_not_empty;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.constraint.notice" {
+				found = true
+				if f.Metadata["action"] != "validate_constraint" {
+					t.Errorf("expected action=validate_constraint, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["constraint"] != "email_not_empty" {
+					t.Errorf("expected constraint=email_not_empty, got %v", f.Metadata["constraint"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.constraint.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_domain_rename", func(t *testing.T) {
+		const sql = "ALTER DOMAIN email RENAME TO contact_email;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_domain.rename.notice" {
+				found = true
+				if f.Metadata["action"] != "rename" {
+					t.Errorf("expected action=rename, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["new_name"] != "contact_email" {
+					t.Errorf("expected new_name=contact_email, got %v", f.Metadata["new_name"])
+				}
+				if f.Metadata["object_name"] != "email" {
+					t.Errorf("expected object_name=email, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_domain.rename.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_domain", func(t *testing.T) {
+		const sql = "DROP DOMAIN email;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_domain.advisory" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "drop_domain" {
+					t.Errorf("expected operation=drop_domain, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "email" {
+					t.Errorf("expected object_name=email, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected drop_domain.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_domain_cascade_duplicate_findings", func(t *testing.T) {
+		const sql = "DROP DOMAIN IF EXISTS email CASCADE;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var foundAdvisory, foundCascade bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_domain.advisory" {
+				foundAdvisory = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("advisory: expected warning, got %s", f.Level)
+				}
+				if f.Metadata["if_exists"] != "true" {
+					t.Errorf("advisory: expected if_exists=true, got %v", f.Metadata["if_exists"])
+				}
+			}
+			if f.RuleID == "ddl.pg.drop_domain.cascade.warn" {
+				foundCascade = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("cascade: expected warning, got %s", f.Level)
+				}
+				if f.Metadata["cascade"] != "true" {
+					t.Errorf("cascade: expected cascade=true, got %v", f.Metadata["cascade"])
+				}
+				if f.Metadata["if_exists"] != "true" {
+					t.Errorf("cascade: expected if_exists=true, got %v", f.Metadata["if_exists"])
+				}
+			}
+		}
+		if !foundAdvisory {
+			t.Fatalf("expected drop_domain.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+		if !foundCascade {
+			t.Fatalf("expected drop_domain.cascade.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)
