@@ -193,6 +193,14 @@ const (
 	ruleIDPGAlterTypeAddValuePositionNotice                = "ddl.pg.alter_type.add_value.position.notice"
 	ruleIDPGDropTypeAdvisory                               = "ddl.pg.drop_type.advisory"
 	ruleIDPGDropTypeCascadeWarn                            = "ddl.pg.drop_type.cascade.warn"
+	// PostgreSQL domain lifecycle rules (PG-only).
+	ruleIDPGCreateDomainNotice                             = "ddl.pg.create_domain.notice"
+	ruleIDPGAlterDomainConstraintNotice                    = "ddl.pg.alter_domain.constraint.notice"
+	ruleIDPGAlterDomainDefaultNotice                       = "ddl.pg.alter_domain.default.notice"
+	ruleIDPGAlterDomainNotNullNotice                       = "ddl.pg.alter_domain.not_null.notice"
+	ruleIDPGAlterDomainRenameNotice                        = "ddl.pg.alter_domain.rename.notice"
+	ruleIDPGDropDomainAdvisory                             = "ddl.pg.drop_domain.advisory"
+	ruleIDPGDropDomainCascadeWarn                          = "ddl.pg.drop_domain.cascade.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

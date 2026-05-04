@@ -864,6 +864,42 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params:  map[string]any{},
 			},
+				// PG domain lifecycle rules (PostgreSQL-only).
+				"ddl.pg.create_domain.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_domain.constraint.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_domain.default.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_domain.not_null.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_domain.rename.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.drop_domain.advisory": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.drop_domain.cascade.warn": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
