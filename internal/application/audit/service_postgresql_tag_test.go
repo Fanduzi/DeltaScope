@@ -2526,6 +2526,18 @@ func TestAuditSQLPostgreSQLAlterTableUnsupportedActionRules(t *testing.T) {
 			wantRuleID: "ddl.pg.alter.detach_partition.warn",
 			wantLevel:  rule.LevelWarning,
 		},
+		{
+			name:       "set_logged_notice",
+			sql:        "ALTER TABLE users SET LOGGED;",
+			wantRuleID: "ddl.pg.alter.set_logged.notice",
+			wantLevel:  rule.LevelNotice,
+		},
+		{
+			name:       "set_unlogged_notice",
+			sql:        "ALTER TABLE users SET UNLOGGED;",
+			wantRuleID: "ddl.pg.alter.set_unlogged.notice",
+			wantLevel:  rule.LevelNotice,
+		},
 	}
 
 	for _, tt := range tests {
