@@ -1946,3 +1946,68 @@ func TestAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_domain_notice",
+			sql:         "CREATE DOMAIN email AS text CHECK (VALUE <> '');",
+			wantRuleIDs: []string{"ddl.pg.create_domain.notice"},
+		},
+		{
+			name:        "alter_domain_add_constraint",
+			sql:         "ALTER DOMAIN email ADD CONSTRAINT email_not_empty CHECK (VALUE <> '');",
+			wantRuleIDs: []string{"ddl.pg.alter_domain.constraint.notice"},
+		},
+		{
+			name:        "alter_domain_rename",
+			sql:         "ALTER DOMAIN email RENAME TO contact_email;",
+			wantRuleIDs: []string{"ddl.pg.alter_domain.rename.notice"},
+		},
+		{
+			name:        "drop_domain_cascade",
+			sql:         "DROP DOMAIN IF EXISTS email CASCADE;",
+			wantRuleIDs: []string{"ddl.pg.drop_domain.advisory", "ddl.pg.drop_domain.cascade.warn"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, f := range result.Statements[0].Findings {
+				if _, expected := wantRuleIDs[f.RuleID]; expected {
+					wantRuleIDs[f.RuleID] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule %q, got %#v", ruleID, result.Statements[0].Findings)
+				}
+			}
+		})
+	}
+}
