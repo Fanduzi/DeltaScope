@@ -297,50 +297,46 @@ func TestDomainLifecycleDeltaScopeBaseline(t *testing.T) {
 	}
 }
 
-// assertDomainLifecycleBaseline captures the current baseline expectations.
-// CREATE DOMAIN: currently returns unsupported "create_domain".
-// ALTER DOMAIN: currently not classified (KindUnknown), extract returns unsupported.
-// DROP DOMAIN: classified as DDL (DropStmt is in classify switch), but extractor
-// returns unsupported because the DropStmt extractor does not handle OBJECT_TYPE
-// for domains specifically.
+// assertDomainLifecycleBaseline captures the post-Task-2 expectations.
+// All 15 domain lifecycle forms are now normalized through spec.DDL.
 func assertDomainLifecycleBaseline(t *testing.T, fact domainLifecycleBaselineFact) {
 	t.Helper()
+
+	// All domain forms must classify as DDL.
+	if !fact.Classifies {
+		t.Errorf("%s: expected to classify as DDL", fact.Name)
+	}
 
 	switch fact.Name {
 	case "create_domain_plain", "create_domain_not_null", "create_domain_default",
 		"create_domain_check", "create_domain_named_check":
-		// CREATE DOMAIN is classified as DDL (in classify switch) but extractor
-		// returns unsupported "create_domain".
-		if !fact.Classifies {
-			t.Errorf("%s: expected to classify as DDL", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported, got normalized", fact.Name)
+		if fact.DDLOperation != "create_domain" {
+			t.Errorf("%s: expected create_domain, got %q", fact.Name, fact.DDLOperation)
 		}
-		if fact.UnsupportedFeature != "create_domain" {
-			t.Errorf("%s: expected feature create_domain, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLObjectType != "domain" {
+			t.Errorf("%s: expected object type domain, got %q", fact.Name, fact.DDLObjectType)
 		}
 
-	case "drop_domain":
-		if !fact.Classifies {
-			t.Errorf("%s: expected to classify as DDL", fact.Name)
+	case "drop_domain", "drop_domain_if_exists_cascade":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		// DROP DOMAIN goes through the generic DropStmt path.
-		// Currently unsupported because the extractor does not handle domain-specific drops.
-
-	case "drop_domain_if_exists_cascade":
-		if !fact.Classifies {
-			t.Errorf("%s: expected to classify as DDL", fact.Name)
+		if fact.DDLOperation != "drop_domain" {
+			t.Errorf("%s: expected drop_domain, got %q", fact.Name, fact.DDLOperation)
 		}
 
 	case "alter_domain_set_default", "alter_domain_drop_default",
 		"alter_domain_set_not_null", "alter_domain_drop_not_null",
 		"alter_domain_add_constraint", "alter_domain_drop_constraint",
 		"alter_domain_validate_constraint", "alter_domain_rename":
-		// ALTER DOMAIN is not in the classify switch, so Kind is Unknown.
-		// Extractor will return unsupported for unknown kinds.
-		if fact.UnsupportedFeature == "" && fact.Kind != spec.KindUnknown {
-			// ALTER DOMAIN may either be Unknown or unsupported depending on path
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "alter_domain" {
+			t.Errorf("%s: expected alter_domain, got %q", fact.Name, fact.DDLOperation)
 		}
 	}
 }

@@ -304,26 +304,18 @@ func assertTypeLifecycleBaseline(t *testing.T, fact typeLifecycleBaselineFact) {
 			t.Errorf("%s: expected feature create_type_composite, got %q", fact.Name, fact.UnsupportedFeature)
 		}
 	case "create_domain":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported, got normalized", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "create_domain" {
-			t.Errorf("%s: expected feature create_domain, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOperation != "create_domain" {
+			t.Errorf("%s: expected create_domain, got %q", fact.Name, fact.DDLOperation)
 		}
 	}
 }
 
 // --- AST helper functions ---
 
-// firstStringFromNodes returns the first String node value from a list of nodes.
-func firstStringFromNodes(nodes []*pg_query.Node) string {
-	for _, n := range nodes {
-		if s := n.GetString_(); s != nil && s.GetSval() != "" {
-			return s.GetSval()
-		}
-	}
-	return ""
-}
+// firstStringFromNodes is now provided by extractor.go in the same package.
 
 // typeNameFromDropObjects extracts the type name from a DropStmt's objects list.
 // DROP TYPE uses TypeName nodes instead of the simple String/List format used by

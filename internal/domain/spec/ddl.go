@@ -50,6 +50,10 @@ const (
 	DDLOperationCreateType DDLOperation = "create_type"
 	DDLOperationAlterType  DDLOperation = "alter_type"
 	DDLOperationDropType   DDLOperation = "drop_type"
+
+	DDLOperationCreateDomain DDLOperation = "create_domain"
+	DDLOperationAlterDomain  DDLOperation = "alter_domain"
+	DDLOperationDropDomain   DDLOperation = "drop_domain"
 )
 
 // Table describes a table-level object.

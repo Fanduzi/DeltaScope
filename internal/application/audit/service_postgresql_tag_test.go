@@ -3422,25 +3422,39 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 		}
 	})
 
-	t.Run("create_domain_unsupported", func(t *testing.T) {
-		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
-		result, err := AuditSQL(context.Background(), Request{
-			SQL:     sql,
-			Dialect: spec.DialectPostgreSQL,
-		})
-		if !errors.Is(err, ErrUnsupportedStatement) {
-			t.Fatalf("expected unsupported statement sentinel, got %v", err)
-		}
-		if len(result.Unsupported) != 1 {
-			t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
-		}
-		if result.Unsupported[0].Feature != "create_domain" {
-			t.Fatalf("expected unsupported feature create_domain, got %#v", result.Unsupported[0])
-		}
-		if result.Unsupported[0].Reason == "" {
-			t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
-		}
-	})
+		t.Run("create_domain_normalized", func(t *testing.T) {
+			const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
+
+			// Verify service-level audit succeeds without unsupported details.
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     sql,
+				Dialect: spec.DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %d", len(result.Unsupported))
+			}
+
+			// Extract the underlying spec to prove extractor-level facts.
+			stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+			if !ok {
+				t.Fatal("expected supported statement")
+			}
+			if stmt.DDL == nil {
+				t.Fatalf("expected normalized DDL, got nil")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationCreateDomain {
+				t.Fatalf("expected create_domain, got %q", stmt.DDL.Operation)
+			}
+			if stmt.DDL.ObjectName != "email" {
+				t.Fatalf("expected object name email, got %q", stmt.DDL.ObjectName)
+			}
+			if stmt.DDL.ObjectType != "domain" {
+				t.Fatalf("expected object type domain, got %q", stmt.DDL.ObjectType)
+			}
+			})
 }
 
 func serviceMetadataValueEqual(a, b any) bool {

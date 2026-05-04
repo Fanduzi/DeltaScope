@@ -6113,7 +6113,7 @@ func TestExtractCompositeTypeUnsupported(t *testing.T) {
 	}
 }
 
-func TestExtractCreateDomainUnsupported(t *testing.T) {
+func TestExtractCreateDomain(t *testing.T) {
 	parser := New()
 	result, err := parser.Parse("CREATE DOMAIN email AS text CHECK (VALUE <> '')")
 	if err != nil {
@@ -6123,10 +6123,22 @@ func TestExtractCreateDomainUnsupported(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if stmt.Unsupported == nil {
-		t.Fatalf("expected unsupported, got supported %#v", stmt.DDL)
+	if stmt.DDL == nil {
+		t.Fatalf("expected normalized DDL, got nil")
 	}
-	if stmt.Unsupported.Feature != "create_domain" {
-		t.Fatalf("expected feature create_domain, got %q", stmt.Unsupported.Feature)
+	if stmt.DDL.Operation != spec.DDLOperationCreateDomain {
+		t.Fatalf("expected create_domain, got %q", stmt.DDL.Operation)
+	}
+	if stmt.DDL.ObjectName != "email" {
+		t.Fatalf("expected object name email, got %q", stmt.DDL.ObjectName)
+	}
+	if stmt.DDL.ObjectType != "domain" {
+		t.Fatalf("expected object type domain, got %q", stmt.DDL.ObjectType)
+	}
+	if stmt.DDL.Options["base_type"] != "text" {
+		t.Fatalf("expected base_type text, got %q", stmt.DDL.Options["base_type"])
+	}
+	if stmt.DDL.Options["has_check"] != "true" {
+		t.Fatalf("expected has_check true, got %q", stmt.DDL.Options["has_check"])
 	}
 }

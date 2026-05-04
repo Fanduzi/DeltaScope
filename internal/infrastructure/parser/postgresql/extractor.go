@@ -68,7 +68,9 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 	case *pg_query.Node_CompositeTypeStmt:
 		return unsupportedStatement(statement, "create_type_composite", "postgresql composite type creation is not in the approved v0.55.0 subset"), nil
 	case *pg_query.Node_CreateDomainStmt:
-		return unsupportedStatement(statement, "create_domain", "postgresql domain creation is not in the approved v0.55.0 subset"), nil
+		return extractCreateDomainStmt(statement, node.CreateDomainStmt), nil
+	case *pg_query.Node_AlterDomainStmt:
+		return extractAlterDomainStmt(statement, node.AlterDomainStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
@@ -185,6 +187,20 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	if stmt == nil {
 		return unsupportedStatement(statement, "rename", "postgresql rename statement payload is missing")
 	}
+
+	switch stmt.GetRenameType() {
+	case pg_query.ObjectType_OBJECT_DOMAIN:
+		objectName := renameObjectDomainName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterDomain,
+			ObjectName: objectName,
+			ObjectType: "domain",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	default:
+	}
+
 	if stmt.GetRelation() == nil {
 		return unsupportedStatement(statement, "rename", "postgresql rename statement relation target is missing")
 	}
@@ -227,7 +243,7 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		}
 		return statement
 	default:
-		return unsupportedStatement(statement, "rename", "postgresql rename target is not in the approved v1 subset")
+			return unsupportedStatement(statement, "rename", "postgresql rename target is not in the approved v1 subset")
 	}
 }
 
@@ -314,6 +330,17 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			Operation:  spec.DDLOperationDropType,
 			ObjectName: dropTypeNameFromObjects(stmt.GetObjects()),
 			ObjectType: "type",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_DOMAIN:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropDomain,
+			ObjectName: dropTypeNameFromObjects(stmt.GetObjects()),
+			ObjectType: "domain",
 			Options:    options,
 		}
 	default:
@@ -1245,7 +1272,123 @@ func extractAlterEnumStmt(statement spec.Statement, stmt *pg_query.AlterEnumStmt
 	return statement
 }
 
+func extractCreateDomainStmt(statement spec.Statement, stmt *pg_query.CreateDomainStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_domain", "postgresql create domain statement payload is missing")
+	}
+	objectName := firstStringFromNodes(stmt.GetDomainname())
+	if objectName == "" {
+		return unsupportedStatement(statement, "create_domain", "postgresql create domain name is missing")
+	}
+	baseType := ""
+	if tn := stmt.GetTypeName(); tn != nil {
+		baseType = firstStringFromNodes(tn.GetNames())
+	}
+	options := map[string]string{"type_kind": "domain"}
+	if baseType != "" {
+		options["base_type"] = baseType
+	}
+	for _, c := range stmt.GetConstraints() {
+		con := c.GetConstraint()
+		if con == nil {
+			continue
+		}
+		switch con.GetContype() {
+		case pg_query.ConstrType_CONSTR_NOTNULL:
+			options["not_null"] = "true"
+		case pg_query.ConstrType_CONSTR_DEFAULT:
+			options["has_default"] = "true"
+		case pg_query.ConstrType_CONSTR_CHECK:
+			options["has_check"] = "true"
+			if con.GetConname() != "" {
+				options["constraint"] = con.GetConname()
+			}
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateDomain,
+		ObjectName: objectName,
+		ObjectType: "domain",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractAlterDomainStmt(statement spec.Statement, stmt *pg_query.AlterDomainStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_domain", "postgresql alter domain statement payload is missing")
+	}
+	objectName := firstStringFromNodes(stmt.GetTypeName())
+	if objectName == "" {
+		return unsupportedStatement(statement, "alter_domain", "postgresql alter domain name is missing")
+	}
+	options := map[string]string{}
+	switch stmt.GetSubtype() {
+	case "T":
+		if stmt.GetDef() != nil {
+			options["action"] = "set_default"
+			options["has_default"] = "true"
+		} else {
+			options["action"] = "drop_default"
+		}
+	case "O":
+		options["action"] = "set_not_null"
+		options["not_null"] = "true"
+	case "N":
+		options["action"] = "drop_not_null"
+	case "C":
+		options["action"] = "add_constraint"
+		if stmt.GetName() != "" {
+			options["constraint"] = stmt.GetName()
+		}
+		options["has_check"] = "true"
+	case "X":
+		options["action"] = "drop_constraint"
+		if stmt.GetName() != "" {
+			options["constraint"] = stmt.GetName()
+		}
+	case "V":
+		options["action"] = "validate_constraint"
+		if stmt.GetName() != "" {
+			options["constraint"] = stmt.GetName()
+		}
+	default:
+		return unsupportedStatement(statement, "alter_domain", fmt.Sprintf("postgresql alter domain subtype %q is not supported", stmt.GetSubtype()))
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterDomain,
+		ObjectName: objectName,
+		ObjectType: "domain",
+		Options:    options,
+	}
+	return statement
+}
+
+// renameObjectDomainName extracts the domain name from a RenameStmt targeting
+// OBJECT_DOMAIN. The domain name is stored in the Object field as a List of
+// String nodes, not in the Relation field.
+func renameObjectDomainName(stmt *pg_query.RenameStmt) string {
+	obj := stmt.GetObject()
+	if obj == nil {
+		return ""
+	}
+	if list := obj.GetList(); list != nil {
+		return firstStringFromNodes(list.GetItems())
+	}
+	return firstStringFromNodes([]*pg_query.Node{obj})
+}
+
 func firstStringFromTypeNameNodes(nodes []*pg_query.Node) string {
+	for _, n := range nodes {
+		if s := n.GetString_(); s != nil && s.GetSval() != "" {
+			return s.GetSval()
+		}
+	}
+	return ""
+}
+
+// firstStringFromNodes returns the first String node value from a flat node list.
+func firstStringFromNodes(nodes []*pg_query.Node) string {
 	for _, n := range nodes {
 		if s := n.GetString_(); s != nil && s.GetSval() != "" {
 			return s.GetSval()
@@ -1306,6 +1449,8 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "create_type_composite"
 	case *pg_query.Node_CreateDomainStmt:
 		return "create_domain"
+	case *pg_query.Node_AlterDomainStmt:
+		return "alter_domain"
 	default:
 		return "unknown"
 	}

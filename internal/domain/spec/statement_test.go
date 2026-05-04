@@ -858,6 +858,70 @@ func TestDDLTypeLifecycleOperationsSerializeCorrectly(t *testing.T) {
 	}
 }
 
+func TestDDLDomainOperationsRoundTrip(t *testing.T) {
+	var rt DDL
+
+	createDomain := &DDL{
+		Operation:  DDLOperationCreateDomain,
+		ObjectName: "email",
+		ObjectType: "domain",
+		Options:    map[string]string{"type_kind": "domain", "base_type": "text", "not_null": "true"},
+	}
+	data, err := json.Marshal(createDomain)
+	if err != nil {
+		t.Fatalf("marshal create_domain ddl: %v", err)
+	}
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal create_domain ddl: %v", err)
+	}
+	if rt.Operation != "create_domain" {
+		t.Fatalf("expected operation create_domain, got %q", rt.Operation)
+	}
+	if rt.Options["base_type"] != "text" {
+		t.Fatalf("expected base_type text, got %q", rt.Options["base_type"])
+	}
+
+	alterDomain := &DDL{
+		Operation:  DDLOperationAlterDomain,
+		ObjectName: "email",
+		ObjectType: "domain",
+		Options:    map[string]string{"action": "add_constraint", "constraint": "chk_email", "has_check": "true"},
+	}
+	data, err = json.Marshal(alterDomain)
+	if err != nil {
+		t.Fatalf("marshal alter_domain ddl: %v", err)
+	}
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal alter_domain ddl: %v", err)
+	}
+	if rt.Operation != "alter_domain" {
+		t.Fatalf("expected operation alter_domain, got %q", rt.Operation)
+	}
+	if rt.Options["action"] != "add_constraint" {
+		t.Fatalf("expected action add_constraint, got %q", rt.Options["action"])
+	}
+
+	dropDomain := &DDL{
+		Operation:  DDLOperationDropDomain,
+		ObjectName: "email",
+		ObjectType: "domain",
+		Options:    map[string]string{"if_exists": "true", "cascade": "true"},
+	}
+	data, err = json.Marshal(dropDomain)
+	if err != nil {
+		t.Fatalf("marshal drop_domain ddl: %v", err)
+	}
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal drop_domain ddl: %v", err)
+	}
+	if rt.Operation != "drop_domain" {
+		t.Fatalf("expected operation drop_domain, got %q", rt.Operation)
+	}
+	if rt.Options["cascade"] != "true" {
+		t.Fatalf("expected cascade true, got %q", rt.Options["cascade"])
+	}
+}
+
 func TestDDLObjectFieldsOmitWhenEmpty(t *testing.T) {
 	ddl := &DDL{
 		Operation: DDLOperationCreateIndex,
