@@ -6,6 +6,25 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.57.0] - 2026-05-05
+
+### Added
+
+- PostgreSQL domain lifecycle DDL normalization: `CREATE DOMAIN`, `ALTER DOMAIN` (SET/DROP DEFAULT, SET/DROP NOT NULL, ADD/DROP/VALIDATE CONSTRAINT, RENAME TO), and `DROP DOMAIN` (including `IF EXISTS ... CASCADE`) now pass through the audit pipeline instead of returning unsupported.
+- Seven new PostgreSQL-only rules: `ddl.pg.create_domain.notice` (notice), `ddl.pg.alter_domain.constraint.notice` (notice), `ddl.pg.alter_domain.default.notice` (notice), `ddl.pg.alter_domain.not_null.notice` (notice), `ddl.pg.alter_domain.rename.notice` (notice), `ddl.pg.drop_domain.advisory` (warning), `ddl.pg.drop_domain.cascade.warn` (warning).
+- Corpus fixtures covering all seven new rules' trigger forms.
+- Service-level tests through `AuditSQL` for 12 domain lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all 15 domain lifecycle forms.
+
+### Non-Goals
+
+- DeltaScope does not render `CHECK` or `DEFAULT` expression text. Rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body.
+- DeltaScope does not perform live dependency validation on domains.
+- `CREATE TYPE ... AS (...)` composite types remain explicitly unsupported as `create_type_composite`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the seven new PostgreSQL-only rule entries.
+
 ## [v0.56.0] - 2026-05-04
 
 ### Added

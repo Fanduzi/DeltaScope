@@ -367,7 +367,25 @@ deltascope rules search "prefix"
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` 移除用户定义类型——建议审查依赖列和函数 | warning | 否 |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。复合类型（`CREATE TYPE ... AS (...)`）和域（`CREATE DOMAIN ...`）在本版本中为显式不支持边界。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持。域（`CREATE DOMAIN ...`）已支持——参见下方域生命周期规则。
+
+---
+
+## DDL：PostgreSQL 域生命周期规则（7 条）
+
+这些规则用于防范 PostgreSQL 域生命周期 DDL 操作中的风险——域创建、约束/默认值/可空性变更、重命名和删除。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_domain.notice` | `CREATE DOMAIN` 引入可复用的类型约束——信息性提示 | notice | 否 |
+| `ddl.pg.alter_domain.constraint.notice` | `ALTER DOMAIN ... ADD/DROP/VALIDATE CONSTRAINT` 修改类型合约——信息性提示 | notice | 否 |
+| `ddl.pg.alter_domain.default.notice` | `ALTER DOMAIN ... SET/DROP DEFAULT` 变更隐式值——信息性提示 | notice | 否 |
+| `ddl.pg.alter_domain.not_null.notice` | `ALTER DOMAIN ... SET/DROP NOT NULL` 变更可空性——信息性提示 | notice | 否 |
+| `ddl.pg.alter_domain.rename.notice` | `ALTER DOMAIN ... RENAME TO` 变更域名称——信息性提示 | notice | 否 |
+| `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` 移除域——建议审查依赖列 | warning | 否 |
+| `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持，标记为 `create_type_composite`。
 
 ---
 

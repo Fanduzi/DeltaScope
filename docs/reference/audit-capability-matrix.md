@@ -301,7 +301,44 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` removes a user-defined type — advises review of dependent columns and functions | ✓ | ✗ | warning |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
 
-> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. This is not full PostgreSQL type lifecycle coverage. Composite types (`CREATE TYPE ... AS (...)`) and domains (`CREATE DOMAIN ...`) remain explicit unsupported boundaries. No MySQL/TiDB behavior changes.
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. This is not full PostgreSQL type lifecycle coverage. Composite types (`CREATE TYPE ... AS (...)`) remain explicitly unsupported. Domains are supported — see Domain Lifecycle below. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Domain Lifecycle (v0.57.0)
+
+`v0.57.0` adds PostgreSQL domain lifecycle coverage. DeltaScope normalizes `CREATE DOMAIN`, `ALTER DOMAIN` (constraint, default, not null, rename), and `DROP DOMAIN`, adds seven PostgreSQL-only findings, and keeps composite types as an explicit unsupported boundary. `CHECK` and `DEFAULT` expression text is intentionally not rendered — rules emit boolean facts and constraint names where available. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE DOMAIN email AS text CHECK (VALUE <> '')` | `create_domain` (type_kind=domain, base_type=text, has_check=true) |
+| `CREATE DOMAIN email AS text NOT NULL DEFAULT 'n/a' CONSTRAINT chk CHECK (...)` | `create_domain` (type_kind=domain, base_type=text, not_null=true, has_default=true, has_check=true, constraint=chk) |
+| `ALTER DOMAIN email SET DEFAULT 'x'` | `alter_domain` (action=set_default, has_default=true) |
+| `ALTER DOMAIN email DROP DEFAULT` | `alter_domain` (action=drop_default) |
+| `ALTER DOMAIN email SET NOT NULL` | `alter_domain` (action=set_not_null, not_null=true) |
+| `ALTER DOMAIN email DROP NOT NULL` | `alter_domain` (action=drop_not_null) |
+| `ALTER DOMAIN email ADD CONSTRAINT chk CHECK (...)` | `alter_domain` (action=add_constraint, has_check=true, constraint=chk) |
+| `ALTER DOMAIN email DROP CONSTRAINT chk` | `alter_domain` (action=drop_constraint, constraint=chk) |
+| `ALTER DOMAIN email VALIDATE CONSTRAINT chk` | `alter_domain` (action=validate_constraint, constraint=chk) |
+| `ALTER DOMAIN email RENAME TO contact_email` | `alter_domain` (action=rename, new_name=contact_email) |
+| `DROP DOMAIN email` | `drop_domain` |
+| `DROP DOMAIN IF EXISTS email CASCADE` | `drop_domain` (if_exists=true, cascade=true) |
+
+### Domain Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_domain.notice` | `CREATE DOMAIN` introduces a reusable type constraint — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.constraint.notice` | `ALTER DOMAIN ... ADD/DROP/VALIDATE CONSTRAINT` modifies the type contract — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.default.notice` | `ALTER DOMAIN ... SET/DROP DEFAULT` changes the implicit value — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.not_null.notice` | `ALTER DOMAIN ... SET/DROP NOT NULL` changes nullability — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.rename.notice` | `ALTER DOMAIN ... RENAME TO` changes the domain name — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` removes a domain — advises review of dependent columns | ✓ | ✗ | warning |
+| `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types (`CREATE TYPE ... AS (...)`) remain explicitly unsupported as `create_type_composite`. No MySQL/TiDB behavior changes.
 
 ---
 

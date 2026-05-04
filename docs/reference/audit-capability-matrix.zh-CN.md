@@ -287,7 +287,44 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` 移除用户定义类型——建议审查依赖列和函数 | ✓ | ✗ | warning |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
 
-> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。这不是完整的 PostgreSQL 类型生命周期覆盖。复合类型（`CREATE TYPE ... AS (...)`）和域（`CREATE DOMAIN ...`）仍为显式不支持边界。不影响 MySQL/TiDB 行为。
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。这不是完整的 PostgreSQL 类型生命周期覆盖。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持。域（`CREATE DOMAIN ...`）已支持——参见下方域生命周期。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL 域生命周期（v0.57.0）
+
+`v0.57.0` 新增 PostgreSQL 域生命周期覆盖。DeltaScope 规范化 `CREATE DOMAIN`、`ALTER DOMAIN`（constraint、default、not null、rename）和 `DROP DOMAIN`，新增七条 PostgreSQL-only 发现，并将复合类型作为显式不支持边界。`CHECK` 和 `DEFAULT` 表达式文本明确不渲染——规则只暴露布尔事实和约束名称。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 标准化操作
+
+| SQL | 标准化操作 |
+|-----|-----------|
+| `CREATE DOMAIN email AS text CHECK (VALUE <> '')` | `create_domain` (type_kind=domain, base_type=text, has_check=true) |
+| `CREATE DOMAIN email AS text NOT NULL DEFAULT 'n/a' CONSTRAINT chk CHECK (...)` | `create_domain` (type_kind=domain, base_type=text, not_null=true, has_default=true, has_check=true, constraint=chk) |
+| `ALTER DOMAIN email SET DEFAULT 'x'` | `alter_domain` (action=set_default, has_default=true) |
+| `ALTER DOMAIN email DROP DEFAULT` | `alter_domain` (action=drop_default) |
+| `ALTER DOMAIN email SET NOT NULL` | `alter_domain` (action=set_not_null, not_null=true) |
+| `ALTER DOMAIN email DROP NOT NULL` | `alter_domain` (action=drop_not_null) |
+| `ALTER DOMAIN email ADD CONSTRAINT chk CHECK (...)` | `alter_domain` (action=add_constraint, has_check=true, constraint=chk) |
+| `ALTER DOMAIN email DROP CONSTRAINT chk` | `alter_domain` (action=drop_constraint, constraint=chk) |
+| `ALTER DOMAIN email VALIDATE CONSTRAINT chk` | `alter_domain` (action=validate_constraint, constraint=chk) |
+| `ALTER DOMAIN email RENAME TO contact_email` | `alter_domain` (action=rename, new_name=contact_email) |
+| `DROP DOMAIN email` | `drop_domain` |
+| `DROP DOMAIN IF EXISTS email CASCADE` | `drop_domain` (if_exists=true, cascade=true) |
+
+### 域生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
+|---------|---------|:----:|:--------:|---------|
+| `ddl.pg.create_domain.notice` | `CREATE DOMAIN` 引入可复用类型约束——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.constraint.notice` | `ALTER DOMAIN ... ADD/DROP/VALIDATE CONSTRAINT` 修改类型合约——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.default.notice` | `ALTER DOMAIN ... SET/DROP DEFAULT` 变更隐式值——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.not_null.notice` | `ALTER DOMAIN ... SET/DROP NOT NULL` 变更可空性——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_domain.rename.notice` | `ALTER DOMAIN ... RENAME TO` 变更域名称——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` 移除域——建议审查依赖列 | ✓ | ✗ | warning |
+| `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持，标记为 `create_type_composite`。不影响 MySQL/TiDB 行为。
 
 ---
 

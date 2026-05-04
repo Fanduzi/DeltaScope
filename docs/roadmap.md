@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.56.0 PostgreSQL ALTER TABLE Remaining Grammar Pack
+## Latest Completed Milestone: v0.57.0 PostgreSQL Domain Lifecycle Pack
+
+**Goal:** normalize PostgreSQL domain lifecycle DDL through the audit pipeline, adding seven PostgreSQL-only findings for offline migration review while keeping `CHECK`/`DEFAULT` expression rendering out of scope and composite types as an explicit unsupported boundary.
+
+### Completed Scope
+
+- 15 PostgreSQL domain lifecycle forms normalized through the audit pipeline: `CREATE DOMAIN`, `ALTER DOMAIN` (SET/DROP DEFAULT, SET/DROP NOT NULL, ADD/DROP/VALIDATE CONSTRAINT, RENAME TO), `DROP DOMAIN`, `DROP DOMAIN IF EXISTS ... CASCADE`.
+- Seven new PostgreSQL-only rules: `ddl.pg.create_domain.notice` (notice), `ddl.pg.alter_domain.constraint.notice` (notice), `ddl.pg.alter_domain.default.notice` (notice), `ddl.pg.alter_domain.not_null.notice` (notice), `ddl.pg.alter_domain.rename.notice` (notice), `ddl.pg.drop_domain.advisory` (warning), `ddl.pg.drop_domain.cascade.warn` (warning).
+- Corpus fixtures covering all seven new rules.
+- Service-level tests through `AuditSQL` for 12 domain lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all 15 domain lifecycle forms.
+
+### Key Design Decisions
+
+- DeltaScope does not render `CHECK` or `DEFAULT` expression text. Rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body.
+- DeltaScope does not perform live dependency validation on domains.
+- `CREATE TYPE ... AS (...)` composite types remain explicitly unsupported as `create_type_composite`.
+- `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits two findings: `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the seven new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.56.0 PostgreSQL ALTER TABLE Remaining Grammar Pack
 
 **Goal:** normalize PostgreSQL ALTER TABLE logged-state transitions and capture ALTER COLUMN TYPE USING metadata, adding two PostgreSQL-only findings for logged-state review while keeping SET TABLESPACE as an explicit unsupported boundary.
 
@@ -47,7 +69,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - DeltaScope does not model full PostgreSQL type system semantics.
 - This is not full PostgreSQL type lifecycle support.
 - Composite types remain explicit unsupported as `create_type_composite`.
-- Domains remain explicit unsupported as `create_domain`.
+- Domains were added in v0.57.0.
 - No MySQL/TiDB behavior changes.
 - No default policy changes beyond the five new PostgreSQL-only rule entries.
 
