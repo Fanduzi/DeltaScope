@@ -1947,6 +1947,66 @@ func TestAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLCompositeTypeLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_type_composite_notice",
+			sql:         "CREATE TYPE address AS (street text, city text);",
+			wantRuleIDs: []string{"ddl.pg.create_type.composite.notice"},
+		},
+		{
+			name:        "alter_type_composite_rename_notice",
+			sql:         "ALTER TYPE address RENAME TO mailing_address;",
+			wantRuleIDs: []string{"ddl.pg.alter_type.composite_rename.notice"},
+		},
+		{
+			name:        "alter_type_composite_set_schema_notice",
+			sql:         "ALTER TYPE address SET SCHEMA archive;",
+			wantRuleIDs: []string{"ddl.pg.alter_type.composite_set_schema.notice"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, f := range result.Statements[0].Findings {
+				if _, expected := wantRuleIDs[f.RuleID]; expected {
+					wantRuleIDs[f.RuleID] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule %q, got %#v", ruleID, result.Statements[0].Findings)
+				}
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name        string

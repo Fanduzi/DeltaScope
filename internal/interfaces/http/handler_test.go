@@ -1873,6 +1873,94 @@ func TestHandlerAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestHandlerAuditPostgreSQLCompositeTypeLifecycleRuleCoverage(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+		t.Skip("skipping: PG-capable build required for composite type lifecycle rule coverage test")
+	}
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_type_composite_notice",
+			sql:         `CREATE TYPE address AS (street text, city text);`,
+			wantRuleIDs: []string{"ddl.pg.create_type.composite.notice"},
+		},
+		{
+			name:        "alter_type_composite_rename_notice",
+			sql:         `ALTER TYPE address RENAME TO mailing_address;`,
+			wantRuleIDs: []string{"ddl.pg.alter_type.composite_rename.notice"},
+		},
+		{
+			name:        "alter_type_composite_set_schema_notice",
+			sql:         `ALTER TYPE address SET SCHEMA archive;`,
+			wantRuleIDs: []string{"ddl.pg.alter_type.composite_set_schema.notice"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := `{"sql":"` + strings.ReplaceAll(tt.sql, `"`, `\"`) + `","dialect":"postgresql"}`
+			req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+			}
+
+			var payload map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			if unsupported, ok := payload["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+
+			statements, ok := payload["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", payload["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				ruleID, _ := finding["rule_id"].(string)
+				if _, expected := wantRuleIDs[ruleID]; expected {
+					wantRuleIDs[ruleID] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule_id %s, got %#v", ruleID, findings)
+				}
+			}
+		})
+	}
+}
+
 func TestHandlerAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
 	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for domain lifecycle rule coverage test")
