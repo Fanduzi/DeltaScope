@@ -367,7 +367,21 @@ deltascope rules search "prefix"
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` 移除用户定义类型——建议审查依赖列和函数 | warning | 否 |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持。域（`CREATE DOMAIN ...`）已支持——参见下方域生命周期规则。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。复合类型现已支持——参见下方 Composite Type Lifecycle 规则。域（`CREATE DOMAIN ...`）已支持——参见下方域生命周期规则。
+
+---
+
+## DDL：PostgreSQL Composite Type Lifecycle 规则（3 条）
+
+这些规则用于覆盖 PostgreSQL composite type 生命周期 DDL 操作——composite type 创建、重命名和 schema 移动。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_type.composite.notice` | `CREATE TYPE ... AS (...)` 引入新的 composite type——信息性提示 | notice | 否 |
+| `ddl.pg.alter_type.composite_rename.notice` | `ALTER TYPE ... RENAME TO` 变更 composite type 名称——信息性提示 | notice | 否 |
+| `ddl.pg.alter_type.composite_set_schema.notice` | `ALTER TYPE ... SET SCHEMA` 将 composite type 移至不同 schema——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`DROP TYPE` 不由 composite-specific 规则覆盖——它复用 Type Lifecycle 规则族中已有的 `ddl.pg.drop_type.advisory` 和 `ddl.pg.drop_type.cascade.warn`。属性级操作（`ADD ATTRIBUTE`、`DROP ATTRIBUTE`、`ALTER ATTRIBUTE ... TYPE`、`RENAME ATTRIBUTE`）明确不支持/延迟。DeltaScope 在结构层级上可以识别 composite type 属性定义中的 `COLLATE` 注解，但不渲染、解释或校验 collation 语义。
 
 ---
 
@@ -385,7 +399,7 @@ deltascope rules search "prefix"
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` 移除域——建议审查依赖列 | warning | 否 |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持，标记为 `create_type_composite`。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型现已支持——参见上方 Composite Type Lifecycle 规则。
 
 ---
 

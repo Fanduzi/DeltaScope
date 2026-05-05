@@ -376,7 +376,21 @@ These rules guard against risky PostgreSQL type lifecycle DDL operations — enu
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` removes a user-defined type — advises review of dependent columns and functions | warning | No |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. Composite types (`CREATE TYPE ... AS (...)`) are explicitly unsupported. Domains are supported — see Domain Lifecycle Rules below.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. Composite types are now supported — see Composite Type Lifecycle Rules below. Domains are supported — see Domain Lifecycle Rules below.
+
+---
+
+## DDL: PostgreSQL Composite Type Lifecycle Rules (3 rules)
+
+These rules guard PostgreSQL composite type lifecycle DDL operations — composite type creation, rename, and schema move. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_type.composite.notice` | `CREATE TYPE ... AS (...)` introduces a new composite type — informational notice | notice | No |
+| `ddl.pg.alter_type.composite_rename.notice` | `ALTER TYPE ... RENAME TO` changes the composite type name — informational notice | notice | No |
+| `ddl.pg.alter_type.composite_set_schema.notice` | `ALTER TYPE ... SET SCHEMA` moves the composite type to a different schema — informational notice | notice | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `DROP TYPE` is not covered by composite-specific rules — it reuses the existing `ddl.pg.drop_type.advisory` and `ddl.pg.drop_type.cascade.warn` rules from the Type Lifecycle family. Attribute-level operations (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`) are explicitly unsupported/deferred. DeltaScope recognizes `COLLATE` annotations on composite type attributes structurally but does not render, interpret, or validate collation semantics.
 
 ---
 
@@ -394,7 +408,7 @@ These rules guard against risky PostgreSQL domain lifecycle DDL operations — d
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` removes a domain — advises review of dependent columns | warning | No |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names where available, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types (`CREATE TYPE ... AS (...)`) remain explicitly unsupported as `create_type_composite`.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names where available, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types are now supported — see Composite Type Lifecycle Rules above.
 
 ---
 

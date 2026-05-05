@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.58.0] - 2026-05-06
+
+### Added
+
+- PostgreSQL composite type lifecycle narrow support: `CREATE TYPE ... AS (...)`, `ALTER TYPE ... RENAME TO`, and `ALTER TYPE ... SET SCHEMA` now pass through the audit pipeline instead of returning unsupported.
+- Three new PostgreSQL-only rules: `ddl.pg.create_type.composite.notice` (notice), `ddl.pg.alter_type.composite_rename.notice` (notice), `ddl.pg.alter_type.composite_set_schema.notice` (notice).
+- `DROP TYPE` for composite types reuses existing v0.55.0 rules (`ddl.pg.drop_type.advisory`, `ddl.pg.drop_type.cascade.warn`) — no new composite-specific DROP TYPE rule.
+- Collation annotations in composite type attribute definitions are recognized structurally but not interpreted or validated.
+- Corpus fixtures covering all three new rules' trigger forms.
+- Service-level tests through `AuditSQL` for representative composite lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all composite type lifecycle forms.
+
+### Non-Goals
+
+- DeltaScope does not perform live dependency validation on composite types.
+- DeltaScope does not model full PostgreSQL type system semantics.
+- This is narrow composite type lifecycle support — not complete PostgreSQL type system support.
+- Attribute-level operations (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`) remain explicitly deferred.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the three new PostgreSQL-only rule entries.
+
 ## [v0.57.0] - 2026-05-05
 
 ### Added

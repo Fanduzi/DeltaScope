@@ -287,7 +287,42 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` 移除用户定义类型——建议审查依赖列和函数 | ✓ | ✗ | warning |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
 
-> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。这不是完整的 PostgreSQL 类型生命周期覆盖。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持。域（`CREATE DOMAIN ...`）已支持——参见下方域生命周期。不影响 MySQL/TiDB 行为。
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不会检查在线依赖对象、验证 enum 值是否已被数据或应用代码使用，也不会建模完整的 PostgreSQL 类型系统语义。这不是完整的 PostgreSQL 类型生命周期覆盖。复合类型现已支持——参见下方 Composite Type Lifecycle。域（`CREATE DOMAIN ...`）已支持——参见下方域生命周期。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Composite Type Lifecycle（v0.58.0）
+
+`v0.58.0` 新增 PostgreSQL composite type lifecycle 窄支持。DeltaScope 规范化 `CREATE TYPE ... AS (...)`、`ALTER TYPE ... RENAME TO` 和 `ALTER TYPE ... SET SCHEMA`，新增三条 PostgreSQL-only 发现，并将属性级操作（`ADD ATTRIBUTE`、`DROP ATTRIBUTE`、`ALTER ATTRIBUTE ... TYPE`、`RENAME ATTRIBUTE`）作为显式不支持/延迟边界。`DROP TYPE` 复用 v0.55.0 已有规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 标准化操作
+
+| SQL | 标准化操作 |
+|-----|-----------|
+| `CREATE TYPE address AS (street text, city text)` | `create_type_composite` |
+| `CREATE TYPE qualified.address AS (street text, city text)` | `create_type_composite` |
+| `CREATE TYPE address AS (street text COLLATE "C", city text)` | `create_type_composite`（collation 被记录但不做解释） |
+| `ALTER TYPE address RENAME TO mailing_address` | `alter_type` (action=rename) |
+| `ALTER TYPE address SET SCHEMA archive` | `alter_type` (action=set_schema) |
+
+### Composite Type Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
+|---------|---------|:----:|:--------:|---------|
+| `ddl.pg.create_type.composite.notice` | `CREATE TYPE ... AS (...)` 引入新的 composite type——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.composite_rename.notice` | `ALTER TYPE ... RENAME TO` 变更 composite type 名称——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.composite_set_schema.notice` | `ALTER TYPE ... SET SCHEMA` 将 composite type 移至不同 schema——信息性提示 | ✓ | ✗ | notice |
+
+### 不支持/延迟的操作
+
+| SQL | 不支持的特性 |
+|-----|------------|
+| `ALTER TYPE ... ADD ATTRIBUTE` | `alter_type_add_attribute` |
+| `ALTER TYPE ... DROP ATTRIBUTE` | `alter_type_drop_attribute` |
+| `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE` | `alter_type_alter_attribute_type` |
+| `ALTER TYPE ... RENAME ATTRIBUTE ... TO ...` | `alter_type_rename_attribute` |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。`DROP TYPE` 不由 composite-specific 规则覆盖——它复用 Type Lifecycle 规则族中已有的 `ddl.pg.drop_type.advisory` 和 `ddl.pg.drop_type.cascade.warn`。属性级操作明确延迟。DeltaScope 在结构层级上可以识别 composite type 属性定义中的 `COLLATE` 注解，但不渲染、解释或校验 collation 语义。不影响 MySQL/TiDB 行为。
 
 ---
 
@@ -324,7 +359,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` 移除域——建议审查依赖列 | ✓ | ✗ | warning |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
 
-> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型（`CREATE TYPE ... AS (...)`）保持显式不支持，标记为 `create_type_composite`。不影响 MySQL/TiDB 行为。
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型现已支持——参见上方 Composite Type Lifecycle。不影响 MySQL/TiDB 行为。
 
 ---
 

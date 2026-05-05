@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.57.0 PostgreSQL Domain Lifecycle Pack
+## Latest Completed Milestone: v0.58.0 PostgreSQL Composite Type Lifecycle Pack
+
+**Goal:** normalize PostgreSQL composite type lifecycle narrow support through the audit pipeline, adding three PostgreSQL-only findings for offline migration review while keeping attribute-level operations explicitly deferred and reusing existing DROP TYPE rules.
+
+### Completed Scope
+
+- Five PostgreSQL composite type lifecycle forms normalized through the audit pipeline: `CREATE TYPE ... AS (...)` (including schema-qualified and collation-annotated forms), `ALTER TYPE ... RENAME TO`, `ALTER TYPE ... SET SCHEMA`.
+- Three new PostgreSQL-only rules: `ddl.pg.create_type.composite.notice` (notice), `ddl.pg.alter_type.composite_rename.notice` (notice), `ddl.pg.alter_type.composite_set_schema.notice` (notice).
+- `DROP TYPE` for composite types reuses existing v0.55.0 rules (`ddl.pg.drop_type.advisory`, `ddl.pg.drop_type.cascade.warn`) — no new composite-specific DROP TYPE rule.
+- Corpus fixtures covering all three new rules.
+- Service-level tests through `AuditSQL` for representative composite lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all composite type lifecycle forms.
+
+### Key Design Decisions
+
+- DeltaScope does not perform live dependency validation on composite types.
+- DeltaScope does not model full PostgreSQL type system semantics.
+- This is narrow composite type lifecycle support — not complete PostgreSQL type system support.
+- Collation annotations in composite type attribute definitions are recognized structurally but not interpreted.
+- Attribute-level operations (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`) remain explicitly deferred as `alter_type_add_attribute`, `alter_type_drop_attribute`, `alter_type_alter_attribute_type`, `alter_type_rename_attribute`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the three new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.57.0 PostgreSQL Domain Lifecycle Pack
 
 **Goal:** normalize PostgreSQL domain lifecycle DDL through the audit pipeline, adding seven PostgreSQL-only findings for offline migration review while keeping `CHECK`/`DEFAULT` expression rendering out of scope and composite types as an explicit unsupported boundary.
 
@@ -21,8 +45,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 
 - DeltaScope does not render `CHECK` or `DEFAULT` expression text. Rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body.
 - DeltaScope does not perform live dependency validation on domains.
-- `CREATE TYPE ... AS (...)` composite types remain explicitly unsupported as `create_type_composite`.
-- `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits two findings: `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`.
+- `CREATE TYPE ... AS (...)` composite types were added in v0.58.0.
 - No MySQL/TiDB behavior changes.
 - No default policy changes beyond the seven new PostgreSQL-only rule entries.
 
@@ -581,6 +604,6 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 
 Areas that may be addressed in future milestones (no dates committed):
 
-- Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `ALTER COLUMN TYPE`, `SET LOGGED/UNLOGGED`).
-- PostgreSQL composite type and domain support.
+- Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
+- PostgreSQL composite type attribute lifecycle (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`).
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`, `CREATE EXTENSION`).

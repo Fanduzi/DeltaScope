@@ -301,7 +301,42 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.drop_type.advisory` | `DROP TYPE` removes a user-defined type — advises review of dependent columns and functions | ✓ | ✗ | warning |
 | `ddl.pg.drop_type.cascade.warn` | `DROP TYPE ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
 
-> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. This is not full PostgreSQL type lifecycle coverage. Composite types (`CREATE TYPE ... AS (...)`) remain explicitly unsupported. Domains are supported — see Domain Lifecycle below. No MySQL/TiDB behavior changes.
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not inspect live dependent objects, validate whether enum values are already used by data or application code, or model full PostgreSQL type system semantics. This is not full PostgreSQL type lifecycle coverage. Composite types are now supported — see Composite Type Lifecycle below. Domains are supported — see Domain Lifecycle below. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Composite Type Lifecycle (v0.58.0)
+
+`v0.58.0` adds PostgreSQL composite type lifecycle narrow support. DeltaScope normalizes `CREATE TYPE ... AS (...)`, `ALTER TYPE ... RENAME TO`, and `ALTER TYPE ... SET SCHEMA`, adds three PostgreSQL-only findings, and keeps attribute-level operations (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`) as explicit unsupported/deferred boundaries. `DROP TYPE` reuses existing v0.55.0 rules. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE TYPE address AS (street text, city text)` | `create_type_composite` |
+| `CREATE TYPE qualified.address AS (street text, city text)` | `create_type_composite` |
+| `CREATE TYPE address AS (street text COLLATE "C", city text)` | `create_type_composite` (collation recorded but not interpreted) |
+| `ALTER TYPE address RENAME TO mailing_address` | `alter_type` (action=rename) |
+| `ALTER TYPE address SET SCHEMA archive` | `alter_type` (action=set_schema) |
+
+### Composite Type Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_type.composite.notice` | `CREATE TYPE ... AS (...)` introduces a new composite type — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.composite_rename.notice` | `ALTER TYPE ... RENAME TO` changes the composite type name — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.composite_set_schema.notice` | `ALTER TYPE ... SET SCHEMA` moves the composite type to a different schema — informational notice | ✓ | ✗ | notice |
+
+### Unsupported / Deferred Operations
+
+| SQL | Unsupported Feature |
+|-----|-------------------|
+| `ALTER TYPE ... ADD ATTRIBUTE` | `alter_type_add_attribute` |
+| `ALTER TYPE ... DROP ATTRIBUTE` | `alter_type_drop_attribute` |
+| `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE` | `alter_type_alter_attribute_type` |
+| `ALTER TYPE ... RENAME ATTRIBUTE ... TO ...` | `alter_type_rename_attribute` |
+
+> **Note:** These rules are offline-only and do not require a database connection. `DROP TYPE` is not covered by composite-specific rules — it reuses the existing `ddl.pg.drop_type.advisory` and `ddl.pg.drop_type.cascade.warn` from the Type Lifecycle family. Attribute-level operations are explicitly deferred. DeltaScope recognizes `COLLATE` annotations on composite type attributes structurally but does not render, interpret, or validate collation semantics. No MySQL/TiDB behavior changes.
 
 ---
 
@@ -338,7 +373,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` removes a domain — advises review of dependent columns | ✓ | ✗ | warning |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
 
-> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types (`CREATE TYPE ... AS (...)`) remain explicitly unsupported as `create_type_composite`. No MySQL/TiDB behavior changes.
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types are now supported — see Composite Type Lifecycle above. No MySQL/TiDB behavior changes.
 
 ---
 
