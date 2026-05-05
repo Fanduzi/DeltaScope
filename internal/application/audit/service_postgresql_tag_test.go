@@ -3477,6 +3477,230 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 			})
 }
 
+func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
+	t.Run("create_type_composite_notice", func(t *testing.T) {
+		const sql = "CREATE TYPE address AS (street text, city text);"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_type.composite.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "create_type" {
+					t.Errorf("expected operation=create_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "address" {
+					t.Errorf("expected object_name=address, got %v", f.Metadata["object_name"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+				if f.Metadata["attributes"] != "2" {
+					t.Errorf("expected attributes=2, got %v", f.Metadata["attributes"])
+				}
+				if f.Metadata["attribute_names"] != "street,city" {
+					t.Errorf("expected attribute_names=street,city, got %v", f.Metadata["attribute_names"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_type.composite.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("create_type_composite_qualified_schema", func(t *testing.T) {
+		const sql = "CREATE TYPE qualified.address AS (street text, city text);"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_type.composite.notice" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_type.composite.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL.Options["schema"] != "qualified" {
+			t.Fatalf("expected schema=qualified, got %q", stmt.DDL.Options["schema"])
+		}
+	})
+
+	t.Run("alter_type_composite_rename_notice", func(t *testing.T) {
+		const sql = "ALTER TYPE address RENAME TO mailing_address;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.composite_rename.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "address" {
+					t.Errorf("expected object_name=address, got %v", f.Metadata["object_name"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+				if f.Metadata["action"] != "rename" {
+					t.Errorf("expected action=rename, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["new_name"] != "mailing_address" {
+					t.Errorf("expected new_name=mailing_address, got %v", f.Metadata["new_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_type.composite_rename.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_type_composite_set_schema_notice", func(t *testing.T) {
+		const sql = "ALTER TYPE address SET SCHEMA archive;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.composite_set_schema.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "address" {
+					t.Errorf("expected object_name=address, got %v", f.Metadata["object_name"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+				if f.Metadata["action"] != "set_schema" {
+					t.Errorf("expected action=set_schema, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["new_schema"] != "archive" {
+					t.Errorf("expected new_schema=archive, got %v", f.Metadata["new_schema"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_type.composite_set_schema.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_type_no_composite_rule_duplicate", func(t *testing.T) {
+		const sql = "DROP TYPE address;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var foundDropAdvisory bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_type.advisory" {
+				foundDropAdvisory = true
+			}
+			if f.RuleID == "ddl.pg.create_type.composite.notice" ||
+				f.RuleID == "ddl.pg.alter_type.composite_rename.notice" ||
+				f.RuleID == "ddl.pg.alter_type.composite_set_schema.notice" {
+				t.Fatalf("composite rule %q must not fire for DROP TYPE", f.RuleID)
+			}
+		}
+		if !foundDropAdvisory {
+			t.Fatalf("expected drop_type.advisory, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("deferred_attribute_actions_unsupported", func(t *testing.T) {
+		cases := []struct {
+			name string
+			sql  string
+		}{
+			{"add_attribute", "ALTER TYPE address ADD ATTRIBUTE country text"},
+			{"drop_attribute", "ALTER TYPE address DROP ATTRIBUTE city"},
+			{"alter_attribute_type", "ALTER TYPE address ALTER ATTRIBUTE street TYPE varchar(255)"},
+			{"rename_attribute", "ALTER TYPE address RENAME ATTRIBUTE street TO line1"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				result, err := AuditSQL(context.Background(), Request{
+					SQL:     tc.sql,
+					Dialect: spec.DialectPostgreSQL,
+				})
+				if !errors.Is(err, ErrUnsupportedStatement) {
+					t.Fatalf("expected unsupported statement sentinel, got %v", err)
+				}
+				if len(result.Unsupported) == 0 {
+					t.Fatalf("expected unsupported for deferred attribute action")
+				}
+			})
+		}
+	})
+}
+
 func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	t.Run("create_domain_with_check", func(t *testing.T) {
 		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
