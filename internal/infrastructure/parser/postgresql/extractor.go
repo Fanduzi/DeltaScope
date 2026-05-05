@@ -66,7 +66,7 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 	case *pg_query.Node_AlterEnumStmt:
 		return extractAlterEnumStmt(statement, node.AlterEnumStmt), nil
 	case *pg_query.Node_CompositeTypeStmt:
-		return unsupportedStatement(statement, "create_type_composite", "postgresql composite type creation is not in the approved v0.55.0 subset"), nil
+		return extractCompositeTypeStmt(statement, node.CompositeTypeStmt), nil
 	case *pg_query.Node_CreateDomainStmt:
 		return extractCreateDomainStmt(statement, node.CreateDomainStmt), nil
 	case *pg_query.Node_AlterDomainStmt:
@@ -153,6 +153,9 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 	if stmt == nil {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter table statement payload is missing")
 	}
+	if stmt.GetObjtype() == pg_query.ObjectType_OBJECT_TYPE {
+		return extractAlterTypeCompositeFromAlterTableStmt(statement, stmt)
+	}
 	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TYPE_UNDEFINED && stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
 	}
@@ -189,6 +192,23 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 	}
 
 	switch stmt.GetRenameType() {
+	case pg_query.ObjectType_OBJECT_TYPE:
+		objectName := ""
+		if stmt.GetRelation() != nil {
+			objectName = stmt.GetRelation().GetRelname()
+		}
+		if objectName == "" {
+			objectName = renameObjectTypeName(stmt)
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: objectName,
+			ObjectType: "type",
+			Options:    map[string]string{"type_kind": "composite", "action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_ATTRIBUTE:
+		return unsupportedStatement(statement, "alter_type_rename_attribute", "postgresql alter type rename attribute is deferred")
 	case pg_query.ObjectType_OBJECT_DOMAIN:
 		objectName := renameObjectDomainName(stmt)
 		statement.DDL = &spec.DDL{
@@ -250,6 +270,9 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.AlterObjectSchemaStmt) spec.Statement {
 	if stmt == nil {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter object schema statement payload is missing")
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TYPE {
+		return extractAlterTypeSetSchema(statement, stmt)
 	}
 	statement.DDL = &spec.DDL{
 		Operation: spec.DDLOperationAlterTable,
@@ -1364,6 +1387,105 @@ func extractAlterDomainStmt(statement spec.Statement, stmt *pg_query.AlterDomain
 	return statement
 }
 
+// extractCompositeTypeStmt normalizes CREATE TYPE ... AS (...) into spec.DDL
+// with operation create_type and type_kind=composite.
+func extractCompositeTypeStmt(statement spec.Statement, stmt *pg_query.CompositeTypeStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_type", "postgresql composite type statement payload is missing")
+	}
+	objectName := ""
+	schemaName := ""
+	if rv := stmt.GetTypevar(); rv != nil {
+		objectName = rv.GetRelname()
+		schemaName = rv.GetSchemaname()
+	}
+	if objectName == "" {
+		return unsupportedStatement(statement, "create_type", "postgresql composite type name is missing")
+	}
+	var attrNames []string
+	for _, col := range stmt.GetColdeflist() {
+		if cd := col.GetColumnDef(); cd != nil {
+			attrNames = append(attrNames, cd.GetColname())
+		}
+	}
+	options := map[string]string{
+		"type_kind":  "composite",
+		"attributes": strconv.Itoa(len(attrNames)),
+	}
+	if len(attrNames) > 0 {
+		options["attribute_names"] = strings.Join(attrNames, ",")
+	}
+	if schemaName != "" {
+		options["schema"] = schemaName
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateType,
+		ObjectName: objectName,
+		ObjectType: "type",
+		Options:    options,
+	}
+	return statement
+}
+
+// extractAlterTypeCompositeFromAlterTableStmt handles ALTER TYPE ...
+// ADD/DROP/ALTER ATTRIBUTE which pg_query maps to AlterTableStmt with
+// objtype=OBJECT_TYPE. These attribute actions are deferred.
+func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableStmt) spec.Statement {
+	if len(stmt.GetCmds()) == 0 {
+		return unsupportedStatement(statement, "alter_type", "postgresql alter type composite statement has no commands")
+	}
+	cmd := stmt.GetCmds()[0].GetAlterTableCmd()
+	if cmd == nil {
+		return unsupportedStatement(statement, "alter_type", "postgresql alter type composite command payload is missing")
+	}
+	switch cmd.GetSubtype() {
+	case pg_query.AlterTableType_AT_AddColumn:
+		return unsupportedStatement(statement, "alter_type_add_attribute", "postgresql alter type add attribute is deferred")
+	case pg_query.AlterTableType_AT_DropColumn:
+		return unsupportedStatement(statement, "alter_type_drop_attribute", "postgresql alter type drop attribute is deferred")
+	case pg_query.AlterTableType_AT_AlterColumnType:
+		return unsupportedStatement(statement, "alter_type_alter_attribute_type", "postgresql alter type alter attribute type is deferred")
+	default:
+		return unsupportedStatement(statement, "alter_type", fmt.Sprintf("postgresql alter type composite action %s is deferred", cmd.GetSubtype()))
+	}
+}
+
+// extractAlterTypeSetSchema normalizes ALTER TYPE ... SET SCHEMA into
+// spec.DDL with operation alter_type and action=set_schema.
+func extractAlterTypeSetSchema(statement spec.Statement, stmt *pg_query.AlterObjectSchemaStmt) spec.Statement {
+	objectName := ""
+	if obj := stmt.GetObject(); obj != nil {
+		if list := obj.GetList(); list != nil {
+			objectName = firstStringFromNodes(list.GetItems())
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterType,
+		ObjectName: objectName,
+		ObjectType: "type",
+		Options: map[string]string{
+			"type_kind":  "composite",
+			"action":     "set_schema",
+			"new_schema": stmt.GetNewschema(),
+		},
+	}
+	return statement
+}
+
+// renameObjectTypeName extracts the type name from a RenameStmt targeting
+// OBJECT_TYPE. The type name is stored in the Object field as a List of
+// String nodes.
+func renameObjectTypeName(stmt *pg_query.RenameStmt) string {
+	obj := stmt.GetObject()
+	if obj == nil {
+		return ""
+	}
+	if list := obj.GetList(); list != nil {
+		return firstStringFromNodes(list.GetItems())
+	}
+	return firstStringFromNodes([]*pg_query.Node{obj})
+}
+
 // renameObjectDomainName extracts the domain name from a RenameStmt targeting
 // OBJECT_DOMAIN. The domain name is stored in the Object field as a List of
 // String nodes, not in the Relation field.
@@ -1446,7 +1568,7 @@ func featureNameForNode(node *pg_query.Node) string {
 	case *pg_query.Node_AlterEnumStmt:
 		return "alter_type"
 	case *pg_query.Node_CompositeTypeStmt:
-		return "create_type_composite"
+		return "create_type"
 	case *pg_query.Node_CreateDomainStmt:
 		return "create_domain"
 	case *pg_query.Node_AlterDomainStmt:

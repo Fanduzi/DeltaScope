@@ -6095,7 +6095,7 @@ func TestExtractDropTypeIfExistsCascade(t *testing.T) {
 	}
 }
 
-func TestExtractCompositeTypeUnsupported(t *testing.T) {
+func TestExtractCompositeType(t *testing.T) {
 	parser := New()
 	result, err := parser.Parse("CREATE TYPE address AS (street text, city text)")
 	if err != nil {
@@ -6105,11 +6105,26 @@ func TestExtractCompositeTypeUnsupported(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if stmt.Unsupported == nil {
-		t.Fatalf("expected unsupported, got supported %#v", stmt.DDL)
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected normalized, got unsupported: %s", stmt.Unsupported.Feature)
 	}
-	if stmt.Unsupported.Feature != "create_type_composite" {
-		t.Fatalf("expected feature create_type_composite, got %q", stmt.Unsupported.Feature)
+	if stmt.DDL == nil {
+		t.Fatal("expected DDL, got nil")
+	}
+	if stmt.DDL.Operation != spec.DDLOperationCreateType {
+		t.Fatalf("expected create_type, got %q", stmt.DDL.Operation)
+	}
+	if stmt.DDL.ObjectName != "address" {
+		t.Fatalf("expected object name address, got %q", stmt.DDL.ObjectName)
+	}
+	if stmt.DDL.Options["type_kind"] != "composite" {
+		t.Fatalf("expected type_kind=composite, got %q", stmt.DDL.Options["type_kind"])
+	}
+	if stmt.DDL.Options["attributes"] != "2" {
+		t.Fatalf("expected attributes=2, got %q", stmt.DDL.Options["attributes"])
+	}
+	if stmt.DDL.Options["attribute_names"] != "street,city" {
+		t.Fatalf("expected attribute_names=street,city, got %q", stmt.DDL.Options["attribute_names"])
 	}
 }
 

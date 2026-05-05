@@ -106,6 +106,11 @@ var pgDDLCensusCases = []censusCase{
 	{Name: "ALTER TYPE enum ADD VALUE", SQL: "ALTER TYPE color ADD VALUE 'yellow'"},
 	{Name: "DROP TYPE", SQL: "DROP TYPE color"},
 
+		// --- COMPOSITE TYPE LIFECYCLE ---
+		{Name: "CREATE TYPE composite", SQL: "CREATE TYPE address AS (street text, city text)"},
+		{Name: "ALTER TYPE RENAME TO", SQL: "ALTER TYPE address RENAME TO mailing_address"},
+		{Name: "ALTER TYPE SET SCHEMA", SQL: "ALTER TYPE address SET SCHEMA archive"},
+
 		// --- DOMAIN LIFECYCLE ---
 		{Name: "CREATE DOMAIN basic", SQL: "CREATE DOMAIN email AS text"},
 		{Name: "CREATE DOMAIN NOT NULL", SQL: "CREATE DOMAIN email AS text NOT NULL"},
@@ -189,6 +194,9 @@ var pgCorpusCovered = map[string]bool{
 	"CREATE TYPE enum":                           true,
 	"ALTER TYPE enum ADD VALUE":                  true,
 	"DROP TYPE":                                  true,
+		"CREATE TYPE composite":                      false,
+		"ALTER TYPE RENAME TO":                       false,
+		"ALTER TYPE SET SCHEMA":                      false,
 		"CREATE DOMAIN basic":                       false,
 		"CREATE DOMAIN NOT NULL":                    false,
 		"CREATE DOMAIN DEFAULT":                     false,

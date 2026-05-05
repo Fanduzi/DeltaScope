@@ -403,12 +403,17 @@ func assertCompositeTypeLifecycleBaseline(t *testing.T, fact compositeTypeLifecy
 	switch fact.Name {
 	case "create_type_composite_plain", "create_type_composite_multi_attr",
 		"create_type_composite_qualified", "create_type_composite_collate":
-		// Current state: classified as DDL but explicitly unsupported
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported, got normalized", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "create_type_composite" {
-			t.Errorf("%s: expected feature create_type_composite, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOperation != "create_type" {
+			t.Errorf("%s: expected create_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLObjectType != "type" {
+			t.Errorf("%s: expected object type type, got %q", fact.Name, fact.DDLObjectType)
+		}
+		if fact.DDLOptions["type_kind"] != "composite" {
+			t.Errorf("%s: expected type_kind=composite, got %q", fact.Name, fact.DDLOptions["type_kind"])
 		}
 
 	case "drop_type":
@@ -427,22 +432,64 @@ func assertCompositeTypeLifecycleBaseline(t *testing.T, fact compositeTypeLifecy
 			t.Errorf("%s: expected drop_type, got %q", fact.Name, fact.DDLOperation)
 		}
 
-	case "alter_type_add_attribute", "alter_type_drop_attribute",
-		"alter_type_alter_attribute_type":
-		// pg_query maps these to AlterTableStmt — may be handled by existing
-		// ALTER TABLE path or may fall through as unsupported.
-		// Record baseline only; no strict assertion on normalized vs unsupported.
+	case "alter_type_add_attribute":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "alter_type_add_attribute" {
+			t.Errorf("%s: expected feature alter_type_add_attribute, got %q", fact.Name, fact.UnsupportedFeature)
+		}
+
+	case "alter_type_drop_attribute":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "alter_type_drop_attribute" {
+			t.Errorf("%s: expected feature alter_type_drop_attribute, got %q", fact.Name, fact.UnsupportedFeature)
+		}
+
+	case "alter_type_alter_attribute_type":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "alter_type_alter_attribute_type" {
+			t.Errorf("%s: expected feature alter_type_alter_attribute_type, got %q", fact.Name, fact.UnsupportedFeature)
+		}
 
 	case "alter_type_rename_attribute":
-		// pg_query maps to RenameStmt with renameType=OBJECT_ATTRIBUTE
-		// Record baseline only.
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "alter_type_rename_attribute" {
+			t.Errorf("%s: expected feature alter_type_rename_attribute, got %q", fact.Name, fact.UnsupportedFeature)
+		}
 
 	case "alter_type_rename":
-		// pg_query maps to RenameStmt — may match existing domain RENAME TO pattern.
-		// Record baseline only.
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "rename" {
+			t.Errorf("%s: expected action=rename, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["new_name"] != "mailing_address" {
+			t.Errorf("%s: expected new_name=mailing_address, got %q", fact.Name, fact.DDLOptions["new_name"])
+		}
 
 	case "alter_type_set_schema":
-		// pg_query maps to AlterObjectSchemaStmt — may match existing SET SCHEMA path.
-		// Record baseline only.
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "set_schema" {
+			t.Errorf("%s: expected action=set_schema, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["new_schema"] != "archive" {
+			t.Errorf("%s: expected new_schema=archive, got %q", fact.Name, fact.DDLOptions["new_schema"])
+		}
 	}
 }

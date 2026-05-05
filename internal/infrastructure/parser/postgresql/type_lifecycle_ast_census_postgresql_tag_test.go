@@ -296,13 +296,13 @@ func assertTypeLifecycleBaseline(t *testing.T, fact typeLifecycleBaselineFact) {
 		if fact.DDLOperation != "drop_type" {
 			t.Errorf("%s: expected drop_type, got %q", fact.Name, fact.DDLOperation)
 		}
-	case "create_type_composite":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported, got normalized", fact.Name)
-		}
-		if fact.UnsupportedFeature != "create_type_composite" {
-			t.Errorf("%s: expected feature create_type_composite, got %q", fact.Name, fact.UnsupportedFeature)
-		}
+		case "create_type_composite":
+			if fact.Unsupported {
+				t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+			}
+			if fact.DDLOperation != "create_type" {
+				t.Errorf("%s: expected create_type, got %q", fact.Name, fact.DDLOperation)
+			}
 	case "create_domain":
 		if fact.Unsupported {
 			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
