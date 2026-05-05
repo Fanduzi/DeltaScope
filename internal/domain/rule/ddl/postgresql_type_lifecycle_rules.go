@@ -71,7 +71,7 @@ func (r pgTypeLifecycleRule) Evaluate(statement spec.Statement) ([]rule.Finding,
 		"object_type": statement.DDL.ObjectType,
 		"object_name": objectName,
 	}
-	for _, key := range []string{"type_kind", "action", "value", "placement", "neighbor", "cascade", "if_exists"} {
+	for _, key := range []string{"type_kind", "action", "value", "placement", "neighbor", "cascade", "if_exists", "attributes", "attribute_names", "new_name", "new_schema"} {
 		if val := statement.DDL.Options[key]; val != "" {
 			metadata[key] = val
 		}
@@ -202,6 +202,42 @@ func newDropTypeCascadeWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 		"CASCADE tells PostgreSQL to drop objects that depend on the type.",
 		"Tables, columns, functions, views, casts, or constraints depending on the type may be removed unexpectedly.",
 		"Prefer RESTRICT during review. If CASCADE is intentional, enumerate dependent objects and confirm the blast radius.",
+		cfg,
+	)
+}
+
+func newCreateTypeCompositeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGCreateTypeCompositeNotice, rule.LevelNotice, spec.DDLOperationCreateType,
+		"type_kind", "composite", true, "type",
+		"PostgreSQL composite type %q created — review schema contract change",
+		"CREATE TYPE ... AS (...) introduces a structured type that tables, functions, and application code may depend on.",
+		"Composite type changes (adding, dropping, or altering attributes) are deferred operations that require coordinated deploys once the type is in use.",
+		"Confirm the attribute list is stable and that downstream consumers can tolerate the new type before deployment.",
+		cfg,
+	)
+}
+
+func newAlterTypeCompositeRenameNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGAlterTypeCompositeRenameNotice, rule.LevelNotice, spec.DDLOperationAlterType,
+		"action", "rename", true, "type",
+		"PostgreSQL type %q renamed — references may break",
+		"ALTER TYPE ... RENAME TO changes the type name that columns, functions, casts, and application code reference.",
+		"Existing schema objects and application queries that reference the old type name will fail after this change.",
+		"Coordinate the rename with all dependent objects and application code. Use a multi-step migration if needed.",
+		cfg,
+	)
+}
+
+func newAlterTypeCompositeSetSchemaNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGAlterTypeCompositeSetSchemaNotice, rule.LevelNotice, spec.DDLOperationAlterType,
+		"action", "set_schema", true, "type",
+		"PostgreSQL type %q moved to a different schema — qualified references may break",
+		"ALTER TYPE ... SET SCHEMA changes the schema qualifier that qualified references depend on.",
+		"Existing qualified references to the type will fail if not updated to the new schema path.",
+		"Update all qualified references to the type and verify that search_path settings still resolve the type correctly.",
 		cfg,
 	)
 }

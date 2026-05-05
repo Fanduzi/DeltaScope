@@ -444,6 +444,10 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterTypeAddValuePositionNotice, construct: newAlterTypeAddValuePositionNoticeRule},
 		{ruleID: ruleIDPGDropTypeAdvisory, construct: newDropTypeAdvisoryRule},
 		{ruleID: ruleIDPGDropTypeCascadeWarn, construct: newDropTypeCascadeWarnRule},
+		// PostgreSQL composite type lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateTypeCompositeNotice, construct: newCreateTypeCompositeNoticeRule},
+		{ruleID: ruleIDPGAlterTypeCompositeRenameNotice, construct: newAlterTypeCompositeRenameNoticeRule},
+		{ruleID: ruleIDPGAlterTypeCompositeSetSchemaNotice, construct: newAlterTypeCompositeSetSchemaNoticeRule},
 		// PostgreSQL domain lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreateDomainNotice, construct: newCreateDomainNoticeRule},
 		{ruleID: ruleIDPGAlterDomainConstraintNotice, construct: newAlterDomainConstraintNoticeRule},

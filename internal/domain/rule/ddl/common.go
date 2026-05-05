@@ -201,6 +201,10 @@ const (
 	ruleIDPGAlterDomainRenameNotice                        = "ddl.pg.alter_domain.rename.notice"
 	ruleIDPGDropDomainAdvisory                             = "ddl.pg.drop_domain.advisory"
 	ruleIDPGDropDomainCascadeWarn                          = "ddl.pg.drop_domain.cascade.warn"
+	// PostgreSQL composite type lifecycle rules (PG-only).
+	ruleIDPGCreateTypeCompositeNotice                      = "ddl.pg.create_type.composite.notice"
+	ruleIDPGAlterTypeCompositeRenameNotice                 = "ddl.pg.alter_type.composite_rename.notice"
+	ruleIDPGAlterTypeCompositeSetSchemaNotice              = "ddl.pg.alter_type.composite_set_schema.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

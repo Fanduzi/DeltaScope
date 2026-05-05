@@ -22,7 +22,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
-| postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum notice, alter-type add-value advisory, alter-type add-value position notice, drop-type advisory, drop-type cascade warn |
+| postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, drop-type advisory, drop-type cascade warn |
 | postgresql_domain_lifecycle_rules.go | Implements PostgreSQL-only domain lifecycle rules: create-domain notice, alter-domain constraint/default/not-null/rename notices, drop-domain advisory, drop-domain cascade warn |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
@@ -228,6 +228,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter_type.add_value.position.notice`
 - `ddl.pg.drop_type.advisory`
 - `ddl.pg.drop_type.cascade.warn`
+- `ddl.pg.create_type.composite.notice`
+- `ddl.pg.alter_type.composite_rename.notice`
+- `ddl.pg.alter_type.composite_set_schema.notice`
 - `ddl.pg.create_domain.notice`
 - `ddl.pg.alter_domain.constraint.notice`
 - `ddl.pg.alter_domain.default.notice`

@@ -864,6 +864,22 @@ func Default() Policy {
 				Level:   rule.LevelWarning,
 				Params:  map[string]any{},
 			},
+				// PG composite type lifecycle rules (PostgreSQL-only).
+				"ddl.pg.create_type.composite.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_type.composite_rename.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_type.composite_set_schema.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
 				// PG domain lifecycle rules (PostgreSQL-only).
 				"ddl.pg.create_domain.notice": {
 					Enabled: true,
