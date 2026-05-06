@@ -24,6 +24,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
 | postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, drop-type advisory, drop-type cascade warn |
 | postgresql_domain_lifecycle_rules.go | Implements PostgreSQL-only domain lifecycle rules: create-domain notice, alter-domain constraint/default/not-null/rename notices, drop-domain advisory, drop-domain cascade warn |
+| postgresql_extension_lifecycle_rules.go | Implements PostgreSQL-only extension lifecycle rules: create-extension notice, create-extension cascade warn, alter-extension update/set-schema notices, drop-extension advisory, drop-extension cascade warn |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
@@ -55,6 +56,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_alter_table_rules_test.go | Verifies PG alter table gap rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_type_lifecycle_rules_test.go | Verifies PG type lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_domain_lifecycle_rules_test.go | Verifies PG domain lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
+| postgresql_extension_lifecycle_rules_test.go | Verifies PG extension lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 
 ## Exports
 
@@ -238,6 +240,12 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter_domain.rename.notice`
 - `ddl.pg.drop_domain.advisory`
 - `ddl.pg.drop_domain.cascade.warn`
+- `ddl.pg.create_extension.notice`
+- `ddl.pg.create_extension.cascade.warn`
+- `ddl.pg.alter_extension.update.notice`
+- `ddl.pg.alter_extension.set_schema.notice`
+- `ddl.pg.drop_extension.advisory`
+- `ddl.pg.drop_extension.cascade.warn`
 
 ## Milestone 4 Planned Create-Table Surface
 

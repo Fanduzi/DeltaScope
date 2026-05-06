@@ -916,6 +916,37 @@ func Default() Policy {
 					Level:   rule.LevelWarning,
 					Params:  map[string]any{},
 				},
+				// PG extension lifecycle rules (PostgreSQL-only).
+				"ddl.pg.create_extension.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.create_extension.cascade.warn": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_extension.update.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.alter_extension.set_schema.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.drop_extension.advisory": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.drop_extension.cascade.warn": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
 			"ddl.alter.modify_column.target_type_family.allowlist": {
 				Enabled: true,
 				Level:   rule.LevelBlocker,
