@@ -4479,6 +4479,266 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 }
 
+func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
+	t.Run("grant_select_notice", func(t *testing.T) {
+		const sql = "GRANT SELECT ON TABLE users TO analyst;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.grant.table_privilege.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "grant_table" {
+					t.Errorf("expected operation=grant_table, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "users" {
+					t.Errorf("expected object_name=users, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected grant.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("grant_multi_privilege_grantee", func(t *testing.T) {
+		const sql = "GRANT SELECT, INSERT ON TABLE orders TO analyst, reporter;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.grant.table_privilege.notice" {
+				found = true
+				if f.Metadata["privileges"] != "select,insert" {
+					t.Errorf("expected privileges=select,insert, got %v", f.Metadata["privileges"])
+				}
+				if f.Metadata["grantees"] != "analyst,reporter" {
+					t.Errorf("expected grantees=analyst,reporter, got %v", f.Metadata["grantees"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected grant.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("grant_schema_qualified", func(t *testing.T) {
+		const sql = "GRANT SELECT ON TABLE public.users TO analyst;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.grant.table_privilege.notice" {
+				found = true
+				if f.Metadata["schema"] != "public" {
+					t.Errorf("expected schema=public, got %v", f.Metadata["schema"])
+				}
+				if f.Metadata["object_name"] != "users" {
+					t.Errorf("expected object_name=users, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected grant.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("grant_all_privileges", func(t *testing.T) {
+		const sql = "GRANT ALL PRIVILEGES ON TABLE users TO analyst;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var foundNotice, foundAllWarn bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.grant.table_privilege.notice" {
+				foundNotice = true
+			}
+			if f.RuleID == "ddl.pg.grant.table_privilege.all.warn" {
+				foundAllWarn = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("all.warn: expected warning, got %s", f.Level)
+				}
+				if f.Metadata["all_privileges"] != "true" {
+					t.Errorf("all.warn: expected all_privileges=true, got %v", f.Metadata["all_privileges"])
+				}
+			}
+		}
+		if !foundNotice {
+			t.Fatalf("expected grant.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+		if !foundAllWarn {
+			t.Fatalf("expected grant.table_privilege.all.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("revoke_select_notice", func(t *testing.T) {
+		const sql = "REVOKE SELECT ON TABLE users FROM analyst;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.revoke.table_privilege.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "revoke_table" {
+					t.Errorf("expected operation=revoke_table, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["object_name"] != "users" {
+					t.Errorf("expected object_name=users, got %v", f.Metadata["object_name"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected revoke.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("revoke_multi_privilege_grantee", func(t *testing.T) {
+		const sql = "REVOKE SELECT, DELETE ON TABLE orders FROM analyst, reporter;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.revoke.table_privilege.notice" {
+				found = true
+				if f.Metadata["privileges"] != "select,delete" {
+					t.Errorf("expected privileges=select,delete, got %v", f.Metadata["privileges"])
+				}
+				if f.Metadata["grantees"] != "analyst,reporter" {
+					t.Errorf("expected grantees=analyst,reporter, got %v", f.Metadata["grantees"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected revoke.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("revoke_all_cascade", func(t *testing.T) {
+		const sql = "REVOKE ALL PRIVILEGES ON TABLE users FROM analyst CASCADE;"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+
+		var foundNotice, foundCascadeWarn bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.revoke.table_privilege.notice" {
+				foundNotice = true
+			}
+			if f.RuleID == "ddl.pg.revoke.table_privilege.cascade.warn" {
+				foundCascadeWarn = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("cascade.warn: expected warning, got %s", f.Level)
+				}
+				if f.Metadata["cascade"] != "true" {
+					t.Errorf("cascade.warn: expected cascade=true, got %v", f.Metadata["cascade"])
+				}
+			}
+		}
+		if !foundNotice {
+			t.Fatalf("expected revoke.table_privilege.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+		if !foundCascadeWarn {
+			t.Fatalf("expected revoke.table_privilege.cascade.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("deferred_governance_dcl_unsupported", func(t *testing.T) {
+		cases := []struct {
+			name string
+			sql  string
+		}{
+			{"grant_role", "GRANT analyst TO reporter"},
+			{"revoke_role", "REVOKE analyst FROM reporter"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				result, err := AuditSQL(context.Background(), Request{
+					SQL:     tc.sql,
+					Dialect: spec.DialectPostgreSQL,
+				})
+				if !errors.Is(err, ErrUnsupportedStatement) {
+					t.Fatalf("expected unsupported statement sentinel, got %v", err)
+				}
+				if len(result.Unsupported) == 0 {
+					t.Fatalf("expected unsupported for deferred governance DCL")
+				}
+			})
+		}
+	})
+}
+
 func serviceMetadataValueEqual(a, b any) bool {
 	aFloat, aIsNum := toFloat64(a)
 	bFloat, bIsNum := toFloat64(b)

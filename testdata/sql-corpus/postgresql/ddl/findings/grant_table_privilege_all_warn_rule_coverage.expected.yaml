@@ -1,0 +1,11 @@
+name: grant_table_privilege_all_warn_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.grant.table_privilege.notice
+      - ddl.pg.grant.table_privilege.all.warn

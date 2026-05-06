@@ -1,0 +1,1 @@
+REVOKE SELECT ON TABLE users FROM analyst;
