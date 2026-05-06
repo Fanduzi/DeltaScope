@@ -405,34 +405,162 @@ func TestTablePrivilegeDCLDeltaScopeBaseline(t *testing.T) {
 	}
 }
 
-// assertTablePrivilegeDCLBaseline captures Task-1 baseline expectations.
+// assertTablePrivilegeDCLBaseline captures post-Task-2 expectations.
 //
-// Current state (pre-Task-2):
-//   - All GRANT/REVOKE table privilege forms: KindUnknown, unsupported via
-//     "postgresql statement type is not in the approved v1 subset"
-//   - GRANT/REVOKE role membership: same unsupported path
-//   - ALTER DEFAULT PRIVILEGES: same unsupported path
+// Post-Task-2 state:
+//   - Ordinary table GRANT forms: KindDDL, normalized as grant_table
+//   - Ordinary table REVOKE forms: KindDDL, normalized as revoke_table
+//   - ALL TABLES IN SCHEMA: KindDDL, unsupported with feature grant_all_tables_in_schema
+//   - Sequence privileges: KindDDL, unsupported with feature grant_table
+//   - Role membership: KindDDL, unsupported with feature grant_role
+//   - ALTER DEFAULT PRIVILEGES: KindDDL, unsupported with feature alter_default_privileges
 func assertTablePrivilegeDCLBaseline(t *testing.T, fact tablePrivilegeDCLBaselineFact) {
 	t.Helper()
 
-	// All forms should currently be unsupported (KindUnknown) because the
-	// classify() function and Extract() switch have no GrantStmt,
-	// GrantRoleStmt, or AlterDefaultPrivilegesStmt branches.
-	if fact.Kind != spec.KindUnknown {
-		t.Errorf("%s: expected KindUnknown, got %v", fact.Name, fact.Kind)
+	// All forms now classify as DDL.
+	if fact.Kind != spec.KindDDL {
+		t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
 	}
-	if !fact.Unsupported {
-		t.Errorf("%s: expected unsupported, got normalized (op=%s)", fact.Name, fact.DDLOperation)
-	}
-	if fact.UnsupportedReason == "" {
-		t.Errorf("%s: expected non-empty unsupported reason", fact.Name)
+
+	switch fact.Name {
+	// Supported: normalized table privilege forms.
+	case "grant_select_on_table":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s: %s", fact.Name, fact.UnsupportedFeature, fact.UnsupportedReason)
+		}
+		if fact.DDLOperation != "grant_table" {
+			t.Errorf("%s: expected grant_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLObjectName != "users" {
+			t.Errorf("%s: expected object_name users, got %q", fact.Name, fact.DDLObjectName)
+		}
+		if fact.DDLObjectType != "table" {
+			t.Errorf("%s: expected object_type table, got %q", fact.Name, fact.DDLObjectType)
+		}
+		if fact.DDLOptions["privileges"] != "select" {
+			t.Errorf("%s: expected privileges=select, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["grantees"] != "analyst" {
+			t.Errorf("%s: expected grantees=analyst, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "grant_select_insert_on_table":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "grant_table" {
+			t.Errorf("%s: expected grant_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["privileges"] != "select,insert" {
+			t.Errorf("%s: expected privileges=select,insert, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["grantees"] != "analyst,app_user" {
+			t.Errorf("%s: expected grantees=analyst,app_user, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "grant_all_on_table":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "grant_table" {
+			t.Errorf("%s: expected grant_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["all_privileges"] != "true" {
+			t.Errorf("%s: expected all_privileges=true, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "grant_select_on_qualified_table":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "grant_table" {
+			t.Errorf("%s: expected grant_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["schema"] != "public" {
+			t.Errorf("%s: expected schema=public, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLObjectName != "users" {
+			t.Errorf("%s: expected object_name users, got %q", fact.Name, fact.DDLObjectName)
+		}
+
+	case "revoke_select_on_table":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "revoke_table" {
+			t.Errorf("%s: expected revoke_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["privileges"] != "select" {
+			t.Errorf("%s: expected privileges=select, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "revoke_select_insert_on_table":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "revoke_table" {
+			t.Errorf("%s: expected revoke_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["privileges"] != "select,insert" {
+			t.Errorf("%s: expected privileges=select,insert, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["grantees"] != "analyst,app_user" {
+			t.Errorf("%s: expected grantees=analyst,app_user, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "revoke_all_on_table_cascade":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "revoke_table" {
+			t.Errorf("%s: expected revoke_table, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["all_privileges"] != "true" {
+			t.Errorf("%s: expected all_privileges=true, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["cascade"] != "true" {
+			t.Errorf("%s: expected cascade=true, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	// Deferred: broader scopes with stable feature names.
+	case "grant_select_all_tables_in_schema":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "grant_all_tables_in_schema" {
+			t.Errorf("%s: expected feature 'grant_all_tables_in_schema', got %q", fact.Name, fact.UnsupportedFeature)
+		}
+
+	case "grant_select_on_sequence":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "grant_table" {
+			t.Errorf("%s: expected feature 'grant_table', got %q", fact.Name, fact.UnsupportedFeature)
+		}
+
+	case "grant_role_to_role", "revoke_role_from_role":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "grant_role" {
+			t.Errorf("%s: expected feature 'grant_role', got %q", fact.Name, fact.UnsupportedFeature)
+		}
+
+	case "alter_default_privileges_grant":
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "alter_default_privileges" {
+			t.Errorf("%s: expected feature 'alter_default_privileges', got %q", fact.Name, fact.UnsupportedFeature)
+		}
 	}
 }
 
-// TestTablePrivilegeDCLRuleCoverageBaseline verifies that no existing rules
-// fire on table privilege DCL statements. Since rules operate on normalized
-// DDL/DML statements and all privilege DCL forms are currently unsupported,
-// no rule evaluation is possible. This is a read-only characterization test.
+// TestTablePrivilegeDCLRuleCoverageBaseline verifies the normalized state
+// of table privilege DCL statements for rule applicability. Supported forms
+// produce DDL suitable for future rules; deferred forms remain unsupported.
+// This is a read-only characterization test — no rules fire yet.
 func TestTablePrivilegeDCLRuleCoverageBaseline(t *testing.T) {
 	t.Log("")
 	t.Log("=== PostgreSQL Table Privilege DCL Rule Coverage Baseline ===")
@@ -453,8 +581,6 @@ func TestTablePrivilegeDCLRuleCoverageBaseline(t *testing.T) {
 			t.Fatalf("%s: extract failed: %v", tc.Name, extractErr)
 		}
 
-		// All forms are unsupported, so no rules can fire. Confirm that
-		// the statement has no normalized DDL (the precondition for rules).
 		hasDDL := stmt.DDL != nil
 		hasDML := stmt.DML != nil
 		isUnsupported := stmt.Unsupported != nil
@@ -462,9 +588,31 @@ func TestTablePrivilegeDCLRuleCoverageBaseline(t *testing.T) {
 		t.Logf("%-42s | unsupported=%v | has_ddl=%v | has_dml=%v",
 			tc.Name, isUnsupported, hasDDL, hasDML)
 
-		if hasDDL || hasDML {
-			t.Errorf("%s: expected no normalized DDL/DML, got ddl=%v dml=%v",
-				tc.Name, hasDDL, hasDML)
+		switch tc.Name {
+		case "grant_select_on_table", "grant_select_insert_on_table",
+			"grant_all_on_table", "grant_select_on_qualified_table",
+			"revoke_select_on_table", "revoke_select_insert_on_table",
+			"revoke_all_on_table_cascade":
+			// Supported: produces normalized DDL, no unsupported marker.
+			if !hasDDL {
+				t.Errorf("%s: expected normalized DDL", tc.Name)
+			}
+			if hasDML {
+				t.Errorf("%s: unexpected DML", tc.Name)
+			}
+			if isUnsupported {
+				t.Errorf("%s: unexpected unsupported marker", tc.Name)
+			}
+
+		default:
+			// Deferred: no normalized DDL/DML, has unsupported marker.
+			if hasDDL || hasDML {
+				t.Errorf("%s: expected no normalized DDL/DML, got ddl=%v dml=%v",
+					tc.Name, hasDDL, hasDML)
+			}
+			if !isUnsupported {
+				t.Errorf("%s: expected unsupported marker", tc.Name)
+			}
 		}
 	}
 }

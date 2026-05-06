@@ -922,6 +922,64 @@ func TestDDLDomainOperationsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestDDLGrantTableOperationsRoundTrip(t *testing.T) {
+	grant := &DDL{
+		Operation:  DDLOperationGrantTable,
+		ObjectName: "users",
+		ObjectType: "table",
+		Options:    map[string]string{"privileges": "select,insert", "grantees": "analyst,app_user", "schema": "public"},
+	}
+	data, err := json.Marshal(grant)
+	if err != nil {
+		t.Fatalf("marshal grant_table ddl: %v", err)
+	}
+	var rt DDL
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal grant_table ddl: %v", err)
+	}
+	if rt.Operation != "grant_table" {
+		t.Fatalf("expected operation grant_table, got %q", rt.Operation)
+	}
+	if rt.ObjectName != "users" {
+		t.Fatalf("expected object_name users, got %q", rt.ObjectName)
+	}
+	if rt.ObjectType != "table" {
+		t.Fatalf("expected object_type table, got %q", rt.ObjectType)
+	}
+	if rt.Options["privileges"] != "select,insert" {
+		t.Fatalf("expected privileges select,insert, got %q", rt.Options["privileges"])
+	}
+	if rt.Options["grantees"] != "analyst,app_user" {
+		t.Fatalf("expected grantees analyst,app_user, got %q", rt.Options["grantees"])
+	}
+	if rt.Options["schema"] != "public" {
+		t.Fatalf("expected schema public, got %q", rt.Options["schema"])
+	}
+
+	revoke := &DDL{
+		Operation:  DDLOperationRevokeTable,
+		ObjectName: "users",
+		ObjectType: "table",
+		Options:    map[string]string{"all_privileges": "true", "grantees": "analyst", "cascade": "true"},
+	}
+	data, err = json.Marshal(revoke)
+	if err != nil {
+		t.Fatalf("marshal revoke_table ddl: %v", err)
+	}
+	if err := json.Unmarshal(data, &rt); err != nil {
+		t.Fatalf("unmarshal revoke_table ddl: %v", err)
+	}
+	if rt.Operation != "revoke_table" {
+		t.Fatalf("expected operation revoke_table, got %q", rt.Operation)
+	}
+	if rt.Options["all_privileges"] != "true" {
+		t.Fatalf("expected all_privileges true, got %q", rt.Options["all_privileges"])
+	}
+	if rt.Options["cascade"] != "true" {
+		t.Fatalf("expected cascade true, got %q", rt.Options["cascade"])
+	}
+}
+
 func TestDDLObjectFieldsOmitWhenEmpty(t *testing.T) {
 	ddl := &DDL{
 		Operation: DDLOperationCreateIndex,

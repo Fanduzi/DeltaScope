@@ -58,6 +58,9 @@ const (
 	DDLOperationCreateExtension DDLOperation = "create_extension"
 	DDLOperationAlterExtension  DDLOperation = "alter_extension"
 	DDLOperationDropExtension   DDLOperation = "drop_extension"
+
+	DDLOperationGrantTable  DDLOperation = "grant_table"
+	DDLOperationRevokeTable DDLOperation = "revoke_table"
 )
 
 // Table describes a table-level object.

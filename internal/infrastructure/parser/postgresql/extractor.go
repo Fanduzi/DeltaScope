@@ -77,6 +77,12 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractAlterExtensionStmt(statement, node.AlterExtensionStmt), nil
 	case *pg_query.Node_AlterExtensionContentsStmt:
 		return extractAlterExtensionContentsStmt(statement, node.AlterExtensionContentsStmt), nil
+	case *pg_query.Node_GrantStmt:
+		return extractGrantStmt(statement, node.GrantStmt), nil
+	case *pg_query.Node_GrantRoleStmt:
+		return extractGrantRoleStmt(statement, node.GrantRoleStmt), nil
+	case *pg_query.Node_AlterDefaultPrivilegesStmt:
+		return extractAlterDefaultPrivilegesStmt(statement, node.AlterDefaultPrivilegesStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
@@ -1651,6 +1657,112 @@ func dropTypeNameFromObjects(objects []*pg_query.Node) string {
 	return ""
 }
 
+func extractGrantStmt(statement spec.Statement, stmt *pg_query.GrantStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "grant_table", "postgresql grant statement payload is missing")
+	}
+
+	// Only support ordinary table privileges (ACL_TARGET_OBJECT + OBJECT_TABLE).
+	if stmt.GetTargtype() == pg_query.GrantTargetType_ACL_TARGET_ALL_IN_SCHEMA {
+		return unsupportedStatement(statement, "grant_all_tables_in_schema", "postgresql grant all tables in schema is deferred")
+	}
+	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
+		return unsupportedStatement(statement, "grant_table", fmt.Sprintf("postgresql grant object type %s is deferred", stmt.GetObjtype()))
+	}
+	if stmt.GetTargtype() != pg_query.GrantTargetType_ACL_TARGET_OBJECT {
+		return unsupportedStatement(statement, "grant_table", fmt.Sprintf("postgresql grant target type %s is deferred", stmt.GetTargtype()))
+	}
+
+	// Extract table name from first RangeVar object.
+	tableName, schemaName := grantObjectName(stmt.GetObjects())
+	if tableName == "" {
+		return unsupportedStatement(statement, "grant_table", "postgresql grant table target name is missing")
+	}
+
+	options := map[string]string{}
+	// Privileges: empty list means ALL PRIVILEGES; otherwise CSV of named privileges.
+	privNames := grantPrivilegeNames(stmt.GetPrivileges())
+	if len(privNames) == 0 {
+		options["all_privileges"] = "true"
+	} else {
+		options["privileges"] = strings.Join(privNames, ",")
+	}
+	// Grantees: CSV of role names.
+	granteeNames := grantGranteeNames(stmt.GetGrantees())
+	if len(granteeNames) > 0 {
+		options["grantees"] = strings.Join(granteeNames, ",")
+	}
+	if schemaName != "" {
+		options["schema"] = schemaName
+	}
+	if stmt.GetGrantOption() {
+		options["grant_option"] = "true"
+	}
+	if !stmt.GetIsGrant() && stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+		options["cascade"] = "true"
+	}
+
+	operation := spec.DDLOperationGrantTable
+	if !stmt.GetIsGrant() {
+		operation = spec.DDLOperationRevokeTable
+	}
+
+	statement.DDL = &spec.DDL{
+		Operation:  operation,
+		ObjectName: tableName,
+		ObjectType: "table",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractGrantRoleStmt(statement spec.Statement, stmt *pg_query.GrantRoleStmt) spec.Statement {
+	return unsupportedStatement(statement, "grant_role", "postgresql role membership grant/revoke is deferred")
+}
+
+func extractAlterDefaultPrivilegesStmt(statement spec.Statement, stmt *pg_query.AlterDefaultPrivilegesStmt) spec.Statement {
+	return unsupportedStatement(statement, "alter_default_privileges", "postgresql alter default privileges is deferred")
+}
+
+// grantObjectName extracts table name and optional schema from GrantStmt.Objects.
+func grantObjectName(objects []*pg_query.Node) (name string, schema string) {
+	for _, obj := range objects {
+		if rv := obj.GetRangeVar(); rv != nil {
+			return rv.GetRelname(), rv.GetSchemaname()
+		}
+	}
+	return "", ""
+}
+
+// grantPrivilegeNames extracts named privileges from AccessPriv nodes.
+// Returns empty slice when ALL PRIVILEGES is implied (no AccessPriv nodes or
+// AccessPriv with empty priv_name).
+func grantPrivilegeNames(privileges []*pg_query.Node) []string {
+	var names []string
+	for _, n := range privileges {
+		ap := n.GetAccessPriv()
+		if ap == nil {
+			continue
+		}
+		pn := ap.GetPrivName()
+		if pn != "" {
+			names = append(names, strings.ToLower(pn))
+		}
+	}
+	return names
+}
+
+// grantGranteeNames extracts role names from RoleSpec nodes.
+func grantGranteeNames(grantees []*pg_query.Node) []string {
+	var names []string
+	for _, n := range grantees {
+		if rs := n.GetRoleSpec(); rs != nil {
+			names = append(names, rs.GetRolename())
+		}
+	}
+	return names
+}
+
 func featureNameForNode(node *pg_query.Node) string {
 	if node == nil {
 		return "unknown"
@@ -1696,6 +1808,12 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "alter_extension"
 	case *pg_query.Node_AlterExtensionContentsStmt:
 		return "alter_extension"
+	case *pg_query.Node_GrantStmt:
+		return "grant_table"
+	case *pg_query.Node_GrantRoleStmt:
+		return "grant_role"
+	case *pg_query.Node_AlterDefaultPrivilegesStmt:
+		return "alter_default_privileges"
 	default:
 		return "unknown"
 	}
