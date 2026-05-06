@@ -12,7 +12,12 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个面向 MySQL、TiDB 和 PostgreSQL 的离线优先 SQL 审核引擎。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+DeltaScope 是一个离线优先的 SQL 审核和数据库变更风险检查工具，支持 MySQL、TiDB、PostgreSQL 的 DDL/DML 变更审核。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+
+**常用搜索入口：**
+- [MySQL DDL审核工具](docs/landing/zh/mysql-ddl-audit-tool.html) — 上线前检查表结构变更风险
+- [PostgreSQL / PGSQL DDL审核工具](docs/landing/zh/postgresql-ddl-audit-tool.html) — PG 表结构变更和权限分配审核
+- [SQL上线审核工具](docs/landing/zh/sql-release-audit-tool.html) — 在 CI 中检查数据库变更风险
 
 ## 安装
 

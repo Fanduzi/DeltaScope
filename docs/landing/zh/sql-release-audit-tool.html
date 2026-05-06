@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL上线审核工具：在 CI 中检查数据库变更风险 — DeltaScope</title>
+  <meta name="description" content="DeltaScope 是一个离线优先的 SQL 审核工具，支持 MySQL、TiDB、PostgreSQL 的 DDL/DML 上线审核。在 CI 流水线中自动检查数据库变更风险，也支持 AI agent 集成。" />
+  <link rel="canonical" href="https://deltascope.pages.dev/zh/sql-release-audit-tool.html" />
+  <meta property="og:title" content="SQL上线审核工具：在 CI 中检查数据库变更风险 — DeltaScope" />
+  <meta property="og:description" content="离线优先的 SQL 上线审核工具。支持 MySQL、TiDB、PostgreSQL，在 CI 中自动检查数据库变更风险。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://deltascope.pages.dev/zh/sql-release-audit-tool.html" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="SQL上线审核工具：在 CI 中检查数据库变更风险 — DeltaScope" />
+  <meta name="twitter:description" content="离线优先的 SQL 上线审核工具。在 CI 中自动检查数据库变更风险。" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DeltaScope",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux",
+    "description": "离线优先的 SQL 上线审核工具，支持 MySQL、TiDB、PostgreSQL。在 CI 流水线中自动检查 DDL/DML 变更风险。",
+    "url": "https://github.com/Fanduzi/DeltaScope",
+    "softwareVersion": "v0.60.0",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "license": "https://opensource.org/licenses/Apache-2.0"
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent2: #3fb950; --warn: #d29922; --danger: #f85149; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+    h1 { font-size: 2rem; margin: 2.5rem 0 1rem; line-height: 1.3; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; color: var(--accent); }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0.75rem 0; color: var(--text); }
+    code, pre { font-family: 'IBM Plex Mono', monospace, monospace; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 1rem 0; font-size: 0.875rem; line-height: 1.5; }
+    code { background: rgba(88,166,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre code { background: none; padding: 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-blocker { background: rgba(248,81,73,0.15); color: var(--danger); border: 1px solid rgba(248,81,73,0.3); }
+    .badge-warn { background: rgba(210,153,34,0.15); color: var(--warn); border: 1px solid rgba(210,153,34,0.3); }
+    .badge-notice { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+    .faq details { margin: 0.75rem 0; }
+    .faq summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 0.5rem 0; }
+    .faq details div { padding: 0.5rem 0 0.5rem 1rem; color: var(--muted); }
+    .not-box { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.2); border-radius: 8px; padding: 16px; margin: 1.5rem 0; }
+    .not-box h3 { color: var(--warn); margin-top: 0; }
+    nav { border-bottom: 1px solid var(--border); padding: 12px 0; }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    nav a { color: var(--muted); font-size: 0.875rem; }
+    footer { border-top: 1px solid var(--border); padding: 2rem 0; margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+    .links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .links-grid a { display: block; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="https://deltascope.pages.dev/" style="font-weight:700;color:var(--text);">DeltaScope</a>
+      <span>
+        <a href="https://github.com/Fanduzi/DeltaScope">GitHub</a>
+        <span style="color:var(--border);margin:0 8px;">|</span>
+        <a href="https://deltascope.pages.dev/en/sql-migration-risk-checker.html">English</a>
+      </span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>SQL上线审核工具：在 CI 中检查数据库变更风险</h1>
+    <p>DeltaScope 是一个<strong>离线优先的 SQL审核工具</strong>，支持 MySQL、TiDB、PostgreSQL 的 DDL/DML 上线审核。它返回 <span class="badge badge-blocker">blocker</span>、<span class="badge badge-warn">warning</span>、<span class="badge badge-notice">notice</span> 三级结构化结论。支持 CLI、CI 集成、HTTP 服务、Go SDK、MCP 服务五种入口。</p>
+
+    <h2>在上线前发现风险 SQL</h2>
+
+    <h3>破坏性 DDL</h3>
+    <pre><code>$ deltascope audit --sql "ALTER TABLE users DROP COLUMN age;"
+
+Verdict: reject
+Statements: 1
+Blockers:   1
+
+Statement 1: ALTER TABLE
+- [blocker] ddl.alter.drop.column: dropping column "age" is a destructive change
+</code></pre>
+
+    <h3>无保护 DML</h3>
+    <pre><code>$ deltascope audit --sql "DELETE FROM users;"
+
+Verdict: reject
+Statements: 1
+Blockers:   1
+
+Statement 1: DELETE
+- [blocker] dml.where.require: UPDATE and DELETE statements must include a WHERE clause
+</code></pre>
+
+    <h2>CI SQL 审核</h2>
+    <pre><code># GitHub Actions
+- name: Audit SQL migrations
+  run: |
+    deltascope audit \
+      --file ./migrations.sql \
+      --format github-actions \
+      --fail-on blocker
+</code></pre>
+
+    <pre><code># GitLab CI
+- name: Audit SQL migrations
+  run: |
+    deltascope audit \
+      --file ./migrations.sql \
+      --format gitlab-codequality \
+      --fail-on warning
+</code></pre>
+
+    <h2>接入方式</h2>
+    <ul>
+      <li><strong>CLI</strong> — <code>deltascope audit --file migrations.sql</code></li>
+      <li><strong>CI</strong> — GitHub Actions、GitLab Code Quality、SARIF for Code Scanning</li>
+      <li><strong>HTTP</strong> — <code>POST /v1/audit</code>，启动 <code>deltascope-server</code></li>
+      <li><strong>Go SDK</strong> — <code>deltascope.Audit(ctx, req)</code>，导入 <code>pkg/deltascope</code></li>
+      <li><strong>MCP</strong> — <code>deltascope-mcp</code>，支持 Claude Code、Codex、Cursor 等 40+ AI 编码工具</li>
+    </ul>
+
+    <div class="links-grid">
+      <a href="https://deltascope.pages.dev/zh/mysql-ddl-audit-tool.html">MySQL DDL审核工具 &rarr;</a>
+      <a href="https://deltascope.pages.dev/zh/postgresql-ddl-audit-tool.html">PostgreSQL DDL审核工具 &rarr;</a>
+      <a href="https://github.com/Fanduzi/DeltaScope/releases">Releases &rarr;</a>
+      <a href="https://github.com/Fanduzi/DeltaScope#quick-start">Quick Start &rarr;</a>
+    </div>
+
+    <div class="not-box">
+      <h3>DeltaScope 不是什么</h3>
+      <ul>
+        <li>不是迁移执行引擎。DeltaScope 在执行前审核 SQL 文本，不运行任何 SQL。</li>
+        <li>不是数据库代理或防火墙。它操作静态文件和字符串。</li>
+        <li>不是运行时审计日志。它在部署前发现风险，不是部署后记录活动。</li>
+      </ul>
+    </div>
+
+    <h2>常见问题</h2>
+    <div class="faq">
+      <details>
+        <summary>支持哪些数据库？</summary>
+        <div>MySQL、TiDB 和 PostgreSQL。通过 <code>--dialect mysql|tidb|postgresql</code> 选择方言。</div>
+      </details>
+      <details>
+        <summary>严重级别怎么划分？</summary>
+        <div>每条发现分为 <strong>blocker</strong>（必须修复，会导致数据丢失或停服）、<strong>warning</strong>（建议修复，存在潜在风险）、<strong>notice</strong>（提示信息，值得审查）。如果有 blocker 存在，整体结论为 <code>reject</code>；如果只有 warning/notice，结论为 <code>review</code>；如果全部通过，结论为 <code>pass</code>。</div>
+      </details>
+      <details>
+        <summary>可以和 AI 编码工具配合使用吗？</summary>
+        <div>可以。MCP 服务器支持 Claude Code、Codex、Cursor 等 40+ AI 编码工具。通过 <code>claude mcp add</code> 或 npx launcher 添加。</div>
+      </details>
+      <details>
+        <summary>需要数据库连接吗？</summary>
+        <div>不需要。默认模式是离线审核，只解析 SQL 文本。可选的元数据感知模式可以连接数据库读取表统计信息。</div>
+      </details>
+      <details>
+        <summary>可以自定义哪些规则是 blocker 吗？</summary>
+        <div>可以。每条规则的严重级别都可以通过 YAML 配置文件覆盖，使用 <code>--config</code> 指定。</div>
+      </details>
+    </div>
+
+    <footer>
+      <div class="container">
+        <p>DeltaScope 使用 Apache 2.0 许可证。&copy; 2026 Fanduzi。</p>
+        <p style="margin-top:0.5rem;">
+          <a href="https://github.com/Fanduzi/DeltaScope">GitHub</a> &middot;
+          <a href="https://github.com/Fanduzi/DeltaScope/releases">Releases</a> &middot;
+          <a href="https://deltascope.pages.dev/">首页</a> &middot;
+          <a href="https://deltascope.pages.dev/en/sql-migration-risk-checker.html">English</a>
+        </p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

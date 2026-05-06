@@ -5,6 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DeltaScope — Audit Risky MySQL, TiDB, and PostgreSQL SQL Before It Ships</title>
   <meta name="description" content="DeltaScope helps teams catch risky MySQL, TiDB, and PostgreSQL SQL before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine." />
+  <link rel="canonical" href="https://deltascope.pages.dev/" />
+  <meta property="og:title" content="DeltaScope — Audit Risky MySQL, TiDB, and PostgreSQL SQL Before It Ships" />
+  <meta property="og:description" content="DeltaScope helps teams catch risky MySQL, TiDB, and PostgreSQL SQL before it reaches a database. Audit migrations, gate CI, and review AI-generated SQL changes with one offline-first engine." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://deltascope.pages.dev/" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="DeltaScope — Audit Risky MySQL, TiDB, and PostgreSQL SQL Before It Ships" />
+  <meta name="twitter:description" content="Offline-first SQL audit engine. Catch risky DDL and DML before they reach a database." />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DeltaScope",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux",
+    "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
+    "url": "https://github.com/Fanduzi/DeltaScope",
+    "softwareVersion": "v0.60.0",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "license": "https://opensource.org/licenses/Apache-2.0"
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1143,6 +1165,38 @@ Statement 1: CREATE TABLE
       </div>
     </section>
 
+    <section id="seo-pages" style="padding:48px 0 24px;">
+      <div class="container">
+        <h2 style="text-align:center;font-size:1.5rem;margin-bottom:32px;">SQL audit pages for common searches / 常用搜索入口</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:900px;margin:0 auto;">
+          <a href="en/mysql-ddl-audit-tool.html" style="display:block;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);">
+            <strong>MySQL DDL Audit Tool</strong>
+            <p style="margin:8px 0 0;font-size:0.875rem;color:var(--muted);">Catch risky schema changes before they ship.</p>
+          </a>
+          <a href="en/postgresql-ddl-audit-tool.html" style="display:block;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);">
+            <strong>PostgreSQL DDL Audit Tool</strong>
+            <p style="margin:8px 0 0;font-size:0.875rem;color:var(--muted);">Review schema changes and DCL before migration.</p>
+          </a>
+          <a href="en/sql-migration-risk-checker.html" style="display:block;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);">
+            <strong>SQL Migration Risk Checker</strong>
+            <p style="margin:8px 0 0;font-size:0.875rem;color:var(--muted);">CI and AI workflow integration for SQL review.</p>
+          </a>
+          <a href="zh/mysql-ddl-audit-tool.html" style="display:block;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);">
+            <strong>MySQL DDL审核工具</strong>
+            <p style="margin:8px 0 0;font-size:0.875rem;color:var(--muted);">上线前检查表结构变更风险。</p>
+          </a>
+          <a href="zh/postgresql-ddl-audit-tool.html" style="display:block;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);">
+            <strong>PostgreSQL / PGSQL DDL审核工具</strong>
+            <p style="margin:8px 0 0;font-size:0.875rem;color:var(--muted);">PG 表结构变更和权限分配审核。</p>
+          </a>
+          <a href="zh/sql-release-audit-tool.html" style="display:block;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);">
+            <strong>SQL上线审核工具</strong>
+            <p style="margin:8px 0 0;font-size:0.875rem;color:var(--muted);">在 CI 中检查数据库变更风险。</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top">↑</button>
 
     <footer>
@@ -1554,7 +1608,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
             v0560: 'v0.56.0 新增 PostgreSQL ALTER TABLE logged-state 覆盖与 ALTER COLUMN TYPE USING 元数据提取，规范化 SET LOGGED、SET UNLOGGED，并配有两条 PostgreSQL-only 新发现。',
             v0550: 'v0.55.0 新增 PostgreSQL 类型生命周期覆盖，支持 enum 类型与类型删除，规范化 CREATE TYPE AS ENUM、ALTER TYPE ADD VALUE 和 DROP TYPE，并配有五条 PostgreSQL-only 新发现。',
             v0540: 'v0.54.0 扩展 PostgreSQL ALTER TABLE 覆盖，纳入触发器范围操作与 replica identity 配置，并为高风险 replica identity 模式提供新发现。'
-          }
+          },
           title: '把 DDL / DML 审查前移到工作流更早的位置',
           sub: '一次安装，本地先审，CI 再卡口，并在所有接入面上复用同一套策略。',
           primary: '安装 DeltaScope',
