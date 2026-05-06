@@ -140,6 +140,8 @@ var pgDDLCensusCases = []censusCase{
 	{Name: "REVOKE SELECT ON TABLE", SQL: "REVOKE SELECT ON TABLE users FROM analyst"},
 	{Name: "CREATE EXTENSION", SQL: "CREATE EXTENSION IF NOT EXISTS pg_trgm"},
 	{Name: "DROP EXTENSION", SQL: "DROP EXTENSION pg_trgm"},
+	{Name: "ALTER EXTENSION UPDATE", SQL: "ALTER EXTENSION pg_trgm UPDATE"},
+	{Name: "ALTER EXTENSION SET SCHEMA", SQL: "ALTER EXTENSION pg_trgm SET SCHEMA extensions"},
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_audit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()"},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_audit ON users"},
 }
@@ -223,6 +225,8 @@ var pgCorpusCovered = map[string]bool{
 	"REVOKE SELECT ON TABLE":                     false,
 	"CREATE EXTENSION":                           false,
 	"DROP EXTENSION":                             false,
+	"ALTER EXTENSION UPDATE":                     false,
+	"ALTER EXTENSION SET SCHEMA":                 false,
 	"CREATE TRIGGER":                             false,
 	"DROP TRIGGER":                               false,
 }

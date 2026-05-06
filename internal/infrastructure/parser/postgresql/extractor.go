@@ -71,6 +71,12 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateDomainStmt(statement, node.CreateDomainStmt), nil
 	case *pg_query.Node_AlterDomainStmt:
 		return extractAlterDomainStmt(statement, node.AlterDomainStmt), nil
+	case *pg_query.Node_CreateExtensionStmt:
+		return extractCreateExtensionStmt(statement, node.CreateExtensionStmt), nil
+	case *pg_query.Node_AlterExtensionStmt:
+		return extractAlterExtensionStmt(statement, node.AlterExtensionStmt), nil
+	case *pg_query.Node_AlterExtensionContentsStmt:
+		return extractAlterExtensionContentsStmt(statement, node.AlterExtensionContentsStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
@@ -274,6 +280,26 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TYPE {
 		return extractAlterTypeSetSchema(statement, stmt)
 	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_EXTENSION {
+		objectName := ""
+		if obj := stmt.GetObject(); obj != nil {
+			if list := obj.GetList(); list != nil {
+				objectName = firstStringFromNodes(list.GetItems())
+			} else if s := obj.GetString_(); s != nil {
+				objectName = s.GetSval()
+			}
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterExtension,
+			ObjectName: objectName,
+			ObjectType: "extension",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
 	statement.DDL = &spec.DDL{
 		Operation: spec.DDLOperationAlterTable,
 		Table:     tableFromRangeVar(stmt.GetRelation()),
@@ -364,6 +390,17 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			Operation:  spec.DDLOperationDropDomain,
 			ObjectName: dropTypeNameFromObjects(stmt.GetObjects()),
 			ObjectType: "domain",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_EXTENSION:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropExtension,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "extension",
 			Options:    options,
 		}
 	default:
@@ -1387,6 +1424,86 @@ func extractAlterDomainStmt(statement spec.Statement, stmt *pg_query.AlterDomain
 	return statement
 }
 
+func extractCreateExtensionStmt(statement spec.Statement, stmt *pg_query.CreateExtensionStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_extension", "postgresql create extension statement payload is missing")
+	}
+	options := map[string]string{}
+	if stmt.GetIfNotExists() {
+		options["if_not_exists"] = "true"
+	}
+	for _, optNode := range stmt.GetOptions() {
+		defElem := optNode.GetDefElem()
+		if defElem == nil {
+			continue
+		}
+		switch defElem.GetDefname() {
+		case "schema":
+			if arg := defElem.GetArg(); arg != nil {
+				if s := arg.GetString_(); s != nil {
+					options["schema"] = s.GetSval()
+				}
+			}
+		case "new_version":
+			if arg := defElem.GetArg(); arg != nil {
+				if s := arg.GetString_(); s != nil {
+					options["version"] = s.GetSval()
+				}
+			}
+		case "cascade":
+			options["cascade"] = "true"
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateExtension,
+		ObjectName: stmt.GetExtname(),
+		ObjectType: "extension",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractAlterExtensionStmt(statement spec.Statement, stmt *pg_query.AlterExtensionStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_extension", "postgresql alter extension statement payload is missing")
+	}
+	options := map[string]string{"action": "update"}
+	for _, optNode := range stmt.GetOptions() {
+		defElem := optNode.GetDefElem()
+		if defElem == nil {
+			continue
+		}
+		if defElem.GetDefname() == "new_version" {
+			if arg := defElem.GetArg(); arg != nil {
+				if s := arg.GetString_(); s != nil {
+					options["version"] = s.GetSval()
+				}
+			}
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterExtension,
+		ObjectName: stmt.GetExtname(),
+		ObjectType: "extension",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractAlterExtensionContentsStmt(statement spec.Statement, stmt *pg_query.AlterExtensionContentsStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_extension", "postgresql alter extension contents statement payload is missing")
+	}
+	switch stmt.GetAction() {
+	case 1:
+		return unsupportedStatement(statement, "alter_extension_add_member", "postgresql alter extension add member is deferred")
+	case -1:
+		return unsupportedStatement(statement, "alter_extension_drop_member", "postgresql alter extension drop member is deferred")
+	default:
+		return unsupportedStatement(statement, "alter_extension", fmt.Sprintf("postgresql alter extension contents action %d is deferred", stmt.GetAction()))
+	}
+}
+
 // extractCompositeTypeStmt normalizes CREATE TYPE ... AS (...) into spec.DDL
 // with operation create_type and type_kind=composite.
 func extractCompositeTypeStmt(statement spec.Statement, stmt *pg_query.CompositeTypeStmt) spec.Statement {
@@ -1573,6 +1690,12 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "create_domain"
 	case *pg_query.Node_AlterDomainStmt:
 		return "alter_domain"
+	case *pg_query.Node_CreateExtensionStmt:
+		return "create_extension"
+	case *pg_query.Node_AlterExtensionStmt:
+		return "alter_extension"
+	case *pg_query.Node_AlterExtensionContentsStmt:
+		return "alter_extension"
 	default:
 		return "unknown"
 	}

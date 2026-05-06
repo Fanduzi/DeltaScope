@@ -54,6 +54,10 @@ const (
 	DDLOperationCreateDomain DDLOperation = "create_domain"
 	DDLOperationAlterDomain  DDLOperation = "alter_domain"
 	DDLOperationDropDomain   DDLOperation = "drop_domain"
+
+	DDLOperationCreateExtension DDLOperation = "create_extension"
+	DDLOperationAlterExtension  DDLOperation = "alter_extension"
+	DDLOperationDropExtension   DDLOperation = "drop_extension"
 )
 
 // Table describes a table-level object.

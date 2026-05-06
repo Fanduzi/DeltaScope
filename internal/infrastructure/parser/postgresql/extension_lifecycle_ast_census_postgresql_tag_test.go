@@ -390,84 +390,160 @@ func TestExtensionLifecycleDeltaScopeBaseline(t *testing.T) {
 	}
 }
 
-// assertExtensionLifecycleBaseline captures current (pre-Task-2) expectations.
+// assertExtensionLifecycleBaseline captures post-Task-2 expectations.
 //
-// Current state:
-//   - CREATE EXTENSION forms: KindUnknown, unsupported feature "unknown"
-//     (CreateExtensionStmt not in classify switch)
-//   - DROP EXTENSION forms: KindDDL (DropStmt IS in classify switch), but
-//     unsupported because OBJECT_EXTENSION is not handled in extractDropStmt
-//   - ALTER EXTENSION UPDATE forms: KindUnknown, unsupported feature "unknown"
-//     (AlterExtensionStmt not in classify switch)
-//   - ALTER EXTENSION SET SCHEMA: KindDDL, normalized as alter_table via
-//     AlterObjectSchemaStmt handler (already classified and extracted)
-//   - ALTER EXTENSION ADD/DROP TABLE: KindUnknown, unsupported feature "unknown"
-//     (AlterExtensionContentsStmt not in classify switch)
+// Post-Task-2 state:
+//   - CREATE EXTENSION forms: KindDDL, normalized as create_extension
+//   - DROP EXTENSION forms: KindDDL, normalized as drop_extension
+//   - ALTER EXTENSION UPDATE forms: KindDDL, normalized as alter_extension
+//   - ALTER EXTENSION SET SCHEMA: KindDDL, normalized as alter_extension
+//   - ALTER EXTENSION ADD/DROP TABLE: KindDDL, unsupported with stable feature names
 func assertExtensionLifecycleBaseline(t *testing.T, fact extensionLifecycleBaselineFact) {
 	t.Helper()
 
 	switch fact.Name {
-	case "create_extension", "create_extension_if_not_exists",
-		"create_extension_schema", "create_extension_version",
-		"create_extension_cascade":
-		// CreateExtensionStmt is not in classify switch → KindUnknown
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
-		}
-		if fact.Kind != spec.KindUnknown {
-			t.Errorf("%s: expected KindUnknown, got %v", fact.Name, fact.Kind)
-		}
-		if fact.UnsupportedFeature != "unknown" {
-			t.Errorf("%s: expected feature 'unknown', got %q", fact.Name, fact.UnsupportedFeature)
-		}
-
-	case "drop_extension", "drop_extension_if_exists_cascade":
-		// DropStmt IS in classify switch → KindDDL, but OBJECT_EXTENSION not handled
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
-		}
+	case "create_extension":
 		if fact.Kind != spec.KindDDL {
 			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
 		}
-		if fact.UnsupportedFeature != "drop" {
-			t.Errorf("%s: expected feature 'drop', got %q", fact.Name, fact.UnsupportedFeature)
-		}
-
-	case "alter_extension_update", "alter_extension_update_to_version":
-		// AlterExtensionStmt not in classify switch → KindUnknown
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
-		}
-		if fact.Kind != spec.KindUnknown {
-			t.Errorf("%s: expected KindUnknown, got %v", fact.Name, fact.Kind)
-		}
-		if fact.UnsupportedFeature != "unknown" {
-			t.Errorf("%s: expected feature 'unknown', got %q", fact.Name, fact.UnsupportedFeature)
-		}
-
-	case "alter_extension_set_schema":
-		// ALTER EXTENSION SET SCHEMA uses AlterObjectSchemaStmt which IS in
-		// classify switch → already classified as DDL and extracted as alter_table.
 		if fact.Unsupported {
 			t.Errorf("%s: expected normalized, got unsupported %s: %s", fact.Name, fact.UnsupportedFeature, fact.UnsupportedReason)
 		}
+		if fact.DDLOperation != "create_extension" {
+			t.Errorf("%s: expected create_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLObjectName != "pg_trgm" {
+			t.Errorf("%s: expected object_name pg_trgm, got %q", fact.Name, fact.DDLObjectName)
+		}
+		if fact.DDLObjectType != "extension" {
+			t.Errorf("%s: expected object_type extension, got %q", fact.Name, fact.DDLObjectType)
+		}
+
+	case "create_extension_if_not_exists":
 		if fact.Kind != spec.KindDDL {
 			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
 		}
-		if fact.DDLOperation != "alter_table" {
-			t.Errorf("%s: expected alter_table, got %q", fact.Name, fact.DDLOperation)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "create_extension" {
+			t.Errorf("%s: expected create_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["if_not_exists"] != "true" {
+			t.Errorf("%s: expected if_not_exists=true, got %v", fact.Name, fact.DDLOptions)
 		}
 
-	case "alter_extension_add_table", "alter_extension_drop_table":
-		// AlterExtensionContentsStmt not in classify switch → KindUnknown
+	case "create_extension_schema":
+		if fact.DDLOperation != "create_extension" {
+			t.Errorf("%s: expected create_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["schema"] != "public" {
+			t.Errorf("%s: expected schema=public, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "create_extension_version":
+		if fact.DDLOperation != "create_extension" {
+			t.Errorf("%s: expected create_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["version"] != "1.6" {
+			t.Errorf("%s: expected version=1.6, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "create_extension_cascade":
+		if fact.DDLOperation != "create_extension" {
+			t.Errorf("%s: expected create_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["cascade"] != "true" {
+			t.Errorf("%s: expected cascade=true, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "drop_extension":
+		if fact.Kind != spec.KindDDL {
+			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		}
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "drop_extension" {
+			t.Errorf("%s: expected drop_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLObjectName != "pg_trgm" {
+			t.Errorf("%s: expected object_name pg_trgm, got %q", fact.Name, fact.DDLObjectName)
+		}
+
+	case "drop_extension_if_exists_cascade":
+		if fact.DDLOperation != "drop_extension" {
+			t.Errorf("%s: expected drop_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["if_exists"] != "true" {
+			t.Errorf("%s: expected if_exists=true, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["cascade"] != "true" {
+			t.Errorf("%s: expected cascade=true, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "alter_extension_update":
+		if fact.Kind != spec.KindDDL {
+			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		}
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported", fact.Name)
+		}
+		if fact.DDLOperation != "alter_extension" {
+			t.Errorf("%s: expected alter_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "update" {
+			t.Errorf("%s: expected action=update, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "alter_extension_update_to_version":
+		if fact.DDLOperation != "alter_extension" {
+			t.Errorf("%s: expected alter_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "update" {
+			t.Errorf("%s: expected action=update, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["version"] != "1.6" {
+			t.Errorf("%s: expected version=1.6, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "alter_extension_set_schema":
+		if fact.Kind != spec.KindDDL {
+			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		}
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s: %s", fact.Name, fact.UnsupportedFeature, fact.UnsupportedReason)
+		}
+		if fact.DDLOperation != "alter_extension" {
+			t.Errorf("%s: expected alter_extension, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "set_schema" {
+			t.Errorf("%s: expected action=set_schema, got %v", fact.Name, fact.DDLOptions)
+		}
+		if fact.DDLOptions["new_schema"] != "extensions" {
+			t.Errorf("%s: expected new_schema=extensions, got %v", fact.Name, fact.DDLOptions)
+		}
+
+	case "alter_extension_add_table":
+		if fact.Kind != spec.KindDDL {
+			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		}
 		if !fact.Unsupported {
 			t.Errorf("%s: expected unsupported", fact.Name)
 		}
-		if fact.Kind != spec.KindUnknown {
-			t.Errorf("%s: expected KindUnknown, got %v", fact.Name, fact.Kind)
+		if fact.UnsupportedFeature != "alter_extension_add_member" {
+			t.Errorf("%s: expected feature 'alter_extension_add_member', got %q", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "unknown" {
-			t.Errorf("%s: expected feature 'unknown', got %q", fact.Name, fact.UnsupportedFeature)
+
+	case "alter_extension_drop_table":
+		if fact.Kind != spec.KindDDL {
+			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		}
+		if !fact.Unsupported {
+			t.Errorf("%s: expected unsupported", fact.Name)
+		}
+		if fact.UnsupportedFeature != "alter_extension_drop_member" {
+			t.Errorf("%s: expected feature 'alter_extension_drop_member', got %q", fact.Name, fact.UnsupportedFeature)
 		}
 	}
 }
