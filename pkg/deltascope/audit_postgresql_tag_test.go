@@ -2071,3 +2071,73 @@ func TestAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_extension_notice",
+			sql:         "CREATE EXTENSION pg_trgm;",
+			wantRuleIDs: []string{"ddl.pg.create_extension.notice"},
+		},
+		{
+			name:        "create_extension_cascade",
+			sql:         "CREATE EXTENSION pg_trgm CASCADE;",
+			wantRuleIDs: []string{"ddl.pg.create_extension.notice", "ddl.pg.create_extension.cascade.warn"},
+		},
+		{
+			name:        "alter_extension_update_notice",
+			sql:         "ALTER EXTENSION pg_trgm UPDATE;",
+			wantRuleIDs: []string{"ddl.pg.alter_extension.update.notice"},
+		},
+		{
+			name:        "alter_extension_set_schema_notice",
+			sql:         "ALTER EXTENSION pg_trgm SET SCHEMA extensions;",
+			wantRuleIDs: []string{"ddl.pg.alter_extension.set_schema.notice"},
+		},
+		{
+			name:        "drop_extension_cascade",
+			sql:         "DROP EXTENSION IF EXISTS pg_trgm CASCADE;",
+			wantRuleIDs: []string{"ddl.pg.drop_extension.advisory", "ddl.pg.drop_extension.cascade.warn"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, f := range result.Statements[0].Findings {
+				if _, expected := wantRuleIDs[f.RuleID]; expected {
+					wantRuleIDs[f.RuleID] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule %q, got %#v", ruleID, result.Statements[0].Findings)
+				}
+			}
+		})
+	}
+}

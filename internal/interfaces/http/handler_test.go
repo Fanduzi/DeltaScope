@@ -2053,3 +2053,101 @@ func TestHandlerAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlerAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
+	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+		t.Skip("skipping: PG-capable build required for extension lifecycle rule coverage test")
+	}
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		sql         string
+		wantRuleIDs []string
+	}{
+		{
+			name:        "create_extension_notice",
+			sql:         `CREATE EXTENSION pg_trgm;`,
+			wantRuleIDs: []string{"ddl.pg.create_extension.notice"},
+		},
+		{
+			name:        "create_extension_cascade",
+			sql:         `CREATE EXTENSION pg_trgm CASCADE;`,
+			wantRuleIDs: []string{"ddl.pg.create_extension.notice", "ddl.pg.create_extension.cascade.warn"},
+		},
+		{
+			name:        "alter_extension_update_notice",
+			sql:         `ALTER EXTENSION pg_trgm UPDATE;`,
+			wantRuleIDs: []string{"ddl.pg.alter_extension.update.notice"},
+		},
+		{
+			name:        "alter_extension_set_schema_notice",
+			sql:         `ALTER EXTENSION pg_trgm SET SCHEMA extensions;`,
+			wantRuleIDs: []string{"ddl.pg.alter_extension.set_schema.notice"},
+		},
+		{
+			name:        "drop_extension_cascade",
+			sql:         `DROP EXTENSION IF EXISTS pg_trgm CASCADE;`,
+			wantRuleIDs: []string{"ddl.pg.drop_extension.advisory", "ddl.pg.drop_extension.cascade.warn"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body := `{"sql":"` + strings.ReplaceAll(tt.sql, `"`, `\"`) + `","dialect":"postgresql"}`
+			req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+			}
+
+			var payload map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			if unsupported, ok := payload["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+
+			statements, ok := payload["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", payload["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			wantRuleIDs := map[string]bool{}
+			for _, id := range tt.wantRuleIDs {
+				wantRuleIDs[id] = false
+			}
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				ruleID, _ := finding["rule_id"].(string)
+				if _, expected := wantRuleIDs[ruleID]; expected {
+					wantRuleIDs[ruleID] = true
+				}
+			}
+			for ruleID, found := range wantRuleIDs {
+				if !found {
+					t.Fatalf("expected finding with rule_id %s, got %#v", ruleID, findings)
+				}
+			}
+		})
+	}
+}
