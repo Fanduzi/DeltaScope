@@ -25,6 +25,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, drop-type advisory, drop-type cascade warn |
 | postgresql_domain_lifecycle_rules.go | Implements PostgreSQL-only domain lifecycle rules: create-domain notice, alter-domain constraint/default/not-null/rename notices, drop-domain advisory, drop-domain cascade warn |
 | postgresql_extension_lifecycle_rules.go | Implements PostgreSQL-only extension lifecycle rules: create-extension notice, create-extension cascade warn, alter-extension update/set-schema notices, drop-extension advisory, drop-extension cascade warn |
+| postgresql_privilege_rules.go | Implements PostgreSQL-only table privilege rules: grant-table notice, grant-table all-privileges warn, revoke-table notice, revoke-table cascade warn |
+| postgresql_privilege_rules_test.go | Verifies PG table privilege rules with positive, negative, cross-dialect, deferred-form, registration, and defaults coverage |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
@@ -240,6 +242,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter_domain.rename.notice`
 - `ddl.pg.drop_domain.advisory`
 - `ddl.pg.drop_domain.cascade.warn`
+- `ddl.pg.grant.table_privilege.notice`
+- `ddl.pg.grant.table_privilege.all.warn`
+- `ddl.pg.revoke.table_privilege.notice`
+- `ddl.pg.revoke.table_privilege.cascade.warn`
 - `ddl.pg.create_extension.notice`
 - `ddl.pg.create_extension.cascade.warn`
 - `ddl.pg.alter_extension.update.notice`

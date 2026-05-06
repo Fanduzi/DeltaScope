@@ -205,6 +205,11 @@ const (
 	ruleIDPGCreateTypeCompositeNotice                      = "ddl.pg.create_type.composite.notice"
 	ruleIDPGAlterTypeCompositeRenameNotice                 = "ddl.pg.alter_type.composite_rename.notice"
 	ruleIDPGAlterTypeCompositeSetSchemaNotice              = "ddl.pg.alter_type.composite_set_schema.notice"
+	// PostgreSQL table privilege rules (PG-only).
+	ruleIDPGGrantTablePrivilegeNotice                      = "ddl.pg.grant.table_privilege.notice"
+	ruleIDPGGrantTablePrivilegeAllWarn                     = "ddl.pg.grant.table_privilege.all.warn"
+	ruleIDPGRevokeTablePrivilegeNotice                     = "ddl.pg.revoke.table_privilege.notice"
+	ruleIDPGRevokeTablePrivilegeCascadeWarn                = "ddl.pg.revoke.table_privilege.cascade.warn"
 	// PostgreSQL extension lifecycle rules (PG-only).
 	ruleIDPGCreateExtensionNotice                          = "ddl.pg.create_extension.notice"
 	ruleIDPGCreateExtensionCascadeWarn                     = "ddl.pg.create_extension.cascade.warn"

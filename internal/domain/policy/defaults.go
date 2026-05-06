@@ -916,6 +916,27 @@ func Default() Policy {
 					Level:   rule.LevelWarning,
 					Params:  map[string]any{},
 				},
+				// PG table privilege rules (PostgreSQL-only).
+				"ddl.pg.grant.table_privilege.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.grant.table_privilege.all.warn": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.revoke.table_privilege.notice": {
+					Enabled: true,
+					Level:   rule.LevelNotice,
+					Params:  map[string]any{},
+				},
+				"ddl.pg.revoke.table_privilege.cascade.warn": {
+					Enabled: true,
+					Level:   rule.LevelWarning,
+					Params:  map[string]any{},
+				},
 				// PG extension lifecycle rules (PostgreSQL-only).
 				"ddl.pg.create_extension.notice": {
 					Enabled: true,
