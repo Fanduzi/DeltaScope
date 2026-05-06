@@ -405,6 +405,45 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL 表级权限 DCL（v0.60.0）
+
+`v0.60.0` 新增 PostgreSQL 表级权限 DCL 窄支持。DeltaScope 规范化 `GRANT ... ON TABLE` 和 `REVOKE ... ON TABLE`，新增四条 PostgreSQL-only 发现，并将 `ALL TABLES IN SCHEMA`、sequence privileges、role membership GRANT/REVOKE 和 `ALTER DEFAULT PRIVILEGES` 作为显式不支持/延迟边界。DeltaScope 不对表级权限做任何形式的实时校验。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `GRANT SELECT ON users TO reader` | `grant_table_privilege` |
+| `GRANT SELECT, INSERT ON users TO reader, writer` | `grant_table_privilege`（privileges=[SELECT, INSERT], grantees=[reader, writer]） |
+| `GRANT ALL PRIVILEGES ON users TO admin` | `grant_table_privilege`（all_privileges=true） |
+| `GRANT SELECT ON public.users TO reader` | `grant_table_privilege`（schema=public） |
+| `REVOKE SELECT ON users FROM reader` | `revoke_table_privilege` |
+| `REVOKE INSERT, UPDATE ON users FROM writer, editor` | `revoke_table_privilege`（privileges=[INSERT, UPDATE], grantees=[writer, editor]） |
+| `REVOKE ALL PRIVILEGES ON users FROM admin` | `revoke_table_privilege`（all_privileges=true） |
+| `REVOKE SELECT ON users FROM reader CASCADE` | `revoke_table_privilege`（cascade=true） |
+
+### 表级权限 DCL 规则
+
+| 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
+|---------|---------|:----:|:--------:|---------|
+| `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` 授予表级权限——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` 授予所有权限——警告过度授权 | ✓ | ✗ | warning |
+| `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` 撤销表级权限——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.revoke.table_privilege.cascade.warn` | `REVOKE ... ON TABLE ... CASCADE` 级联撤销——警告级联副作用 | ✓ | ✗ | warning |
+
+### 不支持/延迟的操作
+
+| SQL | 状态 |
+|-----|------|
+| `GRANT ... ON ALL TABLES IN SCHEMA` | 不支持 |
+| Sequence privileges（`GRANT ... ON SEQUENCE`） | 不支持 |
+| Role membership（`GRANT role TO role`） | 不支持 |
+| `ALTER DEFAULT PRIVILEGES` | 不支持 |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。`GRANT ALL PRIVILEGES ON TABLE` 会同时触发 `ddl.pg.grant.table_privilege.notice` 和 `ddl.pg.grant.table_privilege.all.warn`。`REVOKE ... ON TABLE ... CASCADE` 会同时触发 `ddl.pg.revoke.table_privilege.notice` 和 `ddl.pg.revoke.table_privilege.cascade.warn`，属于有意设计。DeltaScope 不做任何形式的实时校验——不验证 grantee/role 是否存在、不验证 table/object 是否存在、不验证当前用户是否有授权权限、不计算 effective privileges、不解析 role inheritance、不验证 ownership、不评估 RLS/policies。这是窄表级权限 DCL 支持，不是广泛的治理或 admin DCL 支持。不影响 MySQL/TiDB 行为。
+
+---
+
 ## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0）
 
 `v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。

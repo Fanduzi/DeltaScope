@@ -425,7 +425,22 @@ These rules guard against risky PostgreSQL extension lifecycle DDL operations �
 | `ddl.pg.drop_extension.advisory` | `DROP EXTENSION` removes an extension — advises review of dependent objects | warning | No |
 | `ddl.pg.drop_extension.cascade.warn` | `DROP EXTENSION ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CREATE EXTENSION ... CASCADE` intentionally emits both `ddl.pg.create_extension.notice` and `ddl.pg.create_extension.cascade.warn`. `DROP EXTENSION ... CASCADE` intentionally emits both `ddl.pg.drop_extension.advisory` and `ddl.pg.drop_extension.cascade.warn`. DeltaScope does not perform live validation of extension availability, installed packages, version compatibility, or dependency graphs. Extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) is explicitly unsupported/deferred.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CREATE EXTENSION ... CASCADE` intentionally emits both `ddl.pg.create_extension.notice` and `ddl.pg.create_extension.cascade.warn`. `DROP EXTENSION ... CASCADE` intentionally emits both `ddl.pg.drop_extension.advisory` and `ddl.pg.drop_extension.cascade.warn`. DeltaScope does not perform live validation of extension availability, installed packages, version compatibility, or dependency graphs. Extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) is explicitly unsupported/deferred. Table-level privilege DCL is now supported — see Table Privilege DCL Rules below.
+
+---
+
+## DDL: PostgreSQL Table Privilege DCL Rules (4 rules)
+
+These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ... ON TABLE` and `REVOKE ... ON TABLE`. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` grants table-level privileges — informational notice | notice | No |
+| `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` grants all privileges — warns about over-permission | warning | No |
+| `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` revokes table-level privileges — informational notice | notice | No |
+| `ddl.pg.revoke.table_privilege.cascade.warn` | `REVOKE ... ON TABLE ... CASCADE` cascades revocation to dependent privileges — warns about cascade side-effects | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `GRANT ALL PRIVILEGES ON TABLE` intentionally emits both `ddl.pg.grant.table_privilege.notice` and `ddl.pg.grant.table_privilege.all.warn`. `REVOKE ... ON TABLE ... CASCADE` intentionally emits both `ddl.pg.revoke.table_privilege.notice` and `ddl.pg.revoke.table_privilege.cascade.warn`. Supports multiple privileges (e.g., `SELECT, INSERT`), multiple grantees, and schema-qualified table names (e.g., `public.users`). DeltaScope does not perform live validation — no grantee/role existence checks, no table/object existence checks, no grantor permission checks, no effective privilege computation, no role inheritance resolution, no ownership verification, and no RLS/policy evaluation. `ALL TABLES IN SCHEMA`, sequence privileges, role membership GRANT/REVOKE, and `ALTER DEFAULT PRIVILEGES` are not supported. This is narrow table-level privilege DCL support — not broad governance or admin DCL support.
 
 ---
 

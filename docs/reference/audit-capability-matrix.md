@@ -419,6 +419,45 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL Table Privilege DCL (v0.60.0)
+
+`v0.60.0` adds PostgreSQL table-level privilege DCL narrow support. DeltaScope normalizes `GRANT ... ON TABLE` and `REVOKE ... ON TABLE`, adds four PostgreSQL-only findings, and keeps `ALL TABLES IN SCHEMA`, sequence privileges, role membership GRANT/REVOKE, and `ALTER DEFAULT PRIVILEGES` as explicit unsupported/deferred boundaries. DeltaScope does not perform live validation of any kind for table privileges. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `GRANT SELECT ON users TO reader` | `grant_table_privilege` |
+| `GRANT SELECT, INSERT ON users TO reader, writer` | `grant_table_privilege` (privileges=[SELECT, INSERT], grantees=[reader, writer]) |
+| `GRANT ALL PRIVILEGES ON users TO admin` | `grant_table_privilege` (all_privileges=true) |
+| `GRANT SELECT ON public.users TO reader` | `grant_table_privilege` (schema=public) |
+| `REVOKE SELECT ON users FROM reader` | `revoke_table_privilege` |
+| `REVOKE INSERT, UPDATE ON users FROM writer, editor` | `revoke_table_privilege` (privileges=[INSERT, UPDATE], grantees=[writer, editor]) |
+| `REVOKE ALL PRIVILEGES ON users FROM admin` | `revoke_table_privilege` (all_privileges=true) |
+| `REVOKE SELECT ON users FROM reader CASCADE` | `revoke_table_privilege` (cascade=true) |
+
+### Table Privilege DCL Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` grants table-level privileges — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` grants all privileges — warns about over-permission | ✓ | ✗ | warning |
+| `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` revokes table-level privileges — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.revoke.table_privilege.cascade.warn` | `REVOKE ... ON TABLE ... CASCADE` cascades revocation — warns about cascade side-effects | ✓ | ✗ | warning |
+
+### Unsupported / Deferred Operations
+
+| SQL | Status |
+|-----|--------|
+| `GRANT ... ON ALL TABLES IN SCHEMA` | Not supported |
+| Sequence privileges (`GRANT ... ON SEQUENCE`) | Not supported |
+| Role membership (`GRANT role TO role`) | Not supported |
+| `ALTER DEFAULT PRIVILEGES` | Not supported |
+
+> **Note:** These rules are offline-only and do not require a database connection. `GRANT ALL PRIVILEGES ON TABLE` intentionally emits both `ddl.pg.grant.table_privilege.notice` and `ddl.pg.grant.table_privilege.all.warn`. `REVOKE ... ON TABLE ... CASCADE` intentionally emits both `ddl.pg.revoke.table_privilege.notice` and `ddl.pg.revoke.table_privilege.cascade.warn`. DeltaScope does not perform live validation — no grantee/role existence checks, no table/object existence checks, no grantor permission checks, no effective privilege computation, no role inheritance resolution, no ownership verification, and no RLS/policy evaluation. This is narrow table-level privilege DCL support — not broad governance or admin DCL support. No MySQL/TiDB behavior changes.
+
+---
+
 ## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0)
 
 `v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.

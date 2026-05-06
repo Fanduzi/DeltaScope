@@ -6,6 +6,31 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.60.0] - 2026-05-06
+
+### Added
+
+- PostgreSQL table-level privilege DCL narrow support: `GRANT ... ON TABLE` and `REVOKE ... ON TABLE` now pass through the audit pipeline instead of returning unsupported.
+- Four new PostgreSQL-only rules: `ddl.pg.grant.table_privilege.notice` (notice), `ddl.pg.grant.table_privilege.all.warn` (warning), `ddl.pg.revoke.table_privilege.notice` (notice), `ddl.pg.revoke.table_privilege.cascade.warn` (warning).
+- `GRANT ALL PRIVILEGES ON TABLE` triggers both `ddl.pg.grant.table_privilege.notice` and `ddl.pg.grant.table_privilege.all.warn` — duplicate findings are intentional.
+- `REVOKE ... ON TABLE ... CASCADE` triggers both `ddl.pg.revoke.table_privilege.notice` and `ddl.pg.revoke.table_privilege.cascade.warn` — duplicate findings are intentional.
+- Supports single-table GRANT/REVOKE with multiple privileges (e.g., `SELECT, INSERT`), multiple grantees, and schema-qualified table names (e.g., `public.users`).
+- Corpus fixtures covering all four new rules' trigger forms.
+- Service-level tests through `AuditSQL` for representative table privilege DCL variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all table privilege DCL forms.
+
+### Non-Goals
+
+- DeltaScope does not perform live validation of any kind for table privileges: no grantee/role existence checks, no table/object existence checks, no grantor permission checks, no effective privilege computation, no role inheritance resolution, no ownership verification, no RLS/policy evaluation.
+- `ALL TABLES IN SCHEMA` GRANT/REVOKE is not supported.
+- Sequence privileges are not supported.
+- Role membership GRANT/REVOKE is not supported.
+- `ALTER DEFAULT PRIVILEGES` is not supported.
+- This is narrow table-level privilege DCL support — not broad governance or admin DCL support.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the four new PostgreSQL-only rule entries.
+
 ## [v0.59.0] - 2026-05-06
 
 ### Added

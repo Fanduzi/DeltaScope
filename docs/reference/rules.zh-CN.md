@@ -416,7 +416,22 @@ deltascope rules search "prefix"
 | `ddl.pg.drop_extension.advisory` | `DROP EXTENSION` 移除扩展——建议审查依赖对象 | warning | 否 |
 | `ddl.pg.drop_extension.cascade.warn` | `DROP EXTENSION ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE EXTENSION ... CASCADE` 会同时触发 `ddl.pg.create_extension.notice` 和 `ddl.pg.create_extension.cascade.warn`。`DROP EXTENSION ... CASCADE` 会同时触发 `ddl.pg.drop_extension.advisory` 和 `ddl.pg.drop_extension.cascade.warn`，属于有意设计。DeltaScope 不对 extension 做可用性、已安装包、版本兼容性或依赖图的实时校验。Extension 成员变更（`ALTER EXTENSION ... ADD/DROP TABLE`）明确不支持/延迟。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE EXTENSION ... CASCADE` 会同时触发 `ddl.pg.create_extension.notice` 和 `ddl.pg.create_extension.cascade.warn`。`DROP EXTENSION ... CASCADE` 会同时触发 `ddl.pg.drop_extension.advisory` 和 `ddl.pg.drop_extension.cascade.warn`，属于有意设计。DeltaScope 不对 extension 做可用性、已安装包、版本兼容性或依赖图的实时校验。Extension 成员变更（`ALTER EXTENSION ... ADD/DROP TABLE`）明确不支持/延迟。表级权限 DCL 现已支持——见下方表级权限 DCL 规则。
+
+---
+
+## DDL：PostgreSQL 表级权限 DCL 规则（4 条）
+
+这些规则覆盖 PostgreSQL 表级权限 DCL 操作——`GRANT ... ON TABLE` 和 `REVOKE ... ON TABLE`。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.grant.table_privilege.notice` | `GRANT ... ON TABLE` 授予表级权限——信息性通知 | notice | No |
+| `ddl.pg.grant.table_privilege.all.warn` | `GRANT ALL PRIVILEGES ON TABLE` 授予所有权限——警告过度授权 | warning | No |
+| `ddl.pg.revoke.table_privilege.notice` | `REVOKE ... ON TABLE` 撤销表级权限——信息性通知 | notice | No |
+| `ddl.pg.revoke.table_privilege.cascade.warn` | `REVOKE ... ON TABLE ... CASCADE` 级联撤销依赖权限——警告级联副作用 | warning | No |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`GRANT ALL PRIVILEGES ON TABLE` 会同时触发 `ddl.pg.grant.table_privilege.notice` 和 `ddl.pg.grant.table_privilege.all.warn`。`REVOKE ... ON TABLE ... CASCADE` 会同时触发 `ddl.pg.revoke.table_privilege.notice` 和 `ddl.pg.revoke.table_privilege.cascade.warn`，属于有意设计。支持多个 privileges（如 `SELECT, INSERT`）、多个 grantees、schema-qualified 表名（如 `public.users`）。DeltaScope 不做任何形式的实时校验——不验证 grantee/role 是否存在、不验证 table/object 是否存在、不验证当前用户是否有授权权限、不计算 effective privileges、不解析 role inheritance、不验证 ownership、不评估 RLS/policies。`ALL TABLES IN SCHEMA`、sequence privileges、role membership GRANT/REVOKE 和 `ALTER DEFAULT PRIVILEGES` 不支持。这是窄表级权限 DCL 支持，不是广泛的治理或 admin DCL 支持。
 
 ---
 

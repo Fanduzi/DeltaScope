@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.59.0 PostgreSQL Extension Lifecycle Pack
+## Latest Completed Milestone: v0.60.0 PostgreSQL Table Privilege DCL Pack
+
+**Goal:** normalize PostgreSQL table-level privilege DCL narrow support through the audit pipeline, adding four PostgreSQL-only findings for offline migration review while keeping `ALL TABLES IN SCHEMA`, sequence privileges, role membership GRANT/REVOKE, and `ALTER DEFAULT PRIVILEGES` explicitly deferred and not performing live validation.
+
+### Completed Scope
+
+- 8 PostgreSQL table-level privilege DCL forms normalized through the audit pipeline: `GRANT ... ON TABLE` (single/multiple privileges, single/multiple grantees, schema-qualified table), `GRANT ALL PRIVILEGES ON TABLE`, `REVOKE ... ON TABLE` (single/multiple privileges, single/multiple grantees), `REVOKE ... ON TABLE ... CASCADE`.
+- Four new PostgreSQL-only rules: `ddl.pg.grant.table_privilege.notice` (notice), `ddl.pg.grant.table_privilege.all.warn` (warning), `ddl.pg.revoke.table_privilege.notice` (notice), `ddl.pg.revoke.table_privilege.cascade.warn` (warning).
+- `GRANT ALL PRIVILEGES ON TABLE` intentionally triggers both `ddl.pg.grant.table_privilege.notice` and `ddl.pg.grant.table_privilege.all.warn`. `REVOKE ... ON TABLE ... CASCADE` intentionally triggers both `ddl.pg.revoke.table_privilege.notice` and `ddl.pg.revoke.table_privilege.cascade.warn`.
+- Corpus fixtures covering all four new rules.
+- Service-level tests through `AuditSQL` for representative table privilege DCL variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all table privilege DCL forms.
+
+### Key Design Decisions
+
+- DeltaScope does not perform live validation of any kind for table privileges — no grantee/role existence checks, no table/object existence checks, no grantor permission checks, no effective privilege computation, no role inheritance resolution, no ownership verification, and no RLS/policy evaluation.
+- `ALL TABLES IN SCHEMA`, sequence privileges, role membership GRANT/REVOKE, and `ALTER DEFAULT PRIVILEGES` are explicitly unsupported/deferred.
+- This is narrow table-level privilege DCL support — not broad governance or admin DCL support.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the four new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.59.0 PostgreSQL Extension Lifecycle Pack
 
 **Goal:** normalize PostgreSQL extension lifecycle narrow support through the audit pipeline, adding six PostgreSQL-only findings for offline migration review while keeping extension member mutation explicitly deferred and not performing live validation.
 
@@ -629,4 +651,4 @@ Areas that may be addressed in future milestones (no dates committed):
 
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
 - PostgreSQL composite type attribute lifecycle (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`).
-- PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`).
+- PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`/`REVOKE` for non-table objects, `ALTER DEFAULT PRIVILEGES`).
