@@ -271,7 +271,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.refresh_materialized_view.concurrently.warn` | Non-concurrent `REFRESH MATERIALIZED VIEW` holds an exclusive lock — warns on default or explicit `WITH DATA` refreshes | ✓ | ✗ | warning |
 | `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` empties the view — downstream readers may see empty results | ✓ | ✗ | notice |
 
-> **Note:** `CONCURRENTLY` refreshes pass both rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view. This is not complete PostgreSQL object lifecycle coverage — remaining unsupported DDL forms (trigger, function, extension, etc.) are still explicit boundaries.
+> **Note:** `CONCURRENTLY` refreshes pass both rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view. This is not complete PostgreSQL object lifecycle coverage — remaining unsupported DDL forms (trigger, function, etc.) are still explicit boundaries.
 
 ---
 
@@ -373,7 +373,49 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` removes a domain — advises review of dependent columns | ✓ | ✗ | warning |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
 
-> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types are now supported — see Composite Type Lifecycle above. No MySQL/TiDB behavior changes.
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types are now supported — see Composite Type Lifecycle above. Extensions are now supported — see Extension Lifecycle below. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Extension Lifecycle (v0.59.0)
+
+`v0.59.0` adds PostgreSQL extension lifecycle narrow support. DeltaScope normalizes `CREATE EXTENSION`, `ALTER EXTENSION` (`UPDATE`, `UPDATE TO`, `SET SCHEMA`), and `DROP EXTENSION`, adds six PostgreSQL-only findings, and keeps extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) as explicit unsupported/deferred boundaries. DeltaScope does not perform live validation of extension availability, installed packages, version compatibility, or dependency graphs. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE EXTENSION pg_trgm` | `create_extension` |
+| `CREATE EXTENSION IF NOT EXISTS pg_trgm` | `create_extension` (if_not_exists=true) |
+| `CREATE EXTENSION pg_trgm WITH SCHEMA utils` | `create_extension` (schema=utils) |
+| `CREATE EXTENSION pg_trgm WITH VERSION '1.5'` | `create_extension` (version=1.5) |
+| `CREATE EXTENSION pg_trgm CASCADE` | `create_extension` (cascade=true) |
+| `ALTER EXTENSION pg_trgm UPDATE` | `alter_extension` (action=update) |
+| `ALTER EXTENSION pg_trgm UPDATE TO '1.6'` | `alter_extension` (action=update_to) |
+| `ALTER EXTENSION pg_trgm SET SCHEMA utils` | `alter_extension` (action=set_schema) |
+| `DROP EXTENSION pg_trgm` | `drop_extension` |
+| `DROP EXTENSION IF EXISTS pg_trgm` | `drop_extension` (if_exists=true) |
+| `DROP EXTENSION pg_trgm CASCADE` | `drop_extension` (cascade=true) |
+
+### Extension Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_extension.notice` | `CREATE EXTENSION` installs an extension into the database — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.create_extension.cascade.warn` | `CREATE EXTENSION ... CASCADE` auto-installs dependencies — may introduce unintended extensions | ✓ | ✗ | warning |
+| `ddl.pg.alter_extension.update.notice` | `ALTER EXTENSION ... UPDATE` / `UPDATE TO` upgrades an extension — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_extension.set_schema.notice` | `ALTER EXTENSION ... SET SCHEMA` moves the extension to a different schema — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_extension.advisory` | `DROP EXTENSION` removes an extension — advises review of dependent objects | ✓ | ✗ | warning |
+| `ddl.pg.drop_extension.cascade.warn` | `DROP EXTENSION ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+
+### Unsupported / Deferred Operations
+
+| SQL | Unsupported Feature |
+|-----|-------------------|
+| `ALTER EXTENSION ... ADD TABLE` | `alter_extension_add_member` |
+| `ALTER EXTENSION ... DROP TABLE` | `alter_extension_drop_member` |
+
+> **Note:** These rules are offline-only and do not require a database connection. `CREATE EXTENSION ... CASCADE` intentionally emits both `ddl.pg.create_extension.notice` and `ddl.pg.create_extension.cascade.warn`. `DROP EXTENSION ... CASCADE` intentionally emits both `ddl.pg.drop_extension.advisory` and `ddl.pg.drop_extension.cascade.warn`. DeltaScope does not perform live validation of extension availability, installed packages, version compatibility, or dependency graphs. Extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) is explicitly unsupported/deferred. No MySQL/TiDB behavior changes.
 
 ---
 

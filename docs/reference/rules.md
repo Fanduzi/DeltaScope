@@ -408,7 +408,24 @@ These rules guard against risky PostgreSQL domain lifecycle DDL operations — d
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` removes a domain — advises review of dependent columns | warning | No |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names where available, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types are now supported — see Composite Type Lifecycle Rules above.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not render `CHECK` or `DEFAULT` expression text — rules emit boolean facts (`has_check`, `has_default`, `not_null`) and constraint names where available, but never the expression body. DeltaScope does not perform live dependency validation on domains. `DROP DOMAIN IF EXISTS ... CASCADE` intentionally emits both `ddl.pg.drop_domain.advisory` and `ddl.pg.drop_domain.cascade.warn`. Composite types are now supported — see Composite Type Lifecycle Rules above. Extensions are now supported — see Extension Lifecycle Rules below.
+
+---
+
+## DDL: PostgreSQL Extension Lifecycle Rules (6 rules)
+
+These rules guard against risky PostgreSQL extension lifecycle DDL operations — extension creation, updates, schema moves, and drops. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_extension.notice` | `CREATE EXTENSION` installs an extension into the database — informational notice | notice | No |
+| `ddl.pg.create_extension.cascade.warn` | `CREATE EXTENSION ... CASCADE` auto-installs dependencies — may introduce unintended extensions | warning | No |
+| `ddl.pg.alter_extension.update.notice` | `ALTER EXTENSION ... UPDATE` / `UPDATE TO` upgrades an extension — informational notice | notice | No |
+| `ddl.pg.alter_extension.set_schema.notice` | `ALTER EXTENSION ... SET SCHEMA` moves the extension to a different schema — informational notice | notice | No |
+| `ddl.pg.drop_extension.advisory` | `DROP EXTENSION` removes an extension — advises review of dependent objects | warning | No |
+| `ddl.pg.drop_extension.cascade.warn` | `DROP EXTENSION ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CREATE EXTENSION ... CASCADE` intentionally emits both `ddl.pg.create_extension.notice` and `ddl.pg.create_extension.cascade.warn`. `DROP EXTENSION ... CASCADE` intentionally emits both `ddl.pg.drop_extension.advisory` and `ddl.pg.drop_extension.cascade.warn`. DeltaScope does not perform live validation of extension availability, installed packages, version compatibility, or dependency graphs. Extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) is explicitly unsupported/deferred.
 
 ---
 

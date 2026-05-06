@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.59.0] - 2026-05-06
+
+### Added
+
+- PostgreSQL extension lifecycle narrow support: `CREATE EXTENSION`, `ALTER EXTENSION` (`UPDATE`, `UPDATE TO`, `SET SCHEMA`), and `DROP EXTENSION` now pass through the audit pipeline instead of returning unsupported.
+- Six new PostgreSQL-only rules: `ddl.pg.create_extension.notice` (notice), `ddl.pg.create_extension.cascade.warn` (warning), `ddl.pg.alter_extension.update.notice` (notice), `ddl.pg.alter_extension.set_schema.notice` (notice), `ddl.pg.drop_extension.advisory` (warning), `ddl.pg.drop_extension.cascade.warn` (warning).
+- `CREATE EXTENSION ... CASCADE` triggers both the base `notice` and `cascade.warn` rules; `DROP EXTENSION ... CASCADE` triggers both the base `advisory` and `cascade.warn` rules — duplicate findings are intentional.
+- Corpus fixtures covering all six new rules' trigger forms.
+- Service-level tests through `AuditSQL` for representative extension lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all extension lifecycle forms.
+
+### Non-Goals
+
+- DeltaScope does not perform live dependency validation on extensions.
+- DeltaScope does not model full PostgreSQL extension system semantics.
+- This is narrow extension lifecycle support — not broad governance or admin DDL support.
+- Extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) remains explicitly deferred.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the six new PostgreSQL-only rule entries.
+
 ## [v0.58.0] - 2026-05-06
 
 ### Added

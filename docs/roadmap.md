@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.58.0 PostgreSQL Composite Type Lifecycle Pack
+## Latest Completed Milestone: v0.59.0 PostgreSQL Extension Lifecycle Pack
+
+**Goal:** normalize PostgreSQL extension lifecycle narrow support through the audit pipeline, adding six PostgreSQL-only findings for offline migration review while keeping extension member mutation explicitly deferred and not performing live validation.
+
+### Completed Scope
+
+- 11 PostgreSQL extension lifecycle forms normalized through the audit pipeline: `CREATE EXTENSION` (including `IF NOT EXISTS`, `WITH SCHEMA`, `WITH VERSION`, `CASCADE`), `ALTER EXTENSION` (`UPDATE`, `UPDATE TO`, `SET SCHEMA`), `DROP EXTENSION` (including `IF EXISTS`, `CASCADE`).
+- Six new PostgreSQL-only rules: `ddl.pg.create_extension.notice` (notice), `ddl.pg.create_extension.cascade.warn` (warning), `ddl.pg.alter_extension.update.notice` (notice), `ddl.pg.alter_extension.set_schema.notice` (notice), `ddl.pg.drop_extension.advisory` (warning), `ddl.pg.drop_extension.cascade.warn` (warning).
+- `CREATE EXTENSION ... CASCADE` intentionally triggers both `ddl.pg.create_extension.notice` and `ddl.pg.create_extension.cascade.warn`. `DROP EXTENSION ... CASCADE` intentionally triggers both `ddl.pg.drop_extension.advisory` and `ddl.pg.drop_extension.cascade.warn`.
+- Corpus fixtures covering all six new rules.
+- Service-level tests through `AuditSQL` for representative extension lifecycle variants.
+- Public surface tests across all four surfaces: `pkg/deltascope` Audit, CLI Execute, HTTP handler, and MCP audit_sql tool.
+- AST census tests documenting stable parser facts for all extension lifecycle forms.
+
+### Key Design Decisions
+
+- DeltaScope does not perform live validation of extension availability, installed packages, version compatibility, or dependency graphs.
+- DeltaScope does not model full PostgreSQL extension system semantics.
+- This is narrow extension lifecycle support — not broad governance or admin DDL support.
+- Extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) remains explicitly deferred as `alter_extension_add_member`, `alter_extension_drop_member`.
+- No MySQL/TiDB behavior changes.
+- No default policy changes beyond the six new PostgreSQL-only rule entries.
+
+## Previous Milestone: v0.58.0 PostgreSQL Composite Type Lifecycle Pack
 
 **Goal:** normalize PostgreSQL composite type lifecycle narrow support through the audit pipeline, adding three PostgreSQL-only findings for offline migration review while keeping attribute-level operations explicitly deferred and reusing existing DROP TYPE rules.
 
@@ -191,7 +214,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 ### Key Design Decisions
 
 - `REFRESH MATERIALIZED VIEW` remains unsupported/deferred.
-- This is not full PostgreSQL object lifecycle coverage. Remaining unsupported DDL forms (triggers, functions, extensions, etc.) remain explicit boundaries.
+- This is not full PostgreSQL object lifecycle coverage. Remaining unsupported DDL forms (triggers, functions, etc.) remain explicit boundaries.
 - No MySQL/TiDB behavior changes.
 - No default policy changes beyond the nine new PostgreSQL-only rule entries.
 
@@ -606,4 +629,4 @@ Areas that may be addressed in future milestones (no dates committed):
 
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
 - PostgreSQL composite type attribute lifecycle (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`).
-- PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`, `CREATE EXTENSION`).
+- PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`, `REVOKE`).

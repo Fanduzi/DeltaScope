@@ -399,7 +399,24 @@ deltascope rules search "prefix"
 | `ddl.pg.drop_domain.advisory` | `DROP DOMAIN` 移除域——建议审查依赖列 | warning | 否 |
 | `ddl.pg.drop_domain.cascade.warn` | `DROP DOMAIN ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型现已支持——参见上方 Composite Type Lifecycle 规则。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不渲染 `CHECK` 或 `DEFAULT` 表达式文本——规则只暴露布尔事实（`has_check`、`has_default`、`not_null`）和约束名称，不包含表达式正文。DeltaScope 不对域执行在线依赖验证。`DROP DOMAIN IF EXISTS ... CASCADE` 会同时触发 `ddl.pg.drop_domain.advisory` 和 `ddl.pg.drop_domain.cascade.warn`，属于有意设计。复合类型现已支持——参见上方 Composite Type Lifecycle 规则。扩展现已支持——参见下方 Extension Lifecycle 规则。
+
+---
+
+## DDL：PostgreSQL Extension 生命周期规则（6 条）
+
+这些规则用于防范 PostgreSQL extension 生命周期 DDL 操作中的风险——扩展安装、升级、schema 迁移和删除。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_extension.notice` | `CREATE EXTENSION` 安装扩展到数据库——信息性提示 | notice | 否 |
+| `ddl.pg.create_extension.cascade.warn` | `CREATE EXTENSION ... CASCADE` 自动安装依赖——可能引入非预期扩展 | warning | 否 |
+| `ddl.pg.alter_extension.update.notice` | `ALTER EXTENSION ... UPDATE` / `UPDATE TO` 升级扩展——信息性提示 | notice | 否 |
+| `ddl.pg.alter_extension.set_schema.notice` | `ALTER EXTENSION ... SET SCHEMA` 将扩展移至不同 schema——信息性提示 | notice | 否 |
+| `ddl.pg.drop_extension.advisory` | `DROP EXTENSION` 移除扩展——建议审查依赖对象 | warning | 否 |
+| `ddl.pg.drop_extension.cascade.warn` | `DROP EXTENSION ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE EXTENSION ... CASCADE` 会同时触发 `ddl.pg.create_extension.notice` 和 `ddl.pg.create_extension.cascade.warn`。`DROP EXTENSION ... CASCADE` 会同时触发 `ddl.pg.drop_extension.advisory` 和 `ddl.pg.drop_extension.cascade.warn`，属于有意设计。DeltaScope 不对 extension 做可用性、已安装包、版本兼容性或依赖图的实时校验。Extension 成员变更（`ALTER EXTENSION ... ADD/DROP TABLE`）明确不支持/延迟。
 
 ---
 
