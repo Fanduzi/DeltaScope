@@ -1,0 +1,11 @@
+name: drop_extension_cascade_warn_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.drop_extension.advisory
+      - ddl.pg.drop_extension.cascade.warn
