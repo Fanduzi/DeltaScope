@@ -465,9 +465,9 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
 			DDL: &spec.DDL{
-				Operation: spec.DDLOperationCreateTable,
-				Table:     &spec.Table{Name: "pg_smoke"},
-				Columns: []spec.Column{{Name: "id", Type: "bigint", NotNull: true}},
+				Operation:  spec.DDLOperationCreateTable,
+				Table:      &spec.Table{Name: "pg_smoke"},
+				Columns:    []spec.Column{{Name: "id", Type: "bigint", NotNull: true}},
 				PrimaryKey: &spec.Index{Name: "pg_smoke_pkey", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			},
 		}

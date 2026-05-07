@@ -21,10 +21,10 @@ import (
 // gitlabIssue mirrors the required GitLab Code Quality issue shape.
 // See https://docs.gitlab.com/ci/testing/code_quality/ (checked 2026-04-26).
 type gitlabIssue struct {
-	Description string        `json:"description"`
-	CheckName   string        `json:"check_name"`
-	Fingerprint string        `json:"fingerprint"`
-	Severity    string        `json:"severity"`
+	Description string         `json:"description"`
+	CheckName   string         `json:"check_name"`
+	Fingerprint string         `json:"fingerprint"`
+	Severity    string         `json:"severity"`
 	Location    gitlabLocation `json:"location"`
 }
 

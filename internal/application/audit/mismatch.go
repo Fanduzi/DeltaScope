@@ -118,6 +118,7 @@ func maskLiteralsAndComments(sql string) string {
 	return string(out)
 }
 
+//nolint:unused
 func formatPossiblePostgreSQLMismatchError(err error, dialect string, token string) error {
 	return fmt.Errorf("%w; possible dialect mismatch: %s syntax %q is commonly PostgreSQL-specific; if this SQL targets PostgreSQL, use the postgresql dialect", err, dialect, token)
 }

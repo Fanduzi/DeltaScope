@@ -8,15 +8,15 @@ package dml
 import "github.com/Fanduzi/DeltaScope/internal/domain/spec"
 
 const (
-	ruleIDWhereRequire       = "dml.where.require"
-	ruleIDLimitForbid        = "dml.limit.forbid"
-	ruleIDOrderByForbid      = "dml.order_by.forbid"
-	ruleIDSubqueryForbid     = "dml.subquery.forbid"
-	ruleIDJoinOnRequire      = "dml.join.on.require"
-	ruleIDInsertRowsMaxCount = "dml.insert.rows.max_count"
-	ruleIDReplaceForbid      = "dml.replace.forbid"
-	ruleIDInsertSelectForbid = "dml.insert.select.forbid"
-	ruleIDOnDuplicateForbid  = "dml.insert.on_duplicate.forbid"
+	ruleIDWhereRequire        = "dml.where.require"
+	ruleIDLimitForbid         = "dml.limit.forbid"
+	ruleIDOrderByForbid       = "dml.order_by.forbid"
+	ruleIDSubqueryForbid      = "dml.subquery.forbid"
+	ruleIDJoinOnRequire       = "dml.join.on.require"
+	ruleIDInsertRowsMaxCount  = "dml.insert.rows.max_count"
+	ruleIDReplaceForbid       = "dml.replace.forbid"
+	ruleIDInsertSelectForbid  = "dml.insert.select.forbid"
+	ruleIDOnDuplicateForbid   = "dml.insert.on_duplicate.forbid"
 	ruleIDTableDenylistForbid = "dml.table.denylist.forbid"
 )
 

@@ -206,16 +206,16 @@ func TestPostgreSQLAlterTableUnsupportedASTCensus(t *testing.T) {
 
 	// Assert stable AST shapes.
 	expectedShapes := map[string]struct {
-		topKind    string
-		subtype    string
-		targetTbl  string
+		topKind   string
+		subtype   string
+		targetTbl string
 	}{
-		"set_schema":          {topKind: "AlterObjectSchemaStmt", subtype: "", targetTbl: "users"},
-		"owner_to":            {topKind: "AlterTableStmt", subtype: "AT_ChangeOwner", targetTbl: "users"},
-		"enable_trigger_named": {topKind: "AlterTableStmt", subtype: "AT_EnableTrig", targetTbl: "users"},
+		"set_schema":            {topKind: "AlterObjectSchemaStmt", subtype: "", targetTbl: "users"},
+		"owner_to":              {topKind: "AlterTableStmt", subtype: "AT_ChangeOwner", targetTbl: "users"},
+		"enable_trigger_named":  {topKind: "AlterTableStmt", subtype: "AT_EnableTrig", targetTbl: "users"},
 		"disable_trigger_named": {topKind: "AlterTableStmt", subtype: "AT_DisableTrig", targetTbl: "users"},
-		"attach_partition":    {topKind: "AlterTableStmt", subtype: "AT_AttachPartition", targetTbl: "measurement"},
-		"detach_partition":    {topKind: "AlterTableStmt", subtype: "AT_DetachPartition", targetTbl: "measurement"},
+		"attach_partition":      {topKind: "AlterTableStmt", subtype: "AT_AttachPartition", targetTbl: "measurement"},
+		"detach_partition":      {topKind: "AlterTableStmt", subtype: "AT_DetachPartition", targetTbl: "measurement"},
 	}
 
 	for _, f := range facts {

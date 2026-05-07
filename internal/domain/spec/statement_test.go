@@ -518,9 +518,9 @@ func TestColumnOmitsGeneratedWhenWhenEmpty(t *testing.T) {
 
 func TestColumnPreservesIsIdentityFact(t *testing.T) {
 	col := Column{
-		Name:        "id",
-		Type:        "bigint",
-		IsIdentity:  true,
+		Name:       "id",
+		Type:       "bigint",
+		IsIdentity: true,
 	}
 
 	if !col.IsIdentity {
@@ -558,12 +558,12 @@ func TestColumnOmitsIsIdentityWhenFalse(t *testing.T) {
 
 func TestColumnPreservesIdentityOptionsFact(t *testing.T) {
 	col := Column{
-		Name:    "id",
-		Type:    "bigint",
+		Name: "id",
+		Type: "bigint",
 		IdentityOptions: map[string]any{
-			"start":    int32(10),
+			"start":     int32(10),
 			"increment": int32(5),
-			"cycle":    true,
+			"cycle":     true,
 		},
 	}
 
@@ -712,8 +712,8 @@ func TestIndexPreservesAdvancedFactsInJSON(t *testing.T) {
 
 func TestIndexOmitsAdvancedFactsWhenZero(t *testing.T) {
 	idx := Index{
-		Name:  "idx_simple",
-		Kind:  IndexKindSecondary,
+		Name:    "idx_simple",
+		Kind:    IndexKindSecondary,
 		Columns: []string{"email"},
 	}
 

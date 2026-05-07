@@ -903,7 +903,6 @@ func TestExtractMapsInsertSelect(t *testing.T) {
 	}
 }
 
-
 func TestExtractLeavesUnknownStatementsAvailableForLaterLayers(t *testing.T) {
 	parsed, err := Parse("select 1;", spec.DialectMySQL)
 	if err != nil {

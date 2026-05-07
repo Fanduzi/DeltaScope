@@ -261,7 +261,7 @@ func openMySQLClient(config ConnectionConfig) (Client, error) {
 	}, nil
 }
 
- type postgresqlClient struct {
+type postgresqlClient struct {
 	db       *sql.DB
 	provider *postgresqlmeta.Provider
 }

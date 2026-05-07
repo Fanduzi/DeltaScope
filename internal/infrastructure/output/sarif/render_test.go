@@ -128,9 +128,9 @@ func TestRenderIncludesResults(t *testing.T) {
 
 func TestRenderSeverityMapping(t *testing.T) {
 	tests := []struct {
-		name          string
-		level         rule.Level
-		wantSeverity  string
+		name         string
+		level        rule.Level
+		wantSeverity string
 	}{
 		{"blocker maps to error", rule.LevelBlocker, "error"},
 		{"warning maps to warning", rule.LevelWarning, "warning"},

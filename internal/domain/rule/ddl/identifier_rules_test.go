@@ -133,8 +133,8 @@ func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
 		selects   func(spec.Statement) []identifierSubject
 	}{
 		{
-			name:   "postgresql table keyword",
-			ruleID: ruleIDTableNameKeywordForbid,
+			name:    "postgresql table keyword",
+			ruleID:  ruleIDTableNameKeywordForbid,
 			subject: "table",
 			statement: spec.Statement{
 				Kind:    spec.KindDDL,
@@ -147,8 +147,8 @@ func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
 			selects: selectTableName,
 		},
 		{
-			name:   "postgresql column keyword",
-			ruleID: ruleIDColumnNameKeywordForbid,
+			name:    "postgresql column keyword",
+			ruleID:  ruleIDColumnNameKeywordForbid,
 			subject: "column",
 			statement: spec.Statement{
 				Kind:    spec.KindDDL,
@@ -1075,7 +1075,9 @@ func postgresStatementWithConstraints(primaryKey *spec.Index, indexes []spec.Ind
 
 // postgresAlterTableAddFKConstraint builds a spec.Statement that mirrors what
 // the PostgreSQL extractor currently produces for
-//   ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);
+//
+//	ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);
+//
 // Today the extractor puts FK facts only in Alter.Options — DDL.Constraints is empty.
 func postgresAlterTableAddFKConstraint(constraintName string, columns []string, referencedTable string, referencedColumns []string) spec.Statement {
 	options := map[string]string{
@@ -1157,9 +1159,9 @@ func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *tes
 				Action: "add_constraint",
 				Name:   "fk_orders_user",
 				Options: map[string]string{
-					"constraint_type":   "foreign_key",
-					"columns":           "user_id",
-					"referenced_table":  "public.users",
+					"constraint_type":  "foreign_key",
+					"columns":          "user_id",
+					"referenced_table": "public.users",
 				},
 			}},
 		},
@@ -1190,7 +1192,9 @@ func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *tes
 
 // postgresAlterTableAddCheckConstraint builds a spec.Statement that mirrors what
 // the PostgreSQL extractor currently produces for
-//   ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);
+//
+//	ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);
+//
 // Today the extractor puts check facts only in Alter.Options — DDL.Constraints is empty.
 func postgresAlterTableAddCheckConstraint(constraintName string, columns []string) spec.Statement {
 	options := map[string]string{

@@ -116,16 +116,16 @@ func extractCreateStmt(statement spec.Statement, stmt *pg_query.CreateStmt) spec
 	for _, item := range stmt.GetTableElts() {
 		if column := item.GetColumnDef(); column != nil {
 			if unsupported := hasUnsupportedColumnConstraint(column); unsupported != nil {
-					return unsupportedStatementWithDetail(statement, unsupported)
-				}
-				ddl.Columns = append(ddl.Columns, columnFromDef(column))
-				applyColumnConstraints(ddl, column)
+				return unsupportedStatementWithDetail(statement, unsupported)
+			}
+			ddl.Columns = append(ddl.Columns, columnFromDef(column))
+			applyColumnConstraints(ddl, column)
 			continue
 		}
 		if constraint := item.GetConstraint(); constraint != nil {
 			if unsupported := applyTableConstraint(ddl, constraint); unsupported != nil {
-					return unsupportedStatement(statement, unsupported.Feature, unsupported.Reason)
-				}
+				return unsupportedStatement(statement, unsupported.Feature, unsupported.Reason)
+			}
 		}
 	}
 
@@ -190,8 +190,8 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 			return unsupportedStatement(statement, "alter_table", "postgresql alter table command is unsupported in v1")
 		}
 		ddl.Alter = append(ddl.Alter, alter)
-			projectAlterConstraintFK(ddl, alter)
-			projectAlterConstraintCheck(ddl, alter)
+		projectAlterConstraintFK(ddl, alter)
+		projectAlterConstraintCheck(ddl, alter)
 	}
 
 	statement.DDL = ddl
@@ -275,7 +275,7 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		}
 		return statement
 	default:
-			return unsupportedStatement(statement, "rename", "postgresql rename target is not in the approved v1 subset")
+		return unsupportedStatement(statement, "rename", "postgresql rename target is not in the approved v1 subset")
 	}
 }
 
@@ -848,7 +848,7 @@ func generatedWhenFromDef(defNode *pg_query.Node) string {
 		}
 		arg := defElem.GetArg()
 		if arg != nil && arg.GetInteger() != nil {
-			return string(rune(arg.GetInteger().GetIval()))
+			return string(rune(arg.GetInteger().GetIval())) //nolint:unconvert // intentional rune→string conversion
 		}
 	}
 	return ""
@@ -904,7 +904,7 @@ func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.
 			ReferencedSchema:  rangeVarSchema(constraint.GetPktable()),
 			ReferencedTable:   rangeVarName(constraint.GetPktable()),
 			ReferencedColumns: stringValuesFromNodes(constraint.GetPkAttrs()),
-			})
+		})
 	case pg_query.ConstrType_CONSTR_PRIMARY:
 		applyPrimaryKey(ddl, constraint.GetConname(), stringValuesFromNodes(constraint.GetKeys()))
 	case pg_query.ConstrType_CONSTR_CHECK:
@@ -1057,6 +1057,8 @@ func identityOptionsFromConstraint(constraint *pg_query.Constraint) map[string]a
 // generatedIdentityUnsupportedMetadata builds UnsupportedDetail.Metadata for
 // unsupported generated/identity column outcomes, carrying the column name,
 // generated_when, is_identity flag, and identity options when present.
+//
+//nolint:unused
 func generatedIdentityUnsupportedMetadata(column *pg_query.ColumnDef) map[string]any {
 	metadata := map[string]any{
 		"column": column.GetColname(),
@@ -1828,10 +1830,7 @@ func featureNameForUnknown(rawSQL string) string {
 }
 
 func alterSubtypeFeature(subtype pg_query.AlterTableType) string {
-	name := subtype.String()
-	if strings.HasPrefix(name, "AT_") {
-		name = strings.TrimPrefix(name, "AT_")
-	}
+	name := strings.TrimPrefix(subtype.String(), "AT_")
 	if name == "" || name == "ALTER_TABLE_TYPE_UNDEFINED" {
 		return "alter_table"
 	}

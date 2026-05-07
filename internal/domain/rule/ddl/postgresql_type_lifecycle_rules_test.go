@@ -697,13 +697,13 @@ func TestTypeLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
 		t.Fatalf("evaluate: %v", err)
 	}
 	pgRuleIDs := map[string]bool{
-		ruleIDPGCreateTypeEnumNotice:            true,
-		ruleIDPGAlterTypeAddValueAdvisory:       true,
-		ruleIDPGAlterTypeAddValuePositionNotice: true,
-		ruleIDPGDropTypeAdvisory:                true,
-		ruleIDPGDropTypeCascadeWarn:             true,
-		ruleIDPGCreateTypeCompositeNotice:       true,
-		ruleIDPGAlterTypeCompositeRenameNotice:  true,
+		ruleIDPGCreateTypeEnumNotice:              true,
+		ruleIDPGAlterTypeAddValueAdvisory:         true,
+		ruleIDPGAlterTypeAddValuePositionNotice:   true,
+		ruleIDPGDropTypeAdvisory:                  true,
+		ruleIDPGDropTypeCascadeWarn:               true,
+		ruleIDPGCreateTypeCompositeNotice:         true,
+		ruleIDPGAlterTypeCompositeRenameNotice:    true,
 		ruleIDPGAlterTypeCompositeSetSchemaNotice: true,
 	}
 	for _, f := range findings {

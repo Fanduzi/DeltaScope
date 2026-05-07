@@ -55,7 +55,9 @@ func newAlterTableOptionCompatibilityRule(cfg policy.RulePolicy) (rule.Statement
 
 func (r alterColumnCompatibilityRule) ID() string { return r.ruleID }
 
-func (r alterTableOptionCompatibilityRule) ID() string { return ruleIDAlterTableOptionCompatibilityRequire }
+func (r alterTableOptionCompatibilityRule) ID() string {
+	return ruleIDAlterTableOptionCompatibilityRequire
+}
 
 func (r alterColumnCompatibilityRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToAlterActions(statement, r.action)
@@ -208,11 +210,11 @@ func optionCompatibilityFindings(level rule.Level, tableName string, snapshot *s
 			Message:    fmt.Sprintf("table option %q changes from %q to %q", optionKey, source, target),
 			Suggestion: fmt.Sprintf("keep %s aligned with the current table setting or review the compatibility impact explicitly", optionKey),
 			Metadata: map[string]any{
-				"table":         tableName,
-				"action":        alter.Action,
-				"option":        optionKey,
-				"source_value":  source,
-				"target_value":  target,
+				"table":        tableName,
+				"action":       alter.Action,
+				"option":       optionKey,
+				"source_value": source,
+				"target_value": target,
 			},
 		})
 	}
@@ -232,11 +234,11 @@ func autoIncrementCompatibilityFinding(level rule.Level, tableName string, alter
 			Message:    fmt.Sprintf("table auto_increment seed shrinks from %d to %d", sourceValue, targetValue),
 			Suggestion: "keep AUTO_INCREMENT at or above the current seed unless the reset is fully reviewed",
 			Metadata: map[string]any{
-				"table":         tableName,
-				"action":        alter.Action,
-				"option":        "auto_increment",
-				"source_value":  sourceValue,
-				"target_value":  targetValue,
+				"table":        tableName,
+				"action":       alter.Action,
+				"option":       "auto_increment",
+				"source_value": sourceValue,
+				"target_value": targetValue,
 			},
 		}, true
 	}
@@ -249,11 +251,11 @@ func autoIncrementCompatibilityFinding(level rule.Level, tableName string, alter
 		Message:    fmt.Sprintf("table option %q changes from %q to %q", "auto_increment", source, target),
 		Suggestion: "keep AUTO_INCREMENT aligned with the current seed or review the reset explicitly",
 		Metadata: map[string]any{
-			"table":         tableName,
-			"action":        alter.Action,
-			"option":        "auto_increment",
-			"source_value":  source,
-			"target_value":  target,
+			"table":        tableName,
+			"action":       alter.Action,
+			"option":       "auto_increment",
+			"source_value": source,
+			"target_value": target,
 		},
 	}, true
 }

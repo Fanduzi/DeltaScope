@@ -160,63 +160,63 @@ const (
 	ruleIDPGTableForeignKeyCrossSchemaAdvisory               = "ddl.pg.table.foreign_key.cross_schema.advisory"
 	ruleIDPGAlterNotValidConstraintValidateRequire           = "ddl.pg.alter.not_valid_constraint.validate.require"
 	ruleIDPGDropIndexAdvisory                                = "ddl.pg.drop_index.advisory"
-	ruleIDPGAlterAddColumnNonNullNoDefaultWarn              = "ddl.pg.alter.add_column.non_null_no_default.warn"
-	ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory = "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
-	ruleIDPGAlterDropConstraintAdvisory                     = "ddl.pg.alter.drop_constraint.advisory"
-	ruleIDPGDropSchemaAdvisory                              = "ddl.pg.drop_schema.advisory"
-	ruleIDPGDropSchemaCascadeWarn                           = "ddl.pg.drop_schema.cascade.warn"
-	ruleIDPGCreateSequenceCycleWarn                         = "ddl.pg.create_sequence.cycle.warn"
-	ruleIDPGAlterSequenceRestartWarn                        = "ddl.pg.alter_sequence.restart.warn"
-	ruleIDPGAlterSequenceCycleWarn                          = "ddl.pg.alter_sequence.cycle.warn"
-	ruleIDPGDropSequenceAdvisory                            = "ddl.pg.drop_sequence.advisory"
-	ruleIDPGDropSequenceCascadeWarn                         = "ddl.pg.drop_sequence.cascade.warn"
-	ruleIDPGDropMaterializedViewAdvisory                    = "ddl.pg.drop_materialized_view.advisory"
-	ruleIDPGDropMaterializedViewCascadeWarn                 = "ddl.pg.drop_materialized_view.cascade.warn"
-	ruleIDPGRefreshMaterializedViewConcurrentlyWarn         = "ddl.pg.refresh_materialized_view.concurrently.warn"
+	ruleIDPGAlterAddColumnNonNullNoDefaultWarn               = "ddl.pg.alter.add_column.non_null_no_default.warn"
+	ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory  = "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
+	ruleIDPGAlterDropConstraintAdvisory                      = "ddl.pg.alter.drop_constraint.advisory"
+	ruleIDPGDropSchemaAdvisory                               = "ddl.pg.drop_schema.advisory"
+	ruleIDPGDropSchemaCascadeWarn                            = "ddl.pg.drop_schema.cascade.warn"
+	ruleIDPGCreateSequenceCycleWarn                          = "ddl.pg.create_sequence.cycle.warn"
+	ruleIDPGAlterSequenceRestartWarn                         = "ddl.pg.alter_sequence.restart.warn"
+	ruleIDPGAlterSequenceCycleWarn                           = "ddl.pg.alter_sequence.cycle.warn"
+	ruleIDPGDropSequenceAdvisory                             = "ddl.pg.drop_sequence.advisory"
+	ruleIDPGDropSequenceCascadeWarn                          = "ddl.pg.drop_sequence.cascade.warn"
+	ruleIDPGDropMaterializedViewAdvisory                     = "ddl.pg.drop_materialized_view.advisory"
+	ruleIDPGDropMaterializedViewCascadeWarn                  = "ddl.pg.drop_materialized_view.cascade.warn"
+	ruleIDPGRefreshMaterializedViewConcurrentlyWarn          = "ddl.pg.refresh_materialized_view.concurrently.warn"
 	ruleIDPGRefreshMaterializedViewNoDataNotice              = "ddl.pg.refresh_materialized_view.no_data.notice"
-	ruleIDPGAlterDropColumnAdvisory                        = "ddl.pg.alter.drop_column.advisory"
-	ruleIDPGAlterValidateConstraintAdvisory                = "ddl.pg.alter.validate_constraint.advisory"
-	ruleIDPGAlterAddColumnNullableNotice                   = "ddl.pg.alter.add_column.nullable.notice"
-	ruleIDPGAlterSetSchemaAdvisory                         = "ddl.pg.alter.set_schema.advisory"
-	ruleIDPGAlterOwnerAdvisory                             = "ddl.pg.alter.owner.advisory"
-	ruleIDPGAlterEnableTriggerNotice                       = "ddl.pg.alter.enable_trigger.notice"
-	ruleIDPGAlterDisableTriggerWarn                        = "ddl.pg.alter.disable_trigger.warn"
-	ruleIDPGAlterAttachPartitionAdvisory                   = "ddl.pg.alter.attach_partition.advisory"
-	ruleIDPGAlterDetachPartitionWarn                       = "ddl.pg.alter.detach_partition.warn"
-	ruleIDPGAlterReplicaIdentityFullWarn                   = "ddl.pg.alter.replica_identity_full.warn"
-	ruleIDPGAlterReplicaIdentityNothingWarn                = "ddl.pg.alter.replica_identity_nothing.warn"
-	ruleIDPGAlterReplicaIdentityUsingIndexNotice           = "ddl.pg.alter.replica_identity_using_index.notice"
-	ruleIDPGAlterLoggedNotice                               = "ddl.pg.alter.set_logged.notice"
-	ruleIDPGAlterUnloggedNotice                             = "ddl.pg.alter.set_unlogged.notice"
-	ruleIDPGCreateTypeEnumNotice                           = "ddl.pg.create_type.enum.notice"
-	ruleIDPGAlterTypeAddValueAdvisory                      = "ddl.pg.alter_type.add_value.advisory"
-	ruleIDPGAlterTypeAddValuePositionNotice                = "ddl.pg.alter_type.add_value.position.notice"
-	ruleIDPGDropTypeAdvisory                               = "ddl.pg.drop_type.advisory"
-	ruleIDPGDropTypeCascadeWarn                            = "ddl.pg.drop_type.cascade.warn"
+	ruleIDPGAlterDropColumnAdvisory                          = "ddl.pg.alter.drop_column.advisory"
+	ruleIDPGAlterValidateConstraintAdvisory                  = "ddl.pg.alter.validate_constraint.advisory"
+	ruleIDPGAlterAddColumnNullableNotice                     = "ddl.pg.alter.add_column.nullable.notice"
+	ruleIDPGAlterSetSchemaAdvisory                           = "ddl.pg.alter.set_schema.advisory"
+	ruleIDPGAlterOwnerAdvisory                               = "ddl.pg.alter.owner.advisory"
+	ruleIDPGAlterEnableTriggerNotice                         = "ddl.pg.alter.enable_trigger.notice"
+	ruleIDPGAlterDisableTriggerWarn                          = "ddl.pg.alter.disable_trigger.warn"
+	ruleIDPGAlterAttachPartitionAdvisory                     = "ddl.pg.alter.attach_partition.advisory"
+	ruleIDPGAlterDetachPartitionWarn                         = "ddl.pg.alter.detach_partition.warn"
+	ruleIDPGAlterReplicaIdentityFullWarn                     = "ddl.pg.alter.replica_identity_full.warn"
+	ruleIDPGAlterReplicaIdentityNothingWarn                  = "ddl.pg.alter.replica_identity_nothing.warn"
+	ruleIDPGAlterReplicaIdentityUsingIndexNotice             = "ddl.pg.alter.replica_identity_using_index.notice"
+	ruleIDPGAlterLoggedNotice                                = "ddl.pg.alter.set_logged.notice"
+	ruleIDPGAlterUnloggedNotice                              = "ddl.pg.alter.set_unlogged.notice"
+	ruleIDPGCreateTypeEnumNotice                             = "ddl.pg.create_type.enum.notice"
+	ruleIDPGAlterTypeAddValueAdvisory                        = "ddl.pg.alter_type.add_value.advisory"
+	ruleIDPGAlterTypeAddValuePositionNotice                  = "ddl.pg.alter_type.add_value.position.notice"
+	ruleIDPGDropTypeAdvisory                                 = "ddl.pg.drop_type.advisory"
+	ruleIDPGDropTypeCascadeWarn                              = "ddl.pg.drop_type.cascade.warn"
 	// PostgreSQL domain lifecycle rules (PG-only).
-	ruleIDPGCreateDomainNotice                             = "ddl.pg.create_domain.notice"
-	ruleIDPGAlterDomainConstraintNotice                    = "ddl.pg.alter_domain.constraint.notice"
-	ruleIDPGAlterDomainDefaultNotice                       = "ddl.pg.alter_domain.default.notice"
-	ruleIDPGAlterDomainNotNullNotice                       = "ddl.pg.alter_domain.not_null.notice"
-	ruleIDPGAlterDomainRenameNotice                        = "ddl.pg.alter_domain.rename.notice"
-	ruleIDPGDropDomainAdvisory                             = "ddl.pg.drop_domain.advisory"
-	ruleIDPGDropDomainCascadeWarn                          = "ddl.pg.drop_domain.cascade.warn"
+	ruleIDPGCreateDomainNotice          = "ddl.pg.create_domain.notice"
+	ruleIDPGAlterDomainConstraintNotice = "ddl.pg.alter_domain.constraint.notice"
+	ruleIDPGAlterDomainDefaultNotice    = "ddl.pg.alter_domain.default.notice"
+	ruleIDPGAlterDomainNotNullNotice    = "ddl.pg.alter_domain.not_null.notice"
+	ruleIDPGAlterDomainRenameNotice     = "ddl.pg.alter_domain.rename.notice"
+	ruleIDPGDropDomainAdvisory          = "ddl.pg.drop_domain.advisory"
+	ruleIDPGDropDomainCascadeWarn       = "ddl.pg.drop_domain.cascade.warn"
 	// PostgreSQL composite type lifecycle rules (PG-only).
-	ruleIDPGCreateTypeCompositeNotice                      = "ddl.pg.create_type.composite.notice"
-	ruleIDPGAlterTypeCompositeRenameNotice                 = "ddl.pg.alter_type.composite_rename.notice"
-	ruleIDPGAlterTypeCompositeSetSchemaNotice              = "ddl.pg.alter_type.composite_set_schema.notice"
+	ruleIDPGCreateTypeCompositeNotice         = "ddl.pg.create_type.composite.notice"
+	ruleIDPGAlterTypeCompositeRenameNotice    = "ddl.pg.alter_type.composite_rename.notice"
+	ruleIDPGAlterTypeCompositeSetSchemaNotice = "ddl.pg.alter_type.composite_set_schema.notice"
 	// PostgreSQL table privilege rules (PG-only).
-	ruleIDPGGrantTablePrivilegeNotice                      = "ddl.pg.grant.table_privilege.notice"
-	ruleIDPGGrantTablePrivilegeAllWarn                     = "ddl.pg.grant.table_privilege.all.warn"
-	ruleIDPGRevokeTablePrivilegeNotice                     = "ddl.pg.revoke.table_privilege.notice"
-	ruleIDPGRevokeTablePrivilegeCascadeWarn                = "ddl.pg.revoke.table_privilege.cascade.warn"
+	ruleIDPGGrantTablePrivilegeNotice       = "ddl.pg.grant.table_privilege.notice"
+	ruleIDPGGrantTablePrivilegeAllWarn      = "ddl.pg.grant.table_privilege.all.warn"
+	ruleIDPGRevokeTablePrivilegeNotice      = "ddl.pg.revoke.table_privilege.notice"
+	ruleIDPGRevokeTablePrivilegeCascadeWarn = "ddl.pg.revoke.table_privilege.cascade.warn"
 	// PostgreSQL extension lifecycle rules (PG-only).
-	ruleIDPGCreateExtensionNotice                          = "ddl.pg.create_extension.notice"
-	ruleIDPGCreateExtensionCascadeWarn                     = "ddl.pg.create_extension.cascade.warn"
-	ruleIDPGAlterExtensionUpdateNotice                     = "ddl.pg.alter_extension.update.notice"
-	ruleIDPGAlterExtensionSetSchemaNotice                  = "ddl.pg.alter_extension.set_schema.notice"
-	ruleIDPGDropExtensionAdvisory                          = "ddl.pg.drop_extension.advisory"
-	ruleIDPGDropExtensionCascadeWarn                       = "ddl.pg.drop_extension.cascade.warn"
+	ruleIDPGCreateExtensionNotice         = "ddl.pg.create_extension.notice"
+	ruleIDPGCreateExtensionCascadeWarn    = "ddl.pg.create_extension.cascade.warn"
+	ruleIDPGAlterExtensionUpdateNotice    = "ddl.pg.alter_extension.update.notice"
+	ruleIDPGAlterExtensionSetSchemaNotice = "ddl.pg.alter_extension.set_schema.notice"
+	ruleIDPGDropExtensionAdvisory         = "ddl.pg.drop_extension.advisory"
+	ruleIDPGDropExtensionCascadeWarn      = "ddl.pg.drop_extension.cascade.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
@@ -271,6 +271,7 @@ func appliesToStandaloneDDLAction(statement spec.Statement, action string) bool 
 	return len(matchingStandaloneDDLActions(statement, action)) > 0
 }
 
+//nolint:unused
 func appliesToCreateView(statement spec.Statement) bool {
 	return statement.Kind == spec.KindDDL &&
 		statement.DDL != nil &&
@@ -278,6 +279,7 @@ func appliesToCreateView(statement spec.Statement) bool {
 		statement.DDL.Operation == spec.DDLOperationCreateView
 }
 
+//nolint:unused
 func appliesToDropTable(statement spec.Statement) bool {
 	return statement.Kind == spec.KindDDL &&
 		statement.DDL != nil &&
@@ -285,6 +287,7 @@ func appliesToDropTable(statement spec.Statement) bool {
 		statement.DDL.Operation == spec.DDLOperationDropTable
 }
 
+//nolint:unused
 func appliesToTruncateTable(statement spec.Statement) bool {
 	return statement.Kind == spec.KindDDL &&
 		statement.DDL != nil &&

@@ -342,46 +342,46 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 				spec.Alter{Action: "set_data_type", Name: "status"},
 			),
 		},
-			{
-				name: "drop_index_advisory",
-				r:    mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
-				stmt: spec.Statement{
-					Kind: spec.KindDDL,
-					DDL: &spec.DDL{
-						Operation: spec.DDLOperationDropIndex,
-						Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_email"}},
-					},
+		{
+			name: "drop_index_advisory",
+			r:    mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationDropIndex,
+					Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_email"}},
 				},
 			},
-			{
-				name: "add_column_non_null_no_default",
-				r:    mustNewAddColumnNonNullNoDefaultWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
-				stmt: alterStatement(
-					spec.Alter{
-						Action: "add_column",
-						Name:   "bio",
-						Column: &spec.AlterColumn{Definition: &spec.Column{Name: "bio", NotNull: true, HasDefault: false}},
-					},
-				),
-			},
-			{
-				name: "add_unique_constraint_advisory",
-				r:    mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
-				stmt: alterStatement(
-					spec.Alter{
-						Action:  "add_constraint",
-						Name:    "uniq_email",
-						Options: map[string]string{"constraint_type": "unique"},
-					},
-				),
-			},
-			{
-				name: "drop_constraint_advisory",
-				r:    mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
-				stmt: alterStatement(
-					spec.Alter{Action: "drop_constraint", Name: "chk_amount"},
-				),
-			},
+		},
+		{
+			name: "add_column_non_null_no_default",
+			r:    mustNewAddColumnNonNullNoDefaultWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: alterStatement(
+				spec.Alter{
+					Action: "add_column",
+					Name:   "bio",
+					Column: &spec.AlterColumn{Definition: &spec.Column{Name: "bio", NotNull: true, HasDefault: false}},
+				},
+			),
+		},
+		{
+			name: "add_unique_constraint_advisory",
+			r:    mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: alterStatement(
+				spec.Alter{
+					Action:  "add_constraint",
+					Name:    "uniq_email",
+					Options: map[string]string{"constraint_type": "unique"},
+				},
+			),
+		},
+		{
+			name: "drop_constraint_advisory",
+			r:    mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: alterStatement(
+				spec.Alter{Action: "drop_constraint", Name: "chk_amount"},
+			),
+		},
 	}
 
 	for _, rl := range rules {
@@ -550,7 +550,6 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 		}
 	})
 
-
 	t.Run("drop_index_advisory_fires_for_pg", func(t *testing.T) {
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
@@ -680,11 +679,11 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 			t.Fatalf("evaluate: %v", err)
 		}
 		pgRuleIDs := map[string]bool{
-			ruleIDPGCreateIndexConcurrentlyRequire:                   true,
-			ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn:          true,
-			ruleIDPGAlterAddCheckNotValidRequire:                     true,
-			ruleIDPGAlterSetDataTypeRewriteWarn:                      true,
-			ruleIDPGDropIndexAdvisory:                                true,
+			ruleIDPGCreateIndexConcurrentlyRequire:                  true,
+			ruleIDPGAlterAddColumnNonNullDefaultRewriteWarn:         true,
+			ruleIDPGAlterAddCheckNotValidRequire:                    true,
+			ruleIDPGAlterSetDataTypeRewriteWarn:                     true,
+			ruleIDPGDropIndexAdvisory:                               true,
 			ruleIDPGAlterAddColumnNonNullNoDefaultWarn:              true,
 			ruleIDPGAlterAddUniqueConstraintConcurrentIndexAdvisory: true,
 			ruleIDPGAlterDropConstraintAdvisory:                     true,

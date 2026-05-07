@@ -14,14 +14,14 @@ import (
 )
 
 type pgObjectLifecycleRule struct {
-	id        string
-	level     rule.Level
-	operation spec.DDLOperation
-	option    string
-	object    string
-	message   string
-	why       string
-	risk      string
+	id         string
+	level      rule.Level
+	operation  spec.DDLOperation
+	option     string
+	object     string
+	message    string
+	why        string
+	risk       string
 	suggestion string
 }
 
@@ -57,7 +57,7 @@ func (r pgObjectLifecycleRule) Evaluate(statement spec.Statement) ([]rule.Findin
 	}
 
 	objectName := statement.DDL.ObjectName
-	message := r.message
+	var message string
 	if objectName != "" {
 		message = fmt.Sprintf(r.message, objectName)
 	} else {

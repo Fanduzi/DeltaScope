@@ -191,15 +191,15 @@ func TestPostgreSQLAlterTableRemainingASTCensus(t *testing.T) {
 	t.Log(strings.Repeat("-", 200))
 
 	expectedShapes := map[string]struct {
-		topKind        string
-		subtype        string
-		table          string
-		column         string
-		typeName       string
-		hasUsing       bool
-		usingNodeKind  string
-		loggedState    string
-		tablespace     string
+		topKind       string
+		subtype       string
+		table         string
+		column        string
+		typeName      string
+		hasUsing      bool
+		usingNodeKind string
+		loggedState   string
+		tablespace    string
 	}{
 		"alter_column_type_basic": {
 			topKind:  "AlterTableStmt",
@@ -231,11 +231,11 @@ func TestPostgreSQLAlterTableRemainingASTCensus(t *testing.T) {
 			loggedState: "unlogged",
 		},
 		"set_tablespace": {
-			topKind:     "AlterTableStmt",
-			subtype:     "AT_SetTableSpace",
-			table:       "users",
-			column:      "fastspace", // cmd.GetName() carries the tablespace name
-			tablespace:  "fastspace",
+			topKind:    "AlterTableStmt",
+			subtype:    "AT_SetTableSpace",
+			table:      "users",
+			column:     "fastspace", // cmd.GetName() carries the tablespace name
+			tablespace: "fastspace",
 		},
 	}
 
@@ -348,10 +348,8 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 			actions := strings.Join(baseline.AlterActions, ",")
 			opts := make([]string, 0, len(baseline.AlterOptions))
 			for i, o := range baseline.AlterOptions {
-				if o != nil {
-					for k, v := range o {
-						opts = append(opts, fmt.Sprintf("alter[%d].%s=%s", i, k, v))
-					}
+				for k, v := range o {
+					opts = append(opts, fmt.Sprintf("alter[%d].%s=%s", i, k, v))
 				}
 			}
 			detail = fmt.Sprintf("DDL op=%s actions=[%s] opts=[%s]", baseline.DDLOperation, actions, strings.Join(opts, ", "))
@@ -474,11 +472,11 @@ func TestPostgreSQLAlterTableRemainingSetLoggedDetail(t *testing.T) {
 	t.Log("")
 
 	cases := []struct {
-		name         string
-		sql          string
-		wantSubtype  string
-		wantName     string
-		wantHasDef   bool
+		name        string
+		sql         string
+		wantSubtype string
+		wantName    string
+		wantHasDef  bool
 	}{
 		{name: "set_logged", sql: "ALTER TABLE users SET LOGGED",
 			wantSubtype: "AT_SetLogged", wantName: "", wantHasDef: false},

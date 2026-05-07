@@ -113,7 +113,12 @@ func executeMetadataAwareAudit(
 			Socket:   strings.TrimSpace(request.Connection.Socket),
 			User:     strings.TrimSpace(request.Connection.User),
 			Password: password,
-			Dialect:  func() spec.Dialect { if explicitDialectValue != "" { return toMetadataDialect(requestedPublicDialect) }; return "" }(),
+			Dialect: func() spec.Dialect {
+				if explicitDialectValue != "" {
+					return toMetadataDialect(requestedPublicDialect)
+				}
+				return ""
+			}(),
 		},
 		RequestedDialect:     toMetadataDialect(requestedPublicDialect),
 		ExplicitDialect:      explicitDialectValue != "",

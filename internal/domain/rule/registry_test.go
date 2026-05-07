@@ -13,11 +13,11 @@ import (
 )
 
 type testStatementRule struct {
-	id         string
-	kind       spec.Kind
-	level      rule.Level
-	message    string
-	evaluated  *int
+	id        string
+	kind      spec.Kind
+	level     rule.Level
+	message   string
+	evaluated *int
 }
 
 func (r testStatementRule) ID() string {

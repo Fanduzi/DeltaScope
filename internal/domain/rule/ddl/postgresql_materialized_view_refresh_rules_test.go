@@ -13,10 +13,10 @@ func refreshMatViewStatement(opts map[string]string) spec.Statement {
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
-			Operation:   spec.DDLOperationRefreshMaterializedView,
-			ObjectName:  "mv_stats",
-			ObjectType:  "materialized_view",
-			Options:     opts,
+			Operation:  spec.DDLOperationRefreshMaterializedView,
+			ObjectName: "mv_stats",
+			ObjectType: "materialized_view",
+			Options:    opts,
 		},
 	}
 }

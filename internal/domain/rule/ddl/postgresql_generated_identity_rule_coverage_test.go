@@ -560,9 +560,9 @@ func TestPGGeneratedIdentityCoverageMatrix(t *testing.T) {
 				DDL: &spec.DDL{
 					Table: &spec.Table{Name: "t"},
 					Alter: []spec.Alter{{
-						Action: "set_generated",
-						Name:   "id",
-						Column: &spec.AlterColumn{OldName: "id"},
+						Action:  "set_generated",
+						Name:    "id",
+						Column:  &spec.AlterColumn{OldName: "id"},
 						Options: map[string]string{"generated_when": "a"},
 					}},
 				},
@@ -576,9 +576,9 @@ func TestPGGeneratedIdentityCoverageMatrix(t *testing.T) {
 				DDL: &spec.DDL{
 					Table: &spec.Table{Name: "t"},
 					Alter: []spec.Alter{{
-						Action: "set_generated",
-						Name:   "id",
-						Column: &spec.AlterColumn{OldName: "id"},
+						Action:  "set_generated",
+						Name:    "id",
+						Column:  &spec.AlterColumn{OldName: "id"},
 						Options: map[string]string{"generated_when": "d"},
 					}},
 				},
