@@ -15,9 +15,9 @@
 DeltaScope is an offline-first SQL audit and migration risk checker for MySQL, TiDB, and PostgreSQL DDL/DML changes. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for supported macOS and Linux platforms. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
 
 **Search-focused pages:**
-- [MySQL DDL audit tool](docs/landing/en/mysql-ddl-audit-tool.html) — catch risky MySQL schema changes
-- [PostgreSQL DDL audit tool](docs/landing/en/postgresql-ddl-audit-tool.html) — review PostgreSQL schema changes and DCL
-- [SQL migration risk checker](docs/landing/en/sql-migration-risk-checker.html) — CI and AI workflow integration
+- [MySQL DDL audit tool](https://deltascope.pages.dev/en/mysql-ddl-audit-tool) — catch risky MySQL schema changes
+- [PostgreSQL DDL audit tool](https://deltascope.pages.dev/en/postgresql-ddl-audit-tool) — review PostgreSQL schema changes and DCL
+- [SQL migration risk checker](https://deltascope.pages.dev/en/sql-migration-risk-checker) — CI and AI workflow integration
 
 ## Install
 
