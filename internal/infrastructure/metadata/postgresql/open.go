@@ -6,12 +6,14 @@
 package postgresqlmeta
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -75,10 +77,25 @@ func (c ConnectionConfig) DSN() string {
 }
 
 // OpenDB connects to a PostgreSQL database for metadata reads.
+// The caller is responsible for closing the returned *sql.DB.
 func OpenDB(config ConnectionConfig) (*sql.DB, error) {
 	connConfig, err := pgx.ParseConfig(config.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("parse metadata connection: %w", err)
 	}
-	return stdlib.OpenDB(*connConfig), nil
+	db := stdlib.OpenDB(*connConfig)
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(1 * time.Minute)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("ping metadata connection: %w", err)
+	}
+
+	return db, nil
 }
