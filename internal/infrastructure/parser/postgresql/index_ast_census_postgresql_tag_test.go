@@ -15,15 +15,15 @@ import (
 // and CONCURRENTLY variants. No production code is modified.
 func TestPostgreSQLIndexASTCensus(t *testing.T) {
 	cases := []struct {
-		Name           string
-		SQL            string
-		AccessMethod   string
-		Concurrent     bool
-		Unique         bool
-		HasWhere       bool
-		KeyNames       []string
-		IncludeNames   []string
-		ExprCount      int
+		Name         string
+		SQL          string
+		AccessMethod string
+		Concurrent   bool
+		Unique       bool
+		HasWhere     bool
+		KeyNames     []string
+		IncludeNames []string
+		ExprCount    int
 	}{
 		{
 			Name:         "btree column",

@@ -14,17 +14,17 @@ import (
 // candidate. Fields are populated from pg_query_go direct inspection, not
 // from DeltaScope's extraction pipeline.
 type typeLifecycleASTFact struct {
-	Name        string
-	SQL         string
-	TopKind     string
-	ObjectName  string
-	TypeKind    string // enum, composite, domain
-	EnumLabels  []string
-	AlterAction string // add_value (AlterEnumStmt only)
-	AlterValue  string
-	IfNotExists bool
-	Placement   string // before, after, or empty
-	Neighbor    string
+	Name          string
+	SQL           string
+	TopKind       string
+	ObjectName    string
+	TypeKind      string // enum, composite, domain
+	EnumLabels    []string
+	AlterAction   string // add_value (AlterEnumStmt only)
+	AlterValue    string
+	IfNotExists   bool
+	Placement     string // before, after, or empty
+	Neighbor      string
 	DropMissingOK bool
 	DropCascade   bool
 }
@@ -296,13 +296,13 @@ func assertTypeLifecycleBaseline(t *testing.T, fact typeLifecycleBaselineFact) {
 		if fact.DDLOperation != "drop_type" {
 			t.Errorf("%s: expected drop_type, got %q", fact.Name, fact.DDLOperation)
 		}
-		case "create_type_composite":
-			if fact.Unsupported {
-				t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
-			}
-			if fact.DDLOperation != "create_type" {
-				t.Errorf("%s: expected create_type, got %q", fact.Name, fact.DDLOperation)
-			}
+	case "create_type_composite":
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
+		}
+		if fact.DDLOperation != "create_type" {
+			t.Errorf("%s: expected create_type, got %q", fact.Name, fact.DDLOperation)
+		}
 	case "create_domain":
 		if fact.Unsupported {
 			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)

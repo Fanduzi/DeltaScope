@@ -15,8 +15,8 @@ import (
 	"strings"
 	"testing"
 
-	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )

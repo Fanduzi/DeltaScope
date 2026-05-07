@@ -157,13 +157,13 @@ func TestPostgreSQLAlterTableResidualASTCensus(t *testing.T) {
 		subtype string
 		table   string
 	}{
-		"enable_trigger_all":          {topKind: "AlterTableStmt", subtype: "AT_EnableTrigAll", table: "users"},
-		"enable_trigger_user":         {topKind: "AlterTableStmt", subtype: "AT_EnableTrigUser", table: "users"},
-		"disable_trigger_all":         {topKind: "AlterTableStmt", subtype: "AT_DisableTrigAll", table: "users"},
-		"disable_trigger_user":        {topKind: "AlterTableStmt", subtype: "AT_DisableTrigUser", table: "users"},
-		"replica_identity_default":    {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
-		"replica_identity_full":       {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
-		"replica_identity_nothing":    {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
+		"enable_trigger_all":           {topKind: "AlterTableStmt", subtype: "AT_EnableTrigAll", table: "users"},
+		"enable_trigger_user":          {topKind: "AlterTableStmt", subtype: "AT_EnableTrigUser", table: "users"},
+		"disable_trigger_all":          {topKind: "AlterTableStmt", subtype: "AT_DisableTrigAll", table: "users"},
+		"disable_trigger_user":         {topKind: "AlterTableStmt", subtype: "AT_DisableTrigUser", table: "users"},
+		"replica_identity_default":     {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
+		"replica_identity_full":        {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
+		"replica_identity_nothing":     {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
 		"replica_identity_using_index": {topKind: "AlterTableStmt", subtype: "AT_ReplicaIdentity", table: "users"},
 	}
 
@@ -196,11 +196,11 @@ func TestPostgreSQLAlterTableResidualTriggerScopeASTDetail(t *testing.T) {
 	t.Log("")
 
 	triggerScopeCases := []struct {
-		name         string
-		sql          string
-		wantSubtype  string
-		wantCmdName  string
-		wantHasDef   bool
+		name        string
+		sql         string
+		wantSubtype string
+		wantCmdName string
+		wantHasDef  bool
 	}{
 		{name: "enable_trigger_all", sql: "ALTER TABLE users ENABLE TRIGGER ALL", wantSubtype: "AT_EnableTrigAll", wantCmdName: "", wantHasDef: false},
 		{name: "enable_trigger_user", sql: "ALTER TABLE users ENABLE TRIGGER USER", wantSubtype: "AT_EnableTrigUser", wantCmdName: "", wantHasDef: false},
@@ -305,9 +305,9 @@ func TestPostgreSQLAlterTableResidualReplicaIdentityASTDetail(t *testing.T) {
 	t.Log("=== Replica Identity Stmt Field Extraction ===")
 	t.Log("")
 
-		// pg_query_go encodes identity_type as a single-char string matching
-		// PostgreSQL's RepIdentity enum: 'd'=DEFAULT, 'f'=FULL, 'n'=NOTHING, 'i'=INDEX.
-		detailCases := []struct {
+	// pg_query_go encodes identity_type as a single-char string matching
+	// PostgreSQL's RepIdentity enum: 'd'=DEFAULT, 'f'=FULL, 'n'=NOTHING, 'i'=INDEX.
+	detailCases := []struct {
 		name              string
 		sql               string
 		expectedIdentity  string

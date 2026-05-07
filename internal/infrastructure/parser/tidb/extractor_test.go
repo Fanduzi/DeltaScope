@@ -265,7 +265,7 @@ func TestExtractorHelperMappingsCoverSwitchVariants(t *testing.T) {
 		ast.AlterTableChangeColumn:   "change_column",
 		ast.AlterTableRenameColumn:   "rename_column",
 		ast.AlterTableRenameTable:    "rename_table",
-		ast.AlterTableDropPrimaryKey:"drop_primary_key",
+		ast.AlterTableDropPrimaryKey: "drop_primary_key",
 		ast.AlterTableDropIndex:      "drop_index",
 		ast.AlterTableAddConstraint:  "add_constraint",
 		ast.AlterTableRenameIndex:    "rename_index",

@@ -179,7 +179,7 @@ func TestSourceLocationRuleProvidedLocationPreserved(t *testing.T) {
 // Finding.Location to prove EvaluateStatements preserves rule-provided locations.
 type locationOverrideRule struct{}
 
-func (locationOverrideRule) ID() string { return "test.location-override" }
+func (locationOverrideRule) ID() string                      { return "test.location-override" }
 func (locationOverrideRule) AppliesTo(_ spec.Statement) bool { return true }
 func (locationOverrideRule) Evaluate(_ spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{

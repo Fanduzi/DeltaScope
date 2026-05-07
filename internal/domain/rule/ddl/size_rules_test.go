@@ -68,7 +68,7 @@ func TestIndexKeyLengthRuleFindsLargePrefixOverflow(t *testing.T) {
 	}
 
 	statement := spec.Statement{
-		Kind: spec.KindDDL,
+		Kind:    spec.KindDDL,
 		Dialect: spec.DialectMySQL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationCreateTable,

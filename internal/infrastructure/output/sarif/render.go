@@ -157,8 +157,8 @@ type sarifDocument struct {
 }
 
 type sarifRun struct {
-	Tool    sarifTool      `json:"tool"`
-	Results []sarifResult  `json:"results"`
+	Tool    sarifTool     `json:"tool"`
+	Results []sarifResult `json:"results"`
 }
 
 type sarifTool struct {
@@ -166,10 +166,10 @@ type sarifTool struct {
 }
 
 type sarifDriver struct {
-	Name           string       `json:"name"`
-	Version        string       `json:"version,omitempty"`
-	InformationURI string       `json:"informationUri"`
-	Rules          []sarifRule  `json:"rules"`
+	Name           string      `json:"name"`
+	Version        string      `json:"version,omitempty"`
+	InformationURI string      `json:"informationUri"`
+	Rules          []sarifRule `json:"rules"`
 }
 
 type sarifRule struct {

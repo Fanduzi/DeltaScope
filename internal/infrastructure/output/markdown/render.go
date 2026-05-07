@@ -8,8 +8,8 @@ package markdown
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"

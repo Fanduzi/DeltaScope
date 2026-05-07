@@ -1288,10 +1288,10 @@ func TestAuditSQLPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
 		wantGeneratedWhen string
 	}{
 		{
-			name:              "drop_expression",
-			sql:               "ALTER TABLE users ALTER COLUMN full_name DROP EXPRESSION;",
-			wantRuleID:        "ddl.alter.drop_expression.forbid",
-			wantAction:        "drop_expression",
+			name:       "drop_expression",
+			sql:        "ALTER TABLE users ALTER COLUMN full_name DROP EXPRESSION;",
+			wantRuleID: "ddl.alter.drop_expression.forbid",
+			wantAction: "drop_expression",
 		},
 		{
 			name:              "set_generated_by_default",
@@ -1308,10 +1308,10 @@ func TestAuditSQLPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
 			wantGeneratedWhen: "a",
 		},
 		{
-			name:              "drop_identity",
-			sql:               "ALTER TABLE users ALTER COLUMN id DROP IDENTITY;",
-			wantRuleID:        "ddl.alter.drop_identity.forbid",
-			wantAction:        "drop_identity",
+			name:       "drop_identity",
+			sql:        "ALTER TABLE users ALTER COLUMN id DROP IDENTITY;",
+			wantRuleID: "ddl.alter.drop_identity.forbid",
+			wantAction: "drop_identity",
 		},
 	}
 
@@ -1661,9 +1661,9 @@ func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 
 func TestAuditSQLPostgreSQLAdvancedIndexFormsNormalizedAndCovered(t *testing.T) {
 	tests := []struct {
-		name                string
-		sql                 string
-		wantAccessMethod    string
+		name               string
+		sql                string
+		wantAccessMethod   string
 		wantHasPredicate   bool
 		wantHasExprKeys    bool
 		wantExprCount      int
@@ -1672,43 +1672,43 @@ func TestAuditSQLPostgreSQLAdvancedIndexFormsNormalizedAndCovered(t *testing.T) 
 		wantFindingCovered bool
 	}{
 		{
-			name:                "partial_index",
-			sql:                 "CREATE INDEX idx_users_active_email ON users (email) WHERE active = true",
-			wantAccessMethod:    "btree",
+			name:               "partial_index",
+			sql:                "CREATE INDEX idx_users_active_email ON users (email) WHERE active = true",
+			wantAccessMethod:   "btree",
 			wantHasPredicate:   true,
 			wantFindingCovered: true,
 			wantConcurrently:   "false",
 		},
 		{
-			name:                "expression_index",
-			sql:                 "CREATE INDEX idx_users_lower_email ON users (LOWER(email))",
-			wantAccessMethod:    "btree",
+			name:               "expression_index",
+			sql:                "CREATE INDEX idx_users_lower_email ON users (LOWER(email))",
+			wantAccessMethod:   "btree",
 			wantHasExprKeys:    true,
 			wantExprCount:      1,
 			wantFindingCovered: true,
 			wantConcurrently:   "false",
 		},
 		{
-			name:                "include_index",
-			sql:                 "CREATE INDEX idx_users_email_cover ON users (email) INCLUDE (name, active)",
-			wantAccessMethod:    "btree",
+			name:               "include_index",
+			sql:                "CREATE INDEX idx_users_email_cover ON users (email) INCLUDE (name, active)",
+			wantAccessMethod:   "btree",
 			wantIncludedCols:   []string{"name", "active"},
 			wantFindingCovered: true,
 			wantConcurrently:   "false",
 		},
 		{
-			name:                "gin_index",
-			sql:                 "CREATE INDEX idx_docs_body ON docs USING gin (body)",
-			wantAccessMethod:    "gin",
+			name:               "gin_index",
+			sql:                "CREATE INDEX idx_docs_body ON docs USING gin (body)",
+			wantAccessMethod:   "gin",
 			wantFindingCovered: true,
 			wantConcurrently:   "false",
 		},
 		{
-			name:                "concurrent_partial",
-			sql:                 "CREATE INDEX CONCURRENTLY idx_users_active_email ON users (email) WHERE active = true",
-			wantAccessMethod:    "btree",
-			wantHasPredicate:   true,
-			wantConcurrently:   "true",
+			name:             "concurrent_partial",
+			sql:              "CREATE INDEX CONCURRENTLY idx_users_active_email ON users (email) WHERE active = true",
+			wantAccessMethod: "btree",
+			wantHasPredicate: true,
+			wantConcurrently: "true",
 		},
 	}
 
@@ -2167,8 +2167,8 @@ func TestAuditSQLPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T
 		wantTable         string
 	}{
 		{
-			name: "check_not_valid_without_validate_fires",
-			sql:  "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
+			name:              "check_not_valid_without_validate_fires",
+			sql:               "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
 			wantGlobalFinding: true,
 			wantConstraint:    "chk_orders_amount",
 			wantTable:         "orders",
@@ -2180,8 +2180,8 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;`,
 			wantGlobalFinding: false,
 		},
 		{
-			name: "fk_not_valid_without_validate_fires",
-			sql:  "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) NOT VALID;",
+			name:              "fk_not_valid_without_validate_fires",
+			sql:               "ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) NOT VALID;",
 			wantGlobalFinding: true,
 			wantConstraint:    "fk_orders_user",
 			wantTable:         "orders",
@@ -2309,10 +2309,10 @@ func TestAuditSQLPostgreSQLDropIndexAdvisory(t *testing.T) {
 //   - nullable → does NOT fire the new rule
 func TestAuditSQLPostgreSQLAddColumnNonNullNoDefaultWarn(t *testing.T) {
 	tests := []struct {
-		name              string
-		sql               string
-		wantRulePresent   bool
-		wantRuleAbsent    bool
+		name            string
+		sql             string
+		wantRulePresent bool
+		wantRuleAbsent  bool
 	}{
 		{
 			name:            "not_null_no_default_fires",
@@ -3402,79 +3402,79 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 		}
 	})
 
-		t.Run("create_type_composite_normalized", func(t *testing.T) {
-			const sql = "CREATE TYPE address AS (street text, city text);"
+	t.Run("create_type_composite_normalized", func(t *testing.T) {
+		const sql = "CREATE TYPE address AS (street text, city text);"
 
-			// Verify service-level audit succeeds without unsupported details.
-			result, err := AuditSQL(context.Background(), Request{
-				SQL:     sql,
-				Dialect: spec.DialectPostgreSQL,
-			})
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if len(result.Unsupported) != 0 {
-				t.Fatalf("expected 0 unsupported, got %d", len(result.Unsupported))
-			}
-
-			// Extract the underlying spec to prove extractor-level facts.
-			stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
-			if !ok {
-				t.Fatal("expected supported statement")
-			}
-			if stmt.DDL == nil {
-				t.Fatalf("expected normalized DDL, got nil")
-			}
-			if stmt.DDL.Operation != spec.DDLOperationCreateType {
-				t.Fatalf("expected create_type, got %q", stmt.DDL.Operation)
-			}
-			if stmt.DDL.ObjectName != "address" {
-				t.Fatalf("expected object name address, got %q", stmt.DDL.ObjectName)
-			}
-			if stmt.DDL.Options["type_kind"] != "composite" {
-				t.Fatalf("expected type_kind=composite, got %q", stmt.DDL.Options["type_kind"])
-			}
-			if stmt.DDL.Options["attributes"] != "2" {
-				t.Fatalf("expected attributes=2, got %q", stmt.DDL.Options["attributes"])
-			}
-			if stmt.DDL.Options["attribute_names"] != "street,city" {
-				t.Fatalf("expected attribute_names=street,city, got %q", stmt.DDL.Options["attribute_names"])
-			}
+		// Verify service-level audit succeeds without unsupported details.
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
 		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %d", len(result.Unsupported))
+		}
 
-		t.Run("create_domain_normalized", func(t *testing.T) {
-			const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
+		// Extract the underlying spec to prove extractor-level facts.
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil {
+			t.Fatalf("expected normalized DDL, got nil")
+		}
+		if stmt.DDL.Operation != spec.DDLOperationCreateType {
+			t.Fatalf("expected create_type, got %q", stmt.DDL.Operation)
+		}
+		if stmt.DDL.ObjectName != "address" {
+			t.Fatalf("expected object name address, got %q", stmt.DDL.ObjectName)
+		}
+		if stmt.DDL.Options["type_kind"] != "composite" {
+			t.Fatalf("expected type_kind=composite, got %q", stmt.DDL.Options["type_kind"])
+		}
+		if stmt.DDL.Options["attributes"] != "2" {
+			t.Fatalf("expected attributes=2, got %q", stmt.DDL.Options["attributes"])
+		}
+		if stmt.DDL.Options["attribute_names"] != "street,city" {
+			t.Fatalf("expected attribute_names=street,city, got %q", stmt.DDL.Options["attribute_names"])
+		}
+	})
 
-			// Verify service-level audit succeeds without unsupported details.
-			result, err := AuditSQL(context.Background(), Request{
-				SQL:     sql,
-				Dialect: spec.DialectPostgreSQL,
-			})
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if len(result.Unsupported) != 0 {
-				t.Fatalf("expected 0 unsupported, got %d", len(result.Unsupported))
-			}
+	t.Run("create_domain_normalized", func(t *testing.T) {
+		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
 
-			// Extract the underlying spec to prove extractor-level facts.
-			stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
-			if !ok {
-				t.Fatal("expected supported statement")
-			}
-			if stmt.DDL == nil {
-				t.Fatalf("expected normalized DDL, got nil")
-			}
-			if stmt.DDL.Operation != spec.DDLOperationCreateDomain {
-				t.Fatalf("expected create_domain, got %q", stmt.DDL.Operation)
-			}
-			if stmt.DDL.ObjectName != "email" {
-				t.Fatalf("expected object name email, got %q", stmt.DDL.ObjectName)
-			}
-			if stmt.DDL.ObjectType != "domain" {
-				t.Fatalf("expected object type domain, got %q", stmt.DDL.ObjectType)
-			}
-			})
+		// Verify service-level audit succeeds without unsupported details.
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %d", len(result.Unsupported))
+		}
+
+		// Extract the underlying spec to prove extractor-level facts.
+		stmt, ok := corpusExtractStatement(t, sql, spec.DialectPostgreSQL)
+		if !ok {
+			t.Fatal("expected supported statement")
+		}
+		if stmt.DDL == nil {
+			t.Fatalf("expected normalized DDL, got nil")
+		}
+		if stmt.DDL.Operation != spec.DDLOperationCreateDomain {
+			t.Fatalf("expected create_domain, got %q", stmt.DDL.Operation)
+		}
+		if stmt.DDL.ObjectName != "email" {
+			t.Fatalf("expected object name email, got %q", stmt.DDL.ObjectName)
+		}
+		if stmt.DDL.ObjectType != "domain" {
+			t.Fatalf("expected object type domain, got %q", stmt.DDL.ObjectType)
+		}
+	})
 }
 
 func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {

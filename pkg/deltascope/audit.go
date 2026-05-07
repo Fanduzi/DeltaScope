@@ -182,12 +182,12 @@ type StatementResult struct {
 
 // Result is the stable public audit output.
 type Result struct {
-	Verdict        Verdict                   `json:"verdict"`
-	Summary        Summary                   `json:"summary"`
-	Statements     []StatementResult         `json:"statements,omitempty"`
-	GlobalFindings []Finding                 `json:"global_findings,omitempty"`
-	Unsupported    []spec.UnsupportedDetail  `json:"unsupported,omitempty"`
-	Explanation    *Explanation              `json:"explanation,omitempty"`
+	Verdict        Verdict                  `json:"verdict"`
+	Summary        Summary                  `json:"summary"`
+	Statements     []StatementResult        `json:"statements,omitempty"`
+	GlobalFindings []Finding                `json:"global_findings,omitempty"`
+	Unsupported    []spec.UnsupportedDetail `json:"unsupported,omitempty"`
+	Explanation    *Explanation             `json:"explanation,omitempty"`
 }
 
 // Audit executes the stable public audit flow.

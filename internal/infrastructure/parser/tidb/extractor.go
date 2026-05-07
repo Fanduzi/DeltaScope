@@ -644,8 +644,6 @@ func exprIsLiteralValue(expr ast.ExprNode) bool {
 		return false
 	case ast.ValueExpr:
 		return true
-	case ast.ParamMarkerExpr:
-		return true
 	case *ast.UnaryOperationExpr:
 		return exprIsLiteralValue(typed.V)
 	default:

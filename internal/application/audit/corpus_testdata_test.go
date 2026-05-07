@@ -1,7 +1,6 @@
 package audit
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -216,7 +215,7 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 			}
 
 			// 5. Validate operation if present — must not be empty.
-			if tc.Expect.Operation != "" {
+			if tc.Expect.Operation != "" { //nolint:staticcheck // non-empty is valid
 				// non-empty is valid
 			}
 
@@ -295,7 +294,7 @@ func TestSQLCorpusWalkerFindsActualCases(t *testing.T) {
 		t.Fatalf("walk: %v", err)
 	}
 	if len(matches) == 0 {
-		t.Fatal(fmt.Sprintf("walk found no .expected.yaml files under %s; check directory layout", corpusRoot))
+		t.Fatalf("walk found no .expected.yaml files under %s; check directory layout", corpusRoot)
 	}
 	t.Logf("found %d expected file(s)", len(matches))
 }

@@ -263,7 +263,7 @@ func TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMeta
 		RawSQL:        "create table users (id bigint)",
 		NormalizedSQL: "create table users (id bigint)",
 		Metadata: &spec.Metadata{
-			Schema: "app",
+			Schema:      "app",
 			TargetTable: &spec.TableSnapshot{Exists: true},
 		},
 	}})

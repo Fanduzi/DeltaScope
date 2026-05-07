@@ -14,16 +14,16 @@ import (
 )
 
 type pgTablePrivilegeRule struct {
-	id       string
-	level    rule.Level
-	operation spec.DDLOperation
-	optionKey string
-	optionValue string
+	id            string
+	level         rule.Level
+	operation     spec.DDLOperation
+	optionKey     string
+	optionValue   string
 	requireOption bool
-	message  string
-	why      string
-	risk     string
-	suggestion string
+	message       string
+	why           string
+	risk          string
+	suggestion    string
 }
 
 func newPGTablePrivilegeRule(id string, level rule.Level, operation spec.DDLOperation, optionKey, optionValue string, requireOption bool, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {

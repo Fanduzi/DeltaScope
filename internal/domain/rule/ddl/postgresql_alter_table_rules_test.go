@@ -89,8 +89,8 @@ func TestAddColumnNullableNoticeFiresForPG(t *testing.T) {
 					Name:   "nickname",
 					Column: &spec.AlterColumn{
 						Definition: &spec.Column{
-							Name:   "nickname",
-							Type:   "varchar(100)",
+							Name: "nickname",
+							Type: "varchar(100)",
 						},
 					},
 				},
@@ -1072,9 +1072,9 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		ruleIDPGAlterDetachPartitionWarn,
 		ruleIDPGAlterLoggedNotice,
 		ruleIDPGAlterUnloggedNotice,
-			ruleIDPGAlterReplicaIdentityFullWarn,
-			ruleIDPGAlterReplicaIdentityNothingWarn,
-			ruleIDPGAlterReplicaIdentityUsingIndexNotice,
+		ruleIDPGAlterReplicaIdentityFullWarn,
+		ruleIDPGAlterReplicaIdentityNothingWarn,
+		ruleIDPGAlterReplicaIdentityUsingIndexNotice,
 	}
 	for _, ruleID := range pgAlterRuleIDs {
 		cfg.Rules[ruleID] = policy.RulePolicy{
@@ -1153,18 +1153,18 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
-			pgRuleIDs := map[string]bool{
-				ruleIDPGAlterDropColumnAdvisory:         true,
-				ruleIDPGAlterValidateConstraintAdvisory: true,
-				ruleIDPGAlterAddColumnNullableNotice:    true,
-				ruleIDPGAlterSetSchemaAdvisory:          true,
-				ruleIDPGAlterOwnerAdvisory:              true,
-				ruleIDPGAlterEnableTriggerNotice:        true,
-				ruleIDPGAlterDisableTriggerWarn:         true,
-				ruleIDPGAlterAttachPartitionAdvisory:    true,
-				ruleIDPGAlterDetachPartitionWarn:        true,
-				ruleIDPGAlterLoggedNotice:               true,
-				ruleIDPGAlterUnloggedNotice:             true,
+		pgRuleIDs := map[string]bool{
+			ruleIDPGAlterDropColumnAdvisory:         true,
+			ruleIDPGAlterValidateConstraintAdvisory: true,
+			ruleIDPGAlterAddColumnNullableNotice:    true,
+			ruleIDPGAlterSetSchemaAdvisory:          true,
+			ruleIDPGAlterOwnerAdvisory:              true,
+			ruleIDPGAlterEnableTriggerNotice:        true,
+			ruleIDPGAlterDisableTriggerWarn:         true,
+			ruleIDPGAlterAttachPartitionAdvisory:    true,
+			ruleIDPGAlterDetachPartitionWarn:        true,
+			ruleIDPGAlterLoggedNotice:               true,
+			ruleIDPGAlterUnloggedNotice:             true,
 		}
 		for _, f := range findings {
 			if pgRuleIDs[f.RuleID] {

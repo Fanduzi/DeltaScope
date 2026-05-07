@@ -38,13 +38,13 @@ const (
 	DDLOperationDropView      DDLOperation = "drop_view"
 	DDLOperationTruncateTable DDLOperation = "truncate_table"
 
-	DDLOperationCreateSchema           DDLOperation = "create_schema"
-	DDLOperationDropSchema             DDLOperation = "drop_schema"
-	DDLOperationCreateSequence         DDLOperation = "create_sequence"
-	DDLOperationAlterSequence          DDLOperation = "alter_sequence"
-	DDLOperationDropSequence           DDLOperation = "drop_sequence"
-	DDLOperationCreateMaterializedView DDLOperation = "create_materialized_view"
-	DDLOperationDropMaterializedView   DDLOperation = "drop_materialized_view"
+	DDLOperationCreateSchema            DDLOperation = "create_schema"
+	DDLOperationDropSchema              DDLOperation = "drop_schema"
+	DDLOperationCreateSequence          DDLOperation = "create_sequence"
+	DDLOperationAlterSequence           DDLOperation = "alter_sequence"
+	DDLOperationDropSequence            DDLOperation = "drop_sequence"
+	DDLOperationCreateMaterializedView  DDLOperation = "create_materialized_view"
+	DDLOperationDropMaterializedView    DDLOperation = "drop_materialized_view"
 	DDLOperationRefreshMaterializedView DDLOperation = "refresh_materialized_view"
 
 	DDLOperationCreateType DDLOperation = "create_type"
@@ -72,23 +72,23 @@ type Table struct {
 
 // Column describes a table column.
 type Column struct {
-	Name                      string `json:"name"`
-	Type                      string `json:"type,omitempty"`
-	Length                    int    `json:"length,omitempty"`
-	Charset                   string `json:"charset,omitempty"`
-	Collation                 string `json:"collation,omitempty"`
-	Comment                   string `json:"comment,omitempty"`
-	Unsigned                  bool   `json:"unsigned,omitempty"`
-	NotNull                   bool   `json:"not_null,omitempty"`
-	AutoIncrement             bool   `json:"auto_increment,omitempty"`
-	HasDefault                bool   `json:"has_default,omitempty"`
-	DefaultValue              string `json:"default_value,omitempty"`
-	DefaultIsNull             bool   `json:"default_is_null,omitempty"`
-	DefaultIsCurrentTimestamp bool   `json:"default_is_current_timestamp,omitempty"`
-	OnUpdateCurrentTimestamp  bool       `json:"on_update_current_timestamp,omitempty"`
-	GeneratedWhen            string     `json:"generated_when,omitempty"`
-	IsIdentity               bool       `json:"is_identity,omitempty"`
-	IdentityOptions          map[string]any `json:"identity_options,omitempty"`
+	Name                      string         `json:"name"`
+	Type                      string         `json:"type,omitempty"`
+	Length                    int            `json:"length,omitempty"`
+	Charset                   string         `json:"charset,omitempty"`
+	Collation                 string         `json:"collation,omitempty"`
+	Comment                   string         `json:"comment,omitempty"`
+	Unsigned                  bool           `json:"unsigned,omitempty"`
+	NotNull                   bool           `json:"not_null,omitempty"`
+	AutoIncrement             bool           `json:"auto_increment,omitempty"`
+	HasDefault                bool           `json:"has_default,omitempty"`
+	DefaultValue              string         `json:"default_value,omitempty"`
+	DefaultIsNull             bool           `json:"default_is_null,omitempty"`
+	DefaultIsCurrentTimestamp bool           `json:"default_is_current_timestamp,omitempty"`
+	OnUpdateCurrentTimestamp  bool           `json:"on_update_current_timestamp,omitempty"`
+	GeneratedWhen             string         `json:"generated_when,omitempty"`
+	IsIdentity                bool           `json:"is_identity,omitempty"`
+	IdentityOptions           map[string]any `json:"identity_options,omitempty"`
 }
 
 // IndexKind identifies the semantic class of an index declaration.

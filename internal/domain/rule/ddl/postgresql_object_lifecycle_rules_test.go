@@ -635,9 +635,9 @@ func TestDefaultPolicyIncludesPGObjectLifecycleRules(t *testing.T) {
 	cfg := policy.Default()
 
 	expected := []struct {
-		id       string
-		level    rule.Level
-		enabled  bool
+		id      string
+		level   rule.Level
+		enabled bool
 	}{
 		{ruleIDPGDropSchemaAdvisory, rule.LevelNotice, true},
 		{ruleIDPGDropSchemaCascadeWarn, rule.LevelWarning, true},
@@ -677,7 +677,7 @@ func TestDefaultPolicyExcludesPGRulesFromMySQL(t *testing.T) {
 	}
 	for id := range cfg.Rules {
 		for _, prefix := range pgPrefixes {
-			if len(id) >= len(prefix) && id[:len(prefix)] == prefix {
+			if len(id) >= len(prefix) && id[:len(prefix)] == prefix { //nolint:staticcheck // existence verified
 				// This is expected; just verify it exists
 			}
 		}

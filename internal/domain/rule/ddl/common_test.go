@@ -150,7 +150,7 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationAlterTable,
-			Alter: []spec.Alter{{Action: "rename_index", Name: "idx_old", Options: map[string]string{"new_name": "idx_new"}}},
+			Alter:     []spec.Alter{{Action: "rename_index", Name: "idx_old", Options: map[string]string{"new_name": "idx_new"}}},
 		},
 	}
 	matchedRename := matchingRenameActions(standaloneRenameIndex, "rename_index")

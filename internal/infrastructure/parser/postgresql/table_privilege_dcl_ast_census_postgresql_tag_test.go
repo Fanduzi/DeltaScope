@@ -13,22 +13,22 @@ import (
 // tablePrivilegeDCLASTFact captures observed pg_query AST facts for a
 // PostgreSQL table privilege DCL candidate.
 type tablePrivilegeDCLASTFact struct {
-	Name                string
-	SQL                 string
-	TopKind             string   // GrantStmt, GrantRoleStmt, AlterDefaultPrivilegesStmt
-	GrantMode           string   // "grant" or "revoke" (from GrantStmt.IsGrant)
-	TargetType          string   // ACL_TARGET_OBJECT, ACL_TARGET_ALL_IN_SCHEMA, etc.
-	ObjType             string   // OBJECT_TABLE, OBJECT_SEQUENCE, etc.
-	ObjectsShape        string   // how objects are represented: RangeVar, List→String, etc.
-	ObjectNames         []string // extracted object names
-	ObjectSchemas       []string // extracted schema names (non-empty for qualified names)
-	PrivilegesShape     string   // AccessPriv nodes with/without priv_name
-	PrivilegeNames      []string // named privileges (SELECT, INSERT, etc.)
-	AllPrivileges       bool     // true if AccessPriv with empty priv_name present
-	GranteesShape       string   // RoleSpec nodes
-	GranteeNames        []string // extracted grantee role names
-	GrantOption         bool
-	Behavior            string // CASCADE, RESTRICT, or empty
+	Name            string
+	SQL             string
+	TopKind         string   // GrantStmt, GrantRoleStmt, AlterDefaultPrivilegesStmt
+	GrantMode       string   // "grant" or "revoke" (from GrantStmt.IsGrant)
+	TargetType      string   // ACL_TARGET_OBJECT, ACL_TARGET_ALL_IN_SCHEMA, etc.
+	ObjType         string   // OBJECT_TABLE, OBJECT_SEQUENCE, etc.
+	ObjectsShape    string   // how objects are represented: RangeVar, List→String, etc.
+	ObjectNames     []string // extracted object names
+	ObjectSchemas   []string // extracted schema names (non-empty for qualified names)
+	PrivilegesShape string   // AccessPriv nodes with/without priv_name
+	PrivilegeNames  []string // named privileges (SELECT, INSERT, etc.)
+	AllPrivileges   bool     // true if AccessPriv with empty priv_name present
+	GranteesShape   string   // RoleSpec nodes
+	GranteeNames    []string // extracted grantee role names
+	GrantOption     bool
+	Behavior        string // CASCADE, RESTRICT, or empty
 	// GrantRoleStmt fields
 	GrantedRolesShape string
 	GrantedRoleNames  []string

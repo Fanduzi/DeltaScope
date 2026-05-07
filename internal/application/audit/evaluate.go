@@ -112,9 +112,9 @@ func reportImpact(statement spec.Statement) *report.Impact {
 	result := &report.Impact{
 		EstimatedRows:  impact.EstimatedRows,
 		EstimatedRatio: impact.EstimatedRatio,
-		RiskLevel:      report.ImpactRisk(impact.RiskLevel),
-		Confidence:     report.ImpactConfidence(impact.Confidence),
-		Source:         report.ImpactSource(impact.Source),
+		RiskLevel:      impact.RiskLevel,
+		Confidence:     impact.Confidence,
+		Source:         impact.Source,
 	}
 	if impact.ReasonCodes != nil {
 		result.ReasonCodes = append([]string(nil), impact.ReasonCodes...)

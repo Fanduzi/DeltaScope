@@ -54,7 +54,7 @@ func TestFindSchemasForTableUsesCatalogTables(t *testing.T) {
 	db, queryLog := openTestDB(t, map[string]testQueryResult{
 		"from pg_catalog.pg_class": {
 			columns: []string{"schema_name"},
-			rows: [][]driver.Value{{"analytics"}, {"public"}},
+			rows:    [][]driver.Value{{"analytics"}, {"public"}},
 		},
 	})
 	defer db.Close()
@@ -223,7 +223,7 @@ func TestLoadPlanEstimateUsesPlainExplainForUpdate(t *testing.T) {
 	db, queryLog := openTestDB(t, map[string]testQueryResult{
 		"EXPLAIN UPDATE users SET active = false WHERE id = 42": {
 			columns: []string{"QUERY PLAN"},
-			rows: [][]driver.Value{{"Update on users  (cost=0.15..8.17 rows=0 width=0)"}, {"  ->  Index Scan using users_pkey on users  (cost=0.15..8.17 rows=1 width=0)"}},
+			rows:    [][]driver.Value{{"Update on users  (cost=0.15..8.17 rows=0 width=0)"}, {"  ->  Index Scan using users_pkey on users  (cost=0.15..8.17 rows=1 width=0)"}},
 		},
 	})
 	defer db.Close()

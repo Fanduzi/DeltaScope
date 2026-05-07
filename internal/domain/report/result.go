@@ -91,13 +91,13 @@ type Summary struct {
 
 // Result is the aggregated audit output.
 type Result struct {
-	Verdict        Verdict                   `json:"verdict"`
-	Summary        Summary                   `json:"summary"`
-	Statements     []StatementResult         `json:"statements,omitempty"`
-	GlobalFindings []rule.Finding            `json:"global_findings,omitempty"`
-	Unsupported    []spec.UnsupportedDetail  `json:"unsupported,omitempty"`
-	Explanation    *Explanation              `json:"explanation,omitempty"`
-	RuleSummary    *RuleSummary              `json:"rule_summary,omitempty"`
+	Verdict        Verdict                  `json:"verdict"`
+	Summary        Summary                  `json:"summary"`
+	Statements     []StatementResult        `json:"statements,omitempty"`
+	GlobalFindings []rule.Finding           `json:"global_findings,omitempty"`
+	Unsupported    []spec.UnsupportedDetail `json:"unsupported,omitempty"`
+	Explanation    *Explanation             `json:"explanation,omitempty"`
+	RuleSummary    *RuleSummary             `json:"rule_summary,omitempty"`
 }
 
 // Aggregate builds a final Result from statement and global findings.

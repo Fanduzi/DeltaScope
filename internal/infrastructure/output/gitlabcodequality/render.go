@@ -25,7 +25,7 @@ type Options struct {
 // Unsupported statements are not included.
 func Render(result report.Result, options Options) ([]byte, error) {
 	path := resolvePath(options.Path)
-	var issues []issue
+	issues := make([]issue, 0, len(result.Statements))
 
 	for _, stmt := range result.Statements {
 		for _, finding := range stmt.Findings {

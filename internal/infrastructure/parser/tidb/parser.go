@@ -44,9 +44,7 @@ func (p *Parser) Parse(sql string) (Result, error) {
 		result.Warnings = append(result.Warnings, warn.Error())
 	}
 
-	for _, stmt := range parsed {
-		result.Statements = append(result.Statements, stmt)
-	}
+	result.Statements = append(result.Statements, parsed...)
 
 	return result, nil
 }

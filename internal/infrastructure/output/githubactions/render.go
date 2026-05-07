@@ -21,7 +21,7 @@ type Options struct {
 
 // Render formats an audit result into GitHub Actions annotation commands.
 func Render(result report.Result, options Options) ([]byte, error) {
-	var lines []string
+	lines := make([]string, 0, len(result.Statements))
 
 	for _, stmt := range result.Statements {
 		for _, finding := range stmt.Findings {

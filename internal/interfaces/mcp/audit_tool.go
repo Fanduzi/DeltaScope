@@ -106,7 +106,12 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 			Socket:   connection.Socket,
 			User:     connection.User,
 			Password: connection.Password,
-			Dialect:  func() spec.Dialect { if explicitDialectValue != "" { return toDomainDialect(dialect) }; return "" }(),
+			Dialect: func() spec.Dialect {
+				if explicitDialectValue != "" {
+					return toDomainDialect(dialect)
+				}
+				return ""
+			}(),
 		},
 		RequestedDialect:     toDomainDialect(dialect),
 		ExplicitDialect:      explicitDialectValue != "",

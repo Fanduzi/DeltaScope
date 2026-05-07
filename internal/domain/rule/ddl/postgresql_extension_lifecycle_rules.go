@@ -14,17 +14,17 @@ import (
 )
 
 type pgExtensionLifecycleRule struct {
-	id           string
-	level        rule.Level
-	operation    spec.DDLOperation
-	optionKey    string
-	optionValue  string
+	id            string
+	level         rule.Level
+	operation     spec.DDLOperation
+	optionKey     string
+	optionValue   string
 	requireOption bool
-	object       string
-	message      string
-	why          string
-	risk         string
-	suggestion   string
+	object        string
+	message       string
+	why           string
+	risk          string
+	suggestion    string
 }
 
 func newPGExtensionLifecycleRule(id string, level rule.Level, operation spec.DDLOperation, optionKey, optionValue string, requireOption bool, object, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {

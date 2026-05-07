@@ -202,7 +202,7 @@ func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationAlterTable,
-			Alter: []spec.Alter{{Action: "rename_index", Name: "missing_idx", Options: map[string]string{"new_name": "idx_new"}}},
+			Alter:     []spec.Alter{{Action: "rename_index", Name: "missing_idx", Options: map[string]string{"new_name": "idx_new"}}},
 		},
 		Metadata: &spec.Metadata{
 			TargetTable: &spec.TableSnapshot{
