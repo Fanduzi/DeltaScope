@@ -17,8 +17,17 @@ import (
 )
 
 const runAsMCPServer = "_DELTASCOPE_MCP_RUN_AS_SERVER"
+const runAsMCPPanicTest = "_DELTASCOPE_MCP_PANIC_TEST"
 
 func TestMain(m *testing.M) {
+	if os.Getenv(runAsMCPPanicTest) != "" {
+		os.Unsetenv(runAsMCPPanicTest)
+		newMCPServer = func(config mcpapi.Config) *sdkmcp.Server {
+			panic("test construction panic")
+		}
+		runMCPServer = func(server *sdkmcp.Server) error { return nil }
+		os.Exit(run([]string{}, os.Stdout, os.Stderr))
+	}
 	if os.Getenv(runAsMCPServer) != "" {
 		os.Unsetenv(runAsMCPServer)
 		os.Exit(run([]string{}, os.Stdout, os.Stderr))
