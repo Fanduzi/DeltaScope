@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 
 	mcpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/mcp"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -30,6 +31,15 @@ func main() {
 }
 
 func run(args []string, stdout io.Writer, stderr io.Writer) int {
+	defer func() {
+		if r := recover(); r != nil {
+			buf := make([]byte, 4096)
+			n := runtime.Stack(buf, false)
+			_, _ = fmt.Fprintf(stderr, "FATAL: MCP server panic: %v\nStack trace:\n%s", r, string(buf[:n]))
+			os.Exit(4)
+		}
+	}()
+
 	flags := flag.NewFlagSet("deltascope-mcp", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 

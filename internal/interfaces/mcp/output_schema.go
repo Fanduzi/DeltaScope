@@ -5,7 +5,14 @@
 // note: if this file changes, update this header and module README.md.
 package mcpapi
 
-import "github.com/google/jsonschema-go/jsonschema"
+import (
+	"log"
+	"os"
+
+	"github.com/google/jsonschema-go/jsonschema"
+)
+
+var schemaLogger = log.New(os.Stderr, "mcp: ", log.LstdFlags)
 
 var (
 	auditSQLResultSchema     = mustOutputSchema[AuditSQLResult]()
@@ -17,7 +24,8 @@ var (
 func mustOutputSchema[T any]() *jsonschema.Schema {
 	schema, err := jsonschema.For[T](nil)
 	if err != nil {
-		panic(err)
+		schemaLogger.Printf("output schema generation failed: %v", err)
+		return nil
 	}
 	return schema
 }

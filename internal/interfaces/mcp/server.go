@@ -7,6 +7,7 @@ package mcpapi
 
 import (
 	"context"
+	"runtime"
 
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -28,22 +29,22 @@ func NewServer(config Config) *sdkmcp.Server {
 		Name:         "audit_sql",
 		Description:  "Audit SQL statements with DeltaScope.",
 		OutputSchema: auditSQLResultSchema,
-	}, newAuditSQLTool(config))
+	}, recoverTool(newAuditSQLTool(config)))
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:         "describe_rule",
 		Description:  "Describe one shipped DeltaScope rule by rule ID.",
 		OutputSchema: describeRuleOutputSchema,
-	}, describeRuleTool)
+	}, recoverTool(describeRuleTool))
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:         "list_rules",
 		Description:  "List shipped DeltaScope rules with optional filters.",
 		OutputSchema: listRulesOutputSchema,
-	}, listRulesTool)
+	}, recoverTool(listRulesTool))
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:         "get_capabilities",
 		Description:  "Return a concise DeltaScope capability summary for MCP clients.",
 		OutputSchema: capabilitiesOutputSchema,
-	}, newGetCapabilitiesTool(config))
+	}, recoverTool(newGetCapabilitiesTool(config)))
 
 	return server
 }
@@ -74,5 +75,23 @@ func listRulesTool(_ context.Context, _ *sdkmcp.CallToolRequest, input listRules
 func newGetCapabilitiesTool(config Config) func(context.Context, *sdkmcp.CallToolRequest, getCapabilitiesInput) (*sdkmcp.CallToolResult, any, error) {
 	return func(_ context.Context, _ *sdkmcp.CallToolRequest, _ getCapabilitiesInput) (*sdkmcp.CallToolResult, any, error) {
 		return nil, capabilitiesPayload(config.ConnectionsPath), nil
+	}
+}
+
+// recoverTool wraps a tool handler with panic recovery. If the handler panics,
+// the panic is caught, logged with a stack trace, and a structured error is
+// returned to the client instead of crashing the entire MCP service.
+func recoverTool[T any](handler func(context.Context, *sdkmcp.CallToolRequest, T) (*sdkmcp.CallToolResult, any, error)) func(context.Context, *sdkmcp.CallToolRequest, T) (*sdkmcp.CallToolResult, any, error) {
+	return func(ctx context.Context, req *sdkmcp.CallToolRequest, input T) (result *sdkmcp.CallToolResult, structured any, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				buf := make([]byte, 4096)
+				n := runtime.Stack(buf, false)
+				schemaLogger.Printf("MCP panic recovered: %v\nStack trace:\n%s", r, string(buf[:n]))
+				errorResult, _ := toolError("internal_error", "internal server error")
+				result, structured, err = errorResult, nil, nil
+			}
+		}()
+		return handler(ctx, req, input)
 	}
 }
