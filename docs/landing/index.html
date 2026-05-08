@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.60.0",
+    "softwareVersion": "v0.61.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.60.0 — PostgreSQL table privilege DCL coverage</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.61.0 — Quality & reliability improvements</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,13 +1081,13 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.60.0</div>
+              <div class="release-version">v0.61.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
             <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL Extension Lifecycle Coverage</div>
-            <div class="release-copy" data-i18n="releases.items.v0600">v0.60.0 adds PostgreSQL table-level privilege DCL narrow support, normalizing GRANT/REVOKE table privileges with four new PostgreSQL-only findings.</div>
+            <div class="release-copy" data-i18n="releases.items.v0600">v0.61.0 delivers codebase quality improvements: database connection leak fixes, MCP panic recovery, static analysis integration (903 issues fixed), context propagation, parallel test execution (1522 tests), and performance optimizations.</div>
             <div style="display:none;" data-i18n="releases.items.v0590">v0.59.0 adds PostgreSQL extension lifecycle narrow support, normalizing CREATE EXTENSION, ALTER EXTENSION UPDATE/SET SCHEMA, and DROP EXTENSION with six new PostgreSQL-only findings.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.60.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.60.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.60.0.zh-CN.md">Read release notes →</a>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
@@ -1208,7 +1208,7 @@ Statement 1: CREATE TABLE
               <span class="nav-logo-text">DeltaScope</span>
             </a>
             <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.
-Starting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.58.0 release adds PostgreSQL composite type lifecycle narrow support with three new guardrail rules. The v0.59.0 release adds PostgreSQL extension lifecycle narrow support with six new guardrail rules. The v0.60.0 release adds PostgreSQL table-level privilege DCL narrow support with four new guardrail rules.</p>
+Starting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.58.0 release adds PostgreSQL composite type lifecycle narrow support with three new guardrail rules. The v0.59.0 release adds PostgreSQL extension lifecycle narrow support with six new guardrail rules. The v0.60.0 release adds PostgreSQL table-level privilege DCL narrow support with four new guardrail rules. The v0.61.0 release delivers quality improvements: connection leak fixes, MCP panic recovery, static analysis integration, context propagation, and performance optimizations.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1220,7 +1220,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.60.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.60.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.60.0.zh-CN.md">Release Notes v0.60.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.zh-CN.md">Release Notes v0.61.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1264,7 +1264,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: 'Install'
         },
         hero: {
-          badge: 'v0.60.0 — PostgreSQL table privilege DCL coverage',
+          badge: 'v0.61.0 — Quality & reliability improvements',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1427,14 +1427,14 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.\nStarting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.58.0 release adds PostgreSQL composite type lifecycle narrow support with three new guardrail rules. The v0.59.0 release adds PostgreSQL extension lifecycle narrow support with six new guardrail rules. The v0.60.0 release adds PostgreSQL table-level privilege DCL narrow support with four new guardrail rules.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL.\nStarting with the v0.17.0 release line, the supported macOS and Linux release assets converge on the unified `deltascope` / `deltascope-server` / `deltascope-mcp` product surface for PostgreSQL offline audit. The v0.58.0 release adds PostgreSQL composite type lifecycle narrow support with three new guardrail rules. The v0.59.0 release adds PostgreSQL extension lifecycle narrow support with six new guardrail rules. The v0.60.0 release adds PostgreSQL table-level privilege DCL narrow support with four new guardrail rules. The v0.61.0 release delivers quality improvements: connection leak fixes, MCP panic recovery, static analysis integration, context propagation, and performance optimizations.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.60.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.61.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1452,7 +1452,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           install: '安装'
         },
         hero: {
-          badge: 'v0.60.0 —— PostgreSQL 表级权限 DCL 覆盖',
+          badge: 'v0.61.0 —— 质量与可靠性提升',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1602,7 +1602,7 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           archiveLink: '查看全部发布说明 →',
           items: {
             v0590: 'v0.59.0 新增 PostgreSQL extension lifecycle 窄支持，规范化 CREATE EXTENSION、ALTER EXTENSION UPDATE/SET SCHEMA 和 DROP EXTENSION，并配有六条 PostgreSQL-only 新发现。',
-            v0600: 'v0.60.0 新增 PostgreSQL 表级权限 DCL 窄支持，规范化 GRANT/REVOKE table privileges，并配有四条 PostgreSQL-only 新发现。',
+            v0600: 'v0.61.0 带来代码库质量改进：数据库连接泄漏修复、MCP panic 恢复、静态分析集成（修复 903 个问题）、Context 传播支持、并行测试执行（1522 个测试）和性能优化。',
             v0580: 'v0.58.0 新增 PostgreSQL composite type lifecycle 窄支持，规范化 CREATE TYPE ... AS (...)、ALTER TYPE RENAME TO 和 ALTER TYPE SET SCHEMA，并配有三条 PostgreSQL-only 新发现。',
             v0570: 'v0.57.0 新增 PostgreSQL domain lifecycle 覆盖，规范化 CREATE DOMAIN、ALTER DOMAIN 和 DROP DOMAIN，并配有七条 PostgreSQL-only 新发现。',
             v0560: 'v0.56.0 新增 PostgreSQL ALTER TABLE logged-state 覆盖与 ALTER COLUMN TYPE USING 元数据提取，规范化 SET LOGGED、SET UNLOGGED，并配有两条 PostgreSQL-only 新发现。',
@@ -1615,14 +1615,14 @@ Starting with the v0.17.0 release line, the supported macOS and Linux release as
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux release asset 都会收敛到统一的 `deltascope` / `deltascope-server` / `deltascope-mcp` PostgreSQL offline 产品面。`v0.58.0` 新增 PostgreSQL composite type lifecycle 窄支持，配有三条新防护规则。`v0.59.0` 新增 PostgreSQL extension lifecycle 窄支持，配有六条新防护规则。`v0.60.0` 新增 PostgreSQL 表级权限 DCL 窄支持，配有四条新防护规则。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。\n从 v0.17.0 release 线开始，受支持的 macOS 和 Linux release asset 都会收敛到统一的 `deltascope` / `deltascope-server` / `deltascope-mcp` PostgreSQL offline 产品面。`v0.58.0` 新增 PostgreSQL composite type lifecycle 窄支持，配有三条新防护规则。`v0.59.0` 新增 PostgreSQL extension lifecycle 窄支持，配有六条新防护规则。`v0.60.0` 新增 PostgreSQL 表级权限 DCL 窄支持，配有四条新防护规则。v0.61.0 带来质量改进：连接泄漏修复、MCP panic 恢复、静态分析集成、Context 传播和性能优化。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.60.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.61.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }
