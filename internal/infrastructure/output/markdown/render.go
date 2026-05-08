@@ -14,11 +14,13 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output"
 )
 
 // Render formats an audit result into Markdown.
 func Render(result report.Result) ([]byte, error) {
-	var builder strings.Builder
+	builder := output.GetBuilder()
+	defer output.PutBuilder(builder)
 	builder.Grow(estimateResultSize(result))
 
 	builder.WriteString("# DeltaScope Audit Result\n\n")
@@ -33,7 +35,7 @@ func Render(result report.Result) ([]byte, error) {
 	builder.WriteString("\n- Notices: ")
 	builder.WriteString(strconv.Itoa(result.Summary.Notices))
 	builder.WriteString("\n\n")
-	writeAggregateExplanation(&builder, 2, "Result Explanation", result.Explanation)
+	writeAggregateExplanation(builder, 2, "Result Explanation", result.Explanation)
 
 	for _, statement := range result.Statements {
 		builder.WriteString("## Statement ")
@@ -51,8 +53,8 @@ func Render(result report.Result) ([]byte, error) {
 			builder.WriteString("\n")
 		}
 		builder.WriteString("\n")
-		writeAggregateExplanation(&builder, 3, "Explanation", statement.Explanation)
-		writeImpact(&builder, statement.Impact)
+		writeAggregateExplanation(builder, 3, "Explanation", statement.Explanation)
+		writeImpact(builder, statement.Impact)
 
 		if len(statement.Findings) == 0 {
 			builder.WriteString("No findings.\n\n")
@@ -61,7 +63,7 @@ func Render(result report.Result) ([]byte, error) {
 
 		builder.WriteString("### Findings\n\n")
 		for _, finding := range statement.Findings {
-			writeFinding(&builder, finding)
+			writeFinding(builder, finding)
 		}
 		builder.WriteString("\n")
 	}
@@ -69,7 +71,7 @@ func Render(result report.Result) ([]byte, error) {
 	if len(result.GlobalFindings) > 0 {
 		builder.WriteString("## Global Findings\n\n")
 		for _, finding := range result.GlobalFindings {
-			writeFinding(&builder, finding)
+			writeFinding(builder, finding)
 		}
 	}
 
