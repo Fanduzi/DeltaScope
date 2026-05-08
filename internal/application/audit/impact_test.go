@@ -155,7 +155,7 @@ func TestAttachImpactEstimatesMetadataRefinesUniqueEquality(t *testing.T) {
 		},
 	}}
 
-	statements = attachImpactEstimates(statements)
+	statements = attachImpactEstimates(context.Background(), statements)
 
 	impact := statements[0].DML.Impact
 	if impact == nil {
@@ -189,7 +189,7 @@ func TestAttachImpactEstimatesMetadataRefinesSourceForJoinShape(t *testing.T) {
 		},
 	}}
 
-	statements = attachImpactEstimates(statements)
+	statements = attachImpactEstimates(context.Background(), statements)
 
 	impact := statements[0].DML.Impact
 	if impact == nil {
@@ -226,7 +226,7 @@ func TestAttachImpactEstimatesMissingTargetTableSnapshotKeepsShapeSource(t *test
 		},
 	}}
 
-	statements = attachImpactEstimates(statements)
+	statements = attachImpactEstimates(context.Background(), statements)
 
 	impact := statements[0].DML.Impact
 	if impact == nil {
@@ -265,7 +265,7 @@ func TestAttachImpactEstimatesMissingTargetTableKeepsUniqueEqualityShapeSource(t
 		},
 	}}
 
-	statements = attachImpactEstimates(statements)
+	statements = attachImpactEstimates(context.Background(), statements)
 
 	impact := statements[0].DML.Impact
 	if impact == nil {
@@ -292,7 +292,7 @@ func TestAttachImpactEstimatesSchemaOnlyMetadataKeepsShapeSource(t *testing.T) {
 		},
 	}}
 
-	statements = attachImpactEstimates(statements)
+	statements = attachImpactEstimates(context.Background(), statements)
 
 	impact := statements[0].DML.Impact
 	if impact == nil {
@@ -313,7 +313,7 @@ func TestAttachImpactEstimatesKeepsShapeOnlyImpactOffline(t *testing.T) {
 		},
 	}}
 
-	statements = attachImpactEstimates(statements)
+	statements = attachImpactEstimates(context.Background(), statements)
 
 	impact := statements[0].DML.Impact
 	if impact == nil {
