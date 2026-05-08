@@ -4,7 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.60.0 PostgreSQL Table Privilege DCL Pack
+## Latest Completed Milestone: v0.61.0 Quality & Reliability Pack
+
+**Goal:** improve runtime reliability, static-analysis discipline, context propagation, test throughput, and hot-path performance without changing rule semantics, parser coverage, public APIs, or release asset contracts.
+
+### Completed Scope
+
+- Database connection pool lifecycle hardened to prevent connection leaks under metadata-aware audit workloads.
+- MCP server panic recovery added across tool handler, server handler, and process-level boundaries.
+- golangci-lint v2 integration added with 15 active linters and 903 code-quality issues fixed.
+- `context.Context` timeout and cancellation propagation improved across audit layers.
+- 1522 tests made parallel where safe to reduce feedback time.
+- Hot-path performance optimized with slice preallocation, `strings.Builder` string assembly, and markdown renderer builder reuse.
+- Codebase maintainability improved so all files are now under 800 lines.
+
+### Key Design Decisions
+
+- v0.61.0 is a quality release: no new rule IDs, parser features, public API changes, or audit behavior changes.
+- MySQL, TiDB, and PostgreSQL rule semantics remain unchanged.
+- Release asset naming and install workflows remain unchanged.
+- Quality work stays visible in release docs and landing copy, while capability matrices remain versioned by audit coverage milestones.
+
+## Previous Milestone: v0.60.0 PostgreSQL Table Privilege DCL Pack
 
 **Goal:** normalize PostgreSQL table-level privilege DCL narrow support through the audit pipeline, adding four PostgreSQL-only findings for offline migration review while keeping `ALL TABLES IN SCHEMA`, sequence privileges, role membership GRANT/REVOKE, and `ALTER DEFAULT PRIVILEGES` explicitly deferred and not performing live validation.
 
