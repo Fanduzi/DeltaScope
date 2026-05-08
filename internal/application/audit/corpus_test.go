@@ -47,6 +47,7 @@ func corpusWalkDialects(corpusRoot string) ([]string, error) {
 }
 
 func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
+	t.Parallel()
 	corpusRoot := filepath.Join("..", "..", "..", "testdata", "sql-corpus")
 
 	entries, err := corpusWalkDialects(corpusRoot)
@@ -60,6 +61,7 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 	for _, expPath := range entries {
 		rel, _ := filepath.Rel(corpusRoot, expPath)
 		t.Run(rel, func(t *testing.T) {
+			t.Parallel()
 			// Read sibling .sql.
 			sqlPath := expPath[:len(expPath)-len(".expected.yaml")] + ".sql"
 			sqlBytes, err := os.ReadFile(sqlPath)

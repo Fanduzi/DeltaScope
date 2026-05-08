@@ -16,6 +16,7 @@ import (
 )
 
 func TestColumnTypeForbiddenRulesFindConfiguredFamilies(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		ruleID     string
@@ -68,6 +69,8 @@ func TestColumnTypeForbiddenRulesFindConfiguredFamilies(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newColumnTypeForbiddenRule(tt.ruleID, tt.label, rule.LevelWarning, tt.suggestion, tt.matches, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -89,6 +92,7 @@ func TestColumnTypeForbiddenRulesFindConfiguredFamilies(t *testing.T) {
 }
 
 func TestColumnCharMaxLengthRuleFindsOversizedChar(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newColumnCharMaxLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -108,6 +112,7 @@ func TestColumnCharMaxLengthRuleFindsOversizedChar(t *testing.T) {
 }
 
 func TestColumnCharsetAllowlistRuleFindsUnsupportedCharset(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newColumnValueAllowlistRule(ruleIDColumnCharsetAllowlist, "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -127,6 +132,7 @@ func TestColumnCharsetAllowlistRuleFindsUnsupportedCharset(t *testing.T) {
 }
 
 func TestColumnCollationAllowlistRuleFindsUnsupportedCollation(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newColumnValueAllowlistRule(ruleIDColumnCollationAllowlist, "collation", []string{"utf8mb4_general_ci", "utf8mb4_bin"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -146,6 +152,7 @@ func TestColumnCollationAllowlistRuleFindsUnsupportedCollation(t *testing.T) {
 }
 
 func TestColumnCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newColumnValueAllowlistRule(ruleIDColumnCharsetAllowlist, "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -168,6 +175,7 @@ func TestColumnCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 }
 
 func TestColumnCollationAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newColumnValueAllowlistRule(ruleIDColumnCollationAllowlist, "collation", []string{"utf8mb4_general_ci", "utf8mb4_bin"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -190,6 +198,7 @@ func TestColumnCollationAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 }
 
 func TestColumnCharsetCollationMatchRuleFindsPartialAndMismatchedPairs(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newColumnCharsetCollationMatchRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,

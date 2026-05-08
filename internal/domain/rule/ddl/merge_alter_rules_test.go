@@ -15,6 +15,7 @@ import (
 )
 
 func TestMergeAlterRuleFindsRepeatedMySQLAlterTargets(t *testing.T) {
+	t.Parallel()
 	globalRule, err := newMergeAlterRule(ruleIDAlterMergeMySQLRequire, spec.DialectMySQL, rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"required": true},
@@ -36,6 +37,7 @@ func TestMergeAlterRuleFindsRepeatedMySQLAlterTargets(t *testing.T) {
 }
 
 func TestMergeAlterRuleSkipsDifferentDialectAndSingleAlter(t *testing.T) {
+	t.Parallel()
 	globalRule, err := newMergeAlterRule(ruleIDAlterMergeTiDBRequire, spec.DialectTiDB, rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"required": true},

@@ -12,6 +12,7 @@ import (
 )
 
 func TestParseReturnsUnsupportedErrorForPostgreSQLWithoutBuildTag(t *testing.T) {
+	t.Parallel()
 	_, err := Parse(context.Background(), "select 1;", spec.DialectPostgreSQL)
 	if err == nil {
 		t.Fatal("expected unsupported postgresql error")

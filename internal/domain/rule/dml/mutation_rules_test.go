@@ -15,6 +15,7 @@ import (
 )
 
 func TestWhereRequiredRuleFindsMissingWhere(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newWhereRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -38,6 +39,7 @@ func TestWhereRequiredRuleFindsMissingWhere(t *testing.T) {
 }
 
 func TestLimitForbiddenRuleFindsLimit(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newLimitForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -61,6 +63,7 @@ func TestLimitForbiddenRuleFindsLimit(t *testing.T) {
 }
 
 func TestOrderByForbiddenRuleFindsOrderBy(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newOrderByForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -84,6 +87,7 @@ func TestOrderByForbiddenRuleFindsOrderBy(t *testing.T) {
 }
 
 func TestSubqueryForbiddenRuleFindsSubquery(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newSubqueryForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -107,6 +111,7 @@ func TestSubqueryForbiddenRuleFindsSubquery(t *testing.T) {
 }
 
 func TestJoinOnRequiredRuleFindsJoinWithoutOn(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newJoinOnRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -130,6 +135,7 @@ func TestJoinOnRequiredRuleFindsJoinWithoutOn(t *testing.T) {
 }
 
 func TestMutationRulesIgnoreInsertStatements(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newWhereRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,

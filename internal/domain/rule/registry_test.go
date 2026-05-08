@@ -63,6 +63,7 @@ func (r testGlobalRule) EvaluateAll(ctx context.Context, statements []spec.State
 }
 
 func TestRegistryEvaluatesStatementRulesDeterministically(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	evaluated := 0
 
@@ -101,6 +102,7 @@ func TestRegistryEvaluatesStatementRulesDeterministically(t *testing.T) {
 }
 
 func TestRegistryCollectsGlobalRuleFindings(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterGlobal(testGlobalRule{
 		id:      "audit.batch.notice",
@@ -127,6 +129,7 @@ func TestRegistryCollectsGlobalRuleFindings(t *testing.T) {
 }
 
 func TestRegistryRejectsEmptyRuleID(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	err := registry.RegisterStatement(testStatementRule{
 		id:      "",
@@ -140,6 +143,7 @@ func TestRegistryRejectsEmptyRuleID(t *testing.T) {
 }
 
 func TestRegistryRejectsDuplicateRuleIDs(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
@@ -162,6 +166,7 @@ func TestRegistryRejectsDuplicateRuleIDs(t *testing.T) {
 }
 
 func TestRegistryStampsEmptyFindingRuleID(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
@@ -185,6 +190,7 @@ func TestRegistryStampsEmptyFindingRuleID(t *testing.T) {
 }
 
 func TestRegistryRejectsMismatchedFindingRuleID(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
@@ -229,6 +235,7 @@ func (r testDialectStatementRule) Evaluate(ctx context.Context, stmt spec.Statem
 }
 
 func TestRegistryEvaluateStatementDetailedTracksSkippedRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testDialectStatementRule{
 		id: "ddl.pg.test_rule", dialect: spec.DialectPostgreSQL,
@@ -270,6 +277,7 @@ func TestRegistryEvaluateStatementDetailedTracksSkippedRules(t *testing.T) {
 }
 
 func TestEvaluateStatementDetailedPreservesFindings(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
@@ -299,6 +307,7 @@ func TestEvaluateStatementDetailedPreservesFindings(t *testing.T) {
 }
 
 func TestRegistryLoadedStatementRuleCount(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if registry.LoadedStatementRuleCount() != 0 {
 		t.Fatalf("expected 0 loaded rules, got %d", registry.LoadedStatementRuleCount())

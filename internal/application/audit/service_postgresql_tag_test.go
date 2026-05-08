@@ -59,6 +59,7 @@ var defaultPolicyDialectHygienePostgreSQLForbiddenTokens = []string{
 // This establishes that the schema-aware policy limitation is NOT a
 // data-availability problem — the extractor already preserves these facts.
 func TestAuditSQLPostgreSQLSchemaQualifiedForeignKeyFactsAvailableForPolicy(t *testing.T) {
+	t.Parallel()
 	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));"
 
 	result, err := AuditSQL(context.Background(), Request{
@@ -146,6 +147,7 @@ func TestAuditSQLPostgreSQLSchemaQualifiedForeignKeyFactsAvailableForPolicy(t *t
 // references cannot be treated as "public.users" because DeltaScope
 // does not model PostgreSQL search_path semantics.
 func TestAuditSQLPostgreSQLBareForeignKeyReferenceLeavesSchemaUnknown(t *testing.T) {
+	t.Parallel()
 	const sql = "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));"
 
 	result, err := AuditSQL(context.Background(), Request{
@@ -217,6 +219,7 @@ func TestAuditSQLPostgreSQLBareForeignKeyReferenceLeavesSchemaUnknown(t *testing
 // to distinguish cross-schema from same-schema — not a metadata visibility
 // issue.
 func TestAuditSQLPostgreSQLForeignKeyRuleIsSchemaAgnosticToday(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		sql           string
@@ -249,6 +252,8 @@ func TestAuditSQLPostgreSQLForeignKeyRuleIsSchemaAgnosticToday(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -291,6 +296,7 @@ func TestAuditSQLPostgreSQLForeignKeyRuleIsSchemaAgnosticToday(t *testing.T) {
 }
 
 func TestAuditSQLReturnsMixedSupportedAndUnsupportedPostgreSQLResults(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter table users rename column old_name to new_name; select 1;",
 		Dialect: spec.DialectPostgreSQL,
@@ -319,6 +325,7 @@ func TestAuditSQLReturnsMixedSupportedAndUnsupportedPostgreSQLResults(t *testing
 }
 
 func TestAuditSQLPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists:      true,
@@ -357,6 +364,7 @@ func TestAuditSQLPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing
 }
 
 func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists: true,
@@ -396,6 +404,7 @@ func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *test
 }
 
 func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists: true,
@@ -435,6 +444,7 @@ func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testin
 }
 
 func TestAuditSQLPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists: false,
@@ -471,6 +481,7 @@ func TestAuditSQLPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testin
 }
 
 func TestAuditSQLPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter table users alter column created_at set default now(), alter column updated_at drop default, alter column email set not null, alter column phone drop not null;",
 		Dialect: spec.DialectPostgreSQL,
@@ -504,6 +515,7 @@ func TestAuditSQLPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter table users alter column status type bigint;",
 		Dialect: spec.DialectPostgreSQL,
@@ -527,6 +539,7 @@ func TestAuditSQLPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter index idx_old rename to idx_new;",
 		Dialect: spec.DialectPostgreSQL,
@@ -546,6 +559,7 @@ func TestAuditSQLPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
 		snapshot: &spec.TableSnapshot{
@@ -573,6 +587,7 @@ func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.
 }
 
 func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
 		snapshot: &spec.TableSnapshot{
@@ -613,6 +628,7 @@ func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T)
 }
 
 func TestAuditSQLPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyForbid(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists: true,
@@ -644,6 +660,7 @@ func TestAuditSQLPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyFo
 }
 
 func TestAuditSQLPostgreSQLValidateConstraintFlowsThroughPipeline(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter table users validate constraint chk_amount;",
 		Dialect: spec.DialectPostgreSQL,
@@ -666,6 +683,7 @@ func TestAuditSQLPostgreSQLValidateConstraintFlowsThroughPipeline(t *testing.T) 
 }
 
 func TestAuditSQLPostgreSQLCreateTableForeignKeyRetainsSupportedResultWithReferencedObjectFacts(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table orders (user_id bigint, constraint bad_fk foreign key (user_id) references users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -708,6 +726,7 @@ func TestAuditSQLPostgreSQLCreateTableForeignKeyRetainsSupportedResultWithRefere
 }
 
 func TestAuditSQLPostgreSQLCreateTableInlineReferencesRetainsSupportedResult(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table orders (user_id bigint references users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -740,6 +759,7 @@ func TestAuditSQLPostgreSQLCreateTableInlineReferencesRetainsSupportedResult(t *
 }
 
 func TestAuditSQLPostgreSQLCreateOrReplaceViewReturnsUnsupported(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create or replace view active_users as select id from users;",
 		Dialect: spec.DialectPostgreSQL,
@@ -759,6 +779,7 @@ func TestAuditSQLPostgreSQLCreateOrReplaceViewReturnsUnsupported(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table orders (id bigint, created_at date) partition by range (created_at);",
 		Dialect: spec.DialectPostgreSQL,
@@ -778,6 +799,7 @@ func TestAuditSQLPostgreSQLCreateTablePartitioningReturnsUnsupported(t *testing.
 }
 
 func TestAuditSQLPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSupported(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		sql               string
@@ -802,6 +824,8 @@ func TestAuditSQLPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSupported(t *t
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -846,6 +870,7 @@ func TestAuditSQLPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSupported(t *t
 }
 
 func TestAuditSQLPostgreSQLGeneratedIdentityStateTransitionsNowSupported(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		sql               string
@@ -887,6 +912,8 @@ func TestAuditSQLPostgreSQLGeneratedIdentityStateTransitionsNowSupported(t *test
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -952,6 +979,7 @@ func TestAuditSQLPostgreSQLGeneratedIdentityStateTransitionsNowSupported(t *test
 }
 
 func TestAuditSQLPostgreSQLInlineSchemaQualifiedReferencesPreservesReferencedSchemaFacts(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table orders (id bigint primary key, user_id bigint references public.users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -995,6 +1023,7 @@ func TestAuditSQLPostgreSQLInlineSchemaQualifiedReferencesPreservesReferencedSch
 }
 
 func TestAuditSQLPostgreSQLNamedSchemaQualifiedFKPreservesReferencedSchemaFacts(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -1041,6 +1070,7 @@ func TestAuditSQLPostgreSQLNamedSchemaQualifiedFKPreservesReferencedSchemaFacts(
 }
 
 func TestAuditSQLPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -1083,6 +1113,7 @@ func TestAuditSQLPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetad
 }
 
 func TestAuditSQLPostgreSQLSchemaQualifiedInlineFKExposesReferencedObjectMetadata(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, user_id bigint REFERENCES public.users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -1126,6 +1157,7 @@ func TestAuditSQLPostgreSQLSchemaQualifiedInlineFKExposesReferencedObjectMetadat
 }
 
 func TestAuditSQLPostgreSQLSchemaQualifiedNamedFKExposesReferencedObjectMetadata(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
 		Dialect: spec.DialectPostgreSQL,
@@ -1183,6 +1215,7 @@ func TestAuditSQLPostgreSQLSchemaQualifiedNamedFKExposesReferencedObjectMetadata
 // cross-schema FK on a PostgreSQL CREATE TABLE triggers the new advisory rule
 // alongside the existing FK forbid rule.
 func TestAuditSQLPostgreSQLCrossSchemaFKTriggersAdvisory(t *testing.T) {
+	t.Parallel()
 	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));"
 
 	result, err := AuditSQL(context.Background(), Request{
@@ -1229,6 +1262,7 @@ func TestAuditSQLPostgreSQLCrossSchemaFKTriggersAdvisory(t *testing.T) {
 // TestAuditSQLPostgreSQLSameSchemaFKDoesNotTriggerAdvisory proves that an
 // explicit same-schema FK does not trigger the cross-schema advisory.
 func TestAuditSQLPostgreSQLSameSchemaFKDoesNotTriggerAdvisory(t *testing.T) {
+	t.Parallel()
 	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id));"
 
 	result, err := AuditSQL(context.Background(), Request{
@@ -1252,6 +1286,7 @@ func TestAuditSQLPostgreSQLSameSchemaFKDoesNotTriggerAdvisory(t *testing.T) {
 // TestAuditSQLPostgreSQLBareFKDoesNotTriggerAdvisory proves that a bare
 // REFERENCES without schema qualifier does not trigger the cross-schema advisory.
 func TestAuditSQLPostgreSQLBareFKDoesNotTriggerAdvisory(t *testing.T) {
+	t.Parallel()
 	const sql = "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));"
 
 	result, err := AuditSQL(context.Background(), Request{
@@ -1280,6 +1315,7 @@ func TestAuditSQLPostgreSQLBareFKDoesNotTriggerAdvisory(t *testing.T) {
 // PG-only generated/identity state-transition forbid rules fire through the
 // full AuditSQL pipeline and produce the correct rule IDs.
 func TestAuditSQLPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		sql               string
@@ -1317,6 +1353,8 @@ func TestAuditSQLPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -1375,6 +1413,7 @@ func TestAuditSQLPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAuditSQLPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		sql               string
@@ -1429,6 +1468,8 @@ func TestAuditSQLPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -1502,6 +1543,7 @@ func TestAuditSQLPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
 // extractor now populates DDL.PrimaryKey facts so existing primary-key rules
 // can fire through the full AuditSQL pipeline.
 func TestAuditSQLPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sql        string
@@ -1521,6 +1563,8 @@ func TestAuditSQLPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -1592,6 +1636,7 @@ func TestAuditSQLPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
 // CREATE INDEX and CREATE UNIQUE INDEX on PostgreSQL trigger generic index
 // rules through the full AuditSQL pipeline.
 func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sql        string
@@ -1616,6 +1661,8 @@ func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -1660,6 +1707,7 @@ func TestAuditSQLPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLAdvancedIndexFormsNormalizedAndCovered(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		sql                string
@@ -1714,6 +1762,8 @@ func TestAuditSQLPostgreSQLAdvancedIndexFormsNormalizedAndCovered(t *testing.T) 
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			// Service-level audit: verify finding coverage.
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
@@ -1790,6 +1840,7 @@ func TestAuditSQLPostgreSQLAdvancedIndexFormsNormalizedAndCovered(t *testing.T) 
 }
 
 func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sql        string
@@ -1809,6 +1860,8 @@ func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -1867,6 +1920,7 @@ func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
 // advisory rules through the full AuditSQL pipeline, with correct DDL/Alter
 // facts preserved.
 func TestAuditSQLPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
 		sql                 string
@@ -1903,6 +1957,8 @@ func TestAuditSQLPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2002,6 +2058,7 @@ func TestAuditSQLPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
 // CONSTRAINT CHECK triggers check naming and not_valid rules through the full
 // AuditSQL pipeline, with correct DDL/Alter/Constraint facts preserved.
 func TestAuditSQLPostgreSQLAlterTableCheckRuleCoverage(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                  string
 		sql                   string
@@ -2050,6 +2107,8 @@ func TestAuditSQLPostgreSQLAlterTableCheckRuleCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			req := Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2157,6 +2216,7 @@ func TestAuditSQLPostgreSQLAlterTableCheckRuleCoverage(t *testing.T) {
 // through the full AuditSQL pipeline when a named NOT VALID CHECK/FK is not
 // followed by a matching VALIDATE CONSTRAINT.
 func TestAuditSQLPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	t.Parallel()
 	const ruleID = "ddl.pg.alter.not_valid_constraint.validate.require"
 
 	tests := []struct {
@@ -2190,6 +2250,8 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2233,6 +2295,7 @@ ALTER TABLE orders VALIDATE CONSTRAINT chk_orders_amount;`,
 }
 
 func TestAuditSQLPostgreSQLDefaultPolicyDialectHygiene(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "CREATE TABLE pg_smoke (id bigint primary key);",
 		Dialect: spec.DialectPostgreSQL,
@@ -2276,6 +2339,7 @@ func TestAuditSQLPostgreSQLDefaultPolicyDialectHygiene(t *testing.T) {
 // PG-only advisory alongside the existing cross-dialect drop_index.exists.require
 // (when metadata is provided). Both findings coexist as expected.
 func TestAuditSQLPostgreSQLDropIndexAdvisory(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "DROP INDEX idx_users_email;",
 		Dialect: spec.DialectPostgreSQL,
@@ -2308,6 +2372,7 @@ func TestAuditSQLPostgreSQLDropIndexAdvisory(t *testing.T) {
 //   - NOT NULL with DEFAULT → does NOT fire the new rule (may fire existing rewrite warning)
 //   - nullable → does NOT fire the new rule
 func TestAuditSQLPostgreSQLAddColumnNonNullNoDefaultWarn(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		sql             string
@@ -2333,6 +2398,8 @@ func TestAuditSQLPostgreSQLAddColumnNonNullNoDefaultWarn(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2365,6 +2432,7 @@ func TestAuditSQLPostgreSQLAddColumnNonNullNoDefaultWarn(t *testing.T) {
 // TestAuditSQLPostgreSQLAddUniqueConstraintAdvisory proves that ADD CONSTRAINT
 // UNIQUE triggers the PG-only concurrent-index advisory.
 func TestAuditSQLPostgreSQLAddUniqueConstraintAdvisory(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "ALTER TABLE users ADD CONSTRAINT uniq_users_email UNIQUE (email);",
 		Dialect: spec.DialectPostgreSQL,
@@ -2394,6 +2462,7 @@ func TestAuditSQLPostgreSQLAddUniqueConstraintAdvisory(t *testing.T) {
 // TestAuditSQLPostgreSQLDropConstraintAdvisory proves that DROP CONSTRAINT
 // triggers the PG-only advisory.
 func TestAuditSQLPostgreSQLDropConstraintAdvisory(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "ALTER TABLE users DROP CONSTRAINT uniq_email;",
 		Dialect: spec.DialectPostgreSQL,
@@ -2424,6 +2493,7 @@ func TestAuditSQLPostgreSQLDropConstraintAdvisory(t *testing.T) {
 // alter-table gap rules from Task 2 fire through the full AuditSQL pipeline
 // with correct rule IDs and levels.
 func TestAuditSQLPostgreSQLAlterTableGapRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sql        string
@@ -2452,6 +2522,8 @@ func TestAuditSQLPostgreSQLAlterTableGapRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2484,6 +2556,7 @@ func TestAuditSQLPostgreSQLAlterTableGapRules(t *testing.T) {
 // PG-only alter-table unsupported-action rules fire through the full AuditSQL
 // pipeline with correct rule IDs and levels.
 func TestAuditSQLPostgreSQLAlterTableUnsupportedActionRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sql        string
@@ -2542,6 +2615,8 @@ func TestAuditSQLPostgreSQLAlterTableUnsupportedActionRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2573,6 +2648,7 @@ func TestAuditSQLPostgreSQLAlterTableUnsupportedActionRules(t *testing.T) {
 // TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull proves that the nullable
 // notice rule does NOT fire when the added column has NOT NULL.
 func TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "ALTER TABLE users ADD COLUMN bio text NOT NULL;",
 		Dialect: spec.DialectPostgreSQL,
@@ -2594,6 +2670,7 @@ func TestAuditSQLPostgreSQLAddColumnNullableSkipsNotNull(t *testing.T) {
 // four new ddl.pg.* rules fire when dialect is MySQL. This complements the
 // domain-level PG-only tests in postgresql_migration_rules_test.go.
 func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
+	t.Parallel()
 	pgOnlyRuleIDs := []string{
 		"ddl.pg.drop_index.advisory",
 		"ddl.pg.alter.add_column.non_null_no_default.warn",
@@ -2618,6 +2695,8 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectMySQL,
@@ -2654,6 +2733,7 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 // lifecycle rules fire through the full AuditSQL pipeline with correct rule IDs,
 // levels, and metadata.
 func TestAuditSQLPostgreSQLObjectLifecycleRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		sql        string
@@ -2718,6 +2798,8 @@ func TestAuditSQLPostgreSQLObjectLifecycleRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			result, err := AuditSQL(context.Background(), Request{
 				SQL:     tt.sql,
 				Dialect: spec.DialectPostgreSQL,
@@ -2756,6 +2838,7 @@ func TestAuditSQLPostgreSQLObjectLifecycleRules(t *testing.T) {
 // rules do NOT fire for: non-PG dialects, operations without the required
 // option, and operations that are not lifecycle-related.
 func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
+	t.Parallel()
 	pgLifecycleRuleIDs := []string{
 		"ddl.pg.drop_schema.advisory",
 		"ddl.pg.drop_schema.cascade.warn",
@@ -2782,6 +2865,7 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 	}
 
 	t.Run("mysql_dialect_does_not_fire_lifecycle_rules", func(t *testing.T) {
+		t.Parallel()
 		tests := []struct {
 			name           string
 			sql            string
@@ -2793,6 +2877,8 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+				tt := tt
+				t.Parallel()
 				result, err := AuditSQL(context.Background(), Request{
 					SQL:     tt.sql,
 					Dialect: spec.DialectMySQL,
@@ -2812,6 +2898,7 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 	})
 
 	t.Run("create_schema_default_no_finding", func(t *testing.T) {
+		t.Parallel()
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     "CREATE SCHEMA staging;",
 			Dialect: spec.DialectPostgreSQL,
@@ -2823,6 +2910,7 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 	})
 
 	t.Run("create_sequence_without_cycle_no_lifecycle_finding", func(t *testing.T) {
+		t.Parallel()
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     "CREATE SEQUENCE order_seq START WITH 1 INCREMENT BY 1;",
 			Dialect: spec.DialectPostgreSQL,
@@ -2842,6 +2930,7 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 	})
 
 	t.Run("drop_schema_without_cascade_no_cascade_warn", func(t *testing.T) {
+		t.Parallel()
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     "DROP SCHEMA staging;",
 			Dialect: spec.DialectPostgreSQL,
@@ -2859,6 +2948,7 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 	})
 
 	t.Run("drop_materialized_view_without_cascade_no_cascade_warn", func(t *testing.T) {
+		t.Parallel()
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     "DROP MATERIALIZED VIEW mv_daily_sales;",
 			Dialect: spec.DialectPostgreSQL,
@@ -2880,7 +2970,9 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 // PG-only refresh materialized view rules fire through the full AuditSQL
 // pipeline with correct rule IDs, levels, and metadata.
 func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
+	t.Parallel()
 	t.Run("basic_refresh_fires_concurrently_warn_only", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REFRESH MATERIALIZED VIEW mv_stats;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -2929,6 +3021,7 @@ func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
 	})
 
 	t.Run("concurrent_refresh_no_findings", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_stats;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -2960,6 +3053,7 @@ func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
 	})
 
 	t.Run("with_data_fires_concurrently_warn_only", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REFRESH MATERIALIZED VIEW mv_stats WITH DATA;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3001,6 +3095,7 @@ func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
 	})
 
 	t.Run("with_no_data_fires_both", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REFRESH MATERIALIZED VIEW mv_stats WITH NO DATA;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3049,7 +3144,9 @@ func TestAuditSQLPostgreSQLRefreshMaterializedViewRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
+	t.Parallel()
 	t.Run("replica_identity_full_warn", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TABLE users REPLICA IDENTITY FULL;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3089,6 +3186,7 @@ func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
 	})
 
 	t.Run("replica_identity_nothing_warn", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TABLE users REPLICA IDENTITY NOTHING;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3128,6 +3226,7 @@ func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
 	})
 
 	t.Run("replica_identity_using_index_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3170,6 +3269,7 @@ func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
 	})
 
 	t.Run("replica_identity_default_silent", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TABLE users REPLICA IDENTITY DEFAULT;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3201,7 +3301,9 @@ func TestAuditSQLPostgreSQLReplicaIdentityRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
+	t.Parallel()
 	t.Run("create_type_enum_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE TYPE color AS ENUM ('red', 'green', 'blue');"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3244,6 +3346,7 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_type_add_value_advisory", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TYPE color ADD VALUE 'yellow';"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3283,6 +3386,7 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_type_add_value_position_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TYPE color ADD VALUE 'yellow' AFTER 'green';"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3325,6 +3429,7 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_type_advisory", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP TYPE color;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3361,6 +3466,7 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_type_cascade_warn", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP TYPE IF EXISTS color CASCADE;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3403,6 +3509,7 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_type_composite_normalized", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE TYPE address AS (street text, city text);"
 
 		// Verify service-level audit succeeds without unsupported details.
@@ -3443,6 +3550,7 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_domain_normalized", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
 
 		// Verify service-level audit succeeds without unsupported details.
@@ -3478,7 +3586,9 @@ func TestAuditSQLPostgreSQLTypeLifecycleRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
+	t.Parallel()
 	t.Run("create_type_composite_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE TYPE address AS (street text, city text);"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3524,6 +3634,7 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_type_composite_qualified_schema", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE TYPE qualified.address AS (street text, city text);"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3556,6 +3667,7 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_type_composite_rename_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TYPE address RENAME TO mailing_address;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3601,6 +3713,7 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_type_composite_set_schema_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER TYPE address SET SCHEMA archive;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3646,6 +3759,7 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_type_no_composite_rule_duplicate", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP TYPE address;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3675,6 +3789,7 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("deferred_attribute_actions_unsupported", func(t *testing.T) {
+		t.Parallel()
 		cases := []struct {
 			name string
 			sql  string
@@ -3686,6 +3801,7 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
 				result, err := AuditSQL(context.Background(), Request{
 					SQL:     tc.sql,
 					Dialect: spec.DialectPostgreSQL,
@@ -3702,7 +3818,9 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
+	t.Parallel()
 	t.Run("create_domain_with_check", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE DOMAIN email AS text CHECK (VALUE <> '');"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3745,6 +3863,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_domain_not_null_default_named_check", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE DOMAIN email AS text NOT NULL DEFAULT 'n/a' CONSTRAINT email_not_empty CHECK (VALUE <> '');"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3784,6 +3903,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_set_default", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email SET DEFAULT 'unknown@example.com';"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3817,6 +3937,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_drop_default", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email DROP DEFAULT;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3844,6 +3965,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_set_not_null", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email SET NOT NULL;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3877,6 +3999,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_drop_not_null", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email DROP NOT NULL;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3904,6 +4027,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_add_constraint", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email ADD CONSTRAINT email_not_empty CHECK (VALUE <> '');"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3937,6 +4061,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_drop_constraint", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email DROP CONSTRAINT email_not_empty;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3967,6 +4092,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_validate_constraint", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email VALIDATE CONSTRAINT email_not_empty;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -3997,6 +4123,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_domain_rename", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER DOMAIN email RENAME TO contact_email;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4030,6 +4157,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_domain", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP DOMAIN email;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4063,6 +4191,7 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_domain_cascade_duplicate_findings", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP DOMAIN IF EXISTS email CASCADE;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4109,7 +4238,9 @@ func TestAuditSQLPostgreSQLDomainLifecycleRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
+	t.Parallel()
 	t.Run("create_extension_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE EXTENSION pg_trgm;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4149,6 +4280,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_extension_if_not_exists", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4176,6 +4308,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_extension_with_schema", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE EXTENSION pg_trgm WITH SCHEMA public;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4203,6 +4336,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_extension_with_version", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE EXTENSION pg_trgm WITH VERSION '1.6';"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4230,6 +4364,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_extension_cascade", func(t *testing.T) {
+		t.Parallel()
 		const sql = "CREATE EXTENSION pg_trgm WITH CASCADE;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4266,6 +4401,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_extension_update_no_version", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER EXTENSION pg_trgm UPDATE;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4305,6 +4441,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_extension_update_to_version", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER EXTENSION pg_trgm UPDATE TO '1.6';"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4335,6 +4472,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("alter_extension_set_schema", func(t *testing.T) {
+		t.Parallel()
 		const sql = "ALTER EXTENSION pg_trgm SET SCHEMA extensions;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4377,6 +4515,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_extension_advisory", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP EXTENSION pg_trgm;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4413,6 +4552,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("drop_extension_if_exists_cascade", func(t *testing.T) {
+		t.Parallel()
 		const sql = "DROP EXTENSION IF EXISTS pg_trgm CASCADE;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4455,6 +4595,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("deferred_member_mutation_unsupported", func(t *testing.T) {
+		t.Parallel()
 		cases := []struct {
 			name string
 			sql  string
@@ -4464,6 +4605,7 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
 				result, err := AuditSQL(context.Background(), Request{
 					SQL:     tc.sql,
 					Dialect: spec.DialectPostgreSQL,
@@ -4480,7 +4622,9 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 }
 
 func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
+	t.Parallel()
 	t.Run("grant_select_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "GRANT SELECT ON TABLE users TO analyst;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4517,6 +4661,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("grant_multi_privilege_grantee", func(t *testing.T) {
+		t.Parallel()
 		const sql = "GRANT SELECT, INSERT ON TABLE orders TO analyst, reporter;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4547,6 +4692,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("grant_schema_qualified", func(t *testing.T) {
+		t.Parallel()
 		const sql = "GRANT SELECT ON TABLE public.users TO analyst;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4577,6 +4723,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("grant_all_privileges", func(t *testing.T) {
+		t.Parallel()
 		const sql = "GRANT ALL PRIVILEGES ON TABLE users TO analyst;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4613,6 +4760,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("revoke_select_notice", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REVOKE SELECT ON TABLE users FROM analyst;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4649,6 +4797,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("revoke_multi_privilege_grantee", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REVOKE SELECT, DELETE ON TABLE orders FROM analyst, reporter;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4679,6 +4828,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("revoke_all_cascade", func(t *testing.T) {
+		t.Parallel()
 		const sql = "REVOKE ALL PRIVILEGES ON TABLE users FROM analyst CASCADE;"
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:     sql,
@@ -4715,6 +4865,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	})
 
 	t.Run("deferred_governance_dcl_unsupported", func(t *testing.T) {
+		t.Parallel()
 		cases := []struct {
 			name string
 			sql  string
@@ -4724,6 +4875,7 @@ func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 		}
 		for _, tc := range cases {
 			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
 				result, err := AuditSQL(context.Background(), Request{
 					SQL:     tc.sql,
 					Dialect: spec.DialectPostgreSQL,

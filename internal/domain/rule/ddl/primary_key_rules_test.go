@@ -14,6 +14,7 @@ import (
 )
 
 func TestPrimaryKeyRequiredRuleFindsMissingPrimaryKey(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newPrimaryKeyRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -42,6 +43,7 @@ func TestPrimaryKeyRequiredRuleFindsMissingPrimaryKey(t *testing.T) {
 }
 
 func TestPrimaryKeyRequiredRuleAcceptsPresentPrimaryKey(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newPrimaryKeyRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -63,6 +65,7 @@ func TestPrimaryKeyRequiredRuleAcceptsPresentPrimaryKey(t *testing.T) {
 }
 
 func TestPrimaryKeyColumnCountRuleFindsCompositePrimaryKeyWhenLimitIsOne(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newPrimaryKeyColumnCountRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -94,6 +97,7 @@ func TestPrimaryKeyColumnCountRuleFindsCompositePrimaryKeyWhenLimitIsOne(t *test
 }
 
 func TestPrimaryKeyColumnCountRuleIgnoresMissingPrimaryKey(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newPrimaryKeyColumnCountRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,

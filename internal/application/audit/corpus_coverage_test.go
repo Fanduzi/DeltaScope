@@ -7,6 +7,7 @@ import (
 )
 
 func TestSQLCorpusCoversSupportedRuleDialects(t *testing.T) {
+	t.Parallel()
 	corpusRoot := filepath.Join("..", "..", "..", "testdata", "sql-corpus")
 	files, err := corpusExpectedFiles(corpusRoot)
 	if err != nil {

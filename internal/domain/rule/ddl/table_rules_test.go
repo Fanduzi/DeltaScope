@@ -15,6 +15,7 @@ import (
 )
 
 func TestTableCommentRequiredRuleFindsMissingComment(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableCommentRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -43,6 +44,7 @@ func TestTableCommentRequiredRuleFindsMissingComment(t *testing.T) {
 }
 
 func TestTableCommentRequiredRuleIgnoresAlterStatements(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableCommentRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -70,6 +72,7 @@ func TestTableCommentRequiredRuleIgnoresAlterStatements(t *testing.T) {
 }
 
 func TestTableNameMaxLengthRuleFindsLongNames(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableNameMaxLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -101,6 +104,7 @@ func TestTableNameMaxLengthRuleFindsLongNames(t *testing.T) {
 }
 
 func TestTableNameMaxLengthRuleAcceptsBoundaryLength(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableNameMaxLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -122,6 +126,7 @@ func TestTableNameMaxLengthRuleAcceptsBoundaryLength(t *testing.T) {
 }
 
 func TestTableNameGovernanceRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		tableName  string
@@ -179,6 +184,8 @@ func TestTableNameGovernanceRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			findings := evaluateDDLFindings(t, policy.Policy{Rules: tt.rules}, createTableStatement(tt.tableName, "user table", []string{"id"}))
 
 			if len(findings) != tt.wantCount {

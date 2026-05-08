@@ -15,6 +15,7 @@ import (
 )
 
 func TestExtractorCreateTableCapturesStructuralFacts(t *testing.T) {
+	t.Parallel()
 	stmt := extractSingleStatement(t, `
 		create table app.users (
 			id bigint unsigned not null auto_increment,
@@ -91,6 +92,7 @@ func TestExtractorCreateTableCapturesStructuralFacts(t *testing.T) {
 }
 
 func TestExtractorAlterTableCapturesColumnAndIndexActions(t *testing.T) {
+	t.Parallel()
 	stmt := extractSingleStatement(t, `
 		alter table app.users
 			add column nickname varchar(20) not null default 'anon',
@@ -143,6 +145,7 @@ func TestExtractorAlterTableCapturesColumnAndIndexActions(t *testing.T) {
 }
 
 func TestExtractorDMLCapturesInsertUpdateDeleteFacts(t *testing.T) {
+	t.Parallel()
 	statements := extractStatements(t, `
 		insert into app.users (id, name) values (1, 'a'), (2, 'b') on duplicate key update name = values(name);
 		update app.users set name = 'b' where id = 1;
@@ -181,6 +184,7 @@ func TestExtractorDMLCapturesInsertUpdateDeleteFacts(t *testing.T) {
 }
 
 func TestExtractorDMLCapturesJoinAndSubqueryShapes(t *testing.T) {
+	t.Parallel()
 	statements := extractStatements(t, `
 		update users u join orgs o on o.id = u.org_id set u.name = 'x' where u.id = 1;
 		delete from users where id in (select id from admins);
@@ -201,6 +205,7 @@ func TestExtractorDMLCapturesJoinAndSubqueryShapes(t *testing.T) {
 }
 
 func TestExtractorCapturesCreateViewDropAndTruncateFacts(t *testing.T) {
+	t.Parallel()
 	statements := extractStatements(t, `
 		create view app.active_users as select id from app.users;
 		drop table if exists app.users, app.orgs;
@@ -233,6 +238,7 @@ func TestExtractorCapturesCreateViewDropAndTruncateFacts(t *testing.T) {
 }
 
 func TestExtractorHelperMappingsCoverSwitchVariants(t *testing.T) {
+	t.Parallel()
 	rowFormats := map[uint64]string{
 		ast.RowFormatDefault:      "DEFAULT",
 		ast.RowFormatCompact:      "COMPACT",
@@ -300,6 +306,7 @@ func TestExtractorHelperMappingsCoverSwitchVariants(t *testing.T) {
 }
 
 func TestExtractorHelperPredicatesAndAlterVariants(t *testing.T) {
+	t.Parallel()
 	updateMissingWhere := parsedNode(t, `update users set name = 'x'`).(*ast.UpdateStmt)
 	shape, lookup, keyName, keyKind := extractMutationPredicateShape(updateMissingWhere.Where, tableRefsJoin(updateMissingWhere.TableRefs), true)
 	if shape != spec.PredicateShapeMissingWhere || len(lookup) != 0 || keyName != "" || keyKind != spec.IndexKindUnknown {

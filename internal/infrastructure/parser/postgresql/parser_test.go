@@ -14,6 +14,7 @@ import (
 )
 
 func TestParserParsesMultiStatementSQL(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create table t1 (id bigint); update t1 set id = 2 where id = 1;")
@@ -40,6 +41,7 @@ func TestParserParsesMultiStatementSQL(t *testing.T) {
 }
 
 func TestPGExtractorExtractNormalizesStatementSQL(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), " create table t1 (id bigint); ")
@@ -70,6 +72,7 @@ func TestPGExtractorExtractNormalizesStatementSQL(t *testing.T) {
 }
 
 func TestParserMarksUnsupportedPostgreSQLStatementsStructurally(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "select 1;")
@@ -99,6 +102,7 @@ func TestParserMarksUnsupportedPostgreSQLStatementsStructurally(t *testing.T) {
 }
 
 func TestParserSupportsApprovedPostgreSQLAlterTableWhitelist(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users rename column old_name to new_name;")
@@ -135,6 +139,7 @@ func TestParserSupportsApprovedPostgreSQLAlterTableWhitelist(t *testing.T) {
 }
 
 func TestParserPreservesDropConstraintActionForPostgreSQL(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table public.users drop constraint users_pkey;")
@@ -162,6 +167,7 @@ func TestParserPreservesDropConstraintActionForPostgreSQL(t *testing.T) {
 }
 
 func TestParserPreservesSetDataTypeActionForPostgreSQL(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users alter column status type bigint;")
@@ -192,6 +198,7 @@ func TestParserPreservesSetDataTypeActionForPostgreSQL(t *testing.T) {
 }
 
 func TestParserSetDataTypeBasicHasNoUsingOption(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE users ALTER COLUMN name TYPE text")
 	if err != nil {
@@ -214,6 +221,7 @@ func TestParserSetDataTypeBasicHasNoUsingOption(t *testing.T) {
 }
 
 func TestParserSetDataTypeUsingAddsHasUsingOption(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE users ALTER COLUMN name TYPE jsonb USING to_jsonb(name)")
 	if err != nil {
@@ -236,6 +244,7 @@ func TestParserSetDataTypeUsingAddsHasUsingOption(t *testing.T) {
 }
 
 func TestParserSetLoggedNormalizesAction(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET LOGGED")
 	if err != nil {
@@ -258,6 +267,7 @@ func TestParserSetLoggedNormalizesAction(t *testing.T) {
 }
 
 func TestParserSetUnloggedNormalizesAction(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET UNLOGGED")
 	if err != nil {
@@ -280,6 +290,7 @@ func TestParserSetUnloggedNormalizesAction(t *testing.T) {
 }
 
 func TestParserSetTablespaceStillUnsupported(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET TABLESPACE fastspace")
 	if err != nil {
@@ -298,6 +309,7 @@ func TestParserSetTablespaceStillUnsupported(t *testing.T) {
 }
 
 func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create view public.active_users as select id from public.users;")
@@ -330,6 +342,7 @@ func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
 }
 
 func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create or replace view public.active_users as select id from public.users;")
@@ -353,6 +366,7 @@ func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
 }
 
 func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create temporary view public.active_users as select id from public.users;")
@@ -376,6 +390,7 @@ func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
 }
 
 func TestParserSupportsPostgreSQLDropView(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "drop view if exists public.active_users;")
@@ -408,6 +423,7 @@ func TestParserSupportsPostgreSQLDropView(t *testing.T) {
 }
 
 func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "drop view public.active_users, public.disabled_users;")
@@ -431,6 +447,7 @@ func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
 }
 
 func TestExtractCreateIndexConcurrentFlag(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create index concurrently idx_users_email on public.users (email);")
@@ -466,6 +483,7 @@ func TestExtractCreateIndexConcurrentFlag(t *testing.T) {
 }
 
 func TestExtractCreateIndexNonConcurrent(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create index idx_users_email on public.users (email);")
@@ -492,6 +510,7 @@ func TestExtractCreateIndexNonConcurrent(t *testing.T) {
 }
 
 func TestExtractCreateUniqueIndex(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create unique index idx_users_email on public.users (email);")
@@ -518,6 +537,7 @@ func TestExtractCreateUniqueIndex(t *testing.T) {
 }
 
 func TestExtractCreateIndexNormalizesPartialIndex(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create index idx_active on public.users (email) where active = true;")
@@ -547,6 +567,7 @@ func TestExtractCreateIndexNormalizesPartialIndex(t *testing.T) {
 }
 
 func TestExtractCreateIndexNormalizesExpressionIndex(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create index idx_lower_email on public.users (lower(email));")
@@ -576,6 +597,7 @@ func TestExtractCreateIndexNormalizesExpressionIndex(t *testing.T) {
 }
 
 func TestExtractCreateIndexNormalizesIncludeClause(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create index idx_users_email on public.users (email) include (name);")
@@ -605,6 +627,7 @@ func TestExtractCreateIndexNormalizesIncludeClause(t *testing.T) {
 }
 
 func TestExtractCreateIndexNormalizesNonBtreeAccessMethod(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create index idx_users_email_hash on public.users using hash (email);")
@@ -634,6 +657,7 @@ func TestExtractCreateIndexNormalizesNonBtreeAccessMethod(t *testing.T) {
 }
 
 func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create unique index idx_users_email_unique on public.users (email) nulls not distinct;")
@@ -660,6 +684,7 @@ func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
 }
 
 func TestCharacterizePGUniqueIndexFacts(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                string
 		sql                 string
@@ -761,6 +786,8 @@ func TestCharacterizePGUniqueIndexFacts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statement := extractPostgreSQLStatement(t, tt.sql)
 
 			if tt.wantSupported {
@@ -812,6 +839,7 @@ func TestCharacterizePGUniqueIndexFacts(t *testing.T) {
 }
 
 func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		sql         string
@@ -826,6 +854,8 @@ func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statement := extractPostgreSQLStatement(t, tt.sql)
 
 			if statement.Unsupported == nil {
@@ -839,6 +869,7 @@ func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
 }
 
 func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table public.orders add constraint chk_amount check (amount > 0) not valid;")
@@ -869,6 +900,7 @@ func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
 }
 
 func TestExtractAlterAddCheckWithoutNotValid(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table public.orders add constraint chk_amount check (amount > 0);")
@@ -899,6 +931,7 @@ func TestExtractAlterAddCheckWithoutNotValid(t *testing.T) {
 }
 
 func TestExtractAlterColumnSetDefault(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users alter column status set default 'active';")
@@ -941,6 +974,7 @@ func TestExtractAlterColumnSetDefault(t *testing.T) {
 }
 
 func TestExtractAlterColumnDropDefault(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users alter column status drop default;")
@@ -983,6 +1017,7 @@ func TestExtractAlterColumnDropDefault(t *testing.T) {
 }
 
 func TestExtractAlterColumnSetNotNull(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users alter column status set not null;")
@@ -1025,6 +1060,7 @@ func TestExtractAlterColumnSetNotNull(t *testing.T) {
 }
 
 func TestExtractAlterColumnDropNotNull(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users alter column status drop not null;")
@@ -1067,6 +1103,7 @@ func TestExtractAlterColumnDropNotNull(t *testing.T) {
 }
 
 func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter index idx_old rename to idx_new;")
@@ -1100,6 +1137,7 @@ func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
 }
 
 func TestExtractValidateConstraint(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users validate constraint chk_amount;")
@@ -1139,6 +1177,7 @@ func TestExtractValidateConstraint(t *testing.T) {
 }
 
 func TestExtractDropPrimaryKeyConstraint(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users drop constraint users_pkey;")
@@ -1178,6 +1217,7 @@ func TestExtractDropPrimaryKeyConstraint(t *testing.T) {
 }
 
 func TestExtractDropCheckConstraint(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "alter table users drop constraint chk_amount;")
@@ -1217,6 +1257,7 @@ func TestExtractDropCheckConstraint(t *testing.T) {
 }
 
 func TestExtractCreateTableConstraintNormalization(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		sql            string
@@ -1309,6 +1350,8 @@ func TestExtractCreateTableConstraintNormalization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statement := extractPostgreSQLStatement(t, tt.sql)
 
 			if statement.Kind != spec.KindDDL {
@@ -1367,6 +1410,7 @@ func TestExtractCreateTableConstraintNormalization(t *testing.T) {
 }
 
 func TestExtractCreateTableForeignKeyPreservesReferencedTableAndColumns(t *testing.T) {
+	t.Parallel()
 	sql := `create table orders (
 		user_id bigint,
 		constraint fk_orders_user foreign key (user_id) references users(id)
@@ -1404,6 +1448,7 @@ func TestExtractCreateTableForeignKeyPreservesReferencedTableAndColumns(t *testi
 }
 
 func TestExtractCreateTableInlineReferencesPreservesReferencedTableAndColumns(t *testing.T) {
+	t.Parallel()
 	sql := `create table orders (
 		user_id bigint references users(id)
 	);`
@@ -1440,6 +1485,7 @@ func TestExtractCreateTableInlineReferencesPreservesReferencedTableAndColumns(t 
 }
 
 func TestExtractValidateConstraintSchemaQualifiedFact(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE public.orders VALIDATE CONSTRAINT chk_orders_amount;")
 	if err != nil {
@@ -1475,6 +1521,7 @@ func TestExtractValidateConstraintSchemaQualifiedFact(t *testing.T) {
 }
 
 func TestExtractAlterAddCheckNotValidConstraintFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;")
 
@@ -1506,6 +1553,7 @@ func TestExtractAlterAddCheckNotValidConstraintFact(t *testing.T) {
 }
 
 func TestExtractAlterAddForeignKeyNotValidConstraintFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE public.orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) NOT VALID;")
 
@@ -1619,6 +1667,7 @@ func parseAlterTableStmtAST(t *testing.T, sql string) *pg_query.AlterTableStmt {
 // ---------------------------------------------------------------------------
 
 func TestExtractCreateTableIdentityColumnIsSupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	  email text
@@ -1657,6 +1706,7 @@ func TestExtractCreateTableIdentityColumnIsSupported(t *testing.T) {
 }
 
 func TestExtractCreateTableGeneratedStoredColumnIsSupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  first_name text,
 	  last_name text,
@@ -1696,6 +1746,7 @@ func TestExtractCreateTableGeneratedStoredColumnIsSupported(t *testing.T) {
 }
 
 func TestExtractCreateTableExclusionConstraintReturnsUnsupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE bookings (
   room_id int,
   during tsrange,
@@ -1720,6 +1771,7 @@ func TestExtractCreateTableExclusionConstraintReturnsUnsupported(t *testing.T) {
 }
 
 func TestExtractCreateTablePartitionByStillReturnsUnsupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE events (
   id bigint,
   created_at timestamptz NOT NULL
@@ -1752,6 +1804,7 @@ func TestExtractCreateTablePartitionByStillReturnsUnsupported(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestParseCreateTableIdentityColumnAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   email text
@@ -1816,6 +1869,7 @@ func TestParseCreateTableIdentityColumnAST(t *testing.T) {
 }
 
 func TestParseCreateTableGeneratedStoredColumnAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
   first_name text,
   last_name text,
@@ -1884,6 +1938,7 @@ func TestParseCreateTableGeneratedStoredColumnAST(t *testing.T) {
 }
 
 func TestParseAlterTableAddGeneratedStoredColumnAST(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
 
@@ -1932,6 +1987,7 @@ func TestParseAlterTableAddGeneratedStoredColumnAST(t *testing.T) {
 }
 
 func TestParseAlterTableAddIdentityColumnAST(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
 
@@ -1984,6 +2040,7 @@ func TestParseAlterTableAddIdentityColumnAST(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestParseCreateTableIdentityByDefaultWithOptionsSupportReadinessFacts(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
   id bigint GENERATED BY DEFAULT AS IDENTITY (START WITH 10 INCREMENT BY 5 CACHE 20),
   email text
@@ -2071,6 +2128,7 @@ func TestParseCreateTableIdentityByDefaultWithOptionsSupportReadinessFacts(t *te
 }
 
 func TestParseAlterTableAddIdentityByDefaultWithOptionsSupportReadinessFacts(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ADD COLUMN id bigint GENERATED BY DEFAULT AS IDENTITY (START WITH 10 INCREMENT BY 5 CACHE 20);`
 
@@ -2164,6 +2222,7 @@ func TestParseAlterTableAddIdentityByDefaultWithOptionsSupportReadinessFacts(t *
 }
 
 func TestParseAlterTableDropGeneratedExpressionAST(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN full_name DROP EXPRESSION;`
 
@@ -2191,6 +2250,7 @@ func TestParseAlterTableDropGeneratedExpressionAST(t *testing.T) {
 }
 
 func TestParseAlterTableSetIdentityGeneratedAST(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN id SET GENERATED BY DEFAULT;`
 
@@ -2237,6 +2297,7 @@ func TestParseAlterTableSetIdentityGeneratedAST(t *testing.T) {
 }
 
 func TestParseAlterTableSetIdentityGeneratedAlwaysAST(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN id SET GENERATED ALWAYS;`
 
@@ -2280,6 +2341,7 @@ func TestParseAlterTableSetIdentityGeneratedAlwaysAST(t *testing.T) {
 }
 
 func TestParseAlterTableDropIdentityAST(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN id DROP IDENTITY;`
 
@@ -2307,6 +2369,7 @@ func TestParseAlterTableDropIdentityAST(t *testing.T) {
 }
 
 func TestExtractAlterTableAddGeneratedStoredColumnIsSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
 
@@ -2339,6 +2402,7 @@ func TestExtractAlterTableAddGeneratedStoredColumnIsSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableAddIdentityColumnIsSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
 
@@ -2374,6 +2438,7 @@ func TestExtractAlterTableAddIdentityColumnIsSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableDropGeneratedExpressionNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN full_name DROP EXPRESSION;`
 
@@ -2394,6 +2459,7 @@ func TestExtractAlterTableDropGeneratedExpressionNowSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableSetIdentityGeneratedNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN id SET GENERATED BY DEFAULT;`
 
@@ -2417,6 +2483,7 @@ func TestExtractAlterTableSetIdentityGeneratedNowSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableSetIdentityGeneratedAlwaysNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN id SET GENERATED ALWAYS;`
 
@@ -2440,6 +2507,7 @@ func TestExtractAlterTableSetIdentityGeneratedAlwaysNowSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableDropIdentityNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
   ALTER COLUMN id DROP IDENTITY;`
 
@@ -2460,6 +2528,7 @@ func TestExtractAlterTableDropIdentityNowSupported(t *testing.T) {
 }
 
 func TestParseCreateTableExclusionConstraintAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE bookings (
   room_id int,
   during tsrange,
@@ -2511,6 +2580,7 @@ func TestParseCreateTableExclusionConstraintAST(t *testing.T) {
 }
 
 func TestParseCreateTablePartitionByAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE events (
   id bigint,
   created_at timestamptz NOT NULL
@@ -2568,6 +2638,7 @@ func TestParseCreateTablePartitionByAST(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestParseCreateTableInlineSchemaQualifiedReferencesAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE orders (
   id bigint PRIMARY KEY,
   user_id bigint REFERENCES public.users(id)
@@ -2632,6 +2703,7 @@ func TestParseCreateTableInlineSchemaQualifiedReferencesAST(t *testing.T) {
 }
 
 func TestParseCreateTableTableLevelSchemaQualifiedForeignKeyAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE orders (
   id bigint PRIMARY KEY,
   user_id bigint,
@@ -2687,6 +2759,7 @@ func TestParseCreateTableTableLevelSchemaQualifiedForeignKeyAST(t *testing.T) {
 }
 
 func TestExtractCreateTableInlineSchemaQualifiedReferencesDropsSchemaToday(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE orders (
   id bigint PRIMARY KEY,
   user_id bigint REFERENCES public.users(id)
@@ -2726,6 +2799,7 @@ func TestExtractCreateTableInlineSchemaQualifiedReferencesDropsSchemaToday(t *te
 }
 
 func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyDropsSchemaToday(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE orders (
   id bigint PRIMARY KEY,
   user_id bigint,
@@ -2772,6 +2846,7 @@ func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyDropsSchemaToday(t
 // ---------------------------------------------------------------------------
 
 func TestExtractCreateTableInlineSchemaQualifiedReferencesPreservesReferencedSchema(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE orders (
   id bigint PRIMARY KEY,
   user_id bigint REFERENCES public.users(id)
@@ -2808,6 +2883,7 @@ func TestExtractCreateTableInlineSchemaQualifiedReferencesPreservesReferencedSch
 }
 
 func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyPreservesReferencedSchema(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE orders (
   id bigint PRIMARY KEY,
   user_id bigint,
@@ -2849,6 +2925,7 @@ func TestExtractCreateTableTableLevelSchemaQualifiedForeignKeyPreservesReference
 // ---------------------------------------------------------------------------
 
 func TestParsePostgreSQLGeneratedExpressionSupportReadinessFacts(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
   first_name text,
   last_name text,
@@ -2999,6 +3076,7 @@ func walkExprForStrings(t *testing.T, node *pg_query.Node, columnRefs *[]string,
 }
 
 func TestParsePostgreSQLIdentityOptionSupportReadinessFacts(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
   id bigint GENERATED BY DEFAULT AS IDENTITY (
     START WITH 10
@@ -3163,6 +3241,7 @@ func optionKeys(m map[string]interface{}) []string {
 // ---------------------------------------------------------------------------
 
 func TestExtractCreateTableGeneratedStoredPreservesGeneratedWhen(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  first_name text,
 	  last_name text,
@@ -3196,6 +3275,7 @@ func TestExtractCreateTableGeneratedStoredPreservesGeneratedWhen(t *testing.T) {
 }
 
 func TestExtractCreateTableIdentityColumnPreservesMetadataWithOptions(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  id bigint GENERATED BY DEFAULT AS IDENTITY (
 	    START WITH 10
@@ -3250,6 +3330,7 @@ func TestExtractCreateTableIdentityColumnPreservesMetadataWithOptions(t *testing
 }
 
 func TestExtractAlterTableAddIdentityColumnPreservesMetadata(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
 
@@ -3280,6 +3361,7 @@ func TestExtractAlterTableAddIdentityColumnPreservesMetadata(t *testing.T) {
 }
 
 func TestExtractAlterTableAddGeneratedStoredPreservesMetadata(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
 
@@ -3315,6 +3397,7 @@ func TestExtractAlterTableAddGeneratedStoredPreservesMetadata(t *testing.T) {
 // and are ready to land on spec.Column via columnFromDef once the gate opens.
 
 func TestExtractCreateTableGeneratedStoredNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  first_name text,
 	  last_name text,
@@ -3348,6 +3431,7 @@ func TestExtractCreateTableGeneratedStoredNowSupported(t *testing.T) {
 }
 
 func TestExtractCreateTableIdentityNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  id bigint GENERATED BY DEFAULT AS IDENTITY (
 	    START WITH 10
@@ -3411,6 +3495,7 @@ func TestExtractCreateTableIdentityNowSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableAddGeneratedStoredNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
 
@@ -3438,6 +3523,7 @@ func TestExtractAlterTableAddGeneratedStoredNowSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableAddIdentityNowSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
 
@@ -3474,6 +3560,7 @@ func TestExtractAlterTableAddIdentityNowSupported(t *testing.T) {
 // now supported (no unsupported detail) and that facts land on spec.Column.
 
 func TestExtractCreateTableGeneratedStoredBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  first_name text,
 	  last_name text,
@@ -3518,6 +3605,7 @@ func TestExtractCreateTableGeneratedStoredBecomesSupported(t *testing.T) {
 }
 
 func TestExtractCreateTableIdentityBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (
 	  id bigint GENERATED BY DEFAULT AS IDENTITY (
 	    START WITH 10
@@ -3591,6 +3679,7 @@ func TestExtractCreateTableIdentityBecomesSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableAddGeneratedStoredBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;`
 
@@ -3635,6 +3724,7 @@ func TestExtractAlterTableAddGeneratedStoredBecomesSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableAddIdentityBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users
 	  ADD COLUMN id bigint GENERATED ALWAYS AS IDENTITY;`
 
@@ -3681,6 +3771,7 @@ func TestExtractAlterTableAddIdentityBecomesSupported(t *testing.T) {
 // --- v0.35.0 Task 1: Characterization tests for state-transition current facts ---
 
 func TestExtractAlterTableDropGeneratedExpressionSupportedFacts(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN full_name DROP EXPRESSION;`
 
 	// A. Confirm now supported.
@@ -3728,6 +3819,7 @@ func TestExtractAlterTableDropGeneratedExpressionSupportedFacts(t *testing.T) {
 }
 
 func TestExtractAlterTableSetGeneratedAlwaysSupportedFacts(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN id SET GENERATED ALWAYS;`
 
 	// A. Confirm now supported.
@@ -3794,6 +3886,7 @@ func TestExtractAlterTableSetGeneratedAlwaysSupportedFacts(t *testing.T) {
 }
 
 func TestExtractAlterTableSetGeneratedByDefaultSupportedFacts(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN id SET GENERATED BY DEFAULT;`
 
 	// A. Confirm now supported.
@@ -3846,6 +3939,7 @@ func TestExtractAlterTableSetGeneratedByDefaultSupportedFacts(t *testing.T) {
 }
 
 func TestExtractAlterTableDropIdentitySupportedFacts(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN id DROP IDENTITY;`
 
 	// A. Confirm now supported.
@@ -3892,6 +3986,7 @@ func TestExtractAlterTableDropIdentitySupportedFacts(t *testing.T) {
 // --- Task 2: Supported state-transition tests (red -> green) ---
 
 func TestExtractAlterTableDropGeneratedExpressionBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN full_name DROP EXPRESSION;`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -3926,6 +4021,7 @@ func TestExtractAlterTableDropGeneratedExpressionBecomesSupported(t *testing.T) 
 }
 
 func TestExtractAlterTableSetGeneratedAlwaysBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN id SET GENERATED ALWAYS;`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -3963,6 +4059,7 @@ func TestExtractAlterTableSetGeneratedAlwaysBecomesSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableSetGeneratedByDefaultBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN id SET GENERATED BY DEFAULT;`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -4000,6 +4097,7 @@ func TestExtractAlterTableSetGeneratedByDefaultBecomesSupported(t *testing.T) {
 }
 
 func TestExtractAlterTableDropIdentityBecomesSupported(t *testing.T) {
+	t.Parallel()
 	sql := `ALTER TABLE users ALTER COLUMN id DROP IDENTITY;`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -4040,6 +4138,7 @@ func TestExtractAlterTableDropIdentityBecomesSupported(t *testing.T) {
 // --- AST-level characterization: prove CONSTR_PRIMARY is stable and readable ---
 
 func TestParseCreateTableInlinePrimaryKeyAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (id bigint PRIMARY KEY, name text);`
 	stmt := parseCreateStmtAST(t, sql)
 
@@ -4069,6 +4168,7 @@ func TestParseCreateTableInlinePrimaryKeyAST(t *testing.T) {
 }
 
 func TestParseCreateTableNamedTableLevelPrimaryKeyAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (id bigint, CONSTRAINT users_pkey PRIMARY KEY (id));`
 	stmt := parseCreateStmtAST(t, sql)
 
@@ -4101,6 +4201,7 @@ func TestParseCreateTableNamedTableLevelPrimaryKeyAST(t *testing.T) {
 }
 
 func TestParseCreateTableUnnamedCompositePrimaryKeyAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE memberships (tenant_id bigint, user_id bigint, PRIMARY KEY (tenant_id, user_id));`
 	stmt := parseCreateStmtAST(t, sql)
 
@@ -4134,6 +4235,7 @@ func TestParseCreateTableUnnamedCompositePrimaryKeyAST(t *testing.T) {
 }
 
 func TestParseCreateTableGeneratedIdentityInlinePrimaryKeyAST(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY);`
 	stmt := parseCreateStmtAST(t, sql)
 
@@ -4175,6 +4277,7 @@ func TestParseCreateTableGeneratedIdentityInlinePrimaryKeyAST(t *testing.T) {
 // These tests FAIL until the extractor populates DDL.PrimaryKey for PostgreSQL.
 
 func TestExtractCreateTableInlinePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (id bigint PRIMARY KEY, name text);`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -4212,6 +4315,7 @@ func TestExtractCreateTableInlinePrimaryKeyBecomesSupportedFact(t *testing.T) {
 }
 
 func TestExtractCreateTableNamedTableLevelPrimaryKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (id bigint, CONSTRAINT users_pkey PRIMARY KEY (id));`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -4249,6 +4353,7 @@ func TestExtractCreateTableNamedTableLevelPrimaryKeyBecomesSupportedFact(t *test
 }
 
 func TestExtractCreateTableUnnamedCompositePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE memberships (tenant_id bigint, user_id bigint, PRIMARY KEY (tenant_id, user_id));`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -4286,6 +4391,7 @@ func TestExtractCreateTableUnnamedCompositePrimaryKeyBecomesSupportedFact(t *tes
 }
 
 func TestExtractCreateTableGeneratedIdentityInlinePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	sql := `CREATE TABLE users (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY);`
 
 	statement := extractPostgreSQLStatement(t, sql)
@@ -4340,6 +4446,7 @@ func TestExtractCreateTableGeneratedIdentityInlinePrimaryKeyBecomesSupportedFact
 // ---------------------------------------------------------------------------
 
 func TestASTAlterTableAddPrimaryKeyUnnamed(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD PRIMARY KEY (id);")
 	cmds := stmt.GetCmds()
 	if len(cmds) != 1 {
@@ -4370,6 +4477,7 @@ func TestASTAlterTableAddPrimaryKeyUnnamed(t *testing.T) {
 }
 
 func TestASTAlterTableAddNamedPrimaryKey(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);")
 	cmds := stmt.GetCmds()
 	if len(cmds) != 1 {
@@ -4400,6 +4508,7 @@ func TestASTAlterTableAddNamedPrimaryKey(t *testing.T) {
 }
 
 func TestASTAlterTableAddUniqueUnnamed(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD UNIQUE (email);")
 	cmds := stmt.GetCmds()
 	if len(cmds) != 1 {
@@ -4430,6 +4539,7 @@ func TestASTAlterTableAddUniqueUnnamed(t *testing.T) {
 }
 
 func TestASTAlterTableAddNamedUnique(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t, "ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email);")
 	cmds := stmt.GetCmds()
 	if len(cmds) != 1 {
@@ -4460,6 +4570,7 @@ func TestASTAlterTableAddNamedUnique(t *testing.T) {
 }
 
 func TestASTAlterTableAddNamedCompositePrimaryKey(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_pkey PRIMARY KEY (tenant_id, user_id);")
 	cmds := stmt.GetCmds()
 	if len(cmds) != 1 {
@@ -4493,6 +4604,7 @@ func TestASTAlterTableAddNamedCompositePrimaryKey(t *testing.T) {
 }
 
 func TestASTAlterTableAddNamedCompositeUnique(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_user_key UNIQUE (tenant_id, user_id);")
 	cmds := stmt.GetCmds()
 	if len(cmds) != 1 {
@@ -4533,6 +4645,7 @@ func TestASTAlterTableAddNamedCompositeUnique(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExtractAlterTableAddNamedPrimaryKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t, "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);")
 
 	if statement.Unsupported != nil {
@@ -4563,6 +4676,7 @@ func TestExtractAlterTableAddNamedPrimaryKeyBecomesSupportedFact(t *testing.T) {
 }
 
 func TestExtractAlterTableAddNamedUniqueBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t, "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);")
 
 	if statement.Unsupported != nil {
@@ -4592,6 +4706,7 @@ func TestExtractAlterTableAddNamedUniqueBecomesSupportedFact(t *testing.T) {
 }
 
 func TestExtractAlterTableAddCompositePrimaryKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_pkey PRIMARY KEY (tenant_id, user_id);")
 
 	if statement.Unsupported != nil {
@@ -4609,6 +4724,7 @@ func TestExtractAlterTableAddCompositePrimaryKeyBecomesSupportedFact(t *testing.
 }
 
 func TestExtractAlterTableAddCompositeUniqueBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t, "ALTER TABLE memberships ADD CONSTRAINT memberships_user_key UNIQUE (tenant_id, user_id);")
 
 	if statement.Unsupported != nil {
@@ -4630,6 +4746,7 @@ func TestExtractAlterTableAddCompositeUniqueBecomesSupportedFact(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestASTAlterTableAddNamedForeignKey(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);")
 	cmds := stmt.GetCmds()
@@ -4694,6 +4811,7 @@ func TestASTAlterTableAddNamedForeignKey(t *testing.T) {
 }
 
 func TestASTAlterTableAddUnnamedForeignKey(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD FOREIGN KEY (user_id) REFERENCES users(id);")
 	cmds := stmt.GetCmds()
@@ -4739,6 +4857,7 @@ func TestASTAlterTableAddUnnamedForeignKey(t *testing.T) {
 }
 
 func TestASTAlterTableAddCompositeForeignKey(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (tenant_id, user_id) REFERENCES users(tenant_id, id);")
 	cmds := stmt.GetCmds()
@@ -4780,6 +4899,7 @@ func TestASTAlterTableAddCompositeForeignKey(t *testing.T) {
 }
 
 func TestASTAlterTableAddForeignKeyWithOnDeleteCascade(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;")
 	cmds := stmt.GetCmds()
@@ -4794,6 +4914,7 @@ func TestASTAlterTableAddForeignKeyWithOnDeleteCascade(t *testing.T) {
 }
 
 func TestASTAlterTableAddForeignKeyWithOnUpdateRestrict(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE RESTRICT;")
 	cmds := stmt.GetCmds()
@@ -4808,6 +4929,7 @@ func TestASTAlterTableAddForeignKeyWithOnUpdateRestrict(t *testing.T) {
 }
 
 func TestASTAlterTableAddForeignKeyWithNotValid(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) NOT VALID;")
 	cmds := stmt.GetCmds()
@@ -4821,6 +4943,7 @@ func TestASTAlterTableAddForeignKeyWithNotValid(t *testing.T) {
 }
 
 func TestASTAlterTableAddForeignKeySchemaQualifiedReference(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id);")
 	cmds := stmt.GetCmds()
@@ -4841,6 +4964,7 @@ func TestASTAlterTableAddForeignKeySchemaQualifiedReference(t *testing.T) {
 }
 
 func TestASTAlterTableAddForeignKeyDeferrable(t *testing.T) {
+	t.Parallel()
 	stmt := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) DEFERRABLE INITIALLY DEFERRED;")
 	cmds := stmt.GetCmds()
@@ -4870,6 +4994,7 @@ func stringValuesFromNodesForTest(nodes []*pg_query.Node) []string {
 // ---------------------------------------------------------------------------
 
 func TestExtractAlterTableAddNamedForeignKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id);")
 
@@ -4932,6 +5057,7 @@ func TestExtractAlterTableAddNamedForeignKeyBecomesSupportedFact(t *testing.T) {
 }
 
 func TestExtractAlterTableAddUnnamedForeignKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD FOREIGN KEY (user_id) REFERENCES users(id);")
 
@@ -4957,6 +5083,7 @@ func TestExtractAlterTableAddUnnamedForeignKeyBecomesSupportedFact(t *testing.T)
 }
 
 func TestExtractAlterTableAddCompositeForeignKeyBecomesSupportedFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (tenant_id, user_id) REFERENCES users(tenant_id, id);")
 
@@ -4986,6 +5113,7 @@ func TestExtractAlterTableAddCompositeForeignKeyBecomesSupportedFact(t *testing.
 }
 
 func TestExtractAlterTableAddForeignKeySchemaQualifiedReference(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id);")
 
@@ -5012,6 +5140,7 @@ func TestExtractAlterTableAddForeignKeySchemaQualifiedReference(t *testing.T) {
 // --- AST characterization tests ---
 
 func TestAlterTableAddCheckASTCharacterize_NamedCheck(t *testing.T) {
+	t.Parallel()
 	ast := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0);")
 
@@ -5050,6 +5179,7 @@ func TestAlterTableAddCheckASTCharacterize_NamedCheck(t *testing.T) {
 }
 
 func TestAlterTableAddCheckASTCharacterize_UnnamedCheck(t *testing.T) {
+	t.Parallel()
 	ast := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CHECK (amount >= 0);")
 
@@ -5079,6 +5209,7 @@ func TestAlterTableAddCheckASTCharacterize_UnnamedCheck(t *testing.T) {
 }
 
 func TestAlterTableAddCheckASTCharacterize_NotValid(t *testing.T) {
+	t.Parallel()
 	ast := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;")
 
@@ -5105,6 +5236,7 @@ func TestAlterTableAddCheckASTCharacterize_NotValid(t *testing.T) {
 }
 
 func TestAlterTableAddCheckASTCharacterize_MultiColumnExpr(t *testing.T) {
+	t.Parallel()
 	ast := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_total CHECK (amount + tax >= 0);")
 
@@ -5125,6 +5257,7 @@ func TestAlterTableAddCheckASTCharacterize_MultiColumnExpr(t *testing.T) {
 }
 
 func TestAlterTableAddCheckASTCharacterize_EnumListExpr(t *testing.T) {
+	t.Parallel()
 	ast := parseAlterTableStmtAST(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_status CHECK (status IN ('open', 'closed'));")
 
@@ -5147,6 +5280,7 @@ func TestAlterTableAddCheckASTCharacterize_EnumListExpr(t *testing.T) {
 // --- Extractor red tests (expected FAIL until Task 2) ---
 
 func TestExtractAlterTableAddNamedCheckBecomesProjectedConstraintFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT amount_positive CHECK (amount >= 0);")
 
@@ -5186,6 +5320,7 @@ func TestExtractAlterTableAddNamedCheckBecomesProjectedConstraintFact(t *testing
 }
 
 func TestExtractAlterTableAddUnnamedCheckBecomesProjectedConstraintFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CHECK (amount >= 0);")
 
@@ -5223,6 +5358,7 @@ func TestExtractAlterTableAddUnnamedCheckBecomesProjectedConstraintFact(t *testi
 }
 
 func TestExtractAlterTableAddCheckNotValidStillProjectsConstraint(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;")
 
@@ -5261,6 +5397,7 @@ func TestExtractAlterTableAddCheckNotValidStillProjectsConstraint(t *testing.T) 
 }
 
 func TestExtractAlterTableAddCheckMultiColumnBecomesProjectedConstraintFact(t *testing.T) {
+	t.Parallel()
 	statement := extractPostgreSQLStatement(t,
 		"ALTER TABLE orders ADD CONSTRAINT chk_orders_total CHECK (amount + tax >= 0);")
 
@@ -5290,6 +5427,7 @@ func TestExtractAlterTableAddCheckMultiColumnBecomesProjectedConstraintFact(t *t
 }
 
 func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name       string
 		SQL        string
@@ -5391,6 +5529,7 @@ func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
 			p := New()
 			result, err := p.Parse(context.Background(), tc.SQL)
 			if err != nil {
@@ -5436,6 +5575,7 @@ func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
 }
 
 func TestPGExtractorRefreshMaterializedViewNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "REFRESH MATERIALIZED VIEW mv_stats")
 	if err != nil {
@@ -5471,6 +5611,7 @@ func TestPGExtractorRefreshMaterializedViewNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableSetSchemaNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users SET SCHEMA archive")
 	if err != nil {
@@ -5512,6 +5653,7 @@ func TestPGExtractorAlterTableSetSchemaNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableOwnerToNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users OWNER TO app_owner")
 	if err != nil {
@@ -5547,6 +5689,7 @@ func TestPGExtractorAlterTableOwnerToNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableEnableTriggerNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE TRIGGER trg_users_audit")
 	if err != nil {
@@ -5582,6 +5725,7 @@ func TestPGExtractorAlterTableEnableTriggerNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableDisableTriggerNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE TRIGGER trg_users_audit")
 	if err != nil {
@@ -5617,6 +5761,7 @@ func TestPGExtractorAlterTableDisableTriggerNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableEnableTriggerAllNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE TRIGGER ALL")
 	if err != nil {
@@ -5648,6 +5793,7 @@ func TestPGExtractorAlterTableEnableTriggerAllNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableEnableTriggerUserNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE TRIGGER USER")
 	if err != nil {
@@ -5679,6 +5825,7 @@ func TestPGExtractorAlterTableEnableTriggerUserNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableDisableTriggerAllNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE TRIGGER ALL")
 	if err != nil {
@@ -5710,6 +5857,7 @@ func TestPGExtractorAlterTableDisableTriggerAllNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableDisableTriggerUserNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE TRIGGER USER")
 	if err != nil {
@@ -5741,6 +5889,7 @@ func TestPGExtractorAlterTableDisableTriggerUserNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableReplicaIdentityDefaultNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY DEFAULT")
 	if err != nil {
@@ -5772,6 +5921,7 @@ func TestPGExtractorAlterTableReplicaIdentityDefaultNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableReplicaIdentityFullNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY FULL")
 	if err != nil {
@@ -5803,6 +5953,7 @@ func TestPGExtractorAlterTableReplicaIdentityFullNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableReplicaIdentityNothingNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY NOTHING")
 	if err != nil {
@@ -5834,6 +5985,7 @@ func TestPGExtractorAlterTableReplicaIdentityNothingNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableReplicaIdentityUsingIndexNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx")
 	if err != nil {
@@ -5871,6 +6023,7 @@ func TestPGExtractorAlterTableReplicaIdentityUsingIndexNormalized(t *testing.T) 
 }
 
 func TestPGExtractorAlterTableAttachPartitionNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')")
 	if err != nil {
@@ -5909,6 +6062,7 @@ func TestPGExtractorAlterTableAttachPartitionNormalized(t *testing.T) {
 }
 
 func TestPGExtractorAlterTableDetachPartitionNormalized(t *testing.T) {
+	t.Parallel()
 	p := New()
 	result, err := p.Parse(context.Background(), "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04")
 	if err != nil {
@@ -5944,6 +6098,7 @@ func TestPGExtractorAlterTableDetachPartitionNormalized(t *testing.T) {
 }
 
 func TestExtractCreateTypeEnumNormalizes(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "CREATE TYPE color AS ENUM ('red', 'green', 'blue')")
 	if err != nil {
@@ -5977,6 +6132,7 @@ func TestExtractCreateTypeEnumNormalizes(t *testing.T) {
 }
 
 func TestExtractAlterTypeEnumAddValueNormalizes(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE 'yellow'")
 	if err != nil {
@@ -6004,6 +6160,7 @@ func TestExtractAlterTypeEnumAddValueNormalizes(t *testing.T) {
 }
 
 func TestExtractAlterTypeEnumAddValueIfNotExists(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE IF NOT EXISTS 'yellow'")
 	if err != nil {
@@ -6019,6 +6176,7 @@ func TestExtractAlterTypeEnumAddValueIfNotExists(t *testing.T) {
 }
 
 func TestExtractAlterTypeEnumAddValueBefore(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE 'yellow' BEFORE 'green'")
 	if err != nil {
@@ -6037,6 +6195,7 @@ func TestExtractAlterTypeEnumAddValueBefore(t *testing.T) {
 }
 
 func TestExtractAlterTypeEnumAddValueAfter(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE 'yellow' AFTER 'green'")
 	if err != nil {
@@ -6055,6 +6214,7 @@ func TestExtractAlterTypeEnumAddValueAfter(t *testing.T) {
 }
 
 func TestExtractDropTypeNormalizes(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "DROP TYPE color")
 	if err != nil {
@@ -6079,6 +6239,7 @@ func TestExtractDropTypeNormalizes(t *testing.T) {
 }
 
 func TestExtractDropTypeIfExistsCascade(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "DROP TYPE IF EXISTS color CASCADE")
 	if err != nil {
@@ -6097,6 +6258,7 @@ func TestExtractDropTypeIfExistsCascade(t *testing.T) {
 }
 
 func TestExtractCompositeType(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "CREATE TYPE address AS (street text, city text)")
 	if err != nil {
@@ -6130,6 +6292,7 @@ func TestExtractCompositeType(t *testing.T) {
 }
 
 func TestExtractCreateDomain(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "CREATE DOMAIN email AS text CHECK (VALUE <> '')")
 	if err != nil {

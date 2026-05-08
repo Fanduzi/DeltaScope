@@ -56,6 +56,7 @@ func buildTestRegistry(t *testing.T) *rule.Registry {
 // CREATE TABLE ... GENERATED ALWAYS AS (...) STORED receives at least some
 // rule findings from the general column/table rule pipeline.
 func TestPGGeneratedIdentityRuleCoverage_CreateTableGeneratedStored(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	stmt := spec.Statement{
@@ -90,6 +91,7 @@ func TestPGGeneratedIdentityRuleCoverage_CreateTableGeneratedStored(t *testing.T
 // CREATE TABLE ... GENERATED ALWAYS AS IDENTITY receives at least some
 // rule findings from the general column/table rule pipeline.
 func TestPGGeneratedIdentityRuleCoverage_CreateTableIdentity(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	stmt := spec.Statement{
@@ -121,9 +123,11 @@ func TestPGGeneratedIdentityRuleCoverage_CreateTableIdentity(t *testing.T) {
 // the PG add_column rewrite warning when the column is NOT NULL with a default,
 // and is silent when those conditions are not met.
 func TestPGGeneratedIdentityRuleCoverage_AddColumnGeneratedStored(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	t.Run("generated_stored_without_notnull_default", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -167,6 +171,7 @@ func TestPGGeneratedIdentityRuleCoverage_AddColumnGeneratedStored(t *testing.T) 
 	})
 
 	t.Run("generated_stored_with_notnull_default", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -217,6 +222,7 @@ func TestPGGeneratedIdentityRuleCoverage_AddColumnGeneratedStored(t *testing.T) 
 // ALTER TABLE ... ADD COLUMN ... GENERATED AS IDENTITY receives findings
 // from general alter rules but no identity-specific rule fires.
 func TestPGGeneratedIdentityRuleCoverage_AddColumnIdentity(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	stmt := spec.Statement{
@@ -262,6 +268,7 @@ func TestPGGeneratedIdentityRuleCoverage_AddColumnIdentity(t *testing.T) {
 // ALTER TABLE ... ALTER COLUMN ... DROP EXPRESSION produces zero findings
 // because no registered rule targets the "drop_expression" action.
 func TestPGGeneratedIdentityRuleCoverage_DropExpression(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	stmt := spec.Statement{
@@ -298,9 +305,11 @@ func TestPGGeneratedIdentityRuleCoverage_DropExpression(t *testing.T) {
 // ALTER TABLE ... ALTER COLUMN ... SET GENERATED ALWAYS|BY DEFAULT
 // produces zero findings because no registered rule targets the "set_generated" action.
 func TestPGGeneratedIdentityRuleCoverage_SetGenerated(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	t.Run("set_generated_always", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -332,6 +341,7 @@ func TestPGGeneratedIdentityRuleCoverage_SetGenerated(t *testing.T) {
 	})
 
 	t.Run("set_generated_by_default", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -367,6 +377,7 @@ func TestPGGeneratedIdentityRuleCoverage_SetGenerated(t *testing.T) {
 // ALTER TABLE ... ALTER COLUMN ... DROP IDENTITY produces zero findings
 // because no registered rule targets the "drop_identity" action.
 func TestPGGeneratedIdentityRuleCoverage_DropIdentity(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	stmt := spec.Statement{
@@ -408,6 +419,7 @@ func TestPGGeneratedIdentityRuleCoverage_DropIdentity(t *testing.T) {
 // drop_default, set_not_null, drop_not_null) do not accidentally match generated/identity
 // action values.
 func TestPGAlterActionForbidRulesDoNotCoverGeneratedIdentityActions(t *testing.T) {
+	t.Parallel()
 	cfg := policy.RulePolicy{Enabled: true, Level: rule.LevelWarning, Params: map[string]any{"forbid": true}}
 
 	existingPGActions := []struct {
@@ -442,6 +454,7 @@ func TestPGAlterActionForbidRulesDoNotCoverGeneratedIdentityActions(t *testing.T
 
 		for _, gi := range generatedIdentityActions {
 			t.Run(pg.action+"_does_not_match_"+gi.action, func(t *testing.T) {
+				t.Parallel()
 				stmt := spec.Statement{
 					Kind:    spec.KindDDL,
 					Dialect: spec.DialectPostgreSQL,
@@ -471,6 +484,7 @@ func TestPGAlterActionForbidRulesDoNotCoverGeneratedIdentityActions(t *testing.T
 // supported generated/identity forms through the full registry and prints a
 // coverage matrix. This is the primary characterization for the decision gate.
 func TestPGGeneratedIdentityCoverageMatrix(t *testing.T) {
+	t.Parallel()
 	registry := buildTestRegistry(t)
 
 	cases := []struct {

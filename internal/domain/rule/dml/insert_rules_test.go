@@ -15,6 +15,7 @@ import (
 )
 
 func TestInsertRowsMaxCountRuleFindsOversizedBatch(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newInsertRowsMaxCountRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -38,6 +39,7 @@ func TestInsertRowsMaxCountRuleFindsOversizedBatch(t *testing.T) {
 }
 
 func TestReplaceForbiddenRuleFindsReplace(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newReplaceForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -61,6 +63,7 @@ func TestReplaceForbiddenRuleFindsReplace(t *testing.T) {
 }
 
 func TestInsertSelectForbiddenRuleFindsInsertSelect(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newInsertSelectForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -84,6 +87,7 @@ func TestInsertSelectForbiddenRuleFindsInsertSelect(t *testing.T) {
 }
 
 func TestOnDuplicateForbiddenRuleFindsOnDuplicate(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newOnDuplicateForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -107,6 +111,7 @@ func TestOnDuplicateForbiddenRuleFindsOnDuplicate(t *testing.T) {
 }
 
 func TestInsertSelectForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newInsertSelectForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -134,6 +139,7 @@ func TestInsertSelectForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T)
 }
 
 func TestOnDuplicateForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newOnDuplicateForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,

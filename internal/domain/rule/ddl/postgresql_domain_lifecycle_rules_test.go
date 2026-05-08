@@ -19,6 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCreateDomainNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateDomainNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -55,6 +56,7 @@ func TestCreateDomainNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainConstraintAddNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainConstraintNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -81,6 +83,7 @@ func TestAlterDomainConstraintAddNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainConstraintDropNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainConstraintNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -104,6 +107,7 @@ func TestAlterDomainConstraintDropNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainConstraintValidateNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainConstraintNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -127,6 +131,7 @@ func TestAlterDomainConstraintValidateNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainDefaultSetNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainDefaultNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -150,6 +155,7 @@ func TestAlterDomainDefaultSetNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainDefaultDropNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainDefaultNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -173,6 +179,7 @@ func TestAlterDomainDefaultDropNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainNotNullSetNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainNotNullNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -196,6 +203,7 @@ func TestAlterDomainNotNullSetNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainNotNullDropNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainNotNullNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -219,6 +227,7 @@ func TestAlterDomainNotNullDropNoticeRule(t *testing.T) {
 }
 
 func TestAlterDomainRenameNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -245,6 +254,7 @@ func TestAlterDomainRenameNoticeRule(t *testing.T) {
 }
 
 func TestDropDomainAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropDomainAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -270,6 +280,7 @@ func TestDropDomainAdvisoryRule(t *testing.T) {
 }
 
 func TestDropDomainCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropDomainCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -297,6 +308,7 @@ func TestDropDomainCascadeWarnRule(t *testing.T) {
 
 // Duplicate finding: DROP DOMAIN CASCADE fires both drop_domain.advisory and drop_domain.cascade.warn.
 func TestDropDomainCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
+	t.Parallel()
 	advisory := mustNewDropDomainAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 	cascade := mustNewDropDomainCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -329,6 +341,7 @@ func TestDropDomainCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDomainLifecycleRulesSkipMySQL(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewCreateDomainNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterDomainConstraintNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
@@ -362,6 +375,7 @@ func TestDomainLifecycleRulesSkipMySQL(t *testing.T) {
 }
 
 func TestAlterDomainConstraintNoticeSkipsNonConstraintAction(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainConstraintNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -385,6 +399,7 @@ func TestAlterDomainConstraintNoticeSkipsNonConstraintAction(t *testing.T) {
 }
 
 func TestAlterDomainDefaultNoticeSkipsNonDefaultAction(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainDefaultNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -408,6 +423,7 @@ func TestAlterDomainDefaultNoticeSkipsNonDefaultAction(t *testing.T) {
 }
 
 func TestAlterDomainNotNullNoticeSkipsNonNullAction(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterDomainNotNullNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -431,6 +447,7 @@ func TestAlterDomainNotNullNoticeSkipsNonNullAction(t *testing.T) {
 }
 
 func TestDropDomainCascadeWarnSkipsNonCascade(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropDomainCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -457,6 +474,7 @@ func TestDropDomainCascadeWarnSkipsNonCascade(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegistryIncludesPGDomainLifecycleRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {
@@ -499,6 +517,7 @@ func TestRegistryIncludesPGDomainLifecycleRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
+			t.Parallel()
 			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
@@ -518,6 +537,7 @@ func TestRegistryIncludesPGDomainLifecycleRules(t *testing.T) {
 }
 
 func TestDefaultPolicyIncludesPGDomainLifecycleRules(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	expected := []struct {
@@ -536,6 +556,7 @@ func TestDefaultPolicyIncludesPGDomainLifecycleRules(t *testing.T) {
 
 	for _, exp := range expected {
 		t.Run(exp.id, func(t *testing.T) {
+			t.Parallel()
 			p, ok := cfg.Rules[exp.id]
 			if !ok {
 				t.Fatalf("expected default policy to include %q", exp.id)
@@ -551,6 +572,7 @@ func TestDefaultPolicyIncludesPGDomainLifecycleRules(t *testing.T) {
 }
 
 func TestDomainLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {

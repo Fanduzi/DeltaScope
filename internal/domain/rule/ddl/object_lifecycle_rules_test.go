@@ -15,6 +15,7 @@ import (
 )
 
 func TestCreateViewForbidRule(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenDDLOperationRule(ruleIDViewCreateForbid, spec.DDLOperationCreateView, "create view", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"forbid": true},
@@ -40,6 +41,7 @@ func TestCreateViewForbidRule(t *testing.T) {
 }
 
 func TestDropAndTruncateRules(t *testing.T) {
+	t.Parallel()
 	dropRule, err := newForbiddenDDLOperationRule(ruleIDTableDropForbid, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"forbid": true},
@@ -100,6 +102,7 @@ func TestDropAndTruncateRules(t *testing.T) {
 }
 
 func TestLifecycleMetadataRules(t *testing.T) {
+	t.Parallel()
 	dropExistsRule, err := newTableOperationExistenceRule(ruleIDTableDropExistsRequire, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"requires_metadata": true},
@@ -148,6 +151,7 @@ func TestLifecycleMetadataRules(t *testing.T) {
 }
 
 func TestLifecycleRowCountRules(t *testing.T) {
+	t.Parallel()
 	dropRowsRule, err := newTableRowCountRiskRule(ruleIDTableDropRowsMaxCount, spec.DDLOperationDropTable, "drop table", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"limit": 100, "requires_metadata": true},

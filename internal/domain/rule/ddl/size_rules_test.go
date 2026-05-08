@@ -15,6 +15,7 @@ import (
 )
 
 func TestTableRowSizeRuleFindsCompactRowOverflow(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableRowSizeRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -59,6 +60,7 @@ func TestTableRowSizeRuleFindsCompactRowOverflow(t *testing.T) {
 }
 
 func TestIndexKeyLengthRuleFindsLargePrefixOverflow(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newIndexKeyLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -102,6 +104,7 @@ func TestIndexKeyLengthRuleFindsLargePrefixOverflow(t *testing.T) {
 }
 
 func TestSizeRulesSkipWithoutInstanceFacts(t *testing.T) {
+	t.Parallel()
 	rowRule, err := newTableRowSizeRule(policy.RulePolicy{Enabled: true, Params: map[string]any{"required": true}})
 	if err != nil {
 		t.Fatalf("new row-size rule: %v", err)

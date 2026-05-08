@@ -14,6 +14,7 @@ import (
 )
 
 func TestRenderIncludesSummaryAndStatementFindings(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -49,6 +50,7 @@ func TestRenderIncludesSummaryAndStatementFindings(t *testing.T) {
 }
 
 func TestRenderIncludesGlobalFindings(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReview,
 		Summary: report.Summary{
@@ -70,6 +72,7 @@ func TestRenderIncludesGlobalFindings(t *testing.T) {
 }
 
 func TestRenderIncludesStatementImpact(t *testing.T) {
+	t.Parallel()
 	estimatedRows := int64(12)
 	estimatedRatio := 0.25
 
@@ -104,6 +107,7 @@ func TestRenderIncludesStatementImpact(t *testing.T) {
 }
 
 func TestRenderPreservesTinyNonZeroImpactRatioPrecision(t *testing.T) {
+	t.Parallel()
 	estimatedRatio := 0.000000001
 
 	rendered, err := Render(report.Result{
@@ -132,6 +136,7 @@ func TestRenderPreservesTinyNonZeroImpactRatioPrecision(t *testing.T) {
 }
 
 func TestRenderIncludesAggregateExplanations(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -169,6 +174,7 @@ func TestRenderIncludesAggregateExplanations(t *testing.T) {
 }
 
 func TestRenderUsesSingleSuggestionLineWhenExplanationIncludesSuggestion(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -200,6 +206,7 @@ func TestRenderUsesSingleSuggestionLineWhenExplanationIncludesSuggestion(t *test
 }
 
 func TestRenderFallsBackToLegacySuggestionWhenExplanationSuggestionIsEmpty(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -232,6 +239,7 @@ func TestRenderFallsBackToLegacySuggestionWhenExplanationSuggestionIsEmpty(t *te
 }
 
 func TestRenderUsesLongerCodeSpanDelimiterWhenSQLContainsBackticks(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -260,6 +268,7 @@ func TestRenderUsesLongerCodeSpanDelimiterWhenSQLContainsBackticks(t *testing.T)
 }
 
 func TestRenderUsesDelimiterLongerThanLongestBacktickRun(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -286,6 +295,7 @@ func TestRenderUsesDelimiterLongerThanLongestBacktickRun(t *testing.T) {
 }
 
 func TestRenderPadsCodeSpanWhenSQLStartsWithBacktick(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -312,6 +322,7 @@ func TestRenderPadsCodeSpanWhenSQLStartsWithBacktick(t *testing.T) {
 }
 
 func TestRenderPadsCodeSpanWhenSQLEndsWithBacktick(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -338,6 +349,7 @@ func TestRenderPadsCodeSpanWhenSQLEndsWithBacktick(t *testing.T) {
 }
 
 func TestRenderPadsCodeSpanWhenSQLStartsAndEndsWithBacktick(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{
@@ -378,6 +390,7 @@ func assertNotContains(t *testing.T, output string, want string) {
 }
 
 func TestMarkdownRenderIncludesRuleSummary(t *testing.T) {
+	t.Parallel()
 	loaded := 147
 	applicable := 103
 	rendered, err := Render(report.Result{
@@ -404,6 +417,7 @@ func TestMarkdownRenderIncludesRuleSummary(t *testing.T) {
 }
 
 func TestMarkdownRenderIncludesSkippedRulesSection(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictPass,
 		Summary: report.Summary{Statements: 1},
@@ -427,6 +441,7 @@ func TestMarkdownRenderIncludesSkippedRulesSection(t *testing.T) {
 }
 
 func TestMarkdownRenderOmitsSkippedSectionWhenEmpty(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictPass,
 		Summary: report.Summary{Statements: 1},

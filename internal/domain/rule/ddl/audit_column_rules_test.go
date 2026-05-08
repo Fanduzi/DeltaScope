@@ -15,6 +15,7 @@ import (
 )
 
 func TestAuditColumnsRequiredRuleFindsMissingCreatedAndUpdatedColumns(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableAuditColumnsRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -34,6 +35,7 @@ func TestAuditColumnsRequiredRuleFindsMissingCreatedAndUpdatedColumns(t *testing
 }
 
 func TestAuditColumnsRequiredRuleAcceptsCreatedAndUpdatedPatterns(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableAuditColumnsRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -57,6 +59,7 @@ func TestAuditColumnsRequiredRuleAcceptsCreatedAndUpdatedPatterns(t *testing.T) 
 }
 
 func TestAuditColumnsRequiredRulePostgreSQLOnlyRequiresCreatedPattern(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableAuditColumnsRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,

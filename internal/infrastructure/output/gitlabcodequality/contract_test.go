@@ -40,6 +40,7 @@ type gitlabLines struct {
 // --- Contract: required fields ---
 
 func TestGitLabIssueSchemaContainsAllRequiredKeys(t *testing.T) {
+	t.Parallel()
 	issue := gitlabIssue{
 		Description: "table comment is required",
 		CheckName:   "ddl.table.comment.require",
@@ -83,6 +84,7 @@ func TestGitLabIssueSchemaContainsAllRequiredKeys(t *testing.T) {
 // --- Contract: report is a JSON array ---
 
 func TestEmptyResultProducesEmptyJSONArray(t *testing.T) {
+	t.Parallel()
 	// Task 2 target: Render(report.Result{}) should return [] (empty JSON array).
 	// For now, verify the expected output shape.
 	expected := []byte("[]")
@@ -98,6 +100,7 @@ func TestEmptyResultProducesEmptyJSONArray(t *testing.T) {
 // --- Contract: severity mapping ---
 
 func TestContractSeverityMapping(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		level    rule.Level
 		expected string
@@ -133,6 +136,7 @@ func mapSeverity(level rule.Level) string {
 // --- Contract: severity values belong to GitLab accepted set ---
 
 func TestMappedSeverityValuesAreGitLabAccepted(t *testing.T) {
+	t.Parallel()
 	// GitLab accepts: info, minor, major, critical, blocker
 	accepted := map[string]bool{
 		"info": true, "minor": true, "major": true, "critical": true, "blocker": true,
@@ -149,6 +153,7 @@ func TestMappedSeverityValuesAreGitLabAccepted(t *testing.T) {
 // --- Contract: fingerprint determinism ---
 
 func TestFingerprintIsDeterministic(t *testing.T) {
+	t.Parallel()
 	f1 := computeFingerprint("ddl.table.comment.require", "migrations.sql", 1, 0, "table comment is required")
 	f2 := computeFingerprint("ddl.table.comment.require", "migrations.sql", 1, 0, "table comment is required")
 	if f1 != f2 {
@@ -157,6 +162,7 @@ func TestFingerprintIsDeterministic(t *testing.T) {
 }
 
 func TestDifferentInputsProduceDifferentFingerprints(t *testing.T) {
+	t.Parallel()
 	f1 := computeFingerprint("rule.a", "file.sql", 1, 0, "msg")
 	f2 := computeFingerprint("rule.b", "file.sql", 1, 0, "msg")
 	if f1 == f2 {
@@ -180,6 +186,7 @@ func TestDifferentInputsProduceDifferentFingerprints(t *testing.T) {
 }
 
 func TestFingerprintCollisionResistance(t *testing.T) {
+	t.Parallel()
 	// Generate fingerprints for a large set and check for collisions.
 	seen := make(map[string]string)
 	ruleIDs := []string{"ddl.table.comment.require", "ddl.table.name.length", "ddl.index.prefix.convention"}
@@ -224,6 +231,7 @@ func computeFingerprint(ruleID, path string, line, statementIndex int, message s
 // --- Contract: synthetic path fallback ---
 
 func TestSyntheticPathForSQLInput(t *testing.T) {
+	t.Parallel()
 	// When input comes from --sql or stdin (no file path), use "deltascope.sql".
 	synthetic := "deltascope.sql"
 	if synthetic == "" {
@@ -238,6 +246,7 @@ func TestSyntheticPathForSQLInput(t *testing.T) {
 // --- Contract: line fallback ---
 
 func TestLineFallbackWhenLocationIsNil(t *testing.T) {
+	t.Parallel()
 	finding := rule.Finding{
 		RuleID:         "test.rule",
 		Level:          rule.LevelWarning,
@@ -251,6 +260,7 @@ func TestLineFallbackWhenLocationIsNil(t *testing.T) {
 }
 
 func TestLineFallbackWhenLocationLineIsZero(t *testing.T) {
+	t.Parallel()
 	finding := rule.Finding{
 		RuleID:         "test.rule",
 		Level:          rule.LevelWarning,
@@ -265,6 +275,7 @@ func TestLineFallbackWhenLocationLineIsZero(t *testing.T) {
 }
 
 func TestLineUsesFindingLocationWhenPresent(t *testing.T) {
+	t.Parallel()
 	finding := rule.Finding{
 		RuleID:         "test.rule",
 		Level:          rule.LevelWarning,
@@ -279,6 +290,7 @@ func TestLineUsesFindingLocationWhenPresent(t *testing.T) {
 }
 
 func TestGlobalFindingLineFallback(t *testing.T) {
+	t.Parallel()
 	finding := rule.Finding{
 		RuleID:  "global.rule",
 		Level:   rule.LevelNotice,
@@ -304,6 +316,7 @@ func resolveLine(f rule.Finding) int {
 // --- Contract: unsupported statements excluded ---
 
 func TestUnsupportedStatementsAreExcluded(t *testing.T) {
+	t.Parallel()
 	// Unsupported statements are parser diagnostics, not rule findings.
 	// They should NOT appear in GitLab Code Quality output for v0.45.0.
 	result := report.Result{
@@ -340,6 +353,7 @@ func TestUnsupportedStatementsAreExcluded(t *testing.T) {
 // --- Contract: path resolution sorted deterministically ---
 
 func TestPathResolutionFromFileFlag(t *testing.T) {
+	t.Parallel()
 	path := resolvePath("db/migrate/001_create_users.sql", false)
 	if path != "db/migrate/001_create_users.sql" {
 		t.Errorf("expected file path, got %s", path)
@@ -347,6 +361,7 @@ func TestPathResolutionFromFileFlag(t *testing.T) {
 }
 
 func TestPathResolutionForSQLFlag(t *testing.T) {
+	t.Parallel()
 	path := resolvePath("", false)
 	if path != "deltascope.sql" {
 		t.Errorf("expected synthetic path, got %s", path)
@@ -354,6 +369,7 @@ func TestPathResolutionForSQLFlag(t *testing.T) {
 }
 
 func TestPathResolutionForStdin(t *testing.T) {
+	t.Parallel()
 	path := resolvePath("", false)
 	if path != "deltascope.sql" {
 		t.Errorf("expected synthetic path for stdin, got %s", path)
@@ -361,6 +377,7 @@ func TestPathResolutionForStdin(t *testing.T) {
 }
 
 func TestPathDoesNotStartWithDotSlash(t *testing.T) {
+	t.Parallel()
 	cases := []string{"db/migrate.sql", "deltascope.sql"}
 	for _, p := range cases {
 		if len(p) >= 2 && p[:2] == "./" {
@@ -379,6 +396,7 @@ func resolvePath(filePath string, _ bool) string {
 // --- Contract: multiple findings produce sorted-stable output ---
 
 func TestMultipleFindingsProduceJSONArray(t *testing.T) {
+	t.Parallel()
 	issues := buildIssues()
 	if len(issues) != 3 {
 		t.Fatalf("expected 3 issues, got %d", len(issues))

@@ -15,6 +15,7 @@ import (
 )
 
 func TestAlterTargetTypeFamilyAllowlistRuleBlocksDisallowedFamilies(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newAlterTargetTypeFamilyRule(
 		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
 		"modify_column",
@@ -61,6 +62,7 @@ func TestAlterTargetTypeFamilyAllowlistRuleBlocksDisallowedFamilies(t *testing.T
 }
 
 func TestAlterTargetTypeFamilyAllowlistRuleAllowsConfiguredFamilies(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newAlterTargetTypeFamilyRule(
 		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
 		"change_column",
@@ -103,6 +105,7 @@ func TestAlterTargetTypeFamilyAllowlistRuleAllowsConfiguredFamilies(t *testing.T
 }
 
 func TestAlterColumnTransitionRuleBlocksConfiguredChanges(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		ruleID     string
@@ -166,6 +169,8 @@ func TestAlterColumnTransitionRuleBlocksConfiguredChanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 				tt.ruleID,
 				tt.action,
@@ -200,6 +205,7 @@ func TestAlterColumnTransitionRuleBlocksConfiguredChanges(t *testing.T) {
 }
 
 func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterModifyColumnExplicitDefaultChangeForbid,
 		"modify_column",
@@ -238,6 +244,7 @@ func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
 }
 
 func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
+	t.Parallel()
 	statement := alterStatement(
 		spec.Alter{
 			Action: "add_constraint",
@@ -308,6 +315,7 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 }
 
 func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenAlterRenameRule(
 		ruleIDAlterRenameIndexForbid,
 		"rename_index",
@@ -352,6 +360,7 @@ func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 }
 
 func TestAlterRenameIndexRuleFindsStandaloneForbiddenRename(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenAlterRenameRule(
 		ruleIDAlterRenameIndexForbid,
 		"rename_index",
@@ -401,6 +410,7 @@ func TestAlterRenameIndexRuleFindsStandaloneForbiddenRename(t *testing.T) {
 }
 
 func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		ruleID     string
@@ -441,6 +451,8 @@ func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newAlterAddedIndexPrefixRule(tt.ruleID, tt.kind, tt.fallback, rule.LevelWarning, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -483,6 +495,7 @@ func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
 }
 
 func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newAlterAddedIndexPrefixRule(
 		ruleIDAlterAddIndexSecondaryPrefixRequire,
 		spec.IndexKindSecondary,
@@ -523,6 +536,7 @@ func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
 }
 
 func TestAlterAddedIndexSuffixRuleFindsBadNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		ruleID    string
@@ -555,6 +569,8 @@ func TestAlterAddedIndexSuffixRuleFindsBadNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newAlterAddedIndexSuffixRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -594,6 +610,7 @@ func TestAlterAddedIndexSuffixRuleFindsBadNames(t *testing.T) {
 }
 
 func TestAlterAddedIndexContainsRuleUsesORSemantics(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		ruleID    string
@@ -626,6 +643,8 @@ func TestAlterAddedIndexContainsRuleUsesORSemantics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newAlterAddedIndexContainsRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -662,6 +681,7 @@ func TestAlterAddedIndexContainsRuleUsesORSemantics(t *testing.T) {
 }
 
 func TestAlterAddedIndexColumnsMaxCountRuleBlocksWideAlterAddedIndexes(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newAlterAddedIndexColumnsMaxCountRule(2, rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -701,6 +721,7 @@ func TestAlterAddedIndexColumnsMaxCountRuleBlocksWideAlterAddedIndexes(t *testin
 }
 
 func TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newAlterAddedDuplicateIndexForbiddenRule(rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -748,6 +769,7 @@ func TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes(t *testing
 }
 
 func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules[ruleIDAlterChangeColumnForbid] = policy.RulePolicy{
@@ -849,6 +871,7 @@ func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T)
 }
 
 func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -913,6 +936,7 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 // --- Phase 5 Slice E: PG explicit default change semantic rules ---
 
 func TestPGSetDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
 		"set_default",
@@ -952,6 +976,7 @@ func TestPGSetDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testin
 }
 
 func TestPGDropDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropDefaultExplicitDefaultChangeForbid,
 		"drop_default",
@@ -991,6 +1016,7 @@ func TestPGDropDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testi
 }
 
 func TestPGSetDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
 		"set_default",
@@ -1027,6 +1053,7 @@ func TestPGSetDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *t
 }
 
 func TestPGDropDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropDefaultExplicitDefaultChangeForbid,
 		"drop_default",
@@ -1063,6 +1090,7 @@ func TestPGDropDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *
 }
 
 func TestPGExplicitDefaultChangeRule_SkipsWhenForbidFalse(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
 		"set_default",
@@ -1099,6 +1127,7 @@ func TestPGExplicitDefaultChangeRule_SkipsWhenForbidFalse(t *testing.T) {
 }
 
 func TestPGExplicitDefaultChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
 		"set_default",
@@ -1136,6 +1165,7 @@ func TestPGExplicitDefaultChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.
 }
 
 func TestAlterRegisterAddsAlterAddedIndexLifecycleRulesWhenEnabled(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules[ruleIDAlterAddIndexColumnsMaxCount] = policy.RulePolicy{
@@ -1203,6 +1233,7 @@ func TestAlterRegisterAddsAlterAddedIndexLifecycleRulesWhenEnabled(t *testing.T)
 // --- Phase 5 Slice F: PG explicit nullability change semantic rules ---
 
 func TestPGSetNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
 		"set_not_null",
@@ -1242,6 +1273,7 @@ func TestPGSetNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t
 }
 
 func TestPGDropNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid,
 		"drop_not_null",
@@ -1281,6 +1313,7 @@ func TestPGDropNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(
 }
 
 func TestPGSetNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFalse(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
 		"set_not_null",
@@ -1317,6 +1350,7 @@ func TestPGSetNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFa
 }
 
 func TestPGDropNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFalse(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid,
 		"drop_not_null",
@@ -1353,6 +1387,7 @@ func TestPGDropNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityF
 }
 
 func TestPGExplicitNullabilityChangeRule_SkipsWhenForbidFalse(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
 		"set_not_null",
@@ -1389,6 +1424,7 @@ func TestPGExplicitNullabilityChangeRule_SkipsWhenForbidFalse(t *testing.T) {
 }
 
 func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
 		"set_not_null",
@@ -1433,6 +1469,7 @@ func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *test
 // index prefix rule fires on the PostgreSQL ALTER TABLE ADD CONSTRAINT shape
 // after Task 2 constraint option projection.
 func TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newAlterAddedIndexPrefixRule(
 		ruleIDAlterAddIndexUniquePrefixRequire,
 		spec.IndexKindUnique,

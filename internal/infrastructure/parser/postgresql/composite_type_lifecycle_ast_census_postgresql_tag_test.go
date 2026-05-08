@@ -76,6 +76,7 @@ var pgCompositeTypeLifecycleCensusCases = []struct {
 // all composite type lifecycle DDL candidates. This is a read-only
 // characterization test — no production code is modified.
 func TestCompositeTypeLifecycleASTCensus(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Composite Type Lifecycle AST Census ===")
 	t.Logf("%-40s | %-26s | %s", "Case", "Node Kind", "AST Facts")
@@ -325,6 +326,7 @@ func assertCompositeTypeLifecycleASTFacts(t *testing.T, fact compositeTypeLifecy
 // candidates. This is a read-only characterization test — no production code
 // is modified.
 func TestCompositeTypeLifecycleDeltaScopeBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Composite Type Lifecycle DeltaScope Baseline ===")
 	t.Logf("%-40s | %-8s | %-5s | %-12s | %s",

@@ -15,6 +15,7 @@ import (
 )
 
 func TestIndexTotalMaxCountRuleFindsOversizedIndexCatalog(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(
 		spec.Index{Name: "idx_a", Kind: spec.IndexKindSecondary, Columns: []string{"a"}},
 		spec.Index{Name: "idx_b", Kind: spec.IndexKindSecondary, Columns: []string{"b"}},
@@ -40,6 +41,7 @@ func TestIndexTotalMaxCountRuleFindsOversizedIndexCatalog(t *testing.T) {
 }
 
 func TestIndexColumnsMaxCountRuleFindsWideIndexes(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(spec.Index{
 		Name:    "idx_wide",
 		Kind:    spec.IndexKindSecondary,
@@ -65,6 +67,7 @@ func TestIndexColumnsMaxCountRuleFindsWideIndexes(t *testing.T) {
 }
 
 func TestUniquePrefixRuleFindsBadNames(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(spec.Index{Name: "user_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}})
 	statementRule, err := newIndexPrefixRequiredRule(ruleIDIndexUniquePrefixRequire, spec.IndexKindUnique, "uniq_", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
@@ -85,6 +88,7 @@ func TestUniquePrefixRuleFindsBadNames(t *testing.T) {
 }
 
 func TestSecondaryPrefixRuleFindsBadNames(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(spec.Index{Name: "name_lookup", Kind: spec.IndexKindSecondary, Columns: []string{"name"}})
 	statementRule, err := newIndexPrefixRequiredRule(ruleIDIndexSecondaryPrefixRequire, spec.IndexKindSecondary, "idx_", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
@@ -105,6 +109,7 @@ func TestSecondaryPrefixRuleFindsBadNames(t *testing.T) {
 }
 
 func TestPostgreSQLUniqueUsesSharedIndexRulePath(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		statement spec.Statement
@@ -129,6 +134,8 @@ func TestPostgreSQLUniqueUsesSharedIndexRulePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newIndexColumnsMaxCountRule(policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -164,6 +171,7 @@ func TestPostgreSQLUniqueUsesSharedIndexRulePath(t *testing.T) {
 }
 
 func TestFulltextPrefixRuleFindsBadNames(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(spec.Index{Name: "search_body", Kind: spec.IndexKindFulltext, Columns: []string{"body"}})
 	statementRule, err := newIndexPrefixRequiredRule(ruleIDIndexFulltextPrefixRequire, spec.IndexKindFulltext, "full_", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
@@ -184,6 +192,7 @@ func TestFulltextPrefixRuleFindsBadNames(t *testing.T) {
 }
 
 func TestIndexSuffixRuleFindsBadNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		ruleID    string
@@ -216,6 +225,8 @@ func TestIndexSuffixRuleFindsBadNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statement := statementWithIndexes(spec.Index{Name: tt.indexName, Kind: tt.kind, Columns: []string{"email"}})
 			statementRule, err := newIndexSuffixRequiredRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
 				Enabled: true,
@@ -244,6 +255,7 @@ func TestIndexSuffixRuleFindsBadNames(t *testing.T) {
 }
 
 func TestIndexContainsRuleUsesORSemantics(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		ruleID    string
@@ -289,6 +301,8 @@ func TestIndexContainsRuleUsesORSemantics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newIndexContainsRequiredRule(tt.ruleID, tt.kind, rule.LevelWarning, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelWarning,
@@ -316,6 +330,7 @@ func TestIndexContainsRuleUsesORSemantics(t *testing.T) {
 }
 
 func TestDuplicateIndexRuleFindsExactDuplicateIndexes(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(
 		spec.Index{Name: "idx_name", Kind: spec.IndexKindSecondary, Columns: []string{"name"}},
 		spec.Index{Name: "idx_name_copy", Kind: spec.IndexKindSecondary, Columns: []string{"name"}},
@@ -344,6 +359,7 @@ func TestDuplicateIndexRuleFindsExactDuplicateIndexes(t *testing.T) {
 }
 
 func TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(
 		spec.Index{Name: "idx_name", Kind: spec.IndexKindSecondary, Columns: []string{"name"}},
 		spec.Index{Name: "idx_name_status", Kind: spec.IndexKindSecondary, Columns: []string{"name", "status"}},
@@ -371,6 +387,7 @@ func TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex(t *testing.T) {
 }
 
 func TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique(t *testing.T) {
+	t.Parallel()
 	statement := statementWithIndexes(
 		spec.Index{Name: "idx_email", Kind: spec.IndexKindSecondary, Columns: []string{"email"}},
 		spec.Index{Name: "uniq_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}},
@@ -430,7 +447,9 @@ func postgresCreateIndexStatement(indexes ...spec.Index) spec.Statement {
 // DO NOT apply to standalone CREATE INDEX statements. These are expected RED
 // tests — they should FAIL if rules are extended to cover CREATE INDEX.
 func TestCreateIndexRuleApplicability(t *testing.T) {
+	t.Parallel()
 	t.Run("secondary_prefix_should_trigger_on_bad_create_index", func(t *testing.T) {
+		t.Parallel()
 		statement := postgresCreateIndexStatement(spec.Index{
 			Name:    "bad_users_email",
 			Kind:    spec.IndexKindSecondary,
@@ -456,6 +475,7 @@ func TestCreateIndexRuleApplicability(t *testing.T) {
 	})
 
 	t.Run("unique_prefix_should_trigger_on_bad_create_unique_index", func(t *testing.T) {
+		t.Parallel()
 		statement := postgresCreateIndexStatement(spec.Index{
 			Name:    "bad_users_email",
 			Kind:    spec.IndexKindUnique,
@@ -481,6 +501,7 @@ func TestCreateIndexRuleApplicability(t *testing.T) {
 	})
 
 	t.Run("columns_max_count_should_trigger_on_wide_create_index", func(t *testing.T) {
+		t.Parallel()
 		statement := postgresCreateIndexStatement(spec.Index{
 			Name:    "idx_users_email_tenant",
 			Kind:    spec.IndexKindSecondary,

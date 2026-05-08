@@ -15,6 +15,7 @@ import (
 )
 
 func TestTableCommentMaxLengthRuleFindsLongComments(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableCommentMaxLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -36,6 +37,7 @@ func TestTableCommentMaxLengthRuleFindsLongComments(t *testing.T) {
 }
 
 func TestTableEngineAllowlistRuleFindsDisallowedEngine(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -57,6 +59,7 @@ func TestTableEngineAllowlistRuleFindsDisallowedEngine(t *testing.T) {
 }
 
 func TestTableCharsetAllowlistRuleFindsMissingCharset(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -76,6 +79,7 @@ func TestTableCharsetAllowlistRuleFindsMissingCharset(t *testing.T) {
 }
 
 func TestTableRowFormatAllowlistRuleFindsDisallowedRowFormat(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableRowFormatAllowlist, "row_format", "row format", []string{"DYNAMIC"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -97,6 +101,7 @@ func TestTableRowFormatAllowlistRuleFindsDisallowedRowFormat(t *testing.T) {
 }
 
 func TestTableEngineAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableEngineAllowlist, "engine", "engine", []string{"InnoDB"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -121,6 +126,7 @@ func TestTableEngineAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 }
 
 func TestTableRowFormatAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableRowFormatAllowlist, "row_format", "row format", []string{"DYNAMIC"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -145,6 +151,7 @@ func TestTableRowFormatAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 }
 
 func TestTableCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8mb4"}, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -167,6 +174,7 @@ func TestTableCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 }
 
 func TestTableAutoIncrementInitValueRuleFindsNonDefaultSeed(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableAutoIncrementInitValueRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -188,6 +196,7 @@ func TestTableAutoIncrementInitValueRuleFindsNonDefaultSeed(t *testing.T) {
 }
 
 func TestTableForeignKeyForbidRuleFindsForeignKeys(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableForeignKeyForbidRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -213,6 +222,7 @@ func TestTableForeignKeyForbidRuleFindsForeignKeys(t *testing.T) {
 }
 
 func TestTableCreateLikeForbidRuleFindsLikeStatements(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableBooleanShapeRule(ruleIDTableCreateLikeForbid, "like", rule.LevelBlocker, func(ddl *spec.DDL) bool {
 		return ddl.HasReferTable
 	}, policy.RulePolicy{
@@ -236,6 +246,7 @@ func TestTableCreateLikeForbidRuleFindsLikeStatements(t *testing.T) {
 }
 
 func TestTableCreateAsForbidRuleFindsAsSelectStatements(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableBooleanShapeRule(ruleIDTableCreateAsForbid, "as select", rule.LevelBlocker, func(ddl *spec.DDL) bool {
 		return ddl.HasSelect
 	}, policy.RulePolicy{
@@ -259,6 +270,7 @@ func TestTableCreateAsForbidRuleFindsAsSelectStatements(t *testing.T) {
 }
 
 func TestTablePartitionForbidRuleFindsPartitionedTables(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableBooleanShapeRule(ruleIDTablePartitionForbid, "partitioning", rule.LevelBlocker, func(ddl *spec.DDL) bool {
 		return ddl.HasPartition
 	}, policy.RulePolicy{

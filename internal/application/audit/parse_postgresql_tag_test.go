@@ -10,6 +10,7 @@ import (
 )
 
 func TestParseParsesPostgreSQLWithBuildTag(t *testing.T) {
+	t.Parallel()
 	result, err := Parse(context.Background(), "select 1;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -29,6 +30,7 @@ func TestParseParsesPostgreSQLWithBuildTag(t *testing.T) {
 }
 
 func TestExtractMapsPostgreSQLInsertOnConflictWithoutMySQLFlags(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "insert into users(id, name) values (1, 'a') on conflict (id) do update set name = excluded.name;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -55,6 +57,7 @@ func TestExtractMapsPostgreSQLInsertOnConflictWithoutMySQLFlags(t *testing.T) {
 }
 
 func TestExtractMapsPostgreSQLInsertSelectOnConflictWithoutMySQLDuplicateFlag(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "insert into users(id, name) select id, name from staging_users on conflict (id) do update set name = excluded.name;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)

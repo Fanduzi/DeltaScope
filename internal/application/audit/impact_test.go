@@ -14,7 +14,9 @@ import (
 )
 
 func TestEstimateStatementImpact(t *testing.T) {
+	t.Parallel()
 	t.Run("delete without where returns high risk", func(t *testing.T) {
+		t.Parallel()
 		statement := spec.Statement{
 			Kind: spec.KindDML,
 			DML: &spec.DML{
@@ -46,6 +48,7 @@ func TestEstimateStatementImpact(t *testing.T) {
 	})
 
 	t.Run("update unique equality shape returns low risk", func(t *testing.T) {
+		t.Parallel()
 		statement := spec.Statement{
 			Kind: spec.KindDML,
 			DML: &spec.DML{
@@ -77,6 +80,7 @@ func TestEstimateStatementImpact(t *testing.T) {
 	})
 
 	t.Run("join shape returns high risk with low confidence", func(t *testing.T) {
+		t.Parallel()
 		statement := spec.Statement{
 			Kind: spec.KindDML,
 			DML: &spec.DML{
@@ -102,6 +106,7 @@ func TestEstimateStatementImpact(t *testing.T) {
 	})
 
 	t.Run("unknown fallback ignores statement-level subquery facts", func(t *testing.T) {
+		t.Parallel()
 		statement := spec.Statement{
 			Kind: spec.KindDML,
 			DML: &spec.DML{
@@ -128,6 +133,7 @@ func TestEstimateStatementImpact(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesMetadataRefinesUniqueEquality(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
@@ -173,6 +179,7 @@ func TestAttachImpactEstimatesMetadataRefinesUniqueEquality(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesMetadataRefinesSourceForJoinShape(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
@@ -210,6 +217,7 @@ func TestAttachImpactEstimatesMetadataRefinesSourceForJoinShape(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesMissingTargetTableSnapshotKeepsShapeSource(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
@@ -238,6 +246,7 @@ func TestAttachImpactEstimatesMissingTargetTableSnapshotKeepsShapeSource(t *test
 }
 
 func TestAttachImpactEstimatesMissingTargetTableKeepsUniqueEqualityShapeSource(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
@@ -280,6 +289,7 @@ func TestAttachImpactEstimatesMissingTargetTableKeepsUniqueEqualityShapeSource(t
 }
 
 func TestAttachImpactEstimatesSchemaOnlyMetadataKeepsShapeSource(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
@@ -304,6 +314,7 @@ func TestAttachImpactEstimatesSchemaOnlyMetadataKeepsShapeSource(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesKeepsShapeOnlyImpactOffline(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
@@ -328,6 +339,7 @@ func TestAttachImpactEstimatesKeepsShapeOnlyImpactOffline(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesUsesPlanEstimateWhenAvailable(t *testing.T) {
+	t.Parallel()
 	provider := &planEstimateProviderStub{
 		estimate: &spec.ImpactEstimate{
 			EstimatedRows: ptrInt64(7),
@@ -365,6 +377,7 @@ func TestAttachImpactEstimatesUsesPlanEstimateWhenAvailable(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesPlannerEstimateCanBeRefinedWithMetadata(t *testing.T) {
+	t.Parallel()
 	provider := &planEstimateProviderStub{
 		estimate: &spec.ImpactEstimate{
 			EstimatedRows: ptrInt64(7),
@@ -418,6 +431,7 @@ func TestAttachImpactEstimatesPlannerEstimateCanBeRefinedWithMetadata(t *testing
 }
 
 func TestAttachImpactEstimatesSkipsUnsupportedStatementKindsForPlanner(t *testing.T) {
+	t.Parallel()
 	provider := &planEstimateProviderStub{}
 	statements := []spec.Statement{{
 		Kind:   spec.KindDDL,
@@ -439,6 +453,7 @@ func TestAttachImpactEstimatesSkipsUnsupportedStatementKindsForPlanner(t *testin
 }
 
 func TestAttachImpactEstimatesFallsBackWhenPlanEstimateFails(t *testing.T) {
+	t.Parallel()
 	provider := &planEstimateProviderStub{err: errors.New("planner unavailable")}
 	statements := []spec.Statement{{
 		Kind:   spec.KindDML,
@@ -465,6 +480,7 @@ func TestAttachImpactEstimatesFallsBackWhenPlanEstimateFails(t *testing.T) {
 }
 
 func TestAttachImpactEstimatesPlannerRatioIsClampedToOne(t *testing.T) {
+	t.Parallel()
 	provider := &planEstimateProviderStub{
 		estimate: &spec.ImpactEstimate{
 			EstimatedRows: ptrInt64(500),

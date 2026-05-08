@@ -16,6 +16,7 @@ import (
 )
 
 func TestIdentifierPatternRuleFindsIllegalTableName(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newIdentifierPatternRule(ruleIDTableNamePatternRequire, "table", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -35,6 +36,7 @@ func TestIdentifierPatternRuleFindsIllegalTableName(t *testing.T) {
 }
 
 func TestIdentifierPatternRuleFindsIllegalColumnName(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newIdentifierPatternRule(ruleIDColumnNamePatternRequire, "column", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -54,6 +56,7 @@ func TestIdentifierPatternRuleFindsIllegalColumnName(t *testing.T) {
 }
 
 func TestIdentifierPatternRuleFindsUnnamedIndex(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newIdentifierPatternRule(ruleIDIndexNamePatternRequire, "index", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -73,6 +76,7 @@ func TestIdentifierPatternRuleFindsUnnamedIndex(t *testing.T) {
 }
 
 func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		ruleID    string
@@ -105,6 +109,8 @@ func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newIdentifierKeywordRule(tt.ruleID, tt.subject, rule.LevelBlocker, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -126,6 +132,7 @@ func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
 }
 
 func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		ruleID    string
@@ -166,6 +173,8 @@ func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule, err := newIdentifierKeywordRule(tt.ruleID, tt.subject, rule.LevelBlocker, policy.RulePolicy{
 				Enabled: true,
 				Level:   rule.LevelBlocker,
@@ -187,6 +196,7 @@ func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
 }
 
 func TestIdentifierKeywordRuleFindsSharedReservedKeywordsForPostgreSQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newIdentifierKeywordRule(ruleIDTableNameKeywordForbid, "table", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -213,6 +223,7 @@ func TestIdentifierKeywordRuleFindsSharedReservedKeywordsForPostgreSQL(t *testin
 }
 
 func TestIdentifierKeywordRuleFindsPostgreSQLIndexReservedKeywords(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newIdentifierKeywordRule(ruleIDIndexNameKeywordForbid, "index", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -241,6 +252,7 @@ func TestIdentifierKeywordRuleFindsPostgreSQLIndexReservedKeywords(t *testing.T)
 }
 
 func TestIdentifierKeywordRuleDoesNotFlagSafePostgreSQLNames(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newIdentifierKeywordRule(ruleIDTableNameKeywordForbid, "table", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -267,6 +279,7 @@ func TestIdentifierKeywordRuleDoesNotFlagSafePostgreSQLNames(t *testing.T) {
 }
 
 func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		build        func(t *testing.T) rule.StatementRule
@@ -379,6 +392,8 @@ func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule := tt.build(t)
 
 			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
@@ -420,6 +435,7 @@ func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
 }
 
 func TestConstraintNamingRulesEvaluateExplicitNamesOnly(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		build      func(t *testing.T) rule.StatementRule
@@ -507,6 +523,8 @@ func TestConstraintNamingRulesEvaluateExplicitNamesOnly(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule := tt.build(t)
 
 			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
@@ -527,6 +545,7 @@ func TestConstraintNamingRulesEvaluateExplicitNamesOnly(t *testing.T) {
 }
 
 func TestPostgreSQLConstraintNamingRulesReuseSharedSelectors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		build        func(t *testing.T) rule.StatementRule
@@ -600,6 +619,8 @@ func TestPostgreSQLConstraintNamingRulesReuseSharedSelectors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			statementRule := tt.build(t)
 
 			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
@@ -641,6 +662,7 @@ func TestPostgreSQLConstraintNamingRulesReuseSharedSelectors(t *testing.T) {
 }
 
 func TestRegisterSkipsForeignKeyConstraintNamingWhenForeignKeysAreForbidden(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Policy{
 		Rules: map[string]policy.RulePolicy{
@@ -678,6 +700,7 @@ func TestRegisterSkipsForeignKeyConstraintNamingWhenForeignKeysAreForbidden(t *t
 }
 
 func TestImplicitPrimaryKeyConstraintNamingIsSkipped(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newNamingPrefixRule("ddl.constraint.primary_key.name.prefix.require", "primary key constraint", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -697,6 +720,7 @@ func TestImplicitPrimaryKeyConstraintNamingIsSkipped(t *testing.T) {
 }
 
 func TestForeignKeyConstraintNamingRulesAreSuppressedWhenForeignKeysAreForbidden(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Policy{
 		Rules: map[string]policy.RulePolicy{
@@ -744,6 +768,7 @@ func TestForeignKeyConstraintNamingRulesAreSuppressedWhenForeignKeysAreForbidden
 }
 
 func TestRicherPostgreSQLForeignKeyConstraintUsesSharedConstraintNamingRule(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -783,6 +808,7 @@ func TestRicherPostgreSQLForeignKeyConstraintUsesSharedConstraintNamingRule(t *t
 }
 
 func TestRicherPostgreSQLForeignKeyConstraintPassesSharedNamingRule(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -810,6 +836,7 @@ func TestRicherPostgreSQLForeignKeyConstraintPassesSharedNamingRule(t *testing.T
 }
 
 func TestRicherPostgreSQLInlineReferencesConstraintUsesSharedForeignKeyForbidRule(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Policy{
 		Rules: map[string]policy.RulePolicy{
@@ -855,6 +882,7 @@ func TestRicherPostgreSQLInlineReferencesConstraintUsesSharedForeignKeyForbidRul
 // ---------------------------------------------------------------------------
 
 func TestTableForeignKeyCrossSchemaAdvisoryFiresForExplicitCrossSchemaFK(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelNotice,
@@ -908,6 +936,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryFiresForExplicitCrossSchemaFK(t *test
 }
 
 func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForSameSchemaFK(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelNotice,
@@ -946,6 +975,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForSameSchemaFK(t *testing
 }
 
 func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForBareReference(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelNotice,
@@ -985,6 +1015,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForBareReference(t *testin
 }
 
 func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForMySQL(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newTableForeignKeyCrossSchemaAdvisoryRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelNotice,
@@ -1105,6 +1136,7 @@ func postgresAlterTableAddFKConstraint(constraintName string, columns []string, 
 }
 
 func TestForeignKeyNamingRuleGapAlterTableAddConstraintFKNotFound(t *testing.T) {
+	t.Parallel()
 	// Build a statement that represents ALTER TABLE ADD CONSTRAINT FK.
 	// The constraint name "bad_name" does not follow any naming convention.
 	statement := postgresAlterTableAddFKConstraint("bad_name", []string{"user_id"}, "users", []string{"id"})
@@ -1132,6 +1164,7 @@ func TestForeignKeyNamingRuleGapAlterTableAddConstraintFKNotFound(t *testing.T) 
 }
 
 func TestForeignKeyForbidRuleGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
+	t.Parallel()
 	statement := postgresAlterTableAddFKConstraint("fk_orders_user", []string{"user_id"}, "users", []string{"id"})
 
 	rule, err := newTableForeignKeyForbidRule(policy.RulePolicy{
@@ -1150,6 +1183,7 @@ func TestForeignKeyForbidRuleGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
 }
 
 func TestForeignKeyCrossSchemaAdvisoryGapAlterTableAddConstraintFKNotSeen(t *testing.T) {
+	t.Parallel()
 	statement := spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
@@ -1232,6 +1266,7 @@ func postgresAlterTableAddCheckConstraintWithProjection(constraintName string, c
 }
 
 func TestCheckNamingRule_AlterTableProjectedCheckNowFires(t *testing.T) {
+	t.Parallel()
 	// With extractor projecting CHECK into DDL.Constraints and the appliesTo
 	// gate widened via appliesToCreateTableOrAlterCheckConstraint, the naming
 	// rule now fires on ALTER TABLE ADD CONSTRAINT CHECK.
@@ -1260,6 +1295,7 @@ func TestCheckNamingRule_AlterTableProjectedCheckNowFires(t *testing.T) {
 }
 
 func TestCheckNamingRule_AlterTableProjectedCheckAppliesToNowWidened(t *testing.T) {
+	t.Parallel()
 	// With the widened appliesTo gate, ALTER TABLE ADD CONSTRAINT CHECK with
 	// projected constraints is now accepted by AppliesTo.
 	statement := postgresAlterTableAddCheckConstraintWithProjection("bad_name", []string{"amount"})
@@ -1279,6 +1315,7 @@ func TestCheckNamingRule_AlterTableProjectedCheckAppliesToNowWidened(t *testing.
 }
 
 func TestCheckNamingRuleGap_ProjectedConstraintWouldFireWithFixedAppliesTo(t *testing.T) {
+	t.Parallel()
 	// Simulate a CREATE TABLE statement with the same projected constraint.
 	// This proves the naming rule WOULD fire if AppliesTo accepted ALTER TABLE.
 	statement := postgresStatementWithConstraints(nil, nil,
@@ -1309,6 +1346,7 @@ func TestCheckNamingRuleGap_ProjectedConstraintWouldFireWithFixedAppliesTo(t *te
 }
 
 func TestCheckNamingRule_UnnamedProjectedCheckStillSkipped(t *testing.T) {
+	t.Parallel()
 	// Unnamed checks (empty Name) should be skipped by naming rules even with widened gate.
 	statement := postgresStatementWithConstraints(nil, nil,
 		spec.Constraint{Type: "check", Name: "", Columns: []string{"amount"}})
@@ -1332,6 +1370,7 @@ func TestCheckNamingRule_UnnamedProjectedCheckStillSkipped(t *testing.T) {
 }
 
 func TestCheckNamingRule_AlterTableAppliesToGatePrecedent(t *testing.T) {
+	t.Parallel()
 	// Both FK and CHECK naming rules now use analogous appliesTo functions
 	// that accept CREATE TABLE and their respective ALTER TABLE ADD CONSTRAINT forms.
 

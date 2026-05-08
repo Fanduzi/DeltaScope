@@ -15,6 +15,7 @@ import (
 )
 
 func TestExtractMapsPostgreSQLDropIndex(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "drop index idx_name;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -50,6 +51,7 @@ func TestExtractMapsPostgreSQLDropIndex(t *testing.T) {
 }
 
 func TestExtractMapsPostgreSQLRenameIndex(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "alter index idx_old rename to idx_new;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -85,6 +87,7 @@ func TestExtractMapsPostgreSQLRenameIndex(t *testing.T) {
 }
 
 func TestExtractPreservesPostgreSQLRenameIndexSchema(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "alter index accounting.idx_old rename to idx_new;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)

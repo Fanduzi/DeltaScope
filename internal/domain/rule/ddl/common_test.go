@@ -14,6 +14,7 @@ import (
 )
 
 func TestRegisterAlterRuleIDsStayStable(t *testing.T) {
+	t.Parallel()
 	got := []string{
 		ruleIDAlterModifyColumnTargetTypeFamilyAllowlist,
 		ruleIDAlterChangeColumnTargetTypeFamilyAllowlist,
@@ -55,6 +56,7 @@ func TestRegisterAlterRuleIDsStayStable(t *testing.T) {
 }
 
 func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
+	t.Parallel()
 	statement := alterStatement(
 		spec.Alter{
 			Action: "modify_column",
@@ -226,6 +228,7 @@ func TestRegisterAlterHelpersExposeSemanticPayloads(t *testing.T) {
 }
 
 func TestAppliesToStandaloneDDLAction(t *testing.T) {
+	t.Parallel()
 	dropIndexStatement := spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{

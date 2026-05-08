@@ -60,6 +60,7 @@ func (r testGlobalRule) EvaluateAll(ctx context.Context, statements []spec.State
 }
 
 func TestEvaluateProducesReportFlowOutput(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
@@ -109,6 +110,7 @@ func TestEvaluateProducesReportFlowOutput(t *testing.T) {
 }
 
 func TestEvaluateStatementsEnrichesFindingFromCatalogMetadata(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:         "dml.where.require",
@@ -142,6 +144,7 @@ func TestEvaluateStatementsEnrichesFindingFromCatalogMetadata(t *testing.T) {
 }
 
 func TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterGlobal(testGlobalRule{
 		id:      "audit.batch.notice",
@@ -174,6 +177,7 @@ func TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata(t *testing.T)
 }
 
 func TestEvaluateStatementsBuildsAggregateExplanations(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.where.require",
@@ -217,6 +221,7 @@ func TestEvaluateStatementsBuildsAggregateExplanations(t *testing.T) {
 }
 
 func TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "ddl.table.exists.create.forbid",
@@ -249,6 +254,7 @@ func TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMet
 }
 
 func TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "ddl.table.exists.create.forbid",
@@ -285,6 +291,7 @@ func TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMeta
 }
 
 func TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "dml.table.denylist.forbid",
@@ -317,6 +324,7 @@ func TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules(t *testin
 }
 
 func TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(testStatementRule{
 		id:      "ddl.table.drop.adaptive_hash.warn",

@@ -12,6 +12,7 @@ import (
 )
 
 func TestRenderEmptyResultReturnsEmptyJSONArray(t *testing.T) {
+	t.Parallel()
 	data, err := gitlabcodequality.Render(report.Result{}, gitlabcodequality.Options{})
 	if err != nil {
 		t.Fatalf("Render: %v", err)
@@ -22,6 +23,7 @@ func TestRenderEmptyResultReturnsEmptyJSONArray(t *testing.T) {
 }
 
 func TestRenderStatementFindingHasRequiredKeys(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{
 			{
@@ -73,6 +75,7 @@ func TestRenderStatementFindingHasRequiredKeys(t *testing.T) {
 }
 
 func TestRenderGlobalFindingHasRequiredKeys(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "global.policy.check", Level: rule.LevelNotice, Message: "global notice"},
@@ -101,6 +104,7 @@ func TestRenderGlobalFindingHasRequiredKeys(t *testing.T) {
 }
 
 func TestSeverityMapping(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		level    rule.Level
 		expected string
@@ -123,6 +127,7 @@ func TestSeverityMapping(t *testing.T) {
 }
 
 func TestSeverityMappingUnknown(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: "unknown", Message: "msg"},
@@ -135,6 +140,7 @@ func TestSeverityMappingUnknown(t *testing.T) {
 }
 
 func TestPathCleanupRemovesDotSlash(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: rule.LevelWarning, Message: "msg"},
@@ -150,6 +156,7 @@ func TestPathCleanupRemovesDotSlash(t *testing.T) {
 }
 
 func TestEmptyPathUsesDefault(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: rule.LevelWarning, Message: "msg"},
@@ -165,6 +172,7 @@ func TestEmptyPathUsesDefault(t *testing.T) {
 }
 
 func TestLineFallbackUsesStatementIndex(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{
 			{
@@ -186,6 +194,7 @@ func TestLineFallbackUsesStatementIndex(t *testing.T) {
 }
 
 func TestLineFallbackTo1(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: rule.LevelWarning, Message: "msg"},
@@ -202,6 +211,7 @@ func TestLineFallbackTo1(t *testing.T) {
 }
 
 func TestSuggestionAppendedToDescription(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{
@@ -230,6 +240,7 @@ func TestSuggestionAppendedToDescription(t *testing.T) {
 }
 
 func TestUnsupportedStatementsOmitted(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{
 			{
@@ -253,6 +264,7 @@ func TestUnsupportedStatementsOmitted(t *testing.T) {
 }
 
 func TestFingerprintDeterministic(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: rule.LevelWarning, Message: "msg"},
@@ -269,6 +281,7 @@ func TestFingerprintDeterministic(t *testing.T) {
 }
 
 func TestFingerprintDiffersOnDifferentInputs(t *testing.T) {
+	t.Parallel()
 	base := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "rule.a", Level: rule.LevelWarning, Message: "msg"},
@@ -292,6 +305,7 @@ func TestFingerprintDiffersOnDifferentInputs(t *testing.T) {
 }
 
 func TestFingerprintLength(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: rule.LevelWarning, Message: "msg"},
@@ -307,6 +321,7 @@ func TestFingerprintLength(t *testing.T) {
 }
 
 func TestOutputIsValidJSONArrayNoBOM(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{
 			{RuleID: "test", Level: rule.LevelWarning, Message: "msg"},
@@ -325,6 +340,7 @@ func TestOutputIsValidJSONArrayNoBOM(t *testing.T) {
 }
 
 func TestMultipleFindings(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{
 			{
@@ -357,6 +373,7 @@ func TestMultipleFindings(t *testing.T) {
 }
 
 func TestNoLocationUsesStatementIndexFallback(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{
 			{
@@ -378,6 +395,7 @@ func TestNoLocationUsesStatementIndexFallback(t *testing.T) {
 }
 
 func TestFindingWithLocationOverridesStatementIndex(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{
 			{

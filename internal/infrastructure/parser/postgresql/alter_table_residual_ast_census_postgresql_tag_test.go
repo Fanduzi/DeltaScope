@@ -146,6 +146,7 @@ func alterTableResidualBaselineForCase(t *testing.T, name, sql string) alterTabl
 }
 
 func TestPostgreSQLAlterTableResidualASTCensus(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL ALTER TABLE Residual Candidates AST Census ===")
 	t.Log("")
@@ -192,6 +193,7 @@ func TestPostgreSQLAlterTableResidualASTCensus(t *testing.T) {
 }
 
 func TestPostgreSQLAlterTableResidualTriggerScopeASTDetail(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== Trigger Scope AST Detail: ALL vs USER ===")
 	t.Log("")
@@ -245,6 +247,7 @@ func TestPostgreSQLAlterTableResidualTriggerScopeASTDetail(t *testing.T) {
 }
 
 func TestPostgreSQLAlterTableResidualReplicaIdentityASTDetail(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== Replica Identity AST Detail ===")
 	t.Log("")
@@ -356,6 +359,7 @@ func TestPostgreSQLAlterTableResidualReplicaIdentityASTDetail(t *testing.T) {
 }
 
 func TestPostgreSQLAlterTableResidualCurrentExtractionBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL ALTER TABLE Residual Current Extraction Baseline ===")
 	t.Log("")

@@ -15,6 +15,7 @@ import (
 // AST facts for REFRESH MATERIALIZED VIEW variants. This is a read-only
 // characterization test — no production code is modified.
 func TestPostgreSQLRefreshMaterializedViewASTCensus(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		sql  string
@@ -117,6 +118,7 @@ func refreshMatViewAssertASTFacts(t *testing.T, name string, node *pg_query.Node
 // DeltaScope parser/extractor normalizes all REFRESH MATERIALIZED VIEW
 // variants into DDL with the refresh_materialized_view operation.
 func TestPostgreSQLRefreshMaterializedViewCurrentExtractionBaseline(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name         string
 		sql          string

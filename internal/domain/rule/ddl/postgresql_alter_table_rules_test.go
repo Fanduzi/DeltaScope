@@ -19,6 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestDropColumnAdvisoryFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropColumnAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -49,6 +50,7 @@ func TestDropColumnAdvisoryFiresForPG(t *testing.T) {
 }
 
 func TestValidateConstraintAdvisoryFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewValidateConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -76,6 +78,7 @@ func TestValidateConstraintAdvisoryFiresForPG(t *testing.T) {
 }
 
 func TestAddColumnNullableNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNullableNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -116,6 +119,7 @@ func TestAddColumnNullableNoticeFiresForPG(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddColumnNullableSkipsNotNullWithDefault(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNullableNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -151,6 +155,7 @@ func TestAddColumnNullableSkipsNotNullWithDefault(t *testing.T) {
 }
 
 func TestAddColumnNullableSkipsNotNullNoDefault(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNullableNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -185,6 +190,7 @@ func TestAddColumnNullableSkipsNotNullNoDefault(t *testing.T) {
 }
 
 func TestAddColumnNullableSkipsHasDefault(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNullableNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -223,6 +229,7 @@ func TestAddColumnNullableSkipsHasDefault(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSetSchemaAdvisoryFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewSetSchemaAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -253,6 +260,7 @@ func TestSetSchemaAdvisoryFiresForPG(t *testing.T) {
 }
 
 func TestOwnerAdvisoryFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewOwnerAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -283,6 +291,7 @@ func TestOwnerAdvisoryFiresForPG(t *testing.T) {
 }
 
 func TestEnableTriggerNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewEnableTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -313,6 +322,7 @@ func TestEnableTriggerNoticeFiresForPG(t *testing.T) {
 }
 
 func TestDisableTriggerWarnFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewDisableTriggerWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -343,6 +353,7 @@ func TestDisableTriggerWarnFiresForPG(t *testing.T) {
 }
 
 func TestAttachPartitionAdvisoryFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewAttachPartitionAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -373,6 +384,7 @@ func TestAttachPartitionAdvisoryFiresForPG(t *testing.T) {
 }
 
 func TestDetachPartitionWarnFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewDetachPartitionWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -407,6 +419,7 @@ func TestDetachPartitionWarnFiresForPG(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSetLoggedNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewSetLoggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -437,6 +450,7 @@ func TestSetLoggedNoticeFiresForPG(t *testing.T) {
 }
 
 func TestSetUnloggedNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewSetUnloggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -467,6 +481,7 @@ func TestSetUnloggedNoticeFiresForPG(t *testing.T) {
 }
 
 func TestSetLoggedRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
 	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
 
 	rules := []struct {
@@ -503,6 +518,7 @@ func TestSetLoggedRulesSkipNonPGDialects(t *testing.T) {
 	for _, rl := range rules {
 		for _, dialect := range nonPGDialects {
 			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
 				stmt := rl.stmt
 				stmt.Dialect = dialect
 				if rl.r.AppliesTo(stmt) {
@@ -521,6 +537,7 @@ func TestSetLoggedRulesSkipNonPGDialects(t *testing.T) {
 }
 
 func TestSetLoggedRulesDoNotFireForSetTablespace(t *testing.T) {
+	t.Parallel()
 	loggedRule := mustNewSetLoggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 	unloggedRule := mustNewSetUnloggedNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
@@ -552,6 +569,7 @@ func TestSetLoggedRulesDoNotFireForSetTablespace(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestReplicaIdentityFullWarnFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -582,6 +600,7 @@ func TestReplicaIdentityFullWarnFiresForPG(t *testing.T) {
 }
 
 func TestReplicaIdentityNothingWarnFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewReplicaIdentityNothingWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -609,6 +628,7 @@ func TestReplicaIdentityNothingWarnFiresForPG(t *testing.T) {
 }
 
 func TestReplicaIdentityUsingIndexNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewReplicaIdentityUsingIndexNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -643,6 +663,7 @@ func TestReplicaIdentityUsingIndexNoticeFiresForPG(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestReplicaIdentityDefaultDoesNotFire(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
 		mustNewReplicaIdentityNothingWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -673,6 +694,7 @@ func TestReplicaIdentityDefaultDoesNotFire(t *testing.T) {
 }
 
 func TestReplicaIdentityRulesSkipWrongAction(t *testing.T) {
+	t.Parallel()
 	r := mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -700,6 +722,7 @@ func TestReplicaIdentityRulesSkipWrongAction(t *testing.T) {
 }
 
 func TestReplicaIdentityRulesSkipWrongIdentityOption(t *testing.T) {
+	t.Parallel()
 	r := mustNewReplicaIdentityFullWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -724,6 +747,7 @@ func TestReplicaIdentityRulesSkipWrongIdentityOption(t *testing.T) {
 }
 
 func TestReplicaIdentityRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
 	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
 
 	replicaStmt := spec.Statement{
@@ -749,6 +773,7 @@ func TestReplicaIdentityRulesSkipNonPGDialects(t *testing.T) {
 	for _, rl := range rules {
 		for _, dialect := range nonPGDialects {
 			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
 				stmt := replicaStmt
 				stmt.Dialect = dialect
 				if rl.r.AppliesTo(stmt) {
@@ -767,6 +792,7 @@ func TestReplicaIdentityRulesSkipNonPGDialects(t *testing.T) {
 }
 
 func TestTriggerRulesStillFireOnceForTriggerALL(t *testing.T) {
+	t.Parallel()
 	enableRule := mustNewEnableTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 	disableRule := mustNewDisableTriggerWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -815,6 +841,7 @@ func TestTriggerRulesStillFireOnceForTriggerALL(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
 	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
 
 	baseStmt := spec.Statement{
@@ -1009,6 +1036,7 @@ func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
 	for _, rl := range rules {
 		for _, dialect := range nonPGDialects {
 			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
 				stmt := rl.stmt
 				stmt.Dialect = dialect
 				if rl.r.AppliesTo(stmt) {
@@ -1027,6 +1055,7 @@ func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
 }
 
 func TestPGAlterTableRulesSkipWrongAction(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropColumnAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -1058,6 +1087,7 @@ func TestPGAlterTableRulesSkipWrongAction(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -1089,6 +1119,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 	}
 
 	t.Run("drop_column_advisory_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -1115,6 +1146,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 	})
 
 	t.Run("validate_constraint_advisory_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -1141,6 +1173,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 	})
 
 	t.Run("pg_alter_table_rules_do_not_fire_for_mysql", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -1176,6 +1209,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 }
 
 func TestDefaultPolicyIncludesPGAlterTableRules(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	expected := []struct {
@@ -1196,6 +1230,7 @@ func TestDefaultPolicyIncludesPGAlterTableRules(t *testing.T) {
 
 	for _, exp := range expected {
 		t.Run(exp.id, func(t *testing.T) {
+			t.Parallel()
 			p, ok := cfg.Rules[exp.id]
 			if !ok {
 				t.Fatalf("expected default policy to include %q", exp.id)

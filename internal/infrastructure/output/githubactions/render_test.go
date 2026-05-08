@@ -15,6 +15,7 @@ import (
 )
 
 func TestRenderMapsBlockerToError(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -42,6 +43,7 @@ func TestRenderMapsBlockerToError(t *testing.T) {
 }
 
 func TestRenderMapsWarningToWarning(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -69,6 +71,7 @@ func TestRenderMapsWarningToWarning(t *testing.T) {
 }
 
 func TestRenderMapsNoticeToNotice(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		GlobalFindings: []rule.Finding{{
 			RuleID:  "audit.batch.notice",
@@ -89,6 +92,7 @@ func TestRenderMapsNoticeToNotice(t *testing.T) {
 }
 
 func TestRenderIncludesLocationWhenPresent(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -120,6 +124,7 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 }
 
 func TestRenderIncludesFilePathWhenProvided(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -151,6 +156,7 @@ func TestRenderIncludesFilePathWhenProvided(t *testing.T) {
 }
 
 func TestRenderOmitsLocationWhenAbsent(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -175,6 +181,7 @@ func TestRenderOmitsLocationWhenAbsent(t *testing.T) {
 }
 
 func TestRenderLocationWithoutPathOmitsFile(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -209,6 +216,7 @@ func TestRenderLocationWithoutPathOmitsFile(t *testing.T) {
 }
 
 func TestRenderUnsupportedAsNotice(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Unsupported: []spec.UnsupportedDetail{
 			{Index: 0, Feature: "select", Reason: "not supported"},
@@ -230,6 +238,7 @@ func TestRenderUnsupportedAsNotice(t *testing.T) {
 }
 
 func TestRenderEmptyResultProducesNoAnnotations(t *testing.T) {
+	t.Parallel()
 	result := report.Result{Verdict: report.VerdictPass}
 
 	output, err := Render(result, Options{})
@@ -243,6 +252,7 @@ func TestRenderEmptyResultProducesNoAnnotations(t *testing.T) {
 }
 
 func TestRenderEscapesSpecialCharacters(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,

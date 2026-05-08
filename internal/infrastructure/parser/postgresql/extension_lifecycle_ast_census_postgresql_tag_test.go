@@ -73,6 +73,7 @@ var pgExtensionLifecycleCensusCases = []struct {
 // PostgreSQL extension lifecycle DDL candidates. This is a read-only
 // characterization test — no production code is modified.
 func TestExtensionLifecycleASTCensus(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Extension Lifecycle AST Census ===")
 	t.Logf("%-40s | %-30s | %s", "Case", "Node Kind", "AST Facts")
@@ -322,6 +323,7 @@ func assertExtensionLifecycleASTFacts(t *testing.T, fact extensionLifecycleASTFa
 // candidates. This is a read-only characterization test — no production
 // code is modified.
 func TestExtensionLifecycleDeltaScopeBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Extension Lifecycle DeltaScope Baseline ===")
 	t.Logf("%-40s | %-10s | %-5s | %-12s | %s",

@@ -12,6 +12,7 @@ import (
 )
 
 func TestVerdictPass(t *testing.T) {
+	t.Parallel()
 	result := Aggregate(nil, nil)
 
 	if result.Verdict != VerdictPass {
@@ -23,6 +24,7 @@ func TestVerdictPass(t *testing.T) {
 }
 
 func TestVerdictReview(t *testing.T) {
+	t.Parallel()
 	result := Aggregate(nil, []rule.Finding{
 		{RuleID: "ddl.table.comment.require", Level: rule.LevelWarning, Message: "table comment is recommended"},
 	})
@@ -39,6 +41,7 @@ func TestVerdictReview(t *testing.T) {
 }
 
 func TestVerdictReject(t *testing.T) {
+	t.Parallel()
 	result := Aggregate(nil, []rule.Finding{
 		{RuleID: "dml.where.require", Level: rule.LevelBlocker, Message: "where clause is required"},
 		{RuleID: "ddl.table.comment.require", Level: rule.LevelWarning, Message: "table comment is recommended"},
@@ -56,6 +59,7 @@ func TestVerdictReject(t *testing.T) {
 }
 
 func TestAggregatePreservesStatementExplanation(t *testing.T) {
+	t.Parallel()
 	result := Aggregate([]StatementResult{{
 		Index: 0,
 		Kind:  "dml",
@@ -85,6 +89,7 @@ func TestAggregatePreservesStatementExplanation(t *testing.T) {
 }
 
 func TestAggregatePreservesStatementImpact(t *testing.T) {
+	t.Parallel()
 	result := Aggregate([]StatementResult{{
 		Index: 0,
 		Kind:  "dml",
@@ -110,6 +115,7 @@ func TestAggregatePreservesStatementImpact(t *testing.T) {
 }
 
 func TestAggregatePreservesVerdictSemanticsWithExplanation(t *testing.T) {
+	t.Parallel()
 	result := Aggregate([]StatementResult{{
 		Index: 0,
 		Kind:  "ddl",
@@ -140,6 +146,7 @@ func TestAggregatePreservesVerdictSemanticsWithExplanation(t *testing.T) {
 }
 
 func TestAggregateBuildsStatementExplanationFromFindings(t *testing.T) {
+	t.Parallel()
 	result := Aggregate([]StatementResult{{
 		Index: 0,
 		Kind:  "dml",
@@ -169,6 +176,7 @@ func TestAggregateBuildsStatementExplanationFromFindings(t *testing.T) {
 }
 
 func TestAggregateBuildsResultExplanationFromAggregateFindings(t *testing.T) {
+	t.Parallel()
 	result := Aggregate([]StatementResult{{
 		Index: 0,
 		Kind:  "dml",
@@ -198,6 +206,7 @@ func TestAggregateBuildsResultExplanationFromAggregateFindings(t *testing.T) {
 }
 
 func TestAggregateKeepsDistinctReasonsWhenMessagesMatch(t *testing.T) {
+	t.Parallel()
 	result := Aggregate([]StatementResult{{
 		Index: 0,
 		Kind:  "ddl",
@@ -221,6 +230,7 @@ func TestAggregateKeepsDistinctReasonsWhenMessagesMatch(t *testing.T) {
 }
 
 func TestAggregatePreservesRuleSummary(t *testing.T) {
+	t.Parallel()
 	summary := &RuleSummary{
 		Loaded:     50,
 		Applicable: 46,

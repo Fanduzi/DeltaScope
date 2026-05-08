@@ -16,6 +16,7 @@ import (
 // REFRESH MATERIALIZED VIEW. This is a read-only characterization test — no
 // production code is modified.
 func TestPostgreSQLObjectLifecycleASTCensus(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name string
 		SQL  string
@@ -174,6 +175,7 @@ func dropObjectName(stmt *pg_query.DropStmt) string {
 // DeltaScope pipeline classifies and extracts the object lifecycle DDL
 // candidates. No production code is modified.
 func TestPostgreSQLObjectLifecycleClassification(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name string
 		SQL  string

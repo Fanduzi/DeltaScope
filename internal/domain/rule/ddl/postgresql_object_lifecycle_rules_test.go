@@ -19,6 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestDropSchemaAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropSchemaAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -48,6 +49,7 @@ func TestDropSchemaAdvisoryRule(t *testing.T) {
 }
 
 func TestDropSchemaCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropSchemaCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -74,6 +76,7 @@ func TestDropSchemaCascadeWarnRule(t *testing.T) {
 }
 
 func TestCreateSequenceCycleWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateSequenceCycleWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -100,6 +103,7 @@ func TestCreateSequenceCycleWarnRule(t *testing.T) {
 }
 
 func TestAlterSequenceRestartWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterSequenceRestartWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -123,6 +127,7 @@ func TestAlterSequenceRestartWarnRule(t *testing.T) {
 }
 
 func TestAlterSequenceCycleWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterSequenceCycleWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -146,6 +151,7 @@ func TestAlterSequenceCycleWarnRule(t *testing.T) {
 }
 
 func TestDropSequenceAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropSequenceAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -171,6 +177,7 @@ func TestDropSequenceAdvisoryRule(t *testing.T) {
 }
 
 func TestDropSequenceCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropSequenceCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -194,6 +201,7 @@ func TestDropSequenceCascadeWarnRule(t *testing.T) {
 }
 
 func TestDropMaterializedViewAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropMaterializedViewAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -219,6 +227,7 @@ func TestDropMaterializedViewAdvisoryRule(t *testing.T) {
 }
 
 func TestDropMaterializedViewCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropMaterializedViewCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -246,6 +255,7 @@ func TestDropMaterializedViewCascadeWarnRule(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPGObjectLifecycleRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
 	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
 
 	rules := []struct {
@@ -363,6 +373,7 @@ func TestPGObjectLifecycleRulesSkipNonPGDialects(t *testing.T) {
 	for _, rl := range rules {
 		for _, dialect := range nonPGDialects {
 			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
 				stmt := rl.stmt
 				stmt.Dialect = dialect
 				if rl.r.AppliesTo(stmt) {
@@ -381,6 +392,7 @@ func TestPGObjectLifecycleRulesSkipNonPGDialects(t *testing.T) {
 }
 
 func TestPGObjectLifecycleCascadeRulesSkipWithoutCascade(t *testing.T) {
+	t.Parallel()
 	cascadeRules := []struct {
 		name string
 		r    rule.StatementRule
@@ -429,6 +441,7 @@ func TestPGObjectLifecycleCascadeRulesSkipWithoutCascade(t *testing.T) {
 
 	for _, rl := range cascadeRules {
 		t.Run(rl.name, func(t *testing.T) {
+			t.Parallel()
 			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
@@ -441,6 +454,7 @@ func TestPGObjectLifecycleCascadeRulesSkipWithoutCascade(t *testing.T) {
 }
 
 func TestPGObjectLifecycleOptionRulesSkipWithoutOption(t *testing.T) {
+	t.Parallel()
 	optionRules := []struct {
 		name string
 		r    rule.StatementRule
@@ -486,6 +500,7 @@ func TestPGObjectLifecycleOptionRulesSkipWithoutOption(t *testing.T) {
 
 	for _, rl := range optionRules {
 		t.Run(rl.name, func(t *testing.T) {
+			t.Parallel()
 			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
@@ -498,6 +513,7 @@ func TestPGObjectLifecycleOptionRulesSkipWithoutOption(t *testing.T) {
 }
 
 func TestPGObjectLifecycleRulesSkipWrongOperation(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropSchemaAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -523,6 +539,7 @@ func TestPGObjectLifecycleRulesSkipWrongOperation(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -549,6 +566,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 	}
 
 	t.Run("drop_schema_advisory_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -574,6 +592,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("create_sequence_cycle_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -600,6 +619,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 	})
 
 	t.Run("pg_lifecycle_rules_do_not_fire_for_mysql", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -633,6 +653,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 }
 
 func TestDefaultPolicyIncludesPGObjectLifecycleRules(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	expected := []struct {
@@ -653,6 +674,7 @@ func TestDefaultPolicyIncludesPGObjectLifecycleRules(t *testing.T) {
 
 	for _, exp := range expected {
 		t.Run(exp.id, func(t *testing.T) {
+			t.Parallel()
 			p, ok := cfg.Rules[exp.id]
 			if !ok {
 				t.Fatalf("expected default policy to include %q", exp.id)
@@ -668,6 +690,7 @@ func TestDefaultPolicyIncludesPGObjectLifecycleRules(t *testing.T) {
 }
 
 func TestDefaultPolicyExcludesPGRulesFromMySQL(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 	pgPrefixes := []string{
 		"ddl.pg.drop_schema",

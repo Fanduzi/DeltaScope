@@ -13,6 +13,7 @@ import (
 )
 
 func TestExtractMapsCreateTable(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table users (id bigint unsigned not null auto_increment comment 'pk', name varchar(32) default 'guest' comment 'name', body text comment 'body', created_at datetime not null default current_timestamp comment 'created', updated_at datetime not null default current_timestamp on update current_timestamp comment 'updated', primary key (id), key idx_name (name), unique key uniq_name (name), fulltext key full_body (body)) comment='user table';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -98,6 +99,7 @@ func TestExtractMapsCreateTable(t *testing.T) {
 }
 
 func TestExtractMapsConstraintNamesForNamingGovernance(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table orders (id bigint, user_id bigint, email varchar(64), amount bigint, constraint pk_orders primary key (id), constraint uk_orders_user unique key (user_id), unique key (email), constraint fk_orders_user foreign key (user_id) references users(id), constraint chk_orders_amount check (amount > 0), check (amount < 1000)) comment='orders';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -142,6 +144,7 @@ func TestExtractMapsConstraintNamesForNamingGovernance(t *testing.T) {
 }
 
 func TestExtractPreservesBacktickedKeywordsAndUnnamedIndexes(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table `select` (`from` bigint unsigned not null auto_increment comment 'pk', `group` varchar(32) comment 'group', primary key (`from`), key (`group`), key `order` (`group`)) comment='keyword table';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -177,6 +180,7 @@ func TestExtractPreservesBacktickedKeywordsAndUnnamedIndexes(t *testing.T) {
 }
 
 func TestExtractMapsColumnCharsetAndCollationFacts(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table users (name varchar(32) character set utf8mb4 collate utf8mb4_bin comment 'name', alias char(16) character set utf8 comment 'alias', payload json comment 'payload') comment='users';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -203,6 +207,7 @@ func TestExtractMapsColumnCharsetAndCollationFacts(t *testing.T) {
 }
 
 func TestExtractMapsCreateTableRowFormatAndAutoIncrementOptions(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table users (id bigint unsigned not null auto_increment comment 'id', primary key (id)) row_format=dynamic auto_increment=42 comment='users';", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -229,7 +234,9 @@ func TestExtractMapsCreateTableRowFormatAndAutoIncrementOptions(t *testing.T) {
 }
 
 func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
+	t.Parallel()
 	t.Run("maps create view", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "create view active_users as select id from users;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -255,6 +262,7 @@ func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
 	})
 
 	t.Run("maps drop table", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "drop table if exists users;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -277,6 +285,7 @@ func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
 	})
 
 	t.Run("maps truncate table", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "truncate table users;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -301,7 +310,9 @@ func TestExtractMapsDDLObjectLifecycleOperations(t *testing.T) {
 }
 
 func TestExtractMapsDMLTargetTables(t *testing.T) {
+	t.Parallel()
 	t.Run("insert tracks the destination table", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "insert into users (id) values (1);", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -321,6 +332,7 @@ func TestExtractMapsDMLTargetTables(t *testing.T) {
 	})
 
 	t.Run("update tracks joined mutation tables once", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "update users u join accounts a on a.user_id = u.id set u.active = 1;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -340,6 +352,7 @@ func TestExtractMapsDMLTargetTables(t *testing.T) {
 	})
 
 	t.Run("delete tracks joined mutation tables once", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "delete users from users join accounts on accounts.user_id = users.id where accounts.closed = 1;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -360,7 +373,9 @@ func TestExtractMapsDMLTargetTables(t *testing.T) {
 }
 
 func TestExtractMapsAlterTable(t *testing.T) {
+	t.Parallel()
 	t.Run("maps representative alter shapes", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "alter table users add column age int not null default 0 comment 'age', drop column old_age, modify column age bigint null default 1 comment 'age2', change column old_name new_name bigint unsigned not null auto_increment comment 'name', rename column old_email to email, add unique index uniq_email (email), drop index idx_old, rename index idx_old to idx_new, engine=InnoDB, comment='user table';", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -548,6 +563,7 @@ func TestExtractMapsAlterTable(t *testing.T) {
 	})
 
 	t.Run("splits multi-column add into multiple alter records", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "alter table users add (city varchar(32), score bigint unsigned);", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -574,6 +590,7 @@ func TestExtractMapsAlterTable(t *testing.T) {
 	})
 
 	t.Run("keeps non-index add constraint out of index payloads", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "alter table users add constraint fk_users_account foreign key (account_id) references accounts(id);", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -601,6 +618,7 @@ func TestExtractMapsAlterTable(t *testing.T) {
 }
 
 func TestExtractMapsInsert(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "insert into users(id, name) values (1, 'a'), (2, 'b') on duplicate key update name = values(name);", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -627,6 +645,7 @@ func TestExtractMapsInsert(t *testing.T) {
 }
 
 func TestExtractMapsUpdate(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "update users set name = 'c' where id = 1;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -653,7 +672,9 @@ func TestExtractMapsUpdate(t *testing.T) {
 }
 
 func TestExtractMapsDMLPredicateShape(t *testing.T) {
+	t.Parallel()
 	t.Run("id equality extracts unique-equality shape", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "update users set status = 1 where id = 42;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -704,6 +725,7 @@ func TestExtractMapsDMLPredicateShape(t *testing.T) {
 	})
 
 	t.Run("delete without where attaches missing-where impact", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "delete from users;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -745,6 +767,7 @@ func TestExtractMapsDMLPredicateShape(t *testing.T) {
 	})
 
 	t.Run("generic equality stays unknown", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "update users set score = score + 1 where status = 1;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -771,6 +794,7 @@ func TestExtractMapsDMLPredicateShape(t *testing.T) {
 	})
 
 	t.Run("delete join shape", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "delete u from users u join orders o on o.user_id = u.id where o.status = 'pending';", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -803,6 +827,7 @@ func TestExtractMapsDMLPredicateShape(t *testing.T) {
 	})
 
 	t.Run("subquery outside where stays unknown", func(t *testing.T) {
+		t.Parallel()
 		parsed, err := Parse(context.Background(), "update users set manager_id = (select id from admins limit 1) where status = 1;", spec.DialectMySQL)
 		if err != nil {
 			t.Fatalf("parse: %v", err)
@@ -833,6 +858,7 @@ func TestExtractMapsDMLPredicateShape(t *testing.T) {
 }
 
 func TestExtractMapsDelete(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "delete from users where id = 1 limit 1;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -862,6 +888,7 @@ func TestExtractMapsDelete(t *testing.T) {
 }
 
 func TestExtractDistinguishesJoinWithoutOn(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "update users u join accounts a set u.name = 'c' where u.id = a.user_id;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -885,6 +912,7 @@ func TestExtractDistinguishesJoinWithoutOn(t *testing.T) {
 }
 
 func TestExtractMapsInsertSelect(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "insert into users(id, name) select id, name from staging_users;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -905,6 +933,7 @@ func TestExtractMapsInsertSelect(t *testing.T) {
 }
 
 func TestExtractLeavesUnknownStatementsAvailableForLaterLayers(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "select 1;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -927,6 +956,7 @@ func TestExtractLeavesUnknownStatementsAvailableForLaterLayers(t *testing.T) {
 }
 
 func TestExtractMapsCreateTableLike(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table users_copy like users;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -942,6 +972,7 @@ func TestExtractMapsCreateTableLike(t *testing.T) {
 }
 
 func TestExtractMapsCreateTableAsSelect(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table users_copy as select * from users;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -957,6 +988,7 @@ func TestExtractMapsCreateTableAsSelect(t *testing.T) {
 }
 
 func TestExtractMapsCreateTablePartition(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table users (id bigint primary key) partition by hash(id) partitions 4;", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)

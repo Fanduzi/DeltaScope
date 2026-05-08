@@ -21,6 +21,7 @@ delete from users;`
 // TestSourceLocationStatementLinePopulated verifies that Parse+Extract
 // populates spec.Statement.Line with the correct statement-start line number.
 func TestSourceLocationStatementLinePopulated(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), locationFidelityMultiStmtSQL, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -55,6 +56,7 @@ func TestSourceLocationStatementLinePopulated(t *testing.T) {
 // TestSourceLocationFindingLocationPopulated verifies that rule.Finding.Location
 // is populated for DML findings from multi-line SQL.
 func TestSourceLocationFindingLocationPopulated(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     locationFidelityMultiStmtSQL,
 		Dialect: spec.DialectMySQL,
@@ -90,6 +92,7 @@ func TestSourceLocationFindingLocationPopulated(t *testing.T) {
 // TestSourceLocationParsedStatementHasRawSQL confirms that RawSQL is populated
 // for both statements, proving progressive matching has viable input.
 func TestSourceLocationParsedStatementHasRawSQL(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), locationFidelityMultiStmtSQL, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -116,6 +119,7 @@ func TestSourceLocationParsedStatementHasRawSQL(t *testing.T) {
 // TestSourceLocationTiDBSameAsMySQL verifies that TiDB also gets correct
 // statement-start line numbers through the same source mapper.
 func TestSourceLocationTiDBSameAsMySQL(t *testing.T) {
+	t.Parallel()
 	parsed, err := Parse(context.Background(), locationFidelityMultiStmtSQL, spec.DialectTiDB)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -142,6 +146,7 @@ func TestSourceLocationTiDBSameAsMySQL(t *testing.T) {
 // returns Location.Line=42 and the statement has Line=9, the final finding
 // must retain Line=42.
 func TestSourceLocationRuleProvidedLocationPreserved(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := registry.RegisterStatement(&locationOverrideRule{}); err != nil {
 		t.Fatalf("register rule: %v", err)

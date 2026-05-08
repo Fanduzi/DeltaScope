@@ -138,6 +138,7 @@ func assertHasPostgreSQLSyntaxNotice(t *testing.T, result report.Result, token s
 }
 
 func TestAuditPostgreSQLSyntaxNoticeProvidesExplicitTrustGuidance(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "insert into users(id) values (1) returning id;",
 		Dialect: spec.DialectMySQL,
@@ -192,6 +193,7 @@ func assertHasNoPostgreSQLSyntaxNotice(t *testing.T, result report.Result) {
 }
 
 func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
+	t.Parallel()
 	_, err := AuditSQL(context.Background(), Request{
 		SQL:     "select 1;",
 		Dialect: spec.DialectPostgreSQL,
@@ -205,6 +207,7 @@ func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
 }
 
 func TestAuditAddsPostgreSQLSyntaxNoticeForReturning(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "insert into users(id) values (1) returning id;",
 		Dialect: spec.DialectMySQL,
@@ -219,6 +222,7 @@ func TestAuditAddsPostgreSQLSyntaxNoticeForReturning(t *testing.T) {
 }
 
 func TestAuditAddsPostgreSQLSyntaxNoticeForOnConflict(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "insert into users(id) values (1) on conflict (id) do nothing;",
 		Dialect: spec.DialectTiDB,
@@ -230,6 +234,7 @@ func TestAuditAddsPostgreSQLSyntaxNoticeForOnConflict(t *testing.T) {
 }
 
 func TestAuditAddsPostgreSQLSyntaxNoticeForTypeCast(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "select id::bigint from users;",
 		Dialect: spec.DialectMySQL,
@@ -241,6 +246,7 @@ func TestAuditAddsPostgreSQLSyntaxNoticeForTypeCast(t *testing.T) {
 }
 
 func TestAuditAddsPostgreSQLSyntaxNoticeForAlterColumnTypeUsing(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter table users alter column score type bigint using abs(score);",
 		Dialect: spec.DialectMySQL,
@@ -252,6 +258,7 @@ func TestAuditAddsPostgreSQLSyntaxNoticeForAlterColumnTypeUsing(t *testing.T) {
 }
 
 func TestAuditSQLMySQLSerialDoesNotAddGlobalNotice(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table users (id serial primary key);",
 		Dialect: spec.DialectMySQL,
@@ -266,6 +273,7 @@ func TestAuditSQLMySQLSerialDoesNotAddGlobalNotice(t *testing.T) {
 }
 
 func TestAuditSQLTiDBSerialDoesNotAddGlobalNotice(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table users (id serial primary key);",
 		Dialect: spec.DialectTiDB,
@@ -277,6 +285,7 @@ func TestAuditSQLTiDBSerialDoesNotAddGlobalNotice(t *testing.T) {
 }
 
 func TestAuditDoesNotAddPostgreSQLSyntaxNoticeWhenDialectExplicitlyPostgreSQL(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "insert into users(id) values (1) returning id;",
 		Dialect: spec.DialectPostgreSQL,
@@ -288,6 +297,7 @@ func TestAuditDoesNotAddPostgreSQLSyntaxNoticeWhenDialectExplicitlyPostgreSQL(t 
 }
 
 func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForMySQLSQL(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table users (id bigint primary key) comment='users';",
 		Dialect: spec.DialectMySQL,
@@ -299,6 +309,7 @@ func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForMySQLSQL(t *testing.T) {
 }
 
 func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideStringLiteral(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "select 'returning' as note;",
 		Dialect: spec.DialectMySQL,
@@ -310,6 +321,7 @@ func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideStringLiteral(t *tes
 }
 
 func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideBlockComment(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "select 1 /* returning */;",
 		Dialect: spec.DialectMySQL,
@@ -321,6 +333,7 @@ func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideBlockComment(t *test
 }
 
 func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideLineComment(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "select 1 -- returning\n;",
 		Dialect: spec.DialectMySQL,
@@ -332,6 +345,7 @@ func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideLineComment(t *testi
 }
 
 func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideBacktickIdentifier(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "select `returning` from users;",
 		Dialect: spec.DialectMySQL,
@@ -343,6 +357,7 @@ func TestAuditDoesNotAddPostgreSQLSyntaxNoticeForTokenInsideBacktickIdentifier(t
 }
 
 func TestAuditSQLUsesDefaultPolicy(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "delete from users",
 		Dialect: spec.DialectMySQL,
@@ -363,6 +378,7 @@ func TestAuditSQLUsesDefaultPolicy(t *testing.T) {
 }
 
 func TestAuditSQLMySQLDefaultPolicyDialectHygiene(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     defaultPolicyMySQLDialectHygieneSmokeSQL,
 		Dialect: spec.DialectMySQL,
@@ -377,6 +393,7 @@ func TestAuditSQLMySQLDefaultPolicyDialectHygiene(t *testing.T) {
 }
 
 func TestAuditSQLTiDBDefaultPolicyDialectHygiene(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     defaultPolicyMySQLDialectHygieneSmokeSQL,
 		Dialect: spec.DialectTiDB,
@@ -391,6 +408,7 @@ func TestAuditSQLTiDBDefaultPolicyDialectHygiene(t *testing.T) {
 }
 
 func TestAuditSQLAppliesConfigOverride(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "deltascope.yaml")
 	content := []byte(`
@@ -420,6 +438,7 @@ rules:
 }
 
 func TestAuditSQLTriggersNamingGovernanceFromConfig(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "deltascope.yaml")
 	content := []byte(`
@@ -460,6 +479,7 @@ rules:
 }
 
 func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "delete from users; update accounts set active = 0",
 		Dialect: spec.DialectMySQL,
@@ -477,6 +497,7 @@ func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {
 }
 
 func TestMetadataRequestForMergesTopLevelAndLegacyFields(t *testing.T) {
+	t.Parallel()
 	legacyProvider := &fakeMetadataProvider{}
 	topLevelProvider := &fakeMetadataProvider{}
 
@@ -532,6 +553,8 @@ func TestMetadataRequestForMergesTopLevelAndLegacyFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			got := metadataRequestFor(tt.request)
 			if tt.wantNil {
 				if got != nil {
@@ -553,6 +576,7 @@ func TestMetadataRequestForMergesTopLevelAndLegacyFields(t *testing.T) {
 }
 
 func TestAuditSQLMergesTopLevelSchemaWithLegacyMetadataProvider(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{
 			Version:                "8.0.36",
@@ -589,6 +613,7 @@ func TestAuditSQLMergesTopLevelSchemaWithLegacyMetadataProvider(t *testing.T) {
 }
 
 func TestAuditSQLUsesTopLevelMetadataRequestFields(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{
 			Version:                "8.0.36",
@@ -623,6 +648,7 @@ func TestAuditSQLUsesTopLevelMetadataRequestFields(t *testing.T) {
 }
 
 func TestAuditSQLMetadataRefinesStatementImpact(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists: true,
@@ -668,6 +694,7 @@ func TestAuditSQLMetadataRefinesStatementImpact(t *testing.T) {
 }
 
 func TestAuditSQLMetadataRequestProviderAppliesPlannerEstimate(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		snapshot: &spec.TableSnapshot{
 			Exists: true,
@@ -720,6 +747,7 @@ func TestAuditSQLMetadataRequestProviderAppliesPlannerEstimate(t *testing.T) {
 }
 
 func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{
 			Version:                "8.0.36",
@@ -772,6 +800,7 @@ func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.
 }
 
 func TestEnrichStatementsWithMetadataResolvesStandaloneIndexOwnerWhenAvailable(t *testing.T) {
+	t.Parallel()
 	provider := &fakeMetadataProvider{
 		instance:   &spec.InstanceFacts{Version: "16.2"},
 		indexTable: "users",
@@ -806,6 +835,7 @@ func TestEnrichStatementsWithMetadataResolvesStandaloneIndexOwnerWhenAvailable(t
 }
 
 func TestEnrichStatementsWithMetadataSkipsStandaloneIndexOwnerWithoutResolver(t *testing.T) {
+	t.Parallel()
 	provider := metadataOnlyProvider{
 		instance: &spec.InstanceFacts{Version: "16.2"},
 	}
@@ -854,6 +884,7 @@ func (p metadataOnlyProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialec
 }
 
 func TestEnrichStatementsWithMetadataPreservesSchemaContextWithoutProvider(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{
 		{Kind: spec.KindDML, Dialect: spec.DialectMySQL, DML: &spec.DML{Operation: spec.DMLOperationDelete, Tables: []spec.Table{{Name: "users"}}}},
 	}
@@ -871,6 +902,7 @@ func TestEnrichStatementsWithMetadataPreservesSchemaContextWithoutProvider(t *te
 }
 
 func TestAuditIncludesRuleSummary(t *testing.T) {
+	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "create table users (id bigint primary key) comment='users';",
 		Dialect: spec.DialectMySQL,
@@ -899,6 +931,7 @@ func TestAuditIncludesRuleSummary(t *testing.T) {
 }
 
 func TestEnrichStatementsWithMetadataKeepsOfflinePathWhenProviderIsAbsent(t *testing.T) {
+	t.Parallel()
 	statements := []spec.Statement{
 		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Table: &spec.Table{Name: "users"}}},
 	}

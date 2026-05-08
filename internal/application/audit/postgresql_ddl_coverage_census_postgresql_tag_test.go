@@ -239,6 +239,7 @@ var pgCorpusCovered = map[string]bool{
 // census for PostgreSQL DDL. It characterizes current behavior without
 // requiring production changes.
 func TestPostgreSQLDDLCoverageCensus(t *testing.T) {
+	t.Parallel()
 	var results []censusResult
 
 	for _, tc := range pgDDLCensusCases {

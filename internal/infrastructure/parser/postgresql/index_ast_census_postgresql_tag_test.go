@@ -14,6 +14,7 @@ import (
 // exactly what the parser exposes for partial, expression, INCLUDE, non-btree,
 // and CONCURRENTLY variants. No production code is modified.
 func TestPostgreSQLIndexASTCensus(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name         string
 		SQL          string

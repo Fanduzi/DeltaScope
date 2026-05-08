@@ -7,6 +7,7 @@ import (
 )
 
 func TestLocateStatementsMultiLineSecondStatement(t *testing.T) {
+	t.Parallel()
 	sql := `create table ok_users (
   id bigint unsigned not null auto_increment,
   primary key (id)
@@ -35,6 +36,7 @@ delete from users;`
 }
 
 func TestLocateStatementsHandlesLeadingNewlineInRawSQL(t *testing.T) {
+	t.Parallel()
 	sql := "create table t (id int);\n\ndelete from users;"
 
 	stmts := []ParsedStatement{
@@ -55,6 +57,7 @@ func TestLocateStatementsHandlesLeadingNewlineInRawSQL(t *testing.T) {
 }
 
 func TestLocateStatementsRepeatedStatementTextUsesProgressiveMatch(t *testing.T) {
+	t.Parallel()
 	sql := "delete from users;\n\ndelete from users;"
 
 	stmts := []ParsedStatement{
@@ -72,6 +75,7 @@ func TestLocateStatementsRepeatedStatementTextUsesProgressiveMatch(t *testing.T)
 }
 
 func TestLocateStatementsSkipsBlankLines(t *testing.T) {
+	t.Parallel()
 	sql := "\n\n\ncreate table t (id int);"
 
 	stmts := []ParsedStatement{
@@ -85,6 +89,7 @@ func TestLocateStatementsSkipsBlankLines(t *testing.T) {
 }
 
 func TestLocateStatementsFallbackLeavesZeroWhenNoMatch(t *testing.T) {
+	t.Parallel()
 	sql := "create table t (id int);"
 
 	stmts := []ParsedStatement{
@@ -101,6 +106,7 @@ func TestLocateStatementsFallbackLeavesZeroWhenNoMatch(t *testing.T) {
 }
 
 func TestAttachParsedStatementLocationsKeepsStatementCount(t *testing.T) {
+	t.Parallel()
 	sql := "select 1; select 2;"
 
 	original := []ParsedStatement{

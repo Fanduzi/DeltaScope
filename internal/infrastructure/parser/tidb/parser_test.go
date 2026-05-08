@@ -11,6 +11,7 @@ import (
 )
 
 func TestParserParsesMultiStatementSQL(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create table t1 (id bigint); update t1 set id = 2 where id = 1;")
@@ -27,6 +28,7 @@ func TestParserParsesMultiStatementSQL(t *testing.T) {
 }
 
 func TestParserReturnsErrorForInvalidSQL(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	_, err := parser.Parse(context.Background(), "create table")
@@ -36,6 +38,7 @@ func TestParserReturnsErrorForInvalidSQL(t *testing.T) {
 }
 
 func TestWrapStatementsReturnsExtractorBackedResults(t *testing.T) {
+	t.Parallel()
 	parser := New()
 
 	result, err := parser.Parse(context.Background(), "create table t1 (id bigint); update t1 set id = 2 where id = 1;")

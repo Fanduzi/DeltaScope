@@ -10,6 +10,7 @@ import (
 )
 
 func TestExtractIndexStmtPartial(t *testing.T) {
+	t.Parallel()
 	stmt := extractIndex(t, "CREATE INDEX idx_active ON users (email) WHERE active = true")
 
 	if stmt.Unsupported != nil {
@@ -29,6 +30,7 @@ func TestExtractIndexStmtPartial(t *testing.T) {
 }
 
 func TestExtractIndexStmtExpression(t *testing.T) {
+	t.Parallel()
 	stmt := extractIndex(t, "CREATE INDEX idx_lower ON users (LOWER(email))")
 
 	if stmt.Unsupported != nil {
@@ -47,6 +49,7 @@ func TestExtractIndexStmtExpression(t *testing.T) {
 }
 
 func TestExtractIndexStmtInclude(t *testing.T) {
+	t.Parallel()
 	stmt := extractIndex(t, "CREATE INDEX idx_cover ON users (email) INCLUDE (name, active)")
 
 	if stmt.Unsupported != nil {
@@ -63,6 +66,7 @@ func TestExtractIndexStmtInclude(t *testing.T) {
 }
 
 func TestExtractIndexStmtGin(t *testing.T) {
+	t.Parallel()
 	stmt := extractIndex(t, "CREATE INDEX idx_body ON docs USING gin (body)")
 
 	if stmt.Unsupported != nil {
@@ -73,6 +77,7 @@ func TestExtractIndexStmtGin(t *testing.T) {
 }
 
 func TestExtractIndexStmtConcurrentPartial(t *testing.T) {
+	t.Parallel()
 	stmt := extractIndex(t, "CREATE INDEX CONCURRENTLY idx_active ON users (email) WHERE active = true")
 
 	if stmt.Unsupported != nil {
@@ -88,6 +93,7 @@ func TestExtractIndexStmtConcurrentPartial(t *testing.T) {
 }
 
 func TestExtractIndexStmtNullsNotDistinctUnsupported(t *testing.T) {
+	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "CREATE INDEX idx_nulls ON t (col) NULLS NOT DISTINCT")
 	if err != nil {

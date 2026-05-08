@@ -18,6 +18,7 @@ import (
 // testdata/sql-corpus/postgresql through the full audit pipeline and
 // asserts expected behaviour.
 func TestSQLCorpusPostgreSQL(t *testing.T) {
+	t.Parallel()
 	corpusRoot := filepath.Join("..", "..", "..", "testdata", "sql-corpus", "postgresql")
 
 	entries, err := corpusExpectedFiles(corpusRoot)
@@ -31,6 +32,7 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 	for _, expPath := range entries {
 		rel, _ := filepath.Rel(corpusRoot, expPath)
 		t.Run(rel, func(t *testing.T) {
+			t.Parallel()
 			// Read sibling .sql.
 			sqlPath := expPath[:len(expPath)-len(".expected.yaml")] + ".sql"
 			sqlBytes, err := os.ReadFile(sqlPath)

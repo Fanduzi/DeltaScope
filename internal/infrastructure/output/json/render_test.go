@@ -14,6 +14,7 @@ import (
 )
 
 func TestRenderProducesStableJSONShape(t *testing.T) {
+	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictReject,
 		Summary: report.Summary{

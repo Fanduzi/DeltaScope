@@ -12,6 +12,7 @@ import (
 )
 
 func TestRulePolicyParams(t *testing.T) {
+	t.Parallel()
 	p := RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -31,6 +32,7 @@ func TestRulePolicyParams(t *testing.T) {
 }
 
 func TestDefaultMetadataExistenceRulesStayEnabled(t *testing.T) {
+	t.Parallel()
 	p := Default()
 
 	for _, ruleID := range []string{

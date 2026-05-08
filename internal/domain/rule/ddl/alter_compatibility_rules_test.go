@@ -15,6 +15,7 @@ import (
 )
 
 func TestAlterColumnCompatibilityRuleFindsBreakingTransitions(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newAlterColumnCompatibilityRule(ruleIDAlterModifyColumnCompatibilityRequire, "modify_column", "modify column", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"required": true},
@@ -58,6 +59,7 @@ func TestAlterColumnCompatibilityRuleFindsBreakingTransitions(t *testing.T) {
 }
 
 func TestAlterColumnCompatibilityRuleFindsFamilyChanges(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newAlterColumnCompatibilityRule(ruleIDAlterChangeColumnCompatibilityRequire, "change_column", "change column", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"required": true},
@@ -102,6 +104,7 @@ func TestAlterColumnCompatibilityRuleFindsFamilyChanges(t *testing.T) {
 }
 
 func TestAlterColumnCompatibilityRuleSkipsOfflineMode(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newAlterColumnCompatibilityRule(ruleIDAlterModifyColumnCompatibilityRequire, "modify_column", "modify column", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"required": true},
@@ -128,6 +131,7 @@ func TestAlterColumnCompatibilityRuleSkipsOfflineMode(t *testing.T) {
 }
 
 func TestAlterTableOptionCompatibilityRuleFlagsMetadataBackedChanges(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newAlterTableOptionCompatibilityRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,

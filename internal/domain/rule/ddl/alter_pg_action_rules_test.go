@@ -26,6 +26,7 @@ type pgAlterActionCase struct {
 }
 
 func TestPGAlterActionForbidRules(t *testing.T) {
+	t.Parallel()
 	pgForbidConfig := policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -47,6 +48,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 	for _, pg := range pgActions {
 		t.Run(pg.ruleID, func(t *testing.T) {
+			t.Parallel()
 			r, err := newForbiddenAlterActionRule(
 				pg.ruleID, pg.action, pg.label,
 				rule.LevelWarning, pgForbidConfig,
@@ -58,6 +60,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- Positive: PG + matching action -> 1 finding ---
 			t.Run("positive_pg_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -72,6 +75,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- Negative: MySQL + matching action -> 0 findings ---
 			t.Run("negative_mysql_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectMySQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -86,6 +90,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- Negative: TiDB + matching action -> 0 findings ---
 			t.Run("negative_tidb_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectTiDB,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -100,6 +105,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- Negative: PG + wrong action -> 0 findings ---
 			t.Run("negative_pg_wrong_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "modify_column", Name: "col1"},
 				)
@@ -114,6 +120,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- Negative: PG + add_column -> 0 findings ---
 			t.Run("negative_pg_add_column", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "add_column", Name: "col1"},
 				)
@@ -128,6 +135,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- AppliesTo boundary: PG + matching action -> AppliesTo() == true ---
 			t.Run("applies_to_pg_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -138,6 +146,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- AppliesTo boundary: MySQL + matching action -> AppliesTo() == false ---
 			t.Run("applies_to_mysql_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectMySQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -148,6 +157,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 
 			// --- AppliesTo boundary: forbid:false -> AppliesTo() == false ---
 			t.Run("applies_to_forbid_false", func(t *testing.T) {
+				t.Parallel()
 				noForbidConfig := policy.RulePolicy{
 					Enabled: true,
 					Level:   rule.LevelWarning,
@@ -173,6 +183,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 }
 
 func TestPGAlterActionForbidRulesForbidFalse(t *testing.T) {
+	t.Parallel()
 	// forbid:false -> Evaluate returns 0 findings even for PG + matching action
 	noForbidConfig := policy.RulePolicy{
 		Enabled: true,
@@ -200,6 +211,7 @@ func TestPGAlterActionForbidRulesForbidFalse(t *testing.T) {
 }
 
 func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
+	t.Parallel()
 	// Verify that existing rules (e.g. drop_column.forbid) without dialectAllowlist
 	// retain their old behavior: they fire for ANY dialect.
 	cfg := policy.RulePolicy{
@@ -225,6 +237,7 @@ func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
 		{spec.DialectUnknown},
 	} {
 		t.Run("dialect_"+string(tc.dialect), func(t *testing.T) {
+			t.Parallel()
 			stmt := alterStatementWithDialect(tc.dialect,
 				spec.Alter{Action: "drop_column", Name: "old_col"},
 			)
@@ -244,6 +257,7 @@ func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
 
 	// Also verify forbid:false still works as before
 	t.Run("forbid_false", func(t *testing.T) {
+		t.Parallel()
 		noForbidCfg := policy.RulePolicy{
 			Enabled: true,
 			Level:   rule.LevelWarning,
@@ -276,6 +290,7 @@ func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
 // state-transition forbid rules: drop_expression, set_generated, drop_identity.
 // These rules are registered in Register() and only fire for PostgreSQL dialect.
 func TestPGGeneratedIdentityForbidRules(t *testing.T) {
+	t.Parallel()
 	pgForbidConfig := policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -295,6 +310,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 	for _, pg := range pgGenIdentActions {
 		t.Run(pg.ruleID, func(t *testing.T) {
+			t.Parallel()
 			r, err := newForbiddenAlterActionRule(
 				pg.ruleID, pg.action, pg.label,
 				rule.LevelWarning, pgForbidConfig,
@@ -306,6 +322,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- Positive: PG + matching action -> 1 finding ---
 			t.Run("positive_pg_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -320,6 +337,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- Negative: MySQL + matching action -> 0 findings ---
 			t.Run("negative_mysql_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectMySQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -334,6 +352,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- Negative: TiDB + matching action -> 0 findings ---
 			t.Run("negative_tidb_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectTiDB,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -348,6 +367,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- Negative: PG + wrong action -> 0 findings ---
 			t.Run("negative_pg_wrong_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "modify_column", Name: "col1"},
 				)
@@ -362,6 +382,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- Negative: PG + add_column -> not caught by these rules ---
 			t.Run("negative_pg_add_column", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "add_column", Name: "col1"},
 				)
@@ -376,6 +397,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- AppliesTo boundary: PG + matching action -> true ---
 			t.Run("applies_to_pg_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -386,6 +408,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- AppliesTo boundary: MySQL + matching action -> false ---
 			t.Run("applies_to_mysql_matching_action", func(t *testing.T) {
+				t.Parallel()
 				stmt := alterStatementWithDialect(spec.DialectMySQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
@@ -396,6 +419,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 
 			// --- AppliesTo boundary: forbid:false -> false ---
 			t.Run("applies_to_forbid_false", func(t *testing.T) {
+				t.Parallel()
 				noForbidConfig := policy.RulePolicy{
 					Enabled: true,
 					Level:   rule.LevelWarning,
@@ -424,6 +448,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 // generated/identity forbid rules do NOT match any of the five existing
 // PG-native alter action values (set_data_type, set_default, etc.).
 func TestPGGeneratedIdentityForbidRulesNoCrossFire(t *testing.T) {
+	t.Parallel()
 	cfg := policy.RulePolicy{Enabled: true, Level: rule.LevelWarning, Params: map[string]any{"forbid": true}}
 
 	newActions := []struct {
@@ -449,6 +474,7 @@ func TestPGGeneratedIdentityForbidRulesNoCrossFire(t *testing.T) {
 
 		for _, existing := range existingPGActions {
 			t.Run(na.action+"_does_not_match_"+existing, func(t *testing.T) {
+				t.Parallel()
 				stmt := spec.Statement{
 					Kind:    spec.KindDDL,
 					Dialect: spec.DialectPostgreSQL,

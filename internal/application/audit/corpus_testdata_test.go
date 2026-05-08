@@ -157,6 +157,7 @@ func corpusExpectedFiles(corpusRoot string) ([]string, error) {
 }
 
 func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
+	t.Parallel()
 	corpusRoot := filepath.Join("..", "..", "..", "testdata", "sql-corpus")
 
 	entries, err := corpusExpectedFiles(corpusRoot)
@@ -170,6 +171,7 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 	for _, expPath := range entries {
 		name := filepath.Base(expPath)
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			// 1. Sibling .sql must exist.
 			sqlPath := expPath[:len(expPath)-len(".expected.yaml")] + ".sql"
 			if _, err := os.Stat(sqlPath); os.IsNotExist(err) {
@@ -288,6 +290,7 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 // TestSQLCorpusWalkerFindsActualCases is a sanity check that the walker
 // discovers the sample fixture added in Task 1.
 func TestSQLCorpusWalkerFindsActualCases(t *testing.T) {
+	t.Parallel()
 	corpusRoot := filepath.Join("..", "..", "..", "testdata", "sql-corpus")
 	matches, err := corpusExpectedFiles(corpusRoot)
 	if err != nil {

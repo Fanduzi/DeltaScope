@@ -11,6 +11,7 @@ import (
 )
 
 func TestNotValidConstraintValidateRequiredRule(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		stmts    []spec.Statement
@@ -110,6 +111,8 @@ func TestNotValidConstraintValidateRequiredRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			var r rule.GlobalRule
 			var err error
 			cfg := policy.RulePolicy{
@@ -142,6 +145,7 @@ func TestNotValidConstraintValidateRequiredRule(t *testing.T) {
 }
 
 func TestNotValidConstraintValidateRequiredRule_FindingMetadata(t *testing.T) {
+	t.Parallel()
 	r, err := newNotValidConstraintValidateRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   "warning",
@@ -201,6 +205,7 @@ func TestNotValidConstraintValidateRequiredRule_FindingMetadata(t *testing.T) {
 }
 
 func TestNotValidConstraintValidateRequiredRule_SchemaQualifiedTable(t *testing.T) {
+	t.Parallel()
 	r, err := newNotValidConstraintValidateRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   "warning",
@@ -224,6 +229,7 @@ func TestNotValidConstraintValidateRequiredRule_SchemaQualifiedTable(t *testing.
 }
 
 func TestNotValidConstraintValidateRequiredRule_RegisteredInRegistry(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 

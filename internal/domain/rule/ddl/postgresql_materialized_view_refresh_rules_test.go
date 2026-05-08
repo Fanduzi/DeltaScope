@@ -23,6 +23,7 @@ func refreshMatViewStatement(opts map[string]string) spec.Statement {
 }
 
 func TestPGRefreshMaterializedViewConcurrentlyWarn_NonConcurrentFiresWarning(t *testing.T) {
+	t.Parallel()
 	r, err := newRefreshMaterializedViewConcurrentlyWarnRule(policy.RulePolicy{Enabled: true})
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
@@ -44,6 +45,7 @@ func TestPGRefreshMaterializedViewConcurrentlyWarn_NonConcurrentFiresWarning(t *
 }
 
 func TestPGRefreshMaterializedViewConcurrentlyWarn_ConcurrentNoFinding(t *testing.T) {
+	t.Parallel()
 	r, err := newRefreshMaterializedViewConcurrentlyWarnRule(policy.RulePolicy{Enabled: true})
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
@@ -62,6 +64,7 @@ func TestPGRefreshMaterializedViewConcurrentlyWarn_ConcurrentNoFinding(t *testin
 }
 
 func TestPGRefreshMaterializedViewConcurrentlyWarn_MissingOptionsFiresWarning(t *testing.T) {
+	t.Parallel()
 	r, err := newRefreshMaterializedViewConcurrentlyWarnRule(policy.RulePolicy{Enabled: true})
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
@@ -77,6 +80,7 @@ func TestPGRefreshMaterializedViewConcurrentlyWarn_MissingOptionsFiresWarning(t 
 }
 
 func TestPGRefreshMaterializedViewNoDataNotice_WithNoDataFiresNotice(t *testing.T) {
+	t.Parallel()
 	r, err := newRefreshMaterializedViewNoDataNoticeRule(policy.RulePolicy{Enabled: true})
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
@@ -98,6 +102,7 @@ func TestPGRefreshMaterializedViewNoDataNotice_WithNoDataFiresNotice(t *testing.
 }
 
 func TestPGRefreshMaterializedViewNoDataNotice_WithDataNoFinding(t *testing.T) {
+	t.Parallel()
 	r, err := newRefreshMaterializedViewNoDataNoticeRule(policy.RulePolicy{Enabled: true})
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
@@ -116,6 +121,7 @@ func TestPGRefreshMaterializedViewNoDataNotice_WithDataNoFinding(t *testing.T) {
 }
 
 func TestPGRefreshMaterializedViewRules_WrongDialectNotApplies(t *testing.T) {
+	t.Parallel()
 	stmt := spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectMySQL,
@@ -139,6 +145,7 @@ func TestPGRefreshMaterializedViewRules_WrongDialectNotApplies(t *testing.T) {
 }
 
 func TestPGRefreshMaterializedViewRules_WrongOperationNotApplies(t *testing.T) {
+	t.Parallel()
 	stmt := spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
@@ -162,6 +169,7 @@ func TestPGRefreshMaterializedViewRules_WrongOperationNotApplies(t *testing.T) {
 }
 
 func TestPGRefreshMaterializedViewRules_MetadataIncludesAllFields(t *testing.T) {
+	t.Parallel()
 	concurrentRule, _ := newRefreshMaterializedViewConcurrentlyWarnRule(policy.RulePolicy{Enabled: true})
 
 	findings, err := concurrentRule.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{
@@ -193,6 +201,7 @@ func TestPGRefreshMaterializedViewRules_MetadataIncludesAllFields(t *testing.T) 
 }
 
 func TestPGRefreshMaterializedViewRules_BothRulesRegistered(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {
@@ -227,6 +236,7 @@ func TestPGRefreshMaterializedViewRules_BothRulesRegistered(t *testing.T) {
 }
 
 func TestPGRefreshMaterializedViewRules_PostgreSQLDefaultsContainBoth(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	concurrentEntry, ok := cfg.Rules[ruleIDPGRefreshMaterializedViewConcurrentlyWarn]

@@ -19,6 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCreateExtensionNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -51,6 +52,7 @@ func TestCreateExtensionNoticeRule(t *testing.T) {
 }
 
 func TestCreateExtensionWithIfNotExistsMetadata(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -77,6 +79,7 @@ func TestCreateExtensionWithIfNotExistsMetadata(t *testing.T) {
 }
 
 func TestCreateExtensionWithSchemaMetadata(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -103,6 +106,7 @@ func TestCreateExtensionWithSchemaMetadata(t *testing.T) {
 }
 
 func TestCreateExtensionWithVersionMetadata(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -129,6 +133,7 @@ func TestCreateExtensionWithVersionMetadata(t *testing.T) {
 }
 
 func TestCreateExtensionCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -159,6 +164,7 @@ func TestCreateExtensionCascadeWarnRule(t *testing.T) {
 
 // Duplicate finding: CREATE EXTENSION CASCADE fires both notice and cascade.warn.
 func TestCreateExtensionCascadeFiresBothNoticeAndCascadeWarn(t *testing.T) {
+	t.Parallel()
 	notice := mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 	cascade := mustNewCreateExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -187,6 +193,7 @@ func TestCreateExtensionCascadeFiresBothNoticeAndCascadeWarn(t *testing.T) {
 }
 
 func TestAlterExtensionUpdateNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterExtensionUpdateNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -216,6 +223,7 @@ func TestAlterExtensionUpdateNoticeRule(t *testing.T) {
 }
 
 func TestAlterExtensionUpdateWithVersionMetadata(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterExtensionUpdateNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -242,6 +250,7 @@ func TestAlterExtensionUpdateWithVersionMetadata(t *testing.T) {
 }
 
 func TestAlterExtensionSetSchemaNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterExtensionSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -271,6 +280,7 @@ func TestAlterExtensionSetSchemaNoticeRule(t *testing.T) {
 }
 
 func TestDropExtensionAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropExtensionAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -296,6 +306,7 @@ func TestDropExtensionAdvisoryRule(t *testing.T) {
 }
 
 func TestDropExtensionCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -323,6 +334,7 @@ func TestDropExtensionCascadeWarnRule(t *testing.T) {
 
 // Duplicate finding: DROP EXTENSION CASCADE fires both advisory and cascade.warn.
 func TestDropExtensionCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
+	t.Parallel()
 	advisory := mustNewDropExtensionAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 	cascade := mustNewDropExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -355,6 +367,7 @@ func TestDropExtensionCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExtensionLifecycleRulesSkipMySQL(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewCreateExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -387,6 +400,7 @@ func TestExtensionLifecycleRulesSkipMySQL(t *testing.T) {
 }
 
 func TestCreateExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -409,6 +423,7 @@ func TestCreateExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
 }
 
 func TestAlterExtensionUpdateSkipsNonUpdate(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterExtensionUpdateNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -432,6 +447,7 @@ func TestAlterExtensionUpdateSkipsNonUpdate(t *testing.T) {
 }
 
 func TestAlterExtensionSetSchemaSkipsNonSetSchema(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterExtensionSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -455,6 +471,7 @@ func TestAlterExtensionSetSchemaSkipsNonSetSchema(t *testing.T) {
 }
 
 func TestDropExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -478,6 +495,7 @@ func TestDropExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
 
 // Deferred member mutation specs do not trigger extension rules.
 func TestExtensionRulesSkipMemberMutation(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewCreateExtensionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewCreateExtensionCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -526,6 +544,7 @@ func TestExtensionRulesSkipMemberMutation(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegistryIncludesPGExtensionLifecycleRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {
@@ -564,6 +583,7 @@ func TestRegistryIncludesPGExtensionLifecycleRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
+			t.Parallel()
 			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
@@ -583,6 +603,7 @@ func TestRegistryIncludesPGExtensionLifecycleRules(t *testing.T) {
 }
 
 func TestDefaultPolicyIncludesPGExtensionLifecycleRules(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	expected := []struct {
@@ -600,6 +621,7 @@ func TestDefaultPolicyIncludesPGExtensionLifecycleRules(t *testing.T) {
 
 	for _, exp := range expected {
 		t.Run(exp.id, func(t *testing.T) {
+			t.Parallel()
 			p, ok := cfg.Rules[exp.id]
 			if !ok {
 				t.Fatalf("expected default policy to include %q", exp.id)
@@ -615,6 +637,7 @@ func TestDefaultPolicyIncludesPGExtensionLifecycleRules(t *testing.T) {
 }
 
 func TestExtensionLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {

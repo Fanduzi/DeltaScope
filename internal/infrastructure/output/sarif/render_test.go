@@ -15,6 +15,7 @@ import (
 )
 
 func TestRenderIncludesVersion(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -45,6 +46,7 @@ func TestRenderIncludesVersion(t *testing.T) {
 }
 
 func TestRenderIncludesRuleMetadata(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -90,6 +92,7 @@ func TestRenderIncludesRuleMetadata(t *testing.T) {
 }
 
 func TestRenderIncludesResults(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -127,6 +130,7 @@ func TestRenderIncludesResults(t *testing.T) {
 }
 
 func TestRenderSeverityMapping(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		level        rule.Level
@@ -139,6 +143,7 @@ func TestRenderSeverityMapping(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			result := report.Result{
 				Statements: []report.StatementResult{{
 					Index: 0,
@@ -171,6 +176,7 @@ func TestRenderSeverityMapping(t *testing.T) {
 }
 
 func TestRenderIncludesLocationWhenPresent(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -199,6 +205,7 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 }
 
 func TestRenderIncludesArtifactLocationWhenPathProvided(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -227,6 +234,7 @@ func TestRenderIncludesArtifactLocationWhenPathProvided(t *testing.T) {
 }
 
 func TestRenderOmitsArtifactLocationWhenPathEmpty(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,
@@ -255,6 +263,7 @@ func TestRenderOmitsArtifactLocationWhenPathEmpty(t *testing.T) {
 }
 
 func TestRenderEmptyResultProducesValidSARIF(t *testing.T) {
+	t.Parallel()
 	result := report.Result{Verdict: report.VerdictPass}
 
 	output, err := Render(result, Options{})
@@ -277,6 +286,7 @@ func TestRenderEmptyResultProducesValidSARIF(t *testing.T) {
 }
 
 func TestRenderIncludesHelpFromExplanation(t *testing.T) {
+	t.Parallel()
 	result := report.Result{
 		Statements: []report.StatementResult{{
 			Index: 0,

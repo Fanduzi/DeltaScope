@@ -20,6 +20,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCreateIndexConcurrentlyRequiredRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateIndexConcurrentlyRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -53,6 +54,7 @@ func TestCreateIndexConcurrentlyRequiredRule(t *testing.T) {
 }
 
 func TestCreateIndexConcurrentlyRequiredRuleSkipsWhenConcurrent(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateIndexConcurrentlyRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -80,6 +82,7 @@ func TestCreateIndexConcurrentlyRequiredRuleSkipsWhenConcurrent(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddColumnNonNullDefaultRewriteWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -111,6 +114,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRule(t *testing.T) {
 }
 
 func TestAddColumnNonNullDefaultRewriteWarnRuleSkipsWhenNullable(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -138,6 +142,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRuleSkipsWhenNullable(t *testing.T) {
 }
 
 func TestAddColumnNonNullDefaultRewriteWarnRuleSkipsWhenNoDefault(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -169,6 +174,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRuleSkipsWhenNoDefault(t *testing.T) 
 // ---------------------------------------------------------------------------
 
 func TestAddCheckNotValidRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddCheckNotValidRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -196,6 +202,7 @@ func TestAddCheckNotValidRule(t *testing.T) {
 }
 
 func TestAddCheckNotValidRuleSkipsWhenNotValidPresent(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddCheckNotValidRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -219,6 +226,7 @@ func TestAddCheckNotValidRuleSkipsWhenNotValidPresent(t *testing.T) {
 }
 
 func TestAddCheckNotValidRuleSkipsWhenNotCheckConstraint(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddCheckNotValidRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -245,6 +253,7 @@ func TestAddCheckNotValidRuleSkipsWhenNotCheckConstraint(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSetDataTypeRewriteWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewSetDataTypeRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -271,6 +280,7 @@ func TestSetDataTypeRewriteWarnRule(t *testing.T) {
 }
 
 func TestSetDataTypeRewriteWarnRuleSkipsWhenNotSetDataType(t *testing.T) {
+	t.Parallel()
 	r := mustNewSetDataTypeRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -294,6 +304,7 @@ func TestSetDataTypeRewriteWarnRuleSkipsWhenNotSetDataType(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
+	t.Parallel()
 	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
 
 	rules := []struct {
@@ -388,6 +399,7 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 	for _, rl := range rules {
 		for _, dialect := range nonPGDialects {
 			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
 				stmt := rl.stmt
 				stmt.Dialect = dialect
 				if rl.r.AppliesTo(stmt) {
@@ -410,6 +422,7 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -435,6 +448,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	}
 
 	t.Run("create_index_concurrently_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -462,6 +476,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("add_column_non_null_default_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -491,6 +506,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("add_check_not_valid_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -523,6 +539,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("set_data_type_rewrite_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -552,6 +569,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("drop_index_advisory_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -577,6 +595,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("add_column_non_null_no_default_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -606,6 +625,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("add_unique_constraint_advisory_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -635,6 +655,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("drop_constraint_advisory_fires_for_pg", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -663,6 +684,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 	})
 
 	t.Run("pg_migration_rules_do_not_fire_for_mysql", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -702,6 +724,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateIndexConcurrentlyRequiredRuleProvidesActionableSuggestion(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateIndexConcurrentlyRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -735,6 +758,7 @@ func TestCreateIndexConcurrentlyRequiredRuleProvidesActionableSuggestion(t *test
 }
 
 func TestAddColumnNonNullDefaultRewriteWarnRuleProvidesSaferMigrationSuggestion(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -773,6 +797,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRuleProvidesSaferMigrationSuggestion(
 }
 
 func TestAddCheckNotValidRuleProvidesValidationFlowSuggestion(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddCheckNotValidRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -807,6 +832,7 @@ func TestAddCheckNotValidRuleProvidesValidationFlowSuggestion(t *testing.T) {
 }
 
 func TestSetDataTypeRewriteWarnRuleProvidesPhasedMigrationSuggestion(t *testing.T) {
+	t.Parallel()
 	r := mustNewSetDataTypeRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -844,6 +870,7 @@ func TestSetDataTypeRewriteWarnRuleProvidesPhasedMigrationSuggestion(t *testing.
 // ---------------------------------------------------------------------------
 
 func TestDropIndexAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -878,6 +905,7 @@ func TestDropIndexAdvisoryRule(t *testing.T) {
 }
 
 func TestDropIndexAdvisoryRuleSkipsNonPG(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropIndexAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -906,6 +934,7 @@ func TestDropIndexAdvisoryRuleSkipsNonPG(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddColumnNonNullNoDefaultWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullNoDefaultWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -940,6 +969,7 @@ func TestAddColumnNonNullNoDefaultWarnRule(t *testing.T) {
 }
 
 func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenNullable(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullNoDefaultWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -967,6 +997,7 @@ func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenNullable(t *testing.T) {
 }
 
 func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenHasDefault(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddColumnNonNullNoDefaultWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -998,6 +1029,7 @@ func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenHasDefault(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddUniqueConstraintAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -1027,6 +1059,7 @@ func TestAddUniqueConstraintAdvisoryRule(t *testing.T) {
 }
 
 func TestAddUniqueConstraintAdvisoryRuleSkipsNonUniqueConstraint(t *testing.T) {
+	t.Parallel()
 	r := mustNewAddUniqueConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -1053,6 +1086,7 @@ func TestAddUniqueConstraintAdvisoryRuleSkipsNonUniqueConstraint(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDropConstraintAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -1079,6 +1113,7 @@ func TestDropConstraintAdvisoryRule(t *testing.T) {
 }
 
 func TestDropConstraintAdvisoryRuleSkipsNonDropAction(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropConstraintAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
@@ -1180,6 +1215,7 @@ func mustNewDropConstraintAdvisoryRule(t *testing.T, cfg policy.RulePolicy) rule
 // ---------------------------------------------------------------------------
 
 func TestNotValidConstraintValidateRequiredRule_RegisteredAndFires(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -1224,6 +1260,7 @@ func TestNotValidConstraintValidateRequiredRule_RegisteredAndFires(t *testing.T)
 }
 
 func TestNotValidConstraintValidateRequiredRule_LaterValidateSuppressesViaRegistry(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 

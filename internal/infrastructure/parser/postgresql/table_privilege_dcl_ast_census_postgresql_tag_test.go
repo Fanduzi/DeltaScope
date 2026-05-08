@@ -76,6 +76,7 @@ var pgTablePrivilegeDCLCensusCases = []struct {
 // PostgreSQL table privilege DCL candidates. This is a read-only
 // characterization test — no production code is modified.
 func TestTablePrivilegeDCLASTCensus(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Table Privilege DCL AST Census ===")
 	t.Logf("%-42s | %-30s | %s", "Case", "Node Kind", "AST Facts")
@@ -337,6 +338,7 @@ func assertTablePrivilegeDCLASTFacts(t *testing.T, fact tablePrivilegeDCLASTFact
 // candidates. This is a read-only characterization test — no production
 // code is modified.
 func TestTablePrivilegeDCLDeltaScopeBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Table Privilege DCL DeltaScope Baseline ===")
 	t.Logf("%-42s | %-10s | %-5s | %-12s | %s",
@@ -563,6 +565,7 @@ func assertTablePrivilegeDCLBaseline(t *testing.T, fact tablePrivilegeDCLBaselin
 // produce DDL suitable for future rules; deferred forms remain unsupported.
 // This is a read-only characterization test — no rules fire yet.
 func TestTablePrivilegeDCLRuleCoverageBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Table Privilege DCL Rule Coverage Baseline ===")
 

@@ -12,6 +12,7 @@ import (
 )
 
 func TestAllCoversEveryDefaultRule(t *testing.T) {
+	t.Parallel()
 	defaults := domainpolicy.Default()
 	items := All()
 
@@ -29,6 +30,7 @@ func TestAllCoversEveryDefaultRule(t *testing.T) {
 }
 
 func TestLookupReturnsKnownRuleMetadata(t *testing.T) {
+	t.Parallel()
 	entry, ok := Lookup("dml.where.require")
 	if !ok {
 		t.Fatalf("expected dml.where.require to exist")
@@ -48,6 +50,7 @@ func TestLookupReturnsKnownRuleMetadata(t *testing.T) {
 }
 
 func TestLookupMarksMetadataAwareRules(t *testing.T) {
+	t.Parallel()
 	entry, ok := Lookup("ddl.table.exists.create.forbid")
 	if !ok {
 		t.Fatalf("expected metadata-aware rule to exist")
@@ -64,6 +67,7 @@ func TestLookupMarksMetadataAwareRules(t *testing.T) {
 }
 
 func TestSearchMatchesRuleIDAndSummaryText(t *testing.T) {
+	t.Parallel()
 	results := Search("where")
 	if len(results) == 0 {
 		t.Fatalf("expected search results")
@@ -81,6 +85,7 @@ func TestSearchMatchesRuleIDAndSummaryText(t *testing.T) {
 }
 
 func TestAllIncludesExplanationMetadataForShippedRules(t *testing.T) {
+	t.Parallel()
 	for _, entry := range All() {
 		if entry.Why == "" || entry.Risk == "" || entry.Suggestion == "" {
 			t.Fatalf("expected explanation metadata for %s, got %#v", entry.RuleID, entry)
@@ -92,6 +97,7 @@ func TestAllIncludesExplanationMetadataForShippedRules(t *testing.T) {
 }
 
 func TestLookupReturnsIndependentCopies(t *testing.T) {
+	t.Parallel()
 	entry, ok := Lookup("dml.where.require")
 	if !ok {
 		t.Fatalf("expected dml.where.require to exist")
@@ -116,6 +122,7 @@ func TestLookupReturnsIndependentCopies(t *testing.T) {
 }
 
 func TestSearchReturnsIndependentCopies(t *testing.T) {
+	t.Parallel()
 	results := Search("where")
 	if len(results) == 0 {
 		t.Fatal("expected search results")
@@ -136,6 +143,7 @@ func TestSearchReturnsIndependentCopies(t *testing.T) {
 }
 
 func TestLookupDeepCopiesSliceDefaultParams(t *testing.T) {
+	t.Parallel()
 	entry, ok := Lookup("ddl.table.charset.allowlist")
 	if !ok {
 		t.Fatalf("expected ddl.table.charset.allowlist to exist")
@@ -160,6 +168,7 @@ func TestLookupDeepCopiesSliceDefaultParams(t *testing.T) {
 }
 
 func TestFormatYAMLScalarQuotesStringLists(t *testing.T) {
+	t.Parallel()
 	got := formatYAMLScalar([]string{"utf8mb4", "needs:quote", "two words"})
 	want := `["utf8mb4", "needs:quote", "two words"]`
 	if got != want {

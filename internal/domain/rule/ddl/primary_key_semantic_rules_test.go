@@ -15,6 +15,7 @@ import (
 )
 
 func TestPrimaryKeyBigintRuleFindsNonBigintPrimaryKey(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyBigintRequire, rule.LevelBlocker, "must use bigint", "change the primary key column type to bigint", func(column spec.Column) bool {
 		return baseType(column) == "bigint"
 	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
@@ -31,6 +32,7 @@ func TestPrimaryKeyBigintRuleFindsNonBigintPrimaryKey(t *testing.T) {
 }
 
 func TestPrimaryKeyUnsignedRuleFindsSignedPrimaryKey(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyUnsignedRequire, rule.LevelBlocker, "must be unsigned", "mark the primary key column as UNSIGNED", func(column spec.Column) bool {
 		return column.Unsigned
 	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
@@ -47,6 +49,7 @@ func TestPrimaryKeyUnsignedRuleFindsSignedPrimaryKey(t *testing.T) {
 }
 
 func TestPrimaryKeyAutoIncrementRuleFindsMissingAutoIncrement(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyAutoIncrementRequire, rule.LevelBlocker, "must use auto_increment", "add AUTO_INCREMENT to the primary key column", func(column spec.Column) bool {
 		return column.AutoIncrement
 	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
@@ -63,6 +66,7 @@ func TestPrimaryKeyAutoIncrementRuleFindsMissingAutoIncrement(t *testing.T) {
 }
 
 func TestPrimaryKeyNotNullRuleFindsNullablePrimaryKey(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newPrimaryKeyNotNullRule(policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
@@ -77,6 +81,7 @@ func TestPrimaryKeyNotNullRuleFindsNullablePrimaryKey(t *testing.T) {
 }
 
 func TestPrimaryKeySemanticRulesSkipCompositePrimaryKeys(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyBigintRequire, rule.LevelBlocker, "must use bigint", "change the primary key column type to bigint", func(column spec.Column) bool {
 		return baseType(column) == "bigint"
 	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
@@ -105,6 +110,7 @@ func TestPrimaryKeySemanticRulesSkipCompositePrimaryKeys(t *testing.T) {
 }
 
 func TestPrimaryKeyBigintRuleAcceptsPostgreSQLBigIntAliases(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyBigintRequire, rule.LevelBlocker, "must use bigint", "change the primary key column type to bigint", func(column spec.Column) bool {
 		return baseType(column) == "bigint"
 	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
@@ -144,6 +150,7 @@ func primaryKeyStatement(column spec.Column) spec.Statement {
 // primary-key bigint rule fires on the PostgreSQL ALTER TABLE ADD CONSTRAINT
 // shape after Task 2 primary-key projection.
 func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(
 		ruleIDPrimaryKeyBigintRequire,
 		rule.LevelBlocker,

@@ -15,6 +15,7 @@ import (
 )
 
 func TestForbiddenAlterActionRuleFindsForbiddenActions(t *testing.T) {
+	t.Parallel()
 	statement := alterStatement(
 		spec.Alter{Action: "drop_column", Name: "old_name"},
 		spec.Alter{Action: "rename_table", Name: "users_archive"},
@@ -39,6 +40,7 @@ func TestForbiddenAlterActionRuleFindsForbiddenActions(t *testing.T) {
 }
 
 func TestForbiddenAlterActionRuleSkipsAllowedPolicies(t *testing.T) {
+	t.Parallel()
 	statement := alterStatement(spec.Alter{Action: "rename_column", Name: "legacy_name"})
 
 	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterRenameColumnForbid, "rename_column", "rename column", rule.LevelBlocker, policy.RulePolicy{
@@ -60,6 +62,7 @@ func TestForbiddenAlterActionRuleSkipsAllowedPolicies(t *testing.T) {
 }
 
 func TestForbiddenAlterActionRuleHandlesStandaloneDropIndexWithoutTable(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterDropIndexForbid, "drop_index", "drop index", rule.LevelWarning, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -98,6 +101,7 @@ func TestForbiddenAlterActionRuleHandlesStandaloneDropIndexWithoutTable(t *testi
 }
 
 func TestForbiddenAlterActionRuleMapsPostgreSQLDropConstraintPrimaryKeySemantically(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterDropPrimaryKeyForbid, "drop_primary_key", "drop primary key", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -140,6 +144,7 @@ func TestForbiddenAlterActionRuleMapsPostgreSQLDropConstraintPrimaryKeySemantica
 }
 
 func TestForbiddenAlterActionRuleDoesNotMapNonPrimaryConstraintToDropPrimaryKey(t *testing.T) {
+	t.Parallel()
 	statementRule, err := newForbiddenAlterActionRule(ruleIDAlterDropPrimaryKeyForbid, "drop_primary_key", "drop primary key", rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,

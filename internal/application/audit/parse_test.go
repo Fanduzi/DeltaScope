@@ -15,6 +15,7 @@ import (
 )
 
 func TestParseReturnsApplicationOwnedStatements(t *testing.T) {
+	t.Parallel()
 	result, err := Parse(context.Background(), "create table t1 (id bigint);", spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -45,6 +46,7 @@ func TestParseReturnsApplicationOwnedStatements(t *testing.T) {
 }
 
 func TestParseRejectsUnknownDialect(t *testing.T) {
+	t.Parallel()
 	_, err := Parse(context.Background(), "select 1;", spec.Dialect("sqlite"))
 	if err == nil {
 		t.Fatal("expected unsupported dialect error")
@@ -55,6 +57,7 @@ func TestParseRejectsUnknownDialect(t *testing.T) {
 }
 
 func TestParseMySQLPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
+	t.Parallel()
 	_, err := Parse(context.Background(), "insert into users (name) values ('alice') returning id;", spec.DialectMySQL)
 	if err == nil {
 		t.Fatal("expected parse error")
@@ -65,6 +68,7 @@ func TestParseMySQLPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
 }
 
 func TestParseTiDBPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
+	t.Parallel()
 	_, err := Parse(context.Background(), "insert into users (name) values ('alice') returning id;", spec.DialectTiDB)
 	if err == nil {
 		t.Fatal("expected parse error")
@@ -75,6 +79,7 @@ func TestParseTiDBPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
 }
 
 func TestParseMySQLSyntaxErrorDoesNotReportPGMismatch(t *testing.T) {
+	t.Parallel()
 	_, err := Parse(context.Background(), "select from users where;", spec.DialectMySQL)
 	if err == nil {
 		t.Fatal("expected parse error")

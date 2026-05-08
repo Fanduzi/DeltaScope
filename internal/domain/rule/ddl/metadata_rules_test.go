@@ -15,6 +15,7 @@ import (
 )
 
 func TestTableExistenceRules(t *testing.T) {
+	t.Parallel()
 	createRule, err := newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{},
@@ -65,6 +66,7 @@ func TestTableExistenceRules(t *testing.T) {
 }
 
 func TestAlterColumnExistenceRules(t *testing.T) {
+	t.Parallel()
 	addRule, err := newAlterObjectExistenceRule(ruleIDAlterAddColumnExistsForbid, []string{"add_columns"}, "column", true, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{},
@@ -118,6 +120,7 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 }
 
 func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
+	t.Parallel()
 	indexRule, err := newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{},
@@ -191,6 +194,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 }
 
 func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
+	t.Parallel()
 	indexRule, err := newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{},
@@ -227,6 +231,7 @@ func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
 }
 
 func TestAlterPrimaryKeyExistenceRuleConstraintOnlySnapshot(t *testing.T) {
+	t.Parallel()
 	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{},
@@ -266,6 +271,7 @@ func TestAlterPrimaryKeyExistenceRuleConstraintOnlySnapshot(t *testing.T) {
 }
 
 func TestAlterPrimaryKeyExistenceRuleFallsBackToPrimaryKeyIndexName(t *testing.T) {
+	t.Parallel()
 	pkRule, err := newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{},
@@ -299,6 +305,7 @@ func TestAlterPrimaryKeyExistenceRuleFallsBackToPrimaryKeyIndexName(t *testing.T
 }
 
 func TestMetadataExistenceRulesIgnoreLegacyRequiredParamAndSkipWithoutMetadata(t *testing.T) {
+	t.Parallel()
 	createRule, err := newTableExistenceRule(ruleIDTableExistsCreateForbid, false, rule.LevelBlocker, policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"required": false},

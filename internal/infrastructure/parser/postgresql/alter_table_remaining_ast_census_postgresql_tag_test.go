@@ -184,6 +184,7 @@ func alterTableRemainingBaselineForCase(t *testing.T, name, sql string) alterTab
 // TestPostgreSQLAlterTableRemainingASTCensus inspects the raw AST shape for each
 // candidate form and asserts stable node types and extractable fields.
 func TestPostgreSQLAlterTableRemainingASTCensus(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL ALTER TABLE Remaining Candidates AST Census ===")
 	t.Log("")
@@ -291,6 +292,7 @@ func TestPostgreSQLAlterTableRemainingASTCensus(t *testing.T) {
 // DeltaScope Parse+Extract pipeline and records what each candidate currently
 // produces. This establishes the baseline for Task 2 decisions.
 func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL ALTER TABLE Remaining Current Extraction Baseline ===")
 	t.Log("")
@@ -412,6 +414,7 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 // AST shape for ALTER COLUMN TYPE ... USING to confirm whether it can be
 // stably rendered or only detected as a boolean.
 func TestPostgreSQLAlterTableRemainingUsingClauseDetail(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== USING Clause AST Detail for ALTER COLUMN TYPE ===")
 	t.Log("")
@@ -468,6 +471,7 @@ func TestPostgreSQLAlterTableRemainingUsingClauseDetail(t *testing.T) {
 // TestPostgreSQLAlterTableRemainingSetLoggedDetail examines SET LOGGED/UNLOGGED
 // AST shape to confirm extractability.
 func TestPostgreSQLAlterTableRemainingSetLoggedDetail(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== SET LOGGED / SET UNLOGGED AST Detail ===")
 	t.Log("")
@@ -516,6 +520,7 @@ func TestPostgreSQLAlterTableRemainingSetLoggedDetail(t *testing.T) {
 // TestPostgreSQLAlterTableRemainingSetTablespaceDetail examines SET TABLESPACE
 // AST shape to confirm extractability.
 func TestPostgreSQLAlterTableRemainingSetTablespaceDetail(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== SET TABLESPACE AST Detail ===")
 	t.Log("")
@@ -551,6 +556,7 @@ func TestPostgreSQLAlterTableRemainingSetTablespaceDetail(t *testing.T) {
 // ALTER COLUMN TYPE is already covered by existing rules and records which
 // rules exist for it. This prevents Task 2 from duplicating support.
 func TestPostgreSQLAlterTableRemainingExistingRuleCoverage(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== Existing Rule Coverage for ALTER COLUMN TYPE ===")
 	t.Log("")

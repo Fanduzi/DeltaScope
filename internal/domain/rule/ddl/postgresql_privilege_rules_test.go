@@ -19,6 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestGrantTablePrivilegeNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -58,6 +59,7 @@ func TestGrantTablePrivilegeNoticeRule(t *testing.T) {
 }
 
 func TestGrantTablePrivilegeMultiplePrivilegesAndGrantees(t *testing.T) {
+	t.Parallel()
 	r := mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -87,6 +89,7 @@ func TestGrantTablePrivilegeMultiplePrivilegesAndGrantees(t *testing.T) {
 }
 
 func TestGrantTablePrivilegeWithSchema(t *testing.T) {
+	t.Parallel()
 	r := mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -113,6 +116,7 @@ func TestGrantTablePrivilegeWithSchema(t *testing.T) {
 }
 
 func TestGrantTablePrivilegeAllWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewGrantTablePrivilegeAllWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -143,6 +147,7 @@ func TestGrantTablePrivilegeAllWarnRule(t *testing.T) {
 
 // Duplicate finding: GRANT ALL PRIVILEGES fires both notice and all.warn.
 func TestGrantAllPrivilegesFiresBothNoticeAndAllWarn(t *testing.T) {
+	t.Parallel()
 	notice := mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 	allWarn := mustNewGrantTablePrivilegeAllWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -171,6 +176,7 @@ func TestGrantAllPrivilegesFiresBothNoticeAndAllWarn(t *testing.T) {
 }
 
 func TestRevokeTablePrivilegeNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewRevokeTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -200,6 +206,7 @@ func TestRevokeTablePrivilegeNoticeRule(t *testing.T) {
 }
 
 func TestRevokeTablePrivilegeMultiplePrivilegesAndGrantees(t *testing.T) {
+	t.Parallel()
 	r := mustNewRevokeTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -229,6 +236,7 @@ func TestRevokeTablePrivilegeMultiplePrivilegesAndGrantees(t *testing.T) {
 }
 
 func TestRevokeTablePrivilegeCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewRevokeTablePrivilegeCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -259,6 +267,7 @@ func TestRevokeTablePrivilegeCascadeWarnRule(t *testing.T) {
 
 // Duplicate finding: REVOKE CASCADE fires both notice and cascade.warn.
 func TestRevokeCascadeFiresBothNoticeAndCascadeWarn(t *testing.T) {
+	t.Parallel()
 	notice := mustNewRevokeTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 	cascadeWarn := mustNewRevokeTablePrivilegeCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -291,6 +300,7 @@ func TestRevokeCascadeFiresBothNoticeAndCascadeWarn(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTablePrivilegeRulesSkipMySQL(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewGrantTablePrivilegeAllWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -321,6 +331,7 @@ func TestTablePrivilegeRulesSkipMySQL(t *testing.T) {
 }
 
 func TestTablePrivilegeRulesSkipTiDB(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewGrantTablePrivilegeAllWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -351,6 +362,7 @@ func TestTablePrivilegeRulesSkipTiDB(t *testing.T) {
 }
 
 func TestGrantAllPrivilegesWarnSkipsNonAll(t *testing.T) {
+	t.Parallel()
 	r := mustNewGrantTablePrivilegeAllWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -374,6 +386,7 @@ func TestGrantAllPrivilegesWarnSkipsNonAll(t *testing.T) {
 }
 
 func TestRevokeCascadeWarnSkipsNonCascade(t *testing.T) {
+	t.Parallel()
 	r := mustNewRevokeTablePrivilegeCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -398,6 +411,7 @@ func TestRevokeCascadeWarnSkipsNonCascade(t *testing.T) {
 
 // Deferred forms do not trigger table privilege rules.
 func TestTablePrivilegeRulesSkipDeferredForms(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewGrantTablePrivilegeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewGrantTablePrivilegeAllWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -463,6 +477,7 @@ func TestTablePrivilegeRulesSkipDeferredForms(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegistryIncludesPGTablePrivilegeRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {
@@ -493,6 +508,7 @@ func TestRegistryIncludesPGTablePrivilegeRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
+			t.Parallel()
 			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
@@ -512,6 +528,7 @@ func TestRegistryIncludesPGTablePrivilegeRules(t *testing.T) {
 }
 
 func TestDefaultPolicyIncludesPGTablePrivilegeRules(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	expected := []struct {
@@ -527,6 +544,7 @@ func TestDefaultPolicyIncludesPGTablePrivilegeRules(t *testing.T) {
 
 	for _, exp := range expected {
 		t.Run(exp.id, func(t *testing.T) {
+			t.Parallel()
 			p, ok := cfg.Rules[exp.id]
 			if !ok {
 				t.Fatalf("expected default policy to include %q", exp.id)
@@ -542,6 +560,7 @@ func TestDefaultPolicyIncludesPGTablePrivilegeRules(t *testing.T) {
 }
 
 func TestTablePrivilegeRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {

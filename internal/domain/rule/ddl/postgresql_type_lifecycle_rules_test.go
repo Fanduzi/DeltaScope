@@ -19,6 +19,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCreateTypeEnumNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateTypeEnumNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -52,6 +53,7 @@ func TestCreateTypeEnumNoticeRule(t *testing.T) {
 }
 
 func TestAlterTypeAddValueAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeAddValueAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -81,6 +83,7 @@ func TestAlterTypeAddValueAdvisoryRule(t *testing.T) {
 }
 
 func TestAlterTypeAddValuePositionNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeAddValuePositionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -114,6 +117,7 @@ func TestAlterTypeAddValuePositionNoticeRule(t *testing.T) {
 }
 
 func TestAlterTypeAddValueWithPositionFiresBothRules(t *testing.T) {
+	t.Parallel()
 	advisory := mustNewAlterTypeAddValueAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 	position := mustNewAlterTypeAddValuePositionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
@@ -139,6 +143,7 @@ func TestAlterTypeAddValueWithPositionFiresBothRules(t *testing.T) {
 }
 
 func TestDropTypeAdvisoryRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropTypeAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -164,6 +169,7 @@ func TestDropTypeAdvisoryRule(t *testing.T) {
 }
 
 func TestDropTypeCascadeWarnRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropTypeCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -191,6 +197,7 @@ func TestDropTypeCascadeWarnRule(t *testing.T) {
 
 // Duplicate finding: DROP TYPE CASCADE fires both drop_type.advisory and drop_type.cascade.warn.
 func TestDropTypeCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
+	t.Parallel()
 	advisory := mustNewDropTypeAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 	cascade := mustNewDropTypeCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
@@ -223,6 +230,7 @@ func TestDropTypeCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTypeLifecycleRulesSkipMySQL(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewCreateTypeEnumNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeAddValueAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
@@ -257,6 +265,7 @@ func TestTypeLifecycleRulesSkipMySQL(t *testing.T) {
 }
 
 func TestCreateTypeEnumNoticeSkipsNonEnum(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateTypeEnumNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -280,6 +289,7 @@ func TestCreateTypeEnumNoticeSkipsNonEnum(t *testing.T) {
 }
 
 func TestAlterTypeAddValueAdvisorySkipsNonAddValue(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeAddValueAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -303,6 +313,7 @@ func TestAlterTypeAddValueAdvisorySkipsNonAddValue(t *testing.T) {
 }
 
 func TestPositionNoticeSkipsNoPlacement(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeAddValuePositionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -326,6 +337,7 @@ func TestPositionNoticeSkipsNoPlacement(t *testing.T) {
 }
 
 func TestDropTypeCascadeWarnSkipsNonCascade(t *testing.T) {
+	t.Parallel()
 	r := mustNewDropTypeCascadeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
 
 	stmt := spec.Statement{
@@ -348,6 +360,7 @@ func TestDropTypeCascadeWarnSkipsNonCascade(t *testing.T) {
 }
 
 func TestCreateTypeCompositeNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -387,6 +400,7 @@ func TestCreateTypeCompositeNoticeRule(t *testing.T) {
 }
 
 func TestAlterTypeCompositeRenameNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -417,6 +431,7 @@ func TestAlterTypeCompositeRenameNoticeRule(t *testing.T) {
 }
 
 func TestAlterTypeCompositeSetSchemaNoticeRule(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -451,6 +466,7 @@ func TestAlterTypeCompositeSetSchemaNoticeRule(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateTypeCompositeNoticeSkipsEnum(t *testing.T) {
+	t.Parallel()
 	r := mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -474,6 +490,7 @@ func TestCreateTypeCompositeNoticeSkipsEnum(t *testing.T) {
 }
 
 func TestAlterTypeCompositeRenameSkipsAddValue(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -497,6 +514,7 @@ func TestAlterTypeCompositeRenameSkipsAddValue(t *testing.T) {
 }
 
 func TestAlterTypeCompositeSetSchemaSkipsRename(t *testing.T) {
+	t.Parallel()
 	r := mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
 
 	stmt := spec.Statement{
@@ -520,6 +538,7 @@ func TestAlterTypeCompositeSetSchemaSkipsRename(t *testing.T) {
 }
 
 func TestCompositeTypeRulesSkipDropType(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
@@ -548,6 +567,7 @@ func TestCompositeTypeRulesSkipDropType(t *testing.T) {
 }
 
 func TestCompositeTypeRulesSkipMySQL(t *testing.T) {
+	t.Parallel()
 	rules := []rule.StatementRule{
 		mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
@@ -577,6 +597,7 @@ func TestCompositeTypeRulesSkipMySQL(t *testing.T) {
 }
 
 func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {
@@ -624,6 +645,7 @@ func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
+			t.Parallel()
 			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
@@ -643,6 +665,7 @@ func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
 }
 
 func TestDefaultPolicyIncludesPGTypeLifecycleRules(t *testing.T) {
+	t.Parallel()
 	cfg := policy.Default()
 
 	expected := []struct {
@@ -662,6 +685,7 @@ func TestDefaultPolicyIncludesPGTypeLifecycleRules(t *testing.T) {
 
 	for _, exp := range expected {
 		t.Run(exp.id, func(t *testing.T) {
+			t.Parallel()
 			p, ok := cfg.Rules[exp.id]
 			if !ok {
 				t.Fatalf("expected default policy to include %q", exp.id)
@@ -677,6 +701,7 @@ func TestDefaultPolicyIncludesPGTypeLifecycleRules(t *testing.T) {
 }
 
 func TestTypeLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	if err := Register(registry, cfg); err != nil {

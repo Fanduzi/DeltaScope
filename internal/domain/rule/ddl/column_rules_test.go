@@ -15,6 +15,7 @@ import (
 )
 
 func TestTableColumnsMinCountRuleFindsEmptyTables(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newTableColumnsMinCountRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -34,6 +35,7 @@ func TestTableColumnsMinCountRuleFindsEmptyTables(t *testing.T) {
 }
 
 func TestColumnCommentRequiredRuleFindsMissingComments(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnCommentRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -53,6 +55,7 @@ func TestColumnCommentRequiredRuleFindsMissingComments(t *testing.T) {
 }
 
 func TestColumnNameMaxLengthRuleFindsLongNames(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnNameMaxLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -72,6 +75,7 @@ func TestColumnNameMaxLengthRuleFindsLongNames(t *testing.T) {
 }
 
 func TestColumnVarcharMaxLengthRuleFindsOversizedColumns(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnVarcharMaxLengthRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -91,6 +95,7 @@ func TestColumnVarcharMaxLengthRuleFindsOversizedColumns(t *testing.T) {
 }
 
 func TestColumnDefaultRequiredRuleFindsMissingDefaults(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnDefaultRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -110,6 +115,7 @@ func TestColumnDefaultRequiredRuleFindsMissingDefaults(t *testing.T) {
 }
 
 func TestColumnDefaultRequiredRuleIgnoresBlobTextLikeColumns(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnDefaultRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -129,6 +135,7 @@ func TestColumnDefaultRequiredRuleIgnoresBlobTextLikeColumns(t *testing.T) {
 }
 
 func TestColumnNotNullRequiredRuleFindsNullableBusinessColumns(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnNotNullRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -151,6 +158,7 @@ func TestColumnNotNullRequiredRuleFindsNullableBusinessColumns(t *testing.T) {
 }
 
 func TestColumnNotNullRequiredRuleAllowsTimeLikeNullableColumnsWhenConfigured(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnNotNullRequiredRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -173,6 +181,7 @@ func TestColumnNotNullRequiredRuleAllowsTimeLikeNullableColumnsWhenConfigured(t 
 }
 
 func TestColumnFloatDoubleForbiddenRuleFindsFloatColumns(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newColumnFloatDoubleForbiddenRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -192,6 +201,7 @@ func TestColumnFloatDoubleForbiddenRuleFindsFloatColumns(t *testing.T) {
 }
 
 func TestColumnNameGovernanceRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		columns   []spec.Column
@@ -252,6 +262,8 @@ func TestColumnNameGovernanceRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			findings := evaluateDDLFindings(t, policy.Policy{Rules: tt.rules}, createTableWithColumns("users", tt.columns...))
 
 			if len(findings) != tt.wantCount {

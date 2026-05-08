@@ -16,6 +16,7 @@ import (
 )
 
 func TestImpactRowsMaxCountRuleFindsLargeEstimate(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newImpactRowsMaxCountRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelBlocker,
@@ -47,6 +48,7 @@ func TestImpactRowsMaxCountRuleFindsLargeEstimate(t *testing.T) {
 }
 
 func TestImpactRowsMaxCountRuleRejectsThresholdBelowOne(t *testing.T) {
+	t.Parallel()
 	_, err := newImpactRowsMaxCountRule(policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"value": 0},
@@ -57,6 +59,7 @@ func TestImpactRowsMaxCountRuleRejectsThresholdBelowOne(t *testing.T) {
 }
 
 func TestImpactRowsMaxCountRuleSkipsUnknownEstimate(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newImpactRowsMaxCountRule(policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"value": 1000},
@@ -76,6 +79,7 @@ func TestImpactRowsMaxCountRuleSkipsUnknownEstimate(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleFindsLargeEstimate(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 		Enabled: true,
 		Level:   rule.LevelWarning,
@@ -107,6 +111,7 @@ func TestImpactRatioMaxPercentRuleFindsLargeEstimate(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleAcceptsNumericVariants(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name  string
 		value any
@@ -125,6 +130,7 @@ func TestImpactRatioMaxPercentRuleAcceptsNumericVariants(t *testing.T) {
 		{name: "uint64", value: uint64(42)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			_, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 				Enabled: true,
 				Params:  map[string]any{"value": tc.value},
@@ -137,6 +143,7 @@ func TestImpactRatioMaxPercentRuleAcceptsNumericVariants(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleSkipsUnknownEstimate(t *testing.T) {
+	t.Parallel()
 	ruleUnderTest, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"value": 10},
@@ -161,6 +168,7 @@ func TestImpactRatioMaxPercentRuleSkipsUnknownEstimate(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleRejectsNegativeThreshold(t *testing.T) {
+	t.Parallel()
 	_, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"value": -1},
@@ -171,6 +179,7 @@ func TestImpactRatioMaxPercentRuleRejectsNegativeThreshold(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleRejectsThresholdAboveHundred(t *testing.T) {
+	t.Parallel()
 	_, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"value": 100.01},
@@ -181,6 +190,7 @@ func TestImpactRatioMaxPercentRuleRejectsThresholdAboveHundred(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleRejectsNonFiniteThreshold(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name  string
 		value float64
@@ -190,6 +200,7 @@ func TestImpactRatioMaxPercentRuleRejectsNonFiniteThreshold(t *testing.T) {
 		{name: "neginf", value: math.Inf(-1)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			_, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 				Enabled: true,
 				Params:  map[string]any{"value": tc.value},
@@ -202,6 +213,7 @@ func TestImpactRatioMaxPercentRuleRejectsNonFiniteThreshold(t *testing.T) {
 }
 
 func TestImpactRatioMaxPercentRuleRejectsInvalidConfig(t *testing.T) {
+	t.Parallel()
 	_, err := newImpactRatioMaxPercentRule(policy.RulePolicy{
 		Enabled: true,
 		Params:  map[string]any{"value": "not-a-number"},

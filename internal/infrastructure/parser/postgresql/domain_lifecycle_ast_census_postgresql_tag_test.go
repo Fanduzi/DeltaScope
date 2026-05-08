@@ -74,6 +74,7 @@ var pgDomainLifecycleCensusCases = []struct {
 // domain lifecycle DDL candidates. This is a read-only characterization
 // test — no production code is modified.
 func TestDomainLifecycleASTCensus(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Domain Lifecycle AST Census ===")
 	t.Logf("%-38s | %-22s | %s", "Case", "Node Kind", "AST Facts")
@@ -230,6 +231,7 @@ func assertDomainLifecycleASTFacts(t *testing.T, fact domainLifecycleASTFact) {
 // candidates. After Task 2, supported forms normalize through spec.DDL and
 // deferred forms return explicit unsupported details.
 func TestDomainLifecycleDeltaScopeBaseline(t *testing.T) {
+	t.Parallel()
 	t.Log("")
 	t.Log("=== PostgreSQL Domain Lifecycle DeltaScope Baseline ===")
 	t.Logf("%-38s | %-8s | %-12s | %-5s | %s",

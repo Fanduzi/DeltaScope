@@ -11,6 +11,7 @@ import (
 )
 
 func TestKindAndDialectStringReturnUnderlyingValue(t *testing.T) {
+	t.Parallel()
 	if got := KindDDL.String(); got != "ddl" {
 		t.Fatalf("expected ddl string, got %q", got)
 	}
@@ -29,6 +30,7 @@ func TestKindAndDialectStringReturnUnderlyingValue(t *testing.T) {
 }
 
 func TestStatementKindAndDialectTypes(t *testing.T) {
+	t.Parallel()
 	stmt := Statement{
 		Kind:    KindDDL,
 		Dialect: DialectMySQL,
@@ -46,6 +48,7 @@ func TestStatementKindAndDialectTypes(t *testing.T) {
 }
 
 func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {
+	t.Parallel()
 	stmt := Statement{
 		Metadata: &Metadata{
 			Instance: &InstanceFacts{
@@ -98,6 +101,7 @@ func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {
 }
 
 func TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot(t *testing.T) {
+	t.Parallel()
 	snapshot := TableSnapshot{
 		Constraints: []Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
 	}
@@ -108,6 +112,7 @@ func TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot(t *testing.T
 }
 
 func TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot(t *testing.T) {
+	t.Parallel()
 	snapshot := TableSnapshot{
 		PrimaryKey: &Index{Name: "PRIMARY", Kind: IndexKindPrimary, Columns: []string{"id"}},
 	}
@@ -118,6 +123,7 @@ func TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot(t *testing.T) {
 }
 
 func TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts(t *testing.T) {
+	t.Parallel()
 	snapshot := TableSnapshot{
 		Constraints: []Constraint{{Type: "check", Name: "users_id_positive", Columns: []string{"id"}}},
 		Indexes:     []Index{{Name: "idx_email", Kind: IndexKindSecondary, Columns: []string{"email"}}},
@@ -129,6 +135,7 @@ func TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts(t *testing
 }
 
 func TestDDLTracksExplicitNamesForNamingGovernanceTargets(t *testing.T) {
+	t.Parallel()
 	stmt := Statement{
 		Kind:    KindDDL,
 		Dialect: DialectMySQL,
@@ -195,6 +202,7 @@ func TestDDLTracksExplicitNamesForNamingGovernanceTargets(t *testing.T) {
 }
 
 func TestConstraintPreservesForeignKeyReferencedObjectFacts(t *testing.T) {
+	t.Parallel()
 	constraint := Constraint{
 		Type:              "foreign_key",
 		Name:              "fk_orders_user",
@@ -238,6 +246,7 @@ func TestConstraintPreservesForeignKeyReferencedObjectFacts(t *testing.T) {
 }
 
 func TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent(t *testing.T) {
+	t.Parallel()
 	constraint := Constraint{
 		Type:    "check",
 		Name:    "chk_amount",
@@ -261,6 +270,7 @@ func TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent(t *testing.T) {
 }
 
 func TestConstraintPreservesForeignKeyReferencedSchemaFacts(t *testing.T) {
+	t.Parallel()
 	constraint := Constraint{
 		Type:              "foreign_key",
 		Name:              "fk_orders_user",
@@ -296,6 +306,7 @@ func TestConstraintPreservesForeignKeyReferencedSchemaFacts(t *testing.T) {
 }
 
 func TestConstraintOmitsReferencedSchemaWhenAbsent(t *testing.T) {
+	t.Parallel()
 	constraint := Constraint{
 		Type:    "check",
 		Name:    "chk_amount",
@@ -316,6 +327,7 @@ func TestConstraintOmitsReferencedSchemaWhenAbsent(t *testing.T) {
 }
 
 func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) {
+	t.Parallel()
 	stmt := Statement{
 		Kind:    KindDML,
 		Dialect: DialectMySQL,
@@ -477,6 +489,7 @@ func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) 
 // ---------------------------------------------------------------------------
 
 func TestColumnPreservesGeneratedWhenFact(t *testing.T) {
+	t.Parallel()
 	col := Column{
 		Name:          "full_name",
 		Type:          "text",
@@ -501,6 +514,7 @@ func TestColumnPreservesGeneratedWhenFact(t *testing.T) {
 }
 
 func TestColumnOmitsGeneratedWhenWhenEmpty(t *testing.T) {
+	t.Parallel()
 	col := Column{Name: "email", Type: "text"}
 
 	data, err := json.Marshal(col)
@@ -517,6 +531,7 @@ func TestColumnOmitsGeneratedWhenWhenEmpty(t *testing.T) {
 }
 
 func TestColumnPreservesIsIdentityFact(t *testing.T) {
+	t.Parallel()
 	col := Column{
 		Name:       "id",
 		Type:       "bigint",
@@ -541,6 +556,7 @@ func TestColumnPreservesIsIdentityFact(t *testing.T) {
 }
 
 func TestColumnOmitsIsIdentityWhenFalse(t *testing.T) {
+	t.Parallel()
 	col := Column{Name: "email", Type: "text"}
 
 	data, err := json.Marshal(col)
@@ -557,6 +573,7 @@ func TestColumnOmitsIsIdentityWhenFalse(t *testing.T) {
 }
 
 func TestColumnPreservesIdentityOptionsFact(t *testing.T) {
+	t.Parallel()
 	col := Column{
 		Name: "id",
 		Type: "bigint",
@@ -591,6 +608,7 @@ func TestColumnPreservesIdentityOptionsFact(t *testing.T) {
 }
 
 func TestColumnOmitsIdentityOptionsWhenNil(t *testing.T) {
+	t.Parallel()
 	col := Column{Name: "email", Type: "text"}
 
 	data, err := json.Marshal(col)
@@ -607,6 +625,7 @@ func TestColumnOmitsIdentityOptionsWhenNil(t *testing.T) {
 }
 
 func TestUnsupportedDetailPreservesMetadata(t *testing.T) {
+	t.Parallel()
 	detail := UnsupportedDetail{
 		Feature: "generated_column",
 		Reason:  "unsupported in v1",
@@ -640,6 +659,7 @@ func TestUnsupportedDetailPreservesMetadata(t *testing.T) {
 }
 
 func TestUnsupportedDetailOmitsMetadataWhenNil(t *testing.T) {
+	t.Parallel()
 	detail := UnsupportedDetail{
 		Feature: "select",
 		Reason:  "unsupported",
@@ -659,6 +679,7 @@ func TestUnsupportedDetailOmitsMetadataWhenNil(t *testing.T) {
 }
 
 func TestIndexPreservesAdvancedFactsInJSON(t *testing.T) {
+	t.Parallel()
 	idx := Index{
 		Name:              "idx_active",
 		Kind:              IndexKindSecondary,
@@ -711,6 +732,7 @@ func TestIndexPreservesAdvancedFactsInJSON(t *testing.T) {
 }
 
 func TestIndexOmitsAdvancedFactsWhenZero(t *testing.T) {
+	t.Parallel()
 	idx := Index{
 		Name:    "idx_simple",
 		Kind:    IndexKindSecondary,
@@ -753,6 +775,7 @@ func ptrFloat64(value float64) *float64 {
 }
 
 func TestDDLObjectLifecycleFieldsSerializeCorrectly(t *testing.T) {
+	t.Parallel()
 	ddl := &DDL{
 		Operation:  DDLOperationDropSchema,
 		ObjectName: "staging",
@@ -793,6 +816,7 @@ func TestDDLObjectLifecycleFieldsSerializeCorrectly(t *testing.T) {
 }
 
 func TestDDLTypeLifecycleOperationsSerializeCorrectly(t *testing.T) {
+	t.Parallel()
 	createType := &DDL{
 		Operation:  DDLOperationCreateType,
 		ObjectName: "color",
@@ -859,6 +883,7 @@ func TestDDLTypeLifecycleOperationsSerializeCorrectly(t *testing.T) {
 }
 
 func TestDDLDomainOperationsRoundTrip(t *testing.T) {
+	t.Parallel()
 	var rt DDL
 
 	createDomain := &DDL{
@@ -923,6 +948,7 @@ func TestDDLDomainOperationsRoundTrip(t *testing.T) {
 }
 
 func TestDDLGrantTableOperationsRoundTrip(t *testing.T) {
+	t.Parallel()
 	grant := &DDL{
 		Operation:  DDLOperationGrantTable,
 		ObjectName: "users",
@@ -981,6 +1007,7 @@ func TestDDLGrantTableOperationsRoundTrip(t *testing.T) {
 }
 
 func TestDDLObjectFieldsOmitWhenEmpty(t *testing.T) {
+	t.Parallel()
 	ddl := &DDL{
 		Operation: DDLOperationCreateIndex,
 		Table:     &Table{Name: "users"},

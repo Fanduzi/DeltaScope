@@ -85,6 +85,7 @@ var pgAlterTableCensusCases = []struct {
 }
 
 func TestPostgreSQLAlterTableCoverageCensus(t *testing.T) {
+	t.Parallel()
 	var results []alterTableCensusResult
 
 	for _, tc := range pgAlterTableCensusCases {

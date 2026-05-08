@@ -186,6 +186,7 @@ func alterUnsupportedCurrentStatusForCase(t *testing.T, name, sql string) alterU
 }
 
 func TestPostgreSQLAlterTableUnsupportedASTCensus(t *testing.T) {
+	t.Parallel()
 	var facts []alterUnsupportedNodeFacts
 
 	for _, tc := range alterTableUnsupportedASTCases {
@@ -252,6 +253,7 @@ func TestPostgreSQLAlterTableUnsupportedASTCensus(t *testing.T) {
 }
 
 func TestPostgreSQLAlterTableUnsupportedCurrentExtractionBaseline(t *testing.T) {
+	t.Parallel()
 	var statuses []alterUnsupportedCurrentStatus
 
 	for _, tc := range alterTableUnsupportedASTCases {

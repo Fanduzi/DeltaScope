@@ -51,6 +51,7 @@ var defaultPolicyDialectHygieneRegistryPostgreSQLOnlyRuleIDs = []string{
 }
 
 func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.table.name.max_length"] = policy.RulePolicy{
@@ -148,6 +149,7 @@ func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
 }
 
 func TestRegisterSkipsDisabledDDLRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.table.comment.require"] = policy.RulePolicy{
@@ -181,6 +183,7 @@ func TestRegisterSkipsDisabledDDLRules(t *testing.T) {
 }
 
 func TestRegisterAddsEnabledAlterRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.alter.drop_column.forbid"] = policy.RulePolicy{
@@ -242,6 +245,7 @@ func TestRegisterAddsEnabledAlterRulesInDeterministicOrder(t *testing.T) {
 }
 
 func TestRegisterAddsStandalonePostgreSQLDropIndexRule(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.alter.drop_index.forbid"] = policy.RulePolicy{
@@ -280,6 +284,7 @@ func TestRegisterAddsStandalonePostgreSQLDropIndexRule(t *testing.T) {
 }
 
 func TestRegisterAddsEnabledTableOptionRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.table.primary_key.require"] = policy.RulePolicy{
@@ -350,6 +355,7 @@ func TestRegisterAddsEnabledTableOptionRulesInDeterministicOrder(t *testing.T) {
 }
 
 func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.table.denylist.forbid"] = policy.RulePolicy{
@@ -390,6 +396,7 @@ func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
 }
 
 func TestRegisterAddsEnabledPrimaryKeySemanticRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.table.primary_key.columns.max_count"] = policy.RulePolicy{
@@ -440,6 +447,7 @@ func TestRegisterAddsEnabledPrimaryKeySemanticRulesInDeterministicOrder(t *testi
 }
 
 func TestRegisterRejectsInvalidDDLRuleConfig(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["ddl.table.name.max_length"] = policy.RulePolicy{
@@ -456,12 +464,14 @@ func TestRegisterRejectsInvalidDDLRuleConfig(t *testing.T) {
 }
 
 func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	if err := Register(registry, policy.Default()); err != nil {
 		t.Fatalf("register: %v", err)
 	}
 
 	t.Run("postgresql_create_table_excludes_mysql_family_only_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -482,6 +492,7 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 	})
 
 	t.Run("mysql_alter_excludes_postgresql_only_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -509,6 +520,7 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 	})
 
 	t.Run("tidb_alter_excludes_postgresql_only_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectTiDB,
@@ -537,6 +549,7 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 }
 
 func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -562,6 +575,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 
 	// Test PostgreSQL dialect: all 5 forbid rules + 1 migration-safety rule should fire
 	t.Run("postgresql_fires_all_five_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -602,6 +616,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 
 	// Test MySQL dialect: none of the 5 PG-native rules should fire
 	t.Run("mysql_skips_pg_native_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -639,6 +654,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 
 	// Test TiDB dialect: none of the 5 PG-native rules should fire
 	t.Run("tidb_skips_pg_native_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectTiDB,
@@ -675,6 +691,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 }
 
 func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -688,6 +705,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 	}
 
 	t.Run("postgresql_fires_explicit_default_change_semantic_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -739,6 +757,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 	})
 
 	t.Run("mysql_modify_column_does_not_trigger_pg_semantic_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -771,6 +790,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 	})
 
 	t.Run("tidb_modify_column_does_not_trigger_pg_semantic_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectTiDB,
@@ -804,6 +824,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 }
 
 func TestRegisterPGExplicitDefaultChangeDoesNotBreakExistingMySQLRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -847,6 +868,7 @@ func TestRegisterPGExplicitDefaultChangeDoesNotBreakExistingMySQLRules(t *testin
 	}
 }
 func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 
@@ -860,6 +882,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 	}
 
 	t.Run("postgresql_fires_explicit_nullability_change_semantic_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectPostgreSQL,
@@ -911,6 +934,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 	})
 
 	t.Run("mysql_modify_column_does_not_trigger_pg_nullability_semantic_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectMySQL,
@@ -943,6 +967,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 	})
 
 	t.Run("tidb_modify_column_does_not_trigger_pg_nullability_semantic_rules", func(t *testing.T) {
+		t.Parallel()
 		stmt := spec.Statement{
 			Kind:    spec.KindDDL,
 			Dialect: spec.DialectTiDB,
@@ -976,6 +1001,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 }
 
 func TestRegisterPGExplicitNullabilityChangeDoesNotBreakExistingMySQLRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 

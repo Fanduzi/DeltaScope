@@ -17,6 +17,7 @@ import (
 )
 
 func TestRegisterAddsEnabledDMLRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["dml.insert.rows.max_count"] = policy.RulePolicy{
@@ -51,6 +52,7 @@ func TestRegisterAddsEnabledDMLRulesInDeterministicOrder(t *testing.T) {
 }
 
 func TestRegisterAddsImpactRulesInDeterministicOrder(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["dml.where.require"] = policy.RulePolicy{
@@ -166,6 +168,7 @@ func TestRegisterAddsImpactRulesInDeterministicOrder(t *testing.T) {
 }
 
 func TestRegisterSkipsDisabledDMLRules(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["dml.where.require"] = policy.RulePolicy{
@@ -213,6 +216,7 @@ func registeredStatementRuleIDs(t *testing.T, registry *rule.Registry) []string 
 }
 
 func TestRegisterRejectsInvalidDMLRuleConfig(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["dml.insert.rows.max_count"] = policy.RulePolicy{
@@ -227,6 +231,7 @@ func TestRegisterRejectsInvalidDMLRuleConfig(t *testing.T) {
 }
 
 func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
+	t.Parallel()
 	registry := rule.NewRegistry()
 	cfg := policy.Default()
 	cfg.Rules["dml.table.denylist.forbid"] = policy.RulePolicy{
