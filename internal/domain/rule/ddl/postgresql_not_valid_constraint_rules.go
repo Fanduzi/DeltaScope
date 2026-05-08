@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -46,13 +47,16 @@ func (r notValidConstraintValidateRequiredRule) ID() string {
 	return ruleIDPGAlterNotValidConstraintValidateRequire
 }
 
-func (r notValidConstraintValidateRequiredRule) EvaluateAll(statements []spec.Statement) ([]rule.Finding, error) {
+func (r notValidConstraintValidateRequiredRule) EvaluateAll(ctx context.Context, statements []spec.Statement) ([]rule.Finding, error) {
 	if r.level == "" {
 		return nil, nil
 	}
 
 	pending := make([]pendingNotValidConstraint, 0)
 	for idx, statement := range statements {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if statement.Dialect != spec.DialectPostgreSQL || statement.Kind != spec.KindDDL || statement.DDL == nil {
 			continue
 		}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -28,7 +29,7 @@ func TestForbiddenAlterActionRuleFindsForbiddenActions(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -49,7 +50,7 @@ func TestForbiddenAlterActionRuleSkipsAllowedPolicies(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -81,7 +82,7 @@ func TestForbiddenAlterActionRuleHandlesStandaloneDropIndexWithoutTable(t *testi
 		t.Fatal("expected standalone drop index statement to apply")
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -123,7 +124,7 @@ func TestForbiddenAlterActionRuleMapsPostgreSQLDropConstraintPrimaryKeySemantica
 		},
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -165,7 +166,7 @@ func TestForbiddenAlterActionRuleDoesNotMapNonPrimaryConstraintToDropPrimaryKey(
 		},
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

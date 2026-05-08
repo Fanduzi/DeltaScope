@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -22,7 +23,7 @@ func TestMergeAlterRuleFindsRepeatedMySQLAlterTargets(t *testing.T) {
 		t.Fatalf("new mysql merge alter rule: %v", err)
 	}
 
-	findings, err := globalRule.EvaluateAll([]spec.Statement{
+	findings, err := globalRule.EvaluateAll(context.Background(), []spec.Statement{
 		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "drop_column", Name: "age"}}}},
 		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "drop_index", Name: "idx_age"}}}},
 	})
@@ -43,7 +44,7 @@ func TestMergeAlterRuleSkipsDifferentDialectAndSingleAlter(t *testing.T) {
 		t.Fatalf("new tidb merge alter rule: %v", err)
 	}
 
-	findings, err := globalRule.EvaluateAll([]spec.Statement{
+	findings, err := globalRule.EvaluateAll(context.Background(), []spec.Statement{
 		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "drop_column", Name: "age"}}}},
 		{Kind: spec.KindDDL, Dialect: spec.DialectTiDB, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "orders"}, Alter: []spec.Alter{{Action: "drop_column", Name: "legacy"}}}},
 	})

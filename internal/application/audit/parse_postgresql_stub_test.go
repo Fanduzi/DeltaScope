@@ -3,6 +3,7 @@
 package audit
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestParseReturnsUnsupportedErrorForPostgreSQLWithoutBuildTag(t *testing.T) {
-	_, err := Parse("select 1;", spec.DialectPostgreSQL)
+	_, err := Parse(context.Background(), "select 1;", spec.DialectPostgreSQL)
 	if err == nil {
 		t.Fatal("expected unsupported postgresql error")
 	}

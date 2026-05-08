@@ -1,6 +1,7 @@
 package ddl
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -123,7 +124,7 @@ func TestNotValidConstraintValidateRequiredRule(t *testing.T) {
 			if err != nil {
 				t.Fatalf("construct rule: %v", err)
 			}
-			findings, err := r.EvaluateAll(tt.stmts)
+			findings, err := r.EvaluateAll(context.Background(), tt.stmts)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -153,7 +154,7 @@ func TestNotValidConstraintValidateRequiredRule_FindingMetadata(t *testing.T) {
 	stmts := []spec.Statement{
 		pgAlterConstraint("orders", "public", "chk_amount", "check", true),
 	}
-	findings, err := r.EvaluateAll(stmts)
+	findings, err := r.EvaluateAll(context.Background(), stmts)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -213,7 +214,7 @@ func TestNotValidConstraintValidateRequiredRule_SchemaQualifiedTable(t *testing.
 		pgAlterConstraint("orders", "public", "chk_amount", "check", true),
 		pgValidateConstraint("orders", "public", "chk_amount"),
 	}
-	findings, err := r.EvaluateAll(stmts)
+	findings, err := r.EvaluateAll(context.Background(), stmts)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -247,7 +248,7 @@ func TestNotValidConstraintValidateRequiredRule_RegisteredInRegistry(t *testing.
 		},
 	}}
 
-	globalFindings, err := registry.EvaluateGlobal(statements)
+	globalFindings, err := registry.EvaluateGlobal(context.Background(), statements)
 	if err != nil {
 		t.Fatalf("evaluate global: %v", err)
 	}

@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -199,7 +200,7 @@ func TestPostgreSQLObjectLifecycleClassification(t *testing.T) {
 
 	for _, tc := range cases {
 		p := New()
-		result, parseErr := p.Parse(tc.SQL)
+		result, parseErr := p.Parse(context.Background(), tc.SQL)
 		if parseErr != nil {
 			t.Logf("%-42s | %-6s | %-8s | %-12s | parse error: %v",
 				tc.Name, "FAIL", "-", "-", parseErr)

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -36,13 +37,16 @@ func newMergeAlterRule(ruleID string, dialect spec.Dialect, fallbackLevel rule.L
 
 func (r mergeAlterRule) ID() string { return r.ruleID }
 
-func (r mergeAlterRule) EvaluateAll(statements []spec.Statement) ([]rule.Finding, error) {
+func (r mergeAlterRule) EvaluateAll(ctx context.Context, statements []spec.Statement) ([]rule.Finding, error) {
 	if r.dialect == "" {
 		return nil, nil
 	}
 
 	counts := make(map[string]int)
 	for _, statement := range statements {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if statement.Kind != spec.KindDDL || statement.Dialect != r.dialect || !appliesToAlterTable(statement) {
 			continue
 		}

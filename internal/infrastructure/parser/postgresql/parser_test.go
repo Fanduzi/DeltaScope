@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -15,7 +16,7 @@ import (
 func TestParserParsesMultiStatementSQL(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create table t1 (id bigint); update t1 set id = 2 where id = 1;")
+	result, err := parser.Parse(context.Background(), "create table t1 (id bigint); update t1 set id = 2 where id = 1;")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -41,7 +42,7 @@ func TestParserParsesMultiStatementSQL(t *testing.T) {
 func TestPGExtractorExtractNormalizesStatementSQL(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse(" create table t1 (id bigint); ")
+	result, err := parser.Parse(context.Background(), " create table t1 (id bigint); ")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -71,7 +72,7 @@ func TestPGExtractorExtractNormalizesStatementSQL(t *testing.T) {
 func TestParserMarksUnsupportedPostgreSQLStatementsStructurally(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("select 1;")
+	result, err := parser.Parse(context.Background(), "select 1;")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -100,7 +101,7 @@ func TestParserMarksUnsupportedPostgreSQLStatementsStructurally(t *testing.T) {
 func TestParserSupportsApprovedPostgreSQLAlterTableWhitelist(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users rename column old_name to new_name;")
+	result, err := parser.Parse(context.Background(), "alter table users rename column old_name to new_name;")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -136,7 +137,7 @@ func TestParserSupportsApprovedPostgreSQLAlterTableWhitelist(t *testing.T) {
 func TestParserPreservesDropConstraintActionForPostgreSQL(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table public.users drop constraint users_pkey;")
+	result, err := parser.Parse(context.Background(), "alter table public.users drop constraint users_pkey;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -163,7 +164,7 @@ func TestParserPreservesDropConstraintActionForPostgreSQL(t *testing.T) {
 func TestParserPreservesSetDataTypeActionForPostgreSQL(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users alter column status type bigint;")
+	result, err := parser.Parse(context.Background(), "alter table users alter column status type bigint;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -192,7 +193,7 @@ func TestParserPreservesSetDataTypeActionForPostgreSQL(t *testing.T) {
 
 func TestParserSetDataTypeBasicHasNoUsingOption(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TABLE users ALTER COLUMN name TYPE text")
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users ALTER COLUMN name TYPE text")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -214,7 +215,7 @@ func TestParserSetDataTypeBasicHasNoUsingOption(t *testing.T) {
 
 func TestParserSetDataTypeUsingAddsHasUsingOption(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TABLE users ALTER COLUMN name TYPE jsonb USING to_jsonb(name)")
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users ALTER COLUMN name TYPE jsonb USING to_jsonb(name)")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -236,7 +237,7 @@ func TestParserSetDataTypeUsingAddsHasUsingOption(t *testing.T) {
 
 func TestParserSetLoggedNormalizesAction(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TABLE users SET LOGGED")
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET LOGGED")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -258,7 +259,7 @@ func TestParserSetLoggedNormalizesAction(t *testing.T) {
 
 func TestParserSetUnloggedNormalizesAction(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TABLE users SET UNLOGGED")
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET UNLOGGED")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -280,7 +281,7 @@ func TestParserSetUnloggedNormalizesAction(t *testing.T) {
 
 func TestParserSetTablespaceStillUnsupported(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TABLE users SET TABLESPACE fastspace")
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET TABLESPACE fastspace")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -299,7 +300,7 @@ func TestParserSetTablespaceStillUnsupported(t *testing.T) {
 func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create view public.active_users as select id from public.users;")
+	result, err := parser.Parse(context.Background(), "create view public.active_users as select id from public.users;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -331,7 +332,7 @@ func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
 func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create or replace view public.active_users as select id from public.users;")
+	result, err := parser.Parse(context.Background(), "create or replace view public.active_users as select id from public.users;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -354,7 +355,7 @@ func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
 func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create temporary view public.active_users as select id from public.users;")
+	result, err := parser.Parse(context.Background(), "create temporary view public.active_users as select id from public.users;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -377,7 +378,7 @@ func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
 func TestParserSupportsPostgreSQLDropView(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("drop view if exists public.active_users;")
+	result, err := parser.Parse(context.Background(), "drop view if exists public.active_users;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -409,7 +410,7 @@ func TestParserSupportsPostgreSQLDropView(t *testing.T) {
 func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("drop view public.active_users, public.disabled_users;")
+	result, err := parser.Parse(context.Background(), "drop view public.active_users, public.disabled_users;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -432,7 +433,7 @@ func TestParserRejectsPostgreSQLMultiTargetDropView(t *testing.T) {
 func TestExtractCreateIndexConcurrentFlag(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create index concurrently idx_users_email on public.users (email);")
+	result, err := parser.Parse(context.Background(), "create index concurrently idx_users_email on public.users (email);")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -467,7 +468,7 @@ func TestExtractCreateIndexConcurrentFlag(t *testing.T) {
 func TestExtractCreateIndexNonConcurrent(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create index idx_users_email on public.users (email);")
+	result, err := parser.Parse(context.Background(), "create index idx_users_email on public.users (email);")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -493,7 +494,7 @@ func TestExtractCreateIndexNonConcurrent(t *testing.T) {
 func TestExtractCreateUniqueIndex(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create unique index idx_users_email on public.users (email);")
+	result, err := parser.Parse(context.Background(), "create unique index idx_users_email on public.users (email);")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -519,7 +520,7 @@ func TestExtractCreateUniqueIndex(t *testing.T) {
 func TestExtractCreateIndexNormalizesPartialIndex(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create index idx_active on public.users (email) where active = true;")
+	result, err := parser.Parse(context.Background(), "create index idx_active on public.users (email) where active = true;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -548,7 +549,7 @@ func TestExtractCreateIndexNormalizesPartialIndex(t *testing.T) {
 func TestExtractCreateIndexNormalizesExpressionIndex(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create index idx_lower_email on public.users (lower(email));")
+	result, err := parser.Parse(context.Background(), "create index idx_lower_email on public.users (lower(email));")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -577,7 +578,7 @@ func TestExtractCreateIndexNormalizesExpressionIndex(t *testing.T) {
 func TestExtractCreateIndexNormalizesIncludeClause(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create index idx_users_email on public.users (email) include (name);")
+	result, err := parser.Parse(context.Background(), "create index idx_users_email on public.users (email) include (name);")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -606,7 +607,7 @@ func TestExtractCreateIndexNormalizesIncludeClause(t *testing.T) {
 func TestExtractCreateIndexNormalizesNonBtreeAccessMethod(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create index idx_users_email_hash on public.users using hash (email);")
+	result, err := parser.Parse(context.Background(), "create index idx_users_email_hash on public.users using hash (email);")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -635,7 +636,7 @@ func TestExtractCreateIndexNormalizesNonBtreeAccessMethod(t *testing.T) {
 func TestExtractCreateIndexRejectsNullsNotDistinct(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create unique index idx_users_email_unique on public.users (email) nulls not distinct;")
+	result, err := parser.Parse(context.Background(), "create unique index idx_users_email_unique on public.users (email) nulls not distinct;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -840,7 +841,7 @@ func TestCharacterizePGUnsupportedIndexForms(t *testing.T) {
 func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table public.orders add constraint chk_amount check (amount > 0) not valid;")
+	result, err := parser.Parse(context.Background(), "alter table public.orders add constraint chk_amount check (amount > 0) not valid;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -870,7 +871,7 @@ func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
 func TestExtractAlterAddCheckWithoutNotValid(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table public.orders add constraint chk_amount check (amount > 0);")
+	result, err := parser.Parse(context.Background(), "alter table public.orders add constraint chk_amount check (amount > 0);")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -900,7 +901,7 @@ func TestExtractAlterAddCheckWithoutNotValid(t *testing.T) {
 func TestExtractAlterColumnSetDefault(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users alter column status set default 'active';")
+	result, err := parser.Parse(context.Background(), "alter table users alter column status set default 'active';")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -942,7 +943,7 @@ func TestExtractAlterColumnSetDefault(t *testing.T) {
 func TestExtractAlterColumnDropDefault(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users alter column status drop default;")
+	result, err := parser.Parse(context.Background(), "alter table users alter column status drop default;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -984,7 +985,7 @@ func TestExtractAlterColumnDropDefault(t *testing.T) {
 func TestExtractAlterColumnSetNotNull(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users alter column status set not null;")
+	result, err := parser.Parse(context.Background(), "alter table users alter column status set not null;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1026,7 +1027,7 @@ func TestExtractAlterColumnSetNotNull(t *testing.T) {
 func TestExtractAlterColumnDropNotNull(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users alter column status drop not null;")
+	result, err := parser.Parse(context.Background(), "alter table users alter column status drop not null;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1068,7 +1069,7 @@ func TestExtractAlterColumnDropNotNull(t *testing.T) {
 func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter index idx_old rename to idx_new;")
+	result, err := parser.Parse(context.Background(), "alter index idx_old rename to idx_new;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1101,7 +1102,7 @@ func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
 func TestExtractValidateConstraint(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users validate constraint chk_amount;")
+	result, err := parser.Parse(context.Background(), "alter table users validate constraint chk_amount;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1140,7 +1141,7 @@ func TestExtractValidateConstraint(t *testing.T) {
 func TestExtractDropPrimaryKeyConstraint(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users drop constraint users_pkey;")
+	result, err := parser.Parse(context.Background(), "alter table users drop constraint users_pkey;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1179,7 +1180,7 @@ func TestExtractDropPrimaryKeyConstraint(t *testing.T) {
 func TestExtractDropCheckConstraint(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("alter table users drop constraint chk_amount;")
+	result, err := parser.Parse(context.Background(), "alter table users drop constraint chk_amount;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1440,7 +1441,7 @@ func TestExtractCreateTableInlineReferencesPreservesReferencedTableAndColumns(t 
 
 func TestExtractValidateConstraintSchemaQualifiedFact(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TABLE public.orders VALIDATE CONSTRAINT chk_orders_amount;")
+	result, err := parser.Parse(context.Background(), "ALTER TABLE public.orders VALIDATE CONSTRAINT chk_orders_amount;")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -1551,7 +1552,7 @@ func extractPostgreSQLStatement(t *testing.T, sql string) spec.Statement {
 	t.Helper()
 
 	parser := New()
-	result, err := parser.Parse(sql)
+	result, err := parser.Parse(context.Background(), sql)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5391,7 +5392,7 @@ func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			p := New()
-			result, err := p.Parse(tc.SQL)
+			result, err := p.Parse(context.Background(), tc.SQL)
 			if err != nil {
 				t.Fatalf("parse: %v", err)
 			}
@@ -5436,7 +5437,7 @@ func TestPGExtractorExtractsObjectLifecycleDDL(t *testing.T) {
 
 func TestPGExtractorRefreshMaterializedViewNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("REFRESH MATERIALIZED VIEW mv_stats")
+	result, err := p.Parse(context.Background(), "REFRESH MATERIALIZED VIEW mv_stats")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5471,7 +5472,7 @@ func TestPGExtractorRefreshMaterializedViewNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableSetSchemaNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users SET SCHEMA archive")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users SET SCHEMA archive")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5512,7 +5513,7 @@ func TestPGExtractorAlterTableSetSchemaNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableOwnerToNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users OWNER TO app_owner")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users OWNER TO app_owner")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5547,7 +5548,7 @@ func TestPGExtractorAlterTableOwnerToNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableEnableTriggerNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users ENABLE TRIGGER trg_users_audit")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE TRIGGER trg_users_audit")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5582,7 +5583,7 @@ func TestPGExtractorAlterTableEnableTriggerNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableDisableTriggerNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users DISABLE TRIGGER trg_users_audit")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE TRIGGER trg_users_audit")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5617,7 +5618,7 @@ func TestPGExtractorAlterTableDisableTriggerNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableEnableTriggerAllNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users ENABLE TRIGGER ALL")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE TRIGGER ALL")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5648,7 +5649,7 @@ func TestPGExtractorAlterTableEnableTriggerAllNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableEnableTriggerUserNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users ENABLE TRIGGER USER")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE TRIGGER USER")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5679,7 +5680,7 @@ func TestPGExtractorAlterTableEnableTriggerUserNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableDisableTriggerAllNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users DISABLE TRIGGER ALL")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE TRIGGER ALL")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5710,7 +5711,7 @@ func TestPGExtractorAlterTableDisableTriggerAllNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableDisableTriggerUserNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users DISABLE TRIGGER USER")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE TRIGGER USER")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5741,7 +5742,7 @@ func TestPGExtractorAlterTableDisableTriggerUserNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableReplicaIdentityDefaultNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users REPLICA IDENTITY DEFAULT")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY DEFAULT")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5772,7 +5773,7 @@ func TestPGExtractorAlterTableReplicaIdentityDefaultNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableReplicaIdentityFullNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users REPLICA IDENTITY FULL")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY FULL")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5803,7 +5804,7 @@ func TestPGExtractorAlterTableReplicaIdentityFullNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableReplicaIdentityNothingNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users REPLICA IDENTITY NOTHING")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY NOTHING")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5834,7 +5835,7 @@ func TestPGExtractorAlterTableReplicaIdentityNothingNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableReplicaIdentityUsingIndexNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx")
+	result, err := p.Parse(context.Background(), "ALTER TABLE users REPLICA IDENTITY USING INDEX users_replica_identity_idx")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5871,7 +5872,7 @@ func TestPGExtractorAlterTableReplicaIdentityUsingIndexNormalized(t *testing.T) 
 
 func TestPGExtractorAlterTableAttachPartitionNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')")
+	result, err := p.Parse(context.Background(), "ALTER TABLE measurement ATTACH PARTITION measurement_y2026m04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5909,7 +5910,7 @@ func TestPGExtractorAlterTableAttachPartitionNormalized(t *testing.T) {
 
 func TestPGExtractorAlterTableDetachPartitionNormalized(t *testing.T) {
 	p := New()
-	result, err := p.Parse("ALTER TABLE measurement DETACH PARTITION measurement_y2026m04")
+	result, err := p.Parse(context.Background(), "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5944,7 +5945,7 @@ func TestPGExtractorAlterTableDetachPartitionNormalized(t *testing.T) {
 
 func TestExtractCreateTypeEnumNormalizes(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("CREATE TYPE color AS ENUM ('red', 'green', 'blue')")
+	result, err := parser.Parse(context.Background(), "CREATE TYPE color AS ENUM ('red', 'green', 'blue')")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -5977,7 +5978,7 @@ func TestExtractCreateTypeEnumNormalizes(t *testing.T) {
 
 func TestExtractAlterTypeEnumAddValueNormalizes(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TYPE color ADD VALUE 'yellow'")
+	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE 'yellow'")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6004,7 +6005,7 @@ func TestExtractAlterTypeEnumAddValueNormalizes(t *testing.T) {
 
 func TestExtractAlterTypeEnumAddValueIfNotExists(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TYPE color ADD VALUE IF NOT EXISTS 'yellow'")
+	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE IF NOT EXISTS 'yellow'")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6019,7 +6020,7 @@ func TestExtractAlterTypeEnumAddValueIfNotExists(t *testing.T) {
 
 func TestExtractAlterTypeEnumAddValueBefore(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TYPE color ADD VALUE 'yellow' BEFORE 'green'")
+	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE 'yellow' BEFORE 'green'")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6037,7 +6038,7 @@ func TestExtractAlterTypeEnumAddValueBefore(t *testing.T) {
 
 func TestExtractAlterTypeEnumAddValueAfter(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("ALTER TYPE color ADD VALUE 'yellow' AFTER 'green'")
+	result, err := parser.Parse(context.Background(), "ALTER TYPE color ADD VALUE 'yellow' AFTER 'green'")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6055,7 +6056,7 @@ func TestExtractAlterTypeEnumAddValueAfter(t *testing.T) {
 
 func TestExtractDropTypeNormalizes(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("DROP TYPE color")
+	result, err := parser.Parse(context.Background(), "DROP TYPE color")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6079,7 +6080,7 @@ func TestExtractDropTypeNormalizes(t *testing.T) {
 
 func TestExtractDropTypeIfExistsCascade(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("DROP TYPE IF EXISTS color CASCADE")
+	result, err := parser.Parse(context.Background(), "DROP TYPE IF EXISTS color CASCADE")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6097,7 +6098,7 @@ func TestExtractDropTypeIfExistsCascade(t *testing.T) {
 
 func TestExtractCompositeType(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("CREATE TYPE address AS (street text, city text)")
+	result, err := parser.Parse(context.Background(), "CREATE TYPE address AS (street text, city text)")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -6130,7 +6131,7 @@ func TestExtractCompositeType(t *testing.T) {
 
 func TestExtractCreateDomain(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("CREATE DOMAIN email AS text CHECK (VALUE <> '')")
+	result, err := parser.Parse(context.Background(), "CREATE DOMAIN email AS text CHECK (VALUE <> '')")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}

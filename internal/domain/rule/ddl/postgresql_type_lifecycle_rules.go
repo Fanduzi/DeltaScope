@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -52,7 +53,7 @@ func (r pgTypeLifecycleRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Operation == r.operation
 }
 
-func (r pgTypeLifecycleRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgTypeLifecycleRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -127,7 +128,7 @@ func (r pgAlterTypeAddValuePositionNoticeRule) AppliesTo(statement spec.Statemen
 	return p == "before" || p == "after"
 }
 
-func (r pgAlterTypeAddValuePositionNoticeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgAlterTypeAddValuePositionNoticeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

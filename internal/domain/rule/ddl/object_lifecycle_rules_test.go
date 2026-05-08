@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -22,7 +23,7 @@ func TestCreateViewForbidRule(t *testing.T) {
 		t.Fatalf("new create-view forbid rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(spec.Statement{
+	findings, err := statementRule.Evaluate(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationCreateView,
@@ -65,7 +66,7 @@ func TestDropAndTruncateRules(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Operation: spec.DDLOperationDropTable, Table: &spec.Table{Name: "users"}},
 	}
-	dropFindings, err := dropRule.Evaluate(dropStmt)
+	dropFindings, err := dropRule.Evaluate(context.Background(), dropStmt)
 	if err != nil {
 		t.Fatalf("evaluate drop rule: %v", err)
 	}
@@ -77,7 +78,7 @@ func TestDropAndTruncateRules(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Operation: spec.DDLOperationDropView, Table: &spec.Table{Name: "active_users"}},
 	}
-	dropViewFindings, err := dropViewRule.Evaluate(dropViewStmt)
+	dropViewFindings, err := dropViewRule.Evaluate(context.Background(), dropViewStmt)
 	if err != nil {
 		t.Fatalf("evaluate drop-view rule: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestDropAndTruncateRules(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Operation: spec.DDLOperationTruncateTable, Table: &spec.Table{Name: "users"}},
 	}
-	truncateFindings, err := truncateRule.Evaluate(truncateStmt)
+	truncateFindings, err := truncateRule.Evaluate(context.Background(), truncateStmt)
 	if err != nil {
 		t.Fatalf("evaluate truncate rule: %v", err)
 	}
@@ -121,7 +122,7 @@ func TestLifecycleMetadataRules(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "users"}},
 		},
 	}
-	findings, err := dropExistsRule.Evaluate(dropStmt)
+	findings, err := dropExistsRule.Evaluate(context.Background(), dropStmt)
 	if err != nil {
 		t.Fatalf("evaluate drop-table existence rule: %v", err)
 	}
@@ -137,7 +138,7 @@ func TestLifecycleMetadataRules(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
 		},
 	}
-	findings, err = adaptiveHashRule.Evaluate(truncateStmt)
+	findings, err = adaptiveHashRule.Evaluate(context.Background(), truncateStmt)
 	if err != nil {
 		t.Fatalf("evaluate adaptive-hash rule: %v", err)
 	}
@@ -155,7 +156,7 @@ func TestLifecycleRowCountRules(t *testing.T) {
 		t.Fatalf("new drop row-count rule: %v", err)
 	}
 
-	findings, err := dropRowsRule.Evaluate(spec.Statement{
+	findings, err := dropRowsRule.Evaluate(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Operation: spec.DDLOperationDropTable, Table: &spec.Table{Name: "users"}},
 		Metadata: &spec.Metadata{

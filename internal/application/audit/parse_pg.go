@@ -3,12 +3,14 @@
 package audit
 
 import (
+	"context"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	pgparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql"
 )
 
-func parsePostgreSQL(sql string) (ParsedSQL, error) {
-	result, err := pgparser.New().Parse(sql)
+func parsePostgreSQL(ctx context.Context, sql string) (ParsedSQL, error) {
+	result, err := pgparser.New().Parse(ctx, sql)
 	if err != nil {
 		return ParsedSQL{}, err
 	}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -47,7 +48,7 @@ func TestAlterColumnCompatibilityRuleFindsBreakingTransitions(t *testing.T) {
 		},
 	}
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate compatibility rule: %v", err)
 	}
@@ -91,7 +92,7 @@ func TestAlterColumnCompatibilityRuleFindsFamilyChanges(t *testing.T) {
 		},
 	}
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate compatibility rule: %v", err)
 	}
@@ -117,7 +118,7 @@ func TestAlterColumnCompatibilityRuleSkipsOfflineMode(t *testing.T) {
 		},
 	})
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate compatibility rule: %v", err)
 	}
@@ -155,7 +156,7 @@ func TestAlterTableOptionCompatibilityRuleFlagsMetadataBackedChanges(t *testing.
 		},
 	}
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate option compatibility rule: %v", err)
 	}

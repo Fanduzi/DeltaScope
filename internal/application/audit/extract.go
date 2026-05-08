@@ -6,15 +6,19 @@
 package audit
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 // Extract converts parsed statements into first-pass domain StatementSpec values.
-func Extract(parsed ParsedSQL) ([]spec.Statement, error) {
+func Extract(ctx context.Context, parsed ParsedSQL) ([]spec.Statement, error) {
 	statements := make([]spec.Statement, 0, len(parsed.Statements))
 	for index, stmt := range parsed.Statements {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("extract cancelled: %w", err)
+		}
 		if stmt.Extractor == nil {
 			return nil, fmt.Errorf("extract statement %d: missing extractor", index)
 		}

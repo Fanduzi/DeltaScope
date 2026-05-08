@@ -6,6 +6,7 @@
 package audit
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -38,19 +39,19 @@ func (e *PostgreSQLCapabilityBoundaryError) Error() string {
 }
 
 // Parse delegates SQL parsing to the dialect-specific parser adapter.
-func Parse(sql string, dialect spec.Dialect) (ParsedSQL, error) {
+func Parse(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
 	switch dialect {
 	case spec.DialectMySQL, spec.DialectTiDB:
-		return parseTiDB(sql, dialect)
+		return parseTiDB(ctx, sql, dialect)
 	case spec.DialectPostgreSQL:
-		return parsePostgreSQL(sql)
+		return parsePostgreSQL(ctx, sql)
 	default:
 		return ParsedSQL{}, fmt.Errorf("unsupported dialect: %s", dialect)
 	}
 }
 
-func parseTiDB(sql string, dialect spec.Dialect) (ParsedSQL, error) {
-	result, err := tidbparser.New().Parse(sql)
+func parseTiDB(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
+	result, err := tidbparser.New().Parse(ctx, sql)
 	if err != nil {
 		return ParsedSQL{}, err
 	}

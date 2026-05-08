@@ -6,6 +6,8 @@
 package ddl
 
 import (
+	"context"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -34,7 +36,7 @@ func (r tableAuditColumnsRequiredRule) AppliesTo(statement spec.Statement) bool 
 	return r.required && appliesToCreateTableColumns(statement)
 }
 
-func (r tableAuditColumnsRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableAuditColumnsRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

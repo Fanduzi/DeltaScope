@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"sort"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestRegisterAddsEnabledDDLRulesInDeterministicOrder(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationCreateTable,
@@ -161,7 +162,7 @@ func TestRegisterSkipsDisabledDDLRules(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(createTableWithColumns("users", spec.Column{
+	findings, err := registry.EvaluateStatement(context.Background(), createTableWithColumns("users", spec.Column{
 		Name:       "id",
 		Type:       "bigint",
 		Comment:    "'pk'",
@@ -208,7 +209,7 @@ func TestRegisterAddsEnabledAlterRulesInDeterministicOrder(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(alterStatement(
+	findings, err := registry.EvaluateStatement(context.Background(), alterStatement(
 		spec.Alter{Action: "drop_column", Name: "legacy_name"},
 		spec.Alter{Action: "drop_primary_key", Name: "primary"},
 		spec.Alter{Action: "drop_index", Name: "idx_legacy"},
@@ -255,7 +256,7 @@ func TestRegisterAddsStandalonePostgreSQLDropIndexRule(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
@@ -314,7 +315,7 @@ func TestRegisterAddsEnabledTableOptionRulesInDeterministicOrder(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Table:         &spec.Table{Name: "users", Comment: "too long"},
@@ -365,7 +366,7 @@ func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationCreateTable,
@@ -403,7 +404,7 @@ func TestRegisterAddsEnabledPrimaryKeySemanticRulesInDeterministicOrder(t *testi
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Table: &spec.Table{Name: "users", Comment: "user table"},
@@ -472,7 +473,7 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 			},
 		}
 
-		eval, err := registry.EvaluateStatementDetailed(stmt)
+		eval, err := registry.EvaluateStatementDetailed(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -499,7 +500,7 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 			},
 		}
 
-		eval, err := registry.EvaluateStatementDetailed(stmt)
+		eval, err := registry.EvaluateStatementDetailed(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -526,7 +527,7 @@ func TestRegisterDefaultPolicyDialectHygiene(t *testing.T) {
 			},
 		}
 
-		eval, err := registry.EvaluateStatementDetailed(stmt)
+		eval, err := registry.EvaluateStatementDetailed(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -576,7 +577,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -616,7 +617,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -653,7 +654,7 @@ func TestRegisterAddsPGNativeAlterActionForbidRules(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -714,7 +715,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -758,7 +759,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -790,7 +791,7 @@ func TestRegisterAddsPGNativeExplicitDefaultChangeSemanticRules(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -830,7 +831,7 @@ func TestRegisterPGExplicitDefaultChangeDoesNotBreakExistingMySQLRules(t *testin
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -886,7 +887,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -930,7 +931,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -962,7 +963,7 @@ func TestRegisterAddsPGNativeExplicitNullabilityChangeSemanticRules(t *testing.T
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -1002,7 +1003,7 @@ func TestRegisterPGExplicitNullabilityChangeDoesNotBreakExistingMySQLRules(t *te
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

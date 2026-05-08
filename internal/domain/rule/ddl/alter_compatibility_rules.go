@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -67,7 +68,7 @@ func (r alterTableOptionCompatibilityRule) AppliesTo(statement spec.Statement) b
 	return r.required && appliesToAlterActions(statement, "table_option")
 }
 
-func (r alterColumnCompatibilityRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterColumnCompatibilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -78,6 +79,9 @@ func (r alterColumnCompatibilityRule) Evaluate(statement spec.Statement) ([]rule
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		source := snapshot.FindColumn(alter.Name)
 		target, ok := alterColumnDefinition(alter)
 		if source == nil || !ok {
@@ -88,7 +92,7 @@ func (r alterColumnCompatibilityRule) Evaluate(statement spec.Statement) ([]rule
 	return findings, nil
 }
 
-func (r alterTableOptionCompatibilityRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterTableOptionCompatibilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -99,6 +103,9 @@ func (r alterTableOptionCompatibilityRule) Evaluate(statement spec.Statement) ([
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "table_option") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		findings = append(findings, optionCompatibilityFindings(r.level, statement.DDL.Table.Name, snapshot, alter)...)
 	}
 	return findings, nil

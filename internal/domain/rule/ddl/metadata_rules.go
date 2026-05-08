@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -40,7 +41,7 @@ func (r tableExistenceRule) AppliesTo(statement spec.Statement) bool {
 	return false
 }
 
-func (r tableExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -103,7 +104,7 @@ func (r alterObjectExistenceRule) AppliesTo(statement spec.Statement) bool {
 	return len(r.actions) > 0 && len(matchingAlterObjectActions(statement, r.actions...)) > 0
 }
 
-func (r alterObjectExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -115,6 +116,9 @@ func (r alterObjectExistenceRule) Evaluate(statement spec.Statement) ([]rule.Fin
 	findings := make([]rule.Finding, 0)
 	tableName := metadataTargetTableName(statement, snapshot)
 	for _, alter := range matchingAlterObjectActions(statement, r.actions...) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		name := r.selectName(alter)
 		if name == "" {
 			continue
@@ -169,7 +173,7 @@ func (r alterPrimaryKeyExistenceRule) AppliesTo(statement spec.Statement) bool {
 	return len(matchingDropPrimaryKeyActions(statement)) > 0
 }
 
-func (r alterPrimaryKeyExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

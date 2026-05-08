@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -65,7 +66,7 @@ func (r forbiddenAlterActionRule) AppliesTo(statement spec.Statement) bool {
 	return true
 }
 
-func (r forbiddenAlterActionRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r forbiddenAlterActionRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -77,6 +78,9 @@ func (r forbiddenAlterActionRule) Evaluate(statement spec.Statement) ([]rule.Fin
 		alters = matchingStandaloneDDLActions(statement, r.action)
 	}
 	for _, alter := range alters {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if alter.Action != r.action {
 			continue
 		}

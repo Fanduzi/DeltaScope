@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -136,7 +137,7 @@ func TestPostgreSQLRefreshMaterializedViewCurrentExtractionBaseline(t *testing.T
 
 	for _, tc := range cases {
 		p := New()
-		result, parseErr := p.Parse(tc.sql)
+		result, parseErr := p.Parse(context.Background(), tc.sql)
 		if parseErr != nil {
 			t.Fatalf("%s: unexpected parse error: %v", tc.name, parseErr)
 		}
@@ -252,7 +253,7 @@ func refreshMatViewFacts(sql string) (concurrent bool, skipData bool) {
 // for a SQL statement: kind, unsupported-feature, unsupported-reason.
 func refreshMatViewCurrentStatus(sql string) (kind spec.Kind, feature string, reason string) {
 	p := New()
-	result, err := p.Parse(sql)
+	result, err := p.Parse(context.Background(), sql)
 	if err != nil {
 		return spec.KindUnknown, "parse-error", err.Error()
 	}

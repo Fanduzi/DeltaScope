@@ -6,6 +6,7 @@
 package audit
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -29,7 +30,7 @@ func (r testStatementRule) AppliesTo(statement spec.Statement) bool {
 	return statement.Kind == r.kind
 }
 
-func (r testStatementRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r testStatementRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{{
 		Level:         r.level,
 		Message:       r.message,
@@ -48,7 +49,7 @@ func (r testGlobalRule) ID() string {
 	return r.id
 }
 
-func (r testGlobalRule) EvaluateAll(statements []spec.Statement) ([]rule.Finding, error) {
+func (r testGlobalRule) EvaluateAll(ctx context.Context, statements []spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{{
 		Level:   r.level,
 		Message: r.message,
@@ -76,7 +77,7 @@ func TestEvaluateProducesReportFlowOutput(t *testing.T) {
 		t.Fatalf("register global rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{
 		{
 			Kind:          spec.KindDML,
 			RawSQL:        "delete from users",
@@ -119,7 +120,7 @@ func TestEvaluateStatementsEnrichesFindingFromCatalogMetadata(t *testing.T) {
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDML,
 		RawSQL:        "delete from users",
 		NormalizedSQL: "delete from users",
@@ -150,7 +151,7 @@ func TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata(t *testing.T)
 		t.Fatalf("register global rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDML,
 		RawSQL:        "delete from users",
 		NormalizedSQL: "delete from users",
@@ -190,7 +191,7 @@ func TestEvaluateStatementsBuildsAggregateExplanations(t *testing.T) {
 		t.Fatalf("register global rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDML,
 		RawSQL:        "delete from users",
 		NormalizedSQL: "delete from users",
@@ -226,7 +227,7 @@ func TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMet
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDDL,
 		RawSQL:        "create table users (id bigint)",
 		NormalizedSQL: "create table users (id bigint)",
@@ -258,7 +259,7 @@ func TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMeta
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDDL,
 		RawSQL:        "create table users (id bigint)",
 		NormalizedSQL: "create table users (id bigint)",
@@ -294,7 +295,7 @@ func TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules(t *testin
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDML,
 		RawSQL:        "delete from users",
 		NormalizedSQL: "delete from users",
@@ -326,7 +327,7 @@ func TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules(
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	result, err := EvaluateStatements(registry, []spec.Statement{{
+	result, err := EvaluateStatements(context.Background(), registry, []spec.Statement{{
 		Kind:          spec.KindDDL,
 		RawSQL:        "drop table users",
 		NormalizedSQL: "drop table users",

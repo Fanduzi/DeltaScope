@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -20,7 +21,7 @@ func TestPrimaryKeyBigintRuleFindsNonBigintPrimaryKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
 	}
-	findings, err := statementRule.Evaluate(primaryKeyStatement(spec.Column{Name: "id", Type: "int", NotNull: true, Unsigned: true, AutoIncrement: true}))
+	findings, err := statementRule.Evaluate(context.Background(), primaryKeyStatement(spec.Column{Name: "id", Type: "int", NotNull: true, Unsigned: true, AutoIncrement: true}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -36,7 +37,7 @@ func TestPrimaryKeyUnsignedRuleFindsSignedPrimaryKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
 	}
-	findings, err := statementRule.Evaluate(primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", NotNull: true, AutoIncrement: true}))
+	findings, err := statementRule.Evaluate(context.Background(), primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", NotNull: true, AutoIncrement: true}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -52,7 +53,7 @@ func TestPrimaryKeyAutoIncrementRuleFindsMissingAutoIncrement(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
 	}
-	findings, err := statementRule.Evaluate(primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", NotNull: true, Unsigned: true}))
+	findings, err := statementRule.Evaluate(context.Background(), primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", NotNull: true, Unsigned: true}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -66,7 +67,7 @@ func TestPrimaryKeyNotNullRuleFindsNullablePrimaryKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
 	}
-	findings, err := statementRule.Evaluate(primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", Unsigned: true, AutoIncrement: true}))
+	findings, err := statementRule.Evaluate(context.Background(), primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", Unsigned: true, AutoIncrement: true}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -94,7 +95,7 @@ func TestPrimaryKeySemanticRulesSkipCompositePrimaryKeys(t *testing.T) {
 			PrimaryKey: &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"tenant_id", "id"}},
 		},
 	}
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -114,7 +115,7 @@ func TestPrimaryKeyBigintRuleAcceptsPostgreSQLBigIntAliases(t *testing.T) {
 	for _, columnType := range []string{"int8", "pg_catalog.int8"} {
 		statement := primaryKeyStatement(spec.Column{Name: "id", Type: columnType, NotNull: true})
 		statement.Dialect = spec.DialectPostgreSQL
-		findings, err := statementRule.Evaluate(statement)
+		findings, err := statementRule.Evaluate(context.Background(), statement)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", columnType, err)
 		}
@@ -178,7 +179,7 @@ func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 		t.Fatal("expected rule to apply to ALTER TABLE ADD CONSTRAINT PRIMARY KEY")
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

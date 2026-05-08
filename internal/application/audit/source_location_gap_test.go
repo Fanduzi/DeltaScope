@@ -21,7 +21,7 @@ delete from users;`
 // TestSourceLocationStatementLinePopulated verifies that Parse+Extract
 // populates spec.Statement.Line with the correct statement-start line number.
 func TestSourceLocationStatementLinePopulated(t *testing.T) {
-	parsed, err := Parse(locationFidelityMultiStmtSQL, spec.DialectMySQL)
+	parsed, err := Parse(context.Background(), locationFidelityMultiStmtSQL, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -29,7 +29,7 @@ func TestSourceLocationStatementLinePopulated(t *testing.T) {
 		t.Fatalf("expected 2 statements, got %d", len(parsed.Statements))
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestSourceLocationFindingLocationPopulated(t *testing.T) {
 // TestSourceLocationParsedStatementHasRawSQL confirms that RawSQL is populated
 // for both statements, proving progressive matching has viable input.
 func TestSourceLocationParsedStatementHasRawSQL(t *testing.T) {
-	parsed, err := Parse(locationFidelityMultiStmtSQL, spec.DialectMySQL)
+	parsed, err := Parse(context.Background(), locationFidelityMultiStmtSQL, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -116,11 +116,11 @@ func TestSourceLocationParsedStatementHasRawSQL(t *testing.T) {
 // TestSourceLocationTiDBSameAsMySQL verifies that TiDB also gets correct
 // statement-start line numbers through the same source mapper.
 func TestSourceLocationTiDBSameAsMySQL(t *testing.T) {
-	parsed, err := Parse(locationFidelityMultiStmtSQL, spec.DialectTiDB)
+	parsed, err := Parse(context.Background(), locationFidelityMultiStmtSQL, spec.DialectTiDB)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestSourceLocationRuleProvidedLocationPreserved(t *testing.T) {
 		{Kind: spec.KindDML, RawSQL: "delete from users;", Line: 9, Column: 1},
 	}
 
-	result, err := EvaluateStatements(registry, statements)
+	result, err := EvaluateStatements(context.Background(), registry, statements)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -181,7 +181,7 @@ type locationOverrideRule struct{}
 
 func (locationOverrideRule) ID() string                      { return "test.location-override" }
 func (locationOverrideRule) AppliesTo(_ spec.Statement) bool { return true }
-func (locationOverrideRule) Evaluate(_ spec.Statement) ([]rule.Finding, error) {
+func (locationOverrideRule) Evaluate(ctx context.Context, _ spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{
 		{
 			RuleID:   "test.location-override",

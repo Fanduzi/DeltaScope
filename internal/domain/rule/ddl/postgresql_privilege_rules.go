@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -50,7 +51,7 @@ func (r pgTablePrivilegeRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Operation == r.operation
 }
 
-func (r pgTablePrivilegeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgTablePrivilegeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

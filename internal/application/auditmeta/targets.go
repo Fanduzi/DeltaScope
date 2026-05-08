@@ -6,6 +6,7 @@
 package auditmeta
 
 import (
+	"context"
 	"strings"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
@@ -18,12 +19,12 @@ type schemaTarget struct {
 	RequiresExisting bool
 }
 
-func collectTargetTables(sqlText string, dialect spec.Dialect) ([]schemaTarget, error) {
-	parsed, err := appaudit.Parse(sqlText, dialect)
+func collectTargetTables(ctx context.Context, sqlText string, dialect spec.Dialect) ([]schemaTarget, error) {
+	parsed, err := appaudit.Parse(ctx, sqlText, dialect)
 	if err != nil {
 		return nil, err
 	}
-	statements, err := appaudit.Extract(parsed)
+	statements, err := appaudit.Extract(ctx, parsed)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -167,13 +168,16 @@ func (r namingRule) AppliesTo(statement spec.Statement) bool {
 	}
 }
 
-func (r identifierPatternRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r identifierPatternRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, subject := range r.selects(statement) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if r.pattern.MatchString(subject.name) {
 			continue
 		}
@@ -192,13 +196,16 @@ func (r identifierPatternRule) Evaluate(statement spec.Statement) ([]rule.Findin
 	return findings, nil
 }
 
-func (r namingRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r namingRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, subject := range r.selects(statement) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if strings.TrimSpace(subject.name) == "" || r.matches(subject.name) {
 			continue
 		}
@@ -241,13 +248,16 @@ func (r identifierKeywordRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToCreateTable(statement)
 }
 
-func (r identifierKeywordRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r identifierKeywordRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, subject := range r.selects(statement) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !isReservedKeyword(r.ruleID, statement.Dialect, subject.name) {
 			continue
 		}

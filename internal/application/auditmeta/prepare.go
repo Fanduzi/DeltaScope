@@ -148,7 +148,7 @@ func resolveSchema(ctx context.Context, client Client, sqlText string, dialect s
 		return strings.TrimSpace(explicitSchema), explicitSource, nil
 	}
 
-	targets, err := collectTargetTables(sqlText, dialect)
+	targets, err := collectTargetTables(ctx, sqlText, dialect)
 	if err != nil {
 		return "", "", newInvalidSQLError(err)
 	}

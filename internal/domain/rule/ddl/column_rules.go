@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -40,9 +41,13 @@ func (r tableColumnsMinCountRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTableColumns(statement)
 }
 
-func (r tableColumnsMinCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableColumnsMinCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) || len(statement.DDL.Columns) >= r.limit {
 		return nil, nil
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	return []rule.Finding{{
@@ -80,13 +85,16 @@ func (r columnCommentRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToCreateTableColumns(statement)
 }
 
-func (r columnCommentRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnCommentRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if strings.TrimSpace(column.Comment) != "" {
 			continue
 		}
@@ -129,13 +137,16 @@ func (r columnNameMaxLengthRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTableColumns(statement)
 }
 
-func (r columnNameMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnNameMaxLengthRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		actual := len(column.Name)
 		if actual <= r.limit {
 			continue
@@ -181,13 +192,16 @@ func (r columnVarcharMaxLengthRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTableColumns(statement)
 }
 
-func (r columnVarcharMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnVarcharMaxLengthRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if baseType(column) != "varchar" || column.Length == 0 || column.Length <= r.limit {
 			continue
 		}
@@ -229,13 +243,16 @@ func (r columnDefaultRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToCreateTableColumns(statement)
 }
 
-func (r columnDefaultRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnDefaultRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if column.HasDefault || isBlobTextLike(column) {
 			continue
 		}
@@ -282,13 +299,16 @@ func (r columnNotNullRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToCreateTableColumns(statement)
 }
 
-func (r columnNotNullRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnNotNullRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if column.NotNull || isBlobTextLike(column) || (r.allowTimeNull && isTimeLike(column)) {
 			continue
 		}
@@ -329,13 +349,16 @@ func (r columnFloatDoubleForbiddenRule) AppliesTo(statement spec.Statement) bool
 	return r.forbid && appliesToCreateTableColumns(statement)
 }
 
-func (r columnFloatDoubleForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnFloatDoubleForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		switch baseType(column) {
 		case "float", "double":
 			findings = append(findings, rule.Finding{

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -23,7 +24,7 @@ func TestAuditColumnsRequiredRuleFindsMissingCreatedAndUpdatedColumns(t *testing
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableWithColumns("users", spec.Column{Name: "name", Type: "varchar(32)", Length: 32, Comment: "'name'"}))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableWithColumns("users", spec.Column{Name: "name", Type: "varchar(32)", Length: 32, Comment: "'name'"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -42,7 +43,7 @@ func TestAuditColumnsRequiredRuleAcceptsCreatedAndUpdatedPatterns(t *testing.T) 
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableWithColumns(
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableWithColumns(
 		"users",
 		spec.Column{Name: "created_at", Type: "datetime", Comment: "'created'", DefaultIsCurrentTimestamp: true, HasDefault: true, DefaultValue: "current_timestamp", NotNull: true},
 		spec.Column{Name: "updated_at", Type: "datetime", Comment: "'updated'", DefaultIsCurrentTimestamp: true, OnUpdateCurrentTimestamp: true, HasDefault: true, DefaultValue: "current_timestamp", NotNull: true},
@@ -71,7 +72,7 @@ func TestAuditColumnsRequiredRulePostgreSQLOnlyRequiresCreatedPattern(t *testing
 	)
 	statement.Dialect = spec.DialectPostgreSQL
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

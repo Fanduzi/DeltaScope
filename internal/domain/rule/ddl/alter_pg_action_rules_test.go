@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -60,7 +61,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -74,7 +75,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectMySQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -88,7 +89,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectTiDB,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -102,7 +103,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "modify_column", Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -116,7 +117,7 @@ func TestPGAlterActionForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "add_column", Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -189,7 +190,7 @@ func TestPGAlterActionForbidRulesForbidFalse(t *testing.T) {
 	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 		spec.Alter{Action: "set_data_type", Name: "col1"},
 	)
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -231,7 +232,7 @@ func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
 			if !r.AppliesTo(stmt) {
 				t.Fatalf("expected AppliesTo() == true for dialect %s", tc.dialect)
 			}
-			findings, err := r.Evaluate(stmt)
+			findings, err := r.Evaluate(context.Background(), stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -261,7 +262,7 @@ func TestExistingAlterActionRulesZeroValueCompatibility(t *testing.T) {
 		if rNoForbid.AppliesTo(stmt) {
 			t.Fatal("expected AppliesTo() == false when forbid:false for existing rule")
 		}
-		findings, err := rNoForbid.Evaluate(stmt)
+		findings, err := rNoForbid.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -308,7 +309,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -322,7 +323,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectMySQL,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -336,7 +337,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectTiDB,
 					spec.Alter{Action: pg.action, Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -350,7 +351,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "modify_column", Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -364,7 +365,7 @@ func TestPGGeneratedIdentityForbidRules(t *testing.T) {
 				stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
 					spec.Alter{Action: "add_column", Name: "col1"},
 				)
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -456,7 +457,7 @@ func TestPGGeneratedIdentityForbidRulesNoCrossFire(t *testing.T) {
 						Alter: []spec.Alter{{Action: existing, Name: "col1"}},
 					},
 				}
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}

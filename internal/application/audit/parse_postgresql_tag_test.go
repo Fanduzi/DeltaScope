@@ -3,13 +3,14 @@
 package audit
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestParseParsesPostgreSQLWithBuildTag(t *testing.T) {
-	result, err := Parse("select 1;", spec.DialectPostgreSQL)
+	result, err := Parse(context.Background(), "select 1;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -28,12 +29,12 @@ func TestParseParsesPostgreSQLWithBuildTag(t *testing.T) {
 }
 
 func TestExtractMapsPostgreSQLInsertOnConflictWithoutMySQLFlags(t *testing.T) {
-	parsed, err := Parse("insert into users(id, name) values (1, 'a') on conflict (id) do update set name = excluded.name;", spec.DialectPostgreSQL)
+	parsed, err := Parse(context.Background(), "insert into users(id, name) values (1, 'a') on conflict (id) do update set name = excluded.name;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -54,12 +55,12 @@ func TestExtractMapsPostgreSQLInsertOnConflictWithoutMySQLFlags(t *testing.T) {
 }
 
 func TestExtractMapsPostgreSQLInsertSelectOnConflictWithoutMySQLDuplicateFlag(t *testing.T) {
-	parsed, err := Parse("insert into users(id, name) select id, name from staging_users on conflict (id) do update set name = excluded.name;", spec.DialectPostgreSQL)
+	parsed, err := Parse(context.Background(), "insert into users(id, name) select id, name from staging_users on conflict (id) do update set name = excluded.name;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}

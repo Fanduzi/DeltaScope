@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -31,7 +32,7 @@ func TestCreateDomainNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -67,7 +68,7 @@ func TestAlterDomainConstraintAddNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -93,7 +94,7 @@ func TestAlterDomainConstraintDropNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -116,7 +117,7 @@ func TestAlterDomainConstraintValidateNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -139,7 +140,7 @@ func TestAlterDomainDefaultSetNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -162,7 +163,7 @@ func TestAlterDomainDefaultDropNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -185,7 +186,7 @@ func TestAlterDomainNotNullSetNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -208,7 +209,7 @@ func TestAlterDomainNotNullDropNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -231,7 +232,7 @@ func TestAlterDomainRenameNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -256,7 +257,7 @@ func TestDropDomainAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -282,7 +283,7 @@ func TestDropDomainCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -310,8 +311,8 @@ func TestDropDomainCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 		},
 	}
 
-	f1, _ := advisory.Evaluate(stmt)
-	f2, _ := cascade.Evaluate(stmt)
+	f1, _ := advisory.Evaluate(context.Background(), stmt)
+	f2, _ := cascade.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected advisory to fire for DROP DOMAIN CASCADE, got %d findings", len(f1))
 	}
@@ -350,7 +351,7 @@ func TestDomainLifecycleRulesSkipMySQL(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -374,7 +375,7 @@ func TestAlterDomainConstraintNoticeSkipsNonConstraintAction(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -397,7 +398,7 @@ func TestAlterDomainDefaultNoticeSkipsNonDefaultAction(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -420,7 +421,7 @@ func TestAlterDomainNotNullNoticeSkipsNonNullAction(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -442,7 +443,7 @@ func TestDropDomainCascadeWarnSkipsNonCascade(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -498,7 +499,7 @@ func TestRegistryIncludesPGDomainLifecycleRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
-			findings, err := registry.EvaluateStatement(tc.stmt)
+			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -566,7 +567,7 @@ func TestDomainLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
 			Options:    map[string]string{"cascade": "true"},
 		},
 	}
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

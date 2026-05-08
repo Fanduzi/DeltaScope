@@ -8,18 +8,19 @@
 package audit
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestExtractMapsPostgreSQLDropIndex(t *testing.T) {
-	parsed, err := Parse("drop index idx_name;", spec.DialectPostgreSQL)
+	parsed, err := Parse(context.Background(), "drop index idx_name;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -49,12 +50,12 @@ func TestExtractMapsPostgreSQLDropIndex(t *testing.T) {
 }
 
 func TestExtractMapsPostgreSQLRenameIndex(t *testing.T) {
-	parsed, err := Parse("alter index idx_old rename to idx_new;", spec.DialectPostgreSQL)
+	parsed, err := Parse(context.Background(), "alter index idx_old rename to idx_new;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -84,12 +85,12 @@ func TestExtractMapsPostgreSQLRenameIndex(t *testing.T) {
 }
 
 func TestExtractPreservesPostgreSQLRenameIndexSchema(t *testing.T) {
-	parsed, err := Parse("alter index accounting.idx_old rename to idx_new;", spec.DialectPostgreSQL)
+	parsed, err := Parse(context.Background(), "alter index accounting.idx_old rename to idx_new;", spec.DialectPostgreSQL)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}

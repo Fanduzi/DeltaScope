@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -19,7 +20,11 @@ type Result struct {
 
 func New() *Parser { return &Parser{} }
 
-func (p *Parser) Parse(sql string) (Result, error) {
+func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
+	if err := ctx.Err(); err != nil {
+		return Result{}, fmt.Errorf("parse cancelled: %w", err)
+	}
+
 	result, err := pg_query.Parse(sql)
 	if err != nil {
 		return Result{}, fmt.Errorf("parse postgresql sql: %w", err)

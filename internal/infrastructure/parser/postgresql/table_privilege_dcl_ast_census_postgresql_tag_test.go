@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -344,7 +345,7 @@ func TestTablePrivilegeDCLDeltaScopeBaseline(t *testing.T) {
 
 	for _, tc := range pgTablePrivilegeDCLCensusCases {
 		p := New()
-		result, parseErr := p.Parse(tc.SQL)
+		result, parseErr := p.Parse(context.Background(), tc.SQL)
 		if parseErr != nil {
 			t.Logf("%-42s | %-10s | %-5s | %-12s | parse error: %v",
 				tc.Name, "ERROR", "-", "-", parseErr)
@@ -567,7 +568,7 @@ func TestTablePrivilegeDCLRuleCoverageBaseline(t *testing.T) {
 
 	for _, tc := range pgTablePrivilegeDCLCensusCases {
 		p := New()
-		result, parseErr := p.Parse(tc.SQL)
+		result, parseErr := p.Parse(context.Background(), tc.SQL)
 		if parseErr != nil {
 			t.Fatalf("%s: parse failed: %v", tc.Name, parseErr)
 		}

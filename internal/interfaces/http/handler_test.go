@@ -350,7 +350,7 @@ func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T
 }
 
 func TestHandlerAuditRejectsExplicitPostgreSQLMetadataAwareRequestsOnUnsupportedBuild(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err == nil {
 		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
 	}
 	previous := prepareHTTPMetadataAudit
@@ -457,7 +457,7 @@ func TestHandlerAuditAcceptsPostgreSQLOfflineRequests(t *testing.T) {
 }
 
 func TestHandlerAuditRejectsExplicitPostgreSQLOfflineRequestsOnUnsupportedBuild(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err == nil {
 		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1356,7 +1356,7 @@ delete from users;`
 }
 
 func TestHandlerAuditPostgreSQLAdvancedIndexFormsSupportedAndCovered(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for advanced index normalization test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1423,7 +1423,7 @@ func TestHandlerAuditPostgreSQLAdvancedIndexFormsSupportedAndCovered(t *testing.
 }
 
 func TestHandlerAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for alter table unsupported action rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1520,7 +1520,7 @@ func TestHandlerAuditPostgreSQLAlterTableUnsupportedActionRuleCoverage(t *testin
 }
 
 func TestHandlerAuditPostgreSQLRefreshMaterializedViewRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for refresh materialized view rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1624,7 +1624,7 @@ func TestHandlerAuditPostgreSQLRefreshMaterializedViewRuleCoverage(t *testing.T)
 }
 
 func TestHandlerAuditPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for alter table gap rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1706,7 +1706,7 @@ func TestHandlerAuditPostgreSQLAlterTableGapRuleCoverage(t *testing.T) {
 }
 
 func TestHandlerAuditPostgreSQLAlterTableLoggedStateRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for alter table logged state rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1786,7 +1786,7 @@ func TestHandlerAuditPostgreSQLAlterTableLoggedStateRuleCoverage(t *testing.T) {
 }
 
 func TestHandlerAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for type lifecycle rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1874,7 +1874,7 @@ func TestHandlerAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 }
 
 func TestHandlerAuditPostgreSQLCompositeTypeLifecycleRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for composite type lifecycle rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -1962,7 +1962,7 @@ func TestHandlerAuditPostgreSQLCompositeTypeLifecycleRuleCoverage(t *testing.T) 
 }
 
 func TestHandlerAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for domain lifecycle rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -2055,7 +2055,7 @@ func TestHandlerAuditPostgreSQLDomainLifecycleRuleCoverage(t *testing.T) {
 }
 
 func TestHandlerAuditPostgreSQLTablePrivilegeDCLRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for table privilege DCL rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")
@@ -2143,7 +2143,7 @@ func TestHandlerAuditPostgreSQLTablePrivilegeDCLRuleCoverage(t *testing.T) {
 }
 
 func TestHandlerAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err != nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err != nil {
 		t.Skip("skipping: PG-capable build required for extension lifecycle rule coverage test")
 	}
 	handler, err := NewHandler("", "test-build")

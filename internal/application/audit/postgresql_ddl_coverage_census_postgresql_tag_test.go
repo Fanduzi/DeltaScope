@@ -271,7 +271,7 @@ func runCensusCase(t *testing.T, tc censusCase) censusResult {
 	res := censusResult{Name: tc.Name}
 
 	// Step 1: parse-level check. Determines parseable vs parser-error.
-	parsed, parseErr := Parse(tc.SQL, spec.DialectPostgreSQL)
+	parsed, parseErr := Parse(context.Background(), tc.SQL, spec.DialectPostgreSQL)
 	if parseErr != nil {
 		res.ParseOK = false
 		res.Status = statusParserError
@@ -282,7 +282,7 @@ func runCensusCase(t *testing.T, tc censusCase) censusResult {
 	res.ParseOK = true
 
 	// Step 2: extract-level check. Determines unsupported vs normalized.
-	statements, extractErr := Extract(parsed)
+	statements, extractErr := Extract(context.Background(), parsed)
 	if extractErr != nil {
 		res.Status = statusUnclassified
 		res.CorpusCovered = pgCorpusCovered[tc.Name]

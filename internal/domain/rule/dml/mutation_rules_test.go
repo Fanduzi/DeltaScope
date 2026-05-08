@@ -6,6 +6,7 @@
 package dml
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -23,7 +24,7 @@ func TestWhereRequiredRuleFindsMissingWhere(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(updateStatement(false, false, false, false, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(),updateStatement(false, false, false, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -46,7 +47,7 @@ func TestLimitForbiddenRuleFindsLimit(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(updateStatement(true, true, false, false, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(),updateStatement(true, true, false, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -69,7 +70,7 @@ func TestOrderByForbiddenRuleFindsOrderBy(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(deleteStatement(true, false, true, false, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(),deleteStatement(true, false, true, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -92,7 +93,7 @@ func TestSubqueryForbiddenRuleFindsSubquery(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(updateStatement(true, false, false, true, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(),updateStatement(true, false, false, true, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -115,7 +116,7 @@ func TestJoinOnRequiredRuleFindsJoinWithoutOn(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(updateStatement(true, false, false, false, true))
+	findings, err := ruleUnderTest.Evaluate(context.Background(),updateStatement(true, false, false, false, true))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -138,7 +139,7 @@ func TestMutationRulesIgnoreInsertStatements(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(insertStatement(2, false, false, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(),insertStatement(2, false, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -44,13 +45,16 @@ func (r columnTypeForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToCreateTableColumns(statement)
 }
 
-func (r columnTypeForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnTypeForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !r.matchesType(column) {
 			continue
 		}
@@ -89,13 +93,16 @@ func (r columnCharMaxLengthRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTableColumns(statement)
 }
 
-func (r columnCharMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnCharMaxLengthRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if baseType(column) != "char" || column.Length == 0 || column.Length <= r.limit {
 			continue
 		}
@@ -143,13 +150,16 @@ func (r columnCharsetAllowlistRule) AppliesTo(statement spec.Statement) bool {
 	return len(r.allowed) > 0 && appliesToCreateTableColumns(statement)
 }
 
-func (r columnCharsetAllowlistRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnCharsetAllowlistRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		value := strings.ToLower(strings.TrimSpace(column.Charset))
 		if r.field == "collation" {
 			value = strings.ToLower(strings.TrimSpace(column.Collation))
@@ -195,13 +205,16 @@ func (r columnCharsetCollationMatchRule) AppliesTo(statement spec.Statement) boo
 	return r.required && statement.Dialect != spec.DialectPostgreSQL && appliesToCreateTableColumns(statement)
 }
 
-func (r columnCharsetCollationMatchRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r columnCharsetCollationMatchRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		charset := strings.ToLower(strings.TrimSpace(column.Charset))
 		collation := strings.ToLower(strings.TrimSpace(column.Collation))
 		if charset == "" && collation == "" {

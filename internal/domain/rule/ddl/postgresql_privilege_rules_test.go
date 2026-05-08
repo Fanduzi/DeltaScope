@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -31,7 +32,7 @@ func TestGrantTablePrivilegeNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -70,7 +71,7 @@ func TestGrantTablePrivilegeMultiplePrivilegesAndGrantees(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -99,7 +100,7 @@ func TestGrantTablePrivilegeWithSchema(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -125,7 +126,7 @@ func TestGrantTablePrivilegeAllWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -156,8 +157,8 @@ func TestGrantAllPrivilegesFiresBothNoticeAndAllWarn(t *testing.T) {
 		},
 	}
 
-	f1, _ := notice.Evaluate(stmt)
-	f2, _ := allWarn.Evaluate(stmt)
+	f1, _ := notice.Evaluate(context.Background(), stmt)
+	f2, _ := allWarn.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected notice to fire for GRANT ALL PRIVILEGES, got %d findings", len(f1))
 	}
@@ -183,7 +184,7 @@ func TestRevokeTablePrivilegeNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -212,7 +213,7 @@ func TestRevokeTablePrivilegeMultiplePrivilegesAndGrantees(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -241,7 +242,7 @@ func TestRevokeTablePrivilegeCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -272,8 +273,8 @@ func TestRevokeCascadeFiresBothNoticeAndCascadeWarn(t *testing.T) {
 		},
 	}
 
-	f1, _ := notice.Evaluate(stmt)
-	f2, _ := cascadeWarn.Evaluate(stmt)
+	f1, _ := notice.Evaluate(context.Background(), stmt)
+	f2, _ := cascadeWarn.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected notice to fire for REVOKE CASCADE, got %d findings", len(f1))
 	}
@@ -309,7 +310,7 @@ func TestTablePrivilegeRulesSkipMySQL(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -339,7 +340,7 @@ func TestTablePrivilegeRulesSkipTiDB(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -363,7 +364,7 @@ func TestGrantAllPrivilegesWarnSkipsNonAll(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -386,7 +387,7 @@ func TestRevokeCascadeWarnSkipsNonCascade(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -446,7 +447,7 @@ func TestTablePrivilegeRulesSkipDeferredForms(t *testing.T) {
 
 	for _, r := range rules {
 		for _, stmt := range deferredStmts {
-			findings, err := r.Evaluate(stmt)
+			findings, err := r.Evaluate(context.Background(), stmt)
 			if err != nil {
 				t.Fatalf("evaluate %s: %v", r.ID(), err)
 			}
@@ -492,7 +493,7 @@ func TestRegistryIncludesPGTablePrivilegeRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
-			findings, err := registry.EvaluateStatement(tc.stmt)
+			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -557,7 +558,7 @@ func TestTablePrivilegeRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
 			Options:    map[string]string{"privileges": "select", "grantees": "analyst", "all_privileges": "true", "cascade": "true"},
 		},
 	}
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

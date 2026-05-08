@@ -6,6 +6,7 @@
 package audit
 
 import (
+	"context"
 	"sort"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -14,7 +15,7 @@ import (
 )
 
 // EvaluateStatements applies registered rules and aggregates their findings into a report result.
-func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (report.Result, error) {
+func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements []spec.Statement) (report.Result, error) {
 	statementResults := make([]report.StatementResult, 0, len(statements))
 	unsupported := make([]spec.UnsupportedDetail, 0)
 	supportedStatements := make([]spec.Statement, 0, len(statements))
@@ -33,7 +34,7 @@ func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (r
 			continue
 		}
 
-		eval, err := registry.EvaluateStatementDetailed(statement)
+		eval, err := registry.EvaluateStatementDetailed(ctx, statement)
 		if err != nil {
 			return report.Result{}, err
 		}
@@ -75,7 +76,7 @@ func EvaluateStatements(registry *rule.Registry, statements []spec.Statement) (r
 		supportedStatements = append(supportedStatements, statement)
 	}
 
-	globalFindings, err := registry.EvaluateGlobal(supportedStatements)
+	globalFindings, err := registry.EvaluateGlobal(ctx, supportedStatements)
 	if err != nil {
 		return report.Result{}, err
 	}

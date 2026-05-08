@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -53,7 +54,7 @@ func (r singlePrimaryKeyColumnRule) AppliesTo(statement spec.Statement) bool {
 		appliesToAlterAddConstraintPrimaryKey(statement)
 }
 
-func (r singlePrimaryKeyColumnRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r singlePrimaryKeyColumnRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -95,12 +96,15 @@ func (r primaryKeyNotNullRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && !isPostgreSQLDialectGatedPrimaryKeyRule(ruleIDPrimaryKeyNotNullRequire, statement.Dialect) && appliesToCreateTable(statement) && statement.DDL.PrimaryKey != nil
 }
 
-func (r primaryKeyNotNullRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r primaryKeyNotNullRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 	findings := make([]rule.Finding, 0)
 	for _, column := range primaryKeyColumnSpecs(statement) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if column.NotNull {
 			continue
 		}

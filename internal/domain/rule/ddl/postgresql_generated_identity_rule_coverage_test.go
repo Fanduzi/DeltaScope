@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -70,7 +71,7 @@ func TestPGGeneratedIdentityRuleCoverage_CreateTableGeneratedStored(t *testing.T
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -102,7 +103,7 @@ func TestPGGeneratedIdentityRuleCoverage_CreateTableIdentity(t *testing.T) {
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -142,7 +143,7 @@ func TestPGGeneratedIdentityRuleCoverage_AddColumnGeneratedStored(t *testing.T) 
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -187,7 +188,7 @@ func TestPGGeneratedIdentityRuleCoverage_AddColumnGeneratedStored(t *testing.T) 
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -238,7 +239,7 @@ func TestPGGeneratedIdentityRuleCoverage_AddColumnIdentity(t *testing.T) {
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -276,7 +277,7 @@ func TestPGGeneratedIdentityRuleCoverage_DropExpression(t *testing.T) {
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -316,7 +317,7 @@ func TestPGGeneratedIdentityRuleCoverage_SetGenerated(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -347,7 +348,7 @@ func TestPGGeneratedIdentityRuleCoverage_SetGenerated(t *testing.T) {
 			},
 		}
 
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -381,7 +382,7 @@ func TestPGGeneratedIdentityRuleCoverage_DropIdentity(t *testing.T) {
 		},
 	}
 
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -449,7 +450,7 @@ func TestPGAlterActionForbidRulesDoNotCoverGeneratedIdentityActions(t *testing.T
 						Alter: []spec.Alter{{Action: gi.action, Name: "col1"}},
 					},
 				}
-				findings, err := r.Evaluate(stmt)
+				findings, err := r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -604,7 +605,7 @@ func TestPGGeneratedIdentityCoverageMatrix(t *testing.T) {
 	t.Log("=== PostgreSQL Generated/Identity Rule Coverage Matrix ===")
 	silentCount := 0
 	for _, tc := range cases {
-		findings, err := registry.EvaluateStatement(tc.stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", tc.name, err)
 		}

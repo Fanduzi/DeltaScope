@@ -6,6 +6,7 @@
 package tidbparser
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -352,7 +353,7 @@ func extractStatements(t *testing.T, sql string) []spec.Statement {
 	t.Helper()
 
 	parser := New()
-	result, err := parser.Parse(sql)
+	result, err := parser.Parse(context.Background(), sql)
 	if err != nil {
 		t.Fatalf("parse sql: %v", err)
 	}
@@ -373,7 +374,7 @@ func parsedNode(t *testing.T, sql string) ast.StmtNode {
 	t.Helper()
 
 	parser := New()
-	result, err := parser.Parse(sql)
+	result, err := parser.Parse(context.Background(), sql)
 	if err != nil {
 		t.Fatalf("parse sql: %v", err)
 	}

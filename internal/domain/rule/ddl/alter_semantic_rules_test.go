@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -33,7 +34,7 @@ func TestAlterTargetTypeFamilyAllowlistRuleBlocksDisallowedFamilies(t *testing.T
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "modify_column",
 			Name:   "payload",
@@ -79,7 +80,7 @@ func TestAlterTargetTypeFamilyAllowlistRuleAllowsConfiguredFamilies(t *testing.T
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "change_column",
 			Name:   "age",
@@ -184,7 +185,7 @@ func TestAlterColumnTransitionRuleBlocksConfiguredChanges(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(alterStatement(tt.alter))
+			findings, err := statementRule.Evaluate(context.Background(), alterStatement(tt.alter))
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -218,7 +219,7 @@ func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "modify_column",
 			Name:   "age",
@@ -289,7 +290,7 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 		t.Fatalf("new unique-overlap rule: %v", err)
 	}
 
-	leftFindings, err := leftPrefixRule.Evaluate(statement)
+	leftFindings, err := leftPrefixRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate left-prefix rule: %v", err)
 	}
@@ -297,7 +298,7 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 		t.Fatalf("expected left-prefix lifecycle finding, got %+v", leftFindings)
 	}
 
-	uniqueFindings, err := uniqueOverlapRule.Evaluate(statement)
+	uniqueFindings, err := uniqueOverlapRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate unique-overlap rule: %v", err)
 	}
@@ -324,7 +325,7 @@ func TestAlterRenameIndexRuleFindsForbiddenRename(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "rename_index",
 			Name:   "idx_old",
@@ -375,7 +376,7 @@ func TestAlterRenameIndexRuleFindsStandaloneForbiddenRename(t *testing.T) {
 			Alter:     []spec.Alter{{Action: "rename_index", Name: "idx_old", Options: map[string]string{"new_name": "idx_new"}}},
 		},
 	}
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -452,7 +453,7 @@ func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(alterStatement(
+			findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 				spec.Alter{
 					Action: "add_constraint",
 					Name:   tt.indexName,
@@ -500,7 +501,7 @@ func TestAlterAddedIndexPrefixRuleIgnoresNonAddConstraintAlters(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "rename_index",
 			Name:   "legacy_idx",
@@ -563,7 +564,7 @@ func TestAlterAddedIndexSuffixRuleFindsBadNames(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(alterStatement(
+			findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 				spec.Alter{
 					Action: "add_constraint",
 					Name:   tt.indexName,
@@ -634,7 +635,7 @@ func TestAlterAddedIndexContainsRuleUsesORSemantics(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(alterStatement(
+			findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 				spec.Alter{
 					Action: "add_constraint",
 					Name:   tt.indexName,
@@ -672,7 +673,7 @@ func TestAlterAddedIndexColumnsMaxCountRuleBlocksWideAlterAddedIndexes(t *testin
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "add_constraint",
 			Name:   "idx_wide_payload",
@@ -711,7 +712,7 @@ func TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes(t *testing
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "add_constraint",
 			Name:   "idx_email",
@@ -791,7 +792,7 @@ func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T)
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(alterStatement(
+	findings, err := registry.EvaluateStatement(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "rename_index",
 			Name:   "idx_old",
@@ -855,7 +856,7 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(alterStatement(
+	findings, err := registry.EvaluateStatement(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "add_constraint",
 			Name:   "user_email",
@@ -929,7 +930,7 @@ func TestPGSetDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testin
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "set_default",
 			Name:   "status",
@@ -968,7 +969,7 @@ func TestPGDropDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testi
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "drop_default",
 			Name:   "email",
@@ -1007,7 +1008,7 @@ func TestPGSetDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *t
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "set_default",
 			Name:   "status",
@@ -1043,7 +1044,7 @@ func TestPGDropDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "drop_default",
 			Name:   "email",
@@ -1079,7 +1080,7 @@ func TestPGExplicitDefaultChangeRule_SkipsWhenForbidFalse(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "set_default",
 			Name:   "status",
@@ -1116,7 +1117,7 @@ func TestPGExplicitDefaultChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.
 	}
 
 	// MySQL modify_column action — set_default rule must not match
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "modify_column",
 			Name:   "status",
@@ -1156,7 +1157,7 @@ func TestAlterRegisterAddsAlterAddedIndexLifecycleRulesWhenEnabled(t *testing.T)
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(alterStatement(
+	findings, err := registry.EvaluateStatement(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "add_constraint",
 			Name:   "idx_email",
@@ -1219,7 +1220,7 @@ func TestPGSetNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "set_not_null",
 			Name:   "email",
@@ -1258,7 +1259,7 @@ func TestPGDropNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "drop_not_null",
 			Name:   "phone",
@@ -1297,7 +1298,7 @@ func TestPGSetNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFa
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "set_not_null",
 			Name:   "email",
@@ -1333,7 +1334,7 @@ func TestPGDropNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityF
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "drop_not_null",
 			Name:   "phone",
@@ -1369,7 +1370,7 @@ func TestPGExplicitNullabilityChangeRule_SkipsWhenForbidFalse(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "set_not_null",
 			Name:   "email",
@@ -1406,7 +1407,7 @@ func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *test
 	}
 
 	// MySQL modify_column action — set_not_null rule must not match
-	findings, err := statementRule.Evaluate(alterStatement(
+	findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 		spec.Alter{
 			Action: "modify_column",
 			Name:   "email",
@@ -1471,7 +1472,7 @@ func TestPostgreSQLAlterTableAddUniquePrefixRuleCoverage(t *testing.T) {
 		t.Fatal("expected rule to apply to ALTER TABLE ADD CONSTRAINT UNIQUE")
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

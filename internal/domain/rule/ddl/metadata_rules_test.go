@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -36,7 +37,7 @@ func TestTableExistenceRules(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
 		},
 	}
-	findings, err := createRule.Evaluate(createStmt)
+	findings, err := createRule.Evaluate(context.Background(), createStmt)
 	if err != nil {
 		t.Fatalf("evaluate create rule: %v", err)
 	}
@@ -54,7 +55,7 @@ func TestTableExistenceRules(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "users"}},
 		},
 	}
-	findings, err = alterRule.Evaluate(alterStmt)
+	findings, err = alterRule.Evaluate(context.Background(), alterStmt)
 	if err != nil {
 		t.Fatalf("evaluate alter rule: %v", err)
 	}
@@ -99,7 +100,7 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 		},
 	}
 
-	addFindings, err := addRule.Evaluate(statement)
+	addFindings, err := addRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate add-column rule: %v", err)
 	}
@@ -107,7 +108,7 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 		t.Fatalf("expected one add-column finding, got %d", len(addFindings))
 	}
 
-	dropFindings, err := dropRule.Evaluate(statement)
+	dropFindings, err := dropRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate drop-column rule: %v", err)
 	}
@@ -152,7 +153,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 		},
 	}
 
-	indexFindings, err := indexRule.Evaluate(statement)
+	indexFindings, err := indexRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate index rule: %v", err)
 	}
@@ -160,7 +161,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 		t.Fatalf("expected one index existence finding, got %d", len(indexFindings))
 	}
 
-	pkFindings, err := pkRule.Evaluate(statement)
+	pkFindings, err := pkRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate primary-key rule: %v", err)
 	}
@@ -180,7 +181,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 			Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
 		},
 	}
-	pkFindings, err = pkRule.Evaluate(explicitDropPrimaryKey)
+	pkFindings, err = pkRule.Evaluate(context.Background(), explicitDropPrimaryKey)
 	if err != nil {
 		t.Fatalf("evaluate explicit drop primary key rule without primary key: %v", err)
 	}
@@ -213,7 +214,7 @@ func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
 		},
 	}
 
-	findings, err := indexRule.Evaluate(statement)
+	findings, err := indexRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate standalone rename-index rule: %v", err)
 	}
@@ -255,7 +256,7 @@ func TestAlterPrimaryKeyExistenceRuleConstraintOnlySnapshot(t *testing.T) {
 		},
 	}
 
-	findings, err := pkRule.Evaluate(statement)
+	findings, err := pkRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate primary-key rule: %v", err)
 	}
@@ -288,7 +289,7 @@ func TestAlterPrimaryKeyExistenceRuleFallsBackToPrimaryKeyIndexName(t *testing.T
 		},
 	}
 
-	findings, err := pkRule.Evaluate(statement)
+	findings, err := pkRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate primary-key fallback rule: %v", err)
 	}
@@ -306,7 +307,7 @@ func TestMetadataExistenceRulesIgnoreLegacyRequiredParamAndSkipWithoutMetadata(t
 		t.Fatalf("new create existence rule: %v", err)
 	}
 
-	findings, err := createRule.Evaluate(spec.Statement{
+	findings, err := createRule.Evaluate(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Table: &spec.Table{Name: "users"}},
 	})
@@ -317,7 +318,7 @@ func TestMetadataExistenceRulesIgnoreLegacyRequiredParamAndSkipWithoutMetadata(t
 		t.Fatalf("expected offline metadata-backed rule to no-op without metadata, got %d findings", len(findings))
 	}
 
-	findings, err = createRule.Evaluate(spec.Statement{
+	findings, err = createRule.Evaluate(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Table: &spec.Table{Name: "users"}},
 		Metadata: &spec.Metadata{

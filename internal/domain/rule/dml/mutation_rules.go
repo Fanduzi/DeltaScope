@@ -6,6 +6,8 @@
 package dml
 
 import (
+	"context"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -34,7 +36,8 @@ func (r whereRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToMutation(statement)
 }
 
-func (r whereRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r whereRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || statement.DML.HasWhere {
 		return nil, nil
 	}
@@ -72,7 +75,8 @@ func (r limitForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToMutation(statement)
 }
 
-func (r limitForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r limitForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.HasLimit {
 		return nil, nil
 	}
@@ -110,7 +114,8 @@ func (r orderByForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToMutation(statement)
 }
 
-func (r orderByForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r orderByForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.HasOrderBy {
 		return nil, nil
 	}
@@ -148,7 +153,8 @@ func (r subqueryForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToMutation(statement)
 }
 
-func (r subqueryForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r subqueryForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.HasSubquery {
 		return nil, nil
 	}
@@ -186,7 +192,8 @@ func (r joinOnRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToMutation(statement)
 }
 
-func (r joinOnRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r joinOnRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.HasJoin || statement.DML.HasJoinOn {
 		return nil, nil
 	}

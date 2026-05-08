@@ -320,7 +320,7 @@ func TestAuditSQLToolReturnsMetadataAwareContextForDirectConnection(t *testing.T
 }
 
 func TestAuditSQLToolRejectsExplicitPostgreSQLMetadataAwareRequestsOnUnsupportedBuild(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err == nil {
 		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
 	}
 	previous := prepareMetadataAudit
@@ -560,7 +560,7 @@ func TestAuditSQLToolRejectsUnsupportedDialectBeforeMetadataSetup(t *testing.T) 
 }
 
 func TestAuditSQLToolRejectsExplicitPostgreSQLOfflineRequestsOnUnsupportedBuild(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err == nil {
 		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
 	}
 	server := NewServer(Config{Version: "test-version"})
