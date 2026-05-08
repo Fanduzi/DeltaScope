@@ -8,6 +8,7 @@ package sarif
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -130,11 +131,7 @@ func toSARIFResult(finding rule.Finding, options Options) sarifResult {
 }
 
 func joinParts(parts []string) string {
-	result := parts[0]
-	for _, p := range parts[1:] {
-		result += "\n" + p
-	}
-	return result
+	return strings.Join(parts, "\n")
 }
 
 func mapLevel(level rule.Level) string {
