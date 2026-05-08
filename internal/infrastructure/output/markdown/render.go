@@ -263,7 +263,7 @@ func writeFinding(builder *strings.Builder, finding rule.Finding) {
 			builder.WriteString("  - `")
 			builder.WriteString(key)
 			builder.WriteString("`: `")
-			builder.WriteString(fmt.Sprintf("%v", finding.Metadata[key]))
+			fmt.Fprintf(builder, "%v", finding.Metadata[key])
 			builder.WriteString("`\n")
 		}
 	}

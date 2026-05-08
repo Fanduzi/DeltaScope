@@ -1,3 +1,4 @@
+// Package output provides shared output formatting utilities.
 package output
 
 import (
