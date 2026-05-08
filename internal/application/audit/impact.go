@@ -13,8 +13,8 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-func attachImpactEstimates(statements []spec.Statement) []spec.Statement {
-	return attachImpactEstimatesWithPlanner(context.Background(), nil, statements)
+func attachImpactEstimates(ctx context.Context, statements []spec.Statement) []spec.Statement {
+	return attachImpactEstimatesWithPlanner(ctx, nil, statements)
 }
 
 func attachImpactEstimatesWithPlanner(ctx context.Context, planner PlanEstimator, statements []spec.Statement) []spec.Statement {

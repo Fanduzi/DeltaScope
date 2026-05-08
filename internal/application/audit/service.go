@@ -105,7 +105,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	if planner, ok := planEstimatorFor(request).(PlanEstimator); ok {
 		statements = attachImpactEstimatesWithPlanner(ctx, planner, statements)
 	} else {
-		statements = attachImpactEstimates(statements)
+		statements = attachImpactEstimates(ctx, statements)
 	}
 
 	registry, err := buildRegistry(policyCfg)
