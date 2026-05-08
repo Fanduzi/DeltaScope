@@ -8,6 +8,7 @@ package sarif
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -24,7 +25,7 @@ type Options struct {
 // Render formats an audit result into SARIF 2.1.0 JSON.
 // Unsupported statements are not included in SARIF output.
 func Render(result report.Result, options Options) ([]byte, error) {
-	ruleMeta := make(map[string]*sarifRule)
+	ruleMeta := make(map[string]*sarifRule, 8)
 	var results []sarifResult
 
 	collectFinding := func(finding rule.Finding) {
@@ -130,11 +131,7 @@ func toSARIFResult(finding rule.Finding, options Options) sarifResult {
 }
 
 func joinParts(parts []string) string {
-	result := parts[0]
-	for _, p := range parts[1:] {
-		result += "\n" + p
-	}
-	return result
+	return strings.Join(parts, "\n")
 }
 
 func mapLevel(level rule.Level) string {

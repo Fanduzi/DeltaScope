@@ -318,7 +318,7 @@ func selectUniqueConstraintNames(statement spec.Statement) []identifierSubject {
 	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
 		return nil
 	}
-	subjects := make([]identifierSubject, 0)
+	subjects := make([]identifierSubject, 0, len(statement.DDL.Indexes))
 	for _, index := range statement.DDL.Indexes {
 		if index.Kind != spec.IndexKindUnique || strings.TrimSpace(index.Name) == "" {
 			continue
@@ -340,7 +340,7 @@ func selectConstraintNamesByType(statement spec.Statement, constraintType, kind 
 	if statement.DDL == nil || len(statement.DDL.Constraints) == 0 {
 		return nil
 	}
-	subjects := make([]identifierSubject, 0)
+	subjects := make([]identifierSubject, 0, len(statement.DDL.Constraints))
 	for _, constraint := range statement.DDL.Constraints {
 		if constraint.Type != constraintType || strings.TrimSpace(constraint.Name) == "" {
 			continue
