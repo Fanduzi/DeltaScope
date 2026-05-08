@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -36,7 +37,7 @@ func (r indexTotalMaxCountRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToDDLWithIndexes(statement)
 }
 
-func (r indexTotalMaxCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r indexTotalMaxCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -78,13 +79,16 @@ func (r indexColumnsMaxCountRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToDDLWithIndexes(statement)
 }
 
-func (r indexColumnsMaxCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r indexColumnsMaxCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		actual := len(index.Columns)
 		if actual <= r.limit {
 			continue
@@ -155,13 +159,16 @@ func (r indexPrefixRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.prefix != "" && appliesToDDLWithIndexes(statement)
 }
 
-func (r indexPrefixRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r indexPrefixRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if index.Kind != r.kind {
 			continue
 		}
@@ -205,13 +212,16 @@ func (r indexSuffixRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.suffix != "" && appliesToDDLWithIndexes(statement)
 }
 
-func (r indexSuffixRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r indexSuffixRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if index.Kind != r.kind || strings.TrimSpace(index.Name) == "" {
 			continue
 		}
@@ -256,13 +266,16 @@ func (r indexContainsRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return len(r.contains) > 0 && appliesToDDLWithIndexes(statement)
 }
 
-func (r indexContainsRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r indexContainsRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if index.Kind != r.kind || strings.TrimSpace(index.Name) == "" {
 			continue
 		}
@@ -311,7 +324,7 @@ func (r duplicateIndexForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToDDLWithIndexes(statement)
 }
 
-func (r duplicateIndexForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r duplicateIndexForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -319,6 +332,9 @@ func (r duplicateIndexForbiddenRule) Evaluate(statement spec.Statement) ([]rule.
 	seen := make(map[string]string)
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		signature := duplicateSignature(index)
 		if first, ok := seen[signature]; ok {
 			findings = append(findings, rule.Finding{
@@ -364,13 +380,16 @@ func (r redundantLeftPrefixIndexRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToDDLWithIndexes(statement)
 }
 
-func (r redundantLeftPrefixIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for i := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		shorter := statement.DDL.Indexes[i]
 		if shorter.Kind != spec.IndexKindSecondary || len(shorter.Columns) == 0 {
 			continue
@@ -425,7 +444,7 @@ func (r redundantUniqueOverlapIndexRule) AppliesTo(statement spec.Statement) boo
 	return r.forbid && appliesToDDLWithIndexes(statement)
 }
 
-func (r redundantUniqueOverlapIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -440,6 +459,9 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(statement spec.Statement) ([]r
 
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if index.Kind != spec.IndexKindSecondary {
 			continue
 		}

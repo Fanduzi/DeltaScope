@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -34,7 +35,7 @@ func (r pgRefreshMaterializedViewConcurrentlyRule) AppliesTo(statement spec.Stat
 		statement.DDL.Operation == spec.DDLOperationRefreshMaterializedView
 }
 
-func (r pgRefreshMaterializedViewConcurrentlyRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgRefreshMaterializedViewConcurrentlyRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -87,7 +88,7 @@ func (r pgRefreshMaterializedViewNoDataRule) AppliesTo(statement spec.Statement)
 		statement.DDL.Operation == spec.DDLOperationRefreshMaterializedView
 }
 
-func (r pgRefreshMaterializedViewNoDataRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgRefreshMaterializedViewNoDataRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

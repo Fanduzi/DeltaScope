@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -23,7 +24,7 @@ func TestTableCommentMaxLengthRuleFindsLongComments(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.Table.Comment = "too long"
 	}))
 	if err != nil {
@@ -44,7 +45,7 @@ func TestTableEngineAllowlistRuleFindsDisallowedEngine(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.Options["engine"] = "MyISAM"
 	}))
 	if err != nil {
@@ -65,7 +66,7 @@ func TestTableCharsetAllowlistRuleFindsMissingCharset(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(nil))
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -84,7 +85,7 @@ func TestTableRowFormatAllowlistRuleFindsDisallowedRowFormat(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.Options["row_format"] = "COMPACT"
 	}))
 	if err != nil {
@@ -110,7 +111,7 @@ func TestTableEngineAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	})
 	statement.Dialect = spec.DialectPostgreSQL
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -134,7 +135,7 @@ func TestTableRowFormatAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	})
 	statement.Dialect = spec.DialectPostgreSQL
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -156,7 +157,7 @@ func TestTableCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	statement := tableOptionStatement(nil)
 	statement.Dialect = spec.DialectPostgreSQL
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -175,7 +176,7 @@ func TestTableAutoIncrementInitValueRuleFindsNonDefaultSeed(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.Options["auto_increment"] = "42"
 	}))
 	if err != nil {
@@ -196,7 +197,7 @@ func TestTableForeignKeyForbidRuleFindsForeignKeys(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.Constraints = append(ddl.Constraints, spec.Constraint{
 			Type:    "foreign_key",
 			Name:    "fk_users_org",
@@ -223,7 +224,7 @@ func TestTableCreateLikeForbidRuleFindsLikeStatements(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.HasReferTable = true
 	}))
 	if err != nil {
@@ -246,7 +247,7 @@ func TestTableCreateAsForbidRuleFindsAsSelectStatements(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.HasSelect = true
 	}))
 	if err != nil {
@@ -269,7 +270,7 @@ func TestTablePartitionForbidRuleFindsPartitionedTables(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(tableOptionStatement(func(ddl *spec.DDL) {
+	findings, err := statementRule.Evaluate(context.Background(), tableOptionStatement(func(ddl *spec.DDL) {
 		ddl.HasPartition = true
 	}))
 	if err != nil {

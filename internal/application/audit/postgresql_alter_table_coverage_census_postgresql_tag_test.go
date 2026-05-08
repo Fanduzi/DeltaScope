@@ -159,7 +159,7 @@ func classifyAlterTableCensusResult(t *testing.T, name, sql string) alterTableCe
 	t.Helper()
 	res := alterTableCensusResult{Name: name}
 
-	parsed, parseErr := Parse(sql, spec.DialectPostgreSQL)
+	parsed, parseErr := Parse(context.Background(), sql, spec.DialectPostgreSQL)
 	if parseErr != nil {
 		res.Status = alterTableStatusParserError
 		t.Logf("alter-census: %-40s → parser-error: %v", name, parseErr)
@@ -167,7 +167,7 @@ func classifyAlterTableCensusResult(t *testing.T, name, sql string) alterTableCe
 	}
 	res.ParseOK = true
 
-	statements, extractErr := Extract(parsed)
+	statements, extractErr := Extract(context.Background(), parsed)
 	if extractErr != nil {
 		res.Status = alterTableStatusUnclassified
 		t.Logf("alter-census: %-40s → extract-error: %v", name, extractErr)

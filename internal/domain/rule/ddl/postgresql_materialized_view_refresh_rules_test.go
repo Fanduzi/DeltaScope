@@ -1,6 +1,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -27,7 +28,7 @@ func TestPGRefreshMaterializedViewConcurrentlyWarn_NonConcurrentFiresWarning(t *
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := r.Evaluate(refreshMatViewStatement(map[string]string{
+	findings, err := r.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{
 		"concurrently": "false",
 		"with_no_data": "false",
 	}))
@@ -48,7 +49,7 @@ func TestPGRefreshMaterializedViewConcurrentlyWarn_ConcurrentNoFinding(t *testin
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := r.Evaluate(refreshMatViewStatement(map[string]string{
+	findings, err := r.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{
 		"concurrently": "true",
 		"with_no_data": "false",
 	}))
@@ -66,7 +67,7 @@ func TestPGRefreshMaterializedViewConcurrentlyWarn_MissingOptionsFiresWarning(t 
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := r.Evaluate(refreshMatViewStatement(map[string]string{}))
+	findings, err := r.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -81,7 +82,7 @@ func TestPGRefreshMaterializedViewNoDataNotice_WithNoDataFiresNotice(t *testing.
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := r.Evaluate(refreshMatViewStatement(map[string]string{
+	findings, err := r.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{
 		"concurrently": "false",
 		"with_no_data": "true",
 	}))
@@ -102,7 +103,7 @@ func TestPGRefreshMaterializedViewNoDataNotice_WithDataNoFinding(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := r.Evaluate(refreshMatViewStatement(map[string]string{
+	findings, err := r.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{
 		"concurrently": "false",
 		"with_no_data": "false",
 	}))
@@ -163,7 +164,7 @@ func TestPGRefreshMaterializedViewRules_WrongOperationNotApplies(t *testing.T) {
 func TestPGRefreshMaterializedViewRules_MetadataIncludesAllFields(t *testing.T) {
 	concurrentRule, _ := newRefreshMaterializedViewConcurrentlyWarnRule(policy.RulePolicy{Enabled: true})
 
-	findings, err := concurrentRule.Evaluate(refreshMatViewStatement(map[string]string{
+	findings, err := concurrentRule.Evaluate(context.Background(), refreshMatViewStatement(map[string]string{
 		"concurrently": "false",
 		"with_no_data": "true",
 	}))
@@ -202,7 +203,7 @@ func TestPGRefreshMaterializedViewRules_BothRulesRegistered(t *testing.T) {
 		"concurrently": "false",
 		"with_no_data": "true",
 	})
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

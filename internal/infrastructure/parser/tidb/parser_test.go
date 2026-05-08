@@ -6,13 +6,14 @@
 package tidbparser
 
 import (
+	"context"
 	"testing"
 )
 
 func TestParserParsesMultiStatementSQL(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create table t1 (id bigint); update t1 set id = 2 where id = 1;")
+	result, err := parser.Parse(context.Background(), "create table t1 (id bigint); update t1 set id = 2 where id = 1;")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -28,7 +29,7 @@ func TestParserParsesMultiStatementSQL(t *testing.T) {
 func TestParserReturnsErrorForInvalidSQL(t *testing.T) {
 	parser := New()
 
-	_, err := parser.Parse("create table")
+	_, err := parser.Parse(context.Background(), "create table")
 	if err == nil {
 		t.Fatal("expected parse error, got nil")
 	}
@@ -37,7 +38,7 @@ func TestParserReturnsErrorForInvalidSQL(t *testing.T) {
 func TestWrapStatementsReturnsExtractorBackedResults(t *testing.T) {
 	parser := New()
 
-	result, err := parser.Parse("create table t1 (id bigint); update t1 set id = 2 where id = 1;")
+	result, err := parser.Parse(context.Background(), "create table t1 (id bigint); update t1 set id = 2 where id = 1;")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

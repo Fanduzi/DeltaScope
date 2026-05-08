@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -142,7 +143,7 @@ func alterTableRemainingBaselineForCase(t *testing.T, name, sql string) alterTab
 	t.Helper()
 
 	p := New()
-	result, err := p.Parse(sql)
+	result, err := p.Parse(context.Background(), sql)
 	if err != nil {
 		t.Fatalf("Parser.Parse(%q): %v", name, err)
 	}
@@ -590,7 +591,7 @@ func TestPostgreSQLAlterTableRemainingExistingRuleCoverage(t *testing.T) {
 
 	for _, tc := range cases {
 		p := New()
-		result, err := p.Parse(tc.sql)
+		result, err := p.Parse(context.Background(), tc.sql)
 		if err != nil {
 			t.Fatalf("%s: parse failed: %v", tc.name, err)
 		}

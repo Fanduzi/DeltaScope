@@ -28,7 +28,7 @@ const postgreSQLSyntaxNoticeRuleID = "dialect.postgresql.syntax.detected.notice"
 // linked in (CGO_ENABLED=1 -tags postgresql). It returns false when the stub
 // build is active and parsePostgreSQL always returns PostgreSQLCapabilityBoundaryError.
 func pgCapabilityBoundaryIsRealParser() bool {
-	_, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL)
+	_, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL)
 	return err == nil
 }
 

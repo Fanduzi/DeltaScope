@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -39,7 +40,7 @@ func (r tableCommentRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToCreateTable(statement)
 }
 
-func (r tableCommentRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableCommentRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -86,7 +87,7 @@ func (r tableNameMaxLengthRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTable(statement)
 }
 
-func (r tableNameMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableNameMaxLengthRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

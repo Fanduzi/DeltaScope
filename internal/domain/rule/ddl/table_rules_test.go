@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -25,7 +26,7 @@ func TestTableCommentRequiredRuleFindsMissingComment(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("users", "", []string{"id"}))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("users", "", []string{"id"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestTableCommentRequiredRuleIgnoresAlterStatements(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(spec.Statement{
+	findings, err := ruleUnderTest.Evaluate(context.Background(), spec.Statement{
 		Kind: spec.KindDDL,
 		DDL: &spec.DDL{
 			Table: &spec.Table{Name: "users"},
@@ -80,7 +81,7 @@ func TestTableNameMaxLengthRuleFindsLongNames(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("orders_archive", "archive table", []string{"id"}))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("orders_archive", "archive table", []string{"id"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -111,7 +112,7 @@ func TestTableNameMaxLengthRuleAcceptsBoundaryLength(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("users", "user table", []string{"id"}))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("users", "user table", []string{"id"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -221,7 +222,7 @@ func evaluateDDLFindings(t *testing.T, cfg policy.Policy, statement spec.Stateme
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(statement)
+	findings, err := registry.EvaluateStatement(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

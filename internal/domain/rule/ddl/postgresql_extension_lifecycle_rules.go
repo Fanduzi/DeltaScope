@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -52,7 +53,7 @@ func (r pgExtensionLifecycleRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Operation == r.operation
 }
 
-func (r pgExtensionLifecycleRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgExtensionLifecycleRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -32,7 +33,7 @@ func TestCreateIndexConcurrentlyRequiredRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -65,7 +66,7 @@ func TestCreateIndexConcurrentlyRequiredRuleSkipsWhenConcurrent(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -96,7 +97,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRule(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -127,7 +128,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRuleSkipsWhenNullable(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -154,7 +155,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRuleSkipsWhenNoDefault(t *testing.T) 
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -181,7 +182,7 @@ func TestAddCheckNotValidRule(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -208,7 +209,7 @@ func TestAddCheckNotValidRuleSkipsWhenNotValidPresent(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -230,7 +231,7 @@ func TestAddCheckNotValidRuleSkipsWhenNotCheckConstraint(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -256,7 +257,7 @@ func TestSetDataTypeRewriteWarnRule(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -279,7 +280,7 @@ func TestSetDataTypeRewriteWarnRuleSkipsWhenNotSetDataType(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -392,7 +393,7 @@ func TestPostgreSQLMigrationRulesArePGOnly(t *testing.T) {
 				if rl.r.AppliesTo(stmt) {
 					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
 				}
-				findings, err := rl.r.Evaluate(stmt)
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -444,7 +445,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				Options:   map[string]string{"concurrently": "false"},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -473,7 +474,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -505,7 +506,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -534,7 +535,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -559,7 +560,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				Alter:     []spec.Alter{{Action: "drop_index", Name: "idx_email"}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -588,7 +589,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -617,7 +618,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -645,7 +646,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -674,7 +675,7 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 				},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -714,7 +715,7 @@ func TestCreateIndexConcurrentlyRequiredRuleProvidesActionableSuggestion(t *test
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -751,7 +752,7 @@ func TestAddColumnNonNullDefaultRewriteWarnRuleProvidesSaferMigrationSuggestion(
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -785,7 +786,7 @@ func TestAddCheckNotValidRuleProvidesValidationFlowSuggestion(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -818,7 +819,7 @@ func TestSetDataTypeRewriteWarnRuleProvidesPhasedMigrationSuggestion(t *testing.
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -857,7 +858,7 @@ func TestDropIndexAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -891,7 +892,7 @@ func TestDropIndexAdvisoryRuleSkipsNonPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -922,7 +923,7 @@ func TestAddColumnNonNullNoDefaultWarnRule(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -956,7 +957,7 @@ func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenNullable(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -983,7 +984,7 @@ func TestAddColumnNonNullNoDefaultWarnRuleSkipsWhenHasDefault(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1009,7 +1010,7 @@ func TestAddUniqueConstraintAdvisoryRule(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1038,7 +1039,7 @@ func TestAddUniqueConstraintAdvisoryRuleSkipsNonUniqueConstraint(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1061,7 +1062,7 @@ func TestDropConstraintAdvisoryRule(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1087,7 +1088,7 @@ func TestDropConstraintAdvisoryRuleSkipsNonDropAction(t *testing.T) {
 		},
 	)
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1203,7 +1204,7 @@ func TestNotValidConstraintValidateRequiredRule_RegisteredAndFires(t *testing.T)
 		},
 	}}
 
-	globalFindings, err := registry.EvaluateGlobal(statements)
+	globalFindings, err := registry.EvaluateGlobal(context.Background(), statements)
 	if err != nil {
 		t.Fatalf("evaluate global: %v", err)
 	}
@@ -1261,7 +1262,7 @@ func TestNotValidConstraintValidateRequiredRule_LaterValidateSuppressesViaRegist
 		},
 	}
 
-	globalFindings, err := registry.EvaluateGlobal(statements)
+	globalFindings, err := registry.EvaluateGlobal(context.Background(), statements)
 	if err != nil {
 		t.Fatalf("evaluate global: %v", err)
 	}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -31,7 +32,7 @@ func TestCreateTypeEnumNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -64,7 +65,7 @@ func TestAlterTypeAddValueAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -93,7 +94,7 @@ func TestAlterTypeAddValuePositionNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -127,8 +128,8 @@ func TestAlterTypeAddValueWithPositionFiresBothRules(t *testing.T) {
 		},
 	}
 
-	f1, _ := advisory.Evaluate(stmt)
-	f2, _ := position.Evaluate(stmt)
+	f1, _ := advisory.Evaluate(context.Background(), stmt)
+	f2, _ := position.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected advisory to fire, got %d findings", len(f1))
 	}
@@ -150,7 +151,7 @@ func TestDropTypeAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -176,7 +177,7 @@ func TestDropTypeCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -204,8 +205,8 @@ func TestDropTypeCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 		},
 	}
 
-	f1, _ := advisory.Evaluate(stmt)
-	f2, _ := cascade.Evaluate(stmt)
+	f1, _ := advisory.Evaluate(context.Background(), stmt)
+	f2, _ := cascade.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected advisory to fire for DROP TYPE CASCADE, got %d findings", len(f1))
 	}
@@ -245,7 +246,7 @@ func TestTypeLifecycleRulesSkipMySQL(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -269,7 +270,7 @@ func TestCreateTypeEnumNoticeSkipsNonEnum(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -292,7 +293,7 @@ func TestAlterTypeAddValueAdvisorySkipsNonAddValue(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -315,7 +316,7 @@ func TestPositionNoticeSkipsNoPlacement(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -337,7 +338,7 @@ func TestDropTypeCascadeWarnSkipsNonCascade(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -360,7 +361,7 @@ func TestCreateTypeCompositeNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -399,7 +400,7 @@ func TestAlterTypeCompositeRenameNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -429,7 +430,7 @@ func TestAlterTypeCompositeSetSchemaNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -463,7 +464,7 @@ func TestCreateTypeCompositeNoticeSkipsEnum(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -486,7 +487,7 @@ func TestAlterTypeCompositeRenameSkipsAddValue(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -509,7 +510,7 @@ func TestAlterTypeCompositeSetSchemaSkipsRename(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -536,7 +537,7 @@ func TestCompositeTypeRulesSkipDropType(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -565,7 +566,7 @@ func TestCompositeTypeRulesSkipMySQL(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -623,7 +624,7 @@ func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
-			findings, err := registry.EvaluateStatement(tc.stmt)
+			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -692,7 +693,7 @@ func TestTypeLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
 			Options:    map[string]string{"cascade": "true"},
 		},
 	}
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

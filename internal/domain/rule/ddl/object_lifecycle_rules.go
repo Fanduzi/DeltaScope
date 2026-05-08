@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -46,7 +47,7 @@ func (r forbiddenDDLOperationRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Table != nil
 }
 
-func (r forbiddenDDLOperationRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r forbiddenDDLOperationRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -87,7 +88,7 @@ func (r tableOperationExistenceRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Table != nil
 }
 
-func (r tableOperationExistenceRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableOperationExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -133,7 +134,7 @@ func (r adaptiveHashLifecycleRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Table != nil
 }
 
-func (r adaptiveHashLifecycleRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r adaptiveHashLifecycleRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) || statement.Metadata == nil || statement.Metadata.Instance == nil || !statement.Metadata.Instance.InnoDBAdaptiveHashEnabled {
 		return nil, nil
 	}
@@ -181,7 +182,7 @@ func (r tableRowCountRiskRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Table != nil
 }
 
-func (r tableRowCountRiskRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableRowCountRiskRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

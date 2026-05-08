@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -24,7 +25,7 @@ func TestPrimaryKeyRequiredRuleFindsMissingPrimaryKey(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("users", "user table", nil))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("users", "user table", nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -52,7 +53,7 @@ func TestPrimaryKeyRequiredRuleAcceptsPresentPrimaryKey(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("users", "user table", []string{"id"}))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("users", "user table", []string{"id"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -73,7 +74,7 @@ func TestPrimaryKeyColumnCountRuleFindsCompositePrimaryKeyWhenLimitIsOne(t *test
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("user_roles", "user roles", []string{"user_id", "role_id"}))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("user_roles", "user roles", []string{"user_id", "role_id"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -104,7 +105,7 @@ func TestPrimaryKeyColumnCountRuleIgnoresMissingPrimaryKey(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(createTableStatement("users", "user table", nil))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), createTableStatement("users", "user table", nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

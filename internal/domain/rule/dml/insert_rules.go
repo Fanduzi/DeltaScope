@@ -6,6 +6,7 @@
 package dml
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -39,7 +40,8 @@ func (r insertRowsMaxCountRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToInsert(statement)
 }
 
-func (r insertRowsMaxCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r insertRowsMaxCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || statement.DML.InsertRows == 0 || statement.DML.InsertRows <= r.limit {
 		return nil, nil
 	}
@@ -78,7 +80,8 @@ func (r replaceForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToInsert(statement)
 }
 
-func (r replaceForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r replaceForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.IsReplace {
 		return nil, nil
 	}
@@ -113,7 +116,8 @@ func (r insertSelectForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToInsert(statement)
 }
 
-func (r insertSelectForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r insertSelectForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.IsInsertSelect {
 		return nil, nil
 	}
@@ -148,7 +152,8 @@ func (r onDuplicateForbiddenRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToInsert(statement)
 }
 
-func (r onDuplicateForbiddenRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r onDuplicateForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) || !statement.DML.HasOnDuplicate {
 		return nil, nil
 	}

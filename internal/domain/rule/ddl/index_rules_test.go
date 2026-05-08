@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -29,7 +30,7 @@ func TestIndexTotalMaxCountRuleFindsOversizedIndexCatalog(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -54,7 +55,7 @@ func TestIndexColumnsMaxCountRuleFindsWideIndexes(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -74,7 +75,7 @@ func TestUniquePrefixRuleFindsBadNames(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -94,7 +95,7 @@ func TestSecondaryPrefixRuleFindsBadNames(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -142,7 +143,7 @@ func TestPostgreSQLUniqueUsesSharedIndexRulePath(t *testing.T) {
 				t.Fatalf("register rule: %v", err)
 			}
 
-			findings, err := registry.EvaluateStatement(tt.statement)
+			findings, err := registry.EvaluateStatement(context.Background(), tt.statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -173,7 +174,7 @@ func TestFulltextPrefixRuleFindsBadNames(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -225,7 +226,7 @@ func TestIndexSuffixRuleFindsBadNames(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(statement)
+			findings, err := statementRule.Evaluate(context.Background(), statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -297,7 +298,7 @@ func TestIndexContainsRuleUsesORSemantics(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(statementWithIndexes(tt.indexes...))
+			findings, err := statementRule.Evaluate(context.Background(), statementWithIndexes(tt.indexes...))
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -330,7 +331,7 @@ func TestDuplicateIndexRuleFindsExactDuplicateIndexes(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -357,7 +358,7 @@ func TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -384,7 +385,7 @@ func TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique(t *testing
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

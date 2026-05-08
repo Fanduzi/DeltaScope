@@ -195,11 +195,11 @@ func firstNonEmpty(values ...string) string {
 // unsupported, it returns ok=false.
 func corpusExtractStatement(t *testing.T, sql string, dialect spec.Dialect) (spec.Statement, bool) {
 	t.Helper()
-	parsed, err := Parse(sql, dialect)
+	parsed, err := Parse(context.Background(), sql, dialect)
 	if err != nil {
 		t.Fatalf("semantic parse: %v", err)
 	}
-	statements, err := Extract(parsed)
+	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("semantic extract: %v", err)
 	}

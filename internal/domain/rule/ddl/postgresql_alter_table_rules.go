@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -49,13 +50,16 @@ func (r pgAlterActionAdvisoryRule) AppliesTo(statement spec.Statement) bool {
 		appliesToAlterActions(statement, r.action)
 }
 
-func (r pgAlterActionAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgAlterActionAdvisoryRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		message := r.message
 		if alter.Name != "" {
 			message = fmt.Sprintf(r.message, alter.Name)
@@ -102,13 +106,16 @@ func (r pgAlterAddColumnNullableNoticeRule) AppliesTo(statement spec.Statement) 
 		appliesToAlterActions(statement, "add_column")
 }
 
-func (r pgAlterAddColumnNullableNoticeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgAlterAddColumnNullableNoticeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "add_column") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		col, ok := alterColumnDefinition(alter)
 		if !ok {
 			continue
@@ -296,13 +303,16 @@ func (r pgAlterActionOptionRule) AppliesTo(statement spec.Statement) bool {
 		appliesToAlterActions(statement, r.action)
 }
 
-func (r pgAlterActionOptionRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r pgAlterActionOptionRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if alter.Options[r.optionKey] != r.optionValue {
 			continue
 		}

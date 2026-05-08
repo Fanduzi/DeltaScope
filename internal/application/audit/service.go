@@ -72,7 +72,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	parsed, err := Parse(request.SQL, request.Dialect)
+	parsed, err := Parse(ctx, request.SQL, request.Dialect)
 	if err != nil {
 		if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
 			if token, ok := possiblePostgreSQLMismatch(request.SQL); ok {
@@ -87,7 +87,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	statements, err := Extract(parsed)
+	statements, err := Extract(ctx, parsed)
 	if err != nil {
 		return report.Result{}, err
 	}
@@ -113,7 +113,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	result, err := EvaluateStatements(registry, statements)
+	result, err := EvaluateStatements(ctx, registry, statements)
 	if err != nil {
 		return report.Result{}, err
 	}

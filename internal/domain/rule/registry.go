@@ -6,6 +6,7 @@
 package rule
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -16,13 +17,13 @@ import (
 type StatementRule interface {
 	ID() string
 	AppliesTo(statement spec.Statement) bool
-	Evaluate(statement spec.Statement) ([]Finding, error)
+	Evaluate(ctx context.Context, statement spec.Statement) ([]Finding, error)
 }
 
 // GlobalRule evaluates the full statement batch.
 type GlobalRule interface {
 	ID() string
-	EvaluateAll(statements []spec.Statement) ([]Finding, error)
+	EvaluateAll(ctx context.Context, statements []spec.Statement) ([]Finding, error)
 }
 
 // Registry stores rule registrations in deterministic order.
@@ -72,13 +73,16 @@ func (r *Registry) RegisterGlobal(rule GlobalRule) error {
 }
 
 // EvaluateStatement applies all matching statement rules in registration order.
-func (r *Registry) EvaluateStatement(statement spec.Statement) ([]Finding, error) {
+func (r *Registry) EvaluateStatement(ctx context.Context, statement spec.Statement) ([]Finding, error) {
 	findings := make([]Finding, 0)
 	for _, registered := range r.statementRules {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("evaluation cancelled: %w", err)
+		}
 		if !registered.AppliesTo(statement) {
 			continue
 		}
-		ruleFindings, err := registered.Evaluate(statement)
+		ruleFindings, err := registered.Evaluate(ctx, statement)
 		if err != nil {
 			return nil, err
 		}
@@ -92,10 +96,13 @@ func (r *Registry) EvaluateStatement(statement spec.Statement) ([]Finding, error
 }
 
 // EvaluateGlobal applies global rules in registration order.
-func (r *Registry) EvaluateGlobal(statements []spec.Statement) ([]Finding, error) {
+func (r *Registry) EvaluateGlobal(ctx context.Context, statements []spec.Statement) ([]Finding, error) {
 	findings := make([]Finding, 0)
 	for _, registered := range r.globalRules {
-		ruleFindings, err := registered.EvaluateAll(statements)
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("evaluation cancelled: %w", err)
+		}
+		ruleFindings, err := registered.EvaluateAll(ctx, statements)
 		if err != nil {
 			return nil, err
 		}
@@ -115,9 +122,12 @@ func (r *Registry) LoadedStatementRuleCount() int {
 
 // EvaluateStatementDetailed applies all statement rules and returns findings alongside
 // skipped-rule metadata for rules that did not apply with an inferable reason.
-func (r *Registry) EvaluateStatementDetailed(statement spec.Statement) (StatementEvaluation, error) {
+func (r *Registry) EvaluateStatementDetailed(ctx context.Context, statement spec.Statement) (StatementEvaluation, error) {
 	var eval StatementEvaluation
 	for _, registered := range r.statementRules {
+		if err := ctx.Err(); err != nil {
+			return StatementEvaluation{}, fmt.Errorf("evaluation cancelled: %w", err)
+		}
 		if !registered.AppliesTo(statement) {
 			if reason := inferSkipReason(registered.ID(), statement); reason != "" {
 				eval.Skipped = append(eval.Skipped, SkippedRule{
@@ -127,7 +137,7 @@ func (r *Registry) EvaluateStatementDetailed(statement spec.Statement) (Statemen
 			}
 			continue
 		}
-		ruleFindings, err := registered.Evaluate(statement)
+		ruleFindings, err := registered.Evaluate(ctx, statement)
 		if err != nil {
 			return StatementEvaluation{}, err
 		}

@@ -6,6 +6,7 @@
 package rule_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -28,7 +29,7 @@ func (r testStatementRule) AppliesTo(statement spec.Statement) bool {
 	return statement.Kind == r.kind
 }
 
-func (r testStatementRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r testStatementRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if r.evaluated != nil {
 		*r.evaluated++
 	}
@@ -50,7 +51,7 @@ func (r testGlobalRule) ID() string {
 	return r.id
 }
 
-func (r testGlobalRule) EvaluateAll(statements []spec.Statement) ([]rule.Finding, error) {
+func (r testGlobalRule) EvaluateAll(ctx context.Context, statements []spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{{
 		RuleID:  r.id,
 		Level:   r.level,
@@ -83,7 +84,7 @@ func TestRegistryEvaluatesStatementRulesDeterministically(t *testing.T) {
 		t.Fatalf("register second statement rule: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{Kind: spec.KindDDL})
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{Kind: spec.KindDDL})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -109,7 +110,7 @@ func TestRegistryCollectsGlobalRuleFindings(t *testing.T) {
 		t.Fatalf("register global rule: %v", err)
 	}
 
-	findings, err := registry.EvaluateGlobal([]spec.Statement{
+	findings, err := registry.EvaluateGlobal(context.Background(), []spec.Statement{
 		{Kind: spec.KindDDL},
 		{Kind: spec.KindDML},
 	})
@@ -171,7 +172,7 @@ func TestRegistryStampsEmptyFindingRuleID(t *testing.T) {
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{Kind: spec.KindDML})
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{Kind: spec.KindDML})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -206,7 +207,7 @@ func TestRegistryRejectsMismatchedFindingRuleID(t *testing.T) {
 		t.Fatalf("register mismatched rule: %v", err)
 	}
 
-	_, err = registry.EvaluateStatement(spec.Statement{Kind: spec.KindDDL})
+	_, err = registry.EvaluateStatement(context.Background(), spec.Statement{Kind: spec.KindDDL})
 	if err == nil {
 		t.Fatal("expected mismatched finding rule ID to fail evaluation")
 	}
@@ -223,7 +224,7 @@ func (r testDialectStatementRule) ID() string { return r.id }
 func (r testDialectStatementRule) AppliesTo(stmt spec.Statement) bool {
 	return stmt.Dialect == r.dialect
 }
-func (r testDialectStatementRule) Evaluate(stmt spec.Statement) ([]rule.Finding, error) {
+func (r testDialectStatementRule) Evaluate(ctx context.Context, stmt spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{{RuleID: r.id, Level: r.level, Message: r.message}}, nil
 }
 
@@ -242,7 +243,7 @@ func TestRegistryEvaluateStatementDetailedTracksSkippedRules(t *testing.T) {
 		t.Fatalf("register mysql rule: %v", err)
 	}
 
-	eval, err := registry.EvaluateStatementDetailed(spec.Statement{
+	eval, err := registry.EvaluateStatementDetailed(context.Background(), spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectMySQL,
 	})
@@ -279,7 +280,7 @@ func TestEvaluateStatementDetailedPreservesFindings(t *testing.T) {
 		t.Fatalf("register statement rule: %v", err)
 	}
 
-	eval, err := registry.EvaluateStatementDetailed(spec.Statement{
+	eval, err := registry.EvaluateStatementDetailed(context.Background(), spec.Statement{
 		Kind: spec.KindDML,
 	})
 	if err != nil {
@@ -330,7 +331,7 @@ func (r badMismatchedRule) AppliesTo(statement spec.Statement) bool {
 	return r.inner.AppliesTo(statement)
 }
 
-func (r badMismatchedRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r badMismatchedRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	return []rule.Finding{{
 		RuleID:  r.findingRuleID,
 		Level:   r.inner.level,

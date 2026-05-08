@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -30,7 +31,7 @@ func TestDropSchemaAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -60,7 +61,7 @@ func TestDropSchemaCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -86,7 +87,7 @@ func TestCreateSequenceCycleWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -112,7 +113,7 @@ func TestAlterSequenceRestartWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -135,7 +136,7 @@ func TestAlterSequenceCycleWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -157,7 +158,7 @@ func TestDropSequenceAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -183,7 +184,7 @@ func TestDropSequenceCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -205,7 +206,7 @@ func TestDropMaterializedViewAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -231,7 +232,7 @@ func TestDropMaterializedViewCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -367,7 +368,7 @@ func TestPGObjectLifecycleRulesSkipNonPGDialects(t *testing.T) {
 				if rl.r.AppliesTo(stmt) {
 					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
 				}
-				findings, err := rl.r.Evaluate(stmt)
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -428,7 +429,7 @@ func TestPGObjectLifecycleCascadeRulesSkipWithoutCascade(t *testing.T) {
 
 	for _, rl := range cascadeRules {
 		t.Run(rl.name, func(t *testing.T) {
-			findings, err := rl.r.Evaluate(rl.stmt)
+			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -485,7 +486,7 @@ func TestPGObjectLifecycleOptionRulesSkipWithoutOption(t *testing.T) {
 
 	for _, rl := range optionRules {
 		t.Run(rl.name, func(t *testing.T) {
-			findings, err := rl.r.Evaluate(rl.stmt)
+			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -508,7 +509,7 @@ func TestPGObjectLifecycleRulesSkipWrongOperation(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -556,7 +557,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 				ObjectName: "app_data",
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -582,7 +583,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 				Options:    map[string]string{"cycle": "true"},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -608,7 +609,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 				Options:    map[string]string{"cascade": "true"},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}

@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -206,7 +207,7 @@ func TestTypeLifecycleDeltaScopeBaseline(t *testing.T) {
 
 	for _, tc := range pgTypeLifecycleCensusCases {
 		p := New()
-		result, parseErr := p.Parse(tc.SQL)
+		result, parseErr := p.Parse(context.Background(), tc.SQL)
 		if parseErr != nil {
 			t.Logf("%-38s | %-8s | %-12s | parse error: %v",
 				tc.Name, "ERROR", "-", parseErr)

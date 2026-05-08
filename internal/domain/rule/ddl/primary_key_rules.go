@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -38,7 +39,7 @@ func (r primaryKeyRequiredRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToCreateTable(statement)
 }
 
-func (r primaryKeyRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r primaryKeyRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -85,7 +86,7 @@ func (r primaryKeyColumnCountRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTable(statement) || appliesToAlterAddConstraintPrimaryKey(statement)
 }
 
-func (r primaryKeyColumnCountRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r primaryKeyColumnCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

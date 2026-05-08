@@ -6,6 +6,7 @@
 package tidbparser
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -29,7 +30,11 @@ func New() *Parser {
 }
 
 // Parse parses SQL text into TiDB statements and preserves parser warnings.
-func (p *Parser) Parse(sql string) (Result, error) {
+func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
+	if err := ctx.Err(); err != nil {
+		return Result{}, fmt.Errorf("parse cancelled: %w", err)
+	}
+
 	parsed, warns, err := parser.New().Parse(sql, "", "")
 	if err != nil {
 		return Result{}, fmt.Errorf("parse sql: %w", err)

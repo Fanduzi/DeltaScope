@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -36,7 +37,7 @@ func (r tableCommentMaxLengthRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTable(statement)
 }
 
-func (r tableCommentMaxLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableCommentMaxLengthRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -96,7 +97,7 @@ func (r tableOptionAllowlistRule) AppliesTo(statement spec.Statement) bool {
 	return appliesToCreateTable(statement)
 }
 
-func (r tableOptionAllowlistRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableOptionAllowlistRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -148,7 +149,7 @@ func (r tableBooleanShapeRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToCreateTable(statement)
 }
 
-func (r tableBooleanShapeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableBooleanShapeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) || !r.predicate(statement.DDL) {
 		return nil, nil
 	}
@@ -187,7 +188,7 @@ func (r tableAutoIncrementInitValueRule) AppliesTo(statement spec.Statement) boo
 	return appliesToCreateTable(statement)
 }
 
-func (r tableAutoIncrementInitValueRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableAutoIncrementInitValueRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -229,13 +230,16 @@ func (r tableForeignKeyForbidRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && appliesToCreateTableOrAlterFKConstraint(statement)
 }
 
-func (r tableForeignKeyForbidRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableForeignKeyForbidRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, constraint := range statement.DDL.Constraints {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if constraint.Type != "foreign_key" {
 			continue
 		}
@@ -287,13 +291,16 @@ func (r tableForeignKeyCrossSchemaAdvisoryRule) AppliesTo(statement spec.Stateme
 	return statement.Dialect == spec.DialectPostgreSQL && appliesToCreateTableOrAlterFKConstraint(statement)
 }
 
-func (r tableForeignKeyCrossSchemaAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableForeignKeyCrossSchemaAdvisoryRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, constraint := range statement.DDL.Constraints {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if constraint.Type != "foreign_key" {
 			continue
 		}

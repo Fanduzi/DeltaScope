@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -38,7 +39,7 @@ func (r createIndexConcurrentlyRequiredRule) AppliesTo(statement spec.Statement)
 		statement.DDL.Operation == spec.DDLOperationCreateIndex
 }
 
-func (r createIndexConcurrentlyRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r createIndexConcurrentlyRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -100,13 +101,16 @@ func (r addColumnNonNullDefaultRewriteWarnRule) AppliesTo(statement spec.Stateme
 		appliesToAlterActions(statement, "add_column")
 }
 
-func (r addColumnNonNullDefaultRewriteWarnRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r addColumnNonNullDefaultRewriteWarnRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "add_column") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		col, ok := alterColumnDefinition(alter)
 		if !ok || !col.NotNull || !col.HasDefault {
 			continue
@@ -152,13 +156,16 @@ func (r addCheckNotValidRequiredRule) AppliesTo(statement spec.Statement) bool {
 		appliesToAlterActions(statement, "add_constraint")
 }
 
-func (r addCheckNotValidRequiredRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r addCheckNotValidRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if alter.Options["constraint_type"] != "check" {
 			continue
 		}
@@ -208,13 +215,16 @@ func (r setDataTypeRewriteWarnRule) AppliesTo(statement spec.Statement) bool {
 		appliesToAlterActions(statement, "set_data_type")
 }
 
-func (r setDataTypeRewriteWarnRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r setDataTypeRewriteWarnRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "set_data_type") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: fmt.Sprintf("ALTER COLUMN %q SET DATA TYPE carries table rewrite risk on PostgreSQL", alter.Name),
@@ -256,13 +266,16 @@ func (r dropIndexAdvisoryRule) AppliesTo(statement spec.Statement) bool {
 		statement.DDL.Operation == spec.DDLOperationDropIndex
 }
 
-func (r dropIndexAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r dropIndexAdvisoryRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	indexName := ""
 	for _, a := range statement.DDL.Alter {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if a.Action == "drop_index" && a.Name != "" {
 			indexName = a.Name
 		}
@@ -311,13 +324,16 @@ func (r addColumnNonNullNoDefaultWarnRule) AppliesTo(statement spec.Statement) b
 		appliesToAlterActions(statement, "add_column")
 }
 
-func (r addColumnNonNullNoDefaultWarnRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r addColumnNonNullNoDefaultWarnRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "add_column") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		col, ok := alterColumnDefinition(alter)
 		if !ok || !col.NotNull || col.HasDefault {
 			continue
@@ -363,13 +379,16 @@ func (r addUniqueConstraintAdvisoryRule) AppliesTo(statement spec.Statement) boo
 		appliesToAlterActions(statement, "add_constraint")
 }
 
-func (r addUniqueConstraintAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r addUniqueConstraintAdvisoryRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if alter.Options["constraint_type"] != "unique" {
 			continue
 		}
@@ -413,13 +432,16 @@ func (r dropConstraintAdvisoryRule) AppliesTo(statement spec.Statement) bool {
 		appliesToAlterActions(statement, "drop_constraint")
 }
 
-func (r dropConstraintAdvisoryRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r dropConstraintAdvisoryRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "drop_constraint") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
 			Message: fmt.Sprintf("DROP CONSTRAINT %q on PostgreSQL may break application assumptions", alter.Name),

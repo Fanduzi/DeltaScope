@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -88,7 +89,7 @@ func TestExtractIndexStmtConcurrentPartial(t *testing.T) {
 
 func TestExtractIndexStmtNullsNotDistinctUnsupported(t *testing.T) {
 	parser := New()
-	result, err := parser.Parse("CREATE INDEX idx_nulls ON t (col) NULLS NOT DISTINCT")
+	result, err := parser.Parse(context.Background(), "CREATE INDEX idx_nulls ON t (col) NULLS NOT DISTINCT")
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -110,7 +111,7 @@ func TestExtractIndexStmtNullsNotDistinctUnsupported(t *testing.T) {
 func extractIndex(t *testing.T, sql string) spec.Statement {
 	t.Helper()
 	parser := New()
-	result, err := parser.Parse(sql)
+	result, err := parser.Parse(context.Background(), sql)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}

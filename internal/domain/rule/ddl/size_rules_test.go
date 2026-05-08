@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -48,7 +49,7 @@ func TestTableRowSizeRuleFindsCompactRowOverflow(t *testing.T) {
 		},
 	}
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate row-size rule: %v", err)
 	}
@@ -91,7 +92,7 @@ func TestIndexKeyLengthRuleFindsLargePrefixOverflow(t *testing.T) {
 		},
 	}
 
-	findings, err := ruleUnderTest.Evaluate(statement)
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate key-length rule: %v", err)
 	}
@@ -119,10 +120,10 @@ func TestSizeRulesSkipWithoutInstanceFacts(t *testing.T) {
 		},
 	}
 
-	if findings, err := rowRule.Evaluate(statement); err != nil || len(findings) != 0 {
+	if findings, err := rowRule.Evaluate(context.Background(), statement); err != nil || len(findings) != 0 {
 		t.Fatalf("expected row-size rule to skip without metadata, got findings=%+v err=%v", findings, err)
 	}
-	if findings, err := indexRule.Evaluate(statement); err != nil || len(findings) != 0 {
+	if findings, err := indexRule.Evaluate(context.Background(), statement); err != nil || len(findings) != 0 {
 		t.Fatalf("expected key-length rule to skip without metadata, got findings=%+v err=%v", findings, err)
 	}
 }

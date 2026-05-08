@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -44,13 +45,16 @@ func (r forbiddenAlterRenameRule) AppliesTo(statement spec.Statement) bool {
 	return r.forbid && len(matchingRenameActions(statement, r.action)) > 0
 }
 
-func (r forbiddenAlterRenameRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r forbiddenAlterRenameRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingRenameActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		oldName, newName, ok := alterRenameNames(alter)
 		if !ok {
 			continue
@@ -121,13 +125,16 @@ func (r forbiddenExplicitAlterColumnChangeRule) AppliesTo(statement spec.Stateme
 	return r.forbid && appliesToAlterActions(statement, r.action)
 }
 
-func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !r.predicate(alter) {
 			continue
 		}
@@ -184,13 +191,16 @@ func (r alterTargetTypeFamilyRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToAlterActions(statement, r.action)
 }
 
-func (r alterTargetTypeFamilyRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterTargetTypeFamilyRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		column, ok := alterColumnDefinition(alter)
 		if !ok {
 			continue
@@ -271,12 +281,13 @@ func (r alterAddedIndexPrefixRule) AppliesTo(statement spec.Statement) bool {
 	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
 }
 
-func (r alterAddedIndexPrefixRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterAddedIndexPrefixRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings, err := evaluateProjectedAlterIndexRule(
+		ctx,
 		r.inner,
 		r.ID(),
 		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
@@ -304,12 +315,13 @@ func (r alterAddedIndexSuffixRule) AppliesTo(statement spec.Statement) bool {
 	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
 }
 
-func (r alterAddedIndexSuffixRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterAddedIndexSuffixRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings, err := evaluateProjectedAlterIndexRule(
+		ctx,
 		r.inner,
 		r.ID(),
 		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
@@ -337,12 +349,13 @@ func (r alterAddedIndexContainsRule) AppliesTo(statement spec.Statement) bool {
 	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
 }
 
-func (r alterAddedIndexContainsRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterAddedIndexContainsRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 
 	findings, err := evaluateProjectedAlterIndexRule(
+		ctx,
 		r.inner,
 		r.ID(),
 		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
@@ -423,11 +436,12 @@ func (r alterAddedIndexRule) AppliesTo(statement spec.Statement) bool {
 	return len(r.indexes(statement)) > 0
 }
 
-func (r alterAddedIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r alterAddedIndexRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
 	findings, err := evaluateProjectedAlterIndexRule(
+		ctx,
 		r.inner,
 		r.ruleID,
 		projectedAlterIndexesStatement(statement, r.indexes(statement)),
@@ -438,8 +452,8 @@ func (r alterAddedIndexRule) Evaluate(statement spec.Statement) ([]rule.Finding,
 	return findings, nil
 }
 
-func evaluateProjectedAlterIndexRule(inner rule.StatementRule, ruleID string, projected spec.Statement) ([]rule.Finding, error) {
-	findings, err := inner.Evaluate(projected)
+func evaluateProjectedAlterIndexRule(ctx context.Context, inner rule.StatementRule, ruleID string, projected spec.Statement) ([]rule.Finding, error) {
+	findings, err := inner.Evaluate(ctx, projected)
 	if err != nil {
 		return nil, err
 	}

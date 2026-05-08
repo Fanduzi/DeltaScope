@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -106,7 +107,7 @@ func alterTableResidualBaselineForCase(t *testing.T, name, sql string) alterTabl
 	t.Helper()
 
 	p := New()
-	result, err := p.Parse(sql)
+	result, err := p.Parse(context.Background(), sql)
 	if err != nil {
 		t.Fatalf("Parser.Parse(%q): %v", name, err)
 	}

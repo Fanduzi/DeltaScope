@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -30,7 +31,7 @@ func TestCreateExtensionNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -63,7 +64,7 @@ func TestCreateExtensionWithIfNotExistsMetadata(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestCreateExtensionWithSchemaMetadata(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -115,7 +116,7 @@ func TestCreateExtensionWithVersionMetadata(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -141,7 +142,7 @@ func TestCreateExtensionCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -172,8 +173,8 @@ func TestCreateExtensionCascadeFiresBothNoticeAndCascadeWarn(t *testing.T) {
 		},
 	}
 
-	f1, _ := notice.Evaluate(stmt)
-	f2, _ := cascade.Evaluate(stmt)
+	f1, _ := notice.Evaluate(context.Background(), stmt)
+	f2, _ := cascade.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected notice to fire for CREATE EXTENSION CASCADE, got %d findings", len(f1))
 	}
@@ -199,7 +200,7 @@ func TestAlterExtensionUpdateNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -228,7 +229,7 @@ func TestAlterExtensionUpdateWithVersionMetadata(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -254,7 +255,7 @@ func TestAlterExtensionSetSchemaNoticeRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -282,7 +283,7 @@ func TestDropExtensionAdvisoryRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -308,7 +309,7 @@ func TestDropExtensionCascadeWarnRule(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -336,8 +337,8 @@ func TestDropExtensionCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 		},
 	}
 
-	f1, _ := advisory.Evaluate(stmt)
-	f2, _ := cascade.Evaluate(stmt)
+	f1, _ := advisory.Evaluate(context.Background(), stmt)
+	f2, _ := cascade.Evaluate(context.Background(), stmt)
 	if len(f1) != 1 {
 		t.Fatalf("expected advisory to fire for DROP EXTENSION CASCADE, got %d findings", len(f1))
 	}
@@ -375,7 +376,7 @@ func TestExtensionLifecycleRulesSkipMySQL(t *testing.T) {
 	}
 
 	for _, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate %s: %v", r.ID(), err)
 		}
@@ -398,7 +399,7 @@ func TestCreateExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -421,7 +422,7 @@ func TestAlterExtensionUpdateSkipsNonUpdate(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -444,7 +445,7 @@ func TestAlterExtensionSetSchemaSkipsNonSetSchema(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -466,7 +467,7 @@ func TestDropExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -509,7 +510,7 @@ func TestExtensionRulesSkipMemberMutation(t *testing.T) {
 
 	for _, r := range rules {
 		for _, stmt := range []spec.Statement{addMember, dropMember} {
-			findings, err := r.Evaluate(stmt)
+			findings, err := r.Evaluate(context.Background(), stmt)
 			if err != nil {
 				t.Fatalf("evaluate %s: %v", r.ID(), err)
 			}
@@ -563,7 +564,7 @@ func TestRegistryIncludesPGExtensionLifecycleRules(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.ruleID, func(t *testing.T) {
-			findings, err := registry.EvaluateStatement(tc.stmt)
+			findings, err := registry.EvaluateStatement(context.Background(), tc.stmt)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -630,7 +631,7 @@ func TestExtensionLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
 			Options:    map[string]string{"cascade": "true"},
 		},
 	}
-	findings, err := registry.EvaluateStatement(stmt)
+	findings, err := registry.EvaluateStatement(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

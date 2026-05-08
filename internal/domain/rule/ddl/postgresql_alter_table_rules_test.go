@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -32,7 +33,7 @@ func TestDropColumnAdvisoryFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -62,7 +63,7 @@ func TestValidateConstraintAdvisoryFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -98,7 +99,7 @@ func TestAddColumnNullableNoticeFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -140,7 +141,7 @@ func TestAddColumnNullableSkipsNotNullWithDefault(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -174,7 +175,7 @@ func TestAddColumnNullableSkipsNotNullNoDefault(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -208,7 +209,7 @@ func TestAddColumnNullableSkipsHasDefault(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -236,7 +237,7 @@ func TestSetSchemaAdvisoryFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -266,7 +267,7 @@ func TestOwnerAdvisoryFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -296,7 +297,7 @@ func TestEnableTriggerNoticeFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -326,7 +327,7 @@ func TestDisableTriggerWarnFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -356,7 +357,7 @@ func TestAttachPartitionAdvisoryFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -386,7 +387,7 @@ func TestDetachPartitionWarnFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -420,7 +421,7 @@ func TestSetLoggedNoticeFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -450,7 +451,7 @@ func TestSetUnloggedNoticeFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -507,7 +508,7 @@ func TestSetLoggedRulesSkipNonPGDialects(t *testing.T) {
 				if rl.r.AppliesTo(stmt) {
 					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
 				}
-				findings, err := rl.r.Evaluate(stmt)
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -536,7 +537,7 @@ func TestSetLoggedRulesDoNotFireForSetTablespace(t *testing.T) {
 	}
 
 	for _, r := range []rule.StatementRule{loggedRule, unloggedRule} {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -565,7 +566,7 @@ func TestReplicaIdentityFullWarnFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -595,7 +596,7 @@ func TestReplicaIdentityNothingWarnFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -622,7 +623,7 @@ func TestReplicaIdentityUsingIndexNoticeFiresForPG(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -661,7 +662,7 @@ func TestReplicaIdentityDefaultDoesNotFire(t *testing.T) {
 	}
 
 	for i, r := range rules {
-		findings, err := r.Evaluate(stmt)
+		findings, err := r.Evaluate(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("rule %d evaluate: %v", i, err)
 		}
@@ -689,7 +690,7 @@ func TestReplicaIdentityRulesSkipWrongAction(t *testing.T) {
 	if r.AppliesTo(stmt) {
 		t.Fatalf("expected AppliesTo() == false for wrong action")
 	}
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -713,7 +714,7 @@ func TestReplicaIdentityRulesSkipWrongIdentityOption(t *testing.T) {
 		},
 	}
 
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -753,7 +754,7 @@ func TestReplicaIdentityRulesSkipNonPGDialects(t *testing.T) {
 				if rl.r.AppliesTo(stmt) {
 					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
 				}
-				findings, err := rl.r.Evaluate(stmt)
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -779,7 +780,7 @@ func TestTriggerRulesStillFireOnceForTriggerALL(t *testing.T) {
 		},
 	}
 
-	findings, err := enableRule.Evaluate(enableStmt)
+	findings, err := enableRule.Evaluate(context.Background(), enableStmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -800,7 +801,7 @@ func TestTriggerRulesStillFireOnceForTriggerALL(t *testing.T) {
 		},
 	}
 
-	findings, err = disableRule.Evaluate(disableStmt)
+	findings, err = disableRule.Evaluate(context.Background(), disableStmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1013,7 +1014,7 @@ func TestPGAlterTableRulesSkipNonPGDialects(t *testing.T) {
 				if rl.r.AppliesTo(stmt) {
 					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
 				}
-				findings, err := rl.r.Evaluate(stmt)
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
 				if err != nil {
 					t.Fatalf("evaluate: %v", err)
 				}
@@ -1043,7 +1044,7 @@ func TestPGAlterTableRulesSkipWrongAction(t *testing.T) {
 	if r.AppliesTo(stmt) {
 		t.Fatalf("expected AppliesTo() == false for wrong action")
 	}
-	findings, err := r.Evaluate(stmt)
+	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1097,7 +1098,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 				Alter:     []spec.Alter{{Action: "drop_column", Name: "email"}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -1123,7 +1124,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 				Alter:     []spec.Alter{{Action: "validate_constraint", Name: "chk_amt"}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}
@@ -1149,7 +1150,7 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 				Alter:     []spec.Alter{{Action: "drop_column", Name: "email"}},
 			},
 		}
-		findings, err := registry.EvaluateStatement(stmt)
+		findings, err := registry.EvaluateStatement(context.Background(), stmt)
 		if err != nil {
 			t.Fatalf("evaluate: %v", err)
 		}

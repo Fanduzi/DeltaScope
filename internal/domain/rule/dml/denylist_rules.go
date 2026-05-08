@@ -6,6 +6,7 @@
 package dml
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -48,7 +49,8 @@ func (r tableDenylistRule) AppliesTo(statement spec.Statement) bool {
 	return statement.Kind == spec.KindDML && statement.DML != nil && len(statement.DML.Tables) > 0
 }
 
-func (r tableDenylistRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableDenylistRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if err := ctx.Err(); err != nil { return nil, err }
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

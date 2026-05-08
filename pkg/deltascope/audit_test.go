@@ -153,7 +153,7 @@ func TestAuditSupportsPostgreSQLDialectMapping(t *testing.T) {
 }
 
 func TestAuditReturnsCapabilityBoundaryErrorForExplicitPostgreSQLOnUnsupportedBuild(t *testing.T) {
-	if _, err := appaudit.Parse("SELECT 1", spec.DialectPostgreSQL); err == nil {
+	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err == nil {
 		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
 	}
 	_, err := Audit(context.Background(), Request{

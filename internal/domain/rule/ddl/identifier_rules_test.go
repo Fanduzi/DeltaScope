@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -24,7 +25,7 @@ func TestIdentifierPatternRuleFindsIllegalTableName(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statementWithNamedObjects("user-profile", nil, nil))
+	findings, err := statementRule.Evaluate(context.Background(), statementWithNamedObjects("user-profile", nil, nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -43,7 +44,7 @@ func TestIdentifierPatternRuleFindsIllegalColumnName(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statementWithNamedObjects("users", []spec.Column{{Name: "display-name", Type: "varchar(32)", Comment: "'display'"}}, nil))
+	findings, err := statementRule.Evaluate(context.Background(), statementWithNamedObjects("users", []spec.Column{{Name: "display-name", Type: "varchar(32)", Comment: "'display'"}}, nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -62,7 +63,7 @@ func TestIdentifierPatternRuleFindsUnnamedIndex(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statementWithNamedObjects("users", nil, []spec.Index{{Name: "", Kind: spec.IndexKindSecondary, Columns: []string{"name"}}}))
+	findings, err := statementRule.Evaluate(context.Background(), statementWithNamedObjects("users", nil, []spec.Index{{Name: "", Kind: spec.IndexKindSecondary, Columns: []string{"name"}}}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestIdentifierKeywordRuleFindsReservedKeywords(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(tt.statement)
+			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -174,7 +175,7 @@ func TestIdentifierKeywordRuleFindsPostgreSQLReservedKeywords(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(tt.statement)
+			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -195,7 +196,7 @@ func TestIdentifierKeywordRuleFindsSharedReservedKeywordsForPostgreSQL(t *testin
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(spec.Statement{
+	findings, err := statementRule.Evaluate(context.Background(), spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
@@ -221,7 +222,7 @@ func TestIdentifierKeywordRuleFindsPostgreSQLIndexReservedKeywords(t *testing.T)
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(spec.Statement{
+	findings, err := statementRule.Evaluate(context.Background(), spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
@@ -249,7 +250,7 @@ func TestIdentifierKeywordRuleDoesNotFlagSafePostgreSQLNames(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(spec.Statement{
+	findings, err := statementRule.Evaluate(context.Background(), spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
@@ -380,7 +381,7 @@ func TestNamingRulesValidatePrefixSuffixAndContains(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			statementRule := tt.build(t)
 
-			findings, err := statementRule.Evaluate(tt.statement)
+			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -508,7 +509,7 @@ func TestConstraintNamingRulesEvaluateExplicitNamesOnly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			statementRule := tt.build(t)
 
-			findings, err := statementRule.Evaluate(tt.statement)
+			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -601,7 +602,7 @@ func TestPostgreSQLConstraintNamingRulesReuseSharedSelectors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			statementRule := tt.build(t)
 
-			findings, err := statementRule.Evaluate(tt.statement)
+			findings, err := statementRule.Evaluate(context.Background(), tt.statement)
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -660,7 +661,7 @@ func TestRegisterSkipsForeignKeyConstraintNamingWhenForeignKeysAreForbidden(t *t
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(statementWithConstraints(nil, nil, spec.Constraint{
+	findings, err := registry.EvaluateStatement(context.Background(), statementWithConstraints(nil, nil, spec.Constraint{
 		Type:    "foreign_key",
 		Name:    "orders_user_ref",
 		Columns: []string{"user_id"},
@@ -686,7 +687,7 @@ func TestImplicitPrimaryKeyConstraintNamingIsSkipped(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(statementWithConstraints(nil, nil))
+	findings, err := statementRule.Evaluate(context.Background(), statementWithConstraints(nil, nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -726,7 +727,7 @@ func TestForeignKeyConstraintNamingRulesAreSuppressedWhenForeignKeysAreForbidden
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(statementWithConstraints(nil, nil, spec.Constraint{
+	findings, err := registry.EvaluateStatement(context.Background(), statementWithConstraints(nil, nil, spec.Constraint{
 		Type:    "foreign_key",
 		Name:    "orders_user_ref",
 		Columns: []string{"user_id"},
@@ -760,7 +761,7 @@ func TestRicherPostgreSQLForeignKeyConstraintUsesSharedConstraintNamingRule(t *t
 		ReferencedColumns: []string{"id"},
 	})
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -799,7 +800,7 @@ func TestRicherPostgreSQLForeignKeyConstraintPassesSharedNamingRule(t *testing.T
 		ReferencedColumns: []string{"id"},
 	})
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -823,7 +824,7 @@ func TestRicherPostgreSQLInlineReferencesConstraintUsesSharedForeignKeyForbidRul
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
@@ -882,7 +883,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryFiresForExplicitCrossSchemaFK(t *test
 		},
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -935,7 +936,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForSameSchemaFK(t *testing
 		},
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -974,7 +975,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForBareReference(t *testin
 		},
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1012,7 +1013,7 @@ func TestTableForeignKeyCrossSchemaAdvisoryDoesNotFireForMySQL(t *testing.T) {
 		},
 	}
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1120,7 +1121,7 @@ func TestForeignKeyNamingRuleGapAlterTableAddConstraintFKNotFound(t *testing.T) 
 	// happens in the extractor, not in hand-built specs), so the naming rule
 	// still cannot fire.  The rule fires on Constraints, not Alter.Options.
 	// Full end-to-end coverage lives in service/corpus tests (Task 3).
-	findings, err := rule.Evaluate(statement)
+	findings, err := rule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1248,7 +1249,7 @@ func TestCheckNamingRule_AlterTableProjectedCheckNowFires(t *testing.T) {
 		t.Fatal("expected AppliesTo=true for ALTER TABLE ADD CONSTRAINT CHECK with widened gate")
 	}
 
-	findings, err := r.Evaluate(statement)
+	findings, err := r.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1294,7 +1295,7 @@ func TestCheckNamingRuleGap_ProjectedConstraintWouldFireWithFixedAppliesTo(t *te
 	if !r.AppliesTo(statement) {
 		t.Fatal("expected AppliesTo=true for CREATE TABLE with check constraint")
 	}
-	findings, err := r.Evaluate(statement)
+	findings, err := r.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -1320,7 +1321,7 @@ func TestCheckNamingRule_UnnamedProjectedCheckStillSkipped(t *testing.T) {
 		t.Fatalf("newNamingPrefixRule: %v", err)
 	}
 
-	findings, err := r.Evaluate(statement)
+	findings, err := r.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

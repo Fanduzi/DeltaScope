@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -76,7 +77,7 @@ func TestColumnTypeForbiddenRulesFindConfiguredFamilies(t *testing.T) {
 				t.Fatalf("new rule: %v", err)
 			}
 
-			findings, err := statementRule.Evaluate(createTableWithColumns("users", tt.column))
+			findings, err := statementRule.Evaluate(context.Background(), createTableWithColumns("users", tt.column))
 			if err != nil {
 				t.Fatalf("evaluate: %v", err)
 			}
@@ -97,7 +98,7 @@ func TestColumnCharMaxLengthRuleFindsOversizedChar(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(createTableWithColumns("users", spec.Column{Name: "code", Type: "char(96)", Length: 96, Comment: "'code'"}))
+	findings, err := statementRule.Evaluate(context.Background(), createTableWithColumns("users", spec.Column{Name: "code", Type: "char(96)", Length: 96, Comment: "'code'"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -116,7 +117,7 @@ func TestColumnCharsetAllowlistRuleFindsUnsupportedCharset(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "latin1", Collation: "latin1_swedish_ci", Comment: "'nickname'"}))
+	findings, err := statementRule.Evaluate(context.Background(), createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "latin1", Collation: "latin1_swedish_ci", Comment: "'nickname'"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -135,7 +136,7 @@ func TestColumnCollationAllowlistRuleFindsUnsupportedCollation(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	findings, err := statementRule.Evaluate(createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "utf8mb4", Collation: "utf8mb4_unicode_ci", Comment: "'nickname'"}))
+	findings, err := statementRule.Evaluate(context.Background(), createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "utf8mb4", Collation: "utf8mb4_unicode_ci", Comment: "'nickname'"}))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -157,7 +158,7 @@ func TestColumnCharsetAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	statement := createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "latin1", Collation: "latin1_swedish_ci", Comment: "'nickname'"})
 	statement.Dialect = spec.DialectPostgreSQL
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -179,7 +180,7 @@ func TestColumnCollationAllowlistRuleSkipsPostgreSQL(t *testing.T) {
 	statement := createTableWithColumns("users", spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "utf8mb4", Collation: "utf8mb4_unicode_ci", Comment: "'nickname'"})
 	statement.Dialect = spec.DialectPostgreSQL
 
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -203,7 +204,7 @@ func TestColumnCharsetCollationMatchRuleFindsPartialAndMismatchedPairs(t *testin
 		spec.Column{Name: "nickname", Type: "varchar(32)", Length: 32, Charset: "utf8", Comment: "'nickname'"},
 		spec.Column{Name: "display_name", Type: "varchar(32)", Length: 32, Charset: "utf8mb4", Collation: "utf8_general_ci", Comment: "'display'"},
 	)
-	findings, err := statementRule.Evaluate(statement)
+	findings, err := statementRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

@@ -6,6 +6,7 @@
 package ddl
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -53,7 +54,7 @@ func (r indexKeyLengthRule) AppliesTo(statement spec.Statement) bool {
 	return r.required && appliesToCreateTableIndexes(statement)
 }
 
-func (r tableRowSizeRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r tableRowSizeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -72,6 +73,9 @@ func (r tableRowSizeRule) Evaluate(statement spec.Statement) ([]rule.Finding, er
 	totalRowBytes := 0
 	compactRowBytes := 0
 	for _, column := range statement.DDL.Columns {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		columnBytes := estimatedColumnBytes(column, charset)
 		if columnBytes <= 0 {
 			continue
@@ -132,7 +136,7 @@ func (r tableRowSizeRule) Evaluate(statement spec.Statement) ([]rule.Finding, er
 	return findings, nil
 }
 
-func (r indexKeyLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, error) {
+func (r indexKeyLengthRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -145,6 +149,9 @@ func (r indexKeyLengthRule) Evaluate(statement spec.Statement) ([]rule.Finding, 
 	limit := estimatedIndexKeyLimit(statement, instance)
 	findings := make([]rule.Finding, 0)
 	for _, index := range statement.DDL.Indexes {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		total := 0
 		for _, columnName := range index.Columns {
 			column, ok := ddlColumnByName(statement, columnName)
