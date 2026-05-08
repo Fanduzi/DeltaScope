@@ -245,5 +245,135 @@ func TestPrepareReturnsOpenError(t *testing.T) {
 	}
 }
 
+func TestPrepareReturnsDialectDetectErrorWhenDetectionFails(t *testing.T) {
+	t.Parallel()
+
+	detectErr := errors.New("version query failed")
+	client := &fakeClient{detectErr: detectErr}
+	_, err := Prepare(context.Background(), Request{
+		SQL:              "delete from users",
+		RequestedDialect: spec.DialectMySQL,
+		ExplicitDialect:  true,
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err == nil {
+		t.Fatal("expected dialect detect error")
+	}
+	var typedErr *Error
+	if !errors.As(err, &typedErr) {
+		t.Fatalf("expected typed error, got %T", err)
+	}
+	if typedErr.Kind != ErrorDialectDetect {
+		t.Fatalf("expected dialect_detect_failed kind, got %q", typedErr.Kind)
+	}
+}
+
+func TestPrepareReturnsSchemaHintRequiredForExistingTableWithNoSchemas(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {}},
+	}
+	_, err := Prepare(context.Background(), Request{
+		SQL:        "delete from users where id = 1",
+		SchemaHint: "--schema",
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err == nil {
+		t.Fatal("expected schema hint required error")
+	}
+	var typedErr *Error
+	if !errors.As(err, &typedErr) {
+		t.Fatalf("expected typed error, got %T", err)
+	}
+	if typedErr.Kind != ErrorSchemaHintRequired {
+		t.Fatalf("expected schema_hint_required kind, got %q", typedErr.Kind)
+	}
+	if !client.closed {
+		t.Fatal("expected client to close on schema inference failure")
+	}
+}
+
+func TestPrepareResolvesExplicitSchemaSource(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{detectDialect: spec.DialectMySQL}
+	prepared, err := Prepare(context.Background(), Request{
+		SQL:                  "delete from users",
+		ExplicitSchema:       "mydb",
+		ExplicitSchemaSource: "connection.schema",
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if prepared.SchemaSource != "connection.schema" {
+		t.Fatalf("expected connection.schema source, got %q", prepared.SchemaSource)
+	}
+}
+
+func TestPrepareResolvesNoneSchemaForStatementWithNoTargets(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{detectDialect: spec.DialectMySQL}
+	prepared, err := Prepare(context.Background(), Request{
+		SQL: "set names utf8mb4",
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if prepared.Schema != "" || prepared.SchemaSource != "none" {
+		t.Fatalf("expected empty schema with none source, got schema=%q source=%q", prepared.Schema, prepared.SchemaSource)
+	}
+}
+
+func TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialect(t *testing.T) {
+	t.Parallel()
+
+	openErr := errors.New("mysql refused")
+	pgClient := &fakeClient{detectDialect: spec.DialectPostgreSQL, schemasByTable: map[string][]string{"users": {"public"}}}
+	calls := 0
+	prepared, err := Prepare(context.Background(), Request{
+		SQL:            "delete from users where id = 1",
+		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root"},
+		ExplicitSchema: "public",
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			calls++
+			if calls == 1 {
+				return nil, openErr
+			}
+			if config.Dialect != spec.DialectPostgreSQL {
+				t.Fatalf("expected postgres fallback, got dialect=%q", config.Dialect)
+			}
+			return pgClient, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if calls != 2 {
+		t.Fatalf("expected 2 open calls, got %d", calls)
+	}
+	if prepared.Dialect != spec.DialectPostgreSQL {
+		t.Fatalf("expected postgres dialect, got %q", prepared.Dialect)
+	}
+}
+
 var _ Client = (*fakeClient)(nil)
 var _ appaudit.MetadataProvider = (*fakeClient)(nil)

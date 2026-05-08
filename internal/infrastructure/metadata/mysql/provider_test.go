@@ -48,45 +48,143 @@ func TestConnectionConfigDSNUsesUnixSocket(t *testing.T) {
 	}
 }
 
-func TestDetectDialectFromVersion(t *testing.T) {
-	if got := detectDialectFromVersion("8.0.36"); got != spec.DialectMySQL {
-		t.Fatalf("expected mysql dialect, got %q", got)
+func TestConnectionConfigDefaultsWhenEmpty(t *testing.T) {
+	config := ConnectionConfig{}
+
+	if got := config.Network(); got != "tcp" {
+		t.Fatalf("expected tcp for empty config, got %q", got)
 	}
-	if got := detectDialectFromVersion("8.0.11-TiDB-v8.5.0"); got != spec.DialectTiDB {
-		t.Fatalf("expected tidb dialect, got %q", got)
+	if got := config.Address(); got != "127.0.0.1:3306" {
+		t.Fatalf("expected default host:port, got %q", got)
+	}
+}
+
+func TestConnectionConfigDSNFormat(t *testing.T) {
+	config := ConnectionConfig{
+		Host: "db.example.com",
+		Port: 3306,
+		User: "appuser",
+	}
+
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "appuser") {
+		t.Fatalf("expected DSN to contain user, got %q", dsn)
+	}
+	if !strings.Contains(dsn, "tcp") {
+		t.Fatalf("expected DSN to contain tcp network, got %q", dsn)
+	}
+	if !strings.Contains(dsn, "db.example.com") {
+		t.Fatalf("expected DSN to contain host, got %q", dsn)
+	}
+}
+
+func TestConnectionConfigDSNSocketFormat(t *testing.T) {
+	config := ConnectionConfig{
+		Socket: "/var/run/mysqld/mysqld.sock",
+		User:   "root",
+	}
+
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "unix") {
+		t.Fatalf("expected DSN to contain unix network, got %q", dsn)
+	}
+	if !strings.Contains(dsn, "/var/run/mysqld/mysqld.sock") {
+		t.Fatalf("expected DSN to contain socket path, got %q", dsn)
+	}
+}
+
+func TestDetectDialectFromVersion(t *testing.T) {
+	tests := []struct {
+		version string
+		want    spec.Dialect
+	}{
+		{"8.0.36", spec.DialectMySQL},
+		{"8.0.11-TiDB-v8.5.0", spec.DialectTiDB},
+		{"5.7.44", spec.DialectMySQL},
+		{"TiDB-v7.6.0", spec.DialectTiDB},
+		{"8.0.11-tidb-v8.5.0", spec.DialectTiDB},
+	}
+	for _, tc := range tests {
+		t.Run(tc.version, func(t *testing.T) {
+			if got := detectDialectFromVersion(tc.version); got != tc.want {
+				t.Fatalf("detectDialectFromVersion(%q) = %q, want %q", tc.version, got, tc.want)
+			}
+		})
 	}
 }
 
 func TestNormalizeOnOff(t *testing.T) {
-	if !normalizeOnOff("ON") {
-		t.Fatalf("expected ON to normalize to true")
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"ON", true},
+		{"on", true},
+		{"1", true},
+		{"yes", true},
+		{"true", true},
+		{" True ", true},
+		{"OFF", false},
+		{"0", false},
+		{"no", false},
+		{"false", false},
+		{"maybe", false},
+		{"", false},
 	}
-	if !normalizeOnOff("1") {
-		t.Fatalf("expected 1 to normalize to true")
-	}
-	if normalizeOnOff("OFF") {
-		t.Fatalf("expected OFF to normalize to false")
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			if got := normalizeOnOff(tc.input); got != tc.want {
+				t.Fatalf("normalizeOnOff(%q) = %v, want %v", tc.input, got, tc.want)
+			}
+		})
 	}
 }
 
 func TestCharsetFromCollation(t *testing.T) {
-	if got := charsetFromCollation("utf8mb4_general_ci"); got != "utf8mb4" {
-		t.Fatalf("expected utf8mb4, got %q", got)
+	tests := []struct {
+		collation string
+		want      string
+	}{
+		{"utf8mb4_general_ci", "utf8mb4"},
+		{"utf8_general_ci", "utf8"},
+		{"latin1_swedish_ci", "latin1"},
+		{"binary", ""},
+		{"", ""},
+		{"_underscore_first", ""},
 	}
-	if got := charsetFromCollation(""); got != "" {
-		t.Fatalf("expected empty charset, got %q", got)
+	for _, tc := range tests {
+		t.Run(tc.collation, func(t *testing.T) {
+			if got := charsetFromCollation(tc.collation); got != tc.want {
+				t.Fatalf("charsetFromCollation(%q) = %q, want %q", tc.collation, got, tc.want)
+			}
+		})
 	}
 }
 
 func TestParseColumnType(t *testing.T) {
-	baseType, length, unsigned := parseColumnType("varchar(255)")
-	if baseType != "varchar" || length != 255 || unsigned {
-		t.Fatalf("unexpected varchar parse result: %q %d %v", baseType, length, unsigned)
+	tests := []struct {
+		input       string
+		wantBase    string
+		wantLen     int
+		wantUnsigned bool
+	}{
+		{"varchar(255)", "varchar", 255, false},
+		{"bigint(20) unsigned", "bigint", 20, true},
+		{"int", "int", 0, false},
+		{"text", "text", 0, false},
+		{"decimal(10,2)", "decimal", 10, false},
+		{"bigint unsigned", "bigint", 0, true},
+		{"tinyint(1)", "tinyint", 1, false},
+		{"varchar(64) unsigned", "varchar", 64, true},
 	}
-
-	baseType, length, unsigned = parseColumnType("bigint(20) unsigned")
-	if baseType != "bigint" || length != 20 || !unsigned {
-		t.Fatalf("unexpected bigint parse result: %q %d %v", baseType, length, unsigned)
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			base, length, unsigned := parseColumnType(tc.input)
+			if base != tc.wantBase || length != tc.wantLen || unsigned != tc.wantUnsigned {
+				t.Fatalf("parseColumnType(%q) = (%q, %d, %v), want (%q, %d, %v)",
+					tc.input, base, length, unsigned, tc.wantBase, tc.wantLen, tc.wantUnsigned)
+			}
+		})
 	}
 }
 
@@ -122,6 +220,140 @@ func TestAccumulateIndexCardinalityPreservesMaximumNonNilValue(t *testing.T) {
 	}
 	if len(index.Columns) != 3 {
 		t.Fatalf("expected all index columns to be preserved, got %#v", index.Columns)
+	}
+}
+
+func TestAccumulateIndexRowMultipleIndexes(t *testing.T) {
+	indexes := make(map[string]*spec.Index)
+	order := make([]string, 0)
+
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", "id", testPtrInt64(100))
+	accumulateIndexRow(indexes, &order, "idx_email", 1, "BTREE", "email", testPtrInt64(50))
+
+	if len(indexes) != 2 {
+		t.Fatalf("expected 2 indexes, got %d", len(indexes))
+	}
+	if len(order) != 2 || order[0] != "PRIMARY" || order[1] != "idx_email" {
+		t.Fatalf("unexpected order: %#v", order)
+	}
+}
+
+func TestDetectDialectWithMockDB(t *testing.T) {
+	db := openTestDB(t, map[string]testQueryResult{
+		"select version()": {
+			columns: []string{"version()"},
+			rows:    [][]driver.Value{{"8.0.36"}},
+		},
+	})
+	defer db.Close()
+
+	provider := NewProvider(db)
+	dialect, err := provider.DetectDialect(context.Background())
+	if err != nil {
+		t.Fatalf("DetectDialect: %v", err)
+	}
+	if dialect != spec.DialectMySQL {
+		t.Fatalf("expected mysql, got %q", dialect)
+	}
+}
+
+func TestDetectDialectTiDBWithMockDB(t *testing.T) {
+	db := openTestDB(t, map[string]testQueryResult{
+		"select version()": {
+			columns: []string{"version()"},
+			rows:    [][]driver.Value{{"8.0.11-TiDB-v8.5.0"}},
+		},
+	})
+	defer db.Close()
+
+	provider := NewProvider(db)
+	dialect, err := provider.DetectDialect(context.Background())
+	if err != nil {
+		t.Fatalf("DetectDialect: %v", err)
+	}
+	if dialect != spec.DialectTiDB {
+		t.Fatalf("expected tidb, got %q", dialect)
+	}
+}
+
+func TestLoadInstanceFactsWithMockDB(t *testing.T) {
+	db := openTestDB(t, map[string]testQueryResult{
+		"show variables": {
+			columns: []string{"Variable_name", "Value"},
+			rows: [][]driver.Value{
+				{"version", "8.0.36"},
+				{"character_set_database", "utf8mb4"},
+				{"innodb_large_prefix", "ON"},
+				{"innodb_default_row_format", "dynamic"},
+				{"innodb_adaptive_hash_index", "OFF"},
+			},
+		},
+	})
+	defer db.Close()
+
+	provider := NewProvider(db)
+	facts, err := provider.LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
+	if err != nil {
+		t.Fatalf("LoadInstanceFacts: %v", err)
+	}
+	if facts.Version != "8.0.36" {
+		t.Fatalf("expected version 8.0.36, got %q", facts.Version)
+	}
+	if facts.DefaultCharset != "utf8mb4" {
+		t.Fatalf("expected charset utf8mb4, got %q", facts.DefaultCharset)
+	}
+	if !facts.InnoDBLargePrefixEnabled {
+		t.Fatal("expected innodb_large_prefix enabled")
+	}
+	if facts.InnoDBDefaultRowFormat != "dynamic" {
+		t.Fatalf("expected dynamic row format, got %q", facts.InnoDBDefaultRowFormat)
+	}
+	if facts.InnoDBAdaptiveHashEnabled {
+		t.Fatal("expected innodb_adaptive_hash_index disabled")
+	}
+}
+
+func TestLoadTableSnapshotReturnsNotExistsWhenNoTableRow(t *testing.T) {
+	db := openTestDB(t, map[string]testQueryResult{
+		"from information_schema.tables": {
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+			rows:    [][]driver.Value{},
+		},
+	})
+	defer db.Close()
+
+	provider := NewProvider(db)
+	snapshot, err := provider.LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "missing")
+	if err != nil {
+		t.Fatalf("LoadTableSnapshot: %v", err)
+	}
+	if snapshot.Exists {
+		t.Fatal("expected Exists=false for missing table")
+	}
+	if snapshot.Schema != "app" {
+		t.Fatalf("expected schema=app, got %q", snapshot.Schema)
+	}
+}
+
+func TestFindSchemasForTableWithMockDB(t *testing.T) {
+	db := openTestDB(t, map[string]testQueryResult{
+		"from information_schema.tables": {
+			columns: []string{"table_schema"},
+			rows: [][]driver.Value{
+				{"app"},
+				{"staging"},
+			},
+		},
+	})
+	defer db.Close()
+
+	provider := NewProvider(db)
+	schemas, err := provider.FindSchemasForTable(context.Background(), "users")
+	if err != nil {
+		t.Fatalf("FindSchemasForTable: %v", err)
+	}
+	if len(schemas) != 2 || schemas[0] != "app" || schemas[1] != "staging" {
+		t.Fatalf("expected [app staging], got %#v", schemas)
 	}
 }
 
