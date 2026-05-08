@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.61.0] - 2026-05-08
+
+### Added
+
+- Static analysis integration: golangci-lint v2 with 15 active linters and 903 code-quality issues auto-fixed
+- Context propagation support: audit pipeline now respects `context.Context` timeout and cancellation across all layers
+- Parallel test execution: 1522 tests run concurrently with `t.Parallel()`, reducing CI time
+- Performance benchmarks for hot paths (rule evaluation, markdown rendering, string concatenation)
+- MCP server panic recovery with three-layer protection: tool handler, server handler, and process-level recovery
+
+### Changed
+
+- Performance optimization in hot paths: slice preallocation, `strings.Builder` for string concatenation, builder pool for markdown renderer reuse
+- Database connection pool configuration hardened: connection leaks fixed, proper lifecycle management with `sql.DB.SetMaxOpenConns`, `SetMaxIdleConns`, and `SetConnMaxLifetime`
+- golangci-lint configuration updated to v2 format
+
+### Fixed
+
+- Database connection pool leaks under concurrent metadata-aware audit workloads
+- MCP server crashes from unexpected panics in tool handlers now recover gracefully instead of terminating the process
+- 903 lint issues across the codebase (unused variables, error handling, naming conventions, and more)
+
 ## [v0.60.0] - 2026-05-06
 
 ### Added
