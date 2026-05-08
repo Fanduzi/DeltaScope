@@ -74,7 +74,7 @@ func (r *Registry) RegisterGlobal(rule GlobalRule) error {
 
 // EvaluateStatement applies all matching statement rules in registration order.
 func (r *Registry) EvaluateStatement(ctx context.Context, statement spec.Statement) ([]Finding, error) {
-	findings := make([]Finding, 0)
+	findings := make([]Finding, 0, 16)
 	for _, registered := range r.statementRules {
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("evaluation cancelled: %w", err)
@@ -97,7 +97,7 @@ func (r *Registry) EvaluateStatement(ctx context.Context, statement spec.Stateme
 
 // EvaluateGlobal applies global rules in registration order.
 func (r *Registry) EvaluateGlobal(ctx context.Context, statements []spec.Statement) ([]Finding, error) {
-	findings := make([]Finding, 0)
+	findings := make([]Finding, 0, 8)
 	for _, registered := range r.globalRules {
 		if err := ctx.Err(); err != nil {
 			return nil, fmt.Errorf("evaluation cancelled: %w", err)

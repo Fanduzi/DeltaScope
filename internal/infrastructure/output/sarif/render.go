@@ -24,7 +24,7 @@ type Options struct {
 // Render formats an audit result into SARIF 2.1.0 JSON.
 // Unsupported statements are not included in SARIF output.
 func Render(result report.Result, options Options) ([]byte, error) {
-	ruleMeta := make(map[string]*sarifRule)
+	ruleMeta := make(map[string]*sarifRule, 8)
 	var results []sarifResult
 
 	collectFinding := func(finding rule.Finding) {

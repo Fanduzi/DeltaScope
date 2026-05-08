@@ -17,7 +17,7 @@ import (
 // EvaluateStatements applies registered rules and aggregates their findings into a report result.
 func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements []spec.Statement) (report.Result, error) {
 	statementResults := make([]report.StatementResult, 0, len(statements))
-	unsupported := make([]spec.UnsupportedDetail, 0)
+	unsupported := make([]spec.UnsupportedDetail, 0, len(statements)/4+1)
 	supportedStatements := make([]spec.Statement, 0, len(statements))
 
 	appliedIDs := make(map[string]struct{})

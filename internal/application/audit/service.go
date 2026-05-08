@@ -172,7 +172,9 @@ func buildRegistry(cfg domainpolicy.Policy) (*rule.Registry, error) {
 }
 
 func addGlobalFinding(result report.Result, finding rule.Finding) report.Result {
-	findings := append(append([]rule.Finding(nil), result.GlobalFindings...), finding)
+	findings := make([]rule.Finding, 0, len(result.GlobalFindings)+1)
+	findings = append(findings, result.GlobalFindings...)
+	findings = append(findings, finding)
 	reaggregated := report.Aggregate(result.Statements, findings)
 	reaggregated.Unsupported = append([]spec.UnsupportedDetail(nil), result.Unsupported...)
 	reaggregated.RuleSummary = result.RuleSummary
