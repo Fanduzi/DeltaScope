@@ -34,7 +34,9 @@ func (r impactEstimateRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r impactEstimateRule) Evaluate(ctx context.Context, _ spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 
@@ -67,7 +69,9 @@ func (r impactRowsMaxCountRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r impactRowsMaxCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
@@ -117,7 +121,9 @@ func (r impactRatioMaxPercentRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r impactRatioMaxPercentRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

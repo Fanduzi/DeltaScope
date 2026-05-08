@@ -25,7 +25,7 @@ func TestImpactRowsMaxCountRuleFindsLargeEstimate(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),statementWithImpact(&spec.ImpactEstimate{
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statementWithImpact(&spec.ImpactEstimate{
 		EstimatedRows: ptrInt64(5000),
 		RiskLevel:     spec.ImpactRiskHigh,
 		Confidence:    spec.ImpactConfidenceMedium,
@@ -65,7 +65,7 @@ func TestImpactRowsMaxCountRuleSkipsUnknownEstimate(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),statementWithImpact(nil))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statementWithImpact(nil))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestImpactRatioMaxPercentRuleFindsLargeEstimate(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),statementWithImpact(&spec.ImpactEstimate{
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statementWithImpact(&spec.ImpactEstimate{
 		EstimatedRatio: ptrFloat64(0.25),
 		RiskLevel:      spec.ImpactRiskHigh,
 		Confidence:     spec.ImpactConfidenceHigh,
@@ -145,7 +145,7 @@ func TestImpactRatioMaxPercentRuleSkipsUnknownEstimate(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),statementWithImpact(&spec.ImpactEstimate{
+	findings, err := ruleUnderTest.Evaluate(context.Background(), statementWithImpact(&spec.ImpactEstimate{
 		EstimatedRows: ptrInt64(5000),
 		RiskLevel:     spec.ImpactRiskHigh,
 		Confidence:    spec.ImpactConfidenceMedium,

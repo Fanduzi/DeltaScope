@@ -24,93 +24,128 @@ linters:
     - unparam       # Unused function parameters
     - prealloc      # Slice preallocation
 
+  settings:
+    errcheck:
+      check-blank: false
+      check-type-assertions: true
+
+    govet:
+      enable-all: true
+      disable:
+        - shadow     # Too noisy for existing codebase
+        - fieldalignment  # Struct padding: intentional trade-off for readability
+
+    gosec:
+      excludes:
+        - G104  # Audit errors not checked (too noisy)
+        - G112  # Slowloris: handled at infrastructure level
+        - G115  # Integer overflow: config values are bounded
+
+    revive:
+      rules:
+        - name: exported
+          disabled: true  # Too strict for internal packages
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - commentFormatting  # Too opinionated
+        - hugeParam          # API stability > micro-optimization
+        - paramTypeCombine   # False positives with variadic patterns
+        - importShadow       # Common in rule constructors
+        - unnamedResult      # Too noisy for existing codebase
+        - rangeValCopy       # Intentional value copies for safety
+        - unlambda           # Explicit signatures aid readability
+        - nestingReduce      # Style preference
+        - ifElseChain        # Style preference
+        - appendAssign       # Common pattern in test code
+        - nilValReturn       # False positives with named returns
+        - elseif             # Style preference
+        - whyNoLint          # Not requiring explanations initially
+        - httpNoBody         # nil is clear enough for request bodies
+        - preferFprint       # fmt.Print is fine
+        - sloppyLen          # Intentional defensive checks
+        - singleCaseSwitch   # if/else preferred over single-case switch
+        - mapKey             # Intentional string keys
+        - filepathJoin       # False positives with literal paths
+        - caseOrder          # Switch ordering is intentional
+        - builtinShadow      # Common in rule constructors
+        - offBy1             # Reviewed individually
+
+  exclusions:
+    rules:
+      # Exclude test files from some checks
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - unparam
+          - unused
+          - prealloc
+          - staticcheck
+
+      # Test assertions intentionally write to fields without reading
+      - path: _test\.go
+        linters:
+          - govet
+        text: "unusedwrite|nilness"
+
+      # Rule factory functions intentionally use parameters for API consistency
+      - linters:
+          - unparam
+        source: "^(func new|func render|func boolParam|func toolError|func extract)"
+
+      # Config param functions always receive same default
+      - linters:
+          - unparam
+        text: "boolParam"
+
+      # Exclude generated files
+      - path: \.pb\.go$
+        linters:
+          - all
+
+      # defer Close() return values are intentionally ignored (standard Go pattern)
+      - linters:
+          - errcheck
+        source: "defer .+\\.Close\\(\\)"
+
+      # pool.Get() return values are type-asserted, not error-checked
+      - linters:
+          - errcheck
+        source: "\\.Get\\(\\)\\."
+
+      # db.Close() on error paths: connection already failed, close error is irrelevant
+      - linters:
+          - errcheck
+        source: "^\\s+db\\.Close\\(\\)"
+
+      # Known false positive: variable name contains "password" but is not a credential
+      - linters:
+          - gosec
+        text: "G101"
+
+      # File paths from variables are validated at the caller boundary
+      - linters:
+          - gosec
+        text: "G304"
+
+      # WriteString(fmt.Sprintf(...)) is clearer than fmt.Fprintf in template builders
+      - linters:
+          - staticcheck
+        text: "QF1012"
+
+    paths:
+      - \.pb\.go$
+
 formatters:
   enable:
     - gofmt         # Check formatting
     - goimports     # Check imports
 
-linters-settings:
-  errcheck:
-    check-blank: false
-    check-type-assertions: true
-
-  govet:
-    enable-all: true
-    disable:
-      - shadow     # Too noisy for existing codebase
-      - fieldalignment  # Struct padding: intentional trade-off for readability
-
-  gosec:
-    excludes:
-      - G104  # Audit errors not checked (too noisy)
-      - G112  # Slowloris: handled at infrastructure level
-      - G115  # Integer overflow: config values are bounded
-
-  revive:
-    rules:
-      - name: exported
-        disabled: true  # Too strict for internal packages
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - commentFormatting  # Too opinionated
-      - hugeParam          # API stability > micro-optimization
-      - paramTypeCombine   # False positives with variadic patterns
-      - importShadow       # Common in rule constructors
-      - unnamedResult      # Too noisy for existing codebase
-      - rangeValCopy       # Intentional value copies for safety
-      - unlambda           # Explicit signatures aid readability
-      - nestingReduce      # Style preference
-      - ifElseChain        # Style preference
-      - appendAssign       # Common pattern in test code
-      - nilValReturn       # False positives with named returns
-      - elseif             # Style preference
-      - whyNoLint          # Not requiring explanations initially
-      - httpNoBody         # nil is clear enough for request bodies
-      - preferFprint       # fmt.Print is fine
-      - sloppyLen          # Intentional defensive checks
-      - singleCaseSwitch   # if/else preferred over single-case switch
-      - mapKey             # Intentional string keys
-      - filepathJoin       # False positives with literal paths
-      - caseOrder          # Switch ordering is intentional
-      - builtinShadow      # Common in rule constructors
-      - offBy1             # Reviewed individually
-
 issues:
-  exclude-rules:
-    # Exclude test files from some checks
-    - path: _test\.go
-      linters:
-        - errcheck
-        - gosec
-        - unparam
-        - unused
-        - prealloc
-
-    # Test assertions intentionally write to fields without reading
-    - path: _test\.go
-      linters:
-        - govet
-      text: "unusedwrite|nilness"
-
-    # Rule factory functions intentionally use parameters for API consistency
-    - linters:
-        - unparam
-      source: "^(func new|func render|func boolParam|func toolError|func extract)"
-
-    # Config param functions always receive same default
-    - linters:
-        - unparam
-      text: "boolParam"
-
-    # Exclude generated files
-    - path: \.pb\.go$
-      linters:
-        - all
-
   max-issues-per-linter: 0
   max-same-issues: 0

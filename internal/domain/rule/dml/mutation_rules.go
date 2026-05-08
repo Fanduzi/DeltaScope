@@ -37,7 +37,9 @@ func (r whereRequiredRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r whereRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || statement.DML.HasWhere {
 		return nil, nil
 	}
@@ -76,7 +78,9 @@ func (r limitForbiddenRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r limitForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.HasLimit {
 		return nil, nil
 	}
@@ -115,7 +119,9 @@ func (r orderByForbiddenRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r orderByForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.HasOrderBy {
 		return nil, nil
 	}
@@ -154,7 +160,9 @@ func (r subqueryForbiddenRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r subqueryForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.HasSubquery {
 		return nil, nil
 	}
@@ -193,7 +201,9 @@ func (r joinOnRequiredRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r joinOnRequiredRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.HasJoin || statement.DML.HasJoinOn {
 		return nil, nil
 	}

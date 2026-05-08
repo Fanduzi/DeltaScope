@@ -41,7 +41,9 @@ func (r insertRowsMaxCountRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r insertRowsMaxCountRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || statement.DML.InsertRows == 0 || statement.DML.InsertRows <= r.limit {
 		return nil, nil
 	}
@@ -81,7 +83,9 @@ func (r replaceForbiddenRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r replaceForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.IsReplace {
 		return nil, nil
 	}
@@ -117,7 +121,9 @@ func (r insertSelectForbiddenRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r insertSelectForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.IsInsertSelect {
 		return nil, nil
 	}
@@ -153,7 +159,9 @@ func (r onDuplicateForbiddenRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r onDuplicateForbiddenRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) || !statement.DML.HasOnDuplicate {
 		return nil, nil
 	}

@@ -50,7 +50,9 @@ func (r tableDenylistRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r tableDenylistRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
-	if err := ctx.Err(); err != nil { return nil, err }
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}

@@ -24,7 +24,7 @@ func TestInsertRowsMaxCountRuleFindsOversizedBatch(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),insertStatement(3, false, false, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), insertStatement(3, false, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestReplaceForbiddenRuleFindsReplace(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),insertStatement(1, true, false, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), insertStatement(1, true, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestInsertSelectForbiddenRuleFindsInsertSelect(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),insertStatement(0, false, true, false))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), insertStatement(0, false, true, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestOnDuplicateForbiddenRuleFindsOnDuplicate(t *testing.T) {
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),insertStatement(1, false, false, true))
+	findings, err := ruleUnderTest.Evaluate(context.Background(), insertStatement(1, false, false, true))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestInsertSelectForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T)
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),spec.Statement{
+	findings, err := ruleUnderTest.Evaluate(context.Background(), spec.Statement{
 		Kind:    spec.KindDML,
 		Dialect: spec.DialectPostgreSQL,
 		DML: &spec.DML{
@@ -143,7 +143,7 @@ func TestOnDuplicateForbiddenRuleIgnoresPostgreSQLOnConflictShape(t *testing.T) 
 		t.Fatalf("construct rule: %v", err)
 	}
 
-	findings, err := ruleUnderTest.Evaluate(context.Background(),spec.Statement{
+	findings, err := ruleUnderTest.Evaluate(context.Background(), spec.Statement{
 		Kind:    spec.KindDML,
 		Dialect: spec.DialectPostgreSQL,
 		DML: &spec.DML{

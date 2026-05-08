@@ -29,7 +29,7 @@ func TestRegisterAddsEnabledDMLRulesInDeterministicOrder(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(context.Background(),insertStatement(2, true, true, true))
+	findings, err := registry.EvaluateStatement(context.Background(), insertStatement(2, true, true, true))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestRegisterAddsImpactRulesInDeterministicOrder(t *testing.T) {
 		}
 	}
 
-	findings, err := registry.EvaluateStatement(context.Background(),spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
 			Operation:   spec.DMLOperationUpdate,
@@ -178,7 +178,7 @@ func TestRegisterSkipsDisabledDMLRules(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(context.Background(),updateStatement(false, false, false, false, false))
+	findings, err := registry.EvaluateStatement(context.Background(), updateStatement(false, false, false, false, false))
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}
@@ -242,7 +242,7 @@ func TestRegisterAddsDisabledTableGovernanceRule(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(context.Background(),spec.Statement{
+	findings, err := registry.EvaluateStatement(context.Background(), spec.Statement{
 		Kind: spec.KindDML,
 		DML: &spec.DML{
 			Operation: spec.DMLOperationDelete,
