@@ -20,7 +20,12 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 - `-log-level` sets log verbosity: `debug`, `info` (default), `warn`, `error`.
 - `-log-format` sets log format: `json` (default), `text`.
 - `-log-output` sets log destination: `stderr` (default), `file`. `stdout` is forbidden for MCP to protect the stdio protocol.
-- `-log-file` sets log file path (required when `-log-output=file`; plain append, no rotation).
+- `-log-file` sets log file path (required when `-log-output=file`; plain append by default).
+- `-log-rotate` enables log file rotation via lumberjack (requires `-log-output=file`). Default: false (plain append).
+- `-log-max-size-mb` max log file size in MB before rotation. Default: 100.
+- `-log-max-backups` max number of rotated log files to retain. Default: 3.
+- `-log-max-age-days` max number of days to retain rotated log files. Default: 30.
+- `-log-compress` compress rotated log files. Default: true.
 
 ## Update Rule
 

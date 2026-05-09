@@ -13,18 +13,28 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Config configures structured logger creation.
 type Config struct {
-	Level    string // debug, info, warn, error — default "info"
-	Format   string // json, text — default "json"
-	Output   string // stderr, stdout, file — default "stderr"
-	FilePath string // required when Output is "file"
+	Level    string        // debug, info, warn, error — default "info"
+	Format   string        // json, text — default "json"
+	Output   string        // stderr, stdout, file — default "stderr"
+	FilePath string        // required when Output is "file"
+	Rotate   *RotateConfig // optional rotation; nil means plain append
 }
 
-// Rotate is not supported in this foundation. File output uses plain os.File.
-// Rotation is a follow-up task requiring an external dependency.
+// RotateConfig configures log file rotation via lumberjack.
+// All fields use sensible defaults when zero.
+type RotateConfig struct {
+	Enabled    bool
+	MaxSizeMB  int   // default 100
+	MaxBackups int   // default 3
+	MaxAgeDays int   // default 30
+	Compress   *bool // nil defaults to true; set explicitly to false to disable
+}
 
 // NewLogger creates a configured *slog.Logger for the given surface.
 // Surface must be "server" or "mcp". When surface is "mcp" and Output is "stdout",
@@ -120,10 +130,16 @@ func handlerForFormat(format string, w io.Writer, opts *slog.HandlerOptions) (sl
 func writerForOutput(cfg Config, surface string) (io.Writer, error) {
 	switch cfg.Output {
 	case "", "stderr":
+		if cfg.Rotate != nil && cfg.Rotate.Enabled {
+			return nil, fmt.Errorf("logger: rotation requires output=file, got output=%q", cfg.Output)
+		}
 		return os.Stderr, nil
 	case "stdout":
 		if surface == "mcp" {
 			return nil, fmt.Errorf("logger: output=stdout is forbidden for surface %q to protect MCP stdio protocol", surface)
+		}
+		if cfg.Rotate != nil && cfg.Rotate.Enabled {
+			return nil, fmt.Errorf("logger: rotation requires output=file, got output=%q", cfg.Output)
 		}
 		return os.Stdout, nil
 	case "file":
@@ -134,6 +150,18 @@ func writerForOutput(cfg Config, surface string) (io.Writer, error) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return nil, fmt.Errorf("logger: create log directory %q: %w", dir, err)
 		}
+		if cfg.Rotate != nil && cfg.Rotate.Enabled {
+			if err := validateRotateConfig(cfg.Rotate); err != nil {
+				return nil, err
+			}
+			return &lumberjack.Logger{
+				Filename:   cfg.FilePath,
+				MaxSize:    rotateField(cfg.Rotate.MaxSizeMB, 100),
+				MaxBackups: rotateField(cfg.Rotate.MaxBackups, 3),
+				MaxAge:     rotateField(cfg.Rotate.MaxAgeDays, 30),
+				Compress:   rotateBoolField(cfg.Rotate.Compress, true),
+			}, nil
+		}
 		f, err := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if err != nil {
 			return nil, fmt.Errorf("logger: open log file %q: %w", cfg.FilePath, err)
@@ -142,4 +170,31 @@ func writerForOutput(cfg Config, surface string) (io.Writer, error) {
 	default:
 		return nil, fmt.Errorf("logger: invalid output %q (valid: stderr, stdout, file)", cfg.Output)
 	}
+}
+
+func validateRotateConfig(rc *RotateConfig) error {
+	if rc.MaxSizeMB < 0 {
+		return fmt.Errorf("logger: max_size_mb must be positive, got %d", rc.MaxSizeMB)
+	}
+	if rc.MaxBackups < 0 {
+		return fmt.Errorf("logger: max_backups must be non-negative, got %d", rc.MaxBackups)
+	}
+	if rc.MaxAgeDays < 0 {
+		return fmt.Errorf("logger: max_age_days must be non-negative, got %d", rc.MaxAgeDays)
+	}
+	return nil
+}
+
+func rotateField(val, def int) int {
+	if val <= 0 {
+		return def
+	}
+	return val
+}
+
+func rotateBoolField(val *bool, def bool) bool {
+	if val == nil {
+		return def
+	}
+	return *val
 }

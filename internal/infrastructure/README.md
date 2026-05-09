@@ -17,7 +17,8 @@ Infrastructure adapters for parser, config loading, metadata loading, and output
 
 - `logger.NewLogger` — creates `*slog.Logger` for server/MCP surfaces (default: stderr, JSON, info)
 - `logger.NewStdLogger` — bridges `*slog.Logger` to `*log.Logger` for legacy middleware
-- `logger.Config` — level, format, output, file path configuration
+- `logger.Config` — level, format, output, file path, and optional rotation configuration
+- `logger.RotateConfig` — rotation settings: enabled, max size, max backups, max age, compress (defaults: 100MB, 3, 30 days, true)
 
 ## Dependencies
 - Upstream: `internal/application`

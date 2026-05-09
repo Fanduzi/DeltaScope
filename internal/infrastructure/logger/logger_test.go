@@ -271,3 +271,294 @@ func TestNewLoggerDefaultFormatIsJSON(t *testing.T) {
 		t.Fatalf("expected msg='default format test', got %v", entry["msg"])
 	}
 }
+
+func TestNewLoggerRotateNilUsesPlainAppend(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{Output: "file", FilePath: logPath, Rotate: nil}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("plain append test")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("log file is empty")
+	}
+}
+
+func TestNewLoggerRotateDisabledUsesPlainAppend(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: false},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("disabled rotate test")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("log file is empty")
+	}
+}
+
+func TestNewLoggerRotateEnabledWithFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	compress := true
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, Compress: &compress},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("rotated log test")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("log file is empty")
+	}
+}
+
+func TestNewLoggerRotateEnabledCreatesParentDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "deep", "nested", "test.log")
+
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("nested dir test")
+
+	fi, err := os.Stat(logPath)
+	if err != nil {
+		t.Fatalf("log file not created: %v", err)
+	}
+	if fi.Size() == 0 {
+		t.Fatal("log file is empty")
+	}
+}
+
+func TestNewLoggerRotateEnabledWithStderr(t *testing.T) {
+	_, err := NewLogger(Config{
+		Output: "stderr",
+		Rotate: &RotateConfig{Enabled: true},
+	}, "server")
+	if err == nil {
+		t.Fatal("expected error for rotate with stderr")
+	}
+	if !strings.Contains(err.Error(), "rotation requires output=file") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewLoggerRotateEnabledWithStdout(t *testing.T) {
+	_, err := NewLogger(Config{
+		Output: "stdout",
+		Rotate: &RotateConfig{Enabled: true},
+	}, "server")
+	if err == nil {
+		t.Fatal("expected error for rotate with stdout")
+	}
+	if !strings.Contains(err.Error(), "rotation requires output=file") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewLoggerRotateEnabledMCPStdout(t *testing.T) {
+	_, err := NewLogger(Config{
+		Output: "stdout",
+		Rotate: &RotateConfig{Enabled: true},
+	}, "mcp")
+	if err == nil {
+		t.Fatal("expected error for mcp + stdout")
+	}
+}
+
+func TestNewLoggerRotateNegativeMaxSize(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	_, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, MaxSizeMB: -1},
+	}, "server")
+	if err == nil {
+		t.Fatal("expected error for negative max_size_mb")
+	}
+	if !strings.Contains(err.Error(), "max_size_mb must be positive") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewLoggerRotateNegativeMaxBackups(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	_, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, MaxBackups: -1},
+	}, "server")
+	if err == nil {
+		t.Fatal("expected error for negative max_backups")
+	}
+	if !strings.Contains(err.Error(), "max_backups must be non-negative") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewLoggerRotateNegativeMaxAge(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	_, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, MaxAgeDays: -1},
+	}, "server")
+	if err == nil {
+		t.Fatal("expected error for negative max_age_days")
+	}
+	if !strings.Contains(err.Error(), "max_age_days must be non-negative") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestNewLoggerRotateDefaultValuesApplied(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("defaults test")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("log file is empty")
+	}
+}
+
+func TestNewLoggerRotateCompressFalse(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	compress := false
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, Compress: &compress},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("compress false test")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("log file is empty")
+	}
+}
+
+func TestNewLoggerRotateCompressNilDefaultsTrue(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, Compress: nil},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+}
+
+func TestNewLoggerRotateZeroMaxSizeUsesDefault(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true, MaxSizeMB: 0},
+	}, "server")
+	if err != nil {
+		t.Fatalf("internal zero MaxSizeMB should use default, got error: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+
+	l.Info("zero max size uses default")
+
+	data, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read log file: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("log file is empty")
+	}
+}

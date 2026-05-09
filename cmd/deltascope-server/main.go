@@ -45,6 +45,11 @@ func main() {
 	logFormat := flag.String("log-format", "json", "log format: json, text")
 	logOutput := flag.String("log-output", "stderr", "log destination: stderr, stdout, file")
 	logFile := flag.String("log-file", "", "log file path (required when --log-output=file)")
+	logRotate := flag.Bool("log-rotate", false, "enable log file rotation (requires --log-output=file)")
+	logMaxSizeMB := flag.Int("log-max-size-mb", 100, "max log file size in MB before rotation")
+	logMaxBackups := flag.Int("log-max-backups", 3, "max number of rotated log files to retain")
+	logMaxAgeDays := flag.Int("log-max-age-days", 30, "max number of days to retain rotated log files")
+	logCompress := flag.Bool("log-compress", true, "compress rotated log files")
 	flag.Parse()
 
 	if *showVersion {
@@ -61,7 +66,12 @@ func main() {
 	}
 	gin.SetMode(gin.ReleaseMode)
 
-	slogLogger, err := logger.NewLogger(loggerConfigFromFlags(*logLevel, *logFormat, *logOutput, *logFile), "server")
+	if err := validateRotateFlags(*logRotate, *logMaxSizeMB, *logMaxBackups, *logMaxAgeDays); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
+		os.Exit(2)
+	}
+
+	slogLogger, err := logger.NewLogger(loggerConfigFromFlags(*logLevel, *logFormat, *logOutput, *logFile, *logRotate, *logMaxSizeMB, *logMaxBackups, *logMaxAgeDays, *logCompress), "server")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
 		os.Exit(2)
@@ -115,13 +125,23 @@ func main() {
 	}
 }
 
-func loggerConfigFromFlags(level, format, output, file string) logger.Config {
-	return logger.Config{
+func loggerConfigFromFlags(level, format, output, file string, rotate bool, maxMB, maxBackups, maxAge int, compress bool) logger.Config {
+	cfg := logger.Config{
 		Level:    level,
 		Format:   format,
 		Output:   output,
 		FilePath: file,
 	}
+	if rotate {
+		cfg.Rotate = &logger.RotateConfig{
+			Enabled:    true,
+			MaxSizeMB:  maxMB,
+			MaxBackups: maxBackups,
+			MaxAgeDays: maxAge,
+			Compress:   &compress,
+		}
+	}
+	return cfg
 }
 
 func parseCSV(raw string) []string {
@@ -135,4 +155,20 @@ func parseCSV(raw string) []string {
 		out = append(out, item)
 	}
 	return out
+}
+
+func validateRotateFlags(rotate bool, maxMB, maxBackups, maxAge int) error {
+	if !rotate {
+		return nil
+	}
+	if maxMB <= 0 {
+		return fmt.Errorf("log-max-size-mb must be > 0 when rotation is enabled, got %d", maxMB)
+	}
+	if maxBackups < 0 {
+		return fmt.Errorf("log-max-backups must be >= 0 when rotation is enabled, got %d", maxBackups)
+	}
+	if maxAge < 0 {
+		return fmt.Errorf("log-max-age-days must be >= 0 when rotation is enabled, got %d", maxAge)
+	}
+	return nil
 }

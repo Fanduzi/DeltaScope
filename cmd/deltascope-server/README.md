@@ -21,7 +21,12 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 - `-log-level` sets log verbosity: `debug`, `info` (default), `warn`, `error`.
 - `-log-format` sets log format: `json` (default), `text`.
 - `-log-output` sets log destination: `stderr` (default), `stdout`, `file`.
-- `-log-file` sets log file path (required when `-log-output=file`; plain append, no rotation).
+- `-log-file` sets log file path (required when `-log-output=file`; plain append by default).
+- `-log-rotate` enables log file rotation via lumberjack (requires `-log-output=file`). Default: false (plain append).
+- `-log-max-size-mb` max log file size in MB before rotation. Default: 100.
+- `-log-max-backups` max number of rotated log files to retain. Default: 3.
+- `-log-max-age-days` max number of days to retain rotated log files. Default: 30.
+- `-log-compress` compress rotated log files. Default: true.
 - `-version` prints only the semantic version string and defaults to the repository `DefaultVersion` in source builds.
 
 ## Update Rule

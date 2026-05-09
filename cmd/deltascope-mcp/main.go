@@ -50,6 +50,11 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 	logFormat := flags.String("log-format", "json", "log format: json, text")
 	logOutput := flags.String("log-output", "stderr", "log destination: stderr, stdout, file")
 	logFile := flags.String("log-file", "", "log file path (required when --log-output=file)")
+	logRotate := flags.Bool("log-rotate", false, "enable log file rotation (requires --log-output=file)")
+	logMaxSizeMB := flags.Int("log-max-size-mb", 100, "max log file size in MB before rotation")
+	logMaxBackups := flags.Int("log-max-backups", 3, "max number of rotated log files to retain")
+	logMaxAgeDays := flags.Int("log-max-age-days", 30, "max number of days to retain rotated log files")
+	logCompress := flags.Bool("log-compress", true, "compress rotated log files")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -58,12 +63,12 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return 0
 	}
 
-	slogLogger, slogErr := logger.NewLogger(logger.Config{
-		Level:    *logLevel,
-		Format:   *logFormat,
-		Output:   *logOutput,
-		FilePath: *logFile,
-	}, "mcp")
+	if err := validateRotateFlags(*logRotate, *logMaxSizeMB, *logMaxBackups, *logMaxAgeDays); err != nil {
+		_, _ = fmt.Fprintf(stderr, "init logger: %v\n", err)
+		return 2
+	}
+
+	slogLogger, slogErr := logger.NewLogger(mcpLoggerConfig(*logLevel, *logFormat, *logOutput, *logFile, *logRotate, *logMaxSizeMB, *logMaxBackups, *logMaxAgeDays, *logCompress), "mcp")
 	if slogErr != nil {
 		_, _ = fmt.Fprintf(stderr, "init logger: %v\n", slogErr)
 		return 2
@@ -79,4 +84,39 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return 3
 	}
 	return 0
+}
+
+func mcpLoggerConfig(level, format, output, file string, rotate bool, maxMB, maxBackups, maxAge int, compress bool) logger.Config {
+	cfg := logger.Config{
+		Level:    level,
+		Format:   format,
+		Output:   output,
+		FilePath: file,
+	}
+	if rotate {
+		cfg.Rotate = &logger.RotateConfig{
+			Enabled:    true,
+			MaxSizeMB:  maxMB,
+			MaxBackups: maxBackups,
+			MaxAgeDays: maxAge,
+			Compress:   &compress,
+		}
+	}
+	return cfg
+}
+
+func validateRotateFlags(rotate bool, maxMB, maxBackups, maxAge int) error {
+	if !rotate {
+		return nil
+	}
+	if maxMB <= 0 {
+		return fmt.Errorf("log-max-size-mb must be > 0 when rotation is enabled, got %d", maxMB)
+	}
+	if maxBackups < 0 {
+		return fmt.Errorf("log-max-backups must be >= 0 when rotation is enabled, got %d", maxBackups)
+	}
+	if maxAge < 0 {
+		return fmt.Errorf("log-max-age-days must be >= 0 when rotation is enabled, got %d", maxAge)
+	}
+	return nil
 }

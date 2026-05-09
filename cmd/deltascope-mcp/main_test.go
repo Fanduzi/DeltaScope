@@ -10,6 +10,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	mcpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/mcp"
@@ -234,5 +235,76 @@ func TestRunLoggingDebugLevelSucceeds(t *testing.T) {
 	exitCode := run([]string{"--log-level", "debug"}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: %s", exitCode, stderr.String())
+	}
+}
+
+func TestRunRotateWithFileSucceeds(t *testing.T) {
+	previousNewServer := newMCPServer
+	previousRunServer := runMCPServer
+	t.Cleanup(func() {
+		newMCPServer = previousNewServer
+		runMCPServer = previousRunServer
+	})
+
+	server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test", Version: "v0.0.1"}, nil)
+	newMCPServer = func(config mcpapi.Config) *sdkmcp.Server { return server }
+	runMCPServer = func(gotServer *sdkmcp.Server) error { return nil }
+
+	tmpFile := filepath.Join(t.TempDir(), "mcp.log")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-output", "file", "--log-file", tmpFile, "--log-rotate"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d: %s", exitCode, stderr.String())
+	}
+}
+
+func TestRunRotateWithStderrReturnsExit2(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-output", "stderr", "--log-rotate"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("rotation requires output=file")) {
+		t.Fatalf("expected rotation error, got: %s", stderr.String())
+	}
+}
+
+func TestRunRotateInvalidMaxSizeReturnsExit2(t *testing.T) {
+	tmpFile := filepath.Join(t.TempDir(), "mcp.log")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-output", "file", "--log-file", tmpFile, "--log-rotate", "--log-max-size-mb", "-1"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("log-max-size-mb must be > 0")) {
+		t.Fatalf("expected log-max-size-mb error, got: %s", stderr.String())
+	}
+}
+
+func TestRunRotateZeroMaxSizeReturnsExit2(t *testing.T) {
+	tmpFile := filepath.Join(t.TempDir(), "mcp.log")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-output", "file", "--log-file", tmpFile, "--log-rotate", "--log-max-size-mb", "0"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("log-max-size-mb must be > 0")) {
+		t.Fatalf("expected log-max-size-mb error, got: %s", stderr.String())
+	}
+}
+
+func TestRunMCPRotateWithStdoutStillForbidden(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-output", "stdout", "--log-rotate"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("stdout is forbidden")) {
+		t.Fatalf("expected stdout forbidden error, got: %s", stderr.String())
 	}
 }
