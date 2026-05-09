@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	mcpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/mcp"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -53,9 +54,16 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return 0
 	}
 
+	slogLogger, slogErr := logger.NewLogger(logger.Config{}, "mcp")
+	if slogErr != nil {
+		_, _ = fmt.Fprintf(stderr, "init logger: %v\n", slogErr)
+		return 2
+	}
+
 	server := newMCPServer(mcpapi.Config{
 		Version:         Version,
 		ConnectionsPath: *connectionsPath,
+		Logger:          slogLogger,
 	})
 	if err := runMCPServer(server); err != nil {
 		_, _ = fmt.Fprintf(stderr, "serve mcp: %v\n", err)

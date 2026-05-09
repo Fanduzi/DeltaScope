@@ -19,6 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	httpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/http"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -56,11 +57,17 @@ func main() {
 	}
 	gin.SetMode(gin.ReleaseMode)
 
+	slogLogger, err := logger.NewLogger(logger.Config{}, "server")
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
+		os.Exit(2)
+	}
+
 	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithAuthConfig(httpapi.AuthConfig{
 		Enabled:    *authEnabled,
 		Keys:       keys,
 		AllowPaths: allowPaths,
-	}), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
+	}), httpapi.WithSlogLogger(slogLogger), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
 		MetricsEnabled: metricsEnabled,
 		RateLimit: httpapi.RateLimitConfig{
 			Enabled:    *rateLimitEnabled,

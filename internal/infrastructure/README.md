@@ -8,13 +8,16 @@ Infrastructure adapters for parser, config loading, metadata loading, and output
 |------|---------------|
 | doc.go | Declares the infrastructure package placeholder |
 | config/viper/loader.go | Loads YAML policy overrides through Viper |
+| logger/logger.go | Constructs `*slog.Logger` instances for server and MCP surfaces |
 | metadata/ | Holds optional metadata-provider adapters |
 | output/ | Holds result rendering adapters |
 | parser/ | Holds parser adapter modules |
 
 ## Exports
 
-- No exported API yet
+- `logger.NewLogger` — creates `*slog.Logger` for server/MCP surfaces (default: stderr, JSON, info)
+- `logger.NewStdLogger` — bridges `*slog.Logger` to `*log.Logger` for legacy middleware
+- `logger.Config` — level, format, output, file path configuration
 
 ## Dependencies
 - Upstream: `internal/application`

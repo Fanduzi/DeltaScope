@@ -8,6 +8,7 @@ package mcpapi
 import (
 	"bytes"
 	"context"
+	"io"
 	"log"
 	"strings"
 	"testing"
@@ -17,15 +18,13 @@ import (
 
 func TestRecoverTool_CatchesPanicAndReturnsStructuredError(t *testing.T) {
 	var logBuf bytes.Buffer
-	previous := schemaLogger
-	schemaLogger = log.New(&logBuf, "", 0)
-	t.Cleanup(func() { schemaLogger = previous })
+	panicLog := log.New(&logBuf, "", 0)
 
 	handler := func(_ context.Context, _ *sdkmcp.CallToolRequest, _ getCapabilitiesInput) (*sdkmcp.CallToolResult, any, error) {
 		panic("intentional test panic")
 	}
 
-	wrapped := recoverTool(handler)
+	wrapped := recoverTool(handler, panicLog)
 	result, structured, err := wrapped(context.Background(), &sdkmcp.CallToolRequest{}, getCapabilitiesInput{})
 
 	if err != nil {
@@ -63,9 +62,7 @@ func TestRecoverTool_CatchesPanicAndReturnsStructuredError(t *testing.T) {
 
 func TestRecoverTool_StaysResponsiveAfterPanic(t *testing.T) {
 	var logBuf bytes.Buffer
-	previous := schemaLogger
-	schemaLogger = log.New(&logBuf, "", 0)
-	t.Cleanup(func() { schemaLogger = previous })
+	panicLog := log.New(&logBuf, "", 0)
 
 	panicHandler := func(_ context.Context, _ *sdkmcp.CallToolRequest, _ getCapabilitiesInput) (*sdkmcp.CallToolResult, any, error) {
 		panic("first panic")
@@ -74,13 +71,13 @@ func TestRecoverTool_StaysResponsiveAfterPanic(t *testing.T) {
 		return nil, "success", nil
 	}
 
-	wrappedPanic := recoverTool(panicHandler)
+	wrappedPanic := recoverTool(panicHandler, panicLog)
 	result1, _, _ := wrappedPanic(context.Background(), &sdkmcp.CallToolRequest{}, getCapabilitiesInput{})
 	if result1 == nil || !result1.IsError {
 		t.Fatal("first call should return error result")
 	}
 
-	wrappedNormal := recoverTool(normalHandler)
+	wrappedNormal := recoverTool(normalHandler, panicLog)
 	result2, structured2, err2 := wrappedNormal(context.Background(), &sdkmcp.CallToolRequest{}, getCapabilitiesInput{})
 	if err2 != nil {
 		t.Fatalf("second call should succeed: %v", err2)
@@ -95,15 +92,13 @@ func TestRecoverTool_StaysResponsiveAfterPanic(t *testing.T) {
 
 func TestRecoverTool_LogsPanicWithStackTrace(t *testing.T) {
 	var logBuf bytes.Buffer
-	previous := schemaLogger
-	schemaLogger = log.New(&logBuf, "", 0)
-	t.Cleanup(func() { schemaLogger = previous })
+	panicLog := log.New(&logBuf, "", 0)
 
 	handler := func(_ context.Context, _ *sdkmcp.CallToolRequest, _ getCapabilitiesInput) (*sdkmcp.CallToolResult, any, error) {
 		panic("test panic with stack")
 	}
 
-	wrapped := recoverTool(handler)
+	wrapped := recoverTool(handler, panicLog)
 	wrapped(context.Background(), &sdkmcp.CallToolRequest{}, getCapabilitiesInput{})
 
 	logOutput := logBuf.String()
@@ -113,11 +108,12 @@ func TestRecoverTool_LogsPanicWithStackTrace(t *testing.T) {
 }
 
 func TestRecoverTool_PassesThroughNormalResult(t *testing.T) {
+	panicLog := log.New(io.Discard, "", 0)
 	normalHandler := func(_ context.Context, _ *sdkmcp.CallToolRequest, _ listRulesInput) (*sdkmcp.CallToolResult, any, error) {
 		return nil, listRulesResponse{Count: 5}, nil
 	}
 
-	wrapped := recoverTool(normalHandler)
+	wrapped := recoverTool(normalHandler, panicLog)
 	result, structured, err := wrapped(context.Background(), &sdkmcp.CallToolRequest{}, listRulesInput{})
 
 	if err != nil {

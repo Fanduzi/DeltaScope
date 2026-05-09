@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -26,6 +27,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -117,6 +119,17 @@ func WithAuditFunc(fn func(context.Context, deltascope.Request) (deltascope.Resu
 	return func(options *handlerOptions) {
 		if fn != nil {
 			options.auditFn = fn
+		}
+	}
+}
+
+// WithSlogLogger sets the structured logger. The slog.Logger is bridged to a
+// *log.Logger for use by existing recovery and access-log middleware. If sl is
+// nil the option is a no-op and the default log.Default() logger is used.
+func WithSlogLogger(sl *slog.Logger) HandlerOption {
+	return func(options *handlerOptions) {
+		if sl != nil {
+			options.logger = logger.NewStdLogger(sl)
 		}
 	}
 }
