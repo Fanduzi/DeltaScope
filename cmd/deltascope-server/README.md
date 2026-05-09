@@ -18,6 +18,10 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 - `-rate-limit-enabled`, `-rate-limit-rps`, `-rate-limit-burst`, and `-rate-limit-key` configure optional request throttling.
 - `-trusted-proxies` controls which proxy CIDRs are trusted for client IP extraction (empty means trust none).
 - `-metrics-enabled` controls whether `/metrics` is exposed in Prometheus text format.
+- `-log-level` sets log verbosity: `debug`, `info` (default), `warn`, `error`.
+- `-log-format` sets log format: `json` (default), `text`.
+- `-log-output` sets log destination: `stderr` (default), `stdout`, `file`.
+- `-log-file` sets log file path (required when `-log-output=file`; plain append, no rotation).
 - `-version` prints only the semantic version string and defaults to the repository `DefaultVersion` in source builds.
 
 ## Update Rule

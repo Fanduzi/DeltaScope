@@ -6,8 +6,11 @@
 package main
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 )
 
 func TestParseCSV(t *testing.T) {
@@ -38,5 +41,44 @@ func TestParseCSV(t *testing.T) {
 func TestVersionDefaultsToPublicAPIVersion(t *testing.T) {
 	if Version == "" {
 		t.Fatal("expected non-empty default version")
+	}
+}
+
+func TestLoggerConfigFromFlagsDefaultCreatesLogger(t *testing.T) {
+	cfg := loggerConfigFromFlags("info", "json", "stderr", "")
+	l, err := logger.NewLogger(cfg, "server")
+	if err != nil {
+		t.Fatalf("default config should succeed: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+}
+
+func TestLoggerConfigFromFlagsInvalidLevel(t *testing.T) {
+	cfg := loggerConfigFromFlags("trace", "json", "stderr", "")
+	_, err := logger.NewLogger(cfg, "server")
+	if err == nil {
+		t.Fatal("expected error for invalid level")
+	}
+}
+
+func TestLoggerConfigFromFlagsFileOutput(t *testing.T) {
+	tmpFile := filepath.Join(t.TempDir(), "test.log")
+	cfg := loggerConfigFromFlags("info", "json", "file", tmpFile)
+	l, err := logger.NewLogger(cfg, "server")
+	if err != nil {
+		t.Fatalf("file output should succeed: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+}
+
+func TestLoggerConfigFromFlagsInvalidFormat(t *testing.T) {
+	cfg := loggerConfigFromFlags("info", "xml", "stderr", "")
+	_, err := logger.NewLogger(cfg, "server")
+	if err == nil {
+		t.Fatal("expected error for invalid format")
 	}
 }

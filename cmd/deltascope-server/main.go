@@ -41,6 +41,10 @@ func main() {
 	rateLimitAllowPaths := flag.String("rate-limit-allow-paths", "/healthz,/readyz,/version,/metrics", "comma-separated paths that bypass rate limiting")
 	metricsEnabled := flag.Bool("metrics-enabled", true, "enable Prometheus metrics endpoint at /metrics")
 	trustedProxies := flag.String("trusted-proxies", "", "comma-separated trusted proxy CIDRs for client IP extraction; empty means trust no proxies")
+	logLevel := flag.String("log-level", "info", "log verbosity: debug, info, warn, error")
+	logFormat := flag.String("log-format", "json", "log format: json, text")
+	logOutput := flag.String("log-output", "stderr", "log destination: stderr, stdout, file")
+	logFile := flag.String("log-file", "", "log file path (required when --log-output=file)")
 	flag.Parse()
 
 	if *showVersion {
@@ -57,7 +61,7 @@ func main() {
 	}
 	gin.SetMode(gin.ReleaseMode)
 
-	slogLogger, err := logger.NewLogger(logger.Config{}, "server")
+	slogLogger, err := logger.NewLogger(loggerConfigFromFlags(*logLevel, *logFormat, *logOutput, *logFile), "server")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
 		os.Exit(2)
@@ -108,6 +112,15 @@ func main() {
 			os.Exit(3)
 		}
 		cancel()
+	}
+}
+
+func loggerConfigFromFlags(level, format, output, file string) logger.Config {
+	return logger.Config{
+		Level:    level,
+		Format:   format,
+		Output:   output,
+		FilePath: file,
 	}
 }
 

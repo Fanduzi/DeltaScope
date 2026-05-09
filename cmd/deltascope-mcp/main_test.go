@@ -160,3 +160,79 @@ func createMCPServerCommand(t *testing.T) *exec.Cmd {
 	cmd.Env = append(os.Environ(), runAsMCPServer+"=1")
 	return cmd
 }
+
+func TestRunDefaultLoggingFlagsSucceed(t *testing.T) {
+	previousNewServer := newMCPServer
+	previousRunServer := runMCPServer
+	t.Cleanup(func() {
+		newMCPServer = previousNewServer
+		runMCPServer = previousRunServer
+	})
+
+	server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test", Version: "v0.0.1"}, nil)
+	newMCPServer = func(config mcpapi.Config) *sdkmcp.Server { return server }
+	runMCPServer = func(gotServer *sdkmcp.Server) error { return nil }
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d: %s", exitCode, stderr.String())
+	}
+}
+
+func TestRunLoggingStdoutRejectedForMCP(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-output", "stdout"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("stdout is forbidden")) {
+		t.Fatalf("expected stdout-forbidden error, got: %s", stderr.String())
+	}
+}
+
+func TestRunLoggingInvalidFormat(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-format", "xml"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("invalid format")) {
+		t.Fatalf("expected invalid-format error, got: %s", stderr.String())
+	}
+}
+
+func TestRunLoggingInvalidLevel(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-level", "trace"}, &stdout, &stderr)
+	if exitCode != 2 {
+		t.Fatalf("expected exit 2, got %d", exitCode)
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("invalid level")) {
+		t.Fatalf("expected invalid-level error, got: %s", stderr.String())
+	}
+}
+
+func TestRunLoggingDebugLevelSucceeds(t *testing.T) {
+	previousNewServer := newMCPServer
+	previousRunServer := runMCPServer
+	t.Cleanup(func() {
+		newMCPServer = previousNewServer
+		runMCPServer = previousRunServer
+	})
+
+	server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test", Version: "v0.0.1"}, nil)
+	newMCPServer = func(config mcpapi.Config) *sdkmcp.Server { return server }
+	runMCPServer = func(gotServer *sdkmcp.Server) error { return nil }
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"--log-level", "debug"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("expected exit 0, got %d: %s", exitCode, stderr.String())
+	}
+}

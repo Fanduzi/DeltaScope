@@ -46,6 +46,10 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	showVersion := flags.Bool("version", false, "print the DeltaScope MCP build version")
 	connectionsPath := flags.String("connections-path", "", "override the connection_ref config file path")
+	logLevel := flags.String("log-level", "info", "log verbosity: debug, info, warn, error")
+	logFormat := flags.String("log-format", "json", "log format: json, text")
+	logOutput := flags.String("log-output", "stderr", "log destination: stderr, stdout, file")
+	logFile := flags.String("log-file", "", "log file path (required when --log-output=file)")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -54,7 +58,12 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return 0
 	}
 
-	slogLogger, slogErr := logger.NewLogger(logger.Config{}, "mcp")
+	slogLogger, slogErr := logger.NewLogger(logger.Config{
+		Level:    *logLevel,
+		Format:   *logFormat,
+		Output:   *logOutput,
+		FilePath: *logFile,
+	}, "mcp")
 	if slogErr != nil {
 		_, _ = fmt.Fprintf(stderr, "init logger: %v\n", slogErr)
 		return 2
