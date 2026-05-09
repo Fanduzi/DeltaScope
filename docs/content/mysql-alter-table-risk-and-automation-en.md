@@ -2,7 +2,7 @@
 
 ## Background
 
-I'm the author of [DeltaScope](https://github.com/Fanduzi/DeltaScope), an open-source offline SQL audit tool that supports MySQL, TiDB, and PostgreSQL. This post skips the marketing and shows real SQL inputs with real audit outputs — no fabrications.
+I'm the author of [DeltaScope](https://deltascope.pages.dev), an open-source offline SQL audit tool that supports MySQL, TiDB, and PostgreSQL. This post skips the marketing and shows real SQL inputs with real audit outputs — no fabrications.
 
 ## Scenario 1: An Innocent-Looking Migration File
 

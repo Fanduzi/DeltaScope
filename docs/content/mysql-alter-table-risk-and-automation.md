@@ -2,7 +2,7 @@
 
 ## 背景
 
-我是 DeltaScope 的作者。DeltaScope 是一个开源的离线 SQL 审核工具，支持 MySQL、TiDB、PostgreSQL。这篇文章不讲故事，直接拿真实的 SQL 和真实的审核输出，演示它能检查出什么。
+我是 [DeltaScope](https://deltascope.pages.dev/?lang=zh-CN) 的作者。DeltaScope 是一个开源的离线 SQL 审核工具，支持 MySQL、TiDB、PostgreSQL。这篇文章不讲故事，直接拿真实的 SQL 和真实的审核输出，演示它能检查出什么。
 
 所有输出都是实际运行的，没有编造。
 
