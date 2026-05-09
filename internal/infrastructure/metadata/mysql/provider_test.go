@@ -9,10 +9,12 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"io"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -57,6 +59,77 @@ func TestConnectionConfigDefaultsWhenEmpty(t *testing.T) {
 	if got := config.Address(); got != "127.0.0.1:3306" {
 		t.Fatalf("expected default host:port, got %q", got)
 	}
+}
+
+func TestConnectTimeoutDefaultsToFiveSeconds(t *testing.T) {
+	config := ConnectionConfig{}
+	if got := config.connectTimeout(); got != DefaultConnectTimeout {
+		t.Fatalf("expected default timeout %v, got %v", DefaultConnectTimeout, got)
+	}
+}
+
+func TestConnectTimeoutPreservesCustomValue(t *testing.T) {
+	config := ConnectionConfig{ConnectTimeout: 10 * time.Second}
+	if got := config.connectTimeout(); got != 10*time.Second {
+		t.Fatalf("expected custom timeout 10s, got %v", got)
+	}
+}
+
+func TestConnectTimeoutDSNIncludesDefaultTimeout(t *testing.T) {
+	config := ConnectionConfig{
+		Host: "127.0.0.1",
+		Port: 3306,
+		User: "root",
+	}
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "5s") {
+		t.Fatalf("expected default timeout 5s in DSN, got %q", dsn)
+	}
+}
+
+func TestConnectTimeoutDSNReflectsCustomValue(t *testing.T) {
+	config := ConnectionConfig{
+		Host:           "127.0.0.1",
+		Port:           3306,
+		User:           "root",
+		ConnectTimeout: 15 * time.Second,
+	}
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "15s") {
+		t.Fatalf("expected custom timeout 15s in DSN, got %q", dsn)
+	}
+}
+
+func TestOpenDBContextReturnsCanceledWhenCtxAlreadyCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	config := ConnectionConfig{
+		Host: "127.0.0.1",
+		Port: 3306,
+		User: "root",
+	}
+	_, err := OpenDBContext(ctx, config)
+	if err == nil {
+		t.Fatal("expected error from OpenDBContext with canceled context")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestOpenDBContextDoesNotPanicOnNilContext(t *testing.T) {
+	config := ConnectionConfig{
+		Host:           "127.0.0.1",
+		Port:           3306,
+		User:           "root",
+		ConnectTimeout: time.Millisecond,
+	}
+	db, err := OpenDBContext(nil, config)
+	if db != nil {
+		_ = db.Close()
+	}
+	_ = err
 }
 
 func TestConnectionConfigDSNFormat(t *testing.T) {
@@ -163,9 +236,9 @@ func TestCharsetFromCollation(t *testing.T) {
 
 func TestParseColumnType(t *testing.T) {
 	tests := []struct {
-		input       string
-		wantBase    string
-		wantLen     int
+		input        string
+		wantBase     string
+		wantLen      int
 		wantUnsigned bool
 	}{
 		{"varchar(255)", "varchar", 255, false},

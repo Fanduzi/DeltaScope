@@ -20,13 +20,25 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+// DefaultConnectTimeout is the default timeout for initial metadata connection.
+const DefaultConnectTimeout = 5 * time.Second
+
 // ConnectionConfig describes one MySQL-compatible metadata connection.
 type ConnectionConfig struct {
-	Host     string
-	Port     int
-	Socket   string
-	User     string
-	Password string
+	Host           string
+	Port           int
+	Socket         string
+	User           string
+	Password       string
+	ConnectTimeout time.Duration
+}
+
+// connectTimeout returns the configured timeout, defaulting to DefaultConnectTimeout when zero.
+func (c ConnectionConfig) connectTimeout() time.Duration {
+	if c.ConnectTimeout <= 0 {
+		return DefaultConnectTimeout
+	}
+	return c.ConnectTimeout
 }
 
 // Network reports the driver network name for the connection.
@@ -61,13 +73,19 @@ func (c ConnectionConfig) DSN() string {
 	cfg.User = c.User
 	cfg.Passwd = c.Password
 	cfg.Collation = "utf8mb4_general_ci"
+	cfg.Timeout = c.connectTimeout()
 	cfg.Params = map[string]string{"interpolateParams": "true"}
 	return cfg.FormatDSN()
 }
 
-// OpenDB connects to a MySQL-compatible database for metadata reads.
-// The caller is responsible for closing the returned *sql.DB.
-func OpenDB(config ConnectionConfig) (*sql.DB, error) {
+// OpenDBContext connects to a MySQL-compatible database for metadata reads,
+// respecting the caller's context for cancellation and applying the configured
+// connect timeout as a deadline. The caller is responsible for closing the
+// returned *sql.DB.
+func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	db, err := sql.Open("mysql", config.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("open metadata connection: %w", err)
@@ -78,14 +96,20 @@ func OpenDB(config ConnectionConfig) (*sql.DB, error) {
 	db.SetConnMaxLifetime(5 * time.Minute)
 	db.SetConnMaxIdleTime(1 * time.Minute)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, config.connectTimeout())
 	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
+	if err := db.PingContext(timeoutCtx); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("ping metadata connection: %w", err)
 	}
 
 	return db, nil
+}
+
+// OpenDB connects to a MySQL-compatible database for metadata reads using a
+// background context. The caller is responsible for closing the returned *sql.DB.
+func OpenDB(config ConnectionConfig) (*sql.DB, error) {
+	return OpenDBContext(context.Background(), config)
 }
 
 // Provider loads metadata facts through a MySQL-compatible SQL connection.

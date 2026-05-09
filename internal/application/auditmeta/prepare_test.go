@@ -375,5 +375,23 @@ func TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialec
 	}
 }
 
+func TestPrepareDefaultPathFailsFastOnCanceledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// OpenClient is nil, so the default path is used.
+	// A canceled context should propagate through to OpenDBContext.
+	_, err := Prepare(ctx, Request{
+		SQL:        "delete from users",
+		Connection: ConnectionConfig{Host: "127.0.0.1", User: "root"},
+	})
+	if err == nil {
+		t.Fatal("expected error from Prepare with canceled context")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled in chain, got %v", err)
+	}
+}
+
 var _ Client = (*fakeClient)(nil)
 var _ appaudit.MetadataProvider = (*fakeClient)(nil)

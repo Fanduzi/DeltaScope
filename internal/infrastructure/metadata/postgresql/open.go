@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"strconv"
@@ -19,15 +20,27 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
+// DefaultConnectTimeout is the default timeout for initial metadata connection.
+const DefaultConnectTimeout = 5 * time.Second
+
 // ConnectionConfig describes one PostgreSQL metadata connection.
 type ConnectionConfig struct {
-	Host     string
-	Port     int
-	Socket   string
-	Database string
-	User     string
-	Password string
-	SSLMode  string
+	Host           string
+	Port           int
+	Socket         string
+	Database       string
+	User           string
+	Password       string
+	SSLMode        string
+	ConnectTimeout time.Duration
+}
+
+// connectTimeout returns the configured timeout, defaulting to DefaultConnectTimeout when zero.
+func (c ConnectionConfig) connectTimeout() time.Duration {
+	if c.ConnectTimeout <= 0 {
+		return DefaultConnectTimeout
+	}
+	return c.ConnectTimeout
 }
 
 // Address reports the driver address for the connection.
@@ -67,6 +80,7 @@ func (c ConnectionConfig) DSN() string {
 	database := "/" + url.PathEscape(c.DatabaseName())
 	query := url.Values{}
 	query.Set("sslmode", c.sslMode())
+	query.Set("connect_timeout", strconv.Itoa(int(math.Ceil(c.connectTimeout().Seconds()))))
 
 	if strings.TrimSpace(c.Socket) != "" {
 		query.Set("host", c.Address())
@@ -76,9 +90,14 @@ func (c ConnectionConfig) DSN() string {
 	return (&url.URL{Scheme: "postgres", User: user, Host: c.Address(), Path: database, RawQuery: query.Encode()}).String()
 }
 
-// OpenDB connects to a PostgreSQL database for metadata reads.
-// The caller is responsible for closing the returned *sql.DB.
-func OpenDB(config ConnectionConfig) (*sql.DB, error) {
+// OpenDBContext connects to a PostgreSQL database for metadata reads,
+// respecting the caller's context for cancellation and applying the configured
+// connect timeout as a deadline. The caller is responsible for closing the
+// returned *sql.DB.
+func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	connConfig, err := pgx.ParseConfig(config.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("parse metadata connection: %w", err)
@@ -90,12 +109,18 @@ func OpenDB(config ConnectionConfig) (*sql.DB, error) {
 	db.SetConnMaxLifetime(5 * time.Minute)
 	db.SetConnMaxIdleTime(1 * time.Minute)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, config.connectTimeout())
 	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
+	if err := db.PingContext(timeoutCtx); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("ping metadata connection: %w", err)
 	}
 
 	return db, nil
+}
+
+// OpenDB connects to a PostgreSQL database for metadata reads using a
+// background context. The caller is responsible for closing the returned *sql.DB.
+func OpenDB(config ConnectionConfig) (*sql.DB, error) {
+	return OpenDBContext(context.Background(), config)
 }

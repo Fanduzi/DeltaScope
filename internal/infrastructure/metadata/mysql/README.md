@@ -11,7 +11,9 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 
 ## Exports
 
+- `DefaultConnectTimeout`
 - `ConnectionConfig`
+- `OpenDBContext(ctx, config)`
 - `OpenDB(config)`
 - `Provider`
 - `NewProvider(db *sql.DB)`

@@ -60,12 +60,16 @@ type PreparedAudit struct {
 
 // Prepare opens a metadata client, resolves dialect and schema, and returns prepared audit context.
 func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
-	openClient := request.OpenClient
-	if openClient == nil {
-		openClient = openMySQLClient
+	var client Client
+	var detectedDialect spec.Dialect
+	var err error
+
+	if request.OpenClient != nil {
+		client, detectedDialect, err = prepareClientAndDialect(ctx, request.Connection, request.ExplicitDialect, request.OpenClient)
+	} else {
+		client, detectedDialect, err = prepareClientAndDialectDefault(ctx, request.Connection, request.ExplicitDialect)
 	}
 
-	client, detectedDialect, err := prepareClientAndDialect(ctx, request.Connection, request.ExplicitDialect, openClient)
 	if err != nil {
 		var typedErr *Error
 		if errors.As(err, &typedErr) && typedErr.Kind == ErrorDialectDetect {
@@ -209,6 +213,90 @@ func explicitSchemaSource(value string) string {
 	return strings.TrimSpace(value)
 }
 
+// prepareClientAndDialectDefault is the context-aware default open path.
+// It respects the caller's context for cancellation during connection.
+func prepareClientAndDialectDefault(ctx context.Context, config ConnectionConfig, explicitDialect bool) (Client, spec.Dialect, error) {
+	client, err := openPreparedClientContext(ctx, config)
+	if err != nil {
+		return nil, "", err
+	}
+	resolvedClient, resolvedDialect, err := detectClientDialect(ctx, client)
+	if err == nil {
+		return resolvedClient, resolvedDialect, nil
+	}
+	if explicitDialect || config.Dialect != "" {
+		return nil, "", err
+	}
+	_ = client.Close()
+
+	fallback := config
+	fallback.Dialect = spec.DialectPostgreSQL
+	postgresClient, openErr := openMySQLClientContext(ctx, fallback)
+	if openErr != nil {
+		return nil, "", err
+	}
+	resolvedClient, resolvedDialect, detectErr := detectClientDialect(ctx, postgresClient)
+	if detectErr != nil {
+		_ = postgresClient.Close()
+		return nil, "", detectErr
+	}
+	return resolvedClient, resolvedDialect, nil
+}
+
+// openPreparedClientContext tries the default dialect, then falls back to PostgreSQL.
+func openPreparedClientContext(ctx context.Context, config ConnectionConfig) (Client, error) {
+	client, err := openMySQLClientContext(ctx, config)
+	if err == nil {
+		return client, nil
+	}
+	if config.Dialect != "" {
+		return nil, err
+	}
+
+	fallback := config
+	fallback.Dialect = spec.DialectPostgreSQL
+	postgresClient, postgresErr := openMySQLClientContext(ctx, fallback)
+	if postgresErr == nil {
+		return postgresClient, nil
+	}
+	return nil, err
+}
+
+// openMySQLClientContext opens a metadata client respecting the caller's context.
+func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Client, error) {
+	if config.Dialect == spec.DialectPostgreSQL {
+		db, err := postgresqlmeta.OpenDBContext(ctx, postgresqlmeta.ConnectionConfig{
+			Host:     config.Host,
+			Port:     config.Port,
+			Socket:   config.Socket,
+			User:     config.User,
+			Password: config.Password,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return postgresqlClient{
+			db:       db,
+			provider: postgresqlmeta.NewProvider(db),
+		}, nil
+	}
+
+	db, err := mysqlmeta.OpenDBContext(ctx, mysqlmeta.ConnectionConfig{
+		Host:     config.Host,
+		Port:     config.Port,
+		Socket:   config.Socket,
+		User:     config.User,
+		Password: config.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mysqlClient{
+		db:       db,
+		provider: mysqlmeta.NewProvider(db),
+	}, nil
+}
+
 func openPreparedClient(config ConnectionConfig, openClient func(ConnectionConfig) (Client, error)) (Client, error) {
 	client, err := openClient(config)
 	if err == nil {
@@ -227,38 +315,9 @@ func openPreparedClient(config ConnectionConfig, openClient func(ConnectionConfi
 	return nil, err
 }
 
+// openMySQLClient is a background-context wrapper for tests and injection.
 func openMySQLClient(config ConnectionConfig) (Client, error) {
-	if config.Dialect == spec.DialectPostgreSQL {
-		db, err := postgresqlmeta.OpenDB(postgresqlmeta.ConnectionConfig{
-			Host:     config.Host,
-			Port:     config.Port,
-			Socket:   config.Socket,
-			User:     config.User,
-			Password: config.Password,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return postgresqlClient{
-			db:       db,
-			provider: postgresqlmeta.NewProvider(db),
-		}, nil
-	}
-
-	db, err := mysqlmeta.OpenDB(mysqlmeta.ConnectionConfig{
-		Host:     config.Host,
-		Port:     config.Port,
-		Socket:   config.Socket,
-		User:     config.User,
-		Password: config.Password,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return mysqlClient{
-		db:       db,
-		provider: mysqlmeta.NewProvider(db),
-	}, nil
+	return openMySQLClientContext(context.Background(), config)
 }
 
 type postgresqlClient struct {

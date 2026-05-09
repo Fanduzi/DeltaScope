@@ -13,7 +13,9 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 
 ## Exports
 
+- `DefaultConnectTimeout`
 - `ConnectionConfig`
+- `OpenDBContext(ctx, config)`
 - `OpenDB(config)`
 - `Provider`
 - `NewProvider(db *sql.DB)`
