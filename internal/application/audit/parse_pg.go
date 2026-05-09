@@ -4,6 +4,7 @@ package audit
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	pgparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql"
@@ -12,7 +13,7 @@ import (
 func parsePostgreSQL(ctx context.Context, sql string) (ParsedSQL, error) {
 	result, err := pgparser.New().Parse(ctx, sql)
 	if err != nil {
-		return ParsedSQL{}, err
+		return ParsedSQL{}, fmt.Errorf("parse sql: %w", err)
 	}
 
 	parsed := ParsedSQL{

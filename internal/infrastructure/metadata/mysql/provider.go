@@ -220,10 +220,10 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	}
 
 	if err := p.loadColumns(ctx, snapshot); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load table %s.%s columns: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
 	if err := p.loadIndexes(ctx, snapshot); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load table %s.%s indexes: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
 
 	return snapshot, nil

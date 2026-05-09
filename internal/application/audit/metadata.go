@@ -7,6 +7,7 @@ package audit
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -53,7 +54,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 
 	instanceFacts, err := request.Provider.LoadInstanceFacts(ctx, dialect, request.Schema)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load instance facts: %w", err)
 	}
 
 	snapshots := make(map[string]*spec.TableSnapshot)
@@ -65,7 +66,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 
 		tableName, err := metadataTargetTableName(ctx, dialect, request, statement)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolve index owner: %w", err)
 		}
 		if tableName != "" {
 			key := strings.ToLower(tableName)
@@ -73,7 +74,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 			if !ok {
 				snapshot, err = request.Provider.LoadTableSnapshot(ctx, dialect, request.Schema, tableName)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("load table snapshot for %s: %w", tableName, err)
 				}
 				snapshots[key] = snapshot
 			}

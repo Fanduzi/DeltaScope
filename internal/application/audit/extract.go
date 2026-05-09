@@ -24,7 +24,7 @@ func Extract(ctx context.Context, parsed ParsedSQL) ([]spec.Statement, error) {
 		}
 		extracted, err := stmt.Extractor.Extract(parsed.Dialect, stmt.RawSQL)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("extract statement %d: %w", index, err)
 		}
 		if extracted.DML != nil {
 			extracted.DML.Impact = estimateStatementImpact(extracted)

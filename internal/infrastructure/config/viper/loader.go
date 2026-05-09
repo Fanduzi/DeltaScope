@@ -6,6 +6,8 @@
 package viperconfig
 
 import (
+	"fmt"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/viper"
@@ -22,14 +24,14 @@ func LoadPolicy(path string) (policy.Policy, error) {
 	v.SetConfigFile(path)
 	v.SetConfigType("yaml")
 	if err := v.ReadInConfig(); err != nil {
-		return policy.Policy{}, err
+		return policy.Policy{}, fmt.Errorf("read policy config %q: %w", path, err)
 	}
 
 	if err := v.Unmarshal(&cfg, func(dc *mapstructure.DecoderConfig) {
 		dc.TagName = "yaml"
 		dc.ErrorUnused = true
 	}); err != nil {
-		return policy.Policy{}, err
+		return policy.Policy{}, fmt.Errorf("unmarshal policy config: %w", err)
 	}
 
 	return cfg, nil

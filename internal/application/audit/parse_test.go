@@ -7,6 +7,7 @@ package audit
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -86,5 +87,20 @@ func TestParseMySQLSyntaxErrorDoesNotReportPGMismatch(t *testing.T) {
 	}
 	if strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
 		t.Fatalf("did not expect dialect mismatch hint, got %v", err)
+	}
+}
+
+func TestParseWrapPreservesErrorChain(t *testing.T) {
+	t.Parallel()
+	_, err := Parse(context.Background(), "select from users where;", spec.DialectMySQL)
+	if err == nil {
+		t.Fatal("expected parse error")
+	}
+	if !strings.Contains(err.Error(), "parse sql:") {
+		t.Fatalf("expected wrapped error to contain 'parse sql:', got %v", err)
+	}
+	unwrapped := errors.Unwrap(err)
+	if unwrapped == nil {
+		t.Fatal("expected error chain to be preserved via %w wrapping")
 	}
 }
