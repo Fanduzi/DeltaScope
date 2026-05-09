@@ -252,15 +252,15 @@ Verdict: reject
 
 **Statement 1：改列类型触发表重写**
 
-`SET DATA TYPE` 在 PG 里会持有 ACCESS EXCLUSIVE 锁（阻塞所有读写），重写整张表。DeltaScope 给出的建议是分阶段迁移：先加影子列 → 批量回填 → 切读 → 删旧列。这是 PG 特有的规则 `ddl.pg.alter.set_data_type.rewrite.warn`，MySQL 方言下不会触发。
+`SET DATA TYPE` 在 PG 里会持有 ACCESS EXCLUSIVE 锁（阻塞所有读写），重写整张表。[DeltaScope](https://deltascope.pages.dev/?lang=zh-CN) 给出的建议是分阶段迁移：先加影子列 → 批量回填 → 切读 → 删旧列。这是 PG 特有的规则 `ddl.pg.alter.set_data_type.rewrite.warn`，MySQL 方言下不会触发。
 
 **Statement 2：去掉 NOT NULL**
 
-和 MySQL 一样的风险——业务代码依赖 NOT NULL 约束。但在 PG 语法里用的是 `ALTER COLUMN ... DROP NOT NULL`，不是 MySQL 的 `MODIFY COLUMN`。DeltaScope 识别 PG 语法并命中对应的规则。
+和 MySQL 一样的风险——业务代码依赖 NOT NULL 约束。但在 PG 语法里用的是 `ALTER COLUMN ... DROP NOT NULL`，不是 MySQL 的 `MODIFY COLUMN`。[DeltaScope](https://deltascope.pages.dev/?lang=zh-CN) 识别 PG 语法并命中对应的规则。
 
 **Statement 3：CREATE INDEX 没有 CONCURRENTLY**
 
-这个是 PG 独有的坑。PG 的普通 `CREATE INDEX` 会在建索引期间持有锁，阻塞写入。`CREATE INDEX CONCURRENTLY` 可以在不阻塞写入的情况下建索引，但不能在事务内执行。DeltaScope 会检查并建议使用 CONCURRENTLY，同时提醒不能放在事务里。
+这个是 PG 独有的坑。PG 的普通 `CREATE INDEX` 会在建索引期间持有锁，阻塞写入。`CREATE INDEX CONCURRENTLY` 可以在不阻塞写入的情况下建索引，但不能在事务内执行。[DeltaScope](https://deltascope.pages.dev/?lang=zh-CN) 会检查并建议使用 CONCURRENTLY，同时提醒不能放在事务里。
 
 再看一个 PG 特有的场景——添加 CHECK 约束：
 

@@ -250,15 +250,15 @@ Three issues:
 
 **Statement 1: Type change triggers table rewrite**
 
-`SET DATA TYPE` in PostgreSQL acquires an ACCESS EXCLUSIVE lock (blocks all reads and writes) and rewrites the entire table. DeltaScope suggests a phased migration: add a shadow column with the new type, backfill in batches, switch application reads, then drop the old column. This is a PG-only rule (`ddl.pg.alter.set_data_type.rewrite.warn`) — it won't fire under the MySQL dialect.
+`SET DATA TYPE` in PostgreSQL acquires an ACCESS EXCLUSIVE lock (blocks all reads and writes) and rewrites the entire table. [DeltaScope](https://deltascope.pages.dev) suggests a phased migration: add a shadow column with the new type, backfill in batches, switch application reads, then drop the old column. This is a PG-only rule (`ddl.pg.alter.set_data_type.rewrite.warn`) — it won't fire under the MySQL dialect.
 
 **Statement 2: Dropping NOT NULL**
 
-Same risk as MySQL — application code depends on the NOT NULL constraint. But PG syntax uses `ALTER COLUMN ... DROP NOT NULL` instead of MySQL's `MODIFY COLUMN`. DeltaScope recognizes PG syntax and fires the corresponding rule.
+Same risk as MySQL — application code depends on the NOT NULL constraint. But PG syntax uses `ALTER COLUMN ... DROP NOT NULL` instead of MySQL's `MODIFY COLUMN`. [DeltaScope](https://deltascope.pages.dev) recognizes PG syntax and fires the corresponding rule.
 
 **Statement 3: CREATE INDEX without CONCURRENTLY**
 
-This is a PG-specific pitfall. A regular `CREATE INDEX` holds a write-blocking lock for the entire index build. `CREATE INDEX CONCURRENTLY` builds the index without blocking writes, but it can't run inside a transaction. DeltaScope checks for this and reminds you that CONCURRENTLY must be a standalone migration step.
+This is a PG-specific pitfall. A regular `CREATE INDEX` holds a write-blocking lock for the entire index build. `CREATE INDEX CONCURRENTLY` builds the index without blocking writes, but it can't run inside a transaction. [DeltaScope](https://deltascope.pages.dev) checks for this and reminds you that CONCURRENTLY must be a standalone migration step.
 
 One more PG-specific scenario — adding a CHECK constraint:
 
