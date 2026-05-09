@@ -431,4 +431,20 @@ rules:
 
 Commit the config to the repo — CI loads it automatically.
 
+---
+
+**Links:**
+- [Website](https://deltascope.pages.dev)
+- [GitHub](https://github.com/Fanduzi/DeltaScope)
+- [Rule reference](https://github.com/Fanduzi/DeltaScope/blob/main/configs/deltascope.example.yaml)
+- [CI integration docs](https://github.com/Fanduzi/DeltaScope/tree/main/docs/recipe)
+
+Install:
+
+```bash
+# macOS
+brew tap Fanduzi/deltascope && brew install --cask deltascope
+
+# Linux
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```

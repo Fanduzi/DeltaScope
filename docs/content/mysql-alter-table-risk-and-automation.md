@@ -435,4 +435,20 @@ rules:
 
 规则配置提交到仓库，CI 自动加载。
 
+---
+
+**相关链接：**
+- [官网](https://deltascope.pages.dev/?lang=zh-CN)
+- [GitHub](https://github.com/Fanduzi/DeltaScope)
+- [规则列表](https://github.com/Fanduzi/DeltaScope/blob/main/configs/deltascope.example.yaml)
+- [CI 接入文档](https://github.com/Fanduzi/DeltaScope/tree/main/docs/recipe)
+
+安装：
+
+```bash
+# macOS
+brew tap Fanduzi/deltascope && brew install --cask deltascope
+
+# Linux
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```
