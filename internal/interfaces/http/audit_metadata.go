@@ -98,6 +98,11 @@ func executeMetadataAwareAudit(
 		return auditResponse{}, err
 	}
 
+	connectTimeout, _, err := ifaceconn.ParseConnectTimeout(*request.Connection)
+	if err != nil {
+		return auditResponse{}, err
+	}
+
 	explicitDialectValue := strings.TrimSpace(string(request.Dialect))
 	if explicitDialectValue == "" {
 		explicitDialectValue = strings.TrimSpace(request.Connection.Dialect)
@@ -108,11 +113,12 @@ func executeMetadataAwareAudit(
 	prepared, err := prepareHTTPMetadataAudit(ctx, auditmeta.Request{
 		SQL: request.SQL,
 		Connection: auditmeta.ConnectionConfig{
-			Host:     strings.TrimSpace(request.Connection.Host),
-			Port:     request.Connection.Port,
-			Socket:   strings.TrimSpace(request.Connection.Socket),
-			User:     strings.TrimSpace(request.Connection.User),
-			Password: password,
+			Host:           strings.TrimSpace(request.Connection.Host),
+			Port:           request.Connection.Port,
+			Socket:         strings.TrimSpace(request.Connection.Socket),
+			User:           strings.TrimSpace(request.Connection.User),
+			Password:       password,
+			ConnectTimeout: connectTimeout,
 			Dialect: func() spec.Dialect {
 				if explicitDialectValue != "" {
 					return toMetadataDialect(requestedPublicDialect)

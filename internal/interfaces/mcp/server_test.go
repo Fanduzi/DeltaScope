@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -846,6 +847,178 @@ func TestAuditSQLToolReturnsStructuredErrorForIncompleteDirectConnection(t *test
 			"sql": "delete from users",
 			"connection": map[string]any{
 				"schema": "app",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected tool error result, got protocol error: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("expected tool error result")
+	}
+	body := result.StructuredContent.(map[string]any)
+	if body["code"] != "connection_invalid" {
+		t.Fatalf("unexpected error code: %#v", body["code"])
+	}
+}
+
+func TestAuditSQLToolPassesConnectionConnectTimeout(t *testing.T) {
+	previous := prepareMetadataAudit
+	var capturedConfig auditmeta.ConnectionConfig
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		capturedConfig = request.Connection
+		return &auditmeta.PreparedAudit{
+			Client:        metadataOnlyClient{},
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql": "delete from users",
+			"connection": map[string]any{
+				"host":            "127.0.0.1",
+				"port":            3306,
+				"user":            "root",
+				"password":        "secret",
+				"schema":          "app",
+				"connect_timeout": "5s",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	if capturedConfig.ConnectTimeout != 5*time.Second {
+		t.Fatalf("expected ConnectTimeout=5s, got %v", capturedConfig.ConnectTimeout)
+	}
+}
+
+func TestAuditSQLToolAcceptsZeroConnectionConnectTimeoutAsDefault(t *testing.T) {
+	previous := prepareMetadataAudit
+	var capturedConfig auditmeta.ConnectionConfig
+	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		capturedConfig = request.Connection
+		return &auditmeta.PreparedAudit{
+			Client:        metadataOnlyClient{},
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql": "delete from users",
+			"connection": map[string]any{
+				"host":            "127.0.0.1",
+				"port":            3306,
+				"user":            "root",
+				"password":        "secret",
+				"schema":          "app",
+				"connect_timeout": "0s",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("expected success result, got tool error: %#v", result)
+	}
+	if capturedConfig.ConnectTimeout != 0 {
+		t.Fatalf("expected ConnectTimeout=0 for 0s, got %v", capturedConfig.ConnectTimeout)
+	}
+}
+
+func TestAuditSQLToolRejectsInvalidConnectionConnectTimeout(t *testing.T) {
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		t.Fatal("expected prepare to not be called for invalid timeout")
+		return nil, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql": "delete from users",
+			"connection": map[string]any{
+				"host":            "127.0.0.1",
+				"user":            "root",
+				"password":        "secret",
+				"connect_timeout": "not-a-duration",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected tool error result, got protocol error: %v", err)
+	}
+	if !result.IsError {
+		t.Fatal("expected tool error result")
+	}
+	body := result.StructuredContent.(map[string]any)
+	if body["code"] != "connection_invalid" {
+		t.Fatalf("unexpected error code: %#v", body["code"])
+	}
+}
+
+func TestAuditSQLToolRejectsNegativeConnectionConnectTimeout(t *testing.T) {
+	previous := prepareMetadataAudit
+	prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		t.Fatal("expected prepare to not be called for negative timeout")
+		return nil, nil
+	}
+	t.Cleanup(func() { prepareMetadataAudit = previous })
+
+	server := NewServer(Config{Version: "test-version"})
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name: "audit_sql",
+		Arguments: map[string]any{
+			"sql": "delete from users",
+			"connection": map[string]any{
+				"host":            "127.0.0.1",
+				"user":            "root",
+				"password":        "secret",
+				"connect_timeout": "-5s",
 			},
 		},
 	})

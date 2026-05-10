@@ -55,7 +55,8 @@ func mapAuditToolError(err error) string {
 		strings.Contains(err.Error(), "read password file:"),
 		strings.Contains(err.Error(), "connection must include at least one non-password field"),
 		strings.Contains(err.Error(), "connection must include host/user, socket/user, or connection_ref"),
-		strings.Contains(err.Error(), "connection socket cannot be combined"):
+		strings.Contains(err.Error(), "connection socket cannot be combined"),
+		strings.Contains(err.Error(), "connection connect_timeout"):
 		return "connection_invalid"
 	case strings.Contains(err.Error(), "open metadata connection"), strings.Contains(err.Error(), "detect dialect"), strings.Contains(err.Error(), "resolve schema for table"):
 		return "connection_failed"

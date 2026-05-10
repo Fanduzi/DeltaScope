@@ -175,6 +175,54 @@ connections:
 	}
 }
 
+func TestResolveAuditConnectionPreservesConnectTimeoutFromDirectInput(t *testing.T) {
+	t.Parallel()
+
+	resolved, err := ResolveAuditConnection(AuditSQLParams{
+		Connection: &ConnectionInput{
+			Host:           "127.0.0.1",
+			Port:           3307,
+			User:           "root",
+			ConnectTimeout: "5s",
+		},
+	}, ResolveConnectionOptions{})
+	if err != nil {
+		t.Fatalf("resolve connection: %v", err)
+	}
+	if resolved.ConnectTimeout != "5s" {
+		t.Fatalf("expected ConnectTimeout=5s, got %q", resolved.ConnectTimeout)
+	}
+}
+
+func TestResolveAuditConnectionPreservesConnectTimeoutFromConfig(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "connections.yaml")
+	if err := os.WriteFile(path, []byte(`
+connections:
+  prod_timeout:
+    host: 10.0.0.12
+    port: 3306
+    user: audit_bot
+    connect_timeout: 3s
+`), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	resolved, err := ResolveAuditConnection(AuditSQLParams{
+		ConnectionRef: "prod_timeout",
+	}, ResolveConnectionOptions{
+		ConnectionsPath: path,
+	})
+	if err != nil {
+		t.Fatalf("resolve connection: %v", err)
+	}
+	if resolved.ConnectTimeout != "3s" {
+		t.Fatalf("expected ConnectTimeout=3s from config, got %q", resolved.ConnectTimeout)
+	}
+}
+
 func TestResolveAuditConnectionReturnsOfflineWhenNoConnectionProvided(t *testing.T) {
 	t.Parallel()
 

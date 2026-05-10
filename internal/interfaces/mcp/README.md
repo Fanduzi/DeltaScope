@@ -29,6 +29,8 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 - The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances and PostgreSQL on the PG-capable builds.
 - Connection-backed PostgreSQL MCP audit requests follow the same shared metadata-preparation path as the other transports and should preserve explicit metadata-aware context rather than downgrading silently.
 - `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, dialect support, audit result fields, connection inputs, and stable structured error codes.
+- Direct and named connection inputs accept `connect_timeout` (duration string like `5s`); empty/omitted/`0s` uses the default, invalid/negative values return `connection_invalid`.
+- `tool_errors.go` maps `connection connect_timeout` validation errors to `connection_invalid`.
 
 ## Dependencies
 

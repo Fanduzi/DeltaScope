@@ -43,17 +43,18 @@ type ConnectionInput = ifaceconn.ConnectionInput
 
 // ResolvedConnection is the normalized metadata-aware connection used by MCP audit flows.
 type ResolvedConnection struct {
-	Enabled  bool
-	Source   MetadataSource
-	RefName  string
-	RefPath  string
-	Host     string
-	Port     int
-	Socket   string
-	User     string
-	Schema   string
-	Dialect  string
-	Password string
+	Enabled        bool
+	Source         MetadataSource
+	RefName        string
+	RefPath        string
+	Host           string
+	Port           int
+	Socket         string
+	User           string
+	Schema         string
+	Dialect        string
+	Password       string
+	ConnectTimeout string
 }
 
 // ResolveConnectionOptions configures connection resolution dependencies.
@@ -107,17 +108,18 @@ func buildResolvedConnection(input ConnectionInput, source MetadataSource, refNa
 	}
 
 	return ResolvedConnection{
-		Enabled:  true,
-		Source:   source,
-		RefName:  refName,
-		RefPath:  refPath,
-		Host:     strings.TrimSpace(input.Host),
-		Port:     input.Port,
-		Socket:   strings.TrimSpace(input.Socket),
-		User:     strings.TrimSpace(input.User),
-		Schema:   strings.TrimSpace(input.Schema),
-		Dialect:  strings.TrimSpace(input.Dialect),
-		Password: password,
+		Enabled:        true,
+		Source:         source,
+		RefName:        refName,
+		RefPath:        refPath,
+		Host:           strings.TrimSpace(input.Host),
+		Port:           input.Port,
+		Socket:         strings.TrimSpace(input.Socket),
+		User:           strings.TrimSpace(input.User),
+		Schema:         strings.TrimSpace(input.Schema),
+		Dialect:        strings.TrimSpace(input.Dialect),
+		Password:       password,
+		ConnectTimeout: strings.TrimSpace(input.ConnectTimeout),
 	}, nil
 }
 

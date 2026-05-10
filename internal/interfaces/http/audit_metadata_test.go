@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -312,5 +313,137 @@ func TestExecuteAuditRequestValidatesSnapshotInsteadOfSourcePolicyPath(t *testin
 	}
 	if capturedConfigPath == "" {
 		t.Fatalf("expected captured config snapshot path")
+	}
+}
+
+func TestExecuteAuditRequestPassesConnectionConnectTimeout(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	client := &metadataAuditTestClient{}
+	var capturedConfig auditmeta.ConnectionConfig
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		capturedConfig = request.Connection
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host:           "127.0.0.1",
+			Port:           3306,
+			User:           "root",
+			Password:       "secret",
+			Schema:         "app",
+			ConnectTimeout: "5s",
+		},
+	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
+	})
+	if err != nil {
+		t.Fatalf("execute audit request: %v", err)
+	}
+	if capturedConfig.ConnectTimeout != 5*time.Second {
+		t.Fatalf("expected ConnectTimeout=5s, got %v", capturedConfig.ConnectTimeout)
+	}
+}
+
+func TestExecuteAuditRequestAcceptsZeroConnectionConnectTimeoutAsDefault(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	client := &metadataAuditTestClient{}
+	var capturedConfig auditmeta.ConnectionConfig
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		capturedConfig = request.Connection
+		return &auditmeta.PreparedAudit{
+			Client:        client,
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
+		}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host:           "127.0.0.1",
+			Port:           3306,
+			User:           "root",
+			Password:       "secret",
+			Schema:         "app",
+			ConnectTimeout: "0s",
+		},
+	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
+		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
+	})
+	if err != nil {
+		t.Fatalf("execute audit request: %v", err)
+	}
+	if capturedConfig.ConnectTimeout != 0 {
+		t.Fatalf("expected ConnectTimeout=0 for 0s, got %v", capturedConfig.ConnectTimeout)
+	}
+}
+
+func TestExecuteAuditRequestRejectsInvalidConnectionConnectTimeout(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		t.Fatal("expected prepare to not be called for invalid timeout")
+		return nil, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host:           "127.0.0.1",
+			User:           "root",
+			Password:       "secret",
+			ConnectTimeout: "not-a-duration",
+		},
+	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
+		t.Fatal("auditFn should not be called")
+		return deltascope.Result{}, nil
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid connect_timeout")
+	}
+	status, code := mapAuditError(err)
+	if status != 400 {
+		t.Fatalf("expected 400 status, got %d code=%s err=%v", status, code, err)
+	}
+}
+
+func TestExecuteAuditRequestRejectsNegativeConnectionConnectTimeout(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		t.Fatal("expected prepare to not be called for negative timeout")
+		return nil, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL: "delete from users",
+		Connection: &ifaceconn.ConnectionInput{
+			Host:           "127.0.0.1",
+			User:           "root",
+			Password:       "secret",
+			ConnectTimeout: "-5s",
+		},
+	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
+		t.Fatal("auditFn should not be called")
+		return deltascope.Result{}, nil
+	})
+	if err == nil {
+		t.Fatal("expected error for negative connect_timeout")
+	}
+	status, code := mapAuditError(err)
+	if status != 400 {
+		t.Fatalf("expected 400 status, got %d code=%s err=%v", status, code, err)
 	}
 }

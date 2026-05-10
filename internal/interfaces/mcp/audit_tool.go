@@ -13,6 +13,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -98,14 +99,21 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 	}
 	dialect, _ := resolvePublicDialect(explicitDialectValue)
 
+	connectTimeout, _, err := ifaceconn.ParseConnectTimeout(ifaceconn.ConnectionInput{ConnectTimeout: connection.ConnectTimeout})
+	if err != nil {
+		toolResult, toolErr := toolError("connection_invalid", err.Error())
+		return toolResult, nil, toolErr
+	}
+
 	prepared, err := prepareMetadataAudit(ctx, auditmeta.Request{
 		SQL: input.SQL,
 		Connection: auditmeta.ConnectionConfig{
-			Host:     connection.Host,
-			Port:     connection.Port,
-			Socket:   connection.Socket,
-			User:     connection.User,
-			Password: connection.Password,
+			Host:           connection.Host,
+			Port:           connection.Port,
+			Socket:         connection.Socket,
+			User:           connection.User,
+			Password:       connection.Password,
+			ConnectTimeout: connectTimeout,
 			Dialect: func() spec.Dialect {
 				if explicitDialectValue != "" {
 					return toDomainDialect(dialect)
