@@ -6,7 +6,8 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 
 | File | Responsibility |
 |------|---------------|
-| main.go | Parses process flags and starts the HTTP service |
+| main.go | Parses process flags, loads runtime config, merges logging settings, and starts the HTTP service |
+| main_test.go | Verifies CLI flag parsing, logging config from flags, and runtime config merge helpers |
 | main_e2e_test.go | Runs Docker-backed metadata-aware HTTP e2e coverage against the real server binary |
 
 ## Notes
@@ -28,6 +29,7 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 - `-log-max-age-days` max number of days to retain rotated log files. Default: 30.
 - `-log-compress` compress rotated log files. Default: true.
 - `-version` prints only the semantic version string and defaults to the repository `DefaultVersion` in source builds.
+- `-runtime-config <path>` loads a runtime YAML config for logging and other service settings. Explicit flags override runtime config values; runtime config overrides hardcoded defaults.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

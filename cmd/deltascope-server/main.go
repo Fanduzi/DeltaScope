@@ -20,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	httpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/http"
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -50,6 +51,7 @@ func main() {
 	logMaxBackups := flag.Int("log-max-backups", 3, "max number of rotated log files to retain")
 	logMaxAgeDays := flag.Int("log-max-age-days", 30, "max number of days to retain rotated log files")
 	logCompress := flag.Bool("log-compress", true, "compress rotated log files")
+	runtimeConfigPath := flag.String("runtime-config", "", "path to DeltaScope runtime config YAML")
 	flag.Parse()
 
 	if *showVersion {
@@ -66,12 +68,24 @@ func main() {
 	}
 	gin.SetMode(gin.ReleaseMode)
 
+	runtimeCfg, err := runtimeconfig.Load(*runtimeConfigPath)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "load runtime config: %v\n", err)
+		os.Exit(2)
+	}
+
 	if err := validateRotateFlags(*logRotate, *logMaxSizeMB, *logMaxBackups, *logMaxAgeDays); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
 		os.Exit(2)
 	}
 
-	slogLogger, err := logger.NewLogger(loggerConfigFromFlags(*logLevel, *logFormat, *logOutput, *logFile, *logRotate, *logMaxSizeMB, *logMaxBackups, *logMaxAgeDays, *logCompress), "server")
+	loggingCfg := loggerConfigFromRuntimeAndFlags(runtimeCfg, loggingFlagSet{
+		level: *logLevel, format: *logFormat, output: *logOutput, file: *logFile,
+		rotate: *logRotate, maxMB: *logMaxSizeMB, maxBackups: *logMaxBackups,
+		maxAge: *logMaxAgeDays, compress: *logCompress,
+	}, flag.CommandLine)
+
+	slogLogger, err := logger.NewLogger(loggingCfg, "server")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "init logger: %v\n", err)
 		os.Exit(2)
@@ -142,6 +156,92 @@ func loggerConfigFromFlags(level, format, output, file string, rotate bool, maxM
 		}
 	}
 	return cfg
+}
+
+type loggingFlagSet struct {
+	level      string
+	format     string
+	output     string
+	file       string
+	rotate     bool
+	maxMB      int
+	maxBackups int
+	maxAge     int
+	compress   bool
+}
+
+func loggerConfigFromRuntimeAndFlags(runtime runtimeconfig.Config, flags loggingFlagSet, fs *flag.FlagSet) logger.Config {
+	cfg := logger.Config{
+		Level:    resolveStringOverride(runtime.Logging.Level, flags.level, "info", fs, "log-level"),
+		Format:   resolveStringOverride(runtime.Logging.Format, flags.format, "json", fs, "log-format"),
+		Output:   resolveStringOverride(runtime.Logging.Output, flags.output, "stderr", fs, "log-output"),
+		FilePath: resolveStringOverride(runtime.Logging.File, flags.file, "", fs, "log-file"),
+	}
+
+	if rotateEnabled := resolveRotateEnabled(runtime, flags, fs); rotateEnabled {
+		cfg.Rotate = &logger.RotateConfig{
+			Enabled:    true,
+			MaxSizeMB:  resolveIntOverride(runtime.Logging.Rotate.MaxSizeMB, flags.maxMB, 100, fs, "log-max-size-mb"),
+			MaxBackups: resolveIntOverride(runtime.Logging.Rotate.MaxBackups, flags.maxBackups, 3, fs, "log-max-backups"),
+			MaxAgeDays: resolveIntOverride(runtime.Logging.Rotate.MaxAgeDays, flags.maxAge, 30, fs, "log-max-age-days"),
+			Compress:   resolveBoolPtrOverride(runtime.Logging.Rotate.Compress, flags.compress, true, fs, "log-compress"),
+		}
+	}
+
+	return cfg
+}
+
+func resolveStringOverride(runtimeVal, flagVal, defaultVal string, fs *flag.FlagSet, flagName string) string {
+	if isExplicitFlag(fs, flagName) {
+		return flagVal
+	}
+	if runtimeVal != "" {
+		return runtimeVal
+	}
+	if flagVal != defaultVal {
+		return flagVal
+	}
+	return defaultVal
+}
+
+func resolveIntOverride(runtimeVal *int, flagVal, defaultVal int, fs *flag.FlagSet, flagName string) int {
+	if isExplicitFlag(fs, flagName) {
+		return flagVal
+	}
+	if runtimeVal != nil {
+		return *runtimeVal
+	}
+	return defaultVal
+}
+
+func resolveBoolPtrOverride(runtimeVal *bool, flagVal bool, defaultVal bool, fs *flag.FlagSet, flagName string) *bool {
+	if isExplicitFlag(fs, flagName) {
+		return &flagVal
+	}
+	if runtimeVal != nil {
+		return runtimeVal
+	}
+	return &defaultVal
+}
+
+func resolveRotateEnabled(runtime runtimeconfig.Config, flags loggingFlagSet, fs *flag.FlagSet) bool {
+	if isExplicitFlag(fs, "log-rotate") {
+		return flags.rotate
+	}
+	if runtime.Logging.Rotate.Enabled != nil {
+		return *runtime.Logging.Rotate.Enabled
+	}
+	return false
+}
+
+func isExplicitFlag(fs *flag.FlagSet, name string) bool {
+	found := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }
 
 func parseCSV(raw string) []string {

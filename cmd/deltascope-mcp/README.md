@@ -6,8 +6,8 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 
 | File | Responsibility |
 |------|---------------|
-| `main.go` | Parses process flags and starts the MCP stdio service |
-| `main_test.go` | Verifies command bootstrap, version fast-path, and stdio smoke behavior |
+| `main.go` | Parses process flags, loads runtime config, merges logging settings, and starts the MCP stdio service |
+| `main_test.go` | Verifies command bootstrap, version fast-path, logging config, runtime config merge, and stdio smoke behavior |
 | `main_e2e_test.go` | Verifies tagged Docker-backed metadata-aware MCP smoke against real MySQL/TiDB fixtures for direct and connection_ref flows |
 
 ## Notes
@@ -26,6 +26,7 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 - `-log-max-backups` max number of rotated log files to retain. Default: 3.
 - `-log-max-age-days` max number of days to retain rotated log files. Default: 30.
 - `-log-compress` compress rotated log files. Default: true.
+- `-runtime-config <path>` loads a runtime YAML config for logging and other service settings. Explicit flags override runtime config values; runtime config overrides hardcoded defaults. `stdout` from runtime config is still forbidden and must be overridden by an explicit `--log-output` flag.
 
 ## Update Rule
 

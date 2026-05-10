@@ -6,12 +6,15 @@
 package main
 
 import (
+	"flag"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 )
 
 func TestParseCSV(t *testing.T) {
@@ -180,5 +183,231 @@ func TestValidateRotateFlagsRejectsNegativeMaxAge(t *testing.T) {
 	err := validateRotateFlags(true, 100, 3, -1)
 	if err == nil {
 		t.Fatal("expected error for negative max-age-days")
+	}
+}
+
+func TestLoggerConfigFromRuntimeConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "runtime.yaml")
+	if err := os.WriteFile(path, []byte(`
+logging:
+  level: debug
+  format: text
+  output: file
+  file: `+filepath.Join(dir, "test.log")+`
+`), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	runtimeCfg, err := runtimeconfig.Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	var level, format, output, file string
+	var rotate bool
+	var maxMB, maxBackups, maxAge int
+	var compress bool
+	fs.StringVar(&level, "log-level", "info", "")
+	fs.StringVar(&format, "log-format", "json", "")
+	fs.StringVar(&output, "log-output", "stderr", "")
+	fs.StringVar(&file, "log-file", "", "")
+	fs.BoolVar(&rotate, "log-rotate", false, "")
+	fs.IntVar(&maxMB, "log-max-size-mb", 100, "")
+	fs.IntVar(&maxBackups, "log-max-backups", 3, "")
+	fs.IntVar(&maxAge, "log-max-age-days", 30, "")
+	fs.BoolVar(&compress, "log-compress", true, "")
+	_ = fs.Parse([]string{})
+
+	cfg := loggerConfigFromRuntimeAndFlags(runtimeCfg, loggingFlagSet{
+		level: level, format: format, output: output, file: file,
+		rotate: rotate, maxMB: maxMB, maxBackups: maxBackups,
+		maxAge: maxAge, compress: compress,
+	}, fs)
+
+	if cfg.Level != "debug" {
+		t.Fatalf("expected debug level from runtime, got %q", cfg.Level)
+	}
+	if cfg.Format != "text" {
+		t.Fatalf("expected text format from runtime, got %q", cfg.Format)
+	}
+	if cfg.Output != "file" {
+		t.Fatalf("expected file output from runtime, got %q", cfg.Output)
+	}
+
+	l, err := logger.NewLogger(cfg, "server")
+	if err != nil {
+		t.Fatalf("expected valid logger: %v", err)
+	}
+	if l == nil {
+		t.Fatal("expected non-nil logger")
+	}
+}
+
+func TestLoggerFlagsOverrideRuntimeConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "runtime.yaml")
+	if err := os.WriteFile(path, []byte(`
+logging:
+  level: debug
+  format: text
+`), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	runtimeCfg, err := runtimeconfig.Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	var level, format, output, file string
+	var rotate bool
+	var maxMB, maxBackups, maxAge int
+	var compress bool
+	fs.StringVar(&level, "log-level", "info", "")
+	fs.StringVar(&format, "log-format", "json", "")
+	fs.StringVar(&output, "log-output", "stderr", "")
+	fs.StringVar(&file, "log-file", "", "")
+	fs.BoolVar(&rotate, "log-rotate", false, "")
+	fs.IntVar(&maxMB, "log-max-size-mb", 100, "")
+	fs.IntVar(&maxBackups, "log-max-backups", 3, "")
+	fs.IntVar(&maxAge, "log-max-age-days", 30, "")
+	fs.BoolVar(&compress, "log-compress", true, "")
+	_ = fs.Parse([]string{"--log-level", "warn"})
+
+	cfg := loggerConfigFromRuntimeAndFlags(runtimeCfg, loggingFlagSet{
+		level: level, format: format, output: output, file: file,
+		rotate: rotate, maxMB: maxMB, maxBackups: maxBackups,
+		maxAge: maxAge, compress: compress,
+	}, fs)
+
+	if cfg.Level != "warn" {
+		t.Fatalf("expected warn level from explicit flag overriding runtime debug, got %q", cfg.Level)
+	}
+	if cfg.Format != "text" {
+		t.Fatalf("expected text format from runtime (no explicit flag), got %q", cfg.Format)
+	}
+}
+
+func TestRuntimeConfigLoadRejectsInvalidYAML(t *testing.T) {
+	tmpFile := filepath.Join(t.TempDir(), "bad.yaml")
+	if err := os.WriteFile(tmpFile, []byte("logging: ["), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	_, err := runtimeconfig.Load(tmpFile)
+	if err == nil {
+		t.Fatal("expected error for malformed YAML")
+	}
+	if !strings.Contains(err.Error(), "parse runtime config") {
+		t.Fatalf("expected parse error, got: %v", err)
+	}
+}
+
+func TestRuntimeConfigRotateEnabledMapsToLoggerConfig(t *testing.T) {
+	dir := t.TempDir()
+	logFile := filepath.Join(dir, "server.log")
+	path := filepath.Join(dir, "runtime.yaml")
+	if err := os.WriteFile(path, []byte(`
+logging:
+  output: file
+  file: `+logFile+`
+  rotate:
+    enabled: true
+    max_size_mb: 10
+    max_backups: 2
+    max_age_days: 7
+    compress: false
+`), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	runtimeCfg, err := runtimeconfig.Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	var level, format, output, file string
+	var rotate bool
+	var maxMB, maxBackups, maxAge int
+	var compress bool
+	fs.StringVar(&level, "log-level", "info", "")
+	fs.StringVar(&format, "log-format", "json", "")
+	fs.StringVar(&output, "log-output", "stderr", "")
+	fs.StringVar(&file, "log-file", "", "")
+	fs.BoolVar(&rotate, "log-rotate", false, "")
+	fs.IntVar(&maxMB, "log-max-size-mb", 100, "")
+	fs.IntVar(&maxBackups, "log-max-backups", 3, "")
+	fs.IntVar(&maxAge, "log-max-age-days", 30, "")
+	fs.BoolVar(&compress, "log-compress", true, "")
+	_ = fs.Parse([]string{})
+
+	cfg := loggerConfigFromRuntimeAndFlags(runtimeCfg, loggingFlagSet{
+		level: level, format: format, output: output, file: file,
+		rotate: rotate, maxMB: maxMB, maxBackups: maxBackups,
+		maxAge: maxAge, compress: compress,
+	}, fs)
+
+	if cfg.Rotate == nil || !cfg.Rotate.Enabled {
+		t.Fatal("expected rotate enabled from runtime config")
+	}
+	if cfg.Rotate.MaxSizeMB != 10 {
+		t.Fatalf("expected MaxSizeMB=10, got %d", cfg.Rotate.MaxSizeMB)
+	}
+	if cfg.Rotate.MaxBackups != 2 {
+		t.Fatalf("expected MaxBackups=2, got %d", cfg.Rotate.MaxBackups)
+	}
+	if cfg.Rotate.MaxAgeDays != 7 {
+		t.Fatalf("expected MaxAgeDays=7, got %d", cfg.Rotate.MaxAgeDays)
+	}
+	if cfg.Rotate.Compress == nil || *cfg.Rotate.Compress != false {
+		t.Fatalf("expected Compress=false, got %v", cfg.Rotate.Compress)
+	}
+}
+
+func TestRuntimeConfigRotateDisabledIgnoresRotateFields(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "runtime.yaml")
+	if err := os.WriteFile(path, []byte(`
+logging:
+  rotate:
+    enabled: false
+    max_size_mb: 10
+`), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	runtimeCfg, err := runtimeconfig.Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	var level, format, output, file string
+	var rotate bool
+	var maxMB, maxBackups, maxAge int
+	var compress bool
+	fs.StringVar(&level, "log-level", "info", "")
+	fs.StringVar(&format, "log-format", "json", "")
+	fs.StringVar(&output, "log-output", "stderr", "")
+	fs.StringVar(&file, "log-file", "", "")
+	fs.BoolVar(&rotate, "log-rotate", false, "")
+	fs.IntVar(&maxMB, "log-max-size-mb", 100, "")
+	fs.IntVar(&maxBackups, "log-max-backups", 3, "")
+	fs.IntVar(&maxAge, "log-max-age-days", 30, "")
+	fs.BoolVar(&compress, "log-compress", true, "")
+	_ = fs.Parse([]string{})
+
+	cfg := loggerConfigFromRuntimeAndFlags(runtimeCfg, loggingFlagSet{
+		level: level, format: format, output: output, file: file,
+		rotate: rotate, maxMB: maxMB, maxBackups: maxBackups,
+		maxAge: maxAge, compress: compress,
+	}, fs)
+
+	if cfg.Rotate != nil {
+		t.Fatalf("expected nil Rotate when enabled=false, got %+v", cfg.Rotate)
 	}
 }
