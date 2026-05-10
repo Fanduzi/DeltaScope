@@ -52,12 +52,12 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
 
 	// Database/Schema lifecycle
-	{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP DATABASE", SQL: "DROP DATABASE app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP DATABASE", SQL: "DROP DATABASE app", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageFindingCovered},
 
 	// Trigger lifecycle — TiDB parser cannot parse triggers
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
@@ -88,12 +88,12 @@ var tidbDDLCensusCases = []struct {
 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
 
 	// Database/Schema lifecycle
-	{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP DATABASE", SQL: "DROP DATABASE app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP DATABASE", SQL: "DROP DATABASE app", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageFindingCovered},
 
 	// Trigger lifecycle — TiDB parser cannot parse triggers
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},

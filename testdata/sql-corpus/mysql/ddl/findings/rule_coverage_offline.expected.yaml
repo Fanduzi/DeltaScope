@@ -23,6 +23,8 @@ expect:
       - ddl.alter.change_column.explicit_default_change.forbid
       - ddl.alter.change_column.explicit_nullability_change.forbid
       - ddl.alter.change_column.forbid
+      - ddl.database.create.notice
+      - ddl.database.drop.warn
       - ddl.alter.change_column.target_type_family.allowlist
       - ddl.alter.drop_column.forbid
       - ddl.alter.drop_index.forbid

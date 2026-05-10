@@ -75,6 +75,59 @@ func TestDropSchemaCascadeWarnRule(t *testing.T) {
 	}
 }
 
+func TestCreateSchemaNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewCreateSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationCreateSchema,
+			ObjectName: "app_data",
+			ObjectType: "schema",
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", f.Level)
+	}
+	if f.Explanation == nil || f.Explanation.Why == "" || f.Explanation.Risk == "" || f.Explanation.Suggestion == "" {
+		t.Fatalf("expected complete explanation, got %+v", f.Explanation)
+	}
+}
+
+func TestCreateSchemaNoticeIgnoresDatabaseObjectType(t *testing.T) {
+	t.Parallel()
+	r := mustNewCreateSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationCreateSchema,
+			ObjectName: "app_data",
+			ObjectType: "database",
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected 0 findings for database object type, got %d", len(findings))
+	}
+}
+
 func TestCreateSequenceCycleWarnRule(t *testing.T) {
 	t.Parallel()
 	r := mustNewCreateSequenceCycleWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
@@ -546,6 +599,7 @@ func TestRegisterIncludesPGObjectLifecycleRules(t *testing.T) {
 	pgLifecycleRuleIDs := []string{
 		ruleIDPGDropSchemaAdvisory,
 		ruleIDPGDropSchemaCascadeWarn,
+		ruleIDPGCreateSchemaNotice,
 		ruleIDPGCreateSequenceCycleWarn,
 		ruleIDPGAlterSequenceRestartWarn,
 		ruleIDPGAlterSequenceCycleWarn,
@@ -663,6 +717,7 @@ func TestDefaultPolicyIncludesPGObjectLifecycleRules(t *testing.T) {
 	}{
 		{ruleIDPGDropSchemaAdvisory, rule.LevelNotice, true},
 		{ruleIDPGDropSchemaCascadeWarn, rule.LevelWarning, true},
+		{ruleIDPGCreateSchemaNotice, rule.LevelNotice, true},
 		{ruleIDPGCreateSequenceCycleWarn, rule.LevelWarning, true},
 		{ruleIDPGAlterSequenceRestartWarn, rule.LevelWarning, true},
 		{ruleIDPGAlterSequenceCycleWarn, rule.LevelWarning, true},
@@ -711,6 +766,15 @@ func TestDefaultPolicyExcludesPGRulesFromMySQL(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+func mustNewCreateSchemaNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newCreateSchemaNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new create schema notice rule: %v", err)
+	}
+	return r
+}
 
 func mustNewDropSchemaAdvisoryRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
 	t.Helper()

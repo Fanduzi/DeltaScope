@@ -407,6 +407,113 @@ func TestAuditSQLTiDBDefaultPolicyDialectHygiene(t *testing.T) {
 	assertAuditResultTextHasNoTokens(t, result, defaultPolicyDialectHygienePostgreSQLOnlyRemediationTokens)
 }
 
+// ---------------------------------------------------------------------------
+// v0.64.0 Task 4: Service tests — MySQL/TiDB database lifecycle rules
+// ---------------------------------------------------------------------------
+
+func TestAuditSQLMySQLCreateDatabaseFiresCreateNotice(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE DATABASE app",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.create.notice" {
+			found = true
+			if f.Level != "notice" {
+				t.Errorf("expected notice level, got %q", f.Level)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.create.notice finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLMySQLDropDatabaseFiresDropWarn(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "DROP DATABASE app",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.drop.warn" {
+			found = true
+			if f.Level != "warning" {
+				t.Errorf("expected warning level, got %q", f.Level)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.drop.warn finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLTiDBCreateDatabaseFiresCreateNotice(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE DATABASE app",
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.create.notice" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.create.notice finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLTiDBDropDatabaseFiresDropWarn(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "DROP DATABASE app",
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.drop.warn" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.drop.warn finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+
 func TestAuditSQLAppliesConfigOverride(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

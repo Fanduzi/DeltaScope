@@ -18,8 +18,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | index_rules.go | Implements create-table index count, prefix, suffix, contains, and duplicate-index rules |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
+| database_lifecycle_rules.go | Implements MySQL/TiDB database lifecycle rules: create-database notice, drop-database warning |
+| database_lifecycle_rules_test.go | Verifies MySQL/TiDB database lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_migration_rules.go | Implements PostgreSQL-only migration-safety rules: concurrent index, NOT NULL without default, concurrent unique constraint, drop constraint advisory, NOT VALID validation, set-data-type rewrite, add-column with volatile default, and add-check without NOT VALID |
-| postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
+| postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
 | postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, drop-type advisory, drop-type cascade warn |
@@ -198,6 +200,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.drop_index.exists.require`
 - `ddl.alter.rename_index.exists.require`
 - `ddl.alter.drop_primary_key.exists.require`
+- `ddl.database.create.notice`
+- `ddl.database.drop.warn`
+- `ddl.pg.create_schema.notice`
 - `ddl.pg.drop_index.advisory`
 - `ddl.pg.alter.add_column.non_null_no_default.warn`
 - `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory`

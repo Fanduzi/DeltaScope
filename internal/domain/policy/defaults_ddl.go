@@ -611,6 +611,17 @@ func ddlCoreRules() map[string]RulePolicy {
 			Level:   rule.LevelBlocker,
 			Params:  map[string]any{},
 		},
+		// MySQL/TiDB database lifecycle rules.
+		"ddl.database.create.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.database.drop.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
 	}
 }
 

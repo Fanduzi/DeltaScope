@@ -20,6 +20,7 @@ type pgObjectLifecycleRule struct {
 	operation  spec.DDLOperation
 	option     string
 	object     string
+	objectType string
 	message    string
 	why        string
 	risk       string
@@ -40,13 +41,34 @@ func newPGObjectLifecycleRule(id string, level rule.Level, operation spec.DDLOpe
 	}, nil
 }
 
+func newPGObjectLifecycleRuleWithType(id string, level rule.Level, operation spec.DDLOperation, option string, object string, objectType string, message string, why string, risk string, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return pgObjectLifecycleRule{
+		id:         id,
+		level:      configuredLevel(cfg, level),
+		operation:  operation,
+		option:     option,
+		object:     object,
+		objectType: objectType,
+		message:    message,
+		why:        why,
+		risk:       risk,
+		suggestion: suggestion,
+	}, nil
+}
+
 func (r pgObjectLifecycleRule) ID() string { return r.id }
 
 func (r pgObjectLifecycleRule) AppliesTo(statement spec.Statement) bool {
-	return statement.Dialect == spec.DialectPostgreSQL &&
-		statement.Kind == spec.KindDDL &&
-		statement.DDL != nil &&
-		statement.DDL.Operation == r.operation
+	if statement.Dialect != spec.DialectPostgreSQL ||
+		statement.Kind != spec.KindDDL ||
+		statement.DDL == nil ||
+		statement.DDL.Operation != r.operation {
+		return false
+	}
+	if r.objectType != "" && statement.DDL.ObjectType != r.objectType {
+		return false
+	}
+	return true
 }
 
 func (r pgObjectLifecycleRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -79,6 +101,18 @@ func (r pgObjectLifecycleRule) Evaluate(ctx context.Context, statement spec.Stat
 			"object_name": objectName,
 		},
 	}}, nil
+}
+
+func newCreateSchemaNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithType(
+		ruleIDPGCreateSchemaNotice, rule.LevelNotice, spec.DDLOperationCreateSchema, "",
+		"schema", "schema",
+		"CREATE SCHEMA %q changes namespace and security boundaries on PostgreSQL",
+		"Creating a schema adds a new namespace that affects object resolution, search_path behavior, and security boundaries.",
+		"New schemas change how PostgreSQL resolves unqualified object names and may expose or hide objects unexpectedly depending on search_path configuration.",
+		"Review whether the schema name follows naming conventions and whether GRANTs are needed to control access.",
+		cfg,
+	)
 }
 
 func newDropSchemaAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {

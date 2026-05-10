@@ -138,6 +138,11 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.create_schema.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.drop_schema.cascade.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

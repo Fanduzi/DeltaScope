@@ -156,7 +156,9 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"dml.insert.rows.max_count",
 		"dml.replace.forbid",
 		"dml.insert.on_duplicate.forbid",
-		"dml.subquery.forbid":
+		"dml.subquery.forbid",
+		"ddl.database.create.notice",
+		"ddl.database.drop.warn":
 		return true
 	default:
 		return false

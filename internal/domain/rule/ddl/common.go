@@ -217,6 +217,11 @@ const (
 	ruleIDPGAlterExtensionSetSchemaNotice = "ddl.pg.alter_extension.set_schema.notice"
 	ruleIDPGDropExtensionAdvisory         = "ddl.pg.drop_extension.advisory"
 	ruleIDPGDropExtensionCascadeWarn      = "ddl.pg.drop_extension.cascade.warn"
+	// MySQL/TiDB database lifecycle rules.
+	ruleIDDatabaseCreateNotice = "ddl.database.create.notice"
+	ruleIDDatabaseDropWarn     = "ddl.database.drop.warn"
+	// PostgreSQL create schema rule.
+	ruleIDPGCreateSchemaNotice = "ddl.pg.create_schema.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

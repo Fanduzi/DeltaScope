@@ -23,8 +23,8 @@ var crossDialectPGDDLCensusCases = []struct {
 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
 
 	// Schema lifecycle
-	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageNormalizedSilent},
-	{Name: "CREATE SCHEMA IF NOT EXISTS", SQL: "CREATE SCHEMA IF NOT EXISTS app", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE SCHEMA IF NOT EXISTS", SQL: "CREATE SCHEMA IF NOT EXISTS app", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP SCHEMA CASCADE", SQL: "DROP SCHEMA app CASCADE", Expected: ddlCoverageFindingCovered},
 

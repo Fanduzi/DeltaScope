@@ -468,6 +468,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterExtensionSetSchemaNotice, construct: newAlterExtensionSetSchemaNoticeRule},
 		{ruleID: ruleIDPGDropExtensionAdvisory, construct: newDropExtensionAdvisoryRule},
 		{ruleID: ruleIDPGDropExtensionCascadeWarn, construct: newDropExtensionCascadeWarnRule},
+		// MySQL/TiDB database lifecycle rules.
+		{ruleID: ruleIDDatabaseCreateNotice, construct: newDatabaseCreateNoticeRule},
+		{ruleID: ruleIDDatabaseDropWarn, construct: newDatabaseDropWarnRule},
+		// PostgreSQL create schema rule.
+		{ruleID: ruleIDPGCreateSchemaNotice, construct: newCreateSchemaNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

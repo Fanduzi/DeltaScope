@@ -443,3 +443,87 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// v0.64.0 Task 4: Service tests — PG create schema rule
+// ---------------------------------------------------------------------------
+
+// TestAuditSQLPostgreSQLCreateSchemaNotice proves that CREATE SCHEMA triggers
+// the PG-only notice through the full AuditSQL pipeline.
+func TestAuditSQLPostgreSQLCreateSchemaNotice(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE SCHEMA staging",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_schema.notice" {
+			found = true
+			if f.Level != "notice" {
+				t.Errorf("expected notice level, got %q", f.Level)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.pg.create_schema.notice finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
+// TestAuditSQLPostgreSQLCreateSchemaDoesNotFireOnMySQL proves that the PG
+// create schema rule never fires on MySQL/TiDB.
+func TestAuditSQLPostgreSQLCreateSchemaDoesNotFireOnMySQL(t *testing.T) {
+	t.Parallel()
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		t.Run(string(dialect), func(t *testing.T) {
+			t.Parallel()
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     "CREATE DATABASE app",
+				Dialect: dialect,
+			})
+			if err != nil {
+				t.Fatalf("audit sql: %v", err)
+			}
+			for _, stmt := range result.Statements {
+				for _, f := range stmt.Findings {
+					if f.RuleID == "ddl.pg.create_schema.notice" {
+						t.Fatalf("PG create_schema rule fired on %s", dialect)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestAuditSQLDatabaseRulesDoNotFireOnPostgreSQL proves that MySQL/TiDB
+// database lifecycle rules never fire on PostgreSQL.
+func TestAuditSQLDatabaseRulesDoNotFireOnPostgreSQL(t *testing.T) {
+	t.Parallel()
+	databaseRuleIDs := []string{
+		"ddl.database.create.notice",
+		"ddl.database.drop.warn",
+	}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE SCHEMA app",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	for _, stmt := range result.Statements {
+		for _, f := range stmt.Findings {
+			for _, dbID := range databaseRuleIDs {
+				if f.RuleID == dbID {
+					t.Fatalf("database rule %q fired on PostgreSQL", dbID)
+				}
+			}
+		}
+	}
+}
