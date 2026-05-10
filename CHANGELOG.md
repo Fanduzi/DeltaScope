@@ -12,7 +12,7 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 - Structured logging foundation: server (`-log-output`, `-log-level`, `-log-file`) and MCP (`-log-output`, `-log-level`, `-log-file`) logging flags
 - Log file rotation support with configurable max size, max age, max backups, and compress options
-- Metadata connect timeout: `MetadataConnectTimeout` field on `Request` for library consumers, `--metadata-connect-timeout` flag for CLI
+- Internal 5s default connect timeout for metadata-aware MySQL/TiDB and PostgreSQL openers; `OpenDBContext` propagates caller cancellation
 - Parser benchmark coverage for hot paths
 
 ### Changed

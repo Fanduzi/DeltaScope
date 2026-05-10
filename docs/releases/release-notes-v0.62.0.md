@@ -10,7 +10,7 @@ v0.62.0 adds structured logging for server and MCP services, log file rotation, 
 |---------|-------------|
 | Structured logging | Server and MCP now accept `-log-output`, `-log-level`, and `-log-file` flags for structured log output |
 | Log file rotation | Configurable rotation with `--log-rotate`, `--log-max-size`, `--log-max-age`, `--log-max-backups`, and `--log-compress` |
-| Metadata connect timeout | `--metadata-connect-timeout` CLI flag and `MetadataConnectTimeout` field on library `Request` |
+| Metadata connect timeout | Internal 5s default connect timeout for metadata-aware MySQL/TiDB and PostgreSQL openers; `OpenDBContext` propagates caller cancellation |
 | Parser benchmarks | Hot-path benchmark coverage for rule evaluation and rendering |
 
 ## Reliability
@@ -28,6 +28,7 @@ v0.62.0 adds structured logging for server and MCP services, log file rotation, 
 - No new rule IDs, parser features, or public API changes.
 - No MySQL/TiDB/PostgreSQL audit behavior changes.
 - No release asset naming or install workflow changes.
+- Public CLI/HTTP/MCP/SDK timeout configuration remains deferred.
 
 ## Install
 

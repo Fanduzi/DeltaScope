@@ -10,7 +10,7 @@ v0.62.0 新增 server 和 MCP 服务的结构化日志、日志文件轮转、�
 |------|------|
 | 结构化日志 | server 和 MCP 新增 `-log-output`、`-log-level`、`-log-file` 标志 |
 | 日志文件轮转 | 支持通过 `--log-rotate`、`--log-max-size`、`--log-max-age`、`--log-max-backups`、`--log-compress` 配置轮转策略 |
-| 元数据连接超时 | CLI `--metadata-connect-timeout` 标志和库 `Request` 的 `MetadataConnectTimeout` 字段 |
+| 元数据连接超时 | 内部默认 5 秒连接超时用于元数据感知 MySQL/TiDB 和 PostgreSQL 连接；`OpenDBContext` 传播调用方取消信号 |
 | 解析器基准测试 | 热路径基准测试覆盖规则评估和渲染 |
 
 ## 可靠性
@@ -28,6 +28,7 @@ v0.62.0 新增 server 和 MCP 服务的结构化日志、日志文件轮转、�
 - 无新规则 ID、解析器功能或公共 API 变更。
 - 无 MySQL/TiDB/PostgreSQL 审计行为变更。
 - 无发布资产命名或安装工作流变更。
+- 公共 CLI/HTTP/MCP/SDK 超时配置尚在推迟中。
 
 ## 安装
 

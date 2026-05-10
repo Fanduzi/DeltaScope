@@ -12,7 +12,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 
 - Structured logging foundation with server and MCP logging flags (`-log-output`, `-log-level`, `-log-file`).
 - Log file rotation support with configurable max size, max age, max backups, and compress options.
-- Metadata connect timeout configuration (`MetadataConnectTimeout` on `Request`, `--metadata-connect-timeout` CLI flag).
+- Internal 5s default connect timeout for metadata-aware MySQL/TiDB and PostgreSQL openers; `OpenDBContext` propagates caller cancellation; `auditmeta.Prepare(ctx)` respects caller context.
 - Log file permissions restricted to owner-only (`0750` for directories, `0600` for files).
 - `defaults.go` split into 5 files by rule category; `extractor.go` split into 7 files by statement type.
 - Parser benchmark coverage for hot paths.
@@ -23,6 +23,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - v0.62.0 is a logging and maintainability release: no new rule IDs, parser features, or public API changes.
 - MySQL, TiDB, and PostgreSQL rule semantics remain unchanged.
 - Release asset naming and install workflows remain unchanged.
+- Public CLI/HTTP/MCP/SDK metadata timeout configuration remains deferred.
 
 ## Previous Milestone: v0.61.0 Quality & Reliability Pack
 
