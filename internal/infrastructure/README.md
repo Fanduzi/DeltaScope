@@ -12,6 +12,7 @@ Infrastructure adapters for parser, config loading, metadata loading, and output
 | metadata/ | Holds optional metadata-provider adapters |
 | output/ | Holds result rendering adapters |
 | parser/ | Holds parser adapter modules |
+| runtimeconfig/ | Loads non-policy process settings (logging, metadata timeout) from YAML |
 
 ## Exports
 
@@ -19,6 +20,12 @@ Infrastructure adapters for parser, config loading, metadata loading, and output
 - `logger.NewStdLogger` — bridges `*slog.Logger` to `*log.Logger` for legacy middleware
 - `logger.Config` — level, format, output, file path, and optional rotation configuration
 - `logger.RotateConfig` — rotation settings: enabled, max size, max backups, max age, compress (defaults: 100MB, 3, 30 days, true)
+- `runtimeconfig.Load` — reads runtime config YAML, returns Config (empty path returns zero config)
+- `runtimeconfig.ParseConnectTimeout` — parses duration string for metadata connect timeout (empty/zero = unset)
+- `runtimeconfig.Config` — holds logging and metadata runtime settings
+- `runtimeconfig.LoggingConfig` — level, format, output, file, and rotation for runtime logging
+- `runtimeconfig.RotateConfig` — rotation settings (pointer fields distinguish unset from explicit zero)
+- `runtimeconfig.MetadataConfig` — metadata connection settings (connect_timeout duration string)
 
 ## Dependencies
 - Upstream: `internal/application`
