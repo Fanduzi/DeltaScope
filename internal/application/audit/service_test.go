@@ -513,6 +513,102 @@ func TestAuditSQLTiDBDropDatabaseFiresDropWarn(t *testing.T) {
 	}
 }
 
+func TestAuditSQLMySQLCreateSchemaSynonymFiresCreateNotice(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE SCHEMA app",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.create.notice" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.create.notice finding for CREATE SCHEMA synonym, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLMySQLDropSchemaSynonymFiresDropWarn(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "DROP SCHEMA app",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.drop.warn" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.drop.warn finding for DROP SCHEMA synonym, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLTiDBCreateSchemaIFNotExistsFiresCreateNotice(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE SCHEMA IF NOT EXISTS app",
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.create.notice" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.create.notice finding for CREATE SCHEMA IF NOT EXISTS, got %#v", result.Statements[0].Findings)
+	}
+}
+
+func TestAuditSQLTiDBDropSchemaIfExistsFiresDropWarn(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "DROP SCHEMA IF EXISTS app",
+		Dialect: spec.DialectTiDB,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.database.drop.warn" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.database.drop.warn finding for DROP SCHEMA IF EXISTS, got %#v", result.Statements[0].Findings)
+	}
+}
+
 
 func TestAuditSQLAppliesConfigOverride(t *testing.T) {
 	t.Parallel()

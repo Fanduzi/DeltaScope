@@ -502,6 +502,32 @@ func TestAuditSQLPostgreSQLCreateSchemaDoesNotFireOnMySQL(t *testing.T) {
 	}
 }
 
+// TestAuditSQLPostgreSQLCreateSchemaIFNotExistsFiresNotice proves that
+// CREATE SCHEMA IF NOT EXISTS still triggers the notice rule.
+func TestAuditSQLPostgreSQLCreateSchemaIFNotExistsFiresNotice(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "CREATE SCHEMA IF NOT EXISTS app",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.create_schema.notice" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.pg.create_schema.notice finding for CREATE SCHEMA IF NOT EXISTS, got %#v", result.Statements[0].Findings)
+	}
+}
+
 // TestAuditSQLDatabaseRulesDoNotFireOnPostgreSQL proves that MySQL/TiDB
 // database lifecycle rules never fire on PostgreSQL.
 func TestAuditSQLDatabaseRulesDoNotFireOnPostgreSQL(t *testing.T) {
