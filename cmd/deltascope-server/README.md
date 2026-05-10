@@ -30,6 +30,7 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 - `-log-compress` compress rotated log files. Default: true.
 - `-version` prints only the semantic version string and defaults to the repository `DefaultVersion` in source builds.
 - `-runtime-config <path>` loads a runtime YAML config for logging and other service settings. Explicit flags override runtime config values; runtime config overrides hardcoded defaults.
+- `metadata.connect_timeout` in runtime config sets the default metadata connect timeout for HTTP metadata-aware audit. Omitted or empty means no default (uses the opener's internal default). Invalid or negative values cause startup to fail with exit code 2.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

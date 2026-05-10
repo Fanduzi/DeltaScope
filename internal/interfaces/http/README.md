@@ -19,6 +19,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 - `WithAuthConfig(AuthConfig) HandlerOption`
 - `WithMiddlewareConfig(MiddlewareConfig) HandlerOption`
 - `WithAuditFunc(func(context.Context, deltascope.Request) (deltascope.Result, error)) HandlerOption`
+- `WithMetadataConfig(MetadataConfig) HandlerOption`
 - `NewServer(addr, configPath, version, opts ...HandlerOption)`
 
 ## Notes
@@ -32,7 +33,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 - Config hot-reload is achieved by re-reading the configured policy path on each audit request, so file updates take effect without restarting the server.
 - Current scope supports offline and metadata-aware audit plus HTTP-native rule discovery and capability discovery.
 - Responses preserve the public DeltaScope result body and add a `context` block describing mode, dialect/schema provenance, and metadata source.
-- Direct connection input accepts `connect_timeout` (duration string like `5s`); empty/omitted/`0s` uses the default, invalid/negative values return 400.
+- Direct connection input accepts `connect_timeout` (duration string like `5s`); empty/omitted/`0s` falls back to runtime config default, invalid/negative values return 400.
 
 ## Dependencies
 - Upstream: `cmd/deltascope-server`

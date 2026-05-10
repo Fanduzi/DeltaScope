@@ -91,6 +91,12 @@ func main() {
 		os.Exit(2)
 	}
 
+	metadataTimeout, err := parseMetadataConnectTimeout(runtimeCfg)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "init metadata: %v\n", err)
+		os.Exit(2)
+	}
+
 	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithAuthConfig(httpapi.AuthConfig{
 		Enabled:    *authEnabled,
 		Keys:       keys,
@@ -105,6 +111,8 @@ func main() {
 			AllowPaths: parseCSV(*rateLimitAllowPaths),
 		},
 		TrustedProxies: proxies,
+	}), httpapi.WithMetadataConfig(httpapi.MetadataConfig{
+		ConnectTimeout: metadataTimeout,
 	}))
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "build server: %v\n", err)
@@ -271,4 +279,18 @@ func validateRotateFlags(rotate bool, maxMB, maxBackups, maxAge int) error {
 		return fmt.Errorf("log-max-age-days must be >= 0 when rotation is enabled, got %d", maxAge)
 	}
 	return nil
+}
+
+func parseMetadataConnectTimeout(runtime runtimeconfig.Config) (time.Duration, error) {
+	d, set, err := runtimeconfig.ParseConnectTimeout(runtime.Metadata.ConnectTimeout)
+	if err != nil {
+		return 0, fmt.Errorf("metadata.connect_timeout: %w", err)
+	}
+	if !set {
+		return 0, nil
+	}
+	if d <= 0 {
+		return 0, fmt.Errorf("metadata.connect_timeout %q: must be positive", runtime.Metadata.ConnectTimeout)
+	}
+	return d, nil
 }

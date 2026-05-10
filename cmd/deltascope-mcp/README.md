@@ -27,6 +27,7 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 - `-log-max-age-days` max number of days to retain rotated log files. Default: 30.
 - `-log-compress` compress rotated log files. Default: true.
 - `-runtime-config <path>` loads a runtime YAML config for logging and other service settings. Explicit flags override runtime config values; runtime config overrides hardcoded defaults. `stdout` from runtime config is still forbidden and must be overridden by an explicit `--log-output` flag.
+- `metadata.connect_timeout` in runtime config sets the default metadata connect timeout for MCP metadata-aware audit. Omitted or empty means no default (uses the opener's internal default). Invalid or negative values cause startup to fail with exit code 2.
 
 ## Update Rule
 

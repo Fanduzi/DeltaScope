@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
@@ -614,5 +615,47 @@ func TestMCPRunWithRuntimeConfigFileSucceeds(t *testing.T) {
 	exitCode := run([]string{"--runtime-config", path}, &stdout, &stderr)
 	if exitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: %s", exitCode, stderr.String())
+	}
+}
+
+func TestParseMCPMetadataConnectTimeoutFromRuntime(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "runtime.yaml")
+	if err := os.WriteFile(path, []byte("metadata:\n  connect_timeout: 7s\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	runtimeCfg, err := runtimeconfig.Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	d, err := parseMCPMetadataConnectTimeout(runtimeCfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if d != 7*time.Second {
+		t.Fatalf("expected 7s, got %v", d)
+	}
+}
+
+func TestParseMCPMetadataConnectTimeoutRejectsInvalid(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "runtime.yaml")
+	if err := os.WriteFile(path, []byte("metadata:\n  connect_timeout: not-a-duration\n"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	runtimeCfg, err := runtimeconfig.Load(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+
+	_, err = parseMCPMetadataConnectTimeout(runtimeCfg)
+	if err == nil {
+		t.Fatal("expected error for invalid metadata.connect_timeout")
+	}
+	if !strings.Contains(err.Error(), "metadata.connect_timeout") {
+		t.Fatalf("expected metadata.connect_timeout error, got: %v", err)
 	}
 }

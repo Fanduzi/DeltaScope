@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
@@ -46,7 +47,7 @@ func newAuditSQLTool(config Config) func(context.Context, *sdkmcp.CallToolReques
 			return toolResult, nil, toolErr
 		}
 		if connection.Enabled {
-			return auditSQLWithMetadata(ctx, input, connection)
+			return auditSQLWithMetadata(ctx, input, connection, config.MetadataConnectTimeout)
 		}
 		return auditSQLOffline(ctx, input)
 	}
@@ -88,7 +89,7 @@ func auditSQLOffline(ctx context.Context, input AuditSQLParams) (*sdkmcp.CallToo
 	return toolResult, payload, nil
 }
 
-func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection ResolvedConnection) (*sdkmcp.CallToolResult, any, error) {
+func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection ResolvedConnection, defaultConnectTimeout time.Duration) (*sdkmcp.CallToolResult, any, error) {
 	explicitDialectValue := strings.TrimSpace(input.Dialect)
 	if explicitDialectValue == "" {
 		explicitDialectValue = strings.TrimSpace(connection.Dialect)
@@ -99,10 +100,13 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 	}
 	dialect, _ := resolvePublicDialect(explicitDialectValue)
 
-	connectTimeout, _, err := ifaceconn.ParseConnectTimeout(ifaceconn.ConnectionInput{ConnectTimeout: connection.ConnectTimeout})
+	connectTimeout, set, err := ifaceconn.ParseConnectTimeout(ifaceconn.ConnectionInput{ConnectTimeout: connection.ConnectTimeout})
 	if err != nil {
 		toolResult, toolErr := toolError("connection_invalid", err.Error())
 		return toolResult, nil, toolErr
+	}
+	if !set {
+		connectTimeout = defaultConnectTimeout
 	}
 
 	prepared, err := prepareMetadataAudit(ctx, auditmeta.Request{

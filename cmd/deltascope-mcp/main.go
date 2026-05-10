@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
@@ -88,10 +89,17 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return 2
 	}
 
+	metadataTimeout, metadataErr := parseMCPMetadataConnectTimeout(runtimeCfg)
+	if metadataErr != nil {
+		_, _ = fmt.Fprintf(stderr, "init metadata: %v\n", metadataErr)
+		return 2
+	}
+
 	server := newMCPServer(mcpapi.Config{
-		Version:         Version,
-		ConnectionsPath: *connectionsPath,
-		Logger:          slogLogger,
+		Version:                Version,
+		ConnectionsPath:        *connectionsPath,
+		Logger:                 slogLogger,
+		MetadataConnectTimeout: metadataTimeout,
 	})
 	if err := runMCPServer(server); err != nil {
 		_, _ = fmt.Fprintf(stderr, "serve mcp: %v\n", err)
@@ -216,4 +224,18 @@ func validateRotateFlags(rotate bool, maxMB, maxBackups, maxAge int) error {
 		return fmt.Errorf("log-max-age-days must be >= 0 when rotation is enabled, got %d", maxAge)
 	}
 	return nil
+}
+
+func parseMCPMetadataConnectTimeout(runtime runtimeconfig.Config) (time.Duration, error) {
+	d, set, err := runtimeconfig.ParseConnectTimeout(runtime.Metadata.ConnectTimeout)
+	if err != nil {
+		return 0, fmt.Errorf("metadata.connect_timeout: %w", err)
+	}
+	if !set {
+		return 0, nil
+	}
+	if d <= 0 {
+		return 0, fmt.Errorf("metadata.connect_timeout %q: must be positive", runtime.Metadata.ConnectTimeout)
+	}
+	return d, nil
 }

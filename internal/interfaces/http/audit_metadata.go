@@ -40,11 +40,12 @@ func executeAuditRequest(
 	request auditRequest,
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+	metadataDefault MetadataConfig,
 ) (auditResponse, error) {
 	if request.Connection == nil {
 		return executeOfflineAudit(ctx, request, configPath, auditFn)
 	}
-	return executeMetadataAwareAudit(ctx, request, configPath, auditFn)
+	return executeMetadataAwareAudit(ctx, request, configPath, auditFn, metadataDefault)
 }
 
 func executeOfflineAudit(
@@ -82,6 +83,7 @@ func executeMetadataAwareAudit(
 	request auditRequest,
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+	metadataDefault MetadataConfig,
 ) (auditResponse, error) {
 	configSnapshotPath, cleanupConfigSnapshot, err := snapshotHTTPPolicy(configPath)
 	if err != nil {
@@ -98,9 +100,12 @@ func executeMetadataAwareAudit(
 		return auditResponse{}, err
 	}
 
-	connectTimeout, _, err := ifaceconn.ParseConnectTimeout(*request.Connection)
+	connectTimeout, set, err := ifaceconn.ParseConnectTimeout(*request.Connection)
 	if err != nil {
 		return auditResponse{}, err
+	}
+	if !set {
+		connectTimeout = metadataDefault.ConnectTimeout
 	}
 
 	explicitDialectValue := strings.TrimSpace(string(request.Dialect))

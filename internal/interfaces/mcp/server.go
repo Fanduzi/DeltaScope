@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,9 +19,10 @@ import (
 
 // Config configures the DeltaScope MCP server bootstrap.
 type Config struct {
-	Version         string
-	ConnectionsPath string
-	Logger          *slog.Logger // Optional structured logger. Defaults to stderr JSON if nil.
+	Version                string
+	ConnectionsPath        string
+	Logger                 *slog.Logger // Optional structured logger. Defaults to stderr JSON if nil.
+	MetadataConnectTimeout time.Duration
 }
 
 // NewServer returns a configured MCP server with the core DeltaScope tools registered.

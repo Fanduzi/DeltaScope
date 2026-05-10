@@ -57,14 +57,20 @@ type AuthConfig struct {
 	AllowPaths []string
 }
 
+// MetadataConfig carries runtime-level metadata defaults for the HTTP adapter.
+type MetadataConfig struct {
+	ConnectTimeout time.Duration
+}
+
 type handlerOptions struct {
-	auth           AuthConfig
-	requestTimeout time.Duration
-	logger         *log.Logger
-	auditFn        func(context.Context, deltascope.Request) (deltascope.Result, error)
-	rateLimit      RateLimitConfig
-	metricsEnabled bool
-	trustedProxies []string
+	auth            AuthConfig
+	requestTimeout  time.Duration
+	logger          *log.Logger
+	auditFn         func(context.Context, deltascope.Request) (deltascope.Result, error)
+	rateLimit       RateLimitConfig
+	metricsEnabled  bool
+	trustedProxies  []string
+	metadataDefault MetadataConfig
 }
 
 // HandlerOption configures NewHandler behavior.
@@ -134,6 +140,13 @@ func WithSlogLogger(sl *slog.Logger) HandlerOption {
 	}
 }
 
+// WithMetadataConfig sets runtime-level metadata defaults for the HTTP adapter.
+func WithMetadataConfig(cfg MetadataConfig) HandlerOption {
+	return func(options *handlerOptions) {
+		options.metadataDefault = cfg
+	}
+}
+
 // NewHandler returns the JSON HTTP adapter for DeltaScope.
 func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler, error) {
 	if configPath != "" {
@@ -187,7 +200,7 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 		handleCapabilities(c.Writer)
 	})
 	router.POST("/v1/audit", func(c *gin.Context) {
-		handleAudit(c.Writer, c.Request, configPath, options.auditFn)
+		handleAudit(c.Writer, c.Request, configPath, options.auditFn, options.metadataDefault)
 	})
 	if options.metricsEnabled {
 		router.GET("/metrics", gin.WrapH(metricsHandler))
@@ -479,6 +492,7 @@ func handleAudit(
 	r *http.Request,
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+	metadataDefault MetadataConfig,
 ) {
 	defer r.Body.Close()
 
@@ -505,7 +519,7 @@ func handleAudit(
 	}
 	resultChan := make(chan auditOutput, 1)
 	go func() {
-		response, err := executeAuditRequest(r.Context(), request, configPath, auditFn)
+		response, err := executeAuditRequest(r.Context(), request, configPath, auditFn, metadataDefault)
 		resultChan <- auditOutput{response: response, err: err}
 	}()
 
