@@ -6,6 +6,43 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.63.0] - 2026-05-10
+
+### Added
+
+- Runtime config for server and MCP operations (`-runtime-config` flag): load a YAML file with logging and metadata defaults separate from policy config
+- Runtime config logging: `level`, `format`, `output`, `file`, and `rotation` (max size, max age, max backups, compress)
+- Runtime config metadata: `metadata.connect_timeout` default for server/MCP metadata connections
+- MCP stdout logging remains forbidden to protect the stdio protocol; runtime config can set `output: file` or `output: stderr`, but not `stdout`
+- CLI metadata connect timeout: `--metadata-connect-timeout` flag for explicit per-request timeout
+- HTTP metadata connect timeout: `connection.connect_timeout` in the JSON request body
+- MCP metadata connect timeout: `connect_timeout` on direct and named connection inputs
+- Timeout precedence: request-level `connect_timeout` > runtime `metadata.connect_timeout` > opener default; empty or `0s` means unset/default
+- Runtime config and metadata timeout examples in adoption docs
+
+### Changed
+
+- Public surface and E2E coverage for all new inputs across CLI, HTTP, and MCP surfaces
+- Full E2E matrix coverage: CLI/HTTP/MCP x MySQL/TiDB/PostgreSQL
+- SQL corpus 400/400 targets and fixture execution verified
+
+### Documentation
+
+- Runtime config example for server and MCP
+- CLI, HTTP, and MCP metadata connect timeout examples
+- SQL audit MCP server and TiDB schema change audit adoption pages
+
+### Non-Goals
+
+- No new SQL rules in v0.63.0
+- No SQL rule severity or default policy changes
+- Parser cache remains deferred
+- Runtime config is separate from policy config (`--config`)
+- Runtime config currently applies to `deltascope-server` and `deltascope-mcp`, not ordinary CLI logging
+- SDK `deltascope.Request` does NOT have `MetadataConnectTimeout`; SDK callers that pass their own `MetadataProvider` manage connection behavior themselves
+- DeltaScope does not execute migrations and is not a database proxy or runtime query firewall
+- No live privilege/role validation expansion
+
 ## [v0.62.0] - 2026-05-10
 
 ### Added

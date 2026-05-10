@@ -4,7 +4,36 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.62.0 Logging & Maintainability Pack
+## Latest Completed Milestone: v0.63.0 Adoption & Runtime Config Pack
+
+**Goal:** expose metadata connect timeout publicly across CLI, HTTP, and MCP surfaces; add optional runtime configuration for server and MCP operations; and improve adoption documentation — without changing SQL rule behavior, parser coverage, or public SDK contracts.
+
+### Completed Scope
+
+- Runtime config loader (`internal/infrastructure/runtimeconfig`): YAML-based logging and metadata defaults for server and MCP (`-runtime-config` flag).
+- Runtime config logging: `level`, `format`, `output`, `file`, and `rotation` (max size, max age, max backups, compress).
+- Runtime config metadata: `metadata.connect_timeout` default for server and MCP metadata connections.
+- CLI metadata connect timeout: `--metadata-connect-timeout` flag.
+- HTTP metadata connect timeout: `connection.connect_timeout` in the JSON request body.
+- MCP metadata connect timeout: `connect_timeout` on direct and named connection inputs.
+- Timeout precedence: request-level `connect_timeout` > runtime `metadata.connect_timeout` > opener default; empty or `0s` means unset/default.
+- MCP stdout logging remains forbidden to protect the stdio protocol.
+- Public surface coverage verified across CLI, HTTP, MCP, and SDK.
+- Full E2E matrix: CLI/HTTP/MCP x MySQL/TiDB/PostgreSQL.
+- SQL corpus 400/400 targets and fixture execution verified.
+- Runtime config and metadata timeout examples in adoption docs.
+- Adoption docs: SQL audit MCP server and TiDB schema change audit pages.
+
+### Key Design Decisions
+
+- v0.63.0 is an adoption and runtime config release: no new SQL rule IDs, parser features, or public SDK contract changes.
+- Runtime config is separate from policy config (`--config`) and currently applies to `deltascope-server` and `deltascope-mcp`, not ordinary CLI logging.
+- SDK `deltascope.Request` does NOT have `MetadataConnectTimeout`; SDK callers that pass their own `MetadataProvider` manage connection behavior themselves.
+- MySQL, TiDB, and PostgreSQL rule semantics remain unchanged.
+- Parser cache remains deferred.
+- DeltaScope does not execute migrations and is not a database proxy or runtime query firewall.
+
+## Previous Milestone: v0.62.0 Logging & Maintainability Pack
 
 **Goal:** add structured logging for server and MCP services, log file rotation, metadata connect timeout, and improve code maintainability by splitting large files — without changing rule semantics, parser coverage, or public APIs.
 
@@ -23,7 +52,6 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - v0.62.0 is a logging and maintainability release: no new rule IDs, parser features, or public API changes.
 - MySQL, TiDB, and PostgreSQL rule semantics remain unchanged.
 - Release asset naming and install workflows remain unchanged.
-- Public CLI/HTTP/MCP/SDK metadata timeout configuration remains deferred.
 
 ## Previous Milestone: v0.61.0 Quality & Reliability Pack
 
@@ -694,3 +722,5 @@ Areas that may be addressed in future milestones (no dates committed):
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
 - PostgreSQL composite type attribute lifecycle (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`).
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`/`REVOKE` for non-table objects, `ALTER DEFAULT PRIVILEGES`).
+- Parser cache (deferred from v0.63.0).
+- Possible SDK public metadata opener (deferred from v0.63.0).
