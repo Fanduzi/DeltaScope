@@ -536,6 +536,53 @@ func TestNewLoggerRotateCompressNilDefaultsTrue(t *testing.T) {
 	}
 }
 
+func TestNewLoggerFileOutputPermissionRestricted(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{Output: "file", FilePath: logPath}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	l.Info("permission test")
+
+	fi, err := os.Stat(logPath)
+	if err != nil {
+		t.Fatalf("stat log file: %v", err)
+	}
+	perm := fi.Mode().Perm()
+	if perm&0o077 != 0 {
+		t.Fatalf("log file has group/other bits set: %04o", perm)
+	}
+}
+
+func TestNewLoggerRotateFileOutputPermissionRestricted(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "test.log")
+
+	l, err := NewLogger(Config{
+		Output:   "file",
+		FilePath: logPath,
+		Rotate:   &RotateConfig{Enabled: true},
+	}, "server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	l.Info("permission test")
+
+	// lumberjack creates the file internally; verify no group/other bits.
+	fi, err := os.Stat(logPath)
+	if err != nil {
+		t.Fatalf("stat log file: %v", err)
+	}
+	perm := fi.Mode().Perm()
+	if perm&0o077 != 0 {
+		t.Fatalf("rotated log file has group/other bits set: %04o", perm)
+	}
+}
+
 func TestNewLoggerRotateZeroMaxSizeUsesDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 	logPath := filepath.Join(tmpDir, "test.log")

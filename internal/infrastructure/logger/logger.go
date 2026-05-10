@@ -147,7 +147,7 @@ func writerForOutput(cfg Config, surface string) (io.Writer, error) {
 			return nil, fmt.Errorf("logger: file_path is required when output=file")
 		}
 		dir := filepath.Dir(cfg.FilePath)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return nil, fmt.Errorf("logger: create log directory %q: %w", dir, err)
 		}
 		if cfg.Rotate != nil && cfg.Rotate.Enabled {
@@ -162,7 +162,7 @@ func writerForOutput(cfg Config, surface string) (io.Writer, error) {
 				Compress:   rotateBoolField(cfg.Rotate.Compress, true),
 			}, nil
 		}
-		f, err := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		f, err := os.OpenFile(cfg.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 		if err != nil {
 			return nil, fmt.Errorf("logger: open log file %q: %w", cfg.FilePath, err)
 		}
