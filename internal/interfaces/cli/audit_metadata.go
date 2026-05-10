@@ -30,11 +30,12 @@ type auditRunContext struct {
 func openMetadataClient(options auditConnectionOptions) (metadataClient, error) {
 	if options.Dialect == string(spec.DialectPostgreSQL) {
 		db, err := postgresqlmeta.OpenDB(postgresqlmeta.ConnectionConfig{
-			Host:     options.Host,
-			Port:     options.Port,
-			Socket:   options.Socket,
-			User:     options.User,
-			Password: options.Password,
+			Host:           options.Host,
+			Port:           options.Port,
+			Socket:         options.Socket,
+			User:           options.User,
+			Password:       options.Password,
+			ConnectTimeout: options.ConnectTimeout,
 		})
 		if err != nil {
 			return nil, err
@@ -46,11 +47,12 @@ func openMetadataClient(options auditConnectionOptions) (metadataClient, error) 
 	}
 
 	db, err := mysqlmeta.OpenDB(mysqlmeta.ConnectionConfig{
-		Host:     options.Host,
-		Port:     options.Port,
-		Socket:   options.Socket,
-		User:     options.User,
-		Password: options.Password,
+		Host:           options.Host,
+		Port:           options.Port,
+		Socket:         options.Socket,
+		User:           options.User,
+		Password:       options.Password,
+		ConnectTimeout: options.ConnectTimeout,
 	})
 	if err != nil {
 		return nil, err
@@ -133,12 +135,13 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 		ExplicitSchemaSource: "flag",
 		OpenClient: func(config auditmeta.ConnectionConfig) (auditmeta.Client, error) {
 			return newMetadataClient(auditConnectionOptions{
-				Host:     config.Host,
-				Port:     config.Port,
-				Socket:   config.Socket,
-				User:     config.User,
-				Password: config.Password,
-				Dialect:  string(config.Dialect),
+				Host:           config.Host,
+				Port:           config.Port,
+				Socket:         config.Socket,
+				User:           config.User,
+				Password:       config.Password,
+				Dialect:        string(config.Dialect),
+				ConnectTimeout: config.ConnectTimeout,
 			})
 		},
 	})
@@ -157,11 +160,12 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 
 func toAuditMetaConnection(options auditConnectionOptions, requestedDialect spec.Dialect, explicitDialect bool) auditmeta.ConnectionConfig {
 	connection := auditmeta.ConnectionConfig{
-		Host:     options.Host,
-		Port:     options.Port,
-		Socket:   options.Socket,
-		User:     options.User,
-		Password: options.Password,
+		Host:           options.Host,
+		Port:           options.Port,
+		Socket:         options.Socket,
+		User:           options.User,
+		Password:       options.Password,
+		ConnectTimeout: options.ConnectTimeout,
 	}
 	if explicitDialect {
 		connection.Dialect = requestedDialect

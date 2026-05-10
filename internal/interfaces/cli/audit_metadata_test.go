@@ -9,6 +9,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -267,5 +268,115 @@ func TestAuditCommandUsesQualifiedSchemaWithoutInference(t *testing.T) {
 	}
 	if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "app" || client.tableSnapshotCalls[0].Table != "users" {
 		t.Fatalf("expected qualified schema to flow to snapshot lookup, got %#v", client.tableSnapshotCalls)
+	}
+}
+
+func TestAuditCommandPassesMetadataConnectTimeout(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--metadata-connect-timeout", "5s"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if client.options.ConnectTimeout != 5*time.Second {
+		t.Fatalf("expected ConnectTimeout=5s, got %v", client.options.ConnectTimeout)
+	}
+}
+
+func TestAuditCommandRejectsInvalidMetadataConnectTimeout(t *testing.T) {
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--metadata-connect-timeout", "not-a-duration"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "invalid --metadata-connect-timeout") {
+		t.Fatalf("expected invalid timeout error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsNegativeMetadataConnectTimeout(t *testing.T) {
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--metadata-connect-timeout", "-5s"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "--metadata-connect-timeout must be a non-negative duration") {
+		t.Fatalf("expected non-negative duration error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandAcceptsZeroMetadataConnectTimeoutAsDefault(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--metadata-connect-timeout", "0s"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if client.options.ConnectTimeout != 0 {
+		t.Fatalf("expected ConnectTimeout=0 (unset), got %v", client.options.ConnectTimeout)
+	}
+}
+
+func TestAuditCommandIgnoresMetadataConnectTimeoutWithoutConnection(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--dialect", "mysql", "--metadata-connect-timeout", "5s"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "delete") {
+		t.Fatalf("expected normal offline audit output, got %q", stdout.String())
 	}
 }

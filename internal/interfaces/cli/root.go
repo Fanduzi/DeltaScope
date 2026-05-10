@@ -26,8 +26,9 @@ type cliOptions struct {
 	PasswordFile string
 	AskPassword  bool
 	Schema       string
-	Socket       string
-	ShowVersion  bool
+	Socket                 string
+	MetadataConnectTimeout string
+	ShowVersion            bool
 }
 
 func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writer) *cobra.Command {

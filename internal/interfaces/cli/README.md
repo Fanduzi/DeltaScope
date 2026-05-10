@@ -8,8 +8,8 @@ CLI adapter layer for the DeltaScope application.
 |------|---------------|
 | cli.go | Bridges process execution into the testable CLI executor |
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
-| audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, password prompting, quiet/normal rendering, and fail-threshold logic |
-| audit_metadata.go | Bridges CLI metadata-aware options into the shared metadata-preparation flow and MySQL-compatible client opener |
+| audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, quiet/normal rendering, and fail-threshold logic |
+| audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout) into the shared metadata-preparation flow and MySQL-compatible client opener |
 | rules.go | Implements `rules list`, `rules show`, and `rules search` on top of the shipped rule catalog, including ASCII table rendering for list/search output |
 | config.go | Implements the `config` command group, including `lint` and `show-default` validation/inspection flows |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
@@ -18,7 +18,7 @@ CLI adapter layer for the DeltaScope application.
 | capability_surface_pg.go | Defines the PostgreSQL-tagged build capability surface and root CLI wording |
 | version.go | Implements the `version` subcommand with ASCII logo plus build-version and supported-dialect output |
 | cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, and explanation rendering in Markdown/JSON results |
-| audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, and create-table partial behavior |
+| audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, create-table partial behavior, and metadata-connect-timeout flag validation |
 
 ## Exports
 

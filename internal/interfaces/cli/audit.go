@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -135,6 +136,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
 	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for metadata-aware audit")
+	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "metadata connection timeout for metadata-aware audit, for example 5s or 500ms")
 	return cmd
 }
 
@@ -146,9 +148,10 @@ type auditConnectionOptions struct {
 	Password     string
 	PasswordEnv  string
 	PasswordFile string
-	Schema       string
-	Socket       string
-	Dialect      string
+	Schema        string
+	Socket        string
+	Dialect       string
+	ConnectTimeout time.Duration
 }
 
 var passwordPrompt = promptPassword
@@ -164,6 +167,17 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 		PasswordFile: strings.TrimSpace(options.PasswordFile),
 		Schema:       strings.TrimSpace(options.Schema),
 		Socket:       strings.TrimSpace(options.Socket),
+	}
+
+	if timeout := strings.TrimSpace(options.MetadataConnectTimeout); timeout != "" {
+		d, err := time.ParseDuration(timeout)
+		if err != nil {
+			return auditConnectionOptions{}, newUserError(fmt.Sprintf("invalid --metadata-connect-timeout: %v", err))
+		}
+		if d < 0 {
+			return auditConnectionOptions{}, newUserError("--metadata-connect-timeout must be a non-negative duration such as 5s")
+		}
+		resolved.ConnectTimeout = d
 	}
 
 	if options.AskPassword && hasConfiguredPasswordSource(resolved) {
