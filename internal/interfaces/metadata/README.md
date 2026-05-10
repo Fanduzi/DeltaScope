@@ -11,13 +11,14 @@ Shared direct-connection helpers for metadata-aware interface adapters.
 
 ## Exports
 
-- `ConnectionInput`
+- `ConnectionInput` — includes `connect_timeout` field for metadata connection timeout
 - `ErrorKind`
 - `ConnectionInputError`
 - `ResolveConnectionOptions`
 - `IsConnectionInputError(err)`
-- `ValidateConnectionInput(input)`
+- `ValidateConnectionInput(input)` — validates connection shape including `connect_timeout` when present
 - `ResolvePassword(input, options)`
+- `ParseConnectTimeout(input)` — parses `ConnectionInput.ConnectTimeout` into `time.Duration`
 - `ExpandHome(path)`
 
 ## Notes

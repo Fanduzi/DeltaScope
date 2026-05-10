@@ -15,7 +15,7 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
 ## Exports
 
 - `Client`
-- `ConnectionConfig`
+- `ConnectionConfig` — includes `ConnectTimeout` for metadata connection timeout
 - `Request`
 - `PreparedAudit`
 - `Prepare(ctx, request)`

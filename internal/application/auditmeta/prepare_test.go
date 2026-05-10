@@ -10,6 +10,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -395,3 +396,34 @@ func TestPrepareDefaultPathFailsFastOnCanceledContext(t *testing.T) {
 
 var _ Client = (*fakeClient)(nil)
 var _ appaudit.MetadataProvider = (*fakeClient)(nil)
+
+func TestPreparePassesConnectTimeoutToInjectedOpenClient(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	var capturedConfig ConnectionConfig
+	prepared, err := Prepare(context.Background(), Request{
+		SQL: "delete from users",
+		Connection: ConnectionConfig{
+			Host:           "127.0.0.1",
+			Port:           3307,
+			User:           "root",
+			ConnectTimeout: 5 * time.Second,
+		},
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			capturedConfig = config
+			return client, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare metadata audit: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if capturedConfig.ConnectTimeout != 5*time.Second {
+		t.Errorf("expected ConnectTimeout=5s in injected config, got %v", capturedConfig.ConnectTimeout)
+	}
+}

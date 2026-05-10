@@ -9,6 +9,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestValidateConnectionInputRejectsEmptyConnection(t *testing.T) {
@@ -160,5 +161,115 @@ func TestIsConnectionInputErrorRejectsPlainTextMatch(t *testing.T) {
 
 	if IsConnectionInputError(errors.New("connection must include at least one non-password field")) {
 		t.Fatalf("expected plain text error to be rejected without shared type")
+	}
+}
+
+func TestValidateConnectionInputAcceptsConnectTimeoutWithHostUser(t *testing.T) {
+	t.Parallel()
+
+	err := ValidateConnectionInput(ConnectionInput{
+		Host:          "127.0.0.1",
+		User:          "root",
+		ConnectTimeout: "5s",
+	})
+	if err != nil {
+		t.Fatalf("expected valid connection with host/user and connect_timeout, got: %v", err)
+	}
+}
+
+func TestValidateConnectionInputRejectsConnectTimeoutOnly(t *testing.T) {
+	t.Parallel()
+
+	err := ValidateConnectionInput(ConnectionInput{
+		ConnectTimeout: "5s",
+	})
+	if err == nil {
+		t.Fatal("expected error when only connect_timeout is set")
+	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindValidation {
+		t.Fatalf("expected typed validation error, got %#v", err)
+	}
+}
+
+func TestValidateConnectionInputRejectsInvalidConnectTimeout(t *testing.T) {
+	t.Parallel()
+
+	err := ValidateConnectionInput(ConnectionInput{
+		Host:          "127.0.0.1",
+		User:          "root",
+		ConnectTimeout: "not-a-duration",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid connect_timeout")
+	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindValidation {
+		t.Fatalf("expected typed validation error, got %#v", err)
+	}
+	if got := err.Error(); got != "connection connect_timeout must be a valid positive duration such as 5s" {
+		t.Fatalf("unexpected error message: %q", got)
+	}
+}
+
+func TestValidateConnectionInputRejectsNegativeConnectTimeout(t *testing.T) {
+	t.Parallel()
+
+	err := ValidateConnectionInput(ConnectionInput{
+		Host:          "127.0.0.1",
+		User:          "root",
+		ConnectTimeout: "-5s",
+	})
+	if err == nil {
+		t.Fatal("expected error for negative connect_timeout")
+	}
+	var inputErr *ConnectionInputError
+	if !errors.As(err, &inputErr) || inputErr.Kind != ErrorKindValidation {
+		t.Fatalf("expected typed validation error, got %#v", err)
+	}
+}
+
+func TestParseConnectTimeoutReturnsParsedDuration(t *testing.T) {
+	t.Parallel()
+
+	d, ok, err := ParseConnectTimeout(ConnectionInput{ConnectTimeout: "5s"})
+	if err != nil {
+		t.Fatalf("ParseConnectTimeout: %v", err)
+	}
+	if !ok {
+		t.Error("expected ok=true for 5s")
+	}
+	if d != 5*time.Second {
+		t.Errorf("expected 5s, got %v", d)
+	}
+}
+
+func TestParseConnectTimeoutTreatsEmptyAsUnset(t *testing.T) {
+	t.Parallel()
+
+	d, ok, err := ParseConnectTimeout(ConnectionInput{})
+	if err != nil {
+		t.Fatalf("ParseConnectTimeout: %v", err)
+	}
+	if ok {
+		t.Error("expected ok=false for empty")
+	}
+	if d != 0 {
+		t.Errorf("expected 0, got %v", d)
+	}
+}
+
+func TestParseConnectTimeoutTreatsZeroAsUnset(t *testing.T) {
+	t.Parallel()
+
+	d, ok, err := ParseConnectTimeout(ConnectionInput{ConnectTimeout: "0s"})
+	if err != nil {
+		t.Fatalf("ParseConnectTimeout: %v", err)
+	}
+	if ok {
+		t.Error("expected ok=false for 0s")
+	}
+	if d != 0 {
+		t.Errorf("expected 0, got %v", d)
 	}
 }

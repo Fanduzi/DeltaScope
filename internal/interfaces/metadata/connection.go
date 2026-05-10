@@ -11,6 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 )
 
 // ErrorKind classifies shared direct-connection input failures.
@@ -45,15 +48,16 @@ func IsConnectionInputError(err error) bool {
 
 // ConnectionInput describes one direct metadata-aware connection input.
 type ConnectionInput struct {
-	Host         string `json:"host,omitempty" yaml:"host"`
-	Port         int    `json:"port,omitempty"`
-	Socket       string `json:"socket,omitempty" yaml:"socket"`
-	User         string `json:"user,omitempty" yaml:"user"`
-	Schema       string `json:"schema,omitempty" yaml:"schema"`
-	Dialect      string `json:"dialect,omitempty" yaml:"dialect"`
-	Password     string `json:"password,omitempty" yaml:"password"`
-	PasswordEnv  string `json:"password_env,omitempty" yaml:"password_env"`
-	PasswordFile string `json:"password_file,omitempty" yaml:"password_file"`
+	Host          string `json:"host,omitempty" yaml:"host"`
+	Port          int    `json:"port,omitempty"`
+	Socket        string `json:"socket,omitempty" yaml:"socket"`
+	User          string `json:"user,omitempty" yaml:"user"`
+	Schema        string `json:"schema,omitempty" yaml:"schema"`
+	Dialect       string `json:"dialect,omitempty" yaml:"dialect"`
+	Password      string `json:"password,omitempty" yaml:"password"`
+	PasswordEnv   string `json:"password_env,omitempty" yaml:"password_env"`
+	PasswordFile  string `json:"password_file,omitempty" yaml:"password_file"`
+	ConnectTimeout string `json:"connect_timeout,omitempty" yaml:"connect_timeout"`
 }
 
 // ResolveConnectionOptions configures shared connection helper dependencies.
@@ -69,7 +73,8 @@ func ValidateConnectionInput(input ConnectionInput) error {
 		strings.TrimSpace(input.Socket) == "" &&
 		strings.TrimSpace(input.User) == "" &&
 		strings.TrimSpace(input.Schema) == "" &&
-		strings.TrimSpace(input.Dialect) == "" {
+		strings.TrimSpace(input.Dialect) == "" &&
+		strings.TrimSpace(input.ConnectTimeout) == "" {
 		return newConnectionInputError(ErrorKindValidation, "connection must include at least one non-password field", nil)
 	}
 	if strings.TrimSpace(input.Socket) == "" && (strings.TrimSpace(input.Host) == "" || strings.TrimSpace(input.User) == "") {
@@ -80,6 +85,11 @@ func ValidateConnectionInput(input ConnectionInput) error {
 	}
 	if strings.TrimSpace(input.Socket) != "" && (strings.TrimSpace(input.Host) != "" || input.Port != 0) {
 		return newConnectionInputError(ErrorKindValidation, "connection socket cannot be combined with host/port TCP options", nil)
+	}
+	if strings.TrimSpace(input.ConnectTimeout) != "" {
+		if _, _, err := ParseConnectTimeout(input); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -131,6 +141,16 @@ func newConnectionInputError(kind ErrorKind, message string, err error) error {
 		Message: message,
 		Err:     err,
 	}
+}
+
+// ParseConnectTimeout parses the ConnectTimeout field from a ConnectionInput.
+// Empty/zero returns (0, false, nil). Invalid/negative durations return a ConnectionInputError.
+func ParseConnectTimeout(input ConnectionInput) (time.Duration, bool, error) {
+	d, ok, err := runtimeconfig.ParseConnectTimeout(strings.TrimSpace(input.ConnectTimeout))
+	if err != nil {
+		return 0, false, newConnectionInputError(ErrorKindValidation, "connection connect_timeout must be a valid positive duration such as 5s", err)
+	}
+	return d, ok, nil
 }
 
 // ExpandHome expands a leading ~ in path values.

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -29,12 +30,13 @@ type Client interface {
 
 // ConnectionConfig describes one metadata-aware connection opening request.
 type ConnectionConfig struct {
-	Host     string
-	Port     int
-	Socket   string
-	User     string
-	Password string
-	Dialect  spec.Dialect
+	Host           string
+	Port           int
+	Socket         string
+	User           string
+	Password       string
+	Dialect        spec.Dialect
+	ConnectTimeout time.Duration
 }
 
 // Request describes one shared metadata-aware audit preparation request.
@@ -266,11 +268,12 @@ func openPreparedClientContext(ctx context.Context, config ConnectionConfig) (Cl
 func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Client, error) {
 	if config.Dialect == spec.DialectPostgreSQL {
 		db, err := postgresqlmeta.OpenDBContext(ctx, postgresqlmeta.ConnectionConfig{
-			Host:     config.Host,
-			Port:     config.Port,
-			Socket:   config.Socket,
-			User:     config.User,
-			Password: config.Password,
+			Host:           config.Host,
+			Port:           config.Port,
+			Socket:         config.Socket,
+			User:           config.User,
+			Password:       config.Password,
+			ConnectTimeout: config.ConnectTimeout,
 		})
 		if err != nil {
 			return nil, err
@@ -282,11 +285,12 @@ func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Clien
 	}
 
 	db, err := mysqlmeta.OpenDBContext(ctx, mysqlmeta.ConnectionConfig{
-		Host:     config.Host,
-		Port:     config.Port,
-		Socket:   config.Socket,
-		User:     config.User,
-		Password: config.Password,
+		Host:           config.Host,
+		Port:           config.Port,
+		Socket:         config.Socket,
+		User:           config.User,
+		Password:       config.Password,
+		ConnectTimeout: config.ConnectTimeout,
 	})
 	if err != nil {
 		return nil, err
