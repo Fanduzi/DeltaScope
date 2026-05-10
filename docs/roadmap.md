@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.61.0 Quality & Reliability Pack
+## Latest Completed Milestone: v0.62.0 Logging & Maintainability Pack
+
+**Goal:** add structured logging for server and MCP services, log file rotation, metadata connect timeout, and improve code maintainability by splitting large files — without changing rule semantics, parser coverage, or public APIs.
+
+### Completed Scope
+
+- Structured logging foundation with server and MCP logging flags (`-log-output`, `-log-level`, `-log-file`).
+- Log file rotation support with configurable max size, max age, max backups, and compress options.
+- Metadata connect timeout configuration (`MetadataConnectTimeout` on `Request`, `--metadata-connect-timeout` CLI flag).
+- Log file permissions restricted to owner-only (`0750` for directories, `0600` for files).
+- `defaults.go` split into 5 files by rule category; `extractor.go` split into 7 files by statement type.
+- Parser benchmark coverage for hot paths.
+- Context propagation fixes in boundary error wrapping and impact estimation.
+
+### Key Design Decisions
+
+- v0.62.0 is a logging and maintainability release: no new rule IDs, parser features, or public API changes.
+- MySQL, TiDB, and PostgreSQL rule semantics remain unchanged.
+- Release asset naming and install workflows remain unchanged.
+
+## Previous Milestone: v0.61.0 Quality & Reliability Pack
 
 **Goal:** improve runtime reliability, static-analysis discipline, context propagation, test throughput, and hot-path performance without changing rule semantics, parser coverage, public APIs, or release asset contracts.
 

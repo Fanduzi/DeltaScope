@@ -6,6 +6,29 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.62.0] - 2026-05-10
+
+### Added
+
+- Structured logging foundation: server (`-log-output`, `-log-level`, `-log-file`) and MCP (`-log-output`, `-log-level`, `-log-file`) logging flags
+- Log file rotation support with configurable max size, max age, max backups, and compress options
+- Metadata connect timeout: `MetadataConnectTimeout` field on `Request` for library consumers, `--metadata-connect-timeout` flag for CLI
+- Parser benchmark coverage for hot paths
+
+### Changed
+
+- Code maintainability: `defaults.go` split into 5 files by rule category, `extractor.go` split into 7 files by statement type
+- Context propagation improved in boundary error wrapping and impact estimation
+
+### Fixed
+
+- Log file and directory permissions restricted to owner-only (`0750` for directories, `0600` for files)
+
+### Documentation
+
+- SQL audit articles for CSDN/Zhihu/Juejin (Chinese and English versions)
+- DeltaScope name links updated to official site across articles
+
 ## [v0.61.0] - 2026-05-08
 
 ### Added
