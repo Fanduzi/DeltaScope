@@ -1,8 +1,8 @@
 # DeltaScope Quality Improvement Plan (May 2026)
 
-**Date**: 2026-05-06  
-**Last Updated**: 2026-05-09 (archived after v0.61.0 quality release)  
-**Status**: Historical plan — major items landed in v0.61.0  
+**Date**: 2026-05-06
+**Last Updated**: 2026-05-09 (archived after v0.61.0 quality release)
+**Status**: Historical plan — major items landed in v0.61.0
 **Score**: 78/100 → Target: 85-90/100 → v0.61.0 quality baseline
 
 ## Executive Summary
