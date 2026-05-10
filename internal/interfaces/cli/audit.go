@@ -141,16 +141,16 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 }
 
 type auditConnectionOptions struct {
-	Host         string
-	Port         int
-	PortSet      bool
-	User         string
-	Password     string
-	PasswordEnv  string
-	PasswordFile string
-	Schema        string
-	Socket        string
-	Dialect       string
+	Host           string
+	Port           int
+	PortSet        bool
+	User           string
+	Password       string
+	PasswordEnv    string
+	PasswordFile   string
+	Schema         string
+	Socket         string
+	Dialect        string
 	ConnectTimeout time.Duration
 }
 

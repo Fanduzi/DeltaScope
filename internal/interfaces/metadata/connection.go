@@ -48,15 +48,15 @@ func IsConnectionInputError(err error) bool {
 
 // ConnectionInput describes one direct metadata-aware connection input.
 type ConnectionInput struct {
-	Host          string `json:"host,omitempty" yaml:"host"`
-	Port          int    `json:"port,omitempty"`
-	Socket        string `json:"socket,omitempty" yaml:"socket"`
-	User          string `json:"user,omitempty" yaml:"user"`
-	Schema        string `json:"schema,omitempty" yaml:"schema"`
-	Dialect       string `json:"dialect,omitempty" yaml:"dialect"`
-	Password      string `json:"password,omitempty" yaml:"password"`
-	PasswordEnv   string `json:"password_env,omitempty" yaml:"password_env"`
-	PasswordFile  string `json:"password_file,omitempty" yaml:"password_file"`
+	Host           string `json:"host,omitempty" yaml:"host"`
+	Port           int    `json:"port,omitempty"`
+	Socket         string `json:"socket,omitempty" yaml:"socket"`
+	User           string `json:"user,omitempty" yaml:"user"`
+	Schema         string `json:"schema,omitempty" yaml:"schema"`
+	Dialect        string `json:"dialect,omitempty" yaml:"dialect"`
+	Password       string `json:"password,omitempty" yaml:"password"`
+	PasswordEnv    string `json:"password_env,omitempty" yaml:"password_env"`
+	PasswordFile   string `json:"password_file,omitempty" yaml:"password_file"`
 	ConnectTimeout string `json:"connect_timeout,omitempty" yaml:"connect_timeout"`
 }
 

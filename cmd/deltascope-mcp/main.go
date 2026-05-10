@@ -108,25 +108,6 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 	return 0
 }
 
-func mcpLoggerConfig(level, format, output, file string, rotate bool, maxMB, maxBackups, maxAge int, compress bool) logger.Config {
-	cfg := logger.Config{
-		Level:    level,
-		Format:   format,
-		Output:   output,
-		FilePath: file,
-	}
-	if rotate {
-		cfg.Rotate = &logger.RotateConfig{
-			Enabled:    true,
-			MaxSizeMB:  maxMB,
-			MaxBackups: maxBackups,
-			MaxAgeDays: maxAge,
-			Compress:   &compress,
-		}
-	}
-	return cfg
-}
-
 type loggingFlagSet struct {
 	level      string
 	format     string

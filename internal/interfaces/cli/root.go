@@ -13,19 +13,19 @@ import (
 )
 
 type cliOptions struct {
-	ConfigPath   string
-	Dialect      string
-	Format       string
-	FailOn       string
-	Quiet        bool
-	Host         string
-	Port         int
-	User         string
-	Password     string
-	PasswordEnv  string
-	PasswordFile string
-	AskPassword  bool
-	Schema       string
+	ConfigPath             string
+	Dialect                string
+	Format                 string
+	FailOn                 string
+	Quiet                  bool
+	Host                   string
+	Port                   int
+	User                   string
+	Password               string
+	PasswordEnv            string
+	PasswordFile           string
+	AskPassword            bool
+	Schema                 string
 	Socket                 string
 	MetadataConnectTimeout string
 	ShowVersion            bool

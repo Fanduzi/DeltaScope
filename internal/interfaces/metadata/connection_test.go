@@ -168,8 +168,8 @@ func TestValidateConnectionInputAcceptsConnectTimeoutWithHostUser(t *testing.T) 
 	t.Parallel()
 
 	err := ValidateConnectionInput(ConnectionInput{
-		Host:          "127.0.0.1",
-		User:          "root",
+		Host:           "127.0.0.1",
+		User:           "root",
 		ConnectTimeout: "5s",
 	})
 	if err != nil {
@@ -196,8 +196,8 @@ func TestValidateConnectionInputRejectsInvalidConnectTimeout(t *testing.T) {
 	t.Parallel()
 
 	err := ValidateConnectionInput(ConnectionInput{
-		Host:          "127.0.0.1",
-		User:          "root",
+		Host:           "127.0.0.1",
+		User:           "root",
 		ConnectTimeout: "not-a-duration",
 	})
 	if err == nil {
@@ -216,8 +216,8 @@ func TestValidateConnectionInputRejectsNegativeConnectTimeout(t *testing.T) {
 	t.Parallel()
 
 	err := ValidateConnectionInput(ConnectionInput{
-		Host:          "127.0.0.1",
-		User:          "root",
+		Host:           "127.0.0.1",
+		User:           "root",
 		ConnectTimeout: "-5s",
 	})
 	if err == nil {
