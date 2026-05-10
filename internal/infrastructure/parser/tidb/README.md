@@ -7,7 +7,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing and parser-warning co
 | File | Responsibility |
 |------|---------------|
 | parser.go | Parses SQL text and preserves raw statement nodes plus parser warnings |
-| extractor.go | Wraps TiDB AST nodes in parser-neutral extractors and performs TiDB-specific statement extraction |
+| extractor.go | Wraps TiDB AST nodes in parser-neutral extractors and performs TiDB-specific statement extraction including database/schema lifecycle DDL (CREATE/DROP DATABASE/SCHEMA normalized to create_schema/drop_schema with ObjectType="database") |
 | parser_test.go | Verifies multi-statement parsing, parse-failure behavior, and extractor-backed wrapping |
 
 ## Exports

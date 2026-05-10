@@ -68,6 +68,10 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		statement.DDL = extractDropTable(node)
 	case *ast.TruncateTableStmt:
 		statement.DDL = extractTruncateTable(node)
+	case *ast.CreateDatabaseStmt:
+		statement.DDL = extractCreateDatabase(node)
+	case *ast.DropDatabaseStmt:
+		statement.DDL = extractDropDatabase(node)
 	case *ast.InsertStmt:
 		statement.DML = extractInsert(node)
 	case *ast.UpdateStmt:
@@ -102,7 +106,9 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.DropTableStmt,
 		*ast.DropIndexStmt,
 		*ast.RenameTableStmt,
-		*ast.TruncateTableStmt:
+		*ast.TruncateTableStmt,
+		*ast.CreateDatabaseStmt,
+		*ast.DropDatabaseStmt:
 		return spec.KindDDL
 	case *ast.InsertStmt,
 		*ast.UpdateStmt,
@@ -194,6 +200,43 @@ func extractTruncateTable(stmt *ast.TruncateTableStmt) *spec.DDL {
 		ddl.Table = &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}
 	}
 	return ddl
+}
+
+func extractCreateDatabase(stmt *ast.CreateDatabaseStmt) *spec.DDL {
+	options := map[string]string{}
+	if stmt.IfNotExists {
+		options["if_not_exists"] = "true"
+	}
+	for _, opt := range stmt.Options {
+		if opt == nil {
+			continue
+		}
+		switch opt.Tp {
+		case ast.DatabaseOptionCharset:
+			options["charset"] = opt.Value
+		case ast.DatabaseOptionCollate:
+			options["collate"] = opt.Value
+		}
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationCreateSchema,
+		ObjectName: stmt.Name.L,
+		ObjectType: "database",
+		Options:    options,
+	}
+}
+
+func extractDropDatabase(stmt *ast.DropDatabaseStmt) *spec.DDL {
+	options := map[string]string{}
+	if stmt.IfExists {
+		options["if_exists"] = "true"
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationDropSchema,
+		ObjectName: stmt.Name.L,
+		ObjectType: "database",
+		Options:    options,
+	}
 }
 
 func extractAlterSpecs(specification *ast.AlterTableSpec) []spec.Alter {

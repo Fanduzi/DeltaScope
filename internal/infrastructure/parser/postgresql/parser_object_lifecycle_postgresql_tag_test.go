@@ -679,3 +679,96 @@ func TestPGExtractorAlterTableDetachPartitionNormalized(t *testing.T) {
 		t.Fatalf("expected name 'measurement_y2026m04', got %q", alter.Name)
 	}
 }
+
+func TestPGExtractorSchemaLifecycleCreateSchemaNormalized(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		Name        string
+		SQL         string
+		ObjectName  string
+		ObjectType  string
+		IfNotExists bool
+	}{
+		{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", ObjectName: "app", ObjectType: "schema"},
+		{Name: "CREATE SCHEMA IF NOT EXISTS", SQL: "CREATE SCHEMA IF NOT EXISTS app", ObjectName: "app", ObjectType: "schema", IfNotExists: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			p := New()
+			result, err := p.Parse(context.Background(), tc.SQL)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+			if extractErr != nil {
+				t.Fatalf("extract: %v", extractErr)
+			}
+			if stmt.Unsupported != nil {
+				t.Fatalf("expected supported, got unsupported: %s: %s", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+			}
+			if stmt.Kind != spec.KindDDL {
+				t.Fatalf("expected kind DDL, got %q", stmt.Kind)
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL metadata")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationCreateSchema {
+				t.Fatalf("expected operation create_schema, got %q", stmt.DDL.Operation)
+			}
+			if stmt.DDL.ObjectName != tc.ObjectName {
+				t.Fatalf("expected object_name %q, got %q", tc.ObjectName, stmt.DDL.ObjectName)
+			}
+			if stmt.DDL.ObjectType != tc.ObjectType {
+				t.Fatalf("expected object_type %q, got %q", tc.ObjectType, stmt.DDL.ObjectType)
+			}
+			if tc.IfNotExists && stmt.DDL.Options["if_not_exists"] != "true" {
+				t.Fatalf("expected if_not_exists=true, got %q", stmt.DDL.Options["if_not_exists"])
+			}
+			if !tc.IfNotExists && stmt.DDL.Options["if_not_exists"] == "true" {
+				t.Fatal("did not expect if_not_exists=true")
+			}
+		})
+	}
+}
+
+func TestPGExtractorSchemaLifecycleUnsupportedBoundaries(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		Name            string
+		SQL             string
+		ExpectedFeature string
+	}{
+		{Name: "CREATE SCHEMA AUTHORIZATION", SQL: "CREATE SCHEMA AUTHORIZATION app_owner", ExpectedFeature: "create_schema_authorization"},
+		{Name: "CREATE SCHEMA name AUTHORIZATION", SQL: "CREATE SCHEMA app AUTHORIZATION app_owner", ExpectedFeature: "create_schema_authorization"},
+		{Name: "CREATE SCHEMA nested table", SQL: "CREATE SCHEMA app CREATE TABLE users (id bigint)", ExpectedFeature: "create_schema_nested_objects"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			p := New()
+			result, err := p.Parse(context.Background(), tc.SQL)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+			if extractErr != nil {
+				t.Fatalf("extract: %v", extractErr)
+			}
+			if stmt.Unsupported == nil {
+				t.Fatal("expected unsupported statement")
+			}
+			if stmt.Unsupported.Feature != tc.ExpectedFeature {
+				t.Fatalf("expected unsupported feature %q, got %q", tc.ExpectedFeature, stmt.Unsupported.Feature)
+			}
+		})
+	}
+}

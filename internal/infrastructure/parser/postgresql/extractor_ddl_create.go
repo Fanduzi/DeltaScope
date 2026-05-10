@@ -78,6 +78,12 @@ func extractCreateSchemaStmt(statement spec.Statement, stmt *pg_query.CreateSche
 	if stmt == nil {
 		return unsupportedStatement(statement, "create_schema", "postgresql create schema statement payload is missing")
 	}
+	if stmt.GetAuthrole() != nil {
+		return unsupportedStatement(statement, "create_schema_authorization", "postgresql CREATE SCHEMA AUTHORIZATION is unsupported")
+	}
+	if len(stmt.GetSchemaElts()) > 0 {
+		return unsupportedStatement(statement, "create_schema_nested_objects", "postgresql CREATE SCHEMA with nested objects is unsupported")
+	}
 	options := map[string]string{}
 	if stmt.GetIfNotExists() {
 		options["if_not_exists"] = "true"

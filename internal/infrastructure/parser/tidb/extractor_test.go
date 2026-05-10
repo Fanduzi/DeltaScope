@@ -416,3 +416,99 @@ func findAlter(t *testing.T, alters []spec.Alter, action string, name string) sp
 	t.Fatalf("expected alter action %q with name %q in %#v", action, name, alters)
 	return spec.Alter{}
 }
+
+func TestExtractorDatabaseLifecycleCreateDatabase(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		Name        string
+		SQL         string
+		ObjectName  string
+		IfNotExists bool
+		Charset     string
+		Collate     string
+	}{
+		{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", ObjectName: "app"},
+		{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", ObjectName: "app", IfNotExists: true},
+		{Name: "CREATE SCHEMA synonym", SQL: "CREATE SCHEMA app", ObjectName: "app"},
+		{Name: "CREATE SCHEMA IF NOT EXISTS synonym", SQL: "CREATE SCHEMA IF NOT EXISTS app", ObjectName: "app", IfNotExists: true},
+		{Name: "CREATE DATABASE charset", SQL: "CREATE DATABASE app CHARACTER SET utf8mb4", ObjectName: "app", Charset: "utf8mb4"},
+		{Name: "CREATE DATABASE collate", SQL: "CREATE DATABASE app COLLATE utf8mb4_bin", ObjectName: "app", Collate: "utf8mb4_bin"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			stmt := extractSingleStatement(t, tc.SQL)
+			if stmt.Kind != spec.KindDDL {
+				t.Fatalf("expected kind DDL, got %q", stmt.Kind)
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL metadata")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationCreateSchema {
+				t.Fatalf("expected operation create_schema, got %q", stmt.DDL.Operation)
+			}
+			if stmt.DDL.ObjectType != "database" {
+				t.Fatalf("expected object_type database, got %q", stmt.DDL.ObjectType)
+			}
+			if stmt.DDL.ObjectName != tc.ObjectName {
+				t.Fatalf("expected object_name %q, got %q", tc.ObjectName, stmt.DDL.ObjectName)
+			}
+			if tc.IfNotExists && stmt.DDL.Options["if_not_exists"] != "true" {
+				t.Fatalf("expected if_not_exists=true, got %q", stmt.DDL.Options["if_not_exists"])
+			}
+			if !tc.IfNotExists && stmt.DDL.Options["if_not_exists"] == "true" {
+				t.Fatal("did not expect if_not_exists=true")
+			}
+			if tc.Charset != "" && stmt.DDL.Options["charset"] != tc.Charset {
+				t.Fatalf("expected charset=%q, got %q", tc.Charset, stmt.DDL.Options["charset"])
+			}
+			if tc.Collate != "" && stmt.DDL.Options["collate"] != tc.Collate {
+				t.Fatalf("expected collate=%q, got %q", tc.Collate, stmt.DDL.Options["collate"])
+			}
+		})
+	}
+}
+
+func TestExtractorDatabaseLifecycleDropDatabase(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		Name       string
+		SQL        string
+		ObjectName string
+		IfExists   bool
+	}{
+		{Name: "DROP DATABASE", SQL: "DROP DATABASE app", ObjectName: "app"},
+		{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", ObjectName: "app", IfExists: true},
+		{Name: "DROP SCHEMA synonym", SQL: "DROP SCHEMA app", ObjectName: "app"},
+		{Name: "DROP SCHEMA IF EXISTS synonym", SQL: "DROP SCHEMA IF EXISTS app", ObjectName: "app", IfExists: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			stmt := extractSingleStatement(t, tc.SQL)
+			if stmt.Kind != spec.KindDDL {
+				t.Fatalf("expected kind DDL, got %q", stmt.Kind)
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL metadata")
+			}
+			if stmt.DDL.Operation != spec.DDLOperationDropSchema {
+				t.Fatalf("expected operation drop_schema, got %q", stmt.DDL.Operation)
+			}
+			if stmt.DDL.ObjectType != "database" {
+				t.Fatalf("expected object_type database, got %q", stmt.DDL.ObjectType)
+			}
+			if stmt.DDL.ObjectName != tc.ObjectName {
+				t.Fatalf("expected object_name %q, got %q", tc.ObjectName, stmt.DDL.ObjectName)
+			}
+			if tc.IfExists && stmt.DDL.Options["if_exists"] != "true" {
+				t.Fatalf("expected if_exists=true, got %q", stmt.DDL.Options["if_exists"])
+			}
+			if !tc.IfExists && stmt.DDL.Options["if_exists"] == "true" {
+				t.Fatal("did not expect if_exists=true")
+			}
+		})
+	}
+}
