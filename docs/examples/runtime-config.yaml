@@ -1,0 +1,38 @@
+# DeltaScope Runtime Config Example
+#
+# Runtime config controls process-level behavior for long-running services
+# (deltascope-server and deltascope-mcp). It does NOT control audit rules.
+#
+# Policy config (rule behavior, severities, thresholds) is loaded separately
+# via the --config flag and is unrelated to this file.
+#
+# Usage:
+#   deltascope-server -runtime-config /etc/deltascope/runtime.yaml
+#   deltascope-mcp -runtime-config /etc/deltascope/runtime.yaml
+#
+# Runtime config precedence for each field:
+#   1. Explicit command-line flags (highest)
+#   2. Runtime config file values
+#   3. Hardcoded defaults (lowest)
+
+# Logging controls for the server/MCP process.
+# CLI `deltascope` audit output is not affected by this section.
+logging:
+  level: info          # debug | info | warn | error
+  format: json         # json | text
+  output: file         # stderr | file  (stdout is forbidden for MCP)
+  file: /var/log/deltascope/server.log
+
+  # Log file rotation (only applies when output: file).
+  rotate:
+    enabled: true
+    max_size_mb: 100   # rotate when file exceeds this size
+    max_backups: 3     # number of rotated files to keep
+    max_age_days: 30   # days to retain rotated files
+    compress: true     # gzip rotated files
+
+# Metadata defaults for database connections made by this process.
+# Request-level connect_timeout overrides these defaults.
+# Empty or "0s" means no default is set; the internal fallback is used.
+metadata:
+  connect_timeout: 5s  # e.g. 500ms, 5s, 1m

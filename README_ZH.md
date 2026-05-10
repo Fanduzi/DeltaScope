@@ -189,6 +189,26 @@ deltascope audit \
   --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
+带连接超时的元数据感知审核（MySQL）：
+
+```bash
+deltascope audit \
+  --sql "alter table users add column email varchar(255)" \
+  --dialect mysql \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app \
+  --metadata-connect-timeout 5s
+```
+
+带连接超时的 PostgreSQL 元数据感知审核：
+
+```bash
+deltascope audit \
+  --sql "alter table orders add column status text not null" \
+  --dialect postgresql \
+  --host 127.0.0.1 --port 5432 --user root --ask-password --schema app \
+  --metadata-connect-timeout 5s
+```
+
 查看所有内置规则：
 
 ```bash
@@ -226,6 +246,33 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 ```
 
 如果你需要通用 stdio TOML、原生 `deltascope-mcp`、direct connection、`connection_ref`、代理配置和常见错误说明，请看 [使用 DeltaScope MCP](docs/recipe/use-deltascope-mcp.zh-CN.md)。
+
+### MCP 使用 runtime config
+
+使用 runtime config 启动 `deltascope-mcp` 以设置日志和元数据默认值：
+
+```bash
+deltascope-mcp -runtime-config /etc/deltascope/runtime.yaml
+```
+
+MCP 禁止 stdout 日志输出以保护 stdio 协议。Runtime config 可以设置 `output: file` 或 `output: stderr`，不能设置 `stdout`。
+
+### MCP 命名连接带 connect_timeout
+
+```yaml
+# ~/.config/deltascope/connections.yaml
+connections:
+  local_mysql:
+    host: 127.0.0.1
+    port: 3306
+    user: root
+    password_env: MYSQL_PASSWORD
+    schema: app
+    dialect: mysql
+    connect_timeout: 5s
+```
+
+命名连接和直接连接输入都支持 `connect_timeout`。留空或 `0s` 使用 runtime config 默认值。MySQL、TiDB 和 PostgreSQL 都支持 metadata connect timeout。
 
 ## AI Agent Skill
 
@@ -317,7 +364,34 @@ make pg-confidence-gates # PostgreSQL confidence 总入口
 deltascope-server --port 8080
 ```
 
+使用 runtime config 启动（日志和元数据默认值）：
+
+```bash
+deltascope-server --port 8080 -runtime-config /etc/deltascope/runtime.yaml
+```
+
+完整 runtime config 示例见 [docs/examples/runtime-config.yaml](docs/examples/runtime-config.yaml)。
+
 `POST /v1/audit` 同时支持离线 JSON 审核请求和带可选 `connection` 块的元数据感知请求。HTTP 响应会保留公开的审核结果主体，并额外返回 `context` 块。完整协议见 [HTTP API 参考](docs/reference/http-api.zh-CN.md)。
+
+### HTTP 元数据感知请求带 connect_timeout
+
+```json
+{
+  "sql": "alter table users add column email varchar(255)",
+  "dialect": "mysql",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password_env": "MYSQL_PASSWORD",
+    "schema": "app",
+    "connect_timeout": "5s"
+  }
+}
+```
+
+`connection.connect_timeout` 接受 Go duration 字符串（`500ms`、`5s`、`1m`），会覆盖 runtime config 默认值。留空或 `0s` 使用 runtime config 默认值。无效或负值返回 `400` 错误。MySQL、TiDB 和 PostgreSQL 都支持 metadata connect timeout。
 
 ## Library 用法
 

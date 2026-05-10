@@ -191,6 +191,26 @@ deltascope audit \
   --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
+Metadata-aware audit with an explicit connect timeout (MySQL):
+
+```bash
+deltascope audit \
+  --sql "alter table users add column email varchar(255)" \
+  --dialect mysql \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app \
+  --metadata-connect-timeout 5s
+```
+
+Metadata-aware audit with PostgreSQL:
+
+```bash
+deltascope audit \
+  --sql "alter table orders add column status text not null" \
+  --dialect postgresql \
+  --host 127.0.0.1 --port 5432 --user root --ask-password --schema app \
+  --metadata-connect-timeout 5s
+```
+
 See all shipped rules:
 
 ```bash
@@ -228,6 +248,33 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 ```
 
 For raw stdio TOML, native `deltascope-mcp`, direct connection, `connection_ref`, proxy setup, and common errors, see [Use DeltaScope MCP](docs/recipe/use-deltascope-mcp.md).
+
+### MCP with runtime config
+
+Run `deltascope-mcp` with runtime config for logging and metadata defaults:
+
+```bash
+deltascope-mcp -runtime-config /etc/deltascope/runtime.yaml
+```
+
+MCP stdout logging is forbidden to protect the stdio protocol. Runtime config can set `output: file` or `output: stderr`, but not `stdout`.
+
+### MCP named connection with connect timeout
+
+```yaml
+# ~/.config/deltascope/connections.yaml
+connections:
+  local_mysql:
+    host: 127.0.0.1
+    port: 3306
+    user: root
+    password_env: MYSQL_PASSWORD
+    schema: app
+    dialect: mysql
+    connect_timeout: 5s
+```
+
+Both named connections and direct connection inputs accept `connect_timeout`. Empty or `0s` falls back to the runtime config default. MySQL, TiDB, and PostgreSQL all support metadata connect timeout.
 
 ## AI Agent Skill
 
@@ -300,6 +347,14 @@ Run the HTTP adapter over the same audit engine:
 deltascope-server -listen 127.0.0.1:8083
 ```
 
+Run with runtime config for logging and metadata defaults:
+
+```bash
+deltascope-server -listen 127.0.0.1:8083 -runtime-config /etc/deltascope/runtime.yaml
+```
+
+See [docs/examples/runtime-config.yaml](docs/examples/runtime-config.yaml) for a complete runtime config example.
+
 Endpoints:
 
 - `GET /healthz`
@@ -307,6 +362,25 @@ Endpoints:
 - `POST /v1/audit`
 
 `POST /v1/audit` supports both offline JSON audit requests and metadata-aware requests with an optional `connection` block. The HTTP response keeps the public audit result body and adds a `context` block. See the full contract in [HTTP API reference](docs/reference/http-api.md).
+
+### HTTP metadata-aware request with connect timeout
+
+```json
+{
+  "sql": "alter table users add column email varchar(255)",
+  "dialect": "mysql",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password_env": "MYSQL_PASSWORD",
+    "schema": "app",
+    "connect_timeout": "5s"
+  }
+}
+```
+
+The `connection.connect_timeout` field accepts Go duration strings (`500ms`, `5s`, `1m`). It overrides the runtime config default. Empty or `0s` falls back to the runtime config default. Invalid or negative values return a `400` error. MySQL, TiDB, and PostgreSQL all support metadata connect timeout.
 
 ## Library Usage
 

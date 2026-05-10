@@ -47,7 +47,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesQualifiedRenameIndexWithou
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}

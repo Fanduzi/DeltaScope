@@ -21,6 +21,16 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://deltascope.pages.dev/en/sql-audit-mcp-server</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://deltascope.pages.dev/en/tidb-schema-change-audit</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://deltascope.pages.dev/zh/mysql-ddl-audit-tool</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -32,6 +42,16 @@
   </url>
   <url>
     <loc>https://deltascope.pages.dev/zh/sql-release-audit-tool</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://deltascope.pages.dev/zh/sql-audit-mcp-server</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://deltascope.pages.dev/zh/tidb-schema-change-audit</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TiDB Schema Change 审核 — DeltaScope</title>
+  <meta name="description" content="DeltaScope 是离线优先的 TiDB Schema Change 审核工具，在 ALTER TABLE、DROP TABLE 等 DDL 执行前发现风险。支持 CLI、CI、HTTP、MCP。" />
+  <link rel="canonical" href="https://deltascope.pages.dev/zh/tidb-schema-change-audit" />
+  <meta property="og:title" content="TiDB Schema Change 审核 — DeltaScope" />
+  <meta property="og:description" content="离线优先 TiDB Schema Change 审核。在 CI、MCP 或 CLI 中发现 DDL 风险。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://deltascope.pages.dev/zh/tidb-schema-change-audit" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="TiDB Schema Change 审核 — DeltaScope" />
+  <meta name="twitter:description" content="离线优先 TiDB Schema Change 审核。在执行前发现 DDL 风险。" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DeltaScope",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux",
+    "description": "TiDB Schema Change 审核工具。在 ALTER TABLE、DROP TABLE 等 DDL 执行前发现风险。",
+    "url": "https://github.com/Fanduzi/DeltaScope",
+    "softwareVersion": "v0.62.0",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "license": "https://opensource.org/licenses/Apache-2.0"
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --bg: #0d1117; --surface: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent2: #3fb950; --warn: #d29922; --danger: #f85149; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .container { max-width: 820px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+    h1 { font-size: 2rem; margin: 2.5rem 0 1rem; line-height: 1.3; }
+    h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; color: var(--accent); }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0.75rem 0; color: var(--text); }
+    code, pre { font-family: 'IBM Plex Mono', monospace, monospace; }
+    pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 1rem 0; font-size: 0.875rem; line-height: 1.5; }
+    code { background: rgba(88,166,255,0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre code { background: none; padding: 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-blocker { background: rgba(248,81,73,0.15); color: var(--danger); border: 1px solid rgba(248,81,73,0.3); }
+    .badge-warn { background: rgba(210,153,34,0.15); color: var(--warn); border: 1px solid rgba(210,153,34,0.3); }
+    .badge-notice { background: rgba(88,166,255,0.15); color: var(--accent); border: 1px solid rgba(88,166,255,0.3); }
+    .faq details { margin: 0.75rem 0; }
+    .faq summary { cursor: pointer; color: var(--accent); font-weight: 600; padding: 0.5rem 0; }
+    .faq details div { padding: 0.5rem 0 0.5rem 1rem; color: var(--muted); }
+    .not-box { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.2); border-radius: 8px; padding: 16px; margin: 1.5rem 0; }
+    .not-box h3 { color: var(--warn); margin-top: 0; }
+    nav { border-bottom: 1px solid var(--border); padding: 12px 0; }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    nav a { color: var(--muted); font-size: 0.875rem; }
+    footer { border-top: 1px solid var(--border); padding: 2rem 0; margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+    .links-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .links-grid a { display: block; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="container">
+      <a href="https://deltascope.pages.dev/" style="font-weight:700;color:var(--text);">DeltaScope</a>
+      <span>
+        <a href="https://github.com/Fanduzi/DeltaScope">GitHub</a>
+        <span style="color:var(--border);margin:0 8px;">|</span>
+        <a href="https://deltascope.pages.dev/en/tidb-schema-change-audit">English</a>
+      </span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>TiDB Schema Change 审核</h1>
+    <p>DeltaScope 是一个<strong>离线优先的 TiDB Schema Change 审核工具</strong>，在 DDL 语句到达 TiDB 集群之前分析其风险。它能发现破坏性的 ALTER TABLE 操作、缺少默认值、不兼容的类型变更等数十种风险模式，适用于 CI 流水线、开发者工作流和 AI Agent 会话。</p>
+
+    <h2>工作原理</h2>
+    <p>使用 <code>--dialect tidb</code> 传入一条或多条 DDL 语句。DeltaScope 使用 TiDB 兼容语法解析 SQL，评估所有适用规则，返回包含 blocker、warning、notice 的判定结果。离线审核无需数据库连接。</p>
+
+    <pre><code>$ deltascope audit --dialect tidb --sql "ALTER TABLE users DROP COLUMN email;"
+
+Verdict: reject
+Statements: 1
+Blockers:   1
+Warnings:   0
+Notices:    0
+
+Statement 1: ALTER TABLE
+- [blocker] ddl.alter.drop.column: dropping column "email" is a destructive change
+</code></pre>
+
+    <h2>常见 TiDB DDL 检查</h2>
+    <ul>
+      <li><span class="badge badge-blocker">blocker</span> 删除列或表</li>
+      <li><span class="badge badge-blocker">blocker</span> 不兼容的列类型变更</li>
+      <li><span class="badge badge-warn">warning</span> 缺少列默认值</li>
+      <li><span class="badge badge-warn">warning</span> 缺少列注释</li>
+      <li><span class="badge badge-notice">notice</span> 冗余索引添加</li>
+    </ul>
+
+    <h2>带元数据的 TiDB Schema Change 审核</h2>
+    <p>连接到 TiDB 实例，使用表统计信息丰富审核结果：</p>
+
+    <pre><code>deltascope audit \
+  --dialect tidb \
+  --sql "alter table users add column email varchar(255)" \
+  --host 127.0.0.1 --port 4000 --user root --ask-password --schema app \
+  --metadata-connect-timeout 5s</code></pre>
+
+    <h2>在 CI 中使用</h2>
+    <pre><code># GitHub Actions 示例
+- name: Audit TiDB schema changes
+  run: |
+    deltascope audit \
+      --dialect tidb \
+      --file ./migrations/tidb_schema_change.sql \
+      --format github-actions \
+      --fail-on blocker
+</code></pre>
+
+    <p>DeltaScope 也支持 <code>--format sarif</code>（GitHub Code Scanning）和 <code>--format gitlab-codequality</code>（GitLab CI）。</p>
+
+    <h2>多种集成方式</h2>
+    <p>从 CLI、CI、HTTP 服务或 MCP Server（面向 AI Agent）使用同一套审核引擎，同一套策略配置。</p>
+
+    <div class="links-grid">
+      <a href="https://deltascope.pages.dev/zh/mysql-ddl-audit-tool">MySQL DDL 审核工具 &rarr;</a>
+      <a href="https://deltascope.pages.dev/zh/postgresql-ddl-audit-tool">PostgreSQL DDL 审核工具 &rarr;</a>
+      <a href="https://deltascope.pages.dev/zh/sql-audit-mcp-server">SQL 审核 MCP Server &rarr;</a>
+      <a href="https://deltascope.pages.dev/zh/sql-release-audit-tool">SQL 上线审核工具 &rarr;</a>
+    </div>
+
+    <div class="not-box">
+      <h3>DeltaScope 不是什么</h3>
+      <ul>
+        <li>不是 TiDB 管理或监控工具。</li>
+        <li>不是对比两个数据库状态的 schema diff 工具。</li>
+        <li>不是迁移执行引擎。它在执行前审核 SQL 文本。</li>
+      </ul>
+    </div>
+
+    <h2>常见问题</h2>
+    <div class="faq">
+      <details>
+        <summary>DeltaScope 支持 TiDB 特有语法吗？</summary>
+        <div>支持。使用 <code>--dialect tidb</code> 启用 TiDB 兼容解析。MySQL 和 TiDB 共享同一套规则和集成路径。</div>
+      </details>
+      <details>
+        <summary>需要连接 TiDB 集群吗？</summary>
+        <div>不需要。默认模式是离线优先。它解析 SQL 文本无需任何网络连接。可选的元数据感知模式可以从实例读取表统计信息。</div>
+      </details>
+      <details>
+        <summary>可以自定义规则吗？</summary>
+        <div>可以。每条规则都有可配置的严重级别（blocker、warning、notice）和可选参数。通过 YAML 配置文件和 <code>--config</code> 覆盖。</div>
+      </details>
+      <details>
+        <summary>和 TiDB DM 或 TiCDC 有什么区别？</summary>
+        <div>那些工具处理数据迁移和变更数据捕获。DeltaScope 不执行或复制任何 SQL。它在执行前审核 SQL 文本的风险模式。</div>
+      </details>
+    </div>
+
+    <footer>
+      <div class="container">
+        <p>DeltaScope 基于 Apache 2.0 许可证发布。&copy; 2026 Fanduzi.</p>
+        <p style="margin-top:0.5rem;">
+          <a href="https://github.com/Fanduzi/DeltaScope">GitHub</a> &middot;
+          <a href="https://github.com/Fanduzi/DeltaScope/releases">Releases</a> &middot;
+          <a href="https://deltascope.pages.dev/">主页</a> &middot;
+          <a href="https://deltascope.pages.dev/en/tidb-schema-change-audit">English</a>
+        </p>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

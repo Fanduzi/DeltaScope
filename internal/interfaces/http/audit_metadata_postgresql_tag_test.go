@@ -69,7 +69,7 @@ func TestExecuteAuditRequestSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
 			return deltascope.Result{}, err
 		}
 		return result, nil
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -121,7 +121,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(
 			return deltascope.Result{}, err
 		}
 		return result, nil
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -166,7 +166,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareINSERTDoesNotTriggerPlanEstim
 			return deltascope.Result{}, err
 		}
 		return result, nil
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -213,7 +213,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -268,7 +268,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForRenameCol
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -323,7 +323,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColum
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -375,7 +375,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingTableForRenameTabl
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -403,7 +403,7 @@ func TestExecuteAuditRequestPostgreSQLAlterColumnActionsMapToSemanticRules(t *te
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -440,7 +440,7 @@ func TestExecuteAuditRequestPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) 
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -468,7 +468,7 @@ func TestExecuteAuditRequestPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) 
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -492,7 +492,7 @@ func TestExecuteAuditRequestPostgreSQLCreateViewMapsToForbidRule(t *testing.T) {
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -516,7 +516,7 @@ func TestExecuteAuditRequestPostgreSQLDropViewMapsToForbidRule(t *testing.T) {
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -540,7 +540,7 @@ func TestExecuteAuditRequestPostgreSQLValidateConstraintReturnsNormalResult(t *t
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -566,7 +566,7 @@ func TestExecuteAuditRequestPostgreSQLAlterColumnSetNotNullReturnsNormalResult(t
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -597,7 +597,7 @@ func TestExecuteAuditRequestPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerP
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -646,7 +646,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -712,7 +712,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 		},
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -763,7 +763,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableConstraintsReturnNormalResult(t
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -796,7 +796,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -832,7 +832,7 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedReferencesRenderFKFindings(
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -882,7 +882,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err == nil {
 				t.Fatalf("expected unsupported error for %s, got nil", name)
 			}
@@ -922,7 +922,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableGeneratedIdentityStateTransition
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected supported %s, got error: %v", name, err)
 			}
@@ -964,7 +964,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSup
 				result, auditErr := deltascope.Audit(ctx, request)
 				captured = result
 				return result, auditErr
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected supported, got error: %v", err)
 			}
@@ -984,7 +984,7 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferenced
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1036,7 +1036,7 @@ func TestExecuteAuditRequestPostgreSQLCrossSchemaFKRendersAdvisoryNotice(t *test
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1081,7 +1081,7 @@ func TestExecuteAuditRequestPostgreSQLSameSchemaFKDoesNotRenderAdvisory(t *testi
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1102,7 +1102,7 @@ func TestExecuteAuditRequestPostgreSQLBareFKDoesNotRenderAdvisory(t *testing.T) 
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1151,7 +1151,7 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityNarrowNowSupported(t *tes
 				result, auditErr := deltascope.Audit(ctx, request)
 				captured = result
 				return result, auditErr
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected supported, got error: %v", err)
 			}
@@ -1202,7 +1202,7 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected supported path, got error: %v", err)
 			}
@@ -1240,7 +1240,7 @@ func TestExecuteAuditRequestPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1275,7 +1275,7 @@ func TestExecuteAuditRequestPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1310,7 +1310,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintRuleCoverage(t *tes
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1358,7 +1358,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableForeignKeyRuleCoverage(t *testin
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -1397,7 +1397,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t
 		Dialect: deltascope.DialectPostgreSQL,
 	}, configPath, func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1430,7 +1430,7 @@ func TestExecuteAuditRequestPostgreSQLNotValidConstraintValidationRuleCoverage(t
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1458,7 +1458,7 @@ func TestExecuteAuditRequestDefaultPolicyDialectHygienePostgreSQLExcludesMySQLFa
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	})
+	}, MetadataConfig{})
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
@@ -1558,7 +1558,7 @@ func TestExecuteAuditRequestPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) 
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			})
+			}, MetadataConfig{})
 			if err != nil {
 				t.Fatalf("expected supported path, got error: %v", err)
 			}
