@@ -7,4 +7,5 @@ expect:
     count: 0
   findings:
     include:
+      - ddl.view.create.forbid
       - ddl.pg.create_or_replace_view.advisory
