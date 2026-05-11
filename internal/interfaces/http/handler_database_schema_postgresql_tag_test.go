@@ -33,7 +33,7 @@ func TestHandlerAuditPostgreSQLCreateSchemaRendersNotice(t *testing.T) {
 	if !ok || len(statements) != 1 {
 		t.Fatalf("expected one statement, got %#v", payload["statements"])
 	}
-	statement, ok := statements[0].(map[string]any)
+	statement, _ := statements[0].(map[string]any)
 	findings, ok := statement["findings"].([]any)
 	if !ok || len(findings) < 1 {
 		t.Fatalf("expected at least one finding, got %#v", statement["findings"])

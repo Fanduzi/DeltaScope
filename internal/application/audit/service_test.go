@@ -609,7 +609,6 @@ func TestAuditSQLTiDBDropSchemaIfExistsFiresDropWarn(t *testing.T) {
 	}
 }
 
-
 func TestAuditSQLAppliesConfigOverride(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
