@@ -359,5 +359,21 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		// PG trigger lifecycle rules (PostgreSQL-only).
+		"ddl.pg.create_trigger.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.create_constraint_trigger.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.drop_trigger.advisory": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 	}
 }

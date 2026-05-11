@@ -230,6 +230,10 @@ const (
 	ruleIDPGAlterDisableRLSWarn   = "ddl.pg.alter.disable_rls.warn"
 	ruleIDPGAlterForceRLSNotice   = "ddl.pg.alter.force_rls.notice"
 	ruleIDPGAlterNoForceRLSNotice = "ddl.pg.alter.no_force_rls.notice"
+	// PostgreSQL trigger lifecycle rules (PG-only).
+	ruleIDPGCreateTriggerNotice         = "ddl.pg.create_trigger.notice"
+	ruleIDPGCreateConstraintTriggerWarn = "ddl.pg.create_constraint_trigger.warn"
+	ruleIDPGDropTriggerAdvisory         = "ddl.pg.drop_trigger.advisory"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

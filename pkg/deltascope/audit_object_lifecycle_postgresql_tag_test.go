@@ -639,6 +639,62 @@ func TestAuditPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "create_trigger_notice",
+			sql:        "CREATE TRIGGER trg_audit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()",
+			wantRuleID: "ddl.pg.create_trigger.notice",
+		},
+		{
+			name:       "create_constraint_trigger_warn",
+			sql:        "CREATE CONSTRAINT TRIGGER trg_fk AFTER INSERT ON orders FROM items DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_fk()",
+			wantRuleID: "ddl.pg.create_constraint_trigger.warn",
+		},
+		{
+			name:       "drop_trigger_advisory",
+			sql:        "DROP TRIGGER trg_audit ON users",
+			wantRuleID: "ddl.pg.drop_trigger.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name        string

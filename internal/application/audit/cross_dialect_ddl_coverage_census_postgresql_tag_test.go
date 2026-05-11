@@ -29,8 +29,8 @@ var crossDialectPGDDLCensusCases = []struct {
 	{Name: "DROP SCHEMA CASCADE", SQL: "DROP SCHEMA app CASCADE", Expected: ddlCoverageFindingCovered},
 
 	// Trigger lifecycle
-	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_ai AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()", Expected: ddlCoverageUnsupportedBoundary},
-	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_ai ON users", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_ai AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_ai ON users", Expected: ddlCoverageFindingCovered},
 
 	// Routine lifecycle
 	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION log_change() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$", Expected: ddlCoverageUnsupportedBoundary},

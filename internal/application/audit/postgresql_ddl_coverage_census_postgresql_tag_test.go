@@ -145,7 +145,9 @@ var pgDDLCensusCases = []censusCase{
 	{Name: "ALTER EXTENSION UPDATE", SQL: "ALTER EXTENSION pg_trgm UPDATE"},
 	{Name: "ALTER EXTENSION SET SCHEMA", SQL: "ALTER EXTENSION pg_trgm SET SCHEMA extensions"},
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_audit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()"},
+	{Name: "CREATE CONSTRAINT TRIGGER", SQL: "CREATE CONSTRAINT TRIGGER trg_fk AFTER INSERT ON orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_fk()"},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_audit ON users"},
+	{Name: "DROP TRIGGER IF EXISTS", SQL: "DROP TRIGGER IF EXISTS trg_audit ON users"},
 }
 
 // pgCorpusCovered maps representative form names to whether a corpus fixture
@@ -231,8 +233,10 @@ var pgCorpusCovered = map[string]bool{
 	"DROP EXTENSION":                           false,
 	"ALTER EXTENSION UPDATE":                   false,
 	"ALTER EXTENSION SET SCHEMA":               false,
-	"CREATE TRIGGER":                           false,
-	"DROP TRIGGER":                             false,
+	"CREATE TRIGGER":                           true,
+	"CREATE CONSTRAINT TRIGGER":                true,
+	"DROP TRIGGER":                             true,
+	"DROP TRIGGER IF EXISTS":                   true,
 }
 
 // TestPostgreSQLDDLCoverageCensus runs the full representative-form coverage

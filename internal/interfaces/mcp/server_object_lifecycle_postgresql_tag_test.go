@@ -998,3 +998,81 @@ func TestAuditSQLToolPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditSQLToolPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "create_trigger_notice",
+			sql:        "CREATE TRIGGER trg_audit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()",
+			wantRuleID: "ddl.pg.create_trigger.notice",
+		},
+		{
+			name:       "create_constraint_trigger_warn",
+			sql:        "CREATE CONSTRAINT TRIGGER trg_fk AFTER INSERT ON orders FROM items DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_fk()",
+			wantRuleID: "ddl.pg.create_constraint_trigger.warn",
+		},
+		{
+			name:       "drop_trigger_advisory",
+			sql:        "DROP TRIGGER trg_audit ON users",
+			wantRuleID: "ddl.pg.drop_trigger.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := NewServer(Config{Version: "test-version"})
+			session, err := connectClientSession(context.Background(), server)
+			if err != nil {
+				t.Fatalf("connect session: %v", err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name:      "audit_sql",
+				Arguments: map[string]any{"sql": tt.sql, "dialect": "postgresql"},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %T", result.StructuredContent)
+			}
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok {
+				t.Fatalf("expected findings array, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}

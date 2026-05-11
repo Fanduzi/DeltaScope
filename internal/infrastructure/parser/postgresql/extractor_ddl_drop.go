@@ -113,6 +113,8 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "policy",
 			Options:    options,
 		}
+	case pg_query.ObjectType_OBJECT_TRIGGER:
+		statement.DDL = extractDropTriggerStmt(statement, stmt).DDL
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}

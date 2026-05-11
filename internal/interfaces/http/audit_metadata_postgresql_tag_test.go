@@ -1669,3 +1669,64 @@ func TestExecuteAuditRequestPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) 
 		})
 	}
 }
+
+func TestExecuteAuditRequestPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "create_trigger_notice",
+			sql:        "CREATE TRIGGER trg_audit AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION log_change()",
+			wantRuleID: "ddl.pg.create_trigger.notice",
+		},
+		{
+			name:       "create_constraint_trigger_warn",
+			sql:        "CREATE CONSTRAINT TRIGGER trg_fk AFTER INSERT ON orders FROM items DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_fk()",
+			wantRuleID: "ddl.pg.create_constraint_trigger.warn",
+		},
+		{
+			name:       "drop_trigger_advisory",
+			sql:        "DROP TRIGGER trg_audit ON users",
+			wantRuleID: "ddl.pg.drop_trigger.advisory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     tt.sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			}, MetadataConfig{})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if response.Context == nil || response.Context.Mode != "offline" {
+				t.Fatalf("expected offline context, got %#v", response.Context)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+			if len(response.Result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", response.Result.Unsupported)
+			}
+
+			found := false
+			for _, f := range response.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, response.Statements[0].Findings)
+			}
+		})
+	}
+}

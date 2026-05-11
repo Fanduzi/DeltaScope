@@ -65,6 +65,9 @@ const (
 	DDLOperationCreatePolicy DDLOperation = "create_policy"
 	DDLOperationAlterPolicy  DDLOperation = "alter_policy"
 	DDLOperationDropPolicy   DDLOperation = "drop_policy"
+
+	DDLOperationCreateTrigger DDLOperation = "create_trigger"
+	DDLOperationDropTrigger   DDLOperation = "drop_trigger"
 )
 
 // Table describes a table-level object.

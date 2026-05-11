@@ -481,6 +481,10 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDisableRLSWarn, construct: newDisableRLSWarnRule},
 		{ruleID: ruleIDPGAlterForceRLSNotice, construct: newForceRLSNoticeRule},
 		{ruleID: ruleIDPGAlterNoForceRLSNotice, construct: newNoForceRLSNoticeRule},
+		// PostgreSQL trigger lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateTriggerNotice, construct: newCreateTriggerNoticeRule},
+		{ruleID: ruleIDPGCreateConstraintTriggerWarn, construct: newCreateConstraintTriggerWarnRule},
+		{ruleID: ruleIDPGDropTriggerAdvisory, construct: newDropTriggerAdvisoryRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {
