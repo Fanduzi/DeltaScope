@@ -322,6 +322,19 @@ completed. They cannot fire on a single statement in isolation.
 
 ---
 
+## DDL: MySQL/TiDB Database/Schema Lifecycle Rules (2 rules)
+
+These rules guard against MySQL and TiDB database/schema lifecycle DDL operations — `CREATE DATABASE`, `CREATE SCHEMA`, `DROP DATABASE`, and `DROP SCHEMA`. In MySQL/TiDB, `SCHEMA` is a synonym for `DATABASE`. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.database.create.notice` | `CREATE DATABASE` / `CREATE SCHEMA` creates a new logical namespace — informational notice | notice | No |
+| `ddl.database.drop.warn` | `DROP DATABASE` / `DROP SCHEMA` removes a database and all contained objects — should be reviewed | warning | No |
+
+> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. `CREATE DATABASE IF NOT EXISTS` and `CREATE SCHEMA IF NOT EXISTS` still emit the notice. `DROP DATABASE IF EXISTS` and `DROP SCHEMA IF EXISTS` still emit the warning. DeltaScope does not perform live database existence validation. `CREATE DATABASE ... CHARACTER SET` / `COLLATE` options are preserved as parser facts but no policy rule governs them in this milestone. This is not full DDL support — trigger, routine, event, and database privilege lifecycle remain deferred.
+
+---
+
 ## DDL: PostgreSQL Migration-Safety Rules (9 rules)
 
 These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
@@ -340,12 +353,13 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL Object Lifecycle Rules (9 rules)
+## DDL: PostgreSQL Object Lifecycle Rules (10 rules)
 
 These rules guard against risky PostgreSQL object lifecycle DDL operations — schema, sequence, and materialized view CREATE/DROP/ALTER. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_schema.notice` | `CREATE SCHEMA` creates a new namespace — informational notice | notice | No |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | notice | No |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | warning | No |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` may cause sequence value wraparound | warning | No |
@@ -358,7 +372,7 @@ These rules guard against risky PostgreSQL object lifecycle DDL operations — s
 | `ddl.pg.refresh_materialized_view.concurrently.warn` | Non-concurrent `REFRESH MATERIALIZED VIEW` (default or explicit `WITH DATA`) holds an exclusive lock | warning | No |
 | `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` empties the view — downstream readers may see empty results | notice | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CONCURRENTLY` refreshes pass both rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `CREATE SCHEMA IF NOT EXISTS` still emits the notice from `ddl.pg.create_schema.notice`. Existing `DROP SCHEMA` behavior (`ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`) is unchanged. `CREATE SCHEMA AUTHORIZATION` and nested `CREATE SCHEMA ... CREATE TABLE ...` remain unsupported/deferred. DeltaScope does not perform live schema existence validation. `CONCURRENTLY` refreshes pass both materialized view rules without findings. `WITH NO DATA` triggers both rules because it is also non-concurrent. This is not live unique-index validation for `CONCURRENTLY` — DeltaScope does not verify whether a unique index exists on the materialized view.
 
 > **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Starting with `v0.41.0`, `ddl.pg.alter.add_check.not_valid.require` also fires on `ALTER TABLE ... ADD CONSTRAINT ... CHECK` statements. Starting with `v0.42.0`, `ddl.pg.alter.not_valid_constraint.validate.require` checks same-batch validation pairing for named CHECK and FOREIGN KEY `NOT VALID` constraints. Check naming rules (`ddl.constraint.check.name.prefix.require`, `ddl.constraint.check.name.suffix.require`, `ddl.constraint.check.name.contains.require`) also cover the ALTER TABLE CHECK path when configured.
 

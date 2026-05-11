@@ -6,6 +6,38 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.64.0] - 2026-05-11
+
+### Added
+
+- Cross-dialect DDL coverage census characterizing representative DDL forms across MySQL, TiDB, and PostgreSQL (census report is not committed; classification tests are committed).
+- MySQL/TiDB database/schema lifecycle normalization: `CREATE DATABASE`, `CREATE DATABASE IF NOT EXISTS`, `CREATE SCHEMA`, `DROP DATABASE`, `DROP DATABASE IF EXISTS`, `DROP SCHEMA` now pass through the audit pipeline instead of passing silently.
+- PostgreSQL `CREATE SCHEMA` normalization: `CREATE SCHEMA` and `CREATE SCHEMA IF NOT EXISTS` now produce an explicit notice instead of passing silently.
+- Three new audit rules:
+  - `ddl.database.create.notice` (MySQL/TiDB, notice) — fires on `CREATE DATABASE` / `CREATE SCHEMA`
+  - `ddl.database.drop.warn` (MySQL/TiDB, warning) — fires on `DROP DATABASE` / `DROP SCHEMA`
+  - `ddl.pg.create_schema.notice` (PostgreSQL, notice) — fires on `CREATE SCHEMA`
+- Default policy entries for all three new rules.
+- SQL corpus fixtures covering all three new rules across MySQL, TiDB, and PostgreSQL.
+- Public surface tests across CLI, HTTP, MCP, and SDK for all new rules.
+- AST characterization tests documenting stable parser facts for database/schema lifecycle forms.
+
+### Changed
+
+- MySQL/TiDB `CREATE DATABASE`/`DROP DATABASE` and synonyms (`CREATE SCHEMA`/`DROP SCHEMA`) were previously normalized silent; they now produce findings.
+- PostgreSQL `CREATE SCHEMA` was previously normalized silent; it now produces a notice finding.
+- MySQL/TiDB `CREATE DATABASE ... CHARACTER SET`/`COLLATE` options are preserved as parser facts but no policy rule governs them.
+- SQL corpus: 214 policy rules, 405/405 supported targets, 100% coverage.
+
+### Non-Goals
+
+- No full DDL support claim. Trigger, routine, event, and database privilege lifecycle remain deferred.
+- No live database/schema existence validation.
+- No charset/collation/tablespace/owner validation.
+- `CREATE SCHEMA AUTHORIZATION` and nested `CREATE SCHEMA ... CREATE TABLE ...` on PostgreSQL remain unsupported/deferred.
+- Existing PostgreSQL `DROP SCHEMA` behavior (`ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`) is unchanged.
+- DeltaScope does not execute migrations.
+
 ## [v0.63.0] - 2026-05-10
 
 ### Added

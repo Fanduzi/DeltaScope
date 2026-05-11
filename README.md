@@ -39,8 +39,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.63.0/install.sh | \
-  DELTASCOPE_VERSION=v0.63.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.64.0/install.sh | \
+  DELTASCOPE_VERSION=v0.64.0 sh
 ```
 
 ### Dialects & Release Archives
@@ -225,7 +225,7 @@ SQL mistakes are cheap to catch before they run and expensive after. DeltaScope 
 
 - Create-table governance across identifiers, comments, primary keys, audit columns, charset/collation, indexes, and table options.
 - Alter-table governance for destructive actions, compatibility checks, existence validation, and merge guidance.
-- Object-lifecycle checks for `CREATE VIEW`, `DROP TABLE`, and `TRUNCATE TABLE`.
+- Object-lifecycle checks for `CREATE VIEW`, `DROP TABLE`, `TRUNCATE TABLE`, and database/schema lifecycle DDL across MySQL, TiDB, and PostgreSQL.
 - DML protections for `WHERE`, `LIMIT`, `ORDER BY`, subqueries, join conditions, bulk insert patterns, denylisted objects, and conservative affected-row impact estimation.
 - Stable product surfaces: `deltascope` CLI, `deltascope-server`, `deltascope-mcp`, and `pkg/deltascope`.
 - `deltascope-mcp` is the official MCP stdio server and exposes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.

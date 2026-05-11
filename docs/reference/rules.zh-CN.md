@@ -313,6 +313,19 @@ deltascope rules search "prefix"
 
 ---
 
+## DDL：MySQL/TiDB Database/Schema 生命周期规则（2 条）
+
+这些规则用于防范 MySQL 和 TiDB database/schema 生命周期 DDL 操作——`CREATE DATABASE`、`CREATE SCHEMA`、`DROP DATABASE`、`DROP SCHEMA`。在 MySQL/TiDB 中，`SCHEMA` 是 `DATABASE` 的同义词。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效，PostgreSQL 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.database.create.notice` | `CREATE DATABASE` / `CREATE SCHEMA` 创建新的逻辑命名空间——信息性通知 | notice | 否 |
+| `ddl.database.drop.warn` | `DROP DATABASE` / `DROP SCHEMA` 移除数据库及其包含的所有对象——应当审查 | warning | 否 |
+
+> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE DATABASE IF NOT EXISTS` 和 `CREATE SCHEMA IF NOT EXISTS` 仍然会发出 notice。`DROP DATABASE IF EXISTS` 和 `DROP SCHEMA IF EXISTS` 仍然会发出 warning。DeltaScope 不执行在线数据库存在性验证。`CREATE DATABASE ... CHARACTER SET` / `COLLATE` 选项作为解析器事实保留，但本里程碑中无策略规则对其进行治理。这不是完整的 DDL 支持——trigger、routine、event 和数据库权限生命周期均推迟支持。
+
+---
+
 ## DDL：PostgreSQL 迁移安全规则（9 条）
 
 这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
@@ -331,12 +344,13 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL 对象生命周期规则（9 条）
+## DDL：PostgreSQL 对象生命周期规则（10 条）
 
 这些规则用于防范 PostgreSQL 对象生命周期 DDL 操作中的风险——schema、sequence 和 materialized view 的 CREATE/DROP/ALTER。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
+| `ddl.pg.create_schema.notice` | `CREATE SCHEMA` 创建新的命名空间——信息性通知 | notice | 否 |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` 移除 schema，建议审查依赖对象 | notice | 否 |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` 可能导致序列值回绕 | warning | 否 |
@@ -349,7 +363,7 @@ deltascope rules search "prefix"
 | `ddl.pg.refresh_materialized_view.concurrently.warn` | 非并发 `REFRESH MATERIALIZED VIEW`（默认或显式 `WITH DATA`）持有排他锁 | warning | 否 |
 | `ddl.pg.refresh_materialized_view.no_data.notice` | `REFRESH MATERIALIZED VIEW ... WITH NO DATA` 清空物化视图——下游读取方可能看到空结果 | notice | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CONCURRENTLY` 刷新通过两条规则均不产生 finding。`WITH NO DATA` 同时触发两条规则，因为它也是非并发的。这不是 `CONCURRENTLY` 所需的唯一索引在线验证——DeltaScope 不会检查物化视图上是否存在唯一索引。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE SCHEMA IF NOT EXISTS` 仍然会发出 `ddl.pg.create_schema.notice` 的 notice。已有 `DROP SCHEMA` 行为（`ddl.pg.drop_schema.advisory`、`ddl.pg.drop_schema.cascade.warn`）不变。`CREATE SCHEMA AUTHORIZATION` 和嵌套 `CREATE SCHEMA ... CREATE TABLE ...` 仍不支持/推迟支持。DeltaScope 不执行在线 schema 存在性验证。`CONCURRENTLY` 刷新通过两条物化视图规则均不产生 finding。`WITH NO DATA` 同时触发两条规则，因为它也是非并发的。这不是 `CONCURRENTLY` 所需的唯一索引在线验证——DeltaScope 不会检查物化视图上是否存在唯一索引。
 
 > **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。从 `v0.41.0` 开始，`ddl.pg.alter.add_check.not_valid.require` 也对 `ALTER TABLE ... ADD CONSTRAINT ... CHECK` 语句触发。从 `v0.42.0` 开始，`ddl.pg.alter.not_valid_constraint.validate.require` 对命名 CHECK 和 FOREIGN KEY `NOT VALID` 约束执行同批次校验配对检查。CHECK 命名规则（`ddl.constraint.check.name.prefix.require`、`ddl.constraint.check.name.suffix.require`、`ddl.constraint.check.name.contains.require`）在配置后同样覆盖 ALTER TABLE CHECK 路径。
 

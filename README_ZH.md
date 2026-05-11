@@ -37,8 +37,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.63.0/install.sh | \
-  DELTASCOPE_VERSION=v0.63.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.64.0/install.sh | \
+  DELTASCOPE_VERSION=v0.64.0 sh
 ```
 
 ### 方言选择 & 发布产物
@@ -223,7 +223,7 @@ SQL 错误在落库前发现代价极低，落库后代价极高。DeltaScope �
 
 - 建表治理：标识符、注释、主键、审计列、字符集/排序规则、索引、表选项。
 - 改表治理：破坏性操作、兼容性检查、存在性校验、合并建议。
-- 对象生命周期检查：`CREATE VIEW`、`DROP TABLE`、`TRUNCATE TABLE`。
+- 对象生命周期检查：`CREATE VIEW`、`DROP TABLE`、`TRUNCATE TABLE`，以及 MySQL/TiDB/PostgreSQL 跨方言的 database/schema 生命周期 DDL。
 - DML 保护：`WHERE`、`LIMIT`、`ORDER BY`、子查询、JOIN 条件、批量写入模式、黑名单对象，以及保守的影响行数估算。
 - 稳定产品接口：`deltascope` CLI、`deltascope-server`、`deltascope-mcp`、`pkg/deltascope`。
 - `deltascope-mcp` 是官方 MCP stdio 服务，暴露 `audit_sql`、`describe_rule`、`list_rules`、`get_capabilities`。

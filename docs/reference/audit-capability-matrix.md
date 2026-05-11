@@ -220,6 +220,32 @@ These rules require a live table snapshot and are skipped in offline mode.
 
 ---
 
+## DDL: MySQL/TiDB Database/Schema Lifecycle (v0.64.0)
+
+`v0.64.0` normalizes MySQL/TiDB database and schema lifecycle DDL — `CREATE DATABASE`, `CREATE SCHEMA`, `DROP DATABASE`, `DROP SCHEMA` — through the audit pipeline instead of passing silently. In MySQL/TiDB, `SCHEMA` is a synonym for `DATABASE`. Two new rules provide notice and warning coverage. These rules only apply when `--dialect mysql` or `--dialect tidb` is set.
+
+### Normalized Operations
+
+| MySQL/TiDB DDL Action | Normalized As | Supported | Auditable | Rule-Mapped |
+|------------------------|---------------|:---------:|:---------:|:-----------:|
+| `CREATE DATABASE name` | `create_schema` (object_type=database) | ✓ | ✓ | ✓ |
+| `CREATE DATABASE IF NOT EXISTS name` | `create_schema` (object_type=database, if_not_exists=true) | ✓ | ✓ | ✓ |
+| `CREATE SCHEMA name` | `create_schema` (object_type=database) | ✓ | ✓ | ✓ |
+| `DROP DATABASE name` | `drop_schema` (object_type=database) | ✓ | ✓ | ✓ |
+| `DROP DATABASE IF EXISTS name` | `drop_schema` (object_type=database, if_exists=true) | ✓ | ✓ | ✓ |
+| `DROP SCHEMA name` | `drop_schema` (object_type=database) | ✓ | ✓ | ✓ |
+
+### Database/Schema Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.database.create.notice` | `CREATE DATABASE` / `CREATE SCHEMA` creates a new logical namespace — informational notice | ✓ | ✗ | notice |
+| `ddl.database.drop.warn` | `DROP DATABASE` / `DROP SCHEMA` removes a database and all contained objects — should be reviewed | ✓ | ✗ | warning |
+
+> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. DeltaScope does not perform live database existence validation. `CREATE DATABASE ... CHARACTER SET` / `COLLATE` options are preserved as parser facts but no policy rule governs them. This is not full DDL support — trigger, routine, event, and database privilege lifecycle remain deferred.
+
+---
+
 ## DDL: PostgreSQL Migration-Safety
 
 These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
@@ -238,15 +264,15 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL Object Lifecycle (v0.50.0)
+## DDL: PostgreSQL Object Lifecycle (v0.50.0, updated v0.64.0)
 
-`v0.50.0` normalizes PostgreSQL object lifecycle DDL — schema, sequence, and materialized view CREATE/DROP/ALTER operations — through the audit pipeline instead of returning unsupported. Nine new PostgreSQL-only rules guard against cascade drops, sequence wraparound, and sequence counter resets. These rules only apply when `--dialect postgresql` is set.
+`v0.50.0` normalizes PostgreSQL object lifecycle DDL — schema, sequence, and materialized view CREATE/DROP/ALTER operations — through the audit pipeline instead of returning unsupported. Nine PostgreSQL-only rules guard against cascade drops, sequence wraparound, and sequence counter resets. `v0.64.0` adds `ddl.pg.create_schema.notice` for `CREATE SCHEMA` coverage. These rules only apply when `--dialect postgresql` is set.
 
 ### Normalized Operations
 
 | PostgreSQL DDL Action | Normalized As | Supported | Auditable | Rule-Mapped |
 |-----------------------|---------------|:---------:|:---------:|:-----------:|
-| `CREATE SCHEMA` | `create_schema` | ✓ | ✓ | — |
+| `CREATE SCHEMA` | `create_schema` | ✓ | ✓ | ✓ |
 | `DROP SCHEMA` | `drop_schema` | ✓ | ✓ | ✓ |
 | `CREATE SEQUENCE` | `create_sequence` | ✓ | ✓ | ✓ |
 | `ALTER SEQUENCE` | `alter_sequence` | ✓ | ✓ | ✓ |
@@ -259,6 +285,7 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_schema.notice` | `CREATE SCHEMA` creates a new namespace — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` removes a schema — advises review of dependent objects | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` may cause sequence value wraparound | ✓ | ✗ | warning |

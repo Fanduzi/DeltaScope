@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.63.0 Adoption & Runtime Config Pack
+## Latest Completed Milestone: v0.64.0 Cross-Dialect DDL Parity
+
+**Goal:** build a cross-dialect DDL coverage census and close the first parity gap with database/schema lifecycle audit rules for MySQL, TiDB, and PostgreSQL.
+
+### Completed Scope
+
+- Cross-dialect DDL coverage census: representative DDL forms classified across MySQL, TiDB, and PostgreSQL.
+- MySQL/TiDB database/schema lifecycle normalization: `CREATE DATABASE`, `CREATE DATABASE IF NOT EXISTS`, `CREATE SCHEMA`, `DROP DATABASE`, `DROP DATABASE IF EXISTS`, `DROP SCHEMA` now pass through the audit pipeline instead of passing silently.
+- PostgreSQL `CREATE SCHEMA` normalization: `CREATE SCHEMA` and `CREATE SCHEMA IF NOT EXISTS` now produce an explicit notice.
+- Three new audit rules: `ddl.database.create.notice` (MySQL/TiDB, notice), `ddl.database.drop.warn` (MySQL/TiDB, warning), `ddl.pg.create_schema.notice` (PostgreSQL, notice).
+- Default policy entries for all three new rules.
+- SQL corpus: 214 policy rules, 405/405 supported targets, 100% coverage.
+- Public surface coverage verified across CLI, HTTP, MCP, and SDK.
+- AST characterization tests for database/schema lifecycle forms.
+
+### Key Design Decisions
+
+- Reuse `create_schema` / `drop_schema` operations for MySQL/TiDB database/schema synonyms with `ObjectType = "database"` to distinguish from PostgreSQL `ObjectType = "schema"`.
+- Existing PostgreSQL `DROP SCHEMA` rules (`ddl.pg.drop_schema.advisory`, `ddl.pg.drop_schema.cascade.warn`) are unchanged.
+- No shared `ddl.schema.drop.*` rule to avoid duplicate findings or policy churn for existing PG users.
+- MySQL/TiDB `CREATE DATABASE ... CHARACTER SET`/`COLLATE` facts preserved but not governed.
+- PostgreSQL `CREATE SCHEMA AUTHORIZATION` and nested schema creation remain unsupported/deferred.
+- DeltaScope does not execute migrations.
+
+## Previous Milestone: v0.63.0 Adoption & Runtime Config Pack
 
 **Goal:** expose metadata connect timeout publicly across CLI, HTTP, and MCP surfaces; add optional runtime configuration for server and MCP operations; and improve adoption documentation — without changing SQL rule behavior, parser coverage, or public SDK contracts.
 
@@ -722,5 +746,9 @@ Areas that may be addressed in future milestones (no dates committed):
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
 - PostgreSQL composite type attribute lifecycle (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`).
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`/`REVOKE` for non-table objects, `ALTER DEFAULT PRIVILEGES`).
+- Trigger lifecycle parity across MySQL, TiDB, and PostgreSQL (deferred from v0.64.0).
+- Routine/function/procedure lifecycle parity (deferred from v0.64.0).
+- Event lifecycle support (deferred from v0.64.0).
+- Database privilege/DCL parity (deferred from v0.64.0).
 - Parser cache (deferred from v0.63.0).
 - Possible SDK public metadata opener (deferred from v0.63.0).

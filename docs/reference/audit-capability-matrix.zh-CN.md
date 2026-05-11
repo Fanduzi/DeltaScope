@@ -206,6 +206,32 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：MySQL/TiDB Database/Schema 生命周期（v0.64.0）
+
+`v0.64.0` 将 MySQL/TiDB database 和 schema 生命周期 DDL——`CREATE DATABASE`、`CREATE SCHEMA`、`DROP DATABASE`、`DROP SCHEMA`——通过审核管线进行标准化处理，不再静默通过。在 MySQL/TiDB 中，`SCHEMA` 是 `DATABASE` 的同义词。两条新规则提供 notice 和 warning 覆盖。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效。
+
+### 标准化操作
+
+| MySQL/TiDB DDL 动作 | 标准化为 | 已支持 | 可审计 | 规则映射 |
+|---------------------|---------|:------:|:------:|:--------:|
+| `CREATE DATABASE name` | `create_schema` (object_type=database) | ✓ | ✓ | ✓ |
+| `CREATE DATABASE IF NOT EXISTS name` | `create_schema` (object_type=database, if_not_exists=true) | ✓ | ✓ | ✓ |
+| `CREATE SCHEMA name` | `create_schema` (object_type=database) | ✓ | ✓ | ✓ |
+| `DROP DATABASE name` | `drop_schema` (object_type=database) | ✓ | ✓ | ✓ |
+| `DROP DATABASE IF EXISTS name` | `drop_schema` (object_type=database, if_exists=true) | ✓ | ✓ | ✓ |
+| `DROP SCHEMA name` | `drop_schema` (object_type=database) | ✓ | ✓ | ✓ |
+
+### Database/Schema 生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.database.create.notice` | `CREATE DATABASE` / `CREATE SCHEMA` 创建新的逻辑命名空间——信息性通知 | ✓ | ✗ | notice |
+| `ddl.database.drop.warn` | `DROP DATABASE` / `DROP SCHEMA` 移除数据库及其包含的所有对象——应当审查 | ✓ | ✗ | warning |
+
+> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不执行在线数据库存在性验证。`CREATE DATABASE ... CHARACTER SET` / `COLLATE` 选项作为解析器事实保留，但无策略规则对其进行治理。这不是完整的 DDL 支持——trigger、routine、event 和数据库权限生命周期均推迟支持。
+
+---
+
 ## DDL：PostgreSQL 迁移安全
 
 这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
@@ -224,15 +250,15 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
-## DDL：PostgreSQL 对象生命周期（v0.50.0）
+## DDL：PostgreSQL 对象生命周期（v0.50.0，v0.64.0 更新）
 
-`v0.50.0` 将 PostgreSQL 对象生命周期 DDL——schema、sequence 和 materialized view 的 CREATE/DROP/ALTER 操作——通过审核管线进行标准化处理，不再返回 unsupported。九条新 PostgreSQL-only 规则防护级联删除、序列值回绕和序列计数器重置。仅在设置 `--dialect postgresql` 时生效。
+`v0.50.0` 将 PostgreSQL 对象生命周期 DDL——schema、sequence 和 materialized view 的 CREATE/DROP/ALTER 操作——通过审核管线进行标准化处理，不再返回 unsupported。九条 PostgreSQL-only 规则防护级联删除、序列值回绕和序列计数器重置。`v0.64.0` 新增 `ddl.pg.create_schema.notice` 用于 `CREATE SCHEMA` 覆盖。仅在设置 `--dialect postgresql` 时生效。
 
 ### 标准化操作
 
 | PostgreSQL DDL 动作 | 标准化为 | 已支持 | 可审计 | 规则映射 |
 |---------------------|---------|:------:|:------:|:--------:|
-| `CREATE SCHEMA` | `create_schema` | ✓ | ✓ | — |
+| `CREATE SCHEMA` | `create_schema` | ✓ | ✓ | ✓ |
 | `DROP SCHEMA` | `drop_schema` | ✓ | ✓ | ✓ |
 | `CREATE SEQUENCE` | `create_sequence` | ✓ | ✓ | ✓ |
 | `ALTER SEQUENCE` | `alter_sequence` | ✓ | ✓ | ✓ |
@@ -245,6 +271,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 | 规则 ID | 检查描述 | 离线 | Metadata | 默认级别 |
 |---------|---------|:----:|:--------:|---------|
+| `ddl.pg.create_schema.notice` | `CREATE SCHEMA` 创建新的命名空间——信息性通知 | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.advisory` | `DROP SCHEMA` 移除 schema，建议审查依赖对象 | ✓ | ✗ | notice |
 | `ddl.pg.drop_schema.cascade.warn` | `DROP SCHEMA ... CASCADE` 使用级联删除，可能静默移除依赖对象 | ✓ | ✗ | warning |
 | `ddl.pg.create_sequence.cycle.warn` | `CREATE SEQUENCE ... CYCLE` 可能导致序列值回绕 | ✓ | ✗ | warning |
