@@ -61,6 +61,10 @@ const (
 
 	DDLOperationGrantTable  DDLOperation = "grant_table"
 	DDLOperationRevokeTable DDLOperation = "revoke_table"
+
+	DDLOperationCreatePolicy DDLOperation = "create_policy"
+	DDLOperationAlterPolicy  DDLOperation = "alter_policy"
+	DDLOperationDropPolicy   DDLOperation = "drop_policy"
 )
 
 // Table describes a table-level object.

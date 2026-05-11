@@ -531,6 +531,14 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "set_unlogged", Options: map[string]string{"logged": "false"}}, true, nil
 	case pg_query.AlterTableType_AT_SetTableSpace:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "set_tablespace", Reason: "postgresql alter table set tablespace is not in the approved v1 whitelist"}
+	case pg_query.AlterTableType_AT_EnableRowSecurity:
+		return spec.Alter{Action: "enable_rls"}, true, nil
+	case pg_query.AlterTableType_AT_DisableRowSecurity:
+		return spec.Alter{Action: "disable_rls"}, true, nil
+	case pg_query.AlterTableType_AT_ForceRowSecurity:
+		return spec.Alter{Action: "force_rls"}, true, nil
+	case pg_query.AlterTableType_AT_NoForceRowSecurity:
+		return spec.Alter{Action: "no_force_rls"}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}

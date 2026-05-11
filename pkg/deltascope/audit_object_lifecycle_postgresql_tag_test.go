@@ -563,6 +563,82 @@ func TestAuditPostgreSQLTablePrivilegeDCLRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "create_policy_notice",
+			sql:        "CREATE POLICY users_select ON users FOR SELECT USING (true);",
+			wantRuleID: "ddl.pg.create_policy.notice",
+		},
+		{
+			name:       "alter_policy_notice",
+			sql:        "ALTER POLICY users_select ON users USING (id > 0);",
+			wantRuleID: "ddl.pg.alter_policy.notice",
+		},
+		{
+			name:       "drop_policy_warn",
+			sql:        "DROP POLICY users_select ON users;",
+			wantRuleID: "ddl.pg.drop_policy.warn",
+		},
+		{
+			name:       "enable_rls_notice",
+			sql:        "ALTER TABLE users ENABLE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.enable_rls.notice",
+		},
+		{
+			name:       "disable_rls_warn",
+			sql:        "ALTER TABLE users DISABLE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.disable_rls.warn",
+		},
+		{
+			name:       "force_rls_notice",
+			sql:        "ALTER TABLE users FORCE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.force_rls.notice",
+		},
+		{
+			name:       "no_force_rls_notice",
+			sql:        "ALTER TABLE users NO FORCE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.no_force_rls.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name        string

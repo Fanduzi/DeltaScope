@@ -222,6 +222,14 @@ const (
 	ruleIDDatabaseDropWarn     = "ddl.database.drop.warn"
 	// PostgreSQL create schema rule.
 	ruleIDPGCreateSchemaNotice = "ddl.pg.create_schema.notice"
+	// PostgreSQL policy lifecycle rules (PG-only).
+	ruleIDPGCreatePolicyNotice    = "ddl.pg.create_policy.notice"
+	ruleIDPGAlterPolicyNotice     = "ddl.pg.alter_policy.notice"
+	ruleIDPGDropPolicyWarn        = "ddl.pg.drop_policy.warn"
+	ruleIDPGAlterEnableRLSNotice  = "ddl.pg.alter.enable_rls.notice"
+	ruleIDPGAlterDisableRLSWarn   = "ddl.pg.alter.disable_rls.warn"
+	ruleIDPGAlterForceRLSNotice   = "ddl.pg.alter.force_rls.notice"
+	ruleIDPGAlterNoForceRLSNotice = "ddl.pg.alter.no_force_rls.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

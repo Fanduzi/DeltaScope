@@ -473,6 +473,14 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDDatabaseDropWarn, construct: newDatabaseDropWarnRule},
 		// PostgreSQL create schema rule.
 		{ruleID: ruleIDPGCreateSchemaNotice, construct: newCreateSchemaNoticeRule},
+		// PostgreSQL policy lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreatePolicyNotice, construct: newCreatePolicyNoticeRule},
+		{ruleID: ruleIDPGAlterPolicyNotice, construct: newAlterPolicyNoticeRule},
+		{ruleID: ruleIDPGDropPolicyWarn, construct: newDropPolicyWarnRule},
+		{ruleID: ruleIDPGAlterEnableRLSNotice, construct: newEnableRLSNoticeRule},
+		{ruleID: ruleIDPGAlterDisableRLSWarn, construct: newDisableRLSWarnRule},
+		{ruleID: ruleIDPGAlterForceRLSNotice, construct: newForceRLSNoticeRule},
+		{ruleID: ruleIDPGAlterNoForceRLSNotice, construct: newNoForceRLSNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

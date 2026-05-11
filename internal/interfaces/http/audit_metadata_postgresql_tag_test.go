@@ -1588,3 +1588,84 @@ func TestExecuteAuditRequestPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) 
 		})
 	}
 }
+
+func TestExecuteAuditRequestPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "create_policy_notice",
+			sql:        "CREATE POLICY users_select ON users FOR SELECT USING (true);",
+			wantRuleID: "ddl.pg.create_policy.notice",
+		},
+		{
+			name:       "alter_policy_notice",
+			sql:        "ALTER POLICY users_select ON users USING (id > 0);",
+			wantRuleID: "ddl.pg.alter_policy.notice",
+		},
+		{
+			name:       "drop_policy_warn",
+			sql:        "DROP POLICY users_select ON users;",
+			wantRuleID: "ddl.pg.drop_policy.warn",
+		},
+		{
+			name:       "enable_rls_notice",
+			sql:        "ALTER TABLE users ENABLE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.enable_rls.notice",
+		},
+		{
+			name:       "disable_rls_warn",
+			sql:        "ALTER TABLE users DISABLE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.disable_rls.warn",
+		},
+		{
+			name:       "force_rls_notice",
+			sql:        "ALTER TABLE users FORCE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.force_rls.notice",
+		},
+		{
+			name:       "no_force_rls_notice",
+			sql:        "ALTER TABLE users NO FORCE ROW LEVEL SECURITY;",
+			wantRuleID: "ddl.pg.alter.no_force_rls.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, err := executeAuditRequest(context.Background(), auditRequest{
+				SQL:     tt.sql,
+				Dialect: deltascope.DialectPostgreSQL,
+			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
+				return deltascope.Audit(ctx, request)
+			}, MetadataConfig{})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if response.Context == nil || response.Context.Mode != "offline" {
+				t.Fatalf("expected offline context, got %#v", response.Context)
+			}
+			if len(response.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %#v", response.Statements)
+			}
+			if response.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", response.Statements[0].Kind)
+			}
+			if len(response.Result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", response.Result.Unsupported)
+			}
+
+			found := false
+			for _, f := range response.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, response.Statements[0].Findings)
+			}
+		})
+	}
+}

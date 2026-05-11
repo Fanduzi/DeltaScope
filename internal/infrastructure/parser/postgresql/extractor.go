@@ -81,6 +81,10 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractGrantRoleStmt(statement, node.GrantRoleStmt), nil
 	case *pg_query.Node_AlterDefaultPrivilegesStmt:
 		return extractAlterDefaultPrivilegesStmt(statement, node.AlterDefaultPrivilegesStmt), nil
+	case *pg_query.Node_CreatePolicyStmt:
+		return extractCreatePolicyStmt(statement, node.CreatePolicyStmt), nil
+	case *pg_query.Node_AlterPolicyStmt:
+		return extractAlterPolicyStmt(statement, node.AlterPolicyStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil
