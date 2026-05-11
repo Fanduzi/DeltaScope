@@ -2239,3 +2239,94 @@ func TestHandlerAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlerAuditDatabaseSchemaLifecycleRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		dialect    string
+		wantRuleID string
+	}{
+		{
+			name:       "mysql_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    "mysql",
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "mysql_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    "mysql",
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "tidb_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_schema_synonym_notice",
+			sql:        "CREATE SCHEMA app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.create.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler, err := NewHandler("", "test-build")
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+
+			body := `{"sql":"` + tt.sql + `","dialect":"` + tt.dialect + `"}`
+			req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+			}
+
+			var payload map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			statements, ok := payload["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", payload["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) < 1 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				ruleID, _ := finding["rule_id"].(string)
+				if ruleID == tt.wantRuleID {
+					found = true
+				}
+				if strings.HasPrefix(ruleID, "ddl.pg.") {
+					t.Fatalf("MySQL/TiDB HTTP audit must not emit PG rule %q", ruleID)
+				}
+			}
+			if !found {
+				t.Fatalf("expected rule_id %q, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}

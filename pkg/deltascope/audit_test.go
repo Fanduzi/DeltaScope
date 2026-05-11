@@ -639,6 +639,91 @@ delete from users;`
 	}
 }
 
+func TestAuditMySQLDatabaseSchemaLifecycleRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		dialect    Dialect
+		wantRuleID string
+	}{
+		{
+			name:       "create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    DialectMySQL,
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    DialectMySQL,
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    DialectTiDB,
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "tidb_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    DialectTiDB,
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_schema_synonym_notice",
+			sql:        "CREATE SCHEMA app;",
+			dialect:    DialectTiDB,
+			wantRuleID: "ddl.database.create.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: tt.dialect,
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+
+			assertNoPGRuleIDs(t, result)
+		})
+	}
+}
+
+func TestAuditMySQLDatabaseSchemaDialectIsolation(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "CREATE DATABASE app; DROP DATABASE app;",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	for _, stmt := range result.Statements {
+		for _, f := range stmt.Findings {
+			if strings.HasPrefix(f.RuleID, "ddl.pg.") {
+				t.Fatalf("MySQL audit must not emit PG rule %q", f.RuleID)
+			}
+		}
+	}
+}
+
 func ptrInt64(value int64) *int64 {
 	return &value
 }

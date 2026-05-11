@@ -2486,3 +2486,101 @@ func TestLocationFidelityTiDBSARIFArtifactURIAndLine(t *testing.T) {
 		t.Errorf("TiDB: expected startLine=9 (delete statement start), got %v", startLine)
 	}
 }
+
+func TestAuditCommandDatabaseSchemaLifecycleRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		dialect    string
+		wantRuleID string
+	}{
+		{
+			name:       "mysql_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    "mysql",
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "mysql_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    "mysql",
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "tidb_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_schema_synonym_notice",
+			sql:        "CREATE SCHEMA app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.create.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tt.sql, "--dialect", tt.dialect, "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+			_ = code
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) < 1 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected rule_id %q, got %#v", tt.wantRuleID, findings)
+			}
+
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				ruleID, _ := finding["rule_id"].(string)
+				if strings.HasPrefix(ruleID, "ddl.pg.") {
+					t.Fatalf("MySQL/TiDB CLI audit must not emit PG rule %q", ruleID)
+				}
+			}
+		})
+	}
+}

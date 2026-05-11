@@ -1544,3 +1544,97 @@ delete from users;`
 		t.Errorf("expected location.column=1, got %v", loc["column"])
 	}
 }
+
+func TestAuditSQLToolDatabaseSchemaLifecycleRules(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		dialect    string
+		wantRuleID string
+	}{
+		{
+			name:       "mysql_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    "mysql",
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "mysql_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    "mysql",
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_database_notice",
+			sql:        "CREATE DATABASE app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.create.notice",
+		},
+		{
+			name:       "tidb_drop_database_warn",
+			sql:        "DROP DATABASE app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.drop.warn",
+		},
+		{
+			name:       "tidb_create_schema_synonym_notice",
+			sql:        "CREATE SCHEMA app;",
+			dialect:    "tidb",
+			wantRuleID: "ddl.database.create.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := NewServer(Config{Version: "test-version"})
+			session, err := connectClientSession(context.Background(), server)
+			if err != nil {
+				t.Fatalf("connect session: %v", err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name:      "audit_sql",
+				Arguments: map[string]any{"sql": tt.sql, "dialect": tt.dialect},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %T", result.StructuredContent)
+			}
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) < 1 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, item := range findings {
+				finding, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				ruleID, _ := finding["rule_id"].(string)
+				if ruleID == tt.wantRuleID {
+					found = true
+				}
+				if strings.HasPrefix(ruleID, "ddl.pg.") {
+					t.Fatalf("MySQL/TiDB MCP audit must not emit PG rule %q", ruleID)
+				}
+			}
+			if !found {
+				t.Fatalf("expected rule_id %q, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}

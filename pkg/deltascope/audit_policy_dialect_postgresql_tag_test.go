@@ -24,6 +24,8 @@ func TestAuditDefaultPolicyDialectHygienePostgreSQLExcludesMySQLFamilyRules(t *t
 		"ddl.primary_key.unsigned.require",
 		"ddl.primary_key.auto_increment.require",
 		"ddl.primary_key.not_null.require",
+		"ddl.database.create.notice",
+		"ddl.database.drop.warn",
 	}
 	for _, stmt := range result.Statements {
 		for _, finding := range stmt.Findings {

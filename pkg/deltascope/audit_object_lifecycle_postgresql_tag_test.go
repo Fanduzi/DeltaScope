@@ -14,6 +14,11 @@ func TestAuditPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
 		wantRuleID string
 	}{
 		{
+			name:       "create_schema_notice",
+			sql:        "CREATE SCHEMA app;",
+			wantRuleID: "ddl.pg.create_schema.notice",
+		},
+		{
 			name:       "drop_schema_advisory",
 			sql:        "DROP SCHEMA IF EXISTS staging;",
 			wantRuleID: "ddl.pg.drop_schema.advisory",
