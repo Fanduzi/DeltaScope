@@ -695,6 +695,30 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_function.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.create_function.security_definer.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_or_replace_function.advisory:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_function.advisory:
+    enabled: true
+    level: notice
+
+  ddl.pg.create_procedure.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_procedure.advisory:
+    enabled: true
+    level: notice
+
   dml.impact.estimate:
     enabled: true
     level: notice

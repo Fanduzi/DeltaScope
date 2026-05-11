@@ -61,6 +61,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_type_lifecycle_rules_test.go | Verifies PG type lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_domain_lifecycle_rules_test.go | Verifies PG domain lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_extension_lifecycle_rules_test.go | Verifies PG extension lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
+| postgresql_function_lifecycle_rules.go | Implements PostgreSQL-only function/procedure lifecycle rules: create-function notice, create-function security-definer warn, create-or-replace-function advisory, drop-function advisory, create-procedure notice, drop-procedure advisory |
 
 ## Exports
 
@@ -257,6 +258,12 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter_extension.set_schema.notice`
 - `ddl.pg.drop_extension.advisory`
 - `ddl.pg.drop_extension.cascade.warn`
+- `ddl.pg.create_function.notice`
+- `ddl.pg.create_function.security_definer.warn`
+- `ddl.pg.create_or_replace_function.advisory`
+- `ddl.pg.drop_function.advisory`
+- `ddl.pg.create_procedure.notice`
+- `ddl.pg.drop_procedure.advisory`
 
 ## Milestone 4 Planned Create-Table Surface
 

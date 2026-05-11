@@ -3,6 +3,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -310,6 +311,64 @@ func firstStringFromTypeNameNodes(nodes []*pg_query.Node) string {
 		}
 	}
 	return ""
+}
+
+func extractCreateFunctionStmt(statement spec.Statement, stmt *pg_query.CreateFunctionStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_function", "postgresql create function statement payload is missing")
+	}
+
+	options := map[string]string{}
+
+	if stmt.GetReplace() {
+		options["replace"] = "true"
+	}
+
+	for _, optNode := range stmt.GetOptions() {
+		defElem := optNode.GetDefElem()
+		if defElem == nil {
+			continue
+		}
+		switch defElem.GetDefname() {
+		case "security":
+			if arg := defElem.GetArg(); arg != nil {
+				if b := arg.GetBoolean(); b != nil {
+					options["security_definer"] = fmt.Sprintf("%v", b.GetBoolval())
+				}
+			}
+		}
+	}
+
+	// Extract function name from funcname nodes. Schema-qualified names have
+	// two elements: [schema, name]. Plain names have one element: [name].
+	funcName := ""
+	schemaName := ""
+	names := stmt.GetFuncname()
+	if len(names) >= 2 {
+		schemaName = firstStringFromNodes(names[:len(names)-1])
+		funcName = firstStringFromNodes(names[len(names)-1:])
+	} else if len(names) == 1 {
+		funcName = firstStringFromNodes(names)
+	}
+
+	if schemaName != "" {
+		options["schema"] = schemaName
+	}
+
+	operation := spec.DDLOperationCreateFunction
+	objectType := "function"
+	if stmt.GetIsProcedure() {
+		operation = spec.DDLOperationCreateProcedure
+		objectType = "procedure"
+	}
+
+	statement.DDL = &spec.DDL{
+		Operation:  operation,
+		ObjectName: funcName,
+		ObjectType: objectType,
+		Options:    options,
+	}
+	return statement
 }
 
 func applyTableConstraint(ddl *spec.DDL, constraint *pg_query.Constraint) *spec.UnsupportedDetail {

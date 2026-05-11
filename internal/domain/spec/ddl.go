@@ -68,6 +68,11 @@ const (
 
 	DDLOperationCreateTrigger DDLOperation = "create_trigger"
 	DDLOperationDropTrigger   DDLOperation = "drop_trigger"
+
+	DDLOperationCreateFunction  DDLOperation = "create_function"
+	DDLOperationDropFunction    DDLOperation = "drop_function"
+	DDLOperationCreateProcedure DDLOperation = "create_procedure"
+	DDLOperationDropProcedure   DDLOperation = "drop_procedure"
 )
 
 // Table describes a table-level object.

@@ -1,0 +1,11 @@
+name: create_function_security_definer_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.create_function.notice
+      - ddl.pg.create_function.security_definer.warn

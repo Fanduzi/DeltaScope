@@ -115,6 +115,28 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 		}
 	case pg_query.ObjectType_OBJECT_TRIGGER:
 		statement.DDL = extractDropTriggerStmt(statement, stmt).DDL
+	case pg_query.ObjectType_OBJECT_FUNCTION:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropFunction,
+			ObjectName: dropObjectWithArgsName(stmt),
+			ObjectType: "function",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_PROCEDURE:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropProcedure,
+			ObjectName: dropObjectWithArgsName(stmt),
+			ObjectType: "procedure",
+			Options:    options,
+		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}
@@ -141,6 +163,20 @@ func dropTargetName(stmt *pg_query.DropStmt) string {
 	return ""
 }
 
+func dropObjectWithArgsName(stmt *pg_query.DropStmt) string {
+	for _, obj := range stmt.GetObjects() {
+		owa := obj.GetObjectWithArgs()
+		if owa == nil {
+			continue
+		}
+		for _, name := range owa.GetObjname() {
+			if s := name.GetString_(); s != nil && s.GetSval() != "" {
+				return s.GetSval()
+			}
+		}
+	}
+	return ""
+}
 func dropTypeNameFromObjects(objects []*pg_query.Node) string {
 	for _, obj := range objects {
 		tn := obj.GetTypeName()

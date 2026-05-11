@@ -33,8 +33,8 @@ var crossDialectPGDDLCensusCases = []struct {
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_ai ON users", Expected: ddlCoverageFindingCovered},
 
 	// Routine lifecycle
-	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION log_change() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$", Expected: ddlCoverageUnsupportedBoundary},
-	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION log_change()", Expected: ddlCoverageUnsupportedBoundary},
+	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION log_change() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION log_change()", Expected: ddlCoverageFindingCovered},
 
 	// Privilege/DCL
 	{Name: "GRANT SELECT ON TABLE", SQL: "GRANT SELECT ON TABLE users TO reader", Expected: ddlCoverageFindingCovered},

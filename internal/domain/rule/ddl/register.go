@@ -485,6 +485,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateTriggerNotice, construct: newCreateTriggerNoticeRule},
 		{ruleID: ruleIDPGCreateConstraintTriggerWarn, construct: newCreateConstraintTriggerWarnRule},
 		{ruleID: ruleIDPGDropTriggerAdvisory, construct: newDropTriggerAdvisoryRule},
+		// PostgreSQL function/procedure lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateFunctionNotice, construct: newCreateFunctionNoticeRule},
+		{ruleID: ruleIDPGCreateFunctionSecurityDefinerWarn, construct: newCreateFunctionSecurityDefinerWarnRule},
+		{ruleID: ruleIDPGCreateOrReplaceFunctionAdvisory, construct: newCreateOrReplaceFunctionAdvisoryRule},
+		{ruleID: ruleIDPGDropFunctionAdvisory, construct: newDropFunctionAdvisoryRule},
+		{ruleID: ruleIDPGCreateProcedureNotice, construct: newCreateProcedureNoticeRule},
+		{ruleID: ruleIDPGDropProcedureAdvisory, construct: newDropProcedureAdvisoryRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

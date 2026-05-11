@@ -375,5 +375,36 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		// PG function/procedure lifecycle rules (PostgreSQL-only).
+		"ddl.pg.create_function.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.create_function.security_definer.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.create_or_replace_function.advisory": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.drop_function.advisory": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.create_procedure.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.drop_procedure.advisory": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 	}
 }

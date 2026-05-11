@@ -234,6 +234,13 @@ const (
 	ruleIDPGCreateTriggerNotice         = "ddl.pg.create_trigger.notice"
 	ruleIDPGCreateConstraintTriggerWarn = "ddl.pg.create_constraint_trigger.warn"
 	ruleIDPGDropTriggerAdvisory         = "ddl.pg.drop_trigger.advisory"
+	// PostgreSQL function/procedure lifecycle rules (PG-only).
+	ruleIDPGCreateFunctionNotice              = "ddl.pg.create_function.notice"
+	ruleIDPGCreateFunctionSecurityDefinerWarn = "ddl.pg.create_function.security_definer.warn"
+	ruleIDPGCreateOrReplaceFunctionAdvisory   = "ddl.pg.create_or_replace_function.advisory"
+	ruleIDPGDropFunctionAdvisory              = "ddl.pg.drop_function.advisory"
+	ruleIDPGCreateProcedureNotice             = "ddl.pg.create_procedure.notice"
+	ruleIDPGDropProcedureAdvisory             = "ddl.pg.drop_procedure.advisory"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

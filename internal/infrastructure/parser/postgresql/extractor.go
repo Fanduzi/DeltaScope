@@ -87,6 +87,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractAlterPolicyStmt(statement, node.AlterPolicyStmt), nil
 	case *pg_query.Node_CreateTrigStmt:
 		return extractCreateTrigStmt(statement, node.CreateTrigStmt), nil
+	case *pg_query.Node_CreateFunctionStmt:
+		return extractCreateFunctionStmt(statement, node.CreateFunctionStmt), nil
 	case *pg_query.Node_InsertStmt:
 		statement.DML = extractInsert(node.InsertStmt)
 		return statement, nil

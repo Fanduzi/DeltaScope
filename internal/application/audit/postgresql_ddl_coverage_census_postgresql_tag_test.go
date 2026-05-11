@@ -148,6 +148,16 @@ var pgDDLCensusCases = []censusCase{
 	{Name: "CREATE CONSTRAINT TRIGGER", SQL: "CREATE CONSTRAINT TRIGGER trg_fk AFTER INSERT ON orders DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION check_fk()"},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_audit ON users"},
 	{Name: "DROP TRIGGER IF EXISTS", SQL: "DROP TRIGGER IF EXISTS trg_audit ON users"},
+
+	// --- FUNCTION / PROCEDURE LIFECYCLE ---
+	{Name: "CREATE FUNCTION basic", SQL: "CREATE FUNCTION add(a int, b int) RETURNS int LANGUAGE sql AS $$ SELECT a + b $$"},
+	{Name: "CREATE OR REPLACE FUNCTION", SQL: "CREATE OR REPLACE FUNCTION add(a int, b int) RETURNS int LANGUAGE sql AS $$ SELECT a + b $$"},
+	{Name: "CREATE FUNCTION SECURITY DEFINER", SQL: "CREATE FUNCTION admin_task() RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN NULL; END $$"},
+	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION add(int, int)"},
+	{Name: "DROP FUNCTION IF EXISTS", SQL: "DROP FUNCTION IF EXISTS add(int, int)"},
+	{Name: "CREATE PROCEDURE basic", SQL: "CREATE PROCEDURE reset_counter() LANGUAGE plpgsql AS $$ BEGIN NULL; END $$"},
+	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE reset_counter()"},
+	{Name: "DROP PROCEDURE IF EXISTS", SQL: "DROP PROCEDURE IF EXISTS reset_counter()"},
 }
 
 // pgCorpusCovered maps representative form names to whether a corpus fixture
@@ -237,6 +247,14 @@ var pgCorpusCovered = map[string]bool{
 	"CREATE CONSTRAINT TRIGGER":                true,
 	"DROP TRIGGER":                             true,
 	"DROP TRIGGER IF EXISTS":                   true,
+	"CREATE FUNCTION basic":                    true,
+	"CREATE OR REPLACE FUNCTION":               true,
+	"CREATE FUNCTION SECURITY DEFINER":         true,
+	"DROP FUNCTION":                            true,
+	"DROP FUNCTION IF EXISTS":                  false,
+	"CREATE PROCEDURE basic":                   true,
+	"DROP PROCEDURE":                           true,
+	"DROP PROCEDURE IF EXISTS":                 false,
 }
 
 // TestPostgreSQLDDLCoverageCensus runs the full representative-form coverage
