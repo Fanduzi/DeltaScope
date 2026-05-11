@@ -51,26 +51,34 @@ func extractViewStmt(statement spec.Statement, stmt *pg_query.ViewStmt) spec.Sta
 	if stmt == nil {
 		return unsupportedStatement(statement, "create_view", "postgresql create view statement payload is missing")
 	}
-	if stmt.GetReplace() {
-		return unsupportedStatement(statement, "create_view", "postgresql create or replace view is unsupported in v1")
-	}
-	if len(stmt.GetOptions()) > 0 {
-		return unsupportedStatement(statement, "create_view", "postgresql create view options are unsupported in v1")
-	}
-	if stmt.GetWithCheckOption() != pg_query.ViewCheckOption_NO_CHECK_OPTION {
-		return unsupportedStatement(statement, "create_view", "postgresql create view check options are unsupported in v1")
-	}
 	view := stmt.GetView()
 	if view == nil {
 		return unsupportedStatement(statement, "create_view", "postgresql create view target is missing")
 	}
-	if persistence := view.GetRelpersistence(); persistence != "" && persistence != "p" {
-		return unsupportedStatement(statement, "create_view", "postgresql temporary view variants are unsupported in v1")
+
+	options := map[string]string{}
+	if stmt.GetReplace() {
+		options["replace"] = "true"
 	}
+	if persistence := view.GetRelpersistence(); persistence != "" && persistence != "p" {
+		options["temporary"] = "true"
+	}
+	switch stmt.GetWithCheckOption() {
+	case pg_query.ViewCheckOption_LOCAL_CHECK_OPTION:
+		options["check_option"] = "true"
+		options["check_option_scope"] = "local"
+	case pg_query.ViewCheckOption_CASCADED_CHECK_OPTION:
+		options["check_option"] = "true"
+		options["check_option_scope"] = "cascaded"
+	}
+
 	statement.DDL = &spec.DDL{
-		Operation: spec.DDLOperationCreateView,
-		Table:     tableFromRangeVar(view),
-		HasSelect: stmt.GetQuery() != nil,
+		Operation:  spec.DDLOperationCreateView,
+		ObjectName: view.GetRelname(),
+		ObjectType: "view",
+		Table:      tableFromRangeVar(view),
+		HasSelect:  stmt.GetQuery() != nil,
+		Options:    options,
 	}
 	return statement
 }

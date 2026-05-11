@@ -21,10 +21,17 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 		if len(stmt.GetObjects()) != 1 {
 			return unsupportedStatement(statement, "drop", "postgresql multi-target drop view is unsupported in v1")
 		}
+		viewTable := tableFromObjectName(stmt.GetObjects())
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
 		statement.DDL = &spec.DDL{
-			Operation: spec.DDLOperationDropView,
-			Table:     tableFromObjectName(stmt.GetObjects()),
-			Options:   map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())},
+			Operation:  spec.DDLOperationDropView,
+			ObjectName: objectNameFromObjectName(stmt.GetObjects()),
+			ObjectType: "view",
+			Table:      viewTable,
+			Options:    options,
 		}
 	case pg_query.ObjectType_OBJECT_INDEX:
 		options := map[string]string{}

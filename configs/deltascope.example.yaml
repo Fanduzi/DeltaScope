@@ -719,6 +719,30 @@ rules:
     enabled: true
     level: notice
 
+  ddl.pg.create_or_replace_view.advisory:
+    enabled: true
+    level: notice
+
+  ddl.pg.create_temp_view.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.create_view.check_option.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_view.rename.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_view.set_schema.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_view.cascade.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

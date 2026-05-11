@@ -492,6 +492,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropFunctionAdvisory, construct: newDropFunctionAdvisoryRule},
 		{ruleID: ruleIDPGCreateProcedureNotice, construct: newCreateProcedureNoticeRule},
 		{ruleID: ruleIDPGDropProcedureAdvisory, construct: newDropProcedureAdvisoryRule},
+		// PostgreSQL advanced view lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateOrReplaceViewAdvisory, construct: newCreateOrReplaceViewAdvisoryRule},
+		{ruleID: ruleIDPGCreateTempViewNotice, construct: newCreateTempViewNoticeRule},
+		{ruleID: ruleIDPGCreateViewCheckOptionNotice, construct: newCreateViewCheckOptionNoticeRule},
+		{ruleID: ruleIDPGAlterViewRenameNotice, construct: newAlterViewRenameNoticeRule},
+		{ruleID: ruleIDPGAlterViewSetSchemaNotice, construct: newAlterViewSetSchemaNoticeRule},
+		{ruleID: ruleIDPGDropViewCascadeWarn, construct: newDropViewCascadeWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

@@ -1,0 +1,11 @@
+name: create_view_check_option_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.create_view.check_option.notice
+      - ddl.view.create.forbid

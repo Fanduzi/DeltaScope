@@ -80,6 +80,18 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_VIEW:
+		objectName := ""
+		if stmt.GetRelation() != nil {
+			objectName = stmt.GetRelation().GetRelname()
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterView,
+			ObjectName: objectName,
+			ObjectType: "view",
+			Options:    map[string]string{"action": "rename_view", "new_name": stmt.GetNewname()},
+		}
+		return statement
 	default:
 	}
 
@@ -149,6 +161,22 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			Operation:  spec.DDLOperationAlterExtension,
 			ObjectName: objectName,
 			ObjectType: "extension",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_VIEW {
+		objectName := ""
+		if stmt.GetRelation() != nil {
+			objectName = stmt.GetRelation().GetRelname()
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterView,
+			ObjectName: objectName,
+			ObjectType: "view",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),

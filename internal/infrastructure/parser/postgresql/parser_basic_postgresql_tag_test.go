@@ -337,7 +337,7 @@ func TestParserSupportsPostgreSQLCreateView(t *testing.T) {
 	}
 }
 
-func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
+func TestParserSupportsPostgreSQLCreateOrReplaceView(t *testing.T) {
 	t.Parallel()
 	parser := New()
 
@@ -353,15 +353,21 @@ func TestParserRejectsPostgreSQLCreateOrReplaceView(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown, got %#v", statement)
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected kind DDL, got %q", statement.Kind)
 	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_view" {
-		t.Fatalf("expected unsupported create_view detail, got %#v", statement.Unsupported)
+	if statement.DDL == nil {
+		t.Fatal("expected DDL metadata")
+	}
+	if statement.DDL.Operation != spec.DDLOperationCreateView {
+		t.Fatalf("expected operation create_view, got %q", statement.DDL.Operation)
+	}
+	if statement.DDL.Options["replace"] != "true" {
+		t.Fatalf("expected options[replace]=true, got %q", statement.DDL.Options["replace"])
 	}
 }
 
-func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
+func TestParserSupportsPostgreSQLCreateTemporaryView(t *testing.T) {
 	t.Parallel()
 	parser := New()
 
@@ -377,11 +383,17 @@ func TestParserRejectsPostgreSQLCreateTemporaryView(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Kind != spec.KindUnknown {
-		t.Fatalf("expected unsupported kind unknown, got %#v", statement)
+	if statement.Kind != spec.KindDDL {
+		t.Fatalf("expected kind DDL, got %q", statement.Kind)
 	}
-	if statement.Unsupported == nil || statement.Unsupported.Feature != "create_view" {
-		t.Fatalf("expected unsupported create_view detail, got %#v", statement.Unsupported)
+	if statement.DDL == nil {
+		t.Fatal("expected DDL metadata")
+	}
+	if statement.DDL.Operation != spec.DDLOperationCreateView {
+		t.Fatalf("expected operation create_view, got %q", statement.DDL.Operation)
+	}
+	if statement.DDL.Options["temporary"] != "true" {
+		t.Fatalf("expected options[temporary]=true, got %q", statement.DDL.Options["temporary"])
 	}
 }
 

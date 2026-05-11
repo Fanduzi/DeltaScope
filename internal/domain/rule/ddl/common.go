@@ -241,6 +241,14 @@ const (
 	ruleIDPGDropFunctionAdvisory              = "ddl.pg.drop_function.advisory"
 	ruleIDPGCreateProcedureNotice             = "ddl.pg.create_procedure.notice"
 	ruleIDPGDropProcedureAdvisory             = "ddl.pg.drop_procedure.advisory"
+
+	// PG advanced view lifecycle rules (PostgreSQL-only).
+	ruleIDPGCreateOrReplaceViewAdvisory = "ddl.pg.create_or_replace_view.advisory"
+	ruleIDPGCreateTempViewNotice        = "ddl.pg.create_temp_view.notice"
+	ruleIDPGCreateViewCheckOptionNotice = "ddl.pg.create_view.check_option.notice"
+	ruleIDPGAlterViewRenameNotice       = "ddl.pg.alter_view.rename.notice"
+	ruleIDPGAlterViewSetSchemaNotice    = "ddl.pg.alter_view.set_schema.notice"
+	ruleIDPGDropViewCascadeWarn         = "ddl.pg.drop_view.cascade.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

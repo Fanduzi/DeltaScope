@@ -31,6 +31,7 @@ const (
 	DDLOperationUnknown       DDLOperation = "unknown"
 	DDLOperationCreateTable   DDLOperation = "create_table"
 	DDLOperationCreateView    DDLOperation = "create_view"
+	DDLOperationAlterView     DDLOperation = "alter_view"
 	DDLOperationAlterTable    DDLOperation = "alter_table"
 	DDLOperationDropTable     DDLOperation = "drop_table"
 	DDLOperationDropIndex     DDLOperation = "drop_index"

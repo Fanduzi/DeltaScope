@@ -90,22 +90,19 @@ func TestAuditPostgreSQLInsertSelectOnConflictKeepsInsertSelectFindingOnly(t *te
 	}
 }
 
-func TestAuditPostgreSQLCreateOrReplaceViewReturnsUnsupported(t *testing.T) {
+func TestAuditPostgreSQLCreateOrReplaceViewSupported(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "create or replace view active_users as select id from users;",
 		Dialect: DialectPostgreSQL,
 	})
-	if !errors.Is(err, ErrUnsupportedStatement) {
-		t.Fatalf("expected unsupported statement sentinel, got %v", err)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(result.Unsupported) != 1 {
-		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
 	}
-	if result.Unsupported[0].Feature != "create_view" {
-		t.Fatalf("expected unsupported feature create_view, got %#v", result.Unsupported[0])
-	}
-	if result.Unsupported[0].Reason == "" {
-		t.Fatalf("expected unsupported reason, got %#v", result.Unsupported[0])
+	if len(result.Unsupported) != 0 {
+		t.Fatalf("expected 0 unsupported, got %d", len(result.Unsupported))
 	}
 }
 
