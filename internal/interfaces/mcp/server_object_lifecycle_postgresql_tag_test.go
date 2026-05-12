@@ -1076,3 +1076,101 @@ func TestAuditSQLToolPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditSQLToolPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "alter_schema_rename_notice",
+			sql:        "ALTER SCHEMA app RENAME TO app_new;",
+			wantRuleID: "ddl.pg.alter_schema.rename.notice",
+		},
+		{
+			name:       "alter_schema_owner_notice",
+			sql:        "ALTER SCHEMA app OWNER TO app_owner;",
+			wantRuleID: "ddl.pg.alter_schema.owner.notice",
+		},
+		{
+			name:       "alter_index_rename_notice",
+			sql:        "ALTER INDEX idx_users_email RENAME TO idx_users_email_v2;",
+			wantRuleID: "ddl.pg.alter_index.rename.notice",
+		},
+		{
+			name:       "alter_index_set_tablespace_notice",
+			sql:        "ALTER INDEX idx_users_email SET TABLESPACE pg_default;",
+			wantRuleID: "ddl.pg.alter_index.set_tablespace.notice",
+		},
+		{
+			name:       "alter_materialized_view_rename_notice",
+			sql:        "ALTER MATERIALIZED VIEW mv_stats RENAME TO mv_stats_v2;",
+			wantRuleID: "ddl.pg.alter_materialized_view.rename.notice",
+		},
+		{
+			name:       "alter_materialized_view_set_schema_notice",
+			sql:        "ALTER MATERIALIZED VIEW mv_stats SET SCHEMA archive;",
+			wantRuleID: "ddl.pg.alter_materialized_view.set_schema.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := NewServer(Config{Version: "test-version"})
+			session, err := connectClientSession(context.Background(), server)
+			if err != nil {
+				t.Fatalf("connect session: %v", err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+
+			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+				Name: "audit_sql",
+				Arguments: map[string]any{
+					"sql":     tt.sql,
+					"dialect": "postgresql",
+				},
+			})
+			if err != nil {
+				t.Fatalf("call audit_sql: %v", err)
+			}
+			if result.IsError {
+				t.Fatalf("expected success result, got tool error: %#v", result)
+			}
+			body, ok := result.StructuredContent.(map[string]any)
+			if !ok {
+				t.Fatalf("expected structured content, got %#v", result.StructuredContent)
+			}
+			if unsupported, ok := body["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+			statements, ok := body["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one statement, got %#v", body["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, f := range findings {
+				finding, ok := f.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}

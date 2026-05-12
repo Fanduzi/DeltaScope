@@ -764,3 +764,74 @@ func TestAuditPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "alter_schema_rename_notice",
+			sql:        "ALTER SCHEMA app RENAME TO app_new;",
+			wantRuleID: "ddl.pg.alter_schema.rename.notice",
+		},
+		{
+			name:       "alter_schema_owner_notice",
+			sql:        "ALTER SCHEMA app OWNER TO app_owner;",
+			wantRuleID: "ddl.pg.alter_schema.owner.notice",
+		},
+		{
+			name:       "alter_index_rename_notice",
+			sql:        "ALTER INDEX idx_users_email RENAME TO idx_users_email_v2;",
+			wantRuleID: "ddl.pg.alter_index.rename.notice",
+		},
+		{
+			name:       "alter_index_set_tablespace_notice",
+			sql:        "ALTER INDEX idx_users_email SET TABLESPACE pg_default;",
+			wantRuleID: "ddl.pg.alter_index.set_tablespace.notice",
+		},
+		{
+			name:       "alter_materialized_view_rename_notice",
+			sql:        "ALTER MATERIALIZED VIEW mv_stats RENAME TO mv_stats_v2;",
+			wantRuleID: "ddl.pg.alter_materialized_view.rename.notice",
+		},
+		{
+			name:       "alter_materialized_view_set_schema_notice",
+			sql:        "ALTER MATERIALIZED VIEW mv_stats SET SCHEMA archive;",
+			wantRuleID: "ddl.pg.alter_materialized_view.set_schema.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}

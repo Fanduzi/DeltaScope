@@ -1043,3 +1043,98 @@ func TestAuditCommandPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditCommandPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+	}{
+		{
+			name:       "alter_schema_rename_notice",
+			sql:        "ALTER SCHEMA app RENAME TO app_new;",
+			wantRuleID: "ddl.pg.alter_schema.rename.notice",
+		},
+		{
+			name:       "alter_schema_owner_notice",
+			sql:        "ALTER SCHEMA app OWNER TO app_owner;",
+			wantRuleID: "ddl.pg.alter_schema.owner.notice",
+		},
+		{
+			name:       "alter_index_rename_notice",
+			sql:        "ALTER INDEX idx_users_email RENAME TO idx_users_email_v2;",
+			wantRuleID: "ddl.pg.alter_index.rename.notice",
+		},
+		{
+			name:       "alter_index_set_tablespace_notice",
+			sql:        "ALTER INDEX idx_users_email SET TABLESPACE pg_default;",
+			wantRuleID: "ddl.pg.alter_index.set_tablespace.notice",
+		},
+		{
+			name:       "alter_materialized_view_rename_notice",
+			sql:        "ALTER MATERIALIZED VIEW mv_stats RENAME TO mv_stats_v2;",
+			wantRuleID: "ddl.pg.alter_materialized_view.rename.notice",
+		},
+		{
+			name:       "alter_materialized_view_set_schema_notice",
+			sql:        "ALTER MATERIALIZED VIEW mv_stats SET SCHEMA archive;",
+			wantRuleID: "ddl.pg.alter_materialized_view.set_schema.notice",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tt.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			if unsupported, ok := decoded["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, f := range findings {
+				finding, ok := f.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}
