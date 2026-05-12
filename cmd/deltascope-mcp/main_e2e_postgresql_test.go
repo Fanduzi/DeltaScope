@@ -328,7 +328,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		}
 
 		body := result.StructuredContent.(map[string]any)
-		assertMCPFindingPresent(t, body, "ddl.alter.rename_index.forbid")
+		assertMCPFindingPresent(t, body, "ddl.pg.alter_index.rename.notice")
 	})
 
 	// Case 9: drop column — column does not exist

@@ -1,0 +1,1 @@
+ALTER SCHEMA app RENAME TO app_new;

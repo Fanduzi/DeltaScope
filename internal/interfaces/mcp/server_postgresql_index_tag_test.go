@@ -91,13 +91,13 @@ func TestAuditSQLToolPostgreSQLMetadataRenameIndexResolvesOwnerAndReportsExisten
 	found := false
 	for _, raw := range findings {
 		finding, ok := raw.(map[string]any)
-		if ok && finding["rule_id"] == "ddl.alter.rename_index.exists.require" {
+		if ok && finding["rule_id"] == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename_index existence finding, got %#v", findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", findings)
 	}
 }
 
@@ -256,12 +256,12 @@ func TestAuditSQLToolPostgreSQLMetadataQualifiedRenameIndexUsesStatementSchema(t
 	found := false
 	for _, raw := range findings {
 		finding, ok := raw.(map[string]any)
-		if ok && finding["rule_id"] == "ddl.alter.rename_index.exists.require" {
+		if ok && finding["rule_id"] == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename_index existence finding, got %#v", findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", findings)
 	}
 }

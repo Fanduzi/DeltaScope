@@ -1,0 +1,1 @@
+ALTER MATERIALIZED VIEW mv_stats SET SCHEMA reporting;

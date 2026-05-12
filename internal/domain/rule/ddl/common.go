@@ -249,6 +249,14 @@ const (
 	ruleIDPGAlterViewRenameNotice       = "ddl.pg.alter_view.rename.notice"
 	ruleIDPGAlterViewSetSchemaNotice    = "ddl.pg.alter_view.set_schema.notice"
 	ruleIDPGDropViewCascadeWarn         = "ddl.pg.drop_view.cascade.warn"
+
+	// PG alter object lifecycle rules (PostgreSQL-only).
+	ruleIDPGAlterSchemaRenameNotice     = "ddl.pg.alter_schema.rename.notice"
+	ruleIDPGAlterSchemaOwnerNotice      = "ddl.pg.alter_schema.owner.notice"
+	ruleIDPGAlterIndexRenameNotice      = "ddl.pg.alter_index.rename.notice"
+	ruleIDPGAlterIndexSetTablespaceNotice = "ddl.pg.alter_index.set_tablespace.notice"
+	ruleIDPGAlterMaterializedViewRenameNotice   = "ddl.pg.alter_materialized_view.rename.notice"
+	ruleIDPGAlterMaterializedViewSetSchemaNotice = "ddl.pg.alter_materialized_view.set_schema.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

@@ -195,13 +195,13 @@ func TestAuditPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) 
 	}
 	found := false
 	for _, finding := range result.Statements[0].Findings {
-		if finding.RuleID == "ddl.alter.rename_index.exists.require" {
+		if finding.RuleID == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename_index existence finding, got %#v", result.Statements[0].Findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", result.Statements[0].Findings)
 	}
 }
 

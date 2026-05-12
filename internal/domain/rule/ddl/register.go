@@ -499,6 +499,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterViewRenameNotice, construct: newAlterViewRenameNoticeRule},
 		{ruleID: ruleIDPGAlterViewSetSchemaNotice, construct: newAlterViewSetSchemaNoticeRule},
 		{ruleID: ruleIDPGDropViewCascadeWarn, construct: newDropViewCascadeWarnRule},
+		// PostgreSQL alter object lifecycle rules (PG-only).
+		{ruleID: ruleIDPGAlterSchemaRenameNotice, construct: newAlterSchemaRenameNoticeRule},
+		{ruleID: ruleIDPGAlterSchemaOwnerNotice, construct: newAlterSchemaOwnerNoticeRule},
+		{ruleID: ruleIDPGAlterIndexRenameNotice, construct: newAlterIndexRenameNoticeRule},
+		{ruleID: ruleIDPGAlterIndexSetTablespaceNotice, construct: newAlterIndexSetTablespaceNoticeRule},
+		{ruleID: ruleIDPGAlterMaterializedViewRenameNotice, construct: newAlterMaterializedViewRenameNoticeRule},
+		{ruleID: ruleIDPGAlterMaterializedViewSetSchemaNotice, construct: newAlterMaterializedViewSetSchemaNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

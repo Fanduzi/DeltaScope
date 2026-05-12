@@ -262,18 +262,23 @@ func TestParserSupportsPostgreSQLRenameIndex(t *testing.T) {
 	if statement.Unsupported != nil {
 		t.Fatalf("expected supported rename index, got unsupported %#v", statement.Unsupported)
 	}
-	if statement.DDL == nil || len(statement.DDL.Alter) != 1 {
-		t.Fatalf("expected one alter action, got %#v", statement)
+	if statement.DDL == nil {
+		t.Fatalf("expected DDL, got nil")
 	}
-	alter := statement.DDL.Alter[0]
-	if alter.Action != "rename_index" {
-		t.Fatalf("expected rename_index action, got %#v", alter)
+	if statement.DDL.Operation != spec.DDLOperationAlterIndex {
+		t.Fatalf("expected operation alter_index, got %q", statement.DDL.Operation)
 	}
-	if alter.Name != "idx_old" {
-		t.Fatalf("expected old index name idx_old, got %#v", alter)
+	if statement.DDL.ObjectName != "idx_old" {
+		t.Fatalf("expected object_name idx_old, got %q", statement.DDL.ObjectName)
 	}
-	if alter.Options["new_name"] != "idx_new" {
-		t.Fatalf("expected new index name idx_new, got %#v", alter)
+	if statement.DDL.ObjectType != "index" {
+		t.Fatalf("expected object_type index, got %q", statement.DDL.ObjectType)
+	}
+	if statement.DDL.Options["action"] != "rename" {
+		t.Fatalf("expected action=rename, got %q", statement.DDL.Options["action"])
+	}
+	if statement.DDL.Options["new_name"] != "idx_new" {
+		t.Fatalf("expected new_name=idx_new, got %q", statement.DDL.Options["new_name"])
 	}
 }
 

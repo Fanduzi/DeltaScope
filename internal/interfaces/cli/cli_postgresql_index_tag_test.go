@@ -45,8 +45,8 @@ func TestAuditCommandPostgreSQLMetadataQualifiedRenameIndexUsesStatementSchema(t
 		stderr,
 	)
 
-	if code != exitAudit {
-		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	if code != exitOK {
+		t.Fatalf("expected clean exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr output, got %q", stderr.String())
@@ -84,12 +84,12 @@ func TestAuditCommandPostgreSQLMetadataQualifiedRenameIndexUsesStatementSchema(t
 	found := false
 	for _, raw := range findings {
 		finding, ok := raw.(map[string]any)
-		if ok && finding["rule_id"] == "ddl.alter.rename_index.exists.require" {
+		if ok && finding["rule_id"] == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename_index existence finding, got %#v", findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", findings)
 	}
 }

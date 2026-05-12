@@ -40,7 +40,7 @@ func TestAuditPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T) {
 	}
 }
 
-func TestAuditPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
+func TestAuditPostgreSQLRenameIndexMapsToAlterIndexRule(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "alter index idx_old rename to idx_new;",
 		Dialect: DialectPostgreSQL,
@@ -52,10 +52,10 @@ func TestAuditPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
 		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
 	}
 	if len(result.Statements[0].Findings) != 1 {
-		t.Fatalf("expected exactly 1 rename_index finding, got %#v", result.Statements[0].Findings)
+		t.Fatalf("expected exactly 1 alter_index finding, got %#v", result.Statements[0].Findings)
 	}
-	if result.Statements[0].Findings[0].RuleID != "ddl.alter.rename_index.forbid" {
-		t.Fatalf("expected rename_index forbid finding, got %#v", result.Statements[0].Findings)
+	if result.Statements[0].Findings[0].RuleID != "ddl.pg.alter_index.rename.notice" {
+		t.Fatalf("expected alter_index rename notice finding, got %#v", result.Statements[0].Findings)
 	}
 }
 

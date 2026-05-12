@@ -479,10 +479,10 @@ func TestExecuteAuditRequestPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) 
 		t.Fatalf("expected one statement result, got %#v", response.Statements)
 	}
 	if len(response.Statements[0].Findings) != 1 {
-		t.Fatalf("expected exactly 1 rename_index finding, got %#v", response.Statements[0].Findings)
+		t.Fatalf("expected exactly 1 alter_index finding, got %#v", response.Statements[0].Findings)
 	}
-	if response.Statements[0].Findings[0].RuleID != "ddl.alter.rename_index.forbid" {
-		t.Fatalf("expected rename_index forbid finding, got %#v", response.Statements[0].Findings)
+	if response.Statements[0].Findings[0].RuleID != "ddl.pg.alter_index.rename.notice" {
+		t.Fatalf("expected alter_index rename notice finding, got %#v", response.Statements[0].Findings)
 	}
 }
 
@@ -670,13 +670,13 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(
 	}
 	found := false
 	for _, finding := range response.Statements[0].Findings {
-		if finding.RuleID == "ddl.alter.rename_index.exists.require" {
+		if finding.RuleID == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename-index existence finding, got %#v", response.Statements[0].Findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", response.Statements[0].Findings)
 	}
 }
 

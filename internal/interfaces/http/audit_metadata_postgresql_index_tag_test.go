@@ -71,12 +71,12 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesQualifiedRenameIndexWithou
 	}
 	found := false
 	for _, finding := range response.Statements[0].Findings {
-		if finding.RuleID == "ddl.alter.rename_index.exists.require" {
+		if finding.RuleID == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename-index existence finding, got %#v", response.Statements[0].Findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", response.Statements[0].Findings)
 	}
 }

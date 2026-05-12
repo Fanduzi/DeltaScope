@@ -244,11 +244,11 @@ func TestAuditSQLToolPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
 		t.Fatalf("expected findings array, got %#v", statement["findings"])
 	}
 	if len(findings) != 1 {
-		t.Fatalf("expected exactly 1 rename_index finding, got %#v", findings)
+		t.Fatalf("expected exactly 1 alter_index finding, got %#v", findings)
 	}
 	finding, ok := findings[0].(map[string]any)
-	if !ok || finding["rule_id"] != "ddl.alter.rename_index.forbid" {
-		t.Fatalf("expected rename_index forbid finding, got %#v", findings)
+	if !ok || finding["rule_id"] != "ddl.pg.alter_index.rename.notice" {
+		t.Fatalf("expected alter_index rename notice finding, got %#v", findings)
 	}
 }
 

@@ -743,6 +743,30 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.alter_schema.rename.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_schema.owner.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_index.rename.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_index.set_tablespace.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_materialized_view.rename.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_materialized_view.set_schema.notice:
+    enabled: true
+    level: notice
+
   dml.impact.estimate:
     enabled: true
     level: notice

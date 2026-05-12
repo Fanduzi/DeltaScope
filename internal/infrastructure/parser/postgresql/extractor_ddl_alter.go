@@ -18,6 +18,9 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 	if stmt.GetObjtype() == pg_query.ObjectType_OBJECT_TYPE {
 		return extractAlterTypeCompositeFromAlterTableStmt(statement, stmt)
 	}
+	if stmt.GetObjtype() == pg_query.ObjectType_OBJECT_INDEX {
+		return extractAlterIndexStmt(statement, stmt)
+	}
 	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TYPE_UNDEFINED && stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
 	}
@@ -92,6 +95,27 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Options:    map[string]string{"action": "rename_view", "new_name": stmt.GetNewname()},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_SCHEMA:
+		objectName := renameObjectSchemaName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterSchema,
+			ObjectName: objectName,
+			ObjectType: "schema",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_MATVIEW:
+		objectName := ""
+		if stmt.GetRelation() != nil {
+			objectName = stmt.GetRelation().GetRelname()
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterMaterializedView,
+			ObjectName: objectName,
+			ObjectType: "materialized_view",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
 	default:
 	}
 
@@ -123,17 +147,16 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_INDEX:
-		options := map[string]string{"new_name": stmt.GetNewname()}
+		objectName := table.Name
+		options := map[string]string{"action": "rename", "new_name": stmt.GetNewname()}
 		if table != nil && strings.TrimSpace(table.Schema) != "" {
 			options["schema"] = strings.TrimSpace(table.Schema)
 		}
 		statement.DDL = &spec.DDL{
-			Operation: spec.DDLOperationAlterTable,
-			Alter: []spec.Alter{{
-				Action:  "rename_index",
-				Name:    table.Name,
-				Options: options,
-			}},
+			Operation:  spec.DDLOperationAlterIndex,
+			ObjectName: objectName,
+			ObjectType: "index",
+			Options:    options,
 		}
 		return statement
 	default:
@@ -177,6 +200,22 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			Operation:  spec.DDLOperationAlterView,
 			ObjectName: objectName,
 			ObjectType: "view",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_MATVIEW {
+		objectName := ""
+		if stmt.GetRelation() != nil {
+			objectName = stmt.GetRelation().GetRelname()
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterMaterializedView,
+			ObjectName: objectName,
+			ObjectType: "materialized_view",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -769,6 +808,95 @@ func extractGrantStmt(statement spec.Statement, stmt *pg_query.GrantStmt) spec.S
 
 func extractGrantRoleStmt(statement spec.Statement, stmt *pg_query.GrantRoleStmt) spec.Statement {
 	return unsupportedStatement(statement, "grant_role", "postgresql role membership grant/revoke is deferred")
+}
+
+func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_owner", "postgresql alter owner statement payload is missing")
+	}
+
+	owner := ""
+	if no := stmt.GetNewowner(); no != nil {
+		owner = no.GetRolename()
+	}
+
+	switch stmt.GetObjectType() {
+	case pg_query.ObjectType_OBJECT_SCHEMA:
+		objectName := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterSchema,
+			ObjectName: objectName,
+			ObjectType: "schema",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
+	default:
+		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
+	}
+}
+
+func extractAlterIndexStmt(statement spec.Statement, stmt *pg_query.AlterTableStmt) spec.Statement {
+	if len(stmt.GetCmds()) == 0 {
+		return unsupportedStatement(statement, "alter_index", "postgresql alter index statement has no commands")
+	}
+	table := tableFromRangeVar(stmt.GetRelation())
+	objectName := ""
+	if table != nil {
+		objectName = table.Name
+	}
+	for _, item := range stmt.GetCmds() {
+		cmd := item.GetAlterTableCmd()
+		if cmd == nil {
+			continue
+		}
+		switch cmd.GetSubtype() {
+		case pg_query.AlterTableType_AT_SetTableSpace:
+			tablespace := cmd.GetName()
+			statement.DDL = &spec.DDL{
+				Operation:  spec.DDLOperationAlterIndex,
+				ObjectName: objectName,
+				ObjectType: "index",
+				Options:    map[string]string{"action": "set_tablespace", "tablespace": tablespace},
+			}
+			return statement
+		default:
+			return unsupportedStatement(statement, "alter_index", fmt.Sprintf("postgresql alter index command %s is deferred", cmd.GetSubtype()))
+		}
+	}
+	return unsupportedStatement(statement, "alter_index", "postgresql alter index statement has no supported commands")
+}
+
+// renameObjectSchemaName extracts the schema name from a RenameStmt targeting
+// OBJECT_SCHEMA. The schema name is stored in the Subname field.
+func renameObjectSchemaName(stmt *pg_query.RenameStmt) string {
+	if s := stmt.GetSubname(); s != "" {
+		return s
+	}
+	if stmt.GetRelation() != nil {
+		return stmt.GetRelation().GetRelname()
+	}
+	obj := stmt.GetObject()
+	if obj == nil {
+		return ""
+	}
+	if list := obj.GetList(); list != nil {
+		return firstStringFromNodes(list.GetItems())
+	}
+	return firstStringFromNodes([]*pg_query.Node{obj})
+}
+
+// alterOwnerObjectName extracts the object name from an AlterOwnerStmt.
+func alterOwnerObjectName(stmt *pg_query.AlterOwnerStmt) string {
+	if obj := stmt.GetObject(); obj != nil {
+		if list := obj.GetList(); list != nil {
+			return firstStringFromNodes(list.GetItems())
+		}
+		return firstStringFromNodes([]*pg_query.Node{obj})
+	}
+	if rv := stmt.GetRelation(); rv != nil {
+		return rv.GetRelname()
+	}
+	return ""
 }
 
 // grantObjectName extracts table name and optional schema from GrantStmt.Objects.

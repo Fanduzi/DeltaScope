@@ -124,7 +124,7 @@ func TestAuditCommandPostgreSQLSetDataTypeRendersForbidFinding(t *testing.T) {
 	}
 }
 
-func TestAuditCommandPostgreSQLRenameIndexRendersForbidFinding(t *testing.T) {
+func TestAuditCommandPostgreSQLRenameIndexRendersNoticeFinding(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
 
@@ -136,8 +136,8 @@ func TestAuditCommandPostgreSQLRenameIndexRendersForbidFinding(t *testing.T) {
 		stderr,
 	)
 
-	if code != exitAudit {
-		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	if code != exitOK {
+		t.Fatalf("expected clean exit code %d, got %d\nstdout=%q\nstderr=%q", exitOK, code, stdout.String(), stderr.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr output, got %q", stderr.String())
@@ -160,11 +160,11 @@ func TestAuditCommandPostgreSQLRenameIndexRendersForbidFinding(t *testing.T) {
 		t.Fatalf("expected findings array, got %#v", statement["findings"])
 	}
 	if len(findings) != 1 {
-		t.Fatalf("expected exactly 1 rename_index finding, got %#v", findings)
+		t.Fatalf("expected exactly 1 alter_index finding, got %#v", findings)
 	}
 	finding, ok := findings[0].(map[string]any)
-	if !ok || finding["rule_id"] != "ddl.alter.rename_index.forbid" {
-		t.Fatalf("expected rename_index forbid finding, got %#v", findings)
+	if !ok || finding["rule_id"] != "ddl.pg.alter_index.rename.notice" {
+		t.Fatalf("expected alter_index rename notice finding, got %#v", findings)
 	}
 }
 
@@ -285,8 +285,8 @@ func TestAuditCommandPostgreSQLMetadataRenameIndexRendersExistenceFinding(t *tes
 		stderr,
 	)
 
-	if code != exitAudit {
-		t.Fatalf("expected audit exit code %d, got %d\nstdout=%q\nstderr=%q", exitAudit, code, stdout.String(), stderr.String())
+	if code != exitOK {
+		t.Fatalf("expected clean exit code %d, got %d\nstdout=%q\nstderr=%q", exitOK, code, stdout.String(), stderr.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr output, got %q", stderr.String())
@@ -315,13 +315,13 @@ func TestAuditCommandPostgreSQLMetadataRenameIndexRendersExistenceFinding(t *tes
 	found := false
 	for _, raw := range findings {
 		finding, ok := raw.(map[string]any)
-		if ok && finding["rule_id"] == "ddl.alter.rename_index.exists.require" {
+		if ok && finding["rule_id"] == "ddl.pg.alter_index.rename.notice" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected rename_index existence finding, got %#v", findings)
+		t.Fatalf("expected alter_index rename notice finding, got %#v", findings)
 	}
 	if len(client.indexCalls) != 1 || client.indexCalls[0] != "missing_idx" {
 		t.Fatalf("expected one index-owner resolution, got %#v", client.indexCalls)

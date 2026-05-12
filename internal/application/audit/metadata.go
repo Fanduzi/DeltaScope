@@ -109,11 +109,27 @@ func metadataTargetTableName(ctx context.Context, dialect spec.Dialect, request 
 	if tableName != "" {
 		return tableName, nil
 	}
-	if request == nil || request.Provider == nil || statement.DDL == nil || len(statement.DDL.Alter) == 0 {
+	if request == nil || request.Provider == nil || statement.DDL == nil {
 		return "", nil
 	}
 	resolver, ok := request.Provider.(IndexOwnerResolver)
 	if !ok {
+		return "", nil
+	}
+	// Standalone ALTER INDEX operations (PostgreSQL).
+	if statement.DDL.Operation == spec.DDLOperationAlterIndex {
+		indexName := strings.TrimSpace(statement.DDL.ObjectName)
+		if indexName == "" {
+			return "", nil
+		}
+		schema := indexOwnerSchema(request, statement.DDL.Options)
+		if schema == "" {
+			return "", nil
+		}
+		return resolver.ResolveTableForIndex(ctx, dialect, schema, indexName)
+	}
+	// Alter-based index operations (MySQL/TiDB).
+	if len(statement.DDL.Alter) == 0 {
 		return "", nil
 	}
 	for _, alter := range statement.DDL.Alter {
@@ -130,6 +146,18 @@ func metadataTargetTableName(ctx context.Context, dialect spec.Dialect, request 
 		}
 	}
 	return "", nil
+}
+
+func indexOwnerSchema(request *MetadataRequest, options map[string]string) string {
+	if options != nil {
+		if schema := strings.TrimSpace(options["schema"]); schema != "" {
+			return schema
+		}
+	}
+	if request == nil {
+		return ""
+	}
+	return strings.TrimSpace(request.Schema)
 }
 
 func indexStatementSchema(request *MetadataRequest, alter spec.Alter) string {

@@ -506,7 +506,7 @@ func TestAuditSQLPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
 	}
 }
 
-func TestAuditSQLPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
+func TestAuditSQLPostgreSQLRenameIndexMapsToAlterIndexRule(t *testing.T) {
 	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:     "alter index idx_old rename to idx_new;",
@@ -518,11 +518,18 @@ func TestAuditSQLPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
 	if len(result.Statements) != 1 {
 		t.Fatalf("expected 1 statement result, got %#v", result.Statements)
 	}
-	if len(result.Statements[0].Findings) != 1 {
-		t.Fatalf("expected exactly 1 rename_index finding, got %#v", result.Statements[0].Findings)
+	if len(result.Statements[0].Findings) < 1 {
+		t.Fatalf("expected at least 1 finding, got %#v", result.Statements[0].Findings)
 	}
-	if result.Statements[0].Findings[0].RuleID != "ddl.alter.rename_index.forbid" {
-		t.Fatalf("expected rename_index forbid finding, got %#v", result.Statements[0].Findings)
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == "ddl.pg.alter_index.rename.notice" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected ddl.pg.alter_index.rename.notice finding, got %#v", result.Statements[0].Findings)
 	}
 }
 

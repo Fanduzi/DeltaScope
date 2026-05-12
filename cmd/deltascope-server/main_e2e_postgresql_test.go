@@ -171,7 +171,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
-		assertFindingPresent(t, body, "ddl.alter.rename_index.forbid")
+		assertFindingPresent(t, body, "ddl.pg.alter_index.rename.notice")
 	})
 
 	// Case 9: drop column — column does not exist

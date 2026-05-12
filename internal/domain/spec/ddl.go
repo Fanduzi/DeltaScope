@@ -74,6 +74,10 @@ const (
 	DDLOperationDropFunction    DDLOperation = "drop_function"
 	DDLOperationCreateProcedure DDLOperation = "create_procedure"
 	DDLOperationDropProcedure   DDLOperation = "drop_procedure"
+
+	DDLOperationAlterSchema          DDLOperation = "alter_schema"
+	DDLOperationAlterIndex           DDLOperation = "alter_index"
+	DDLOperationAlterMaterializedView DDLOperation = "alter_materialized_view"
 )
 
 // Table describes a table-level object.

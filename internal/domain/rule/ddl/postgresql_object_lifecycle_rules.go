@@ -19,6 +19,7 @@ type pgObjectLifecycleRule struct {
 	level      rule.Level
 	operation  spec.DDLOperation
 	option     string
+	action     string
 	object     string
 	objectType string
 	message    string
@@ -56,6 +57,21 @@ func newPGObjectLifecycleRuleWithType(id string, level rule.Level, operation spe
 	}, nil
 }
 
+func newPGObjectLifecycleRuleWithAction(id string, level rule.Level, operation spec.DDLOperation, action string, object string, objectType string, message string, why string, risk string, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return pgObjectLifecycleRule{
+		id:         id,
+		level:      configuredLevel(cfg, level),
+		operation:  operation,
+		action:     action,
+		object:     object,
+		objectType: objectType,
+		message:    message,
+		why:        why,
+		risk:       risk,
+		suggestion: suggestion,
+	}, nil
+}
+
 func (r pgObjectLifecycleRule) ID() string { return r.id }
 
 func (r pgObjectLifecycleRule) AppliesTo(statement spec.Statement) bool {
@@ -76,6 +92,9 @@ func (r pgObjectLifecycleRule) Evaluate(ctx context.Context, statement spec.Stat
 		return nil, nil
 	}
 	if r.option != "" && statement.DDL.Options[r.option] != "true" {
+		return nil, nil
+	}
+	if r.action != "" && statement.DDL.Options["action"] != r.action {
 		return nil, nil
 	}
 
@@ -219,6 +238,78 @@ func newDropMaterializedViewCascadeWarnRule(cfg policy.RulePolicy) (rule.Stateme
 		"CASCADE forces PostgreSQL to drop any views or other objects that depend on this materialized view.",
 		"Cascading drops can silently destroy dependent views, breaking downstream queries and reporting pipelines beyond the intended target.",
 		"Avoid CASCADE in production migrations. Explicitly drop dependent views first so the full blast radius is visible and reviewed.",
+		cfg,
+	)
+}
+
+func newAlterSchemaRenameNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterSchemaRenameNotice, rule.LevelNotice, spec.DDLOperationAlterSchema, "rename",
+		"schema", "schema",
+		"ALTER SCHEMA %q RENAME changes namespace resolution on PostgreSQL",
+		"Renaming a schema changes how PostgreSQL resolves unqualified object names for every object it contains.",
+		"Downstream queries, views, and application code that reference the old schema name will break until updated.",
+		"Before renaming, search for all references to the old schema name across application code, views, and functions.",
+		cfg,
+	)
+}
+
+func newAlterSchemaOwnerNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterSchemaOwnerNotice, rule.LevelNotice, spec.DDLOperationAlterSchema, "set_owner",
+		"schema", "schema",
+		"ALTER SCHEMA %q OWNER TO changes schema ownership on PostgreSQL",
+		"Changing schema ownership transfers all privileges and default permissions associated with the schema.",
+		"The new owner gains full control over the schema and can drop or modify contained objects.",
+		"Verify the new owner role has appropriate permissions and that no access control policies are violated.",
+		cfg,
+	)
+}
+
+func newAlterIndexRenameNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterIndexRenameNotice, rule.LevelNotice, spec.DDLOperationAlterIndex, "rename",
+		"index", "index",
+		"ALTER INDEX %q RENAME changes index identification on PostgreSQL",
+		"Renaming an index changes how it is identified in query plans and monitoring dashboards.",
+		"Application code or monitoring that references the old index name will need updating.",
+		"Update any monitoring alerts or documentation that reference the old index name.",
+		cfg,
+	)
+}
+
+func newAlterIndexSetTablespaceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterIndexSetTablespaceNotice, rule.LevelNotice, spec.DDLOperationAlterIndex, "set_tablespace",
+		"index", "index",
+		"ALTER INDEX %q SET TABLESPACE moves index storage on PostgreSQL",
+		"Moving an index to a different tablespace changes its physical storage location.",
+		"The operation rewrites the index to the new tablespace, which can be I/O-intensive on large indexes.",
+		"Schedule tablespace moves during low-traffic windows and verify the target tablespace has sufficient space.",
+		cfg,
+	)
+}
+
+func newAlterMaterializedViewRenameNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterMaterializedViewRenameNotice, rule.LevelNotice, spec.DDLOperationAlterMaterializedView, "rename",
+		"materialized view", "materialized_view",
+		"ALTER MATERIALIZED VIEW %q RENAME changes materialized view identification on PostgreSQL",
+		"Renaming a materialized view changes how downstream queries and reporting pipelines reference it.",
+		"Queries, dashboards, or ETL steps that reference the old materialized view name will fail after renaming.",
+		"Update all downstream references before renaming. Consider creating a view with the old name as an alias during transition.",
+		cfg,
+	)
+}
+
+func newAlterMaterializedViewSetSchemaNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGObjectLifecycleRuleWithAction(
+		ruleIDPGAlterMaterializedViewSetSchemaNotice, rule.LevelNotice, spec.DDLOperationAlterMaterializedView, "set_schema",
+		"materialized view", "materialized_view",
+		"ALTER MATERIALIZED VIEW %q SET SCHEMA changes namespace resolution on PostgreSQL",
+		"Moving a materialized view to a different schema changes how PostgreSQL resolves unqualified references to it.",
+		"Downstream queries and reporting pipelines that reference the materialized view without a schema qualifier may resolve to a different object or fail.",
+		"Update all schema-qualified references before moving. Verify no unqualified references depend on the current schema.",
 		cfg,
 	)
 }

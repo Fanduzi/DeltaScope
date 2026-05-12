@@ -1,0 +1,1 @@
+ALTER MATERIALIZED VIEW mv_stats RENAME TO mv_stats_v2;
