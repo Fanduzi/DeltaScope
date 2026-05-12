@@ -1,0 +1,1 @@
+SECURITY LABEL FOR selinux ON TABLE users IS NULL

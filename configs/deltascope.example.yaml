@@ -867,6 +867,22 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.comment_on.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.comment_on.remove.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.security_label.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.security_label.remove.notice:
+    enabled: true
+    level: notice
+
   dml.impact.estimate:
     enabled: true
     level: notice

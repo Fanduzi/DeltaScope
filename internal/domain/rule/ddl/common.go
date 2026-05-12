@@ -285,6 +285,11 @@ const (
 	ruleIDPGCreateForeignDataWrapperNotice = "ddl.pg.create_foreign_data_wrapper.notice"
 	ruleIDPGAlterForeignDataWrapperNotice  = "ddl.pg.alter_foreign_data_wrapper.notice"
 	ruleIDPGDropForeignDataWrapperWarn     = "ddl.pg.drop_foreign_data_wrapper.warn"
+	// PostgreSQL annotation lifecycle rules (PG-only).
+	ruleIDPGCommentOnNotice           = "ddl.pg.comment_on.notice"
+	ruleIDPGCommentOnRemoveNotice     = "ddl.pg.comment_on.remove.notice"
+	ruleIDPGSecurityLabelNotice       = "ddl.pg.security_label.notice"
+	ruleIDPGSecurityLabelRemoveNotice = "ddl.pg.security_label.remove.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

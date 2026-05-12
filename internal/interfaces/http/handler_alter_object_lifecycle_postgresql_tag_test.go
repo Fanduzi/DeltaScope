@@ -175,6 +175,27 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "DROP FOREIGN DATA WRAPPER fdw",
 			wantRuleID: "ddl.pg.drop_foreign_data_wrapper.warn",
 		},
+		// PostgreSQL annotation lifecycle (PG-only).
+		{
+			name:       "comment_on_notice",
+			sql:        "COMMENT ON TABLE users IS 'user accounts'",
+			wantRuleID: "ddl.pg.comment_on.notice",
+		},
+		{
+			name:       "comment_on_remove_notice",
+			sql:        "COMMENT ON TABLE users IS NULL",
+			wantRuleID: "ddl.pg.comment_on.remove.notice",
+		},
+		{
+			name:       "security_label_notice",
+			sql:        "SECURITY LABEL FOR selinux ON TABLE users IS 'system_u:object_r:sepgsql_table_t:s0'",
+			wantRuleID: "ddl.pg.security_label.notice",
+		},
+		{
+			name:       "security_label_remove_notice",
+			sql:        "SECURITY LABEL FOR selinux ON TABLE users IS NULL",
+			wantRuleID: "ddl.pg.security_label.remove.notice",
+		},
 	}
 
 	for _, tt := range tests {

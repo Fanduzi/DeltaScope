@@ -135,19 +135,19 @@ var pgDDLDeepCoverageCensusCases = []struct {
 
 	{Name: "COMMENT ON TABLE IS",
 		SQL:      "COMMENT ON TABLE users IS 'user accounts'",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "COMMENT ON TABLE IS NULL",
 		SQL:      "COMMENT ON TABLE users IS NULL",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Metadata annotation: SECURITY LABEL =====
 
 	{Name: "SECURITY LABEL ON TABLE IS",
 		SQL:      "SECURITY LABEL FOR selinux ON TABLE users IS 'system_u:object_r:sepgsql_table_t:s0'",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "SECURITY LABEL ON TABLE IS NULL",
 		SQL:      "SECURITY LABEL FOR selinux ON TABLE users IS NULL",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Event trigger lifecycle =====
 

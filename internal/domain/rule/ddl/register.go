@@ -534,6 +534,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateForeignDataWrapperNotice, construct: newCreateForeignDataWrapperNoticeRule},
 		{ruleID: ruleIDPGAlterForeignDataWrapperNotice, construct: newAlterForeignDataWrapperNoticeRule},
 		{ruleID: ruleIDPGDropForeignDataWrapperWarn, construct: newDropForeignDataWrapperWarnRule},
+		// PostgreSQL annotation lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCommentOnNotice, construct: newCommentOnNoticeRule},
+		{ruleID: ruleIDPGCommentOnRemoveNotice, construct: newCommentOnRemoveNoticeRule},
+		{ruleID: ruleIDPGSecurityLabelNotice, construct: newSecurityLabelNoticeRule},
+		{ruleID: ruleIDPGSecurityLabelRemoveNotice, construct: newSecurityLabelRemoveNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

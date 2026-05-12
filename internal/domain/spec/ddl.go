@@ -102,6 +102,9 @@ const (
 	DDLOperationCreateForeignDataWrapper DDLOperation = "create_foreign_data_wrapper"
 	DDLOperationAlterForeignDataWrapper  DDLOperation = "alter_foreign_data_wrapper"
 	DDLOperationDropForeignDataWrapper   DDLOperation = "drop_foreign_data_wrapper"
+
+	DDLOperationCommentOn     DDLOperation = "comment_on"
+	DDLOperationSecurityLabel DDLOperation = "security_label"
 )
 
 // Table describes a table-level object.

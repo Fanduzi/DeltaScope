@@ -64,6 +64,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_extension_lifecycle_rules_test.go | Verifies PG extension lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_function_lifecycle_rules.go | Implements PostgreSQL-only function/procedure lifecycle rules: create-function notice, create-function security-definer warn, create-or-replace-function advisory, drop-function advisory, create-procedure notice, drop-procedure advisory |
 | postgresql_advanced_view_lifecycle_rules.go | Implements PostgreSQL-only advanced view lifecycle rules: create-or-replace-view advisory, create-temp-view notice, create-view check-option notice, alter-view rename notice, alter-view set-schema notice, drop-view cascade warn |
+| postgresql_foreign_object_lifecycle_rules.go | Implements PostgreSQL-only foreign object lifecycle rules: create/alter/drop foreign table, foreign server, user mapping, and foreign data wrapper notices/warnings |
+| postgresql_annotation_lifecycle_rules.go | Implements PostgreSQL-only annotation lifecycle rules: comment-on notice, comment-on remove notice, security-label notice, security-label remove notice |
+| postgresql_annotation_lifecycle_rules_test.go | Verifies PG annotation lifecycle rules with positive, negative, cross-dialect, null/non-null skip, registration, and defaults coverage |
 
 ## Exports
 

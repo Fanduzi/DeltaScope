@@ -115,6 +115,10 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateFdwStmt(statement, node.CreateFdwStmt), nil
 	case *pg_query.Node_AlterFdwStmt:
 		return extractAlterFdwStmt(statement, node.AlterFdwStmt), nil
+	case *pg_query.Node_CommentStmt:
+		return extractCommentStmt(statement, node.CommentStmt), nil
+	case *pg_query.Node_SecLabelStmt:
+		return extractSecLabelStmt(statement, node.SecLabelStmt), nil
 	case *pg_query.Node_AlterOwnerStmt:
 		return extractAlterOwnerStmt(statement, node.AlterOwnerStmt), nil
 	case *pg_query.Node_InsertStmt:

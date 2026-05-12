@@ -596,5 +596,26 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		// PostgreSQL annotation lifecycle rules (PG-only).
+		"ddl.pg.comment_on.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.comment_on.remove.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.security_label.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.security_label.remove.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 	}
 }
