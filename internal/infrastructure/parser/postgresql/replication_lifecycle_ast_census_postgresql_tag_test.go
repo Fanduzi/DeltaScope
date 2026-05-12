@@ -326,3 +326,48 @@ func assertReplicationLifecycleBaseline(t *testing.T, fact replicationLifecycleB
 		}
 	}
 }
+
+func TestAlterSubscriptionDisableEnableEdgeCases(t *testing.T) {
+	t.Parallel()
+	p := New()
+
+	cases := []struct {
+		Name       string
+		SQL        string
+		WantAction string
+	}{
+		{Name: "lowercase_disable", SQL: "alter subscription sub disable", WantAction: "disable"},
+		{Name: "mixed_case_disable", SQL: "Alter Subscription sub Disable", WantAction: "disable"},
+		{Name: "multi_whitespace_disable", SQL: "ALTER  SUBSCRIPTION  sub  DISABLE", WantAction: "disable"},
+		{Name: "lowercase_enable", SQL: "alter subscription sub enable", WantAction: "enable"},
+		{Name: "multi_whitespace_enable", SQL: "ALTER  SUBSCRIPTION  sub  ENABLE", WantAction: "enable"},
+		{Name: "set_publication_not_disable", SQL: "ALTER SUBSCRIPTION sub SET PUBLICATION pub_all", WantAction: "set_publication"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			result, err := p.Parse(context.Background(), tc.SQL)
+			if err != nil {
+				t.Fatalf("parse failed: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			es := result.Statements[0]
+			if es.Kind != spec.KindDDL {
+				t.Fatalf("expected KindDDL, got %s", es.Kind)
+			}
+			stmt, extractErr := es.Extractor.Extract(spec.DialectPostgreSQL, es.RawSQL)
+			if extractErr != nil {
+				t.Fatalf("extract failed: %v", extractErr)
+			}
+			if stmt.DDL == nil {
+				t.Fatal("expected DDL")
+			}
+			if stmt.DDL.Options["action"] != tc.WantAction {
+				t.Errorf("expected action=%q, got %q", tc.WantAction, stmt.DDL.Options["action"])
+			}
+		})
+	}
+}
