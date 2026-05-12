@@ -188,6 +188,10 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "foreign_data_wrapper",
 			Options:    options,
 		}
+	case pg_query.ObjectType_OBJECT_EVENT_TRIGGER:
+		statement.DDL = extractDropEventTrigger(statement, stmt).DDL
+	case pg_query.ObjectType_OBJECT_RULE:
+		statement.DDL = extractDropRule(statement, stmt).DDL
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}

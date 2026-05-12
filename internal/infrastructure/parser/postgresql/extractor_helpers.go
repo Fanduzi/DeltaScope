@@ -282,6 +282,12 @@ func featureNameForNode(node *pg_query.Node) string {
 		return "grant_role"
 	case *pg_query.Node_AlterDefaultPrivilegesStmt:
 		return "alter_default_privileges"
+	case *pg_query.Node_CreateEventTrigStmt:
+		return "create_event_trigger"
+	case *pg_query.Node_AlterEventTrigStmt:
+		return "alter_event_trigger"
+	case *pg_query.Node_RuleStmt:
+		return "create_rule"
 	default:
 		return "unknown"
 	}

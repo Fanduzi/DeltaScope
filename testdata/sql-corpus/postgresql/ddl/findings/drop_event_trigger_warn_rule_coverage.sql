@@ -1,0 +1,1 @@
+DROP EVENT TRIGGER trg_ddl

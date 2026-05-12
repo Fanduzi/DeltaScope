@@ -134,6 +134,10 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_EVENT_TRIGGER:
+		return extractRenameEventTrigger(statement, stmt)
+	case pg_query.ObjectType_OBJECT_RULE:
+		return extractRenameRule(statement, stmt)
 	default:
 	}
 

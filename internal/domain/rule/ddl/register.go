@@ -539,6 +539,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCommentOnRemoveNotice, construct: newCommentOnRemoveNoticeRule},
 		{ruleID: ruleIDPGSecurityLabelNotice, construct: newSecurityLabelNoticeRule},
 		{ruleID: ruleIDPGSecurityLabelRemoveNotice, construct: newSecurityLabelRemoveNoticeRule},
+		// PostgreSQL event trigger lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateEventTriggerNotice, construct: newCreateEventTriggerNoticeRule},
+		{ruleID: ruleIDPGAlterEventTriggerNotice, construct: newAlterEventTriggerNoticeRule},
+		{ruleID: ruleIDPGAlterEventTriggerDisableWarn, construct: newAlterEventTriggerDisableWarnRule},
+		{ruleID: ruleIDPGDropEventTriggerWarn, construct: newDropEventTriggerWarnRule},
+		// PostgreSQL rewrite rule lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateRuleNotice, construct: newCreateRuleNoticeRule},
+		{ruleID: ruleIDPGAlterRuleNotice, construct: newAlterRuleNoticeRule},
+		{ruleID: ruleIDPGDropRuleWarn, construct: newDropRuleWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

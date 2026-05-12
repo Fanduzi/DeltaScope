@@ -196,6 +196,48 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "SECURITY LABEL FOR selinux ON TABLE users IS NULL",
 			wantRuleID: "ddl.pg.security_label.remove.notice",
 		},
+		// PostgreSQL event trigger lifecycle (PG-only).
+		{
+			name:       "create_event_trigger_notice",
+			sql:        "CREATE EVENT TRIGGER trg_ddl ON ddl_command_end EXECUTE FUNCTION log_ddl()",
+			wantRuleID: "ddl.pg.create_event_trigger.notice",
+		},
+		{
+			name:       "alter_event_trigger_notice_enable",
+			sql:        "ALTER EVENT TRIGGER trg_ddl ENABLE",
+			wantRuleID: "ddl.pg.alter_event_trigger.notice",
+		},
+		{
+			name:       "alter_event_trigger_notice_rename",
+			sql:        "ALTER EVENT TRIGGER trg_ddl RENAME TO trg_ddl_v2",
+			wantRuleID: "ddl.pg.alter_event_trigger.notice",
+		},
+		{
+			name:       "alter_event_trigger_disable_warn",
+			sql:        "ALTER EVENT TRIGGER trg_ddl DISABLE",
+			wantRuleID: "ddl.pg.alter_event_trigger.disable.warn",
+		},
+		{
+			name:       "drop_event_trigger_warn",
+			sql:        "DROP EVENT TRIGGER trg_ddl",
+			wantRuleID: "ddl.pg.drop_event_trigger.warn",
+		},
+		// PostgreSQL rewrite rule lifecycle (PG-only).
+		{
+			name:       "create_rule_notice",
+			sql:        "CREATE RULE users_insert AS ON INSERT TO users DO NOTHING",
+			wantRuleID: "ddl.pg.create_rule.notice",
+		},
+		{
+			name:       "alter_rule_notice_rename",
+			sql:        "ALTER RULE users_insert ON users RENAME TO users_insert_ignore",
+			wantRuleID: "ddl.pg.alter_rule.notice",
+		},
+		{
+			name:       "drop_rule_warn",
+			sql:        "DROP RULE users_insert_ignore ON users",
+			wantRuleID: "ddl.pg.drop_rule.warn",
+		},
 	}
 
 	for _, tt := range tests {

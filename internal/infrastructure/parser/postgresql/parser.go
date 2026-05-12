@@ -116,7 +116,10 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_CreateFdwStmt,
 		*pg_query.Node_AlterFdwStmt,
 		*pg_query.Node_CommentStmt,
-		*pg_query.Node_SecLabelStmt:
+		*pg_query.Node_SecLabelStmt,
+		*pg_query.Node_CreateEventTrigStmt,
+		*pg_query.Node_AlterEventTrigStmt,
+		*pg_query.Node_RuleStmt:
 		return spec.KindDDL
 	case *pg_query.Node_CreateTableAsStmt:
 		if n := node.GetCreateTableAsStmt(); n != nil && n.GetObjtype() == pg_query.ObjectType_OBJECT_MATVIEW {

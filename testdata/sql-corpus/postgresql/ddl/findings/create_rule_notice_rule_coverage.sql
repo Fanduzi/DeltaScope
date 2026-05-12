@@ -1,0 +1,1 @@
+CREATE RULE users_insert AS ON INSERT TO users DO NOTHING

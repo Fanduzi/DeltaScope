@@ -153,31 +153,31 @@ var pgDDLDeepCoverageCensusCases = []struct {
 
 	{Name: "CREATE EVENT TRIGGER",
 		SQL:      "CREATE EVENT TRIGGER trg_ddl ON ddl_command_end EXECUTE FUNCTION log_ddl()",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER EVENT TRIGGER DISABLE",
 		SQL:      "ALTER EVENT TRIGGER trg_ddl DISABLE",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER EVENT TRIGGER ENABLE",
 		SQL:      "ALTER EVENT TRIGGER trg_ddl ENABLE",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER EVENT TRIGGER RENAME TO",
 		SQL:      "ALTER EVENT TRIGGER trg_ddl RENAME TO trg_ddl_v2",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP EVENT TRIGGER",
 		SQL:      "DROP EVENT TRIGGER trg_ddl",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Rewrite rule lifecycle =====
 
 	{Name: "CREATE RULE",
 		SQL:      "CREATE RULE users_insert AS ON INSERT TO users DO NOTHING",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER RULE RENAME TO",
 		SQL:      "ALTER RULE users_insert ON users RENAME TO users_insert_ignore",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP RULE",
 		SQL:      "DROP RULE users_insert_ignore ON users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 }
 
 func TestPostgreSQLDDLDeepCoverageCensus(t *testing.T) {

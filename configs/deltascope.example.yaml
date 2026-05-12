@@ -883,6 +883,34 @@ rules:
     enabled: true
     level: notice
 
+  ddl.pg.create_event_trigger.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_event_trigger.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_event_trigger.disable.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.drop_event_trigger.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_rule.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_rule.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_rule.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

@@ -290,6 +290,15 @@ const (
 	ruleIDPGCommentOnRemoveNotice     = "ddl.pg.comment_on.remove.notice"
 	ruleIDPGSecurityLabelNotice       = "ddl.pg.security_label.notice"
 	ruleIDPGSecurityLabelRemoveNotice = "ddl.pg.security_label.remove.notice"
+	// PostgreSQL event trigger lifecycle rules (PG-only).
+	ruleIDPGCreateEventTriggerNotice     = "ddl.pg.create_event_trigger.notice"
+	ruleIDPGAlterEventTriggerNotice      = "ddl.pg.alter_event_trigger.notice"
+	ruleIDPGAlterEventTriggerDisableWarn = "ddl.pg.alter_event_trigger.disable.warn"
+	ruleIDPGDropEventTriggerWarn         = "ddl.pg.drop_event_trigger.warn"
+	// PostgreSQL rewrite rule lifecycle rules (PG-only).
+	ruleIDPGCreateRuleNotice = "ddl.pg.create_rule.notice"
+	ruleIDPGAlterRuleNotice  = "ddl.pg.alter_rule.notice"
+	ruleIDPGDropRuleWarn     = "ddl.pg.drop_rule.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

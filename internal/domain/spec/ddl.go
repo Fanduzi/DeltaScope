@@ -105,6 +105,14 @@ const (
 
 	DDLOperationCommentOn     DDLOperation = "comment_on"
 	DDLOperationSecurityLabel DDLOperation = "security_label"
+
+	DDLOperationCreateEventTrigger DDLOperation = "create_event_trigger"
+	DDLOperationAlterEventTrigger  DDLOperation = "alter_event_trigger"
+	DDLOperationDropEventTrigger   DDLOperation = "drop_event_trigger"
+
+	DDLOperationCreateRule DDLOperation = "create_rule"
+	DDLOperationAlterRule  DDLOperation = "alter_rule"
+	DDLOperationDropRule   DDLOperation = "drop_rule"
 )
 
 // Table describes a table-level object.

@@ -67,6 +67,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_foreign_object_lifecycle_rules.go | Implements PostgreSQL-only foreign object lifecycle rules: create/alter/drop foreign table, foreign server, user mapping, and foreign data wrapper notices/warnings |
 | postgresql_annotation_lifecycle_rules.go | Implements PostgreSQL-only annotation lifecycle rules: comment-on notice, comment-on remove notice, security-label notice, security-label remove notice |
 | postgresql_annotation_lifecycle_rules_test.go | Verifies PG annotation lifecycle rules with positive, negative, cross-dialect, null/non-null skip, registration, and defaults coverage |
+| postgresql_event_rule_lifecycle_rules.go | Implements PostgreSQL-only event trigger and rewrite rule lifecycle rules: create/alter/drop event trigger notices/warnings, create/alter/drop rule notices/warnings |
+| postgresql_event_rule_lifecycle_rules_test.go | Verifies PG event trigger and rule lifecycle rules with positive, negative, cross-dialect, action-specific disable-vs-enable, registration, and defaults coverage |
 
 ## Exports
 
