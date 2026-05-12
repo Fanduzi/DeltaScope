@@ -251,11 +251,11 @@ const (
 	ruleIDPGDropViewCascadeWarn         = "ddl.pg.drop_view.cascade.warn"
 
 	// PG alter object lifecycle rules (PostgreSQL-only).
-	ruleIDPGAlterSchemaRenameNotice     = "ddl.pg.alter_schema.rename.notice"
-	ruleIDPGAlterSchemaOwnerNotice      = "ddl.pg.alter_schema.owner.notice"
-	ruleIDPGAlterIndexRenameNotice      = "ddl.pg.alter_index.rename.notice"
-	ruleIDPGAlterIndexSetTablespaceNotice = "ddl.pg.alter_index.set_tablespace.notice"
-	ruleIDPGAlterMaterializedViewRenameNotice   = "ddl.pg.alter_materialized_view.rename.notice"
+	ruleIDPGAlterSchemaRenameNotice              = "ddl.pg.alter_schema.rename.notice"
+	ruleIDPGAlterSchemaOwnerNotice               = "ddl.pg.alter_schema.owner.notice"
+	ruleIDPGAlterIndexRenameNotice               = "ddl.pg.alter_index.rename.notice"
+	ruleIDPGAlterIndexSetTablespaceNotice        = "ddl.pg.alter_index.set_tablespace.notice"
+	ruleIDPGAlterMaterializedViewRenameNotice    = "ddl.pg.alter_materialized_view.rename.notice"
 	ruleIDPGAlterMaterializedViewSetSchemaNotice = "ddl.pg.alter_materialized_view.set_schema.notice"
 )
 

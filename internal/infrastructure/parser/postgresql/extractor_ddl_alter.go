@@ -147,7 +147,10 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_INDEX:
-		objectName := table.Name
+		var objectName string
+		if table != nil {
+			objectName = table.Name
+		}
 		options := map[string]string{"action": "rename", "new_name": stmt.GetNewname()}
 		if table != nil && strings.TrimSpace(table.Schema) != "" {
 			options["schema"] = strings.TrimSpace(table.Schema)
