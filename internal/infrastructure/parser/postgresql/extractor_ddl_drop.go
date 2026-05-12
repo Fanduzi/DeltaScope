@@ -155,6 +155,39 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "publication",
 			Options:    options,
 		}
+	case pg_query.ObjectType_OBJECT_FOREIGN_TABLE:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropForeignTable,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "foreign_table",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_FOREIGN_SERVER:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropForeignServer,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "foreign_server",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_FDW:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropForeignDataWrapper,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "foreign_data_wrapper",
+			Options:    options,
+		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}

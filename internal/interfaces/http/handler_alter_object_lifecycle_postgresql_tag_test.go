@@ -111,6 +111,70 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "DROP SUBSCRIPTION sub",
 			wantRuleID: "ddl.pg.drop_subscription.warn",
 		},
+		// Foreign table lifecycle.
+		{
+			name:       "create_foreign_table_notice",
+			sql:        "CREATE FOREIGN TABLE ft_users (id bigint) SERVER srv OPTIONS (table_name 'users')",
+			wantRuleID: "ddl.pg.create_foreign_table.notice",
+		},
+		{
+			name:       "alter_foreign_table_notice",
+			sql:        "ALTER FOREIGN TABLE ft_users OPTIONS (SET table_name 'users_v2')",
+			wantRuleID: "ddl.pg.alter_foreign_table.notice",
+		},
+		{
+			name:       "drop_foreign_table_warn",
+			sql:        "DROP FOREIGN TABLE ft_users",
+			wantRuleID: "ddl.pg.drop_foreign_table.warn",
+		},
+		// Foreign server lifecycle.
+		{
+			name:       "create_foreign_server_notice",
+			sql:        "CREATE SERVER srv FOREIGN DATA WRAPPER postgres_fdw",
+			wantRuleID: "ddl.pg.create_foreign_server.notice",
+		},
+		{
+			name:       "alter_foreign_server_notice",
+			sql:        "ALTER SERVER srv OPTIONS (SET host 'db')",
+			wantRuleID: "ddl.pg.alter_foreign_server.notice",
+		},
+		{
+			name:       "drop_foreign_server_warn",
+			sql:        "DROP SERVER srv",
+			wantRuleID: "ddl.pg.drop_foreign_server.warn",
+		},
+		// User mapping lifecycle.
+		{
+			name:       "create_user_mapping_notice",
+			sql:        "CREATE USER MAPPING FOR app SERVER srv OPTIONS (user 'app')",
+			wantRuleID: "ddl.pg.create_user_mapping.notice",
+		},
+		{
+			name:       "alter_user_mapping_notice",
+			sql:        "ALTER USER MAPPING FOR app SERVER srv OPTIONS (SET user 'app2')",
+			wantRuleID: "ddl.pg.alter_user_mapping.notice",
+		},
+		{
+			name:       "drop_user_mapping_warn",
+			sql:        "DROP USER MAPPING FOR app SERVER srv",
+			wantRuleID: "ddl.pg.drop_user_mapping.warn",
+		},
+		// Foreign data wrapper lifecycle.
+		{
+			name:       "create_foreign_data_wrapper_notice",
+			sql:        "CREATE FOREIGN DATA WRAPPER fdw HANDLER fdw_handler",
+			wantRuleID: "ddl.pg.create_foreign_data_wrapper.notice",
+		},
+		{
+			name:       "alter_foreign_data_wrapper_notice",
+			sql:        "ALTER FOREIGN DATA WRAPPER fdw OPTIONS (SET key 'value')",
+			wantRuleID: "ddl.pg.alter_foreign_data_wrapper.notice",
+		},
+		{
+			name:       "drop_foreign_data_wrapper_warn",
+			sql:        "DROP FOREIGN DATA WRAPPER fdw",
+			wantRuleID: "ddl.pg.drop_foreign_data_wrapper.warn",
+		},
 	}
 
 	for _, tt := range tests {

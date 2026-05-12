@@ -106,7 +106,15 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_CreateSubscriptionStmt,
 		*pg_query.Node_AlterSubscriptionStmt,
 		*pg_query.Node_DropSubscriptionStmt,
-		*pg_query.Node_AlterOwnerStmt:
+		*pg_query.Node_AlterOwnerStmt,
+		*pg_query.Node_CreateForeignTableStmt,
+		*pg_query.Node_CreateForeignServerStmt,
+		*pg_query.Node_AlterForeignServerStmt,
+		*pg_query.Node_CreateUserMappingStmt,
+		*pg_query.Node_AlterUserMappingStmt,
+		*pg_query.Node_DropUserMappingStmt,
+		*pg_query.Node_CreateFdwStmt,
+		*pg_query.Node_AlterFdwStmt:
 		return spec.KindDDL
 	case *pg_query.Node_CreateTableAsStmt:
 		if n := node.GetCreateTableAsStmt(); n != nil && n.GetObjtype() == pg_query.ObjectType_OBJECT_MATVIEW {

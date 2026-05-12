@@ -819,6 +819,54 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_foreign_table.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_foreign_table.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_foreign_table.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_foreign_server.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_foreign_server.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_foreign_server.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_user_mapping.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_user_mapping.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_user_mapping.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_foreign_data_wrapper.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_foreign_data_wrapper.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_foreign_data_wrapper.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

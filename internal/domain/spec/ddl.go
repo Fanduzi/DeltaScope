@@ -86,6 +86,22 @@ const (
 	DDLOperationCreateSubscription DDLOperation = "create_subscription"
 	DDLOperationAlterSubscription  DDLOperation = "alter_subscription"
 	DDLOperationDropSubscription   DDLOperation = "drop_subscription"
+
+	DDLOperationCreateForeignTable DDLOperation = "create_foreign_table"
+	DDLOperationAlterForeignTable  DDLOperation = "alter_foreign_table"
+	DDLOperationDropForeignTable   DDLOperation = "drop_foreign_table"
+
+	DDLOperationCreateForeignServer DDLOperation = "create_foreign_server"
+	DDLOperationAlterForeignServer  DDLOperation = "alter_foreign_server"
+	DDLOperationDropForeignServer   DDLOperation = "drop_foreign_server"
+
+	DDLOperationCreateUserMapping DDLOperation = "create_user_mapping"
+	DDLOperationAlterUserMapping  DDLOperation = "alter_user_mapping"
+	DDLOperationDropUserMapping   DDLOperation = "drop_user_mapping"
+
+	DDLOperationCreateForeignDataWrapper DDLOperation = "create_foreign_data_wrapper"
+	DDLOperationAlterForeignDataWrapper  DDLOperation = "alter_foreign_data_wrapper"
+	DDLOperationDropForeignDataWrapper   DDLOperation = "drop_foreign_data_wrapper"
 )
 
 // Table describes a table-level object.

@@ -87,49 +87,49 @@ var pgDDLDeepCoverageCensusCases = []struct {
 
 	{Name: "CREATE FOREIGN TABLE",
 		SQL:      "CREATE FOREIGN TABLE ft_users (id bigint) SERVER srv OPTIONS (table_name 'users')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER FOREIGN TABLE OPTIONS",
 		SQL:      "ALTER FOREIGN TABLE ft_users OPTIONS (SET table_name 'users_v2')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP FOREIGN TABLE",
 		SQL:      "DROP FOREIGN TABLE ft_users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Foreign server lifecycle =====
 
 	{Name: "CREATE SERVER",
 		SQL:      "CREATE SERVER srv FOREIGN DATA WRAPPER postgres_fdw",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER SERVER OPTIONS",
 		SQL:      "ALTER SERVER srv OPTIONS (SET host 'db')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP SERVER",
 		SQL:      "DROP SERVER srv",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== User mapping lifecycle =====
 
 	{Name: "CREATE USER MAPPING",
 		SQL:      "CREATE USER MAPPING FOR app SERVER srv OPTIONS (user 'app')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER USER MAPPING",
 		SQL:      "ALTER USER MAPPING FOR app SERVER srv OPTIONS (SET user 'app2')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP USER MAPPING",
 		SQL:      "DROP USER MAPPING FOR app SERVER srv",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Foreign data wrapper lifecycle =====
 
 	{Name: "CREATE FOREIGN DATA WRAPPER",
 		SQL:      "CREATE FOREIGN DATA WRAPPER fdw HANDLER fdw_handler",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER FOREIGN DATA WRAPPER OPTIONS",
 		SQL:      "ALTER FOREIGN DATA WRAPPER fdw OPTIONS (SET key 'value')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP FOREIGN DATA WRAPPER",
 		SQL:      "DROP FOREIGN DATA WRAPPER fdw",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Metadata annotation: COMMENT ON =====
 

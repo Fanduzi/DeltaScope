@@ -1,0 +1,1 @@
+ALTER USER MAPPING FOR app SERVER srv OPTIONS (SET user 'app2')

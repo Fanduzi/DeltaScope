@@ -272,6 +272,19 @@ const (
 	ruleIDPGAlterSubscriptionNotice      = "ddl.pg.alter_subscription.notice"
 	ruleIDPGAlterSubscriptionDisableWarn = "ddl.pg.alter_subscription.disable.warn"
 	ruleIDPGDropSubscriptionWarn         = "ddl.pg.drop_subscription.warn"
+	// PostgreSQL foreign object lifecycle rules (PG-only).
+	ruleIDPGCreateForeignTableNotice       = "ddl.pg.create_foreign_table.notice"
+	ruleIDPGAlterForeignTableNotice        = "ddl.pg.alter_foreign_table.notice"
+	ruleIDPGDropForeignTableWarn           = "ddl.pg.drop_foreign_table.warn"
+	ruleIDPGCreateForeignServerNotice      = "ddl.pg.create_foreign_server.notice"
+	ruleIDPGAlterForeignServerNotice       = "ddl.pg.alter_foreign_server.notice"
+	ruleIDPGDropForeignServerWarn          = "ddl.pg.drop_foreign_server.warn"
+	ruleIDPGCreateUserMappingNotice        = "ddl.pg.create_user_mapping.notice"
+	ruleIDPGAlterUserMappingNotice         = "ddl.pg.alter_user_mapping.notice"
+	ruleIDPGDropUserMappingWarn            = "ddl.pg.drop_user_mapping.warn"
+	ruleIDPGCreateForeignDataWrapperNotice = "ddl.pg.create_foreign_data_wrapper.notice"
+	ruleIDPGAlterForeignDataWrapperNotice  = "ddl.pg.alter_foreign_data_wrapper.notice"
+	ruleIDPGDropForeignDataWrapperWarn     = "ddl.pg.drop_foreign_data_wrapper.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

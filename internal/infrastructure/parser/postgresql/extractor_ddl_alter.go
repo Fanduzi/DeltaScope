@@ -21,6 +21,9 @@ func extractAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableSt
 	if stmt.GetObjtype() == pg_query.ObjectType_OBJECT_INDEX {
 		return extractAlterIndexStmt(statement, stmt)
 	}
+	if stmt.GetObjtype() == pg_query.ObjectType_OBJECT_FOREIGN_TABLE {
+		return extractAlterForeignTableStmt(statement, stmt)
+	}
 	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TYPE_UNDEFINED && stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
 		return unsupportedStatement(statement, "alter_table", "postgresql alter table object type is unsupported in v1")
 	}

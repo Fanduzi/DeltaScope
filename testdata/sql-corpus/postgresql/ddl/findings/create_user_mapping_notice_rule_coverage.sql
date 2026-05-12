@@ -1,0 +1,1 @@
+CREATE USER MAPPING FOR app SERVER srv OPTIONS (user 'app')

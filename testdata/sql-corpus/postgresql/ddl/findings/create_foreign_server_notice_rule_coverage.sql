@@ -1,0 +1,1 @@
+CREATE SERVER srv FOREIGN DATA WRAPPER postgres_fdw

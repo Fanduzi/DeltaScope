@@ -521,6 +521,19 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterSubscriptionNotice, construct: newAlterSubscriptionNoticeRule},
 		{ruleID: ruleIDPGAlterSubscriptionDisableWarn, construct: newAlterSubscriptionDisableWarnRule},
 		{ruleID: ruleIDPGDropSubscriptionWarn, construct: newDropSubscriptionWarnRule},
+		// PostgreSQL foreign object lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateForeignTableNotice, construct: newCreateForeignTableNoticeRule},
+		{ruleID: ruleIDPGAlterForeignTableNotice, construct: newAlterForeignTableNoticeRule},
+		{ruleID: ruleIDPGDropForeignTableWarn, construct: newDropForeignTableWarnRule},
+		{ruleID: ruleIDPGCreateForeignServerNotice, construct: newCreateForeignServerNoticeRule},
+		{ruleID: ruleIDPGAlterForeignServerNotice, construct: newAlterForeignServerNoticeRule},
+		{ruleID: ruleIDPGDropForeignServerWarn, construct: newDropForeignServerWarnRule},
+		{ruleID: ruleIDPGCreateUserMappingNotice, construct: newCreateUserMappingNoticeRule},
+		{ruleID: ruleIDPGAlterUserMappingNotice, construct: newAlterUserMappingNoticeRule},
+		{ruleID: ruleIDPGDropUserMappingWarn, construct: newDropUserMappingWarnRule},
+		{ruleID: ruleIDPGCreateForeignDataWrapperNotice, construct: newCreateForeignDataWrapperNoticeRule},
+		{ruleID: ruleIDPGAlterForeignDataWrapperNotice, construct: newAlterForeignDataWrapperNoticeRule},
+		{ruleID: ruleIDPGDropForeignDataWrapperWarn, construct: newDropForeignDataWrapperWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

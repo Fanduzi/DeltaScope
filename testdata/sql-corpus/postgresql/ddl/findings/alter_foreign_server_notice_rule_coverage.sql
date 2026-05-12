@@ -1,0 +1,1 @@
+ALTER SERVER srv OPTIONS (SET host 'db')

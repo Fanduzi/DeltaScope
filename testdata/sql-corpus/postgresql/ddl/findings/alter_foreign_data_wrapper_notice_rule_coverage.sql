@@ -1,0 +1,1 @@
+ALTER FOREIGN DATA WRAPPER fdw OPTIONS (SET key 'value')

@@ -99,6 +99,22 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractAlterSubscriptionStmt(statement, node.AlterSubscriptionStmt), nil
 	case *pg_query.Node_DropSubscriptionStmt:
 		return extractDropSubscriptionStmt(statement, node.DropSubscriptionStmt), nil
+	case *pg_query.Node_CreateForeignTableStmt:
+		return extractCreateForeignTableStmt(statement, node.CreateForeignTableStmt), nil
+	case *pg_query.Node_CreateForeignServerStmt:
+		return extractCreateForeignServerStmt(statement, node.CreateForeignServerStmt), nil
+	case *pg_query.Node_AlterForeignServerStmt:
+		return extractAlterForeignServerStmt(statement, node.AlterForeignServerStmt), nil
+	case *pg_query.Node_CreateUserMappingStmt:
+		return extractCreateUserMappingStmt(statement, node.CreateUserMappingStmt), nil
+	case *pg_query.Node_AlterUserMappingStmt:
+		return extractAlterUserMappingStmt(statement, node.AlterUserMappingStmt), nil
+	case *pg_query.Node_DropUserMappingStmt:
+		return extractDropUserMappingStmt(statement, node.DropUserMappingStmt), nil
+	case *pg_query.Node_CreateFdwStmt:
+		return extractCreateFdwStmt(statement, node.CreateFdwStmt), nil
+	case *pg_query.Node_AlterFdwStmt:
+		return extractAlterFdwStmt(statement, node.AlterFdwStmt), nil
 	case *pg_query.Node_AlterOwnerStmt:
 		return extractAlterOwnerStmt(statement, node.AlterOwnerStmt), nil
 	case *pg_query.Node_InsertStmt:
