@@ -2,7 +2,7 @@
 
 ## 概述
 
-v0.70.0 扩展了 PostgreSQL 选定非权限 DDL 生命周期覆盖范围：RLS/行级安全策略、触发器、函数/存储过程、高级视图，以及选定的 ALTER 对象生命周期（schema、index、materialized view）。新增 34 条 PostgreSQL 审核规则，横跨 5 个生命周期族；SQL 语料库扩展到 433/433 目标（100% 覆盖率）；SDK、CLI、HTTP、MCP 四层公开面全覆盖。本里程碑覆盖 31 个选定的 PostgreSQL 非权限 DDL 形式——不声称完整 PostgreSQL DDL 语法覆盖。
+v0.70.0 扩展了 PostgreSQL 选定非权限 DDL 生命周期覆盖范围：RLS/行级安全策略、触发器、函数/存储过程、高级视图，以及选定的 ALTER 对象生命周期（schema、index、materialized view）。新增 28 条 PostgreSQL 审核规则，横跨 5 个生命周期族；SQL 语料库扩展到 433/433 目标（100% 覆盖率）；SDK、CLI、HTTP、MCP 四层公开面全覆盖。本里程碑覆盖 31 个选定的 PostgreSQL 非权限 DDL 形式——不声称完整 PostgreSQL DDL 语法覆盖。
 
 ## 选定 PostgreSQL DDL 生命周期覆盖
 

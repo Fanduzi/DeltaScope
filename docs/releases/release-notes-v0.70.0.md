@@ -2,7 +2,7 @@
 
 ## Summary
 
-v0.70.0 extends PostgreSQL coverage to selected non-permission DDL lifecycle families: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle (schema, index, materialized view). 34 new PostgreSQL audit rules across 5 lifecycle families, SQL corpus expansion to 433/433 targets (100% coverage), and full public surface coverage across CLI, HTTP, MCP, and SDK. This milestone covers 31 selected PostgreSQL non-permission DDL forms — it does not claim full PostgreSQL DDL grammar coverage.
+v0.70.0 extends PostgreSQL coverage to selected non-permission DDL lifecycle families: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle (schema, index, materialized view). 28 new PostgreSQL audit rules across 5 lifecycle families, SQL corpus expansion to 433/433 targets (100% coverage), and full public surface coverage across CLI, HTTP, MCP, and SDK. This milestone covers 31 selected PostgreSQL non-permission DDL forms — it does not claim full PostgreSQL DDL grammar coverage.
 
 ## Selected PostgreSQL DDL Lifecycle Coverage
 
