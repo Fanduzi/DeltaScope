@@ -479,6 +479,89 @@ deltascope rules search "prefix"
 
 ---
 
+## DDL：PostgreSQL RLS/Policy 生命周期规则（7 条）
+
+这些规则覆盖 PostgreSQL 行级安全策略和 RLS 开关操作。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_policy.notice` | `CREATE POLICY` 引入新的 RLS 策略——信息性提示 | notice | 否 |
+| `ddl.pg.alter_policy.notice` | `ALTER POLICY` 修改已有 RLS 策略——信息性提示 | notice | 否 |
+| `ddl.pg.drop_policy.warn` | `DROP POLICY` 移除 RLS 策略——警告行级保护被移除 | warning | 否 |
+| `ddl.pg.alter.enable_rls.notice` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` 启用 RLS——信息性提示 | notice | 否 |
+| `ddl.pg.alter.disable_rls.warn` | `ALTER TABLE ... DISABLE ROW LEVEL SECURITY` 禁用 RLS——警告行级保护被关闭 | warning | 否 |
+| `ddl.pg.alter.force_rls.notice` | `ALTER TABLE ... FORCE ROW LEVEL SECURITY` 对表 owner 强制 RLS——信息性提示 | notice | 否 |
+| `ddl.pg.alter.no_force_rls.notice` | `ALTER TABLE ... NO FORCE ROW LEVEL SECURITY` 取消对表 owner 的 RLS 强制——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不评估策略表达式、不验证策略对特定角色的适用性、不检查在线 RLS 状态。`CREATE POLICY ... AS PERMISSIVE` 和 `CREATE POLICY ... AS RESTRICTIVE` 均由 `ddl.pg.create_policy.notice` 覆盖。策略 `WITH CHECK` 和 `USING` 表达式文本不被渲染。这不是完整的 PostgreSQL RLS 治理。
+
+---
+
+## DDL：PostgreSQL Trigger 生命周期规则（3 条）
+
+这些规则覆盖 PostgreSQL 触发器生命周期操作。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_trigger.notice` | `CREATE TRIGGER` 引入新触发器——信息性提示 | notice | 否 |
+| `ddl.pg.create_constraint_trigger.warn` | `CREATE CONSTRAINT TRIGGER` 创建约束触发器——警告约束触发器语义 | warning | 否 |
+| `ddl.pg.drop_trigger.advisory` | `DROP TRIGGER` 移除触发器——建议审查依赖逻辑 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不评估触发器体、不验证触发器函数是否存在、不检查在线触发器状态。`INSTEAD OF` 触发器和转换表（`REFERENCING OLD TABLE / NEW TABLE`）已规范化但不产生额外 finding。这不是完整的 PostgreSQL 触发器治理。
+
+---
+
+## DDL：PostgreSQL Function/Procedure 生命周期规则（6 条）
+
+这些规则覆盖 PostgreSQL 函数和存储过程生命周期操作。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_function.notice` | `CREATE FUNCTION` 引入新函数——信息性提示 | notice | 否 |
+| `ddl.pg.create_function.security_definer.warn` | `CREATE FUNCTION ... SECURITY DEFINER` 以 owner 权限执行——警告权限提升风险 | warning | 否 |
+| `ddl.pg.create_or_replace_function.advisory` | `CREATE OR REPLACE FUNCTION` 替换已有函数——建议审查下游依赖 | notice | 否 |
+| `ddl.pg.drop_function.advisory` | `DROP FUNCTION` 移除函数——建议审查依赖对象 | notice | 否 |
+| `ddl.pg.create_procedure.notice` | `CREATE PROCEDURE` 引入新存储过程——信息性提示 | notice | 否 |
+| `ddl.pg.drop_procedure.advisory` | `DROP PROCEDURE` 移除存储过程——建议审查依赖对象 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE FUNCTION ... SECURITY DEFINER` 会同时触发 `ddl.pg.create_function.notice` 和 `ddl.pg.create_function.security_definer.warn`，属于有意设计。DeltaScope 不评估函数体、不验证参数类型、不检查在线函数状态、不解析 `LANGUAGE` / `VOLATILITY` / `PARALLEL` 安全性。函数参数签名不被建模。这不是完整的 PostgreSQL 函数/存储过程治理。
+
+---
+
+## DDL：PostgreSQL 高级视图生命周期规则（6 条）
+
+这些规则覆盖 PostgreSQL 视图生命周期操作，覆盖范围超出基础 `CREATE VIEW` / `DROP VIEW` 形态。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` 替换已有视图——建议审查下游依赖 | notice | 否 |
+| `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` 创建会话级临时视图——信息性提示 | notice | 否 |
+| `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` 对通过视图的插入/更新强制检查选项——信息性提示 | notice | 否 |
+| `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` 使用级联删除，可能静默移除依赖对象 | warning | 否 |
+| `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` 变更视图名称——信息性提示 | notice | 否 |
+| `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` 将视图移至不同 schema——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`CREATE OR REPLACE VIEW` 在基础 `ddl.view.create.forbid`（启用时）之外还会触发 `ddl.pg.create_or_replace_view.advisory`。`CASCADED` 与 `LOCAL` 检查选项语义不被建模。DeltaScope 不评估视图查询体、不检查在线视图状态。这不是完整的 PostgreSQL 视图治理。
+
+---
+
+## DDL：PostgreSQL 已选 ALTER 对象生命周期规则（6 条）
+
+这些规则覆盖 PostgreSQL 对 schema、index 和 materialized view 的已选 ALTER 操作。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter_schema.rename.notice` | `ALTER SCHEMA ... RENAME TO` 变更 schema 名称——信息性提示 | notice | 否 |
+| `ddl.pg.alter_schema.owner.notice` | `ALTER SCHEMA ... OWNER TO` 变更 schema owner——信息性提示 | notice | 否 |
+| `ddl.pg.alter_index.rename.notice` | `ALTER INDEX ... RENAME TO` 变更索引名称——信息性提示 | notice | 否 |
+| `ddl.pg.alter_index.set_tablespace.notice` | `ALTER INDEX ... SET TABLESPACE` 将索引移至不同表空间——信息性提示 | notice | 否 |
+| `ddl.pg.alter_materialized_view.rename.notice` | `ALTER MATERIALIZED VIEW ... RENAME TO` 变更物化视图名称——信息性提示 | notice | 否 |
+| `ddl.pg.alter_materialized_view.set_schema.notice` | `ALTER MATERIALIZED VIEW ... SET SCHEMA` 将物化视图移至不同 schema——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不验证在线 schema/index/物化视图的存在性、所有权或表空间可用性。这不是完整的 PostgreSQL ALTER 对象生命周期覆盖——这些对象类型的其余 ALTER 形式（如 `ALTER INDEX ... SET (...)`、`ALTER MATERIALIZED VIEW ... OWNER TO`）已推迟。
+
+---
+
 ## DML 规则（10 条）
 
 这些规则对 DML 语句进行评估：`SELECT`、`INSERT`、`UPDATE`、`DELETE`、`REPLACE`。

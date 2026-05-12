@@ -498,6 +498,156 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL RLS/Policy 生命周期（v0.70.0）
+
+`v0.70.0` 新增 PostgreSQL 行级安全策略和 RLS 开关生命周期覆盖。DeltaScope 规范化 `CREATE POLICY`、`ALTER POLICY`、`DROP POLICY` 以及 `ALTER TABLE ... ENABLE/DISABLE/FORCE/NO FORCE ROW LEVEL SECURITY`，新增七条 PostgreSQL-only 规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `CREATE POLICY p1 ON users USING (true)` | `create_policy` |
+| `CREATE POLICY p1 ON users AS RESTRICTIVE ...` | `create_policy` (policy_type=restrictive) |
+| `ALTER POLICY p1 ON users USING (true)` | `alter_policy` |
+| `DROP POLICY p1 ON users` | `drop_policy` |
+| `ALTER TABLE users ENABLE ROW LEVEL SECURITY` | `alter_table` (action=enable_rls) |
+| `ALTER TABLE users DISABLE ROW LEVEL SECURITY` | `alter_table` (action=disable_rls) |
+| `ALTER TABLE users FORCE ROW LEVEL SECURITY` | `alter_table` (action=force_rls) |
+| `ALTER TABLE users NO FORCE ROW LEVEL SECURITY` | `alter_table` (action=no_force_rls) |
+
+### RLS/Policy 生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_policy.notice` | `CREATE POLICY` 引入新的 RLS 策略——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_policy.notice` | `ALTER POLICY` 修改已有 RLS 策略——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_policy.warn` | `DROP POLICY` 移除 RLS 策略——警告行级保护被移除 | ✓ | ✗ | warning |
+| `ddl.pg.alter.enable_rls.notice` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` 启用 RLS——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter.disable_rls.warn` | `ALTER TABLE ... DISABLE ROW LEVEL SECURITY` 禁用 RLS——警告保护被关闭 | ✓ | ✗ | warning |
+| `ddl.pg.alter.force_rls.notice` | `ALTER TABLE ... FORCE ROW LEVEL SECURITY` 对表 owner 强制 RLS——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter.no_force_rls.notice` | `ALTER TABLE ... NO FORCE ROW LEVEL SECURITY` 取消对表 owner 的 RLS 强制——信息性通知 | ✓ | ✗ | notice |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不评估策略表达式、不验证策略对特定角色的适用性、不检查在线 RLS 状态。这不是完整的 PostgreSQL RLS 治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Trigger 生命周期（v0.70.0）
+
+`v0.70.0` 新增 PostgreSQL 触发器生命周期覆盖，支持 `CREATE TRIGGER`、`CREATE CONSTRAINT TRIGGER` 和 `DROP TRIGGER`。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f()` | `create_trigger` |
+| `CREATE CONSTRAINT TRIGGER t1 AFTER INSERT ON users DEFERRABLE INITIALLY DEFERRED ...` | `create_constraint_trigger` |
+| `DROP TRIGGER t1 ON users` | `drop_trigger` |
+
+### Trigger 生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_trigger.notice` | `CREATE TRIGGER` 引入新触发器——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.create_constraint_trigger.warn` | `CREATE CONSTRAINT TRIGGER` 创建约束触发器——警告约束触发器语义 | ✓ | ✗ | warning |
+| `ddl.pg.drop_trigger.advisory` | `DROP TRIGGER` 移除触发器——建议审查依赖逻辑 | ✓ | ✗ | notice |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不评估触发器体、不验证触发器函数是否存在。这不是完整的 PostgreSQL 触发器治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Function/Procedure 生命周期（v0.70.0）
+
+`v0.70.0` 新增 PostgreSQL 函数和存储过程生命周期覆盖，支持 `CREATE FUNCTION`、`CREATE OR REPLACE FUNCTION`、`DROP FUNCTION`、`CREATE PROCEDURE` 和 `DROP PROCEDURE`。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS $$ ... $$` | `create_function` |
+| `CREATE FUNCTION f() ... SECURITY DEFINER` | `create_function` (security_definer=true) |
+| `CREATE OR REPLACE FUNCTION f() ...` | `create_or_replace_function` |
+| `DROP FUNCTION f()` | `drop_function` |
+| `CREATE PROCEDURE p() LANGUAGE plpgsql AS $$ ... $$` | `create_procedure` |
+| `DROP PROCEDURE p()` | `drop_procedure` |
+
+### Function/Procedure 生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_function.notice` | `CREATE FUNCTION` 引入新函数——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.create_function.security_definer.warn` | `CREATE FUNCTION ... SECURITY DEFINER` 以 owner 权限执行——警告权限提升风险 | ✓ | ✗ | warning |
+| `ddl.pg.create_or_replace_function.advisory` | `CREATE OR REPLACE FUNCTION` 替换已有函数——建议审查下游依赖 | ✓ | ✗ | notice |
+| `ddl.pg.drop_function.advisory` | `DROP FUNCTION` 移除函数——建议审查依赖对象 | ✓ | ✗ | notice |
+| `ddl.pg.create_procedure.notice` | `CREATE PROCEDURE` 引入新存储过程——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_procedure.advisory` | `DROP PROCEDURE` 移除存储过程——建议审查依赖对象 | ✓ | ✗ | notice |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。`CREATE FUNCTION ... SECURITY DEFINER` 会同时触发 `ddl.pg.create_function.notice` 和 `ddl.pg.create_function.security_definer.warn`，属于有意设计。DeltaScope 不评估函数体、不验证参数类型、不检查在线函数状态。这不是完整的 PostgreSQL 函数/存储过程治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL 高级视图生命周期（v0.70.0）
+
+`v0.70.0` 新增 PostgreSQL 高级视图生命周期覆盖，超出基础 `CREATE VIEW` / `DROP VIEW` 形态。DeltaScope 规范化 `CREATE OR REPLACE VIEW`、`CREATE TEMP VIEW`、`CREATE VIEW ... WITH CHECK OPTION`、`DROP VIEW ... CASCADE`、`ALTER VIEW ... RENAME TO` 和 `ALTER VIEW ... SET SCHEMA`，新增六条 PostgreSQL-only 规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `CREATE OR REPLACE VIEW v1 AS SELECT 1` | `create_or_replace_view` |
+| `CREATE TEMP VIEW tv1 AS SELECT 1` | `create_temp_view` |
+| `CREATE TEMPORARY VIEW tv1 AS SELECT 1` | `create_temp_view` |
+| `CREATE VIEW v1 AS SELECT 1 WITH CHECK OPTION` | `create_view` (check_option=cascaded) |
+| `CREATE VIEW v1 AS SELECT 1 WITH CASCADED CHECK OPTION` | `create_view` (check_option=cascaded) |
+| `CREATE VIEW v1 AS SELECT 1 WITH LOCAL CHECK OPTION` | `create_view` (check_option=local) |
+| `DROP VIEW v1 CASCADE` | `drop_view` (cascade=true) |
+| `ALTER VIEW v1 RENAME TO v2` | `alter_view` (action=rename) |
+| `ALTER VIEW v1 SET SCHEMA schema2` | `alter_view` (action=set_schema) |
+
+### 高级视图生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` 替换已有视图——建议审查下游依赖 | ✓ | ✗ | notice |
+| `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` 创建会话级临时视图——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` 强制检查选项——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` 使用级联删除——可能静默移除依赖对象 | ✓ | ✗ | warning |
+| `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` 变更视图名称——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` 将视图移至不同 schema——信息性通知 | ✓ | ✗ | notice |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不评估视图查询体、不检查在线视图状态。这不是完整的 PostgreSQL 视图治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL 已选 ALTER 对象生命周期（v0.70.0）
+
+`v0.70.0` 新增 PostgreSQL 对 schema、index 和 materialized view 的已选 ALTER 对象生命周期覆盖。DeltaScope 规范化 `ALTER SCHEMA ... RENAME TO`、`ALTER SCHEMA ... OWNER TO`、`ALTER INDEX ... RENAME TO`、`ALTER INDEX ... SET TABLESPACE`、`ALTER MATERIALIZED VIEW ... RENAME TO` 和 `ALTER MATERIALIZED VIEW ... SET SCHEMA`，新增六条 PostgreSQL-only 规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `ALTER SCHEMA s1 RENAME TO s2` | `alter_schema` (action=rename) |
+| `ALTER SCHEMA s1 OWNER TO new_owner` | `alter_schema` (action=owner) |
+| `ALTER INDEX idx1 RENAME TO idx2` | `alter_index` (action=rename) |
+| `ALTER INDEX idx1 SET TABLESPACE ts2` | `alter_index` (action=set_tablespace) |
+| `ALTER MATERIALIZED VIEW mv1 RENAME TO mv2` | `alter_materialized_view` (action=rename) |
+| `ALTER MATERIALIZED VIEW mv1 SET SCHEMA schema2` | `alter_materialized_view` (action=set_schema) |
+
+### 已选 ALTER 对象生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.alter_schema.rename.notice` | `ALTER SCHEMA ... RENAME TO` 变更 schema 名称——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_schema.owner.notice` | `ALTER SCHEMA ... OWNER TO` 变更 schema owner——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_index.rename.notice` | `ALTER INDEX ... RENAME TO` 变更索引名称——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_index.set_tablespace.notice` | `ALTER INDEX ... SET TABLESPACE` 将索引移至不同表空间——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_materialized_view.rename.notice` | `ALTER MATERIALIZED VIEW ... RENAME TO` 变更物化视图名称——信息性通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_materialized_view.set_schema.notice` | `ALTER MATERIALIZED VIEW ... SET SCHEMA` 将物化视图移至不同 schema——信息性通知 | ✓ | ✗ | notice |
+
+> **说明：** 这些规则均为离线规则，不需要数据库连接。DeltaScope 不验证在线 schema/index/物化视图的存在性、所有权或表空间可用性。这不是完整的 PostgreSQL ALTER 对象生命周期覆盖——其余 ALTER 形式（如 `ALTER INDEX ... SET (...)`、`ALTER MATERIALIZED VIEW ... OWNER TO`）已推迟。不影响 MySQL/TiDB 行为。
+
+---
+
 ## DDL：PostgreSQL 覆盖范围扩展（v0.21.0 / v0.23.0 / v0.24.0）
 
 `v0.21.0` 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。`v0.23.0` 进一步扩展了 PostgreSQL `CREATE TABLE` 常见约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的 `ReferencedTable` 和 `ReferencedColumns`。这些功能面此前会落入能力边界错误或结构不完整；现在会产生带有渐进丰富语义的正常审计结果。不引入新规则——已有的共享规则族在适用时自动生效。

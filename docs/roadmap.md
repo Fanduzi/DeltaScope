@@ -4,7 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.64.0 Cross-Dialect DDL Parity
+## Latest Completed Milestone: v0.70.0 Selected PostgreSQL Non-Permission DDL Lifecycle
+
+**Goal:** extend DeltaScope's PostgreSQL coverage to selected non-permission DDL lifecycle families: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle (schema, index, materialized view).
+
+### Completed Scope
+
+- RLS/Policy lifecycle rules: `CREATE POLICY`, `ALTER POLICY`, `DROP POLICY`, `ENABLE/DISABLE/FORCE/NO FORCE ROW LEVEL SECURITY`.
+- Trigger lifecycle rules: `CREATE TRIGGER`, `CREATE CONSTRAINT TRIGGER`, `DROP TRIGGER`.
+- Function/Procedure lifecycle rules: `CREATE FUNCTION`, `CREATE OR REPLACE FUNCTION`, `CREATE FUNCTION ... SECURITY DEFINER`, `DROP FUNCTION`, `CREATE PROCEDURE`, `DROP PROCEDURE`.
+- Advanced View lifecycle rules: `CREATE OR REPLACE VIEW`, `CREATE TEMP VIEW`, `CREATE VIEW ... WITH CHECK OPTION`, `DROP VIEW ... CASCADE`, `ALTER VIEW ... RENAME TO`, `ALTER VIEW ... SET SCHEMA`.
+- Selected ALTER object lifecycle rules: `ALTER SCHEMA ... RENAME TO`, `ALTER SCHEMA ... OWNER TO`, `ALTER INDEX ... RENAME TO`, `ALTER INDEX ... SET TABLESPACE`, `ALTER MATERIALIZED VIEW ... RENAME TO`, `ALTER MATERIALIZED VIEW ... SET SCHEMA`.
+- 34 new PostgreSQL audit rules across 5 lifecycle families.
+- PostgreSQL DDL completion census: 31 selected non-permission DDL forms `finding_covered`.
+- SQL corpus: 242 policy rules, 433/433 supported targets, 100% coverage.
+- Public surface coverage verified across SDK, CLI, HTTP, and MCP for all new rules.
+- Standalone `ALTER INDEX` metadata resolution path via `IndexOwnerResolver` for PostgreSQL metadata-aware audit.
+
+### Key Design Decisions
+
+- `pgObjectLifecycleRule` pattern introduced with `newPGObjectLifecycleRuleWithAction` supporting operation + action + objectType matching for lifecycle rules.
+- Census scope is limited to 31 selected non-permission DDL forms; many PG DDL families remain intentionally deferred.
+- Standalone `ALTER INDEX` operations resolved through `IndexOwnerResolver` interface without MySQL/TiDB semantic expansion.
+- No overclaim of full PostgreSQL DDL grammar coverage.
+- DeltaScope does not execute migrations.
+
+## Previous Milestone: v0.64.0 Cross-Dialect DDL Parity
 
 **Goal:** build a cross-dialect DDL coverage census and close the first parity gap with database/schema lifecycle audit rules for MySQL, TiDB, and PostgreSQL.
 
@@ -28,7 +53,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - PostgreSQL `CREATE SCHEMA AUTHORIZATION` and nested schema creation remain unsupported/deferred.
 - DeltaScope does not execute migrations.
 
-## Previous Milestone: v0.63.0 Adoption & Runtime Config Pack
+## Prior Milestone: v0.63.0 Adoption & Runtime Config Pack
 
 **Goal:** expose metadata connect timeout publicly across CLI, HTTP, and MCP surfaces; add optional runtime configuration for server and MCP operations; and improve adoption documentation — without changing SQL rule behavior, parser coverage, or public SDK contracts.
 

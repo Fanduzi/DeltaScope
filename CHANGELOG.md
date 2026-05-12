@@ -6,6 +6,67 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.70.0] - 2026-05-12
+
+### Added
+
+- Selected PostgreSQL non-permission DDL lifecycle coverage for v0.70.0 scope: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle rules.
+- RLS/Policy lifecycle rules:
+  - `ddl.pg.create_policy.notice` (notice) — fires on `CREATE POLICY`
+  - `ddl.pg.alter_policy.notice` (notice) — fires on `ALTER POLICY`
+  - `ddl.pg.drop_policy.warn` (warning) — fires on `DROP POLICY`
+  - `ddl.pg.alter.enable_rls.notice` (notice) — fires on `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`
+  - `ddl.pg.alter.disable_rls.warn` (warning) — fires on `ALTER TABLE ... DISABLE ROW LEVEL SECURITY`
+  - `ddl.pg.alter.force_rls.notice` (notice) — fires on `ALTER TABLE ... FORCE ROW LEVEL SECURITY`
+  - `ddl.pg.alter.no_force_rls.notice` (notice) — fires on `ALTER TABLE ... NO FORCE ROW LEVEL SECURITY`
+- Trigger lifecycle rules:
+  - `ddl.pg.create_trigger.notice` (notice) — fires on `CREATE TRIGGER`
+  - `ddl.pg.create_constraint_trigger.warn` (warning) — fires on `CREATE CONSTRAINT TRIGGER`
+  - `ddl.pg.drop_trigger.advisory` (notice) — fires on `DROP TRIGGER`
+- Function/Procedure lifecycle rules:
+  - `ddl.pg.create_function.notice` (notice) — fires on `CREATE FUNCTION`
+  - `ddl.pg.create_function.security_definer.warn` (warning) — fires on `CREATE FUNCTION ... SECURITY DEFINER`
+  - `ddl.pg.create_or_replace_function.advisory` (notice) — fires on `CREATE OR REPLACE FUNCTION`
+  - `ddl.pg.drop_function.advisory` (notice) — fires on `DROP FUNCTION`
+  - `ddl.pg.create_procedure.notice` (notice) — fires on `CREATE PROCEDURE`
+  - `ddl.pg.drop_procedure.advisory` (notice) — fires on `DROP PROCEDURE`
+- Advanced View lifecycle rules:
+  - `ddl.pg.create_or_replace_view.advisory` (notice) — fires on `CREATE OR REPLACE VIEW`
+  - `ddl.pg.create_temp_view.notice` (notice) — fires on `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW`
+  - `ddl.pg.create_view.check_option.notice` (notice) — fires on `CREATE VIEW ... WITH CHECK OPTION`
+  - `ddl.pg.drop_view.cascade.warn` (warning) — fires on `DROP VIEW ... CASCADE`
+  - `ddl.pg.alter_view.rename.notice` (notice) — fires on `ALTER VIEW ... RENAME TO`
+  - `ddl.pg.alter_view.set_schema.notice` (notice) — fires on `ALTER VIEW ... SET SCHEMA`
+- Selected ALTER object lifecycle rules:
+  - `ddl.pg.alter_schema.rename.notice` (notice) — fires on `ALTER SCHEMA ... RENAME TO`
+  - `ddl.pg.alter_schema.owner.notice` (notice) — fires on `ALTER SCHEMA ... OWNER TO`
+  - `ddl.pg.alter_index.rename.notice` (notice) — fires on `ALTER INDEX ... RENAME TO`
+  - `ddl.pg.alter_index.set_tablespace.notice` (notice) — fires on `ALTER INDEX ... SET TABLESPACE`
+  - `ddl.pg.alter_materialized_view.rename.notice` (notice) — fires on `ALTER MATERIALIZED VIEW ... RENAME TO`
+  - `ddl.pg.alter_materialized_view.set_schema.notice` (notice) — fires on `ALTER MATERIALIZED VIEW ... SET SCHEMA`
+- PostgreSQL DDL completion census: 31 selected non-permission DDL forms are now `finding_covered` (RLS/Policy, Trigger, Function/Procedure, View, and selected ALTER object lifecycle).
+- SQL corpus: 242 policy rules, 433/433 supported targets, 100% coverage.
+- Public surface coverage verified across SDK, CLI, HTTP, and MCP for all new rules.
+- Standalone `ALTER INDEX` metadata resolution path: `metadataTargetTableName` now resolves standalone index operations through `IndexOwnerResolver` for PostgreSQL metadata-aware audit.
+- `pgObjectLifecycleRule` pattern with `newPGObjectLifecycleRuleWithAction` supporting operation + action + objectType matching.
+- PostgreSQL extractor coverage for `ALTER SCHEMA`, `ALTER INDEX`, and `ALTER MATERIALIZED VIEW` lifecycle forms via `extractRenameStmt`, `extractAlterOwnerStmt`, `extractAlterObjectSchemaStmt`, and `extractAlterTableStmt`.
+
+### Changed
+
+- PostgreSQL `ALTER INDEX ... RENAME TO` now produces `ddl.pg.alter_index.rename.notice` instead of passing silently.
+- PostgreSQL `ALTER MATERIALIZED VIEW` rename and set-schema now produce explicit findings instead of passing silently.
+- PostgreSQL `ALTER SCHEMA` rename and owner now produce explicit findings instead of passing silently.
+- SQL corpus expanded from 405 to 433 supported targets (28 new PostgreSQL fixtures).
+
+### Non-Goals
+
+- No full PostgreSQL DDL support claim. Selected non-permission DDL families are covered; many remain deferred (see below).
+- No live privilege/role validation. GRANT/REVOKE rules emit informational notices only.
+- No DCL execution or runtime database firewall behavior.
+- DeltaScope does not execute migrations.
+- Deferred PG DDL families: `ALTER TYPE` deep mutation, `ALTER DOMAIN` beyond rename, `ALTER EXTENSION` expanded lifecycle, `ALTER FOREIGN TABLE`/`SERVER`/`USER MAPPING`, `ALTER AGGREGATE`/`OPERATOR`/`CONVERSION`, `ALTER PUBLICATION`/`SUBSCRIPTION`, `ALTER STATISTICS`/`ALTER RULE`, `COMMENT ON`, `SECURITY LABEL`.
+- Permissions/DCL remain out of scope for runtime validation: GRANT/REVOKE, roles/users, default privileges.
+
 ## [v0.64.0] - 2026-05-11
 
 ### Added

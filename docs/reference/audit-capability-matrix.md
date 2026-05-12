@@ -512,6 +512,156 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL RLS/Policy Lifecycle (v0.70.0)
+
+`v0.70.0` adds PostgreSQL Row-Level Security policy and RLS toggle lifecycle coverage. DeltaScope normalizes `CREATE POLICY`, `ALTER POLICY`, `DROP POLICY`, and `ALTER TABLE ... ENABLE/DISABLE/FORCE/NO FORCE ROW LEVEL SECURITY`, adds seven PostgreSQL-only findings. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE POLICY p1 ON users USING (true)` | `create_policy` |
+| `CREATE POLICY p1 ON users AS RESTRICTIVE ...` | `create_policy` (policy_type=restrictive) |
+| `ALTER POLICY p1 ON users USING (true)` | `alter_policy` |
+| `DROP POLICY p1 ON users` | `drop_policy` |
+| `ALTER TABLE users ENABLE ROW LEVEL SECURITY` | `alter_table` (action=enable_rls) |
+| `ALTER TABLE users DISABLE ROW LEVEL SECURITY` | `alter_table` (action=disable_rls) |
+| `ALTER TABLE users FORCE ROW LEVEL SECURITY` | `alter_table` (action=force_rls) |
+| `ALTER TABLE users NO FORCE ROW LEVEL SECURITY` | `alter_table` (action=no_force_rls) |
+
+### RLS/Policy Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_policy.notice` | `CREATE POLICY` introduces a new RLS policy — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_policy.notice` | `ALTER POLICY` modifies an existing RLS policy — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_policy.warn` | `DROP POLICY` removes an RLS policy — warns that row-level protection is removed | ✓ | ✗ | warning |
+| `ddl.pg.alter.enable_rls.notice` | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` enables RLS — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter.disable_rls.warn` | `ALTER TABLE ... DISABLE ROW LEVEL SECURITY` disables RLS — warns that protection is turned off | ✓ | ✗ | warning |
+| `ddl.pg.alter.force_rls.notice` | `ALTER TABLE ... FORCE ROW LEVEL SECURITY` forces RLS for table owner — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter.no_force_rls.notice` | `ALTER TABLE ... NO FORCE ROW LEVEL SECURITY` un-forces RLS for table owner — informational notice | ✓ | ✗ | notice |
+
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not evaluate policy expressions, verify policy applicability, or inspect live RLS state. This is not full PostgreSQL RLS governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Trigger Lifecycle (v0.70.0)
+
+`v0.70.0` adds PostgreSQL trigger lifecycle coverage for `CREATE TRIGGER`, `CREATE CONSTRAINT TRIGGER`, and `DROP TRIGGER`. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE TRIGGER t1 AFTER INSERT ON users FOR EACH ROW EXECUTE FUNCTION f()` | `create_trigger` |
+| `CREATE CONSTRAINT TRIGGER t1 AFTER INSERT ON users DEFERRABLE INITIALLY DEFERRED ...` | `create_constraint_trigger` |
+| `DROP TRIGGER t1 ON users` | `drop_trigger` |
+
+### Trigger Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_trigger.notice` | `CREATE TRIGGER` introduces a new trigger — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.create_constraint_trigger.warn` | `CREATE CONSTRAINT TRIGGER` creates a constraint trigger — warns about constraint-trigger semantics | ✓ | ✗ | warning |
+| `ddl.pg.drop_trigger.advisory` | `DROP TRIGGER` removes a trigger — advises review of dependent logic | ✓ | ✗ | notice |
+
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not evaluate trigger bodies or verify trigger function existence. This is not full PostgreSQL trigger governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Function/Procedure Lifecycle (v0.70.0)
+
+`v0.70.0` adds PostgreSQL function and procedure lifecycle coverage for `CREATE FUNCTION`, `CREATE OR REPLACE FUNCTION`, `DROP FUNCTION`, `CREATE PROCEDURE`, and `DROP PROCEDURE`. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS $$ ... $$` | `create_function` |
+| `CREATE FUNCTION f() ... SECURITY DEFINER` | `create_function` (security_definer=true) |
+| `CREATE OR REPLACE FUNCTION f() ...` | `create_or_replace_function` |
+| `DROP FUNCTION f()` | `drop_function` |
+| `CREATE PROCEDURE p() LANGUAGE plpgsql AS $$ ... $$` | `create_procedure` |
+| `DROP PROCEDURE p()` | `drop_procedure` |
+
+### Function/Procedure Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_function.notice` | `CREATE FUNCTION` introduces a new function — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.create_function.security_definer.warn` | `CREATE FUNCTION ... SECURITY DEFINER` executes with owner privileges — warns about privilege escalation | ✓ | ✗ | warning |
+| `ddl.pg.create_or_replace_function.advisory` | `CREATE OR REPLACE FUNCTION` replaces an existing function — advises review of downstream dependencies | ✓ | ✗ | notice |
+| `ddl.pg.drop_function.advisory` | `DROP FUNCTION` removes a function — advises review of dependent objects | ✓ | ✗ | notice |
+| `ddl.pg.create_procedure.notice` | `CREATE PROCEDURE` introduces a new procedure — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_procedure.advisory` | `DROP PROCEDURE` removes a procedure — advises review of dependent objects | ✓ | ✗ | notice |
+
+> **Note:** These rules are offline-only and do not require a database connection. `CREATE FUNCTION ... SECURITY DEFINER` intentionally emits both `ddl.pg.create_function.notice` and `ddl.pg.create_function.security_definer.warn`. DeltaScope does not evaluate function bodies, verify argument types, or inspect live function state. This is not full PostgreSQL function/procedure governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Advanced View Lifecycle (v0.70.0)
+
+`v0.70.0` adds PostgreSQL advanced view lifecycle coverage beyond the base `CREATE VIEW` / `DROP VIEW` forms. DeltaScope normalizes `CREATE OR REPLACE VIEW`, `CREATE TEMP VIEW`, `CREATE VIEW ... WITH CHECK OPTION`, `DROP VIEW ... CASCADE`, `ALTER VIEW ... RENAME TO`, and `ALTER VIEW ... SET SCHEMA`, adds six PostgreSQL-only findings. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE OR REPLACE VIEW v1 AS SELECT 1` | `create_or_replace_view` |
+| `CREATE TEMP VIEW tv1 AS SELECT 1` | `create_temp_view` |
+| `CREATE TEMPORARY VIEW tv1 AS SELECT 1` | `create_temp_view` |
+| `CREATE VIEW v1 AS SELECT 1 WITH CHECK OPTION` | `create_view` (check_option=cascaded) |
+| `CREATE VIEW v1 AS SELECT 1 WITH CASCADED CHECK OPTION` | `create_view` (check_option=cascaded) |
+| `CREATE VIEW v1 AS SELECT 1 WITH LOCAL CHECK OPTION` | `create_view` (check_option=local) |
+| `DROP VIEW v1 CASCADE` | `drop_view` (cascade=true) |
+| `ALTER VIEW v1 RENAME TO v2` | `alter_view` (action=rename) |
+| `ALTER VIEW v1 SET SCHEMA schema2` | `alter_view` (action=set_schema) |
+
+### Advanced View Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_or_replace_view.advisory` | `CREATE OR REPLACE VIEW` replaces an existing view — advises review of downstream dependencies | ✓ | ✗ | notice |
+| `ddl.pg.create_temp_view.notice` | `CREATE TEMP VIEW` / `CREATE TEMPORARY VIEW` creates a session-scoped view — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.create_view.check_option.notice` | `CREATE VIEW ... WITH CHECK OPTION` enforces check option — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_view.cascade.warn` | `DROP VIEW ... CASCADE` uses cascading deletion — may silently drop dependent objects | ✓ | ✗ | warning |
+| `ddl.pg.alter_view.rename.notice` | `ALTER VIEW ... RENAME TO` changes the view name — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_view.set_schema.notice` | `ALTER VIEW ... SET SCHEMA` moves the view to a different schema — informational notice | ✓ | ✗ | notice |
+
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not evaluate view query bodies or inspect live view state. This is not full PostgreSQL view governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Selected ALTER Object Lifecycle (v0.70.0)
+
+`v0.70.0` adds PostgreSQL selected ALTER object lifecycle coverage for schema, index, and materialized view. DeltaScope normalizes `ALTER SCHEMA ... RENAME TO`, `ALTER SCHEMA ... OWNER TO`, `ALTER INDEX ... RENAME TO`, `ALTER INDEX ... SET TABLESPACE`, `ALTER MATERIALIZED VIEW ... RENAME TO`, and `ALTER MATERIALIZED VIEW ... SET SCHEMA`, adds six PostgreSQL-only findings. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `ALTER SCHEMA s1 RENAME TO s2` | `alter_schema` (action=rename) |
+| `ALTER SCHEMA s1 OWNER TO new_owner` | `alter_schema` (action=owner) |
+| `ALTER INDEX idx1 RENAME TO idx2` | `alter_index` (action=rename) |
+| `ALTER INDEX idx1 SET TABLESPACE ts2` | `alter_index` (action=set_tablespace) |
+| `ALTER MATERIALIZED VIEW mv1 RENAME TO mv2` | `alter_materialized_view` (action=rename) |
+| `ALTER MATERIALIZED VIEW mv1 SET SCHEMA schema2` | `alter_materialized_view` (action=set_schema) |
+
+### Selected ALTER Object Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.alter_schema.rename.notice` | `ALTER SCHEMA ... RENAME TO` changes the schema name — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_schema.owner.notice` | `ALTER SCHEMA ... OWNER TO` changes the schema owner — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_index.rename.notice` | `ALTER INDEX ... RENAME TO` changes the index name — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_index.set_tablespace.notice` | `ALTER INDEX ... SET TABLESPACE` moves the index to a different tablespace — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_materialized_view.rename.notice` | `ALTER MATERIALIZED VIEW ... RENAME TO` changes the materialized view name — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_materialized_view.set_schema.notice` | `ALTER MATERIALIZED VIEW ... SET SCHEMA` moves the materialized view to a different schema — informational notice | ✓ | ✗ | notice |
+
+> **Note:** These rules are offline-only and do not require a database connection. DeltaScope does not verify live schema/index/materialized-view existence, ownership, or tablespace availability. This is not full PostgreSQL ALTER object lifecycle coverage — remaining ALTER forms (e.g., `ALTER INDEX ... SET (...)`, `ALTER MATERIALIZED VIEW ... OWNER TO`) are deferred. No MySQL/TiDB behavior changes.
+
+---
+
 ## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0 / v0.24.0)
 
 `v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns` through the shared `spec.Constraint` model. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results with progressively richer semantics. No new rules are introduced — existing shared rule families apply where relevant.
