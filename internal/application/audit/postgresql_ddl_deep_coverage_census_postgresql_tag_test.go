@@ -48,34 +48,37 @@ var pgDDLDeepCoverageCensusCases = []struct {
 		Expected: ddlCoverageFindingCovered},
 
 	// ===== Publication lifecycle =====
-	// Parser handles all publication DDL; extractor marks them unsupported.
+	// Publication lifecycle: create, alter, and drop are normalized with findings.
 
 	{Name: "CREATE PUBLICATION FOR ALL TABLES",
 		SQL:      "CREATE PUBLICATION pub_all FOR ALL TABLES",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER PUBLICATION ADD TABLE",
 		SQL:      "ALTER PUBLICATION pub_all ADD TABLE users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER PUBLICATION DROP TABLE",
 		SQL:      "ALTER PUBLICATION pub_all DROP TABLE users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP PUBLICATION",
 		SQL:      "DROP PUBLICATION pub_all",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Subscription lifecycle =====
-	// Parser handles most subscription DDL; extractor marks unsupported.
-	// DROP SUBSCRIPTION ... WITH (drop_slot) is a genuine parser error.
+	// Subscription lifecycle: create, alter, and basic drop are normalized with findings.
+	// DROP SUBSCRIPTION ... WITH (drop_slot) remains a genuine parser error.
 
 	{Name: "CREATE SUBSCRIPTION",
 		SQL:      "CREATE SUBSCRIPTION sub CONNECTION 'postgres://example' PUBLICATION pub_all",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER SUBSCRIPTION DISABLE",
 		SQL:      "ALTER SUBSCRIPTION sub DISABLE",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER SUBSCRIPTION ENABLE",
 		SQL:      "ALTER SUBSCRIPTION sub ENABLE",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
+	{Name: "DROP SUBSCRIPTION",
+		SQL:      "DROP SUBSCRIPTION sub",
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP SUBSCRIPTION WITH drop_slot",
 		SQL:      "DROP SUBSCRIPTION sub WITH (drop_slot = true)",
 		Expected: ddlCoverageParserError},

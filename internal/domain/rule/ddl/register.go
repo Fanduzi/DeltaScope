@@ -513,6 +513,14 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterIndexSetTablespaceNotice, construct: newAlterIndexSetTablespaceNoticeRule},
 		{ruleID: ruleIDPGAlterMaterializedViewRenameNotice, construct: newAlterMaterializedViewRenameNoticeRule},
 		{ruleID: ruleIDPGAlterMaterializedViewSetSchemaNotice, construct: newAlterMaterializedViewSetSchemaNoticeRule},
+
+		{ruleID: ruleIDPGCreatePublicationNotice, construct: newCreatePublicationNoticeRule},
+		{ruleID: ruleIDPGAlterPublicationNotice, construct: newAlterPublicationNoticeRule},
+		{ruleID: ruleIDPGDropPublicationWarn, construct: newDropPublicationWarnRule},
+		{ruleID: ruleIDPGCreateSubscriptionNotice, construct: newCreateSubscriptionNoticeRule},
+		{ruleID: ruleIDPGAlterSubscriptionNotice, construct: newAlterSubscriptionNoticeRule},
+		{ruleID: ruleIDPGAlterSubscriptionDisableWarn, construct: newAlterSubscriptionDisableWarnRule},
+		{ruleID: ruleIDPGDropSubscriptionWarn, construct: newDropSubscriptionWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

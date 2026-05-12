@@ -144,6 +144,17 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "procedure",
 			Options:    options,
 		}
+	case pg_query.ObjectType_OBJECT_PUBLICATION:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropPublication,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "publication",
+			Options:    options,
+		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}

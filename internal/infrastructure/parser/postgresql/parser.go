@@ -101,6 +101,11 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_AlterPolicyStmt,
 		*pg_query.Node_CreateTrigStmt,
 		*pg_query.Node_CreateFunctionStmt,
+		*pg_query.Node_CreatePublicationStmt,
+		*pg_query.Node_AlterPublicationStmt,
+		*pg_query.Node_CreateSubscriptionStmt,
+		*pg_query.Node_AlterSubscriptionStmt,
+		*pg_query.Node_DropSubscriptionStmt,
 		*pg_query.Node_AlterOwnerStmt:
 		return spec.KindDDL
 	case *pg_query.Node_CreateTableAsStmt:

@@ -78,6 +78,14 @@ const (
 	DDLOperationAlterSchema           DDLOperation = "alter_schema"
 	DDLOperationAlterIndex            DDLOperation = "alter_index"
 	DDLOperationAlterMaterializedView DDLOperation = "alter_materialized_view"
+
+	DDLOperationCreatePublication DDLOperation = "create_publication"
+	DDLOperationAlterPublication  DDLOperation = "alter_publication"
+	DDLOperationDropPublication   DDLOperation = "drop_publication"
+
+	DDLOperationCreateSubscription DDLOperation = "create_subscription"
+	DDLOperationAlterSubscription  DDLOperation = "alter_subscription"
+	DDLOperationDropSubscription   DDLOperation = "drop_subscription"
 )
 
 // Table describes a table-level object.

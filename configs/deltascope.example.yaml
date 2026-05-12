@@ -791,6 +791,34 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_publication.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_publication.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_publication.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_subscription.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_subscription.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_subscription.disable.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.drop_subscription.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

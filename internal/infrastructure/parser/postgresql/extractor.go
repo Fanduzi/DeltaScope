@@ -89,6 +89,16 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateTrigStmt(statement, node.CreateTrigStmt), nil
 	case *pg_query.Node_CreateFunctionStmt:
 		return extractCreateFunctionStmt(statement, node.CreateFunctionStmt), nil
+	case *pg_query.Node_CreatePublicationStmt:
+		return extractCreatePublicationStmt(statement, node.CreatePublicationStmt), nil
+	case *pg_query.Node_AlterPublicationStmt:
+		return extractAlterPublicationStmt(statement, node.AlterPublicationStmt), nil
+	case *pg_query.Node_CreateSubscriptionStmt:
+		return extractCreateSubscriptionStmt(statement, node.CreateSubscriptionStmt), nil
+	case *pg_query.Node_AlterSubscriptionStmt:
+		return extractAlterSubscriptionStmt(statement, node.AlterSubscriptionStmt), nil
+	case *pg_query.Node_DropSubscriptionStmt:
+		return extractDropSubscriptionStmt(statement, node.DropSubscriptionStmt), nil
 	case *pg_query.Node_AlterOwnerStmt:
 		return extractAlterOwnerStmt(statement, node.AlterOwnerStmt), nil
 	case *pg_query.Node_InsertStmt:

@@ -1,0 +1,1 @@
+CREATE SUBSCRIPTION sub CONNECTION 'postgres://example' PUBLICATION pub_all

@@ -1,0 +1,1 @@
+ALTER PUBLICATION pub_all ADD TABLE users

@@ -455,6 +455,242 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 	})
 }
 
+func TestAuditSQLPostgreSQLReplicationLifecycleRules(t *testing.T) {
+	t.Parallel()
+
+	t.Run("create_publication_notice", func(t *testing.T) {
+		t.Parallel()
+		const sql = "CREATE PUBLICATION pub_all FOR ALL TABLES"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_publication.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["all_tables"] != "true" {
+					t.Errorf("expected all_tables=true, got %v", f.Metadata["all_tables"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_publication.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_publication_notice", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER PUBLICATION pub_all ADD TABLE users"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_publication.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["action"] != "add_table" {
+					t.Errorf("expected action=add_table, got %v", f.Metadata["action"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_publication.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_publication_warn", func(t *testing.T) {
+		t.Parallel()
+		const sql = "DROP PUBLICATION pub_all"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_publication.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected drop_publication.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("create_subscription_notice", func(t *testing.T) {
+		t.Parallel()
+		const sql = "CREATE SUBSCRIPTION sub CONNECTION 'postgres://example' PUBLICATION pub_all"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.create_subscription.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["has_connection"] != "true" {
+					t.Errorf("expected has_connection=true, got %v", f.Metadata["has_connection"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected create_subscription.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_subscription_notice", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER SUBSCRIPTION sub ENABLE"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_subscription.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["action"] != "enable" {
+					t.Errorf("expected action=enable, got %v", f.Metadata["action"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_subscription.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_subscription_disable_warn", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER SUBSCRIPTION sub DISABLE"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_subscription.disable.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["action"] != "disable" {
+					t.Errorf("expected action=disable, got %v", f.Metadata["action"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_subscription.disable.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("drop_subscription_warn", func(t *testing.T) {
+		t.Parallel()
+		const sql = "DROP SUBSCRIPTION sub"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.drop_subscription.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected drop_subscription.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+}
+
 func TestAuditSQLPostgreSQLTablePrivilegeDCLRules(t *testing.T) {
 	t.Parallel()
 	t.Run("grant_select_notice", func(t *testing.T) {

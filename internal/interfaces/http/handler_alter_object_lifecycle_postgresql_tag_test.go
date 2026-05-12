@@ -76,6 +76,41 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "ALTER EXTENSION pg_trgm DROP TABLE users;",
 			wantRuleID: "ddl.pg.alter_extension.drop_member.warn",
 		},
+		{
+			name:       "create_publication_notice",
+			sql:        "CREATE PUBLICATION pub_all FOR ALL TABLES",
+			wantRuleID: "ddl.pg.create_publication.notice",
+		},
+		{
+			name:       "alter_publication_notice",
+			sql:        "ALTER PUBLICATION pub_all ADD TABLE users",
+			wantRuleID: "ddl.pg.alter_publication.notice",
+		},
+		{
+			name:       "drop_publication_warn",
+			sql:        "DROP PUBLICATION pub_all",
+			wantRuleID: "ddl.pg.drop_publication.warn",
+		},
+		{
+			name:       "create_subscription_notice",
+			sql:        "CREATE SUBSCRIPTION sub CONNECTION 'host=localhost' PUBLICATION pub_all",
+			wantRuleID: "ddl.pg.create_subscription.notice",
+		},
+		{
+			name:       "alter_subscription_notice",
+			sql:        "ALTER SUBSCRIPTION sub ENABLE",
+			wantRuleID: "ddl.pg.alter_subscription.notice",
+		},
+		{
+			name:       "alter_subscription_disable_warn",
+			sql:        "ALTER SUBSCRIPTION sub DISABLE",
+			wantRuleID: "ddl.pg.alter_subscription.disable.warn",
+		},
+		{
+			name:       "drop_subscription_warn",
+			sql:        "DROP SUBSCRIPTION sub",
+			wantRuleID: "ddl.pg.drop_subscription.warn",
+		},
 	}
 
 	for _, tt := range tests {
