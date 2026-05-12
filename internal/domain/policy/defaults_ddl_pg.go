@@ -344,6 +344,16 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter_extension.add_member.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_extension.drop_member.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
 		// PG policy lifecycle rules (PostgreSQL-only).
 		"ddl.pg.create_policy.notice": {
 			Enabled: true,

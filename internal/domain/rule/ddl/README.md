@@ -26,7 +26,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
 | postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, alter-type composite add/drop/alter/rename attribute notice/warn, drop-type advisory, drop-type cascade warn |
 | postgresql_domain_lifecycle_rules.go | Implements PostgreSQL-only domain lifecycle rules: create-domain notice, alter-domain constraint/default/not-null/rename notices, drop-domain advisory, drop-domain cascade warn |
-| postgresql_extension_lifecycle_rules.go | Implements PostgreSQL-only extension lifecycle rules: create-extension notice, create-extension cascade warn, alter-extension update/set-schema notices, drop-extension advisory, drop-extension cascade warn |
+| postgresql_extension_lifecycle_rules.go | Implements PostgreSQL-only extension lifecycle rules: create-extension notice, create-extension cascade warn, alter-extension update/set-schema/add-member/drop-member notices/warnings, drop-extension advisory, drop-extension cascade warn |
 | postgresql_privilege_rules.go | Implements PostgreSQL-only table privilege rules: grant-table notice, grant-table all-privileges warn, revoke-table notice, revoke-table cascade warn |
 | postgresql_privilege_rules_test.go | Verifies PG table privilege rules with positive, negative, cross-dialect, deferred-form, registration, and defaults coverage |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
@@ -263,6 +263,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.alter_extension.set_schema.notice`
 - `ddl.pg.drop_extension.advisory`
 - `ddl.pg.drop_extension.cascade.warn`
+- `ddl.pg.alter_extension.add_member.notice`
+- `ddl.pg.alter_extension.drop_member.warn`
 - `ddl.pg.create_function.notice`
 - `ddl.pg.create_function.security_definer.warn`
 - `ddl.pg.create_or_replace_function.advisory`

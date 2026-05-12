@@ -783,6 +783,14 @@ rules:
     enabled: true
     level: notice
 
+  ddl.pg.alter_extension.add_member.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_extension.drop_member.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

@@ -494,6 +494,119 @@ func TestDropExtensionCascadeWarnSkipsNonCascade(t *testing.T) {
 }
 
 // Deferred member mutation specs do not trigger extension rules.
+
+func TestAlterExtensionAddMemberNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterExtensionAddMemberNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterExtension,
+			ObjectName: "pg_trgm",
+			ObjectType: "extension",
+			Options:    map[string]string{"action": "add_member", "member_type": "table", "member": "users"},
+		},
+	}
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Errorf("expected notice, got %s", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "add_member" {
+		t.Errorf("expected action=add_member, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["member_type"] != "table" {
+		t.Errorf("expected member_type=table, got %v", findings[0].Metadata["member_type"])
+	}
+	if findings[0].Metadata["member"] != "users" {
+		t.Errorf("expected member=users, got %v", findings[0].Metadata["member"])
+	}
+}
+
+func TestAlterExtensionDropMemberWarnRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterExtensionDropMemberWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterExtension,
+			ObjectName: "pg_trgm",
+			ObjectType: "extension",
+			Options:    map[string]string{"action": "drop_member", "member_type": "table", "member": "users"},
+		},
+	}
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Errorf("expected warning, got %s", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "drop_member" {
+		t.Errorf("expected action=drop_member, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["member_type"] != "table" {
+		t.Errorf("expected member_type=table, got %v", findings[0].Metadata["member_type"])
+	}
+	if findings[0].Metadata["member"] != "users" {
+		t.Errorf("expected member=users, got %v", findings[0].Metadata["member"])
+	}
+}
+
+func TestAlterExtensionAddMemberSkipsDropMember(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterExtensionAddMemberNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterExtension,
+			ObjectName: "pg_trgm",
+			ObjectType: "extension",
+			Options:    map[string]string{"action": "drop_member"},
+		},
+	}
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected add_member rule to skip drop_member, got %d findings", len(findings))
+	}
+}
+
+func TestAlterExtensionDropMemberSkipsAddMember(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterExtensionDropMemberWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterExtension,
+			ObjectName: "pg_trgm",
+			ObjectType: "extension",
+			Options:    map[string]string{"action": "add_member"},
+		},
+	}
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected drop_member rule to skip add_member, got %d findings", len(findings))
+	}
+}
+
 func TestExtensionRulesSkipMemberMutation(t *testing.T) {
 	t.Parallel()
 	rules := []rule.StatementRule{
@@ -509,7 +622,7 @@ func TestExtensionRulesSkipMemberMutation(t *testing.T) {
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
-			Operation:  spec.DDLOperation("alter_extension_add_member"),
+			Operation:  spec.DDLOperationAlterExtension,
 			ObjectName: "pg_trgm",
 			ObjectType: "extension",
 			Options:    map[string]string{"action": "add_member"},
@@ -519,7 +632,7 @@ func TestExtensionRulesSkipMemberMutation(t *testing.T) {
 		Kind:    spec.KindDDL,
 		Dialect: spec.DialectPostgreSQL,
 		DDL: &spec.DDL{
-			Operation:  spec.DDLOperation("alter_extension_drop_member"),
+			Operation:  spec.DDLOperationAlterExtension,
 			ObjectName: "pg_trgm",
 			ObjectType: "extension",
 			Options:    map[string]string{"action": "drop_member"},
@@ -727,6 +840,24 @@ func mustNewDropExtensionCascadeWarnRule(t *testing.T, cfg policy.RulePolicy) ru
 	r, err := newDropExtensionCascadeWarnRule(cfg)
 	if err != nil {
 		t.Fatalf("new drop extension cascade warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAlterExtensionAddMemberNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAlterExtensionAddMemberNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new alter extension add member notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAlterExtensionDropMemberWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAlterExtensionDropMemberWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new alter extension drop member warn rule: %v", err)
 	}
 	return r
 }

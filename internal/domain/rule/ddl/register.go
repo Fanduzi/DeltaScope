@@ -473,6 +473,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterExtensionSetSchemaNotice, construct: newAlterExtensionSetSchemaNoticeRule},
 		{ruleID: ruleIDPGDropExtensionAdvisory, construct: newDropExtensionAdvisoryRule},
 		{ruleID: ruleIDPGDropExtensionCascadeWarn, construct: newDropExtensionCascadeWarnRule},
+		{ruleID: ruleIDPGAlterExtensionAddMemberNotice, construct: newAlterExtensionAddMemberNoticeRule},
+		{ruleID: ruleIDPGAlterExtensionDropMemberWarn, construct: newAlterExtensionDropMemberWarnRule},
 		// MySQL/TiDB database lifecycle rules.
 		{ruleID: ruleIDDatabaseCreateNotice, construct: newDatabaseCreateNoticeRule},
 		{ruleID: ruleIDDatabaseDropWarn, construct: newDatabaseDropWarnRule},

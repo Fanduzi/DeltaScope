@@ -399,14 +399,42 @@ func extractAlterExtensionContentsStmt(statement spec.Statement, stmt *pg_query.
 	if stmt == nil {
 		return unsupportedStatement(statement, "alter_extension", "postgresql alter extension contents statement payload is missing")
 	}
+
+	var action string
 	switch stmt.GetAction() {
 	case 1:
-		return unsupportedStatement(statement, "alter_extension_add_member", "postgresql alter extension add member is deferred")
+		action = "add_member"
 	case -1:
-		return unsupportedStatement(statement, "alter_extension_drop_member", "postgresql alter extension drop member is deferred")
+		action = "drop_member"
 	default:
 		return unsupportedStatement(statement, "alter_extension", fmt.Sprintf("postgresql alter extension contents action %d is deferred", stmt.GetAction()))
 	}
+
+	memberType := strings.ToLower(strings.TrimPrefix(stmt.GetObjtype().String(), "OBJECT_"))
+	memberName := ""
+	if obj := stmt.GetObject(); obj != nil {
+		if list := obj.GetList(); list != nil {
+			memberName = firstStringFromNodes(list.GetItems())
+		} else {
+			memberName = firstStringFromNodes([]*pg_query.Node{obj})
+		}
+	}
+
+	options := map[string]string{
+		"action":      action,
+		"member_type": memberType,
+	}
+	if memberName != "" {
+		options["member"] = memberName
+	}
+
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterExtension,
+		ObjectName: stmt.GetExtname(),
+		ObjectType: "extension",
+		Options:    options,
+	}
+	return statement
 }
 
 // extractAlterTypeCompositeFromAlterTableStmt handles ALTER TYPE ...

@@ -66,6 +66,16 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "ALTER TYPE address RENAME ATTRIBUTE street TO line1;",
 			wantRuleID: "ddl.pg.alter_type.rename_attribute.notice",
 		},
+		{
+			name:       "alter_extension_add_member_notice",
+			sql:        "ALTER EXTENSION pg_trgm ADD TABLE users;",
+			wantRuleID: "ddl.pg.alter_extension.add_member.notice",
+		},
+		{
+			name:       "alter_extension_drop_member_warn",
+			sql:        "ALTER EXTENSION pg_trgm DROP TABLE users;",
+			wantRuleID: "ddl.pg.alter_extension.drop_member.warn",
+		},
 	}
 
 	for _, tt := range tests {

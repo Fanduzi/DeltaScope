@@ -72,7 +72,7 @@ func (r pgExtensionLifecycleRule) Evaluate(ctx context.Context, statement spec.S
 		"object_type": statement.DDL.ObjectType,
 		"object_name": objectName,
 	}
-	for _, key := range []string{"if_not_exists", "schema", "version", "cascade", "if_exists", "action", "new_schema"} {
+	for _, key := range []string{"if_not_exists", "schema", "version", "cascade", "if_exists", "action", "new_schema", "member_type", "member"} {
 		if val := statement.DDL.Options[key]; val != "" {
 			metadata[key] = val
 		}
@@ -158,6 +158,30 @@ func newDropExtensionCascadeWarnRule(cfg policy.RulePolicy) (rule.StatementRule,
 		"CASCADE tells PostgreSQL to drop objects that depend on the extension.",
 		"Functions, indexes, views, tables, or constraints depending on the extension may be removed unexpectedly.",
 		"Prefer RESTRICT during review. If CASCADE is intentional, enumerate dependent objects and confirm the blast radius.",
+		cfg,
+	)
+}
+
+func newAlterExtensionAddMemberNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGExtensionLifecycleRule(
+		ruleIDPGAlterExtensionAddMemberNotice, rule.LevelNotice, spec.DDLOperationAlterExtension,
+		"action", "add_member", true, "extension",
+		"PostgreSQL extension %q member added — review extension dependency change",
+		"ALTER EXTENSION ADD member includes an existing database object into the extension, making it dependent on the extension.",
+		"Objects added to an extension become owned by the extension and will be dropped if the extension is dropped.",
+		"Confirm the object membership is intentional and that dependent applications account for the coupling.",
+		cfg,
+	)
+}
+
+func newAlterExtensionDropMemberWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGExtensionLifecycleRule(
+		ruleIDPGAlterExtensionDropMemberWarn, rule.LevelWarning, spec.DDLOperationAlterExtension,
+		"action", "drop_member", true, "extension",
+		"PostgreSQL extension %q member removed — review decoupled object",
+		"ALTER EXTENSION DROP member decouples an object from the extension, making it independent again.",
+		"Removing a member may leave orphaned objects that were previously managed by the extension lifecycle.",
+		"Verify that the decoupled object no longer depends on extension-provided types or functions.",
 		cfg,
 	)
 }

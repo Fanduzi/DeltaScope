@@ -368,29 +368,89 @@ func TestAuditSQLPostgreSQLExtensionLifecycleRules(t *testing.T) {
 		}
 	})
 
-	t.Run("deferred_member_mutation_unsupported", func(t *testing.T) {
+	t.Run("alter_extension_add_member_notice", func(t *testing.T) {
 		t.Parallel()
-		cases := []struct {
-			name string
-			sql  string
-		}{
-			{"add_member", "ALTER EXTENSION pg_trgm ADD TABLE users"},
-			{"drop_member", "ALTER EXTENSION pg_trgm DROP TABLE users"},
+		const sql = "ALTER EXTENSION pg_trgm ADD TABLE users"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
 		}
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-				result, err := AuditSQL(context.Background(), Request{
-					SQL:     tc.sql,
-					Dialect: spec.DialectPostgreSQL,
-				})
-				if !errors.Is(err, ErrUnsupportedStatement) {
-					t.Fatalf("expected unsupported statement sentinel, got %v", err)
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_extension.add_member.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
 				}
-				if len(result.Unsupported) == 0 {
-					t.Fatalf("expected unsupported for deferred member mutation")
+				if f.Metadata["operation"] != "alter_extension" {
+					t.Errorf("expected operation=alter_extension, got %v", f.Metadata["operation"])
 				}
-			})
+				if f.Metadata["action"] != "add_member" {
+					t.Errorf("expected action=add_member, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["member_type"] != "table" {
+					t.Errorf("expected member_type=table, got %v", f.Metadata["member_type"])
+				}
+				if f.Metadata["member"] != "users" {
+					t.Errorf("expected member=users, got %v", f.Metadata["member"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_extension.add_member.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_extension_drop_member_warn", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER EXTENSION pg_trgm DROP TABLE users"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_extension.drop_member.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_extension" {
+					t.Errorf("expected operation=alter_extension, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["action"] != "drop_member" {
+					t.Errorf("expected action=drop_member, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["member_type"] != "table" {
+					t.Errorf("expected member_type=table, got %v", f.Metadata["member_type"])
+				}
+				if f.Metadata["member"] != "users" {
+					t.Errorf("expected member=users, got %v", f.Metadata["member"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_extension.drop_member.warn, got %v", collectAuditResultRuleIDs(result))
 		}
 	})
 }

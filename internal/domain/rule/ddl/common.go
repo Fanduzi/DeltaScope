@@ -222,6 +222,8 @@ const (
 	ruleIDPGAlterExtensionSetSchemaNotice = "ddl.pg.alter_extension.set_schema.notice"
 	ruleIDPGDropExtensionAdvisory         = "ddl.pg.drop_extension.advisory"
 	ruleIDPGDropExtensionCascadeWarn      = "ddl.pg.drop_extension.cascade.warn"
+	ruleIDPGAlterExtensionAddMemberNotice = "ddl.pg.alter_extension.add_member.notice"
+	ruleIDPGAlterExtensionDropMemberWarn  = "ddl.pg.alter_extension.drop_member.warn"
 	// MySQL/TiDB database lifecycle rules.
 	ruleIDDatabaseCreateNotice = "ddl.database.create.notice"
 	ruleIDDatabaseDropWarn     = "ddl.database.drop.warn"

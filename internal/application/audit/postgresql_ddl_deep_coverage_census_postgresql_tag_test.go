@@ -42,10 +42,10 @@ var pgDDLDeepCoverageCensusCases = []struct {
 
 	{Name: "ALTER EXTENSION ADD TABLE",
 		SQL:      "ALTER EXTENSION pg_trgm ADD TABLE users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER EXTENSION DROP TABLE",
 		SQL:      "ALTER EXTENSION pg_trgm DROP TABLE users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Publication lifecycle =====
 	// Parser handles all publication DDL; extractor marks them unsupported.

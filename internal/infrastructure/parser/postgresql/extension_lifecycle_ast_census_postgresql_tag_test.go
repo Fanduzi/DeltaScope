@@ -528,25 +528,37 @@ func assertExtensionLifecycleBaseline(t *testing.T, fact extensionLifecycleBasel
 		}
 
 	case "alter_extension_add_table":
-		if fact.Kind != spec.KindDDL {
-			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
+		if fact.DDLOperation != "alter_extension" {
+			t.Errorf("%s: expected alter_extension, got %q", fact.Name, fact.DDLOperation)
 		}
-		if fact.UnsupportedFeature != "alter_extension_add_member" {
-			t.Errorf("%s: expected feature 'alter_extension_add_member', got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOptions["action"] != "add_member" {
+			t.Errorf("%s: expected action=add_member, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["member_type"] != "table" {
+			t.Errorf("%s: expected member_type=table, got %q", fact.Name, fact.DDLOptions["member_type"])
+		}
+		if fact.DDLOptions["member"] != "users" {
+			t.Errorf("%s: expected member=users, got %q", fact.Name, fact.DDLOptions["member"])
 		}
 
 	case "alter_extension_drop_table":
-		if fact.Kind != spec.KindDDL {
-			t.Errorf("%s: expected KindDDL, got %v", fact.Name, fact.Kind)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
+		if fact.DDLOperation != "alter_extension" {
+			t.Errorf("%s: expected alter_extension, got %q", fact.Name, fact.DDLOperation)
 		}
-		if fact.UnsupportedFeature != "alter_extension_drop_member" {
-			t.Errorf("%s: expected feature 'alter_extension_drop_member', got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOptions["action"] != "drop_member" {
+			t.Errorf("%s: expected action=drop_member, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["member_type"] != "table" {
+			t.Errorf("%s: expected member_type=table, got %q", fact.Name, fact.DDLOptions["member_type"])
+		}
+		if fact.DDLOptions["member"] != "users" {
+			t.Errorf("%s: expected member=users, got %q", fact.Name, fact.DDLOptions["member"])
 		}
 	}
 }
