@@ -448,11 +448,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateTypeCompositeNotice, construct: newCreateTypeCompositeNoticeRule},
 		{ruleID: ruleIDPGAlterTypeCompositeRenameNotice, construct: newAlterTypeCompositeRenameNoticeRule},
 		{ruleID: ruleIDPGAlterTypeCompositeSetSchemaNotice, construct: newAlterTypeCompositeSetSchemaNoticeRule},
-	// PostgreSQL composite type attribute lifecycle rules (PG-only).
-	{ruleID: ruleIDPGAlterTypeAddAttributeNotice, construct: newAlterTypeAddAttributeNoticeRule},
-	{ruleID: ruleIDPGAlterTypeDropAttributeWarn, construct: newAlterTypeDropAttributeWarnRule},
-	{ruleID: ruleIDPGAlterTypeAlterAttributeTypeWarn, construct: newAlterTypeAlterAttributeTypeWarnRule},
-	{ruleID: ruleIDPGAlterTypeRenameAttributeNotice, construct: newAlterTypeRenameAttributeNoticeRule},
+		// PostgreSQL composite type attribute lifecycle rules (PG-only).
+		{ruleID: ruleIDPGAlterTypeAddAttributeNotice, construct: newAlterTypeAddAttributeNoticeRule},
+		{ruleID: ruleIDPGAlterTypeDropAttributeWarn, construct: newAlterTypeDropAttributeWarnRule},
+		{ruleID: ruleIDPGAlterTypeAlterAttributeTypeWarn, construct: newAlterTypeAlterAttributeTypeWarnRule},
+		{ruleID: ruleIDPGAlterTypeRenameAttributeNotice, construct: newAlterTypeRenameAttributeNoticeRule},
 		// PostgreSQL domain lifecycle rules (PG-only).
 		{ruleID: ruleIDPGCreateDomainNotice, construct: newCreateDomainNoticeRule},
 		{ruleID: ruleIDPGAlterDomainConstraintNotice, construct: newAlterDomainConstraintNoticeRule},
