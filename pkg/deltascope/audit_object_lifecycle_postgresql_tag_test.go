@@ -399,6 +399,26 @@ func TestAuditPostgreSQLCompositeTypeLifecycleRuleCoverage(t *testing.T) {
 			sql:         "ALTER TYPE address SET SCHEMA archive;",
 			wantRuleIDs: []string{"ddl.pg.alter_type.composite_set_schema.notice"},
 		},
+		{
+			name:        "alter_type_add_attribute_notice",
+			sql:         "ALTER TYPE address ADD ATTRIBUTE country text;",
+			wantRuleIDs: []string{"ddl.pg.alter_type.add_attribute.notice"},
+		},
+		{
+			name:        "alter_type_drop_attribute_warn",
+			sql:         "ALTER TYPE address DROP ATTRIBUTE city;",
+			wantRuleIDs: []string{"ddl.pg.alter_type.drop_attribute.warn"},
+		},
+		{
+			name:        "alter_type_alter_attribute_type_warn",
+			sql:         "ALTER TYPE address ALTER ATTRIBUTE street TYPE varchar(255);",
+			wantRuleIDs: []string{"ddl.pg.alter_type.alter_attribute_type.warn"},
+		},
+		{
+			name:        "alter_type_rename_attribute_notice",
+			sql:         "ALTER TYPE address RENAME ATTRIBUTE street TO line1;",
+			wantRuleIDs: []string{"ddl.pg.alter_type.rename_attribute.notice"},
+		},
 	}
 
 	for _, tt := range tests {

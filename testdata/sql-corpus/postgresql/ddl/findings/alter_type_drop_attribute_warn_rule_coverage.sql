@@ -1,0 +1,1 @@
+ALTER TYPE address DROP ATTRIBUTE city;

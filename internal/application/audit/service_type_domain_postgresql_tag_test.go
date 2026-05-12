@@ -4,7 +4,6 @@ package audit
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -499,31 +498,178 @@ func TestAuditSQLPostgreSQLCompositeTypeLifecycleRules(t *testing.T) {
 		}
 	})
 
-	t.Run("deferred_attribute_actions_unsupported", func(t *testing.T) {
+	t.Run("alter_type_add_attribute_notice", func(t *testing.T) {
 		t.Parallel()
-		cases := []struct {
-			name string
-			sql  string
-		}{
-			{"add_attribute", "ALTER TYPE address ADD ATTRIBUTE country text"},
-			{"drop_attribute", "ALTER TYPE address DROP ATTRIBUTE city"},
-			{"alter_attribute_type", "ALTER TYPE address ALTER ATTRIBUTE street TYPE varchar(255)"},
-			{"rename_attribute", "ALTER TYPE address RENAME ATTRIBUTE street TO line1"},
+		const sql = "ALTER TYPE address ADD ATTRIBUTE country text"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
 		}
-		for _, tc := range cases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-				result, err := AuditSQL(context.Background(), Request{
-					SQL:     tc.sql,
-					Dialect: spec.DialectPostgreSQL,
-				})
-				if !errors.Is(err, ErrUnsupportedStatement) {
-					t.Fatalf("expected unsupported statement sentinel, got %v", err)
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.add_attribute.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
 				}
-				if len(result.Unsupported) == 0 {
-					t.Fatalf("expected unsupported for deferred attribute action")
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
 				}
-			})
+				if f.Metadata["action"] != "add_attribute" {
+					t.Errorf("expected action=add_attribute, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["attribute"] != "country" {
+					t.Errorf("expected attribute=country, got %v", f.Metadata["attribute"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_type.add_attribute.notice, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_type_drop_attribute_warn", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER TYPE address DROP ATTRIBUTE city"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.drop_attribute.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["action"] != "drop_attribute" {
+					t.Errorf("expected action=drop_attribute, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["attribute"] != "city" {
+					t.Errorf("expected attribute=city, got %v", f.Metadata["attribute"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_type.drop_attribute.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_type_alter_attribute_type_warn", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER TYPE address ALTER ATTRIBUTE street TYPE varchar(255)"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.alter_attribute_type.warn" {
+				found = true
+				if f.Level != rule.LevelWarning {
+					t.Errorf("expected warning, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["action"] != "alter_attribute_type" {
+					t.Errorf("expected action=alter_attribute_type, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["attribute"] != "street" {
+					t.Errorf("expected attribute=street, got %v", f.Metadata["attribute"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_type.alter_attribute_type.warn, got %v", collectAuditResultRuleIDs(result))
+		}
+	})
+
+	t.Run("alter_type_rename_attribute_notice", func(t *testing.T) {
+		t.Parallel()
+		const sql = "ALTER TYPE address RENAME ATTRIBUTE street TO line1"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:     sql,
+			Dialect: spec.DialectPostgreSQL,
+		})
+		if err != nil {
+			t.Fatalf("audit sql: %v", err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+		}
+
+		var found bool
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == "ddl.pg.alter_type.rename_attribute.notice" {
+				found = true
+				if f.Level != rule.LevelNotice {
+					t.Errorf("expected notice, got %s", f.Level)
+				}
+				if f.Metadata["operation"] != "alter_type" {
+					t.Errorf("expected operation=alter_type, got %v", f.Metadata["operation"])
+				}
+				if f.Metadata["action"] != "rename_attribute" {
+					t.Errorf("expected action=rename_attribute, got %v", f.Metadata["action"])
+				}
+				if f.Metadata["attribute"] != "street" {
+					t.Errorf("expected attribute=street, got %v", f.Metadata["attribute"])
+				}
+				if f.Metadata["new_name"] != "line1" {
+					t.Errorf("expected new_name=line1, got %v", f.Metadata["new_name"])
+				}
+				if f.Metadata["type_kind"] != "composite" {
+					t.Errorf("expected type_kind=composite, got %v", f.Metadata["type_kind"])
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected alter_type.rename_attribute.notice, got %v", collectAuditResultRuleIDs(result))
 		}
 	})
 }

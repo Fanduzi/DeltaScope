@@ -235,6 +235,27 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		// PG composite type attribute lifecycle rules (PostgreSQL-only).
+		"ddl.pg.alter_type.add_attribute.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_type.drop_attribute.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_type.alter_attribute_type.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_type.rename_attribute.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 		// PG domain lifecycle rules (PostgreSQL-only).
 		"ddl.pg.create_domain.notice": {
 			Enabled: true,

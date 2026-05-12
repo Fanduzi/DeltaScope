@@ -767,6 +767,22 @@ rules:
     enabled: true
     level: notice
 
+  ddl.pg.alter_type.add_attribute.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_type.drop_attribute.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.alter_type.alter_attribute_type.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.alter_type.rename_attribute.notice:
+    enabled: true
+    level: notice
+
   dml.impact.estimate:
     enabled: true
     level: notice

@@ -1,6 +1,6 @@
 // Package ddl verifies PostgreSQL type lifecycle rule behavior.
 // input: synthetic DDL statements with PostgreSQL type lifecycle signals and cross-dialect policy controls
-// output: focused coverage for the five PostgreSQL type lifecycle rules with PG-only gating
+// output: focused coverage for PostgreSQL type lifecycle rules with PG-only gating
 // pos: domain DDL rule test coverage for PG type lifecycle
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -195,7 +195,6 @@ func TestDropTypeCascadeWarnRule(t *testing.T) {
 	}
 }
 
-// Duplicate finding: DROP TYPE CASCADE fires both drop_type.advisory and drop_type.cascade.warn.
 func TestDropTypeCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 	t.Parallel()
 	advisory := mustNewDropTypeAdvisoryRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
@@ -225,6 +224,226 @@ func TestDropTypeCascadeFiresBothAdvisoryAndCascadeWarn(t *testing.T) {
 	}
 }
 
+func TestCreateTypeCompositeNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationCreateType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"type_kind": "composite", "attributes": "2", "attribute_names": "street,city"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", f.Level)
+	}
+	if f.Explanation == nil || f.Explanation.Why == "" || f.Explanation.Risk == "" || f.Explanation.Suggestion == "" {
+		t.Fatalf("expected complete explanation, got %+v", f.Explanation)
+	}
+	if f.Metadata["type_kind"] != "composite" {
+		t.Fatalf("expected metadata type_kind=composite, got %v", f.Metadata["type_kind"])
+	}
+}
+
+func TestAlterTypeCompositeRenameNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"action": "rename", "new_name": "mailing_address"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["new_name"] != "mailing_address" {
+		t.Fatalf("expected metadata new_name=mailing_address, got %v", findings[0].Metadata["new_name"])
+	}
+}
+
+func TestAlterTypeCompositeSetSchemaNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"action": "set_schema", "new_schema": "archive"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["new_schema"] != "archive" {
+		t.Fatalf("expected metadata new_schema=archive, got %v", findings[0].Metadata["new_schema"])
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Positive tests: composite type attribute lifecycle rules
+// ---------------------------------------------------------------------------
+
+func TestAlterTypeAddAttributeNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeAddAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"type_kind": "composite", "action": "add_attribute", "attribute": "country", "attribute_type": "text"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", f.Level)
+	}
+	if f.Metadata["attribute"] != "country" {
+		t.Fatalf("expected metadata attribute=country, got %v", f.Metadata["attribute"])
+	}
+	if f.Metadata["attribute_type"] != "text" {
+		t.Fatalf("expected metadata attribute_type=text, got %v", f.Metadata["attribute_type"])
+	}
+}
+
+func TestAlterTypeDropAttributeWarnRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeDropAttributeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"type_kind": "composite", "action": "drop_attribute", "attribute": "city"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["attribute"] != "city" {
+		t.Fatalf("expected metadata attribute=city, got %v", findings[0].Metadata["attribute"])
+	}
+}
+
+func TestAlterTypeAlterAttributeTypeWarnRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeAlterAttributeTypeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"type_kind": "composite", "action": "alter_attribute_type", "attribute": "street", "attribute_type": "varchar"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["attribute"] != "street" {
+		t.Fatalf("expected metadata attribute=street, got %v", findings[0].Metadata["attribute"])
+	}
+}
+
+func TestAlterTypeRenameAttributeNoticeRule(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeRenameAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"type_kind": "composite", "action": "rename_attribute", "attribute": "street", "new_name": "line1"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	f := findings[0]
+	if f.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", f.Level)
+	}
+	if f.Metadata["attribute"] != "street" {
+		t.Fatalf("expected metadata attribute=street, got %v", f.Metadata["attribute"])
+	}
+	if f.Metadata["new_name"] != "line1" {
+		t.Fatalf("expected metadata new_name=line1, got %v", f.Metadata["new_name"])
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Negative tests: rules skip for non-matching conditions
 // ---------------------------------------------------------------------------
@@ -240,6 +459,10 @@ func TestTypeLifecycleRulesSkipMySQL(t *testing.T) {
 		mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewAlterTypeAddAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewAlterTypeDropAttributeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewAlterTypeAlterAttributeTypeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewAlterTypeRenameAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 	}
 
 	stmt := spec.Statement{
@@ -359,112 +582,6 @@ func TestDropTypeCascadeWarnSkipsNonCascade(t *testing.T) {
 	}
 }
 
-func TestCreateTypeCompositeNoticeRule(t *testing.T) {
-	t.Parallel()
-	r := mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
-
-	stmt := spec.Statement{
-		Kind:    spec.KindDDL,
-		Dialect: spec.DialectPostgreSQL,
-		DDL: &spec.DDL{
-			Operation:  spec.DDLOperationCreateType,
-			ObjectName: "address",
-			ObjectType: "type",
-			Options:    map[string]string{"type_kind": "composite", "attributes": "2", "attribute_names": "street,city"},
-		},
-	}
-
-	findings, err := r.Evaluate(context.Background(), stmt)
-	if err != nil {
-		t.Fatalf("evaluate: %v", err)
-	}
-	if len(findings) != 1 {
-		t.Fatalf("expected 1 finding, got %d", len(findings))
-	}
-	f := findings[0]
-	if f.Level != rule.LevelNotice {
-		t.Fatalf("expected notice level, got %q", f.Level)
-	}
-	if f.Explanation == nil || f.Explanation.Why == "" || f.Explanation.Risk == "" || f.Explanation.Suggestion == "" {
-		t.Fatalf("expected complete explanation, got %+v", f.Explanation)
-	}
-	if f.Metadata["type_kind"] != "composite" {
-		t.Fatalf("expected metadata type_kind=composite, got %v", f.Metadata["type_kind"])
-	}
-	if f.Metadata["attributes"] != "2" {
-		t.Fatalf("expected metadata attributes=2, got %v", f.Metadata["attributes"])
-	}
-	if f.Metadata["attribute_names"] != "street,city" {
-		t.Fatalf("expected metadata attribute_names=street,city, got %v", f.Metadata["attribute_names"])
-	}
-}
-
-func TestAlterTypeCompositeRenameNoticeRule(t *testing.T) {
-	t.Parallel()
-	r := mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
-
-	stmt := spec.Statement{
-		Kind:    spec.KindDDL,
-		Dialect: spec.DialectPostgreSQL,
-		DDL: &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: "address",
-			ObjectType: "type",
-			Options:    map[string]string{"action": "rename", "new_name": "mailing_address"},
-		},
-	}
-
-	findings, err := r.Evaluate(context.Background(), stmt)
-	if err != nil {
-		t.Fatalf("evaluate: %v", err)
-	}
-	if len(findings) != 1 {
-		t.Fatalf("expected 1 finding, got %d", len(findings))
-	}
-	f := findings[0]
-	if f.Level != rule.LevelNotice {
-		t.Fatalf("expected notice level, got %q", f.Level)
-	}
-	if f.Metadata["new_name"] != "mailing_address" {
-		t.Fatalf("expected metadata new_name=mailing_address, got %v", f.Metadata["new_name"])
-	}
-}
-
-func TestAlterTypeCompositeSetSchemaNoticeRule(t *testing.T) {
-	t.Parallel()
-	r := mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
-
-	stmt := spec.Statement{
-		Kind:    spec.KindDDL,
-		Dialect: spec.DialectPostgreSQL,
-		DDL: &spec.DDL{
-			Operation:  spec.DDLOperationAlterType,
-			ObjectName: "address",
-			ObjectType: "type",
-			Options:    map[string]string{"action": "set_schema", "new_schema": "archive"},
-		},
-	}
-
-	findings, err := r.Evaluate(context.Background(), stmt)
-	if err != nil {
-		t.Fatalf("evaluate: %v", err)
-	}
-	if len(findings) != 1 {
-		t.Fatalf("expected 1 finding, got %d", len(findings))
-	}
-	f := findings[0]
-	if f.Level != rule.LevelNotice {
-		t.Fatalf("expected notice level, got %q", f.Level)
-	}
-	if f.Metadata["new_schema"] != "archive" {
-		t.Fatalf("expected metadata new_schema=archive, got %v", f.Metadata["new_schema"])
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Negative tests: composite type rules skip non-matching conditions
-// ---------------------------------------------------------------------------
-
 func TestCreateTypeCompositeNoticeSkipsEnum(t *testing.T) {
 	t.Parallel()
 	r := mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
@@ -543,6 +660,10 @@ func TestCompositeTypeRulesSkipDropType(t *testing.T) {
 		mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewAlterTypeAddAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewAlterTypeDropAttributeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewAlterTypeAlterAttributeTypeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewAlterTypeRenameAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 	}
 
 	stmt := spec.Statement{
@@ -572,6 +693,10 @@ func TestCompositeTypeRulesSkipMySQL(t *testing.T) {
 		mustNewCreateTypeCompositeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeRenameNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 		mustNewAlterTypeCompositeSetSchemaNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewAlterTypeAddAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewAlterTypeDropAttributeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewAlterTypeAlterAttributeTypeWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+		mustNewAlterTypeRenameAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
 	}
 
 	stmt := spec.Statement{
@@ -596,6 +721,56 @@ func TestCompositeTypeRulesSkipMySQL(t *testing.T) {
 	}
 }
 
+// Attribute rules skip wrong action.
+
+func TestAlterTypeAddAttributeSkipsDropAttribute(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeAddAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"action": "drop_attribute", "attribute": "city"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected add_attribute notice to skip drop_attribute, got %d findings", len(findings))
+	}
+}
+
+func TestAlterTypeRenameAttributeSkipsRename(t *testing.T) {
+	t.Parallel()
+	r := mustNewAlterTypeRenameAttributeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: "address",
+			ObjectType: "type",
+			Options:    map[string]string{"action": "rename", "new_name": "mailing_address"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected rename_attribute notice to skip type rename, got %d findings", len(findings))
+	}
+}
+
 func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
 	t.Parallel()
 	registry := rule.NewRegistry()
@@ -604,7 +779,6 @@ func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
 		t.Fatalf("register: %v", err)
 	}
 
-	// Verify each rule fires through the registry for a matching PG statement.
 	cases := []struct {
 		ruleID string
 		stmt   spec.Statement
@@ -640,6 +814,22 @@ func TestRegistryIncludesPGTypeLifecycleRules(t *testing.T) {
 		{ruleIDPGAlterTypeCompositeSetSchemaNotice, spec.Statement{
 			Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
 			DDL: &spec.DDL{Operation: spec.DDLOperationAlterType, ObjectName: "address", ObjectType: "type", Options: map[string]string{"action": "set_schema", "new_schema": "archive"}},
+		}},
+		{ruleIDPGAlterTypeAddAttributeNotice, spec.Statement{
+			Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{Operation: spec.DDLOperationAlterType, ObjectName: "address", ObjectType: "type", Options: map[string]string{"action": "add_attribute", "attribute": "country"}},
+		}},
+		{ruleIDPGAlterTypeDropAttributeWarn, spec.Statement{
+			Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{Operation: spec.DDLOperationAlterType, ObjectName: "address", ObjectType: "type", Options: map[string]string{"action": "drop_attribute", "attribute": "city"}},
+		}},
+		{ruleIDPGAlterTypeAlterAttributeTypeWarn, spec.Statement{
+			Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{Operation: spec.DDLOperationAlterType, ObjectName: "address", ObjectType: "type", Options: map[string]string{"action": "alter_attribute_type", "attribute": "street"}},
+		}},
+		{ruleIDPGAlterTypeRenameAttributeNotice, spec.Statement{
+			Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{Operation: spec.DDLOperationAlterType, ObjectName: "address", ObjectType: "type", Options: map[string]string{"action": "rename_attribute", "attribute": "street", "new_name": "line1"}},
 		}},
 	}
 
@@ -681,6 +871,10 @@ func TestDefaultPolicyIncludesPGTypeLifecycleRules(t *testing.T) {
 		{ruleIDPGCreateTypeCompositeNotice, rule.LevelNotice, true},
 		{ruleIDPGAlterTypeCompositeRenameNotice, rule.LevelNotice, true},
 		{ruleIDPGAlterTypeCompositeSetSchemaNotice, rule.LevelNotice, true},
+		{ruleIDPGAlterTypeAddAttributeNotice, rule.LevelNotice, true},
+		{ruleIDPGAlterTypeDropAttributeWarn, rule.LevelWarning, true},
+		{ruleIDPGAlterTypeAlterAttributeTypeWarn, rule.LevelWarning, true},
+		{ruleIDPGAlterTypeRenameAttributeNotice, rule.LevelNotice, true},
 	}
 
 	for _, exp := range expected {
@@ -731,6 +925,10 @@ func TestTypeLifecycleRulesDoNotFireForMySQLViaRegistry(t *testing.T) {
 		ruleIDPGCreateTypeCompositeNotice:         true,
 		ruleIDPGAlterTypeCompositeRenameNotice:    true,
 		ruleIDPGAlterTypeCompositeSetSchemaNotice: true,
+		ruleIDPGAlterTypeAddAttributeNotice:       true,
+		ruleIDPGAlterTypeDropAttributeWarn:        true,
+		ruleIDPGAlterTypeAlterAttributeTypeWarn:   true,
+		ruleIDPGAlterTypeRenameAttributeNotice:    true,
 	}
 	for _, f := range findings {
 		if pgRuleIDs[f.RuleID] {
@@ -811,6 +1009,42 @@ func mustNewAlterTypeCompositeSetSchemaNoticeRule(t *testing.T, cfg policy.RuleP
 	r, err := newAlterTypeCompositeSetSchemaNoticeRule(cfg)
 	if err != nil {
 		t.Fatalf("new alter type composite set schema notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAlterTypeAddAttributeNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAlterTypeAddAttributeNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new alter type add attribute notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAlterTypeDropAttributeWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAlterTypeDropAttributeWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new alter type drop attribute warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAlterTypeAlterAttributeTypeWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAlterTypeAlterAttributeTypeWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new alter type alter attribute type warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewAlterTypeRenameAttributeNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newAlterTypeRenameAttributeNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new alter type rename attribute notice rule: %v", err)
 	}
 	return r
 }

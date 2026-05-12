@@ -1,0 +1,1 @@
+ALTER TYPE address RENAME ATTRIBUTE street TO line1;

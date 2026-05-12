@@ -26,16 +26,16 @@ var pgDDLDeepCoverageCensusCases = []struct {
 
 	{Name: "ALTER TYPE ADD ATTRIBUTE",
 		SQL:      "ALTER TYPE address ADD ATTRIBUTE country text",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TYPE DROP ATTRIBUTE",
 		SQL:      "ALTER TYPE address DROP ATTRIBUTE city",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TYPE ALTER ATTRIBUTE TYPE",
 		SQL:      "ALTER TYPE address ALTER ATTRIBUTE street TYPE varchar(255)",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TYPE RENAME ATTRIBUTE",
 		SQL:      "ALTER TYPE address RENAME ATTRIBUTE street TO line1",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== Extension member mutation =====
 	// Parser handles ALTER EXTENSION ADD/DROP member; extractor marks unsupported.

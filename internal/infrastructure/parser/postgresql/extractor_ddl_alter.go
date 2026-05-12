@@ -73,7 +73,22 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		}
 		return statement
 	case pg_query.ObjectType_OBJECT_ATTRIBUTE:
-		return unsupportedStatement(statement, "alter_type_rename_attribute", "postgresql alter type rename attribute is deferred")
+		typeName := ""
+		if rng := stmt.GetRelation(); rng != nil {
+			typeName = rng.GetRelname()
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: typeName,
+			ObjectType: "type",
+			Options: map[string]string{
+				"type_kind": "composite",
+				"action":    "rename_attribute",
+				"attribute": stmt.GetSubname(),
+				"new_name":  stmt.GetNewname(),
+			},
+		}
+		return statement
 	case pg_query.ObjectType_OBJECT_DOMAIN:
 		objectName := renameObjectDomainName(stmt)
 		statement.DDL = &spec.DDL{
@@ -396,7 +411,7 @@ func extractAlterExtensionContentsStmt(statement spec.Statement, stmt *pg_query.
 
 // extractAlterTypeCompositeFromAlterTableStmt handles ALTER TYPE ...
 // ADD/DROP/ALTER ATTRIBUTE which pg_query maps to AlterTableStmt with
-// objtype=OBJECT_TYPE. These attribute actions are deferred.
+// objtype=OBJECT_TYPE.
 func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt *pg_query.AlterTableStmt) spec.Statement {
 	if len(stmt.GetCmds()) == 0 {
 		return unsupportedStatement(statement, "alter_type", "postgresql alter type composite statement has no commands")
@@ -405,13 +420,78 @@ func extractAlterTypeCompositeFromAlterTableStmt(statement spec.Statement, stmt 
 	if cmd == nil {
 		return unsupportedStatement(statement, "alter_type", "postgresql alter type composite command payload is missing")
 	}
+
+	objectName := ""
+	if rng := stmt.GetRelation(); rng != nil {
+		objectName = rng.GetRelname()
+	}
+
 	switch cmd.GetSubtype() {
 	case pg_query.AlterTableType_AT_AddColumn:
-		return unsupportedStatement(statement, "alter_type_add_attribute", "postgresql alter type add attribute is deferred")
+		attribute := ""
+		attributeType := ""
+		if def := cmd.GetDef(); def != nil {
+			if cd := def.GetColumnDef(); cd != nil {
+				attribute = cd.GetColname()
+				if tn := cd.GetTypeName(); tn != nil {
+					attributeType = typeNameString(tn)
+				}
+			}
+		}
+		options := map[string]string{
+			"type_kind": "composite",
+			"action":    "add_attribute",
+			"attribute": attribute,
+		}
+		if attributeType != "" {
+			options["attribute_type"] = attributeType
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: objectName,
+			ObjectType: "type",
+			Options:    options,
+		}
+		return statement
 	case pg_query.AlterTableType_AT_DropColumn:
-		return unsupportedStatement(statement, "alter_type_drop_attribute", "postgresql alter type drop attribute is deferred")
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: objectName,
+			ObjectType: "type",
+			Options: map[string]string{
+				"type_kind": "composite",
+				"action":    "drop_attribute",
+				"attribute": cmd.GetName(),
+			},
+		}
+		return statement
 	case pg_query.AlterTableType_AT_AlterColumnType:
-		return unsupportedStatement(statement, "alter_type_alter_attribute_type", "postgresql alter type alter attribute type is deferred")
+		attribute := cmd.GetName()
+		attributeType := ""
+		if def := cmd.GetDef(); def != nil {
+			if cd := def.GetColumnDef(); cd != nil {
+				if tn := cd.GetTypeName(); tn != nil {
+					attributeType = typeNameString(tn)
+				}
+			} else if tn := def.GetTypeName(); tn != nil {
+				attributeType = typeNameString(tn)
+			}
+		}
+		options := map[string]string{
+			"type_kind": "composite",
+			"action":    "alter_attribute_type",
+			"attribute": attribute,
+		}
+		if attributeType != "" {
+			options["attribute_type"] = attributeType
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterType,
+			ObjectName: objectName,
+			ObjectType: "type",
+			Options:    options,
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_type", fmt.Sprintf("postgresql alter type composite action %s is deferred", cmd.GetSubtype()))
 	}

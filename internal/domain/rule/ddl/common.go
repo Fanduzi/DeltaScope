@@ -205,6 +205,11 @@ const (
 	ruleIDPGCreateTypeCompositeNotice         = "ddl.pg.create_type.composite.notice"
 	ruleIDPGAlterTypeCompositeRenameNotice    = "ddl.pg.alter_type.composite_rename.notice"
 	ruleIDPGAlterTypeCompositeSetSchemaNotice = "ddl.pg.alter_type.composite_set_schema.notice"
+	// PostgreSQL composite type attribute lifecycle rules (PG-only).
+	ruleIDPGAlterTypeAddAttributeNotice      = "ddl.pg.alter_type.add_attribute.notice"
+	ruleIDPGAlterTypeDropAttributeWarn       = "ddl.pg.alter_type.drop_attribute.warn"
+	ruleIDPGAlterTypeAlterAttributeTypeWarn  = "ddl.pg.alter_type.alter_attribute_type.warn"
+	ruleIDPGAlterTypeRenameAttributeNotice   = "ddl.pg.alter_type.rename_attribute.notice"
 	// PostgreSQL table privilege rules (PG-only).
 	ruleIDPGGrantTablePrivilegeNotice       = "ddl.pg.grant.table_privilege.notice"
 	ruleIDPGGrantTablePrivilegeAllWarn      = "ddl.pg.grant.table_privilege.all.warn"

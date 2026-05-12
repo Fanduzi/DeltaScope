@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs for PostgreSQL type lifecycle DDL operations
-// output: findings for PostgreSQL enum type creation, value addition, and type drop risks
+// output: findings for PostgreSQL enum type creation, value addition, type drop, and composite type attribute lifecycle risks
 // pos: PostgreSQL-specific type lifecycle rule implementations
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -72,7 +72,7 @@ func (r pgTypeLifecycleRule) Evaluate(ctx context.Context, statement spec.Statem
 		"object_type": statement.DDL.ObjectType,
 		"object_name": objectName,
 	}
-	for _, key := range []string{"type_kind", "action", "value", "placement", "neighbor", "cascade", "if_exists", "attributes", "attribute_names", "new_name", "new_schema"} {
+	for _, key := range []string{"type_kind", "action", "value", "placement", "neighbor", "cascade", "if_exists", "attributes", "attribute_names", "attribute", "attribute_type", "new_name", "new_schema"} {
 		if val := statement.DDL.Options[key]; val != "" {
 			metadata[key] = val
 		}
@@ -239,6 +239,54 @@ func newAlterTypeCompositeSetSchemaNoticeRule(cfg policy.RulePolicy) (rule.State
 		"ALTER TYPE ... SET SCHEMA changes the schema qualifier that qualified references depend on.",
 		"Existing qualified references to the type will fail if not updated to the new schema path.",
 		"Update all qualified references to the type and verify that search_path settings still resolve the type correctly.",
+		cfg,
+	)
+}
+
+func newAlterTypeAddAttributeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGAlterTypeAddAttributeNotice, rule.LevelNotice, spec.DDLOperationAlterType,
+		"action", "add_attribute", true, "type",
+		"PostgreSQL composite type %q attribute added — review schema contract change",
+		"ALTER TYPE ... ADD ATTRIBUTE extends a composite type that tables, functions, and application code may depend on.",
+		"New attributes may break existing row-format consumers or require coordinated deployment with application changes.",
+		"Confirm the attribute name and type are stable and that downstream consumers can tolerate the structural change.",
+		cfg,
+	)
+}
+
+func newAlterTypeDropAttributeWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGAlterTypeDropAttributeWarn, rule.LevelWarning, spec.DDLOperationAlterType,
+		"action", "drop_attribute", true, "type",
+		"PostgreSQL composite type %q attribute dropped — dependent code may break",
+		"ALTER TYPE ... DROP ATTRIBUTE removes an attribute that tables, functions, views, and application code may reference.",
+		"Existing rows retain the dropped attribute until rewrite; queries referencing the attribute will fail after deployment.",
+		"Verify no schema objects or application code reference this attribute before dropping it.",
+		cfg,
+	)
+}
+
+func newAlterTypeAlterAttributeTypeWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGAlterTypeAlterAttributeTypeWarn, rule.LevelWarning, spec.DDLOperationAlterType,
+		"action", "alter_attribute_type", true, "type",
+		"PostgreSQL composite type %q attribute type changed — dependent code may break",
+		"ALTER TYPE ... ALTER ATTRIBUTE ... TYPE changes the data type of a composite type attribute.",
+		"Existing table columns using this type may require a full rewrite; casts and function signatures may become invalid.",
+		"Verify that dependent tables, functions, and casts are compatible with the new type before deploying.",
+		cfg,
+	)
+}
+
+func newAlterTypeRenameAttributeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGTypeLifecycleRule(
+		ruleIDPGAlterTypeRenameAttributeNotice, rule.LevelNotice, spec.DDLOperationAlterType,
+		"action", "rename_attribute", true, "type",
+		"PostgreSQL composite type %q attribute renamed — references may break",
+		"ALTER TYPE ... RENAME ATTRIBUTE changes the attribute name that functions, views, and application code may reference.",
+		"Existing code that references the old attribute name will fail after this change.",
+		"Coordinate the rename with all dependent functions, views, and application code.",
 		cfg,
 	)
 }

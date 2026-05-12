@@ -24,7 +24,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
 | postgresql_alter_table_rules.go | Implements PostgreSQL-only alter table gap rules: drop-column advisory, validate-constraint advisory, add-column nullable notice, set-schema advisory, owner advisory, enable-trigger notice, disable-trigger warn, attach-partition advisory, detach-partition warn |
-| postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, drop-type advisory, drop-type cascade warn |
+| postgresql_type_lifecycle_rules.go | Implements PostgreSQL-only type lifecycle rules: create-type enum/composite notice, alter-type add-value advisory, alter-type add-value position notice, alter-type composite rename/set-schema notice, alter-type composite add/drop/alter/rename attribute notice/warn, drop-type advisory, drop-type cascade warn |
 | postgresql_domain_lifecycle_rules.go | Implements PostgreSQL-only domain lifecycle rules: create-domain notice, alter-domain constraint/default/not-null/rename notices, drop-domain advisory, drop-domain cascade warn |
 | postgresql_extension_lifecycle_rules.go | Implements PostgreSQL-only extension lifecycle rules: create-extension notice, create-extension cascade warn, alter-extension update/set-schema notices, drop-extension advisory, drop-extension cascade warn |
 | postgresql_privilege_rules.go | Implements PostgreSQL-only table privilege rules: grant-table notice, grant-table all-privileges warn, revoke-table notice, revoke-table cascade warn |
@@ -242,6 +242,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.pg.create_type.composite.notice`
 - `ddl.pg.alter_type.composite_rename.notice`
 - `ddl.pg.alter_type.composite_set_schema.notice`
+- `ddl.pg.alter_type.add_attribute.notice`
+- `ddl.pg.alter_type.drop_attribute.warn`
+- `ddl.pg.alter_type.alter_attribute_type.warn`
+- `ddl.pg.alter_type.rename_attribute.notice`
 - `ddl.pg.create_domain.notice`
 - `ddl.pg.alter_domain.constraint.notice`
 - `ddl.pg.alter_domain.default.notice`

@@ -436,35 +436,68 @@ func assertCompositeTypeLifecycleBaseline(t *testing.T, fact compositeTypeLifecy
 		}
 
 	case "alter_type_add_attribute":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "alter_type_add_attribute" {
-			t.Errorf("%s: expected feature alter_type_add_attribute, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "add_attribute" {
+			t.Errorf("%s: expected action=add_attribute, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["attribute"] != "country" {
+			t.Errorf("%s: expected attribute=country, got %q", fact.Name, fact.DDLOptions["attribute"])
+		}
+		if fact.DDLOptions["attribute_type"] != "text" {
+			t.Errorf("%s: expected attribute_type=text, got %q", fact.Name, fact.DDLOptions["attribute_type"])
 		}
 
 	case "alter_type_drop_attribute":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "alter_type_drop_attribute" {
-			t.Errorf("%s: expected feature alter_type_drop_attribute, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "drop_attribute" {
+			t.Errorf("%s: expected action=drop_attribute, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["attribute"] != "city" {
+			t.Errorf("%s: expected attribute=city, got %q", fact.Name, fact.DDLOptions["attribute"])
 		}
 
 	case "alter_type_alter_attribute_type":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "alter_type_alter_attribute_type" {
-			t.Errorf("%s: expected feature alter_type_alter_attribute_type, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "alter_attribute_type" {
+			t.Errorf("%s: expected action=alter_attribute_type, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["attribute"] != "street" {
+			t.Errorf("%s: expected attribute=street, got %q", fact.Name, fact.DDLOptions["attribute"])
+		}
+		if fact.DDLOptions["attribute_type"] != "pg_catalog.varchar" {
+			t.Errorf("%s: expected attribute_type=pg_catalog.varchar, got %q", fact.Name, fact.DDLOptions["attribute_type"])
 		}
 
 	case "alter_type_rename_attribute":
-		if !fact.Unsupported {
-			t.Errorf("%s: expected unsupported", fact.Name)
+		if fact.Unsupported {
+			t.Errorf("%s: expected normalized, got unsupported %s", fact.Name, fact.UnsupportedFeature)
 		}
-		if fact.UnsupportedFeature != "alter_type_rename_attribute" {
-			t.Errorf("%s: expected feature alter_type_rename_attribute, got %q", fact.Name, fact.UnsupportedFeature)
+		if fact.DDLOperation != "alter_type" {
+			t.Errorf("%s: expected alter_type, got %q", fact.Name, fact.DDLOperation)
+		}
+		if fact.DDLOptions["action"] != "rename_attribute" {
+			t.Errorf("%s: expected action=rename_attribute, got %q", fact.Name, fact.DDLOptions["action"])
+		}
+		if fact.DDLOptions["attribute"] != "street" {
+			t.Errorf("%s: expected attribute=street, got %q", fact.Name, fact.DDLOptions["attribute"])
+		}
+		if fact.DDLOptions["new_name"] != "line1" {
+			t.Errorf("%s: expected new_name=line1, got %q", fact.Name, fact.DDLOptions["new_name"])
 		}
 
 	case "alter_type_rename":
