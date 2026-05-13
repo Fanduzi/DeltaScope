@@ -613,6 +613,21 @@ func targetTableSnapshot(statement spec.Statement) (*spec.TableSnapshot, bool) {
 	return statement.Metadata.TargetTable, true
 }
 
+// projectableAttributeKeys is the explicit whitelist of ObjectSnapshot
+// attribute keys that may be projected into finding metadata. Only these
+// keys are forwarded; any key not listed here is silently dropped, even if
+// the provider returns it and it is not in the sensitive-key blacklist.
+var projectableAttributeKeys = map[string]bool{
+	"type_kind":            true,
+	"extension_version":    true,
+	"enabled":              true,
+	"server":               true,
+	"foreign_data_wrapper": true,
+	"target_type":          true,
+	"has_options":          true,
+	"table":                true,
+}
+
 // projectObjectMetadata projects the matching ObjectSnapshot from statement
 // metadata into a flat map suitable for merging into a finding's Metadata.
 // Returns nil if no matching object is available.
@@ -642,7 +657,9 @@ func projectObjectMetadata(statement spec.Statement) map[string]any {
 		result["metadata_ambiguous_candidates"] = snap.AmbiguousCandidates
 	}
 	for k, v := range snap.SafeAttributes() {
-		result["metadata_"+k] = v
+		if projectableAttributeKeys[k] {
+			result["metadata_"+k] = v
+		}
 	}
 	return result
 }

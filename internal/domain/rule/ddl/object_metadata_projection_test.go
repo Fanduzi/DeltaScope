@@ -59,7 +59,7 @@ func TestProjectObjectMetadataNoMatch(t *testing.T) {
 func TestProjectObjectMetadataConfirmed(t *testing.T) {
 	t.Parallel()
 	stmt := spec.Statement{
-		DDL:      &spec.DDL{ObjectType: "extension", ObjectName: "pg_trgm"},
+		DDL: &spec.DDL{ObjectType: "extension", ObjectName: "pg_trgm"},
 		Metadata: &spec.Metadata{
 			Objects: []spec.ObjectSnapshot{{
 				Type:   "extension",
@@ -103,7 +103,7 @@ func TestProjectObjectMetadataConfirmed(t *testing.T) {
 func TestProjectObjectMetadataNotFound(t *testing.T) {
 	t.Parallel()
 	stmt := spec.Statement{
-		DDL:      &spec.DDL{ObjectType: "extension", ObjectName: "missing"},
+		DDL: &spec.DDL{ObjectType: "extension", ObjectName: "missing"},
 		Metadata: &spec.Metadata{
 			Objects: []spec.ObjectSnapshot{{
 				Type:   "extension",
@@ -128,7 +128,7 @@ func TestProjectObjectMetadataAmbiguous(t *testing.T) {
 	t.Parallel()
 	candidates := []string{"public.address", "app.address"}
 	stmt := spec.Statement{
-		DDL:      &spec.DDL{ObjectType: "type", ObjectName: "address"},
+		DDL: &spec.DDL{ObjectType: "type", ObjectName: "address"},
 		Metadata: &spec.Metadata{
 			Objects: []spec.ObjectSnapshot{{
 				Type:                "type",
@@ -154,7 +154,7 @@ func TestProjectObjectMetadataAmbiguous(t *testing.T) {
 func TestProjectObjectMetadataUnavailable(t *testing.T) {
 	t.Parallel()
 	stmt := spec.Statement{
-		DDL:      &spec.DDL{ObjectType: "event_trigger", ObjectName: "trg_ddl"},
+		DDL: &spec.DDL{ObjectType: "event_trigger", ObjectName: "trg_ddl"},
 		Metadata: &spec.Metadata{
 			Objects: []spec.ObjectSnapshot{{
 				Type:   "event_trigger",
@@ -172,7 +172,7 @@ func TestProjectObjectMetadataUnavailable(t *testing.T) {
 func TestProjectObjectMetadataFiltersSensitiveAttributes(t *testing.T) {
 	t.Parallel()
 	stmt := spec.Statement{
-		DDL:      &spec.DDL{ObjectType: "subscription", ObjectName: "sub"},
+		DDL: &spec.DDL{ObjectType: "subscription", ObjectName: "sub"},
 		Metadata: &spec.Metadata{
 			Objects: []spec.ObjectSnapshot{{
 				Type:   "subscription",
@@ -180,9 +180,9 @@ func TestProjectObjectMetadataFiltersSensitiveAttributes(t *testing.T) {
 				Status: spec.MetadataStatusConfirmed,
 				Exists: true,
 				Attributes: map[string]string{
-					"enabled":     "true",
-					"connection":  "host=secret port=5432",
-					"password":    "s3cret",
+					"enabled":    "true",
+					"connection": "host=secret port=5432",
+					"password":   "s3cret",
 				},
 			}},
 		},
@@ -199,10 +199,94 @@ func TestProjectObjectMetadataFiltersSensitiveAttributes(t *testing.T) {
 	}
 }
 
+func TestProjectObjectMetadataWhitelistAllowsAllProjectableKeys(t *testing.T) {
+	t.Parallel()
+	stmt := spec.Statement{
+		DDL: &spec.DDL{ObjectType: "extension", ObjectName: "ext"},
+		Metadata: &spec.Metadata{
+			Objects: []spec.ObjectSnapshot{{
+				Type:   "extension",
+				Name:   "ext",
+				Status: spec.MetadataStatusConfirmed,
+				Exists: true,
+				Attributes: map[string]string{
+					"type_kind":            "enum",
+					"extension_version":    "1.6",
+					"enabled":              "true",
+					"server":               "srv",
+					"foreign_data_wrapper": "fdw",
+					"target_type":          "table",
+					"has_options":          "true",
+					"table":                "users",
+				},
+			}},
+		},
+	}
+	m := projectObjectMetadata(stmt)
+	expected := map[string]string{
+		"metadata_type_kind":            "enum",
+		"metadata_extension_version":    "1.6",
+		"metadata_enabled":              "true",
+		"metadata_server":               "srv",
+		"metadata_foreign_data_wrapper": "fdw",
+		"metadata_target_type":          "table",
+		"metadata_has_options":          "true",
+		"metadata_table":                "users",
+	}
+	for k, want := range expected {
+		got, ok := m[k]
+		if !ok {
+			t.Fatalf("expected key %q to be projected", k)
+		}
+		if got != want {
+			t.Fatalf("expected %s=%q, got %q", k, want, got)
+		}
+	}
+}
+
+func TestProjectObjectMetadataWhitelistBlocksUnknownBenignKeys(t *testing.T) {
+	t.Parallel()
+	stmt := spec.Statement{
+		DDL: &spec.DDL{ObjectType: "type", ObjectName: "addr"},
+		Metadata: &spec.Metadata{
+			Objects: []spec.ObjectSnapshot{{
+				Type:   "type",
+				Name:   "addr",
+				Status: spec.MetadataStatusConfirmed,
+				Exists: true,
+				Attributes: map[string]string{
+					"type_kind":    "composite",
+					"owner":        "postgres",
+					"function":     "my_func",
+					"raw_sql":      "SELECT 1",
+					"slot_name":    "my_slot",
+					"host":         "10.0.0.1",
+					"port":         "5432",
+					"conninfo":     "dbname=prod",
+					"event_filter": "ddl_command_start",
+					"rule_body":    "DO INSTEAD NOTHING",
+				},
+			}},
+		},
+	}
+	m := projectObjectMetadata(stmt)
+	// Whitelisted key should project.
+	if m["metadata_type_kind"] != "composite" {
+		t.Fatalf("expected metadata_type_kind=composite, got %v", m["metadata_type_kind"])
+	}
+	// All unknown benign keys must be blocked.
+	for _, key := range []string{"owner", "function", "raw_sql", "slot_name", "host", "port", "conninfo", "event_filter", "rule_body"} {
+		projected := "metadata_" + key
+		if _, ok := m[projected]; ok {
+			t.Fatalf("expected whitelist to block %q, but it was projected", projected)
+		}
+	}
+}
+
 func TestProjectObjectMetadataNoAttributes(t *testing.T) {
 	t.Parallel()
 	stmt := spec.Statement{
-		DDL:      &spec.DDL{ObjectType: "schema", ObjectName: "app"},
+		DDL: &spec.DDL{ObjectType: "schema", ObjectName: "app"},
 		Metadata: &spec.Metadata{
 			Objects: []spec.ObjectSnapshot{{
 				Type:   "schema",
