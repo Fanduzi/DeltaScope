@@ -20,14 +20,14 @@ import (
 )
 
 type metadataAuditTestClient struct {
-	closed        bool
-	detectDialect spec.Dialect
-	tableCalls    []string
-	indexCalls    []string
-	indexSchemas  []string
-	indexDialects []spec.Dialect
-	indexTable    string
-	snapshot      *spec.TableSnapshot
+	closed         bool
+	detectDialect  spec.Dialect
+	tableCalls     []string
+	indexCalls     []string
+	indexSchemas   []string
+	indexDialects  []spec.Dialect
+	indexTable     string
+	snapshot       *spec.TableSnapshot
 	objectSnapshot *spec.ObjectSnapshot
 	objectCalls    []spec.ObjectLookupRequest
 }
