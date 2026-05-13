@@ -648,6 +648,80 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL Selected Non-Permission DDL Deep Coverage（v0.80.0）
+
+`v0.80.0` 新增 36 条 PostgreSQL-only DDL 生命周期规则，提供 selected PostgreSQL non-permission DDL deep coverage，涵盖六个规则族：composite type 属性变更、extension 成员变更、publication/subscription 生命周期、foreign object 生命周期（外部数据包装器、外部服务器、用户映射、外部表）、注解操作（`COMMENT ON`、`SECURITY LABEL`）以及 event trigger/rewrite rule 生命周期。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### Composite Type Attribute Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.alter_type.add_attribute.notice` | `ALTER TYPE ... ADD ATTRIBUTE` 向 composite type 添加新属性——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.drop_attribute.warn` | `ALTER TYPE ... DROP ATTRIBUTE` 移除属性——警告依赖列和函数 | ✓ | ✗ | warning |
+| `ddl.pg.alter_type.alter_attribute_type.warn` | `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE` 变更属性类型——警告潜在数据转换问题 | ✓ | ✗ | warning |
+| `ddl.pg.alter_type.rename_attribute.notice` | `ALTER TYPE ... RENAME ATTRIBUTE` 重命名属性——信息性提示 | ✓ | ✗ | notice |
+
+### Extension Member Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.alter_extension.add_member.notice` | `ALTER EXTENSION ... ADD TABLE` 将对象添加到扩展——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_extension.drop_member.warn` | `ALTER EXTENSION ... DROP TABLE` 从扩展中移除对象——警告 extension-drop 级联影响 | ✓ | ✗ | warning |
+
+### Publication/Subscription Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_publication.notice` | `CREATE PUBLICATION` 引入新的发布——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_publication.notice` | `ALTER PUBLICATION` 修改已有发布——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_publication.warn` | `DROP PUBLICATION` 移除发布——警告订阅者将停止接收变更 | ✓ | ✗ | warning |
+| `ddl.pg.create_subscription.notice` | `CREATE SUBSCRIPTION` 建立新的订阅——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_subscription.notice` | `ALTER SUBSCRIPTION` 修改已有订阅——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_subscription.disable.warn` | `ALTER SUBSCRIPTION ... DISABLE` 禁用订阅——警告复制将停止 | ✓ | ✗ | warning |
+| `ddl.pg.drop_subscription.warn` | `DROP SUBSCRIPTION` 移除订阅——警告关于复制槽清理 | ✓ | ✗ | warning |
+
+### Foreign Object Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` 引入新的 FDW——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` 修改已有 FDW——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` 移除 FDW——警告依赖的外部服务器和外部表 | ✓ | ✗ | warning |
+| `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` 注册新的外部服务器——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_server.notice` | `ALTER SERVER` 修改已有外部服务器——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_foreign_server.warn` | `DROP SERVER` 移除外部服务器——警告依赖的用户映射和外部表 | ✓ | ✗ | warning |
+| `ddl.pg.create_user_mapping.notice` | `CREATE USER MAPPING` 注册用户映射——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` 修改已有用户映射——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` 移除用户映射——警告依赖的外部表连接 | ✓ | ✗ | warning |
+| `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` 引入新的外部表——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` 修改已有外部表——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` 移除外部表——警告依赖查询 | ✓ | ✗ | warning |
+
+### Annotation Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.comment_on.notice` | `COMMENT ON ... IS 'text'` 为数据库对象附加注释——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.comment_on.remove.notice` | `COMMENT ON ... IS NULL` 移除注释——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.security_label.notice` | `SECURITY LABEL ... IS 'label'` 附加安全标签——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.security_label.remove.notice` | `SECURITY LABEL ... IS NULL` 移除安全标签——信息性提示 | ✓ | ✗ | notice |
+
+### Event Trigger / Rewrite Rule Lifecycle 规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_event_trigger.notice` | `CREATE EVENT TRIGGER` 引入新的事件触发器——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_event_trigger.notice` | `ALTER EVENT TRIGGER` 修改已有事件触发器——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_event_trigger.disable.warn` | `ALTER EVENT TRIGGER ... DISABLE` 禁用事件触发器——警告 DDL 事件处理将停止 | ✓ | ✗ | warning |
+| `ddl.pg.drop_event_trigger.warn` | `DROP EVENT TRIGGER` 移除事件触发器——警告 DDL 事件处理影响 | ✓ | ✗ | warning |
+| `ddl.pg.create_rule.notice` | `CREATE RULE` 引入新的重写规则——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter_rule.notice` | `ALTER RULE` 修改已有重写规则——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.drop_rule.warn` | `DROP RULE` 移除重写规则——警告依赖查询行为 | ✓ | ✗ | warning |
+
+> **说明：** 这是 36 条新的 PostgreSQL-only DDL 生命周期规则。所有规则均为离线规则，不需要数据库连接。Composite type 属性操作取代了此前在 Composite Type Lifecycle 部分中列出的不支持/延迟条目。Extension 成员操作取代了此前在 Extension Lifecycle 部分中列出的不支持/延迟条目。`DROP SUBSCRIPTION ... WITH (drop_slot = true)` 仍被延迟（parser_error）。DeltaScope 不验证在线对象状态、不验证数据转换安全性、不检查复制槽状态、不验证 FDW handler/validator 函数、不评估触发器/规则体。这是 selected PostgreSQL non-permission DDL deep coverage——不是 full PostgreSQL DDL support，也不是 complete PostgreSQL grammar coverage。不影响 MySQL/TiDB 行为。
+
+---
+
 ## DDL：PostgreSQL 覆盖范围扩展（v0.21.0 / v0.23.0 / v0.24.0）
 
 `v0.21.0` 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。`v0.23.0` 进一步扩展了 PostgreSQL `CREATE TABLE` 常见约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的 `ReferencedTable` 和 `ReferencedColumns`。这些功能面此前会落入能力边界错误或结构不完整；现在会产生带有渐进丰富语义的正常审计结果。不引入新规则——已有的共享规则族在适用时自动生效。

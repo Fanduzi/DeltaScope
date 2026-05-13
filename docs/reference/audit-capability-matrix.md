@@ -662,6 +662,80 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL Selected Non-Permission DDL Deep Coverage (v0.80.0)
+
+`v0.80.0` adds 36 new PostgreSQL-only DDL lifecycle rules for selected PostgreSQL non-permission DDL deep coverage across six rule families: composite type attribute mutations, extension member mutations, publication/subscription lifecycle, foreign object lifecycle (foreign data wrappers, foreign servers, user mappings, foreign tables), annotation operations (`COMMENT ON`, `SECURITY LABEL`), and event trigger/rewrite rule lifecycle. These rules only apply when `--dialect postgresql` is set.
+
+### Composite Type Attribute Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.alter_type.add_attribute.notice` | `ALTER TYPE ... ADD ATTRIBUTE` adds a new attribute to a composite type — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_type.drop_attribute.warn` | `ALTER TYPE ... DROP ATTRIBUTE` removes an attribute — warns about dependent columns and functions | ✓ | ✗ | warning |
+| `ddl.pg.alter_type.alter_attribute_type.warn` | `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE` changes an attribute type — warns about potential data conversion | ✓ | ✗ | warning |
+| `ddl.pg.alter_type.rename_attribute.notice` | `ALTER TYPE ... RENAME ATTRIBUTE` renames an attribute — informational notice | ✓ | ✗ | notice |
+
+### Extension Member Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.alter_extension.add_member.notice` | `ALTER EXTENSION ... ADD TABLE` adds an object to the extension — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_extension.drop_member.warn` | `ALTER EXTENSION ... DROP TABLE` removes an object from the extension — warns about extension-drop cascade | ✓ | ✗ | warning |
+
+### Publication/Subscription Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_publication.notice` | `CREATE PUBLICATION` introduces a new publication — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_publication.notice` | `ALTER PUBLICATION` modifies an existing publication — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_publication.warn` | `DROP PUBLICATION` removes a publication — warns that subscribers will stop receiving changes | ✓ | ✗ | warning |
+| `ddl.pg.create_subscription.notice` | `CREATE SUBSCRIPTION` establishes a new subscription — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_subscription.notice` | `ALTER SUBSCRIPTION` modifies an existing subscription — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_subscription.disable.warn` | `ALTER SUBSCRIPTION ... DISABLE` disables the subscription — warns that replication will stop | ✓ | ✗ | warning |
+| `ddl.pg.drop_subscription.warn` | `DROP SUBSCRIPTION` removes a subscription — warns about replication slot cleanup | ✓ | ✗ | warning |
+
+### Foreign Object Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` introduces a new FDW — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` modifies an existing FDW — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` removes an FDW — warns about dependent foreign servers and tables | ✓ | ✗ | warning |
+| `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` registers a new foreign server — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_server.notice` | `ALTER SERVER` modifies an existing foreign server — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_foreign_server.warn` | `DROP SERVER` removes a foreign server — warns about dependent user mappings and foreign tables | ✓ | ✗ | warning |
+| `ddl.pg.create_user_mapping.notice` | `CREATE USER MAPPING` registers a user mapping — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` modifies an existing user mapping — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` removes a user mapping — warns about dependent foreign table connections | ✓ | ✗ | warning |
+| `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` introduces a new foreign table — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` modifies an existing foreign table — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` removes a foreign table — warns about dependent queries | ✓ | ✗ | warning |
+
+### Annotation Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.comment_on.notice` | `COMMENT ON ... IS 'text'` attaches a comment to a database object — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.comment_on.remove.notice` | `COMMENT ON ... IS NULL` removes the comment — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.security_label.notice` | `SECURITY LABEL ... IS 'label'` attaches a security label — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.security_label.remove.notice` | `SECURITY LABEL ... IS NULL` removes the security label — informational notice | ✓ | ✗ | notice |
+
+### Event Trigger / Rewrite Rule Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_event_trigger.notice` | `CREATE EVENT TRIGGER` introduces a new event trigger — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_event_trigger.notice` | `ALTER EVENT TRIGGER` modifies an existing event trigger — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_event_trigger.disable.warn` | `ALTER EVENT TRIGGER ... DISABLE` disables an event trigger — warns that DDL event handling will stop | ✓ | ✗ | warning |
+| `ddl.pg.drop_event_trigger.warn` | `DROP EVENT TRIGGER` removes an event trigger — warns about DDL event handling implications | ✓ | ✗ | warning |
+| `ddl.pg.create_rule.notice` | `CREATE RULE` introduces a new rewrite rule — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_rule.notice` | `ALTER RULE` modifies an existing rewrite rule — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_rule.warn` | `DROP RULE` removes a rewrite rule — warns about dependent query behavior | ✓ | ✗ | warning |
+
+> **Note:** These are 36 new PostgreSQL-only DDL lifecycle rules. All are offline rules and do not require a database connection. Composite type attribute operations replace the previously listed unsupported/deferred entries in the Composite Type Lifecycle section. Extension member operations replace the previously listed unsupported/deferred entries in the Extension Lifecycle section. `DROP SUBSCRIPTION ... WITH (drop_slot = true)` remains deferred (parser_error). DeltaScope does not verify live object state, validate data conversion safety, inspect replication slot status, verify FDW handler/validator functions, or evaluate trigger/rule bodies. This is selected PostgreSQL non-permission DDL deep coverage — not full PostgreSQL DDL support or complete PostgreSQL grammar coverage. No MySQL/TiDB behavior changes.
+
+---
+
 ## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0 / v0.24.0)
 
 `v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns` through the shared `spec.Constraint` model. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results with progressively richer semantics. No new rules are introduced — existing shared rule families apply where relevant.

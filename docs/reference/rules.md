@@ -571,6 +571,108 @@ These rules guard selected PostgreSQL ALTER object operations for schema, index,
 
 ---
 
+## DDL: PostgreSQL Composite Type Attribute Lifecycle Rules (4 rules)
+
+`v0.80.0` adds selected PostgreSQL non-permission DDL deep coverage for composite type attribute mutations. These 4 rules cover `ALTER TYPE ... ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, and `RENAME ATTRIBUTE`, which were previously listed as unsupported/deferred in the Composite Type Lifecycle section. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter_type.add_attribute.notice` | `ALTER TYPE ... ADD ATTRIBUTE` adds a new attribute to a composite type — informational notice | notice | No |
+| `ddl.pg.alter_type.drop_attribute.warn` | `ALTER TYPE ... DROP ATTRIBUTE` removes an attribute from a composite type — warns about dependent columns and functions | warning | No |
+| `ddl.pg.alter_type.alter_attribute_type.warn` | `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE` changes an attribute type — warns about potential data conversion issues | warning | No |
+| `ddl.pg.alter_type.rename_attribute.notice` | `ALTER TYPE ... RENAME ATTRIBUTE` renames an attribute — informational notice | notice | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. These rules replace the previously listed unsupported/deferred entries for `ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, and `RENAME ATTRIBUTE` in the Composite Type Lifecycle section. DeltaScope does not inspect live dependent objects, validate data conversion safety, or model full PostgreSQL type system semantics. `DROP TYPE` reuses existing rules from the Type Lifecycle family. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Extension Member Lifecycle Rules (2 rules)
+
+`v0.80.0` adds selected PostgreSQL non-permission DDL deep coverage for extension member mutation. These 2 rules cover `ALTER EXTENSION ... ADD TABLE` and `ALTER EXTENSION ... DROP TABLE`, which were previously listed as unsupported/deferred in the Extension Lifecycle section. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter_extension.add_member.notice` | `ALTER EXTENSION ... ADD TABLE` adds an object to the extension — informational notice | notice | No |
+| `ddl.pg.alter_extension.drop_member.warn` | `ALTER EXTENSION ... DROP TABLE` removes an object from the extension — warns that the object may be dropped when the extension is dropped | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. These rules replace the previously listed unsupported/deferred entries for extension member mutation (`ALTER EXTENSION ... ADD/DROP TABLE`) in the Extension Lifecycle section. DeltaScope does not validate whether the referenced object exists, verify extension membership state, or inspect live dependency graphs. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Publication/Subscription Lifecycle Rules (7 rules)
+
+`v0.80.0` adds selected PostgreSQL non-permission DDL deep coverage for logical replication publication and subscription lifecycle. These 7 rules cover `CREATE PUBLICATION`, `ALTER PUBLICATION`, `DROP PUBLICATION`, `CREATE SUBSCRIPTION`, `ALTER SUBSCRIPTION`, `ALTER SUBSCRIPTION ... DISABLE`, and `DROP SUBSCRIPTION`. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_publication.notice` | `CREATE PUBLICATION` introduces a new publication for logical replication — informational notice | notice | No |
+| `ddl.pg.alter_publication.notice` | `ALTER PUBLICATION` modifies an existing publication — informational notice | notice | No |
+| `ddl.pg.drop_publication.warn` | `DROP PUBLICATION` removes a publication — warns that subscribers will stop receiving changes | warning | No |
+| `ddl.pg.create_subscription.notice` | `CREATE SUBSCRIPTION` establishes a new subscription connection — informational notice | notice | No |
+| `ddl.pg.alter_subscription.notice` | `ALTER SUBSCRIPTION` modifies an existing subscription — informational notice | notice | No |
+| `ddl.pg.alter_subscription.disable.warn` | `ALTER SUBSCRIPTION ... DISABLE` disables the subscription — warns that replication will stop | warning | No |
+| `ddl.pg.drop_subscription.warn` | `DROP SUBSCRIPTION` removes a subscription — warns about replication slot cleanup | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. `DROP SUBSCRIPTION ... WITH (drop_slot = true)` remains deferred (parser_error) — DeltaScope does not parse the `WITH` options clause on `DROP SUBSCRIPTION`. DeltaScope does not verify live publication/subscription state, replication slot status, or connection parameters. Publication column lists and row filters are preserved as parser facts but no policy rule governs them. This is not full PostgreSQL logical replication governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Foreign Object Lifecycle Rules (12 rules)
+
+`v0.80.0` adds selected PostgreSQL non-permission DDL deep coverage for foreign data wrapper, foreign server, user mapping, and foreign table lifecycle. These 12 rules cover CREATE/ALTER/DROP operations for all four foreign-data object types. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` introduces a new FDW — informational notice | notice | No |
+| `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` modifies an existing FDW — informational notice | notice | No |
+| `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` removes an FDW — warns about dependent foreign servers and tables | warning | No |
+| `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` registers a new foreign server — informational notice | notice | No |
+| `ddl.pg.alter_foreign_server.notice` | `ALTER SERVER` modifies an existing foreign server — informational notice | notice | No |
+| `ddl.pg.drop_foreign_server.warn` | `DROP SERVER` removes a foreign server — warns about dependent user mappings and foreign tables | warning | No |
+| `ddl.pg.create_user_mapping.notice` | `CREATE USER MAPPING` registers a user mapping for a foreign server — informational notice | notice | No |
+| `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` modifies an existing user mapping — informational notice | notice | No |
+| `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` removes a user mapping — warns about dependent foreign table connections | warning | No |
+| `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` introduces a new foreign table — informational notice | notice | No |
+| `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` modifies an existing foreign table — informational notice | notice | No |
+| `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` removes a foreign table — warns about dependent queries | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not verify live foreign-data object existence, connection parameters, FDW handler/validator functions, or foreign table column compatibility. FDW options (`OPTIONS (...)`) are preserved as parser facts but no policy rule governs them. `IMPORT FOREIGN SCHEMA` remains unsupported/deferred. This is not full PostgreSQL foreign-data governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Annotation Lifecycle Rules (4 rules)
+
+`v0.80.0` adds selected PostgreSQL non-permission DDL deep coverage for object annotation operations. These 4 rules cover `COMMENT ON` and `SECURITY LABEL` for setting and removing annotations. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.comment_on.notice` | `COMMENT ON ... IS 'text'` attaches a comment to a database object — informational notice | notice | No |
+| `ddl.pg.comment_on.remove.notice` | `COMMENT ON ... IS NULL` removes the comment from a database object — informational notice | notice | No |
+| `ddl.pg.security_label.notice` | `SECURITY LABEL ... IS 'label'` attaches a security label to a database object — informational notice | notice | No |
+| `ddl.pg.security_label.remove.notice` | `SECURITY LABEL ... IS NULL` removes the security label from a database object — informational notice | notice | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not validate whether the target object exists, verify comment/label content against policies, or inspect live annotation state. `SECURITY LABEL ... FOR provider ...` provider names are preserved as parser facts but no policy rule governs them. This is not full PostgreSQL annotation governance. No MySQL/TiDB behavior changes.
+
+---
+
+## DDL: PostgreSQL Event Trigger / Rewrite Rule Lifecycle Rules (7 rules)
+
+`v0.80.0` adds selected PostgreSQL non-permission DDL deep coverage for event triggers and rewrite rules. These 7 rules cover `CREATE EVENT TRIGGER`, `ALTER EVENT TRIGGER`, `ALTER EVENT TRIGGER ... DISABLE`, `DROP EVENT TRIGGER`, `CREATE RULE`, `ALTER RULE`, and `DROP RULE`. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.create_event_trigger.notice` | `CREATE EVENT TRIGGER` introduces a new event trigger — informational notice | notice | No |
+| `ddl.pg.alter_event_trigger.notice` | `ALTER EVENT TRIGGER` modifies an existing event trigger — informational notice | notice | No |
+| `ddl.pg.alter_event_trigger.disable.warn` | `ALTER EVENT TRIGGER ... DISABLE` disables an event trigger — warns that DDL event handling will stop | warning | No |
+| `ddl.pg.drop_event_trigger.warn` | `DROP EVENT TRIGGER` removes an event trigger — warns about DDL event handling implications | warning | No |
+| `ddl.pg.create_rule.notice` | `CREATE RULE` introduces a new rewrite rule — informational notice | notice | No |
+| `ddl.pg.alter_rule.notice` | `ALTER RULE` modifies an existing rewrite rule — informational notice | notice | No |
+| `ddl.pg.drop_rule.warn` | `DROP RULE` removes a rewrite rule — warns about dependent query behavior | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. DeltaScope does not evaluate event trigger bodies or rewrite rule actions, verify trigger function existence, or inspect live event trigger/rule state. Event trigger `WHEN` conditions and rule `INSTEAD` / `ALSO` semantics are preserved as parser facts but no policy rule governs them. This is not full PostgreSQL event trigger/rewrite rule governance. No MySQL/TiDB behavior changes.
+
+---
+
 ## DML Rules (10 rules)
 
 These rules evaluate DML statements: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and `REPLACE`.

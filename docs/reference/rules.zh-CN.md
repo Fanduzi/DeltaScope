@@ -562,6 +562,108 @@ deltascope rules search "prefix"
 
 ---
 
+## DDL：PostgreSQL Composite Type Attribute Lifecycle 规则（4 条）
+
+`v0.80.0` 新增 selected PostgreSQL non-permission DDL deep coverage，覆盖 composite type 属性变更操作。这 4 条规则覆盖 `ALTER TYPE ... ADD ATTRIBUTE`、`DROP ATTRIBUTE`、`ALTER ATTRIBUTE ... TYPE` 和 `RENAME ATTRIBUTE`，这些操作此前在 Composite Type Lifecycle 部分列为不支持/延迟。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter_type.add_attribute.notice` | `ALTER TYPE ... ADD ATTRIBUTE` 向 composite type 添加新属性——信息性提示 | notice | 否 |
+| `ddl.pg.alter_type.drop_attribute.warn` | `ALTER TYPE ... DROP ATTRIBUTE` 从 composite type 移除属性——警告依赖列和函数 | warning | 否 |
+| `ddl.pg.alter_type.alter_attribute_type.warn` | `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE` 变更属性类型——警告潜在数据转换问题 | warning | 否 |
+| `ddl.pg.alter_type.rename_attribute.notice` | `ALTER TYPE ... RENAME ATTRIBUTE` 重命名属性——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些规则取代了此前在 Composite Type Lifecycle 部分中对 `ADD ATTRIBUTE`、`DROP ATTRIBUTE`、`ALTER ATTRIBUTE ... TYPE` 和 `RENAME ATTRIBUTE` 列出的不支持/延迟条目。DeltaScope 不检查在线依赖对象、不验证数据转换安全性、不建模完整的 PostgreSQL 类型系统语义。`DROP TYPE` 复用 Type Lifecycle 规则族中的已有规则。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Extension Member Lifecycle 规则（2 条）
+
+`v0.80.0` 新增 selected PostgreSQL non-permission DDL deep coverage，覆盖 extension 成员变更操作。这 2 条规则覆盖 `ALTER EXTENSION ... ADD TABLE` 和 `ALTER EXTENSION ... DROP TABLE`，这些操作此前在 Extension Lifecycle 部分列为不支持/延迟。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter_extension.add_member.notice` | `ALTER EXTENSION ... ADD TABLE` 将对象添加到扩展——信息性提示 | notice | 否 |
+| `ddl.pg.alter_extension.drop_member.warn` | `ALTER EXTENSION ... DROP TABLE` 从扩展中移除对象——警告该对象可能在扩展删除时被一并移除 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些规则取代了此前在 Extension Lifecycle 部分中对 extension 成员变更（`ALTER EXTENSION ... ADD/DROP TABLE`）列出的不支持/延迟条目。DeltaScope 不验证被引用对象是否存在、不验证 extension 成员状态、不检查在线依赖图。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Publication/Subscription Lifecycle 规则（7 条）
+
+`v0.80.0` 新增 selected PostgreSQL non-permission DDL deep coverage，覆盖逻辑复制的发布和订阅生命周期。这 7 条规则覆盖 `CREATE PUBLICATION`、`ALTER PUBLICATION`、`DROP PUBLICATION`、`CREATE SUBSCRIPTION`、`ALTER SUBSCRIPTION`、`ALTER SUBSCRIPTION ... DISABLE` 和 `DROP SUBSCRIPTION`。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_publication.notice` | `CREATE PUBLICATION` 引入新的逻辑复制发布——信息性提示 | notice | 否 |
+| `ddl.pg.alter_publication.notice` | `ALTER PUBLICATION` 修改已有发布——信息性提示 | notice | 否 |
+| `ddl.pg.drop_publication.warn` | `DROP PUBLICATION` 移除发布——警告订阅者将停止接收变更 | warning | 否 |
+| `ddl.pg.create_subscription.notice` | `CREATE SUBSCRIPTION` 建立新的订阅连接——信息性提示 | notice | 否 |
+| `ddl.pg.alter_subscription.notice` | `ALTER SUBSCRIPTION` 修改已有订阅——信息性提示 | notice | 否 |
+| `ddl.pg.alter_subscription.disable.warn` | `ALTER SUBSCRIPTION ... DISABLE` 禁用订阅——警告复制将停止 | warning | 否 |
+| `ddl.pg.drop_subscription.warn` | `DROP SUBSCRIPTION` 移除订阅——警告关于复制槽清理 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。`DROP SUBSCRIPTION ... WITH (drop_slot = true)` 仍被延迟（parser_error）——DeltaScope 不解析 `DROP SUBSCRIPTION` 上的 `WITH` 选项子句。DeltaScope 不验证在线发布/订阅状态、复制槽状态或连接参数。发布列列表和行过滤器作为解析器事实保留，但无策略规则对其进行治理。这不是完整的 PostgreSQL 逻辑复制治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Foreign Object Lifecycle 规则（12 条）
+
+`v0.80.0` 新增 selected PostgreSQL non-permission DDL deep coverage，覆盖外部数据包装器、外部服务器、用户映射和外部表的生命周期。这 12 条规则覆盖全部四种外部数据对象类型的 CREATE/ALTER/DROP 操作。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_foreign_data_wrapper.notice` | `CREATE FOREIGN DATA WRAPPER` 引入新的 FDW——信息性提示 | notice | 否 |
+| `ddl.pg.alter_foreign_data_wrapper.notice` | `ALTER FOREIGN DATA WRAPPER` 修改已有 FDW——信息性提示 | notice | 否 |
+| `ddl.pg.drop_foreign_data_wrapper.warn` | `DROP FOREIGN DATA WRAPPER` 移除 FDW——警告依赖的外部服务器和外部表 | warning | 否 |
+| `ddl.pg.create_foreign_server.notice` | `CREATE SERVER` 注册新的外部服务器——信息性提示 | notice | 否 |
+| `ddl.pg.alter_foreign_server.notice` | `ALTER SERVER` 修改已有外部服务器——信息性提示 | notice | 否 |
+| `ddl.pg.drop_foreign_server.warn` | `DROP SERVER` 移除外部服务器——警告依赖的用户映射和外部表 | warning | 否 |
+| `ddl.pg.create_user_mapping.notice` | `CREATE USER MAPPING` 注册外部服务器的用户映射——信息性提示 | notice | 否 |
+| `ddl.pg.alter_user_mapping.notice` | `ALTER USER MAPPING` 修改已有用户映射——信息性提示 | notice | 否 |
+| `ddl.pg.drop_user_mapping.warn` | `DROP USER MAPPING` 移除用户映射——警告依赖的外部表连接 | warning | 否 |
+| `ddl.pg.create_foreign_table.notice` | `CREATE FOREIGN TABLE` 引入新的外部表——信息性提示 | notice | 否 |
+| `ddl.pg.alter_foreign_table.notice` | `ALTER FOREIGN TABLE` 修改已有外部表——信息性提示 | notice | 否 |
+| `ddl.pg.drop_foreign_table.warn` | `DROP FOREIGN TABLE` 移除外部表——警告依赖查询 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不验证在线外部数据对象的存在性、连接参数、FDW handler/validator 函数或外部表列兼容性。FDW 选项（`OPTIONS (...)`）作为解析器事实保留，但无策略规则对其进行治理。`IMPORT FOREIGN SCHEMA` 仍不支持/延迟。这不是完整的 PostgreSQL 外部数据治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Annotation Lifecycle 规则（4 条）
+
+`v0.80.0` 新增 selected PostgreSQL non-permission DDL deep coverage，覆盖对象注解操作。这 4 条规则覆盖 `COMMENT ON` 和 `SECURITY LABEL` 的设置和移除操作。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.comment_on.notice` | `COMMENT ON ... IS 'text'` 为数据库对象附加注释——信息性提示 | notice | 否 |
+| `ddl.pg.comment_on.remove.notice` | `COMMENT ON ... IS NULL` 移除数据库对象的注释——信息性提示 | notice | 否 |
+| `ddl.pg.security_label.notice` | `SECURITY LABEL ... IS 'label'` 为数据库对象附加安全标签——信息性提示 | notice | 否 |
+| `ddl.pg.security_label.remove.notice` | `SECURITY LABEL ... IS NULL` 移除数据库对象的安全标签——信息性提示 | notice | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不验证目标对象是否存在、不验证注释/标签内容是否符合策略、不检查在线注解状态。`SECURITY LABEL ... FOR provider ...` 的 provider 名称作为解析器事实保留，但无策略规则对其进行治理。这不是完整的 PostgreSQL 注解治理。不影响 MySQL/TiDB 行为。
+
+---
+
+## DDL：PostgreSQL Event Trigger / Rewrite Rule Lifecycle 规则（7 条）
+
+`v0.80.0` 新增 selected PostgreSQL non-permission DDL deep coverage，覆盖事件触发器和重写规则。这 7 条规则覆盖 `CREATE EVENT TRIGGER`、`ALTER EVENT TRIGGER`、`ALTER EVENT TRIGGER ... DISABLE`、`DROP EVENT TRIGGER`、`CREATE RULE`、`ALTER RULE` 和 `DROP RULE`。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.create_event_trigger.notice` | `CREATE EVENT TRIGGER` 引入新的事件触发器——信息性提示 | notice | 否 |
+| `ddl.pg.alter_event_trigger.notice` | `ALTER EVENT TRIGGER` 修改已有事件触发器——信息性提示 | notice | 否 |
+| `ddl.pg.alter_event_trigger.disable.warn` | `ALTER EVENT TRIGGER ... DISABLE` 禁用事件触发器——警告 DDL 事件处理将停止 | warning | 否 |
+| `ddl.pg.drop_event_trigger.warn` | `DROP EVENT TRIGGER` 移除事件触发器——警告 DDL 事件处理影响 | warning | 否 |
+| `ddl.pg.create_rule.notice` | `CREATE RULE` 引入新的重写规则——信息性提示 | notice | 否 |
+| `ddl.pg.alter_rule.notice` | `ALTER RULE` 修改已有重写规则——信息性提示 | notice | 否 |
+| `ddl.pg.drop_rule.warn` | `DROP RULE` 移除重写规则——警告依赖查询行为 | warning | 否 |
+
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。DeltaScope 不评估事件触发器体或重写规则动作、不验证触发器函数是否存在、不检查在线事件触发器/规则状态。事件触发器 `WHEN` 条件和规则 `INSTEAD` / `ALSO` 语义作为解析器事实保留，但无策略规则对其进行治理。这不是完整的 PostgreSQL 事件触发器/重写规则治理。不影响 MySQL/TiDB 行为。
+
+---
+
 ## DML 规则（10 条）
 
 这些规则对 DML 语句进行评估：`SELECT`、`INSERT`、`UPDATE`、`DELETE`、`REPLACE`。

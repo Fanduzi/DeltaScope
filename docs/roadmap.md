@@ -4,7 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.70.0 Selected PostgreSQL Non-Permission DDL Lifecycle
+## Latest Completed Milestone: v0.80.0 Selected PostgreSQL Non-Permission DDL Deep Coverage
+
+**Goal:** extend DeltaScope's PostgreSQL coverage to selected non-permission DDL deep coverage families beyond v0.70.0: composite type attribute operations, extension member mutation, publication/subscription lifecycle, foreign object lifecycle, annotation lifecycle (COMMENT ON, SECURITY LABEL), and event trigger/rewrite rule lifecycle.
+
+### Completed Scope
+
+- Composite type attribute lifecycle (4 rules): `ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE TYPE`, `RENAME ATTRIBUTE`.
+- Extension member lifecycle (2 rules): `ADD TABLE`, `DROP TABLE`.
+- Publication/subscription lifecycle (7 rules): `CREATE/ALTER/DROP PUBLICATION`, `CREATE/ALTER/DROP SUBSCRIPTION`, `ALTER SUBSCRIPTION DISABLE`.
+- Foreign object lifecycle (12 rules): `CREATE/ALTER/DROP` for `FOREIGN TABLE`, `SERVER`, `USER MAPPING`, `FOREIGN DATA WRAPPER`.
+- Annotation lifecycle (4 rules): `COMMENT ON`, `COMMENT ON IS NULL`, `SECURITY LABEL`, `SECURITY LABEL IS NULL`.
+- Event trigger/rewrite rule lifecycle (7 rules): `CREATE/ALTER/DROP EVENT TRIGGER` (including `DISABLE`), `CREATE/ALTER/DROP RULE`.
+- 36 new PostgreSQL-only DDL lifecycle rules across 6 families.
+- PostgreSQL DDL deep coverage census: 38/39 forms `finding_covered`, 1 `parser_error` (`DROP SUBSCRIPTION ... WITH (drop_slot)`).
+- SQL corpus: 278 policy rules, 469/469 supported targets, 100% coverage.
+- Public surface coverage verified across SDK, CLI, HTTP, MCP for all 36 rules.
+- Privacy boundary: corpus expected outputs do not contain connection strings, foreign option values, comment text, security label text, trigger/rule bodies.
+
+### Key Design Decisions
+
+- No overclaim of full PostgreSQL DDL grammar coverage.
+- `DROP SUBSCRIPTION ... WITH (drop_slot = true)` remains deferred (parser error).
+- DCL/permissions remain out of scope except pre-existing v0.60.0 table-level DCL support.
+- DeltaScope does not execute migrations.
+
+## Previous Milestone: v0.70.0 Selected PostgreSQL Non-Permission DDL Lifecycle
 
 **Goal:** extend DeltaScope's PostgreSQL coverage to selected non-permission DDL lifecycle families: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle (schema, index, materialized view).
 
@@ -769,7 +794,6 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 Areas that may be addressed in future milestones (no dates committed):
 
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
-- PostgreSQL composite type attribute lifecycle (`ADD ATTRIBUTE`, `DROP ATTRIBUTE`, `ALTER ATTRIBUTE ... TYPE`, `RENAME ATTRIBUTE`).
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`/`REVOKE` for non-table objects, `ALTER DEFAULT PRIVILEGES`).
 - Trigger lifecycle parity across MySQL, TiDB, and PostgreSQL (deferred from v0.64.0).
 - Routine/function/procedure lifecycle parity (deferred from v0.64.0).

@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.70.0",
+    "softwareVersion": "v0.80.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.70.0 — PostgreSQL non-permission DDL lifecycle coverage</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.80.0 — PostgreSQL DDL deep coverage</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,23 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.70.0</div>
+              <div class="release-version">v0.80.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL DDL Lifecycle Coverage</div>
-            <div class="release-copy" data-i18n="releases.items.v0700">v0.70.0 adds selected PostgreSQL non-permission DDL lifecycle coverage: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle rules. 28 new rules, SQL corpus 433/433 targets, and full public surface coverage.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL DDL Deep Coverage</div>
+            <div class="release-copy" data-i18n="releases.items.v0800">v0.80.0 adds 36 new PostgreSQL-only DDL lifecycle rules across 6 families: composite type attributes, extension members, publication/subscription, foreign objects, annotations (COMMENT ON, SECURITY LABEL), and event trigger/rewrite rule lifecycle. SQL corpus 469/469 targets, 100% coverage.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.80.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.80.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.80.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.70.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v0700">PostgreSQL Non-Permission DDL Lifecycle</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v0700">v0.70.0 adds selected PostgreSQL non-permission DDL lifecycle coverage: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle rules. 34 new rules, SQL corpus 433/433 targets, and full public surface coverage.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0700" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.zh-CN.md">Open v0.70.0 notes →</a>
+            </article>
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.64.0</div>
@@ -1113,14 +1121,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v0620">v0.62.0 adds structured logging for server and MCP, log file rotation, metadata connect timeout, parser benchmarks, and improves code maintainability with split rule and extractor files.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.62.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0620" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.62.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.62.0.zh-CN.md">Open v0.62.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.61.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v0610">Quality, Stability &amp; Analysis</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v0610">v0.61.0 focuses on reliability and review quality: connection lifecycle fixes, MCP panic recovery, static analysis integration, context propagation, and performance cleanup.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v0610" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.61.0.zh-CN.md">Open v0.61.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1205,7 +1205,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.70.0 focuses on selected PostgreSQL non-permission DDL lifecycle coverage; older milestones stay in the release archive.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.80.0 focuses on selected PostgreSQL non-permission DDL deep coverage; older milestones stay in the release archive.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1217,7 +1217,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.70.0.zh-CN.md">Release Notes v0.70.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.80.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.80.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.80.0.zh-CN.md">Release Notes v0.80.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1261,7 +1261,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.70.0 — PostgreSQL non-permission DDL lifecycle coverage',
+          badge: 'v0.80.0 — PostgreSQL DDL deep coverage',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1387,30 +1387,30 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL DDL Lifecycle Coverage',
+          currentTitle: 'PostgreSQL DDL Deep Coverage',
           currentLink: 'Read release notes →',
           labels: {
+            v0700: 'PostgreSQL Non-Permission DDL Lifecycle',
             v0640: 'Cross-Dialect DDL Parity & Database/Schema Lifecycle',
             v0630: 'Runtime Config & Metadata Timeout',
-            v0620: 'Logging, Rotation & Maintainability',
-            v0610: 'Quality, Stability & Analysis'
+            v0620: 'Logging, Rotation & Maintainability'
           },
           links: {
+            v0700: 'Open v0.70.0 notes →',
             v0640: 'Open v0.64.0 notes →',
             v0630: 'Open v0.63.0 notes →',
-            v0620: 'Open v0.62.0 notes →',
-            v0610: 'Open v0.61.0 notes →'
+            v0620: 'Open v0.62.0 notes →'
           },
           archiveTitle: 'Release archive',
           archiveLabel: 'All versions',
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
-            v0700: 'v0.70.0 adds selected PostgreSQL non-permission DDL lifecycle coverage: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle rules. 28 new PostgreSQL-only guardrail rules, SQL corpus expansion to 433/433 targets, and full public surface coverage across CLI, HTTP, MCP, and SDK.',
+            v0800: 'v0.80.0 adds 36 new PostgreSQL-only DDL lifecycle rules across 6 families: composite type attributes, extension members, publication/subscription, foreign objects, annotations (COMMENT ON, SECURITY LABEL), and event trigger/rewrite rule lifecycle. SQL corpus 469/469 targets, 100% coverage.',
+            v0700: 'v0.70.0 adds selected PostgreSQL non-permission DDL lifecycle coverage: RLS/Policy, Trigger, Function/Procedure, Advanced View, and selected ALTER object lifecycle rules. 34 new PostgreSQL-only guardrail rules, SQL corpus expansion to 433/433 targets, and full public surface coverage across CLI, HTTP, MCP, and SDK.',
             v0640: 'v0.64.0 adds cross-dialect DDL coverage census and closes the first database/schema lifecycle parity gap. MySQL and TiDB CREATE DATABASE, CREATE SCHEMA, DROP DATABASE, and DROP SCHEMA now produce explicit audit findings instead of passing silently. PostgreSQL CREATE SCHEMA and CREATE SCHEMA IF NOT EXISTS now produce an explicit notice. Three new audit rules, SQL corpus expansion to 405/405 targets, and full public surface coverage across CLI, HTTP, MCP, and SDK.',
             v0630: 'v0.63.0 adds runtime configuration for server and MCP operations, public metadata connect timeout inputs across CLI, HTTP, and MCP surfaces, and adoption documentation. Runtime config is separate from policy config and applies to operational settings like logging and metadata defaults.',
-            v0620: 'v0.62.0 adds structured logging for server and MCP, log file rotation, metadata connect timeout, parser benchmarks, and improves code maintainability with split rule and extractor files. Log file permissions are now restricted to owner-only.',
-            v0610: 'v0.61.0 focuses on reliability and review quality: connection lifecycle fixes, MCP panic recovery, static analysis integration, context propagation, and performance cleanup.'
+            v0620: 'v0.62.0 adds structured logging for server and MCP, log file rotation, metadata connect timeout, parser benchmarks, and improves code maintainability with split rule and extractor files. Log file permissions are now restricted to owner-only.'
           }
         },
         cta: {
@@ -1420,14 +1420,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.70.0 focuses on selected PostgreSQL non-permission DDL lifecycle coverage; older milestones stay in the release archive.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.80.0 focuses on selected PostgreSQL non-permission DDL deep coverage; older milestones stay in the release archive.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.70.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.80.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1445,7 +1445,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.70.0 —— PostgreSQL 非权限 DDL 生命周期覆盖',
+          badge: 'v0.80.0 —— PostgreSQL DDL 深度覆盖',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1571,30 +1571,30 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL DDL 生命周期覆盖',
+          currentTitle: 'PostgreSQL DDL 深度覆盖',
           currentLink: '查看发布说明 →',
           labels: {
+            v0700: 'PostgreSQL 非权限 DDL 生命周期',
             v0640: '跨方言 DDL 对等与 Database/Schema 生命周期',
             v0630: 'Runtime 配置与元数据超时',
-            v0620: '日志、轮转与可维护性',
-            v0610: '质量、稳定性与静态分析'
+            v0620: '日志、轮转与可维护性'
           },
           links: {
+            v0700: '查看 v0.70.0 发布说明 →',
             v0640: '查看 v0.64.0 发布说明 →',
             v0630: '查看 v0.63.0 发布说明 →',
-            v0620: '查看 v0.62.0 发布说明 →',
-            v0610: '查看 v0.61.0 发布说明 →'
+            v0620: '查看 v0.62.0 发布说明 →'
           },
           archiveTitle: '发布归档',
           archiveLabel: '全部版本',
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
-            v0700: 'v0.70.0 新增已选 PostgreSQL 非权限 DDL 生命周期覆盖：RLS/Policy、Trigger、Function/Procedure、高级视图和已选 ALTER 对象生命周期规则。28 条新 PostgreSQL-only 防护规则，SQL 语料库扩展至 433/433 目标，CLI/HTTP/MCP/SDK 全面公共表面覆盖。',
+            v0800: 'v0.80.0 新增 36 条 PostgreSQL-only DDL 生命周期规则，覆盖 6 个族：复合类型属性、扩展成员、发布/订阅、外部对象、注解（COMMENT ON、SECURITY LABEL）和事件触发器/重写规则生命周期。SQL 语料库 469/469 目标，100% 覆盖。',
+            v0700: 'v0.70.0 新增已选 PostgreSQL 非权限 DDL 生命周期覆盖：RLS/Policy、Trigger、Function/Procedure、高级视图和已选 ALTER 对象生命周期规则。34 条新 PostgreSQL-only 防护规则，SQL 语料库扩展至 433/433 目标，CLI/HTTP/MCP/SDK 全面公共表面覆盖。',
             v0640: 'v0.64.0 新增跨方言 DDL 覆盖普查，并关闭首个 database/schema 生命周期对等差距。MySQL 和 TiDB 的 CREATE DATABASE、CREATE SCHEMA、DROP DATABASE、DROP SCHEMA 现在会产出显式审计发现，不再静默通过。PostgreSQL 的 CREATE SCHEMA 和 CREATE SCHEMA IF NOT EXISTS 现在会产出显式通知。三条新审计规则，SQL 语料库扩展至 405/405 目标，CLI/HTTP/MCP/SDK 全面公共表面覆盖。',
             v0630: 'v0.63.0 新增 server/MCP runtime 配置（`-runtime-config`）、CLI/HTTP/MCP 公开的元数据连接超时输入，以及采纳文档。Runtime config 独立于策略配置，适用于日志和元数据默认值等运维设置。',
-            v0620: 'v0.62.0 新增 server 和 MCP 结构化日志、日志文件轮转、元数据连接超时和解析器基准测试。拆分规则和提取器文件改善代码可维护性，日志文件权限限制为仅所有者可访问。',
-            v0610: 'v0.61.0 聚焦质量和稳定性：连接生命周期修复、MCP panic 恢复、静态分析集成、Context 传播和性能清理。'
+            v0620: 'v0.62.0 新增 server 和 MCP 结构化日志、日志文件轮转、元数据连接超时和解析器基准测试。拆分规则和提取器文件改善代码可维护性，日志文件权限限制为仅所有者可访问。'
           },
           title: '把 DDL / DML 审查前移到工作流更早的位置',
           sub: '一次安装，本地先审，CI 再卡口，并在所有接入面上复用同一套策略。',
@@ -1602,14 +1602,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.70.0 聚焦已选 PostgreSQL 非权限 DDL 生命周期覆盖；更早里程碑放在发布归档中。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.80.0 聚焦已选 PostgreSQL 非权限 DDL 深度覆盖；更早里程碑放在发布归档中。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.70.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.80.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

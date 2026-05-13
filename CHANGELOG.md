@@ -6,6 +6,72 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.80.0] - 2026-05-13
+
+### Added
+
+- Selected PostgreSQL non-permission DDL deep coverage: 36 new PostgreSQL-only DDL lifecycle rules across 6 families (composite type attributes, extension members, publication/subscription, foreign objects, annotation lifecycle, event trigger/rewrite rule).
+- Composite type attribute lifecycle rules:
+  - `ddl.pg.alter_type.add_attribute.notice` (notice) — fires on `ALTER TYPE ... ADD ATTRIBUTE`
+  - `ddl.pg.alter_type.drop_attribute.warn` (warning) — fires on `ALTER TYPE ... DROP ATTRIBUTE`
+  - `ddl.pg.alter_type.alter_attribute_type.warn` (warning) — fires on `ALTER TYPE ... ALTER ATTRIBUTE ... TYPE`
+  - `ddl.pg.alter_type.rename_attribute.notice` (notice) — fires on `ALTER TYPE ... RENAME ATTRIBUTE`
+- Extension member lifecycle rules:
+  - `ddl.pg.alter_extension.add_member.notice` (notice) — fires on `ALTER EXTENSION ... ADD TABLE`
+  - `ddl.pg.alter_extension.drop_member.warn` (warning) — fires on `ALTER EXTENSION ... DROP TABLE`
+- Publication/subscription lifecycle rules:
+  - `ddl.pg.create_publication.notice` (notice) — fires on `CREATE PUBLICATION`
+  - `ddl.pg.alter_publication.notice` (notice) — fires on `ALTER PUBLICATION`
+  - `ddl.pg.drop_publication.warn` (warning) — fires on `DROP PUBLICATION`
+  - `ddl.pg.create_subscription.notice` (notice) — fires on `CREATE SUBSCRIPTION`
+  - `ddl.pg.alter_subscription.notice` (notice) — fires on `ALTER SUBSCRIPTION`
+  - `ddl.pg.alter_subscription.disable.warn` (warning) — fires on `ALTER SUBSCRIPTION ... DISABLE`
+  - `ddl.pg.drop_subscription.warn` (warning) — fires on `DROP SUBSCRIPTION`
+- Foreign object lifecycle rules:
+  - `ddl.pg.create_foreign_table.notice` (notice) — fires on `CREATE FOREIGN TABLE`
+  - `ddl.pg.alter_foreign_table.notice` (notice) — fires on `ALTER FOREIGN TABLE`
+  - `ddl.pg.drop_foreign_table.warn` (warning) — fires on `DROP FOREIGN TABLE`
+  - `ddl.pg.create_foreign_server.notice` (notice) — fires on `CREATE SERVER`
+  - `ddl.pg.alter_foreign_server.notice` (notice) — fires on `ALTER SERVER`
+  - `ddl.pg.drop_foreign_server.warn` (warning) — fires on `DROP SERVER`
+  - `ddl.pg.create_user_mapping.notice` (notice) — fires on `CREATE USER MAPPING`
+  - `ddl.pg.alter_user_mapping.notice` (notice) — fires on `ALTER USER MAPPING`
+  - `ddl.pg.drop_user_mapping.warn` (warning) — fires on `DROP USER MAPPING`
+  - `ddl.pg.create_foreign_data_wrapper.notice` (notice) — fires on `CREATE FOREIGN DATA WRAPPER`
+  - `ddl.pg.alter_foreign_data_wrapper.notice` (notice) — fires on `ALTER FOREIGN DATA WRAPPER`
+  - `ddl.pg.drop_foreign_data_wrapper.warn` (warning) — fires on `DROP FOREIGN DATA WRAPPER`
+- Annotation lifecycle rules:
+  - `ddl.pg.comment_on.notice` (notice) — fires on `COMMENT ON`
+  - `ddl.pg.comment_on.remove.notice` (notice) — fires on `COMMENT ON ... IS NULL`
+  - `ddl.pg.security_label.notice` (notice) — fires on `SECURITY LABEL`
+  - `ddl.pg.security_label.remove.notice` (notice) — fires on `SECURITY LABEL ... IS NULL`
+- Event trigger/rewrite rule lifecycle rules:
+  - `ddl.pg.create_event_trigger.notice` (notice) — fires on `CREATE EVENT TRIGGER`
+  - `ddl.pg.alter_event_trigger.notice` (notice) — fires on `ALTER EVENT TRIGGER`
+  - `ddl.pg.alter_event_trigger.disable.warn` (warning) — fires on `ALTER EVENT TRIGGER ... DISABLE`
+  - `ddl.pg.drop_event_trigger.warn` (warning) — fires on `DROP EVENT TRIGGER`
+  - `ddl.pg.create_rule.notice` (notice) — fires on `CREATE RULE`
+  - `ddl.pg.alter_rule.notice` (notice) — fires on `ALTER RULE`
+  - `ddl.pg.drop_rule.warn` (warning) — fires on `DROP RULE`
+- PostgreSQL DDL deep coverage census: 38 selected non-permission DDL forms are now `finding_covered` across composite type attributes, extension members, publication/subscription, foreign objects, annotation, event trigger, and rewrite rule lifecycle.
+- SQL corpus: 278 policy rules, 469/469 supported targets, 100% coverage.
+- Public surface coverage verified across SDK, CLI, HTTP, and MCP for all 36 new rules.
+- Privacy boundary: expected corpus outputs do not contain subscription connection strings, foreign object option values, comment text, security label text, event trigger function bodies, or rewrite rule bodies.
+
+### Changed
+
+- SQL corpus expanded from 433 to 469 supported targets (36 new PostgreSQL fixtures).
+
+### Non-Goals
+
+- No full PostgreSQL DDL support claim. Selected non-permission DDL families are covered; many remain deferred (see below).
+- No live privilege/role validation. GRANT/REVOKE rules emit informational notices only.
+- No DCL execution or runtime database firewall behavior.
+- DeltaScope does not execute migrations.
+- Deferred: `DROP SUBSCRIPTION ... WITH (drop_slot = true)` remains a genuine parser error.
+- Deferred PG DDL families: broader PostgreSQL grammar, aggregate/operator/conversion/statistics lifecycle, and other out-of-scope families remain intentionally not covered.
+- Permissions/DCL remain out of scope for runtime validation: GRANT/REVOKE, roles/users, default privileges (except pre-existing v0.60.0 table-level DCL support).
+
 ## [v0.70.0] - 2026-05-12
 
 ### Added
