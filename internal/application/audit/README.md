@@ -19,7 +19,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | explain.go | Joins evaluated findings with shipped catalog metadata and statement metadata availability notes |
 | service.go | Orchestrates the full audit flow across policy loading, parsing, extraction, top-level request metadata plumbing, optional metadata enrichment, post-enrichment DML impact attachment/refinement, rule registration, evaluation, and partial-support error propagation for unsupported statements |
 | service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, multi-statement SQL, PostgreSQL validation-boundary acceptance, mixed supported/unsupported partial results, metadata enrichment behavior, metadata-backed DML `impact` surfacing, and schema-only context/top-level request plumbing |
-| metadata.go | Defines the optional metadata-provider and index-owner resolver seams, then attaches schema, instance, and target-table facts to statements before evaluation |
+| metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches schema, instance, target-table, and non-table object snapshots to statements before evaluation |
 
 ## Exports
 
@@ -31,6 +31,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 - `MetadataRequest`
 - `MetadataProvider`
 - `IndexOwnerResolver`
+- `PlanEstimator`
+- `ObjectResolver`
 - `Service`
 - `NewService()`
 - `Service.Audit(ctx, request)`

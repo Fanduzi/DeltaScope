@@ -29,6 +29,11 @@ type PlanEstimator interface {
 	LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error)
 }
 
+// ObjectResolver optionally resolves non-table database objects from live metadata.
+type ObjectResolver interface {
+	ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+}
+
 // MetadataRequest describes one optional metadata-aware audit invocation.
 type MetadataRequest struct {
 	Schema   string
@@ -48,6 +53,13 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 		for i, statement := range statements {
 			enriched[i] = statement
 			enriched[i].Metadata = &spec.Metadata{Schema: request.Schema}
+
+			if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
+				objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+				if objSnapshot != nil {
+					enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
+				}
+			}
 		}
 		return enriched, nil
 	}
@@ -83,6 +95,17 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 
 		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil {
 			enriched[i].Metadata = metadata
+		}
+
+		// Object-level enrichment for non-table DDL objects.
+		if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
+			objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+			if objSnapshot != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: request.Schema, Instance: instanceFacts}
+				}
+				enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
+			}
 		}
 	}
 
@@ -170,4 +193,107 @@ func indexStatementSchema(request *MetadataRequest, alter spec.Alter) string {
 		return ""
 	}
 	return strings.TrimSpace(request.Schema)
+}
+
+// planObjectLookup returns an ObjectLookupRequest for the given statement,
+// or nil if the statement does not target a resolvable non-table object.
+func planObjectLookup(schema string, statement spec.Statement) *spec.ObjectLookupRequest {
+	if statement.DDL == nil {
+		return nil
+	}
+	ddl := statement.DDL
+	objType := objectTypeForOperation(ddl.Operation, ddl.ObjectType)
+	if objType == "" {
+		return nil
+	}
+	name := strings.TrimSpace(ddl.ObjectName)
+	if name == "" {
+		return nil
+	}
+	req := &spec.ObjectLookupRequest{
+		Schema: schema,
+		Type:   objType,
+		Name:   name,
+	}
+	if ddl.Options != nil {
+		if table := strings.TrimSpace(ddl.Options["table"]); table != "" {
+			if req.Qualifiers == nil {
+				req.Qualifiers = make(map[string]string)
+			}
+			req.Qualifiers["table"] = table
+		}
+	}
+	return req
+}
+
+// objectTypeForOperation maps a DDL operation and extracted object type to a
+// metadata lookup type. Returns empty string for operations that don't target
+// resolvable non-table objects (e.g. table operations handled by TableSnapshot).
+func objectTypeForOperation(op spec.DDLOperation, extractedType string) string {
+	switch op {
+	case spec.DDLOperationCreateType, spec.DDLOperationAlterType, spec.DDLOperationDropType:
+		return "type"
+	case spec.DDLOperationCreateDomain, spec.DDLOperationAlterDomain, spec.DDLOperationDropDomain:
+		return "domain"
+	case spec.DDLOperationCreateExtension, spec.DDLOperationAlterExtension, spec.DDLOperationDropExtension:
+		return "extension"
+	case spec.DDLOperationCreatePublication, spec.DDLOperationAlterPublication, spec.DDLOperationDropPublication:
+		return "publication"
+	case spec.DDLOperationCreateSubscription, spec.DDLOperationAlterSubscription, spec.DDLOperationDropSubscription:
+		return "subscription"
+	case spec.DDLOperationCreateForeignTable, spec.DDLOperationAlterForeignTable, spec.DDLOperationDropForeignTable:
+		return "foreign_table"
+	case spec.DDLOperationCreateForeignServer, spec.DDLOperationAlterForeignServer, spec.DDLOperationDropForeignServer:
+		return "foreign_server"
+	case spec.DDLOperationCreateUserMapping, spec.DDLOperationAlterUserMapping, spec.DDLOperationDropUserMapping:
+		return "user_mapping"
+	case spec.DDLOperationCreateForeignDataWrapper, spec.DDLOperationAlterForeignDataWrapper, spec.DDLOperationDropForeignDataWrapper:
+		return "foreign_data_wrapper"
+	case spec.DDLOperationCreateEventTrigger, spec.DDLOperationAlterEventTrigger, spec.DDLOperationDropEventTrigger:
+		return "event_trigger"
+	case spec.DDLOperationCreateRule, spec.DDLOperationAlterRule, spec.DDLOperationDropRule:
+		return "rule"
+	case spec.DDLOperationCreateSchema, spec.DDLOperationAlterSchema, spec.DDLOperationDropSchema:
+		return "schema"
+	case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence, spec.DDLOperationDropSequence:
+		return "sequence"
+	case spec.DDLOperationCreateMaterializedView, spec.DDLOperationDropMaterializedView, spec.DDLOperationRefreshMaterializedView, spec.DDLOperationAlterMaterializedView:
+		return "materialized_view"
+	case spec.DDLOperationCommentOn, spec.DDLOperationSecurityLabel:
+		return extractedType
+	default:
+		return ""
+	}
+}
+
+// resolveObjectSnapshot calls the ObjectResolver if available, or returns
+// an unavailable snapshot as fallback. Never returns nil.
+func resolveObjectSnapshot(ctx context.Context, request *MetadataRequest, dialect spec.Dialect, lookup *spec.ObjectLookupRequest) *spec.ObjectSnapshot {
+	if request == nil || request.Provider == nil {
+		return &spec.ObjectSnapshot{
+			Schema: lookup.Schema,
+			Type:   lookup.Type,
+			Name:   lookup.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}
+	}
+	resolver, ok := request.Provider.(ObjectResolver)
+	if !ok {
+		return &spec.ObjectSnapshot{
+			Schema: lookup.Schema,
+			Type:   lookup.Type,
+			Name:   lookup.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}
+	}
+	snapshot, err := resolver.ResolveObject(ctx, dialect, *lookup)
+	if err != nil {
+		return &spec.ObjectSnapshot{
+			Schema: lookup.Schema,
+			Type:   lookup.Type,
+			Name:   lookup.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}
+	}
+	return snapshot
 }

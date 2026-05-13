@@ -108,6 +108,14 @@ type ObjectSnapshot struct {
 	AmbiguousCandidates []string          `json:"ambiguous_candidates,omitempty"`
 }
 
+// ObjectLookupRequest describes one object to resolve from live metadata.
+type ObjectLookupRequest struct {
+	Schema     string
+	Type       string
+	Name       string
+	Qualifiers map[string]string
+}
+
 // IsConfirmed reports whether the object was found in live metadata.
 func (o ObjectSnapshot) IsConfirmed() bool {
 	return o.Status == MetadataStatusConfirmed
