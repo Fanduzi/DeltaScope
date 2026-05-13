@@ -1069,6 +1069,25 @@ When a metadata provider is configured, DeltaScope loads live facts from the tar
 | `table_rows` | Row count safety threshold on DROP TABLE and TRUNCATE TABLE |
 | Index cardinality and `table_rows` | Metadata-aware refinement of conservative DML impact estimation |
 
+### Object Metadata (v0.90.0)
+
+PostgreSQL metadata-aware audit now resolves metadata for selected non-table objects and enriches lifecycle rule findings with safe attributes:
+
+| Object Type | Example SQL | Projected Attributes |
+|-------------|-------------|---------------------|
+| `schema` | `DROP SCHEMA old_schema` | status/name/exists |
+| `type` | `DROP TYPE app.color` | `type_kind` |
+| `domain` | `DROP DOMAIN app.email_address` | `has_check` |
+| `extension` | `DROP EXTENSION pgcrypto` | `extension_version`, `enabled` |
+| `sequence` | `DROP SEQUENCE ticket_seq` | status/name/exists |
+| `materialized_view` | `DROP MATERIALIZED VIEW user_summary` | status/name/exists |
+| `publication` | `DROP PUBLICATION pub_users` | status/name/exists |
+| `foreign_server` | `DROP SERVER fs_test` | `foreign_data_wrapper`, `has_options` |
+| `user_mapping` | `DROP USER MAPPING FOR ... SERVER fs_test` | `server` |
+| `comment` | `COMMENT ON TABLE users IS '...'` | `target_type` |
+
+Findings include `metadata_status` (`confirmed`/`not_found`/`unavailable`), `metadata_exists`, `metadata_object_type`, `metadata_object_name`, `metadata_schema`. Only 8 safe attribute keys are projected; sensitive values (password, secret, connection, body, definition, comment, label, query, action_sql, options) are filtered by a dual blacklist/whitelist. MySQL/TiDB object metadata resolution returns `unavailable` — no behavior change.
+
 ### Dialect-Specific Considerations
 
 **MySQL / TiDB only:**

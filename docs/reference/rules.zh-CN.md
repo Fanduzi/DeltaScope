@@ -861,6 +861,42 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 从 `v0.44.0` 开始，`make release-contract-gates VERSION=vX.Y.Z` 将版本面校验、二进制版本输出、默认策略方言隔离和 archive 完整性合并为统一的 pre-publish gate。未新增规则 ID、解析器功能或公共 API 契约。
 
+### PostgreSQL 元数据感知对象验证（v0.90.0）
+
+v0.90.0 新增已选 PostgreSQL 生命周期规则发现的元数据感知对象验证。当配置了 PostgreSQL 元数据连接时，DeltaScope 通过 `pg_catalog` 查询解析非表对象，并将对象存在性和安全属性信息注入生命周期发现。**未新增规则 ID。** 现有生命周期规则发现在元数据可用时被元数据字段增强。
+
+#### 元数据投射字段
+
+当对象元数据被解析后，以下字段出现在发现的 `metadata` 对象上：
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `metadata_status` | string | `confirmed`、`not_found` 或 `unavailable` |
+| `metadata_exists` | boolean | 对象是否存在于数据库中 |
+| `metadata_object_type` | string | 解析的对象类型（如 `domain`、`type`、`extension`） |
+| `metadata_object_name` | string | 解析的对象名称 |
+| `metadata_schema` | string | 包含对象的模式（当存在歧义时） |
+
+#### 安全可投射属性
+
+仅以下属性键从对象快照投射到发现中：
+
+`type_kind`、`extension_version`、`enabled`、`server`、`foreign_data_wrapper`、`target_type`、`has_options`、`table`
+
+这些以 `metadata_<key>` 形式出现在发现上（例如 `metadata_type_kind`、`metadata_extension_version`）。
+
+#### 被屏蔽属性
+
+以下属性类别**绝不会**投射到发现中，即使在对象快照中存在：password、secret、token、api_key、connection、dsn、connstr、body、definition、comment、label、query、action_sql、options。
+
+#### 支持的生命周期规则
+
+对象元数据增强适用于以下 PostgreSQL 生命周期规则：
+
+`ddl.pg.drop_schema.advisory`、`ddl.pg.drop_type.advisory`、`ddl.pg.drop_domain.advisory`、`ddl.pg.drop_extension.advisory`、`ddl.pg.drop_sequence.advisory`、`ddl.pg.drop_materialized_view.advisory`、`ddl.pg.drop_publication.warn`、`ddl.pg.drop_foreign_server.warn`、`ddl.pg.drop_user_mapping.warn`、`ddl.pg.comment_on.notice`
+
+无元数据连接时，这些规则照常产生发现 — 不出现元数据字段。
+
 ---
 
 ### PostgreSQL Generated/Identity Rule Coverage（v0.36.0）

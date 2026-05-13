@@ -1033,6 +1033,25 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | 表选项（引擎、字符集、行格式） | ALTER TABLE 时的表选项兼容性检查 |
 | `table_rows` | DROP TABLE 和 TRUNCATE TABLE 的行数安全阈值检查 |
 
+### 对象元数据（Object Metadata，v0.90.0）
+
+PostgreSQL 元数据感知审核现在解析选定的非表对象元数据，并将安全属性注入生命周期规则发现：
+
+| 对象类型 | 示例 SQL | 投射属性 |
+|---------|---------|---------|
+| `schema` | `DROP SCHEMA old_schema` | status/name/exists |
+| `type` | `DROP TYPE app.color` | `type_kind` |
+| `domain` | `DROP DOMAIN app.email_address` | `has_check` |
+| `extension` | `DROP EXTENSION pgcrypto` | `extension_version`, `enabled` |
+| `sequence` | `DROP SEQUENCE ticket_seq` | status/name/exists |
+| `materialized_view` | `DROP MATERIALIZED VIEW user_summary` | status/name/exists |
+| `publication` | `DROP PUBLICATION pub_users` | status/name/exists |
+| `foreign_server` | `DROP SERVER fs_test` | `foreign_data_wrapper`, `has_options` |
+| `user_mapping` | `DROP USER MAPPING FOR ... SERVER fs_test` | `server` |
+| `comment` | `COMMENT ON TABLE users IS '...'` | `target_type` |
+
+发现中出现 `metadata_status`（`confirmed`/`not_found`/`unavailable`）、`metadata_exists`、`metadata_object_type`、`metadata_object_name`、`metadata_schema` 等字段。仅 8 个安全属性键可投射到发现中；password、secret、connection、body、definition、comment、label、query、action_sql、options 等敏感属性被双重黑名单/白名单过滤。MySQL/TiDB 对象元数据解析返回 `unavailable` — 无行为变更。
+
 ---
 
 ## 信任与误配防护

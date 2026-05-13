@@ -873,6 +873,42 @@ Each boundary is backed by corpus cases and surface parity tests across CLI, HTT
 
 Starting with `v0.44.0`, `make release-contract-gates VERSION=vX.Y.Z` verifies version surfaces, binary version output, default policy dialect isolation, and archive integrity as a unified pre-publish gate. No new rule IDs, parser features, or public API contracts were added.
 
+### PostgreSQL Metadata-Aware Object Validation (v0.90.0)
+
+v0.90.0 adds metadata-aware object validation for selected PostgreSQL lifecycle rule findings. When a PostgreSQL metadata connection is configured, DeltaScope resolves non-table objects through `pg_catalog` queries and enriches lifecycle findings with object existence and safe attribute information. **No new rule IDs were added.** Existing lifecycle rule findings are enriched with metadata fields when metadata is available.
+
+#### Metadata Projection Fields
+
+When object metadata is resolved, the following fields appear on the finding's `metadata` object:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `metadata_status` | string | `confirmed`, `not_found`, or `unavailable` |
+| `metadata_exists` | boolean | Whether the object exists in the database |
+| `metadata_object_type` | string | Resolved object type (e.g. `domain`, `type`, `extension`) |
+| `metadata_object_name` | string | Resolved object name |
+| `metadata_schema` | string | Schema containing the object (when ambiguous) |
+
+#### Safe Projectable Attributes
+
+Only the following attribute keys are projected from the object snapshot into findings:
+
+`type_kind`, `extension_version`, `enabled`, `server`, `foreign_data_wrapper`, `target_type`, `has_options`, `table`
+
+These appear as `metadata_<key>` on the finding (e.g. `metadata_type_kind`, `metadata_extension_version`).
+
+#### Blocked Attributes
+
+The following attribute categories are **never** projected into findings, even when present in the object snapshot: password, secret, token, api_key, connection, dsn, connstr, body, definition, comment, label, query, action_sql, options.
+
+#### Supported Lifecycle Rules
+
+Object metadata enrichment applies to these PostgreSQL lifecycle rules:
+
+`ddl.pg.drop_schema.advisory`, `ddl.pg.drop_type.advisory`, `ddl.pg.drop_domain.advisory`, `ddl.pg.drop_extension.advisory`, `ddl.pg.drop_sequence.advisory`, `ddl.pg.drop_materialized_view.advisory`, `ddl.pg.drop_publication.warn`, `ddl.pg.drop_foreign_server.warn`, `ddl.pg.drop_user_mapping.warn`, `ddl.pg.comment_on.notice`
+
+Without a metadata connection, these rules produce findings as before — no metadata fields appear.
+
 ---
 
 ### PostgreSQL Generated/Identity Rule Coverage (v0.36.0)
