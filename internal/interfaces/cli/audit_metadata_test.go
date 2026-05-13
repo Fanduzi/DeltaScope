@@ -31,8 +31,10 @@ type fakeMetadataClient struct {
 		Schema string
 		Table  string
 	}
-	snapshot *spec.TableSnapshot
-	closed   bool
+	snapshot       *spec.TableSnapshot
+	objectSnapshot *spec.ObjectSnapshot
+	objectCalls    []spec.ObjectLookupRequest
+	closed         bool
 }
 
 func (f *fakeMetadataClient) LoadInstanceFacts(_ context.Context, _ spec.Dialect, schema string) (*spec.InstanceFacts, error) {
@@ -87,6 +89,11 @@ func (f *fakeMetadataClient) LoadPlanEstimate(context.Context, spec.Statement) (
 		Source:         spec.ImpactSourcePlan,
 		ReasonCodes:    []string{"planner_estimate"},
 	}, nil
+}
+
+func (f *fakeMetadataClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	f.objectCalls = append(f.objectCalls, req)
+	return f.objectSnapshot, nil
 }
 
 func TestAuditCommandUsesMetadataAwareProviderForTCPConnection(t *testing.T) {

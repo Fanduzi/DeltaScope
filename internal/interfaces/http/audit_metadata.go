@@ -273,3 +273,19 @@ func (p publicMetadataProvider) LoadPlanEstimate(ctx context.Context, statement 
 	}
 	return provider.LoadPlanEstimate(ctx, statement)
 }
+
+func (p publicMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	type objectResolver interface {
+		ResolveObject(context.Context, spec.Dialect, spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	}
+	resolver, ok := p.client.(objectResolver)
+	if !ok {
+		return &spec.ObjectSnapshot{
+			Schema: request.Schema,
+			Type:   request.Type,
+			Name:   request.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}, nil
+	}
+	return resolver.ResolveObject(ctx, dialect, request)
+}

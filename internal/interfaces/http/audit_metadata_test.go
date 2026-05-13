@@ -28,6 +28,8 @@ type metadataAuditTestClient struct {
 	indexDialects []spec.Dialect
 	indexTable    string
 	snapshot      *spec.TableSnapshot
+	objectSnapshot *spec.ObjectSnapshot
+	objectCalls    []spec.ObjectLookupRequest
 }
 
 func (c *metadataAuditTestClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
@@ -63,6 +65,11 @@ func (c *metadataAuditTestClient) ResolveTableForIndex(_ context.Context, dialec
 func (c *metadataAuditTestClient) Close() error {
 	c.closed = true
 	return nil
+}
+
+func (c *metadataAuditTestClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	c.objectCalls = append(c.objectCalls, req)
+	return c.objectSnapshot, nil
 }
 
 func TestExecuteAuditRequestReturnsOfflineContext(t *testing.T) {

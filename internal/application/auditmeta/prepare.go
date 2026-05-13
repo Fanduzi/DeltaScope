@@ -353,6 +353,10 @@ func (c postgresqlClient) LoadPlanEstimate(ctx context.Context, statement spec.S
 	return c.provider.LoadPlanEstimate(ctx, statement)
 }
 
+func (c postgresqlClient) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return c.provider.ResolveObject(ctx, dialect, request)
+}
+
 func (c postgresqlClient) Close() error {
 	return c.db.Close()
 }
