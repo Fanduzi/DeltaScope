@@ -97,3 +97,89 @@ func TestAuditCommandProjectsNotFoundObjectMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestAuditCommandProjectsConfirmedObjectMetadata(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectPostgreSQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+		objectSnapshot: &spec.ObjectSnapshot{
+			Schema:     "app",
+			Type:       "domain",
+			Name:       "email_address",
+			Status:     spec.MetadataStatusConfirmed,
+			Exists:     true,
+			Attributes: map[string]string{"has_check": "true"},
+		},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "DROP DOMAIN app.email_address", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--schema", "app", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code %d, got %d\nstdout=%q", exitOK, code, stdout.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v", err)
+	}
+
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) == 0 {
+		t.Fatalf("expected statements, got %#v", decoded["statements"])
+	}
+	stmt, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement map, got %T", statements[0])
+	}
+
+	findings, ok := stmt["findings"].([]any)
+	if !ok {
+		t.Fatalf("expected findings, got %#v", stmt["findings"])
+	}
+
+	var findingMeta map[string]any
+	for _, item := range findings {
+		f, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if f["rule_id"] == "ddl.pg.drop_domain.advisory" {
+			findingMeta, _ = f["metadata"].(map[string]any)
+			break
+		}
+	}
+	if findingMeta == nil {
+		t.Fatalf("expected drop_domain finding, got %#v", findings)
+	}
+
+	if findingMeta["metadata_status"] != "confirmed" {
+		t.Fatalf("expected metadata_status=confirmed, got %#v", findingMeta["metadata_status"])
+	}
+	if findingMeta["metadata_object_name"] != "email_address" {
+		t.Fatalf("expected metadata_object_name=email_address, got %#v", findingMeta["metadata_object_name"])
+	}
+	if findingMeta["metadata_exists"] != true {
+		t.Fatalf("expected metadata_exists=true, got %#v", findingMeta["metadata_exists"])
+	}
+
+	// Verify the ResolveObject call reached the fake client with correct params.
+	if len(client.objectCalls) != 1 {
+		t.Fatalf("expected 1 ResolveObject call, got %d", len(client.objectCalls))
+	}
+	if client.objectCalls[0].Type != "domain" || client.objectCalls[0].Name != "email_address" {
+		t.Fatalf("expected ResolveObject(domain, email_address), got %#v", client.objectCalls[0])
+	}
+}

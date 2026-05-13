@@ -153,3 +153,54 @@ func TestAnnotationLifecycleExtractor(t *testing.T) {
 		})
 	}
 }
+
+// --- Schema-qualified name regression tests (v0.90.0 Task 7) ---
+// objectNameFromNode must return the last name part from qualified names.
+
+func TestCommentOnSchemaQualifiedReturnsLastName(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "COMMENT ON TABLE app.users IS 'test comment'")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if stmt.DDL.ObjectName != "users" {
+		t.Fatalf("expected object_name users, got %q", stmt.DDL.ObjectName)
+	}
+}
+
+func TestCommentOnUnqualifiedNameUnchanged(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "COMMENT ON TABLE users IS 'test comment'")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if stmt.DDL.ObjectName != "users" {
+		t.Fatalf("expected object_name users, got %q", stmt.DDL.ObjectName)
+	}
+}
+
+func TestSecurityLabelSchemaQualifiedReturnsLastName(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "SECURITY LABEL FOR selinux ON TABLE app.users IS 'system_u:object_r:sepgsql_table_t:s0'")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if stmt.DDL.ObjectName != "users" {
+		t.Fatalf("expected object_name users, got %q", stmt.DDL.ObjectName)
+	}
+}

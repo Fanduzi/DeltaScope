@@ -233,3 +233,57 @@ func TestExtractCreateDomain(t *testing.T) {
 		t.Fatalf("expected has_check true, got %q", stmt.DDL.Options["has_check"])
 	}
 }
+
+// --- Schema-qualified name regression tests (v0.90.0 Task 7) ---
+// dropTypeNameFromObjects must return the last name part from qualified names.
+
+func TestExtractDropTypeSchemaQualifiedReturnsLastName(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "DROP TYPE app.color")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if stmt.DDL.ObjectName != "color" {
+		t.Fatalf("expected object_name color, got %q", stmt.DDL.ObjectName)
+	}
+}
+
+func TestExtractDropDomainSchemaQualifiedReturnsLastName(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "DROP DOMAIN app.email_address")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if stmt.DDL.Operation != spec.DDLOperationDropDomain {
+		t.Fatalf("expected drop_domain, got %q", stmt.DDL.Operation)
+	}
+	if stmt.DDL.ObjectName != "email_address" {
+		t.Fatalf("expected object_name email_address, got %q", stmt.DDL.ObjectName)
+	}
+}
+
+func TestExtractDropTypeUnqualifiedNameUnchanged(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "DROP TYPE color")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if stmt.DDL.ObjectName != "color" {
+		t.Fatalf("expected object_name color, got %q", stmt.DDL.ObjectName)
+	}
+}
