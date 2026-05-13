@@ -106,6 +106,15 @@ func (r pgObjectLifecycleRule) Evaluate(ctx context.Context, statement spec.Stat
 		message = fmt.Sprintf("%s on PostgreSQL", r.object)
 	}
 
+	metadata := map[string]any{
+		"operation":   string(r.operation),
+		"object_type": r.object,
+		"object_name": objectName,
+	}
+	for k, v := range projectObjectMetadata(statement) {
+		metadata[k] = v
+	}
+
 	return []rule.Finding{{
 		Level:   r.level,
 		Message: message,
@@ -114,11 +123,7 @@ func (r pgObjectLifecycleRule) Evaluate(ctx context.Context, statement spec.Stat
 			Risk:       r.risk,
 			Suggestion: r.suggestion,
 		},
-		Metadata: map[string]any{
-			"operation":   string(r.operation),
-			"object_type": r.object,
-			"object_name": objectName,
-		},
+		Metadata: metadata,
 	}}, nil
 }
 

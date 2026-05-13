@@ -282,3 +282,13 @@ func TestRegistryIncludesPGEventRuleLifecycleRules(t *testing.T) {
 		})
 	}
 }
+
+
+func mustNewDropEventTriggerWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newDropEventTriggerWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("create rule: %v", err)
+	}
+	return r
+}

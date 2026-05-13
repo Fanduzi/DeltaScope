@@ -77,6 +77,9 @@ func (r pgTypeLifecycleRule) Evaluate(ctx context.Context, statement spec.Statem
 			metadata[key] = val
 		}
 	}
+	for k, v := range projectObjectMetadata(statement) {
+		metadata[k] = v
+	}
 
 	return []rule.Finding{{
 		Level:   r.level,
@@ -145,6 +148,9 @@ func (r pgAlterTypeAddValuePositionNoticeRule) Evaluate(ctx context.Context, sta
 		if val := statement.DDL.Options[key]; val != "" {
 			metadata[key] = val
 		}
+	}
+	for k, v := range projectObjectMetadata(statement) {
+		metadata[k] = v
 	}
 
 	return []rule.Finding{{

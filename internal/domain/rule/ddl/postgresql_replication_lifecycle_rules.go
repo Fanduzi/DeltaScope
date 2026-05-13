@@ -77,6 +77,9 @@ func (r pgReplicationLifecycleRule) Evaluate(ctx context.Context, statement spec
 			metadata[key] = val
 		}
 	}
+	for k, v := range projectObjectMetadata(statement) {
+		metadata[k] = v
+	}
 
 	return []rule.Finding{{
 		Level:   r.level,

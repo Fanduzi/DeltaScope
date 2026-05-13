@@ -613,6 +613,40 @@ func targetTableSnapshot(statement spec.Statement) (*spec.TableSnapshot, bool) {
 	return statement.Metadata.TargetTable, true
 }
 
+// projectObjectMetadata projects the matching ObjectSnapshot from statement
+// metadata into a flat map suitable for merging into a finding's Metadata.
+// Returns nil if no matching object is available.
+func projectObjectMetadata(statement spec.Statement) map[string]any {
+	if statement.DDL == nil || statement.Metadata == nil {
+		return nil
+	}
+	objectType := strings.TrimSpace(statement.DDL.ObjectType)
+	objectName := strings.TrimSpace(statement.DDL.ObjectName)
+	if objectType == "" || objectName == "" {
+		return nil
+	}
+	snap := statement.Metadata.FindObject(objectType, objectName)
+	if snap == nil {
+		return nil
+	}
+	result := map[string]any{
+		"metadata_status":      string(snap.Status),
+		"metadata_exists":      snap.Exists,
+		"metadata_object_type": snap.Type,
+		"metadata_object_name": snap.Name,
+	}
+	if snap.Schema != "" {
+		result["metadata_schema"] = snap.Schema
+	}
+	if len(snap.AmbiguousCandidates) > 0 {
+		result["metadata_ambiguous_candidates"] = snap.AmbiguousCandidates
+	}
+	for k, v := range snap.SafeAttributes() {
+		result["metadata_"+k] = v
+	}
+	return result
+}
+
 func alterTouchesExplicitNullability(alter spec.Alter) bool {
 	change, ok := alterColumnChange(alter)
 	return ok && change.TouchesNullability

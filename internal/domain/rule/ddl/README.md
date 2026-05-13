@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, and alter-index projection helpers, including pinned Milestone 4 create-table superset IDs and `hasColumnConstraint` helper for column-constraint checks |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, alter-index projection helpers, and `projectObjectMetadata` for projecting `spec.Metadata.Objects` validation state into finding metadata maps, including pinned Milestone 4 create-table superset IDs and `hasColumnConstraint` helper for column-constraint checks |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -69,6 +69,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_annotation_lifecycle_rules_test.go | Verifies PG annotation lifecycle rules with positive, negative, cross-dialect, null/non-null skip, registration, and defaults coverage |
 | postgresql_event_rule_lifecycle_rules.go | Implements PostgreSQL-only event trigger and rewrite rule lifecycle rules: create/alter/drop event trigger notices/warnings, create/alter/drop rule notices/warnings |
 | postgresql_event_rule_lifecycle_rules_test.go | Verifies PG event trigger and rule lifecycle rules with positive, negative, cross-dialect, action-specific disable-vs-enable, registration, and defaults coverage |
+| object_metadata_projection_test.go | Verifies `projectObjectMetadata` helper and object metadata projection across all PG lifecycle rule families covering confirmed, not_found, ambiguous, unavailable statuses, sensitive attribute filtering, and finding count preservation |
 
 ## Exports
 
