@@ -8,7 +8,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 |------|---------------|
 | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
 | statement_test.go | Verifies typed statement metadata behavior |
-| metadata.go | Defines optional schema context, instance facts, target-table snapshots, and lookup helpers for metadata-aware auditing |
+| metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
 | dml.go | Defines DML-oriented specification types, including operation metadata and extracted target tables for rule applicability |
@@ -22,8 +22,11 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Dialect`
   Includes `DialectPostgreSQL` for PostgreSQL routing support
 - `Metadata`
+  Now carries `Objects []ObjectSnapshot` for non-table object validation
 - `InstanceFacts`
 - `TableSnapshot`
+- `ObjectSnapshot`
+- `MetadataStatus`
 - `DDL`
 - `DDLOperation`
 - `Table`
@@ -51,7 +54,12 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `Schema` for request-level schema context even when no provider is attached
   - `Instance` for normalized server-level facts such as version and InnoDB defaults
   - `TargetTable` for the current metadata-backed shape of the table being audited
+  - `Objects` for non-table object validation snapshots (types, domains, extensions, publications, subscriptions, foreign objects, event triggers, rewrite rules, annotation targets)
 - `TableSnapshot` includes convenience lookups for case-insensitive column/index existence checks so future rules do not need to duplicate iteration logic.
+- `ObjectSnapshot` carries metadata-validated state for non-table database objects with `Status` (confirmed/not_found/unavailable/ambiguous), `Exists`, `Schema`, `Type`, `Name`, safe `Attributes`, and optional `AmbiguousCandidates`.
+- `MetadataStatus` identifies the outcome of a metadata object lookup: `confirmed` (object exists), `not_found` (object absent), `unavailable` (lookup not performed), `ambiguous` (identity not uniquely resolved).
+- `Metadata.FindObject` and `Metadata.FindObjectsByType` provide case-insensitive lookup across attached object snapshots.
+- `ObjectSnapshot.SafeAttributes` filters out sensitive attribute keys (password, secret, token, connection, body, definition, etc.) to prevent leaking secrets through metadata projection.
 - `DML.Tables` preserves the parser-neutral set of mutation target tables so denylist and future metadata-aware DML rules do not need to rediscover them from AST nodes.
 
 - `Column` now carries offline-governance facts needed by column-focused DDL rules:
