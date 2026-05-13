@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.80.0 Selected PostgreSQL Non-Permission DDL Deep Coverage
+## Latest Completed Milestone: v0.90.0 PostgreSQL Metadata-Aware Object Validation
+
+**Goal:** enrich selected PostgreSQL lifecycle rule findings with live object metadata during metadata-aware audit. DeltaScope resolves non-table PostgreSQL objects (types, domains, extensions, sequences, materialized views, schemas, foreign servers, user mappings, publications, comments) through `pg_catalog` queries and projects safe attributes into findings.
+
+### Completed Scope
+
+- Object metadata resolution pipeline: `ObjectSnapshot` with `Status` (`confirmed`, `not_found`, `unavailable`), `Exists`, `Schema`, `Type`, `Name`, and safe `Attributes`.
+- `ResolveObject` interface on PostgreSQL metadata provider. MySQL/TiDB returns `unavailable` (no behavior change).
+- CLI, HTTP, and MCP adapters forward `ResolveObject` so all three transports surface object metadata.
+- Metadata-aware finding enrichment for 10 supported PostgreSQL lifecycle rules (`drop_schema`, `drop_type`, `drop_domain`, `drop_extension`, `drop_sequence`, `drop_materialized_view`, `drop_publication`, `drop_foreign_server`, `drop_user_mapping`, `comment_on`).
+- Safe attribute projection: dual blacklist/whitelist ensures only 8 safe keys (`type_kind`, `extension_version`, `enabled`, `server`, `foreign_data_wrapper`, `target_type`, `has_options`, `table`) reach findings.
+- Docker-backed E2E test suite: 12 cases covering confirmed/not_found across 10 object types with privacy assertions.
+- Schema-qualified name parsing fix for `DROP DOMAIN/TYPE` and `COMMENT ON`/`SECURITY LABEL` with qualified names.
+
+### Key Design Decisions
+
+- No new rule IDs. v0.90.0 enriches existing findings, does not add rules.
+- Dual blacklist/whitelist attribute filtering prevents sensitive value leakage.
+- MySQL/TiDB object metadata resolution returns `unavailable` — zero behavior change on non-PG dialects.
+- No overclaim of full PostgreSQL DDL grammar coverage.
+- DeltaScope does not execute migrations.
+
+## Previous Milestone: v0.80.0 Selected PostgreSQL Non-Permission DDL Deep Coverage
 
 **Goal:** extend DeltaScope's PostgreSQL coverage to selected non-permission DDL deep coverage families beyond v0.70.0: composite type attribute operations, extension member mutation, publication/subscription lifecycle, foreign object lifecycle, annotation lifecycle (COMMENT ON, SECURITY LABEL), and event trigger/rewrite rule lifecycle.
 

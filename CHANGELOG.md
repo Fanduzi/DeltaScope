@@ -6,6 +6,34 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.90.0] - 2026-05-13
+
+### Added
+
+- PostgreSQL metadata-aware object validation: DeltaScope now resolves metadata for selected non-table PostgreSQL objects (types, domains, extensions, sequences, materialized views, schemas, foreign servers, user mappings, publications, comments) during metadata-aware audit, enriching lifecycle rule findings with object existence and attribute information.
+- Object metadata resolution pipeline: `ObjectSnapshot` with `Status` (`confirmed`, `not_found`, `unavailable`), `Exists`, `Schema`, `Type`, `Name`, and safe `Attributes` projected into findings.
+- `ResolveObject` interface on metadata clients: PostgreSQL metadata provider now resolves object metadata through `pg_catalog` queries. MySQL/TiDB metadata provider returns `unavailable` for object resolution (no behavior change).
+- CLI, HTTP, and MCP adapters forward `ResolveObject` through `cliMetadataProvider` / adapter wrappers so all three transports surface object metadata in finding output.
+- Metadata-aware finding enrichment: supported PostgreSQL lifecycle rules (`drop_schema`, `drop_type`, `drop_domain`, `drop_extension`, `drop_sequence`, `drop_materialized_view`, `drop_publication`, `drop_foreign_server`, `drop_user_mapping`, `comment_on`) now include `metadata_status`, `metadata_object_type`, `metadata_object_name`, `metadata_exists`, and safe projectable attributes when metadata is available.
+- Safe metadata attribute projection: dual protection via `sensitiveAttributeKeys` blacklist (blocks password, secret, connection string, body, definition, comment text, label, query, action_sql, options values) and `projectableAttributeKeys` whitelist (8 safe keys: `type_kind`, `extension_version`, `enabled`, `server`, `foreign_data_wrapper`, `target_type`, `has_options`, `table`).
+- Docker-backed E2E test suite for PostgreSQL object metadata: 12 cases covering confirmed/not_found statuses across 10 object types with privacy assertions.
+- Schema-qualified name parsing fix: parser functions (`dropTypeNameFromObjects`, `objectNameFromNode`) now correctly return the last name part for schema-qualified names like `app.email_address` instead of the first part (`app`).
+
+### Changed
+
+- Parser name resolution: `dropTypeNameFromObjects` and `objectNameFromNode` iterate backwards through AST name arrays to extract the correct object name from qualified identifiers.
+- CLI adapter: `cliMetadataProvider` wrapper forwards `ResolveObject` via interface assertion, matching HTTP/MCP adapter patterns.
+
+### Non-Goals
+
+- No new rule IDs. v0.90.0 enriches existing rule findings with metadata; it does not add rules.
+- No full PostgreSQL DDL support claim. Selected non-permission DDL families are covered; many remain deferred.
+- No live privilege/role validation. GRANT/REVOKE rules emit informational notices only.
+- No DCL execution or runtime database firewall behavior.
+- DeltaScope does not execute migrations.
+- MySQL/TiDB object metadata resolution remains `unavailable` — no behavior change.
+- Only 8 safe attribute keys are projected into findings. All other attributes are filtered by the dual blacklist/whitelist.
+
 ## [v0.80.0] - 2026-05-13
 
 ### Added

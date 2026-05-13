@@ -12,7 +12,7 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 |---------|-----------------|-------|
 | MySQL | `information_schema`, `performance_schema.global_variables`, `InnoDB` stats | Full support. Engine, row-format, adaptive-hash, and InnoDB-specific rules apply. |
 | TiDB | `information_schema`, `performance_schema` (optional) | Same sources as MySQL. `performance_schema` is optional — DeltaScope falls back gracefully. |
-| PostgreSQL | `pg_catalog`, `pg_constraint`, `pg_indexes`, `EXPLAIN` (read-only) | Supported for metadata-aware audit. MySQL-specific features (InnoDB, adaptive hash, row format) are not applicable. PG-specific: `ALTER TABLE … DROP CONSTRAINT` maps to primary-key detection; DML impact estimation uses the PostgreSQL planner via `EXPLAIN` for `UPDATE`/`DELETE`. |
+| PostgreSQL | `pg_catalog`, `pg_constraint`, `pg_indexes`, `EXPLAIN` (read-only) | Supported for metadata-aware audit. MySQL-specific features (InnoDB, adaptive hash, row format) are not applicable. PG-specific: `ALTER TABLE … DROP CONSTRAINT` maps to primary-key detection; DML impact estimation uses the PostgreSQL planner via `EXPLAIN` for `UPDATE`/`DELETE`; object metadata resolution for selected non-table objects (types, domains, extensions, sequences, materialized views, schemas, foreign servers, user mappings, publications, comments) enriches lifecycle rule findings with `metadata_status`, `metadata_object_type`, `metadata_object_name`, `metadata_exists`, and safe projectable attributes. |
 
 ## Capability Status
 
