@@ -112,7 +112,7 @@ func objectNameFromNode(obj *pg_query.Node) string {
 		return ""
 	}
 	if list := obj.GetList(); list != nil {
-		return firstStringFromNodes(list.GetItems())
+		return lastStringFromNodes(list.GetItems())
 	}
-	return firstStringFromNodes([]*pg_query.Node{obj})
+	return lastStringFromNodes([]*pg_query.Node{obj})
 }

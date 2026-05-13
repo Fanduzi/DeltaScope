@@ -88,6 +88,15 @@ func (c mysqlMetadataClient) ResolveTableForIndex(context.Context, spec.Dialect,
 	return "", nil
 }
 
+func (c mysqlMetadataClient) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{
+		Schema: request.Schema,
+		Type:   request.Type,
+		Name:   request.Name,
+		Status: spec.MetadataStatusUnavailable,
+	}, nil
+}
+
 func (c mysqlMetadataClient) Close() error {
 	return c.db.Close()
 }
@@ -119,6 +128,10 @@ func (c postgresqlMetadataClient) ResolveTableForIndex(ctx context.Context, dial
 
 func (c postgresqlMetadataClient) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
 	return c.provider.LoadPlanEstimate(ctx, statement)
+}
+
+func (c postgresqlMetadataClient) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return c.provider.ResolveObject(ctx, dialect, request)
 }
 
 func (c postgresqlMetadataClient) Close() error {
@@ -171,4 +184,56 @@ func toAuditMetaConnection(options auditConnectionOptions, requestedDialect spec
 		connection.Dialect = requestedDialect
 	}
 	return connection
+}
+
+// cliMetadataProvider wraps an auditmeta.Client to forward all metadata
+// capabilities including optional interface-asserted methods like ResolveObject.
+type cliMetadataProvider struct {
+	client auditmeta.Client
+}
+
+func (p cliMetadataProvider) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	return p.client.LoadInstanceFacts(ctx, dialect, schema)
+}
+
+func (p cliMetadataProvider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+	return p.client.LoadTableSnapshot(ctx, dialect, schema, table)
+}
+
+type cliIndexOwnerResolver interface {
+	ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error)
+}
+
+func (p cliMetadataProvider) ResolveTableForIndex(ctx context.Context, dialect spec.Dialect, schema string, index string) (string, error) {
+	resolver, ok := p.client.(cliIndexOwnerResolver)
+	if !ok {
+		return "", nil
+	}
+	return resolver.ResolveTableForIndex(ctx, dialect, schema, index)
+}
+
+func (p cliMetadataProvider) LoadPlanEstimate(ctx context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
+	provider, ok := p.client.(interface {
+		LoadPlanEstimate(context.Context, spec.Statement) (*spec.ImpactEstimate, error)
+	})
+	if !ok {
+		return nil, nil
+	}
+	return provider.LoadPlanEstimate(ctx, statement)
+}
+
+func (p cliMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	type objectResolver interface {
+		ResolveObject(context.Context, spec.Dialect, spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	}
+	resolver, ok := p.client.(objectResolver)
+	if !ok {
+		return &spec.ObjectSnapshot{
+			Schema: request.Schema,
+			Type:   request.Type,
+			Name:   request.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}, nil
+	}
+	return resolver.ResolveObject(ctx, dialect, request)
 }

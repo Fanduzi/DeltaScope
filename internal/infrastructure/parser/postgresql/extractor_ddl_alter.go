@@ -865,6 +865,15 @@ func firstStringFromNodes(nodes []*pg_query.Node) string {
 	return ""
 }
 
+func lastStringFromNodes(nodes []*pg_query.Node) string {
+	for i := len(nodes) - 1; i >= 0; i-- {
+		if s := nodes[i].GetString_(); s != nil && s.GetSval() != "" {
+			return s.GetSval()
+		}
+	}
+	return ""
+}
+
 func extractGrantStmt(statement spec.Statement, stmt *pg_query.GrantStmt) spec.Statement {
 	if stmt == nil {
 		return unsupportedStatement(statement, "grant_table", "postgresql grant statement payload is missing")

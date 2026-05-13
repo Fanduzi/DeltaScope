@@ -84,7 +84,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				defer client.Close()
 				dialect = resolvedDialect
 				schema = resolvedSchema
-				metadataProvider = client
+				metadataProvider = cliMetadataProvider{client: client}
 				runContext = metadataContext
 			}
 

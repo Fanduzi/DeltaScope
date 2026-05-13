@@ -48,3 +48,39 @@ CREATE TABLE archive.users (
 );
 
 INSERT INTO archive.users (name) VALUES ('old-delta');
+
+-- Object metadata E2E fixtures (v0.90.0 Task 7).
+-- These objects test the ResolveObject → enrichment → rule → public surface path.
+
+-- Confirmed: composite type in app schema (also creates ambiguous duplicate below).
+CREATE TYPE app.address AS (city TEXT, zip TEXT);
+
+-- Confirmed: domain in app schema.
+CREATE DOMAIN app.email_address AS TEXT CHECK (VALUE ~* '^[^@]+@[^@]+\.[^@]+$');
+
+-- Confirmed: enum type in app schema.
+CREATE TYPE app.color AS ENUM ('red', 'green', 'blue');
+
+-- Confirmed: extension (pgcrypto is bundled in postgres:17 contrib).
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Confirmed: sequence in app schema.
+CREATE SEQUENCE app.ticket_seq START WITH 100 INCREMENT BY 5;
+
+-- Confirmed: materialized view in app schema.
+CREATE MATERIALIZED VIEW app.user_summary AS SELECT id, name FROM app.users;
+
+-- Confirmed: foreign server + user mapping (tests no-leak of options).
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+CREATE SERVER fs_test FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'dummy-host', port '5432', dbname 'remote');
+CREATE USER MAPPING FOR root SERVER fs_test OPTIONS (user 'remote_user', password 'secret_should_not_leak');
+
+-- Confirmed: publication (PostgreSQL 17 supports FOR ALL TABLES without superuser).
+CREATE PUBLICATION e2e_test_pub FOR ALL TABLES;
+
+-- Confirmed: event trigger (requires superuser; skip if not available).
+-- Using comment on a table to test annotation target resolution.
+COMMENT ON TABLE app.users IS 'sensitive comment text should not leak';
+
+-- Ambiguous: same type name in two schemas.
+CREATE TYPE archive.address AS (street TEXT, city TEXT);

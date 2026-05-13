@@ -238,8 +238,9 @@ func dropTypeNameFromObjects(objects []*pg_query.Node) string {
 		if tn == nil {
 			continue
 		}
-		for _, name := range tn.GetNames() {
-			if s := name.GetString_(); s != nil && s.GetSval() != "" {
+		names := tn.GetNames()
+		for i := len(names) - 1; i >= 0; i-- {
+			if s := names[i].GetString_(); s != nil && s.GetSval() != "" {
 				return s.GetSval()
 			}
 		}
