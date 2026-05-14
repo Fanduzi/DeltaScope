@@ -548,10 +548,14 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateRuleNotice, construct: newCreateRuleNoticeRule},
 		{ruleID: ruleIDPGAlterRuleNotice, construct: newAlterRuleNoticeRule},
 		{ruleID: ruleIDPGDropRuleWarn, construct: newDropRuleWarnRule},
-			// PostgreSQL collation lifecycle rules (PG-only).
-			{ruleID: ruleIDPGCreateCollationNotice, construct: newCreateCollationNoticeRule},
-			{ruleID: ruleIDPGAlterCollationNotice, construct: newAlterCollationNoticeRule},
-			{ruleID: ruleIDPGDropCollationWarn, construct: newDropCollationWarnRule},
+		// PostgreSQL collation lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateCollationNotice, construct: newCreateCollationNoticeRule},
+		{ruleID: ruleIDPGAlterCollationNotice, construct: newAlterCollationNoticeRule},
+		{ruleID: ruleIDPGDropCollationWarn, construct: newDropCollationWarnRule},
+		// PostgreSQL statistics lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateStatisticsNotice, construct: newCreateStatisticsNoticeRule},
+		{ruleID: ruleIDPGAlterStatisticsNotice, construct: newAlterStatisticsNoticeRule},
+		{ruleID: ruleIDPGDropStatisticsWarn, construct: newDropStatisticsWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

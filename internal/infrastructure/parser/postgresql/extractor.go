@@ -127,6 +127,10 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractRuleStmt(statement, node.RuleStmt), nil
 	case *pg_query.Node_DefineStmt:
 		return extractDefineStmt(statement, node.DefineStmt), nil
+	case *pg_query.Node_CreateStatsStmt:
+		return extractCreateStatsStmt(statement, node.CreateStatsStmt), nil
+	case *pg_query.Node_AlterStatsStmt:
+		return extractAlterStatsStmt(statement, node.AlterStatsStmt), nil
 	case *pg_query.Node_AlterOwnerStmt:
 		return extractAlterOwnerStmt(statement, node.AlterOwnerStmt), nil
 	case *pg_query.Node_InsertStmt:

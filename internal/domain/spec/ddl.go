@@ -117,6 +117,10 @@ const (
 	DDLOperationCreateCollation DDLOperation = "create_collation"
 	DDLOperationAlterCollation  DDLOperation = "alter_collation"
 	DDLOperationDropCollation   DDLOperation = "drop_collation"
+
+	DDLOperationCreateStatistics DDLOperation = "create_statistics"
+	DDLOperationAlterStatistics  DDLOperation = "alter_statistics"
+	DDLOperationDropStatistics   DDLOperation = "drop_statistics"
 )
 
 // Table describes a table-level object.

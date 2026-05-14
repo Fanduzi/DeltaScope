@@ -120,6 +120,8 @@ func classify(node *pg_query.Node) spec.Kind {
 		*pg_query.Node_CreateEventTrigStmt,
 		*pg_query.Node_AlterEventTrigStmt,
 		*pg_query.Node_RuleStmt,
+		*pg_query.Node_CreateStatsStmt,
+		*pg_query.Node_AlterStatsStmt,
 		*pg_query.Node_DefineStmt:
 		return spec.KindDDL
 	case *pg_query.Node_CreateTableAsStmt:

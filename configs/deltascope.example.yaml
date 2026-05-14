@@ -923,6 +923,18 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_statistics.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_statistics.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_statistics.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

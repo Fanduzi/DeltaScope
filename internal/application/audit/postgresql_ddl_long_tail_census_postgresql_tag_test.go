@@ -106,19 +106,19 @@ var pgDDLLongTailCensusCases = []struct {
 
 	{Name: "CREATE STATISTICS",
 		SQL:      "CREATE STATISTICS users_stats ON email, status FROM users",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER STATISTICS RENAME TO",
 		SQL:      "ALTER STATISTICS users_stats RENAME TO users_stats_v2",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER STATISTICS OWNER TO",
 		SQL:      "ALTER STATISTICS users_stats OWNER TO app_owner",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER STATISTICS SET SCHEMA",
 		SQL:      "ALTER STATISTICS users_stats SET SCHEMA app",
-		Expected: ddlCoverageNormalizedSilent},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP STATISTICS",
 		SQL:      "DROP STATISTICS users_stats",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== 4. Aggregate / operator / conversion lifecycle =====
 

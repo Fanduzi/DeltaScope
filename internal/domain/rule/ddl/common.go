@@ -303,6 +303,10 @@ const (
 	ruleIDPGCreateCollationNotice = "ddl.pg.create_collation.notice"
 	ruleIDPGAlterCollationNotice  = "ddl.pg.alter_collation.notice"
 	ruleIDPGDropCollationWarn     = "ddl.pg.drop_collation.warn"
+
+	ruleIDPGCreateStatisticsNotice = "ddl.pg.create_statistics.notice"
+	ruleIDPGAlterStatisticsNotice  = "ddl.pg.alter_statistics.notice"
+	ruleIDPGDropStatisticsWarn     = "ddl.pg.drop_statistics.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

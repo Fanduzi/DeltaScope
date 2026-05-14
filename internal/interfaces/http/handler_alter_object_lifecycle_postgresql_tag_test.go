@@ -254,6 +254,10 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "DROP COLLATION app_collation",
 			wantRuleID: "ddl.pg.drop_collation.warn",
 		},
+		// Statistics lifecycle
+		{name:       "create_statistics_notice", sql: "CREATE STATISTICS users_stats ON email, status FROM users", wantRuleID: "ddl.pg.create_statistics.notice"},
+		{name:       "alter_statistics_notice_rename", sql: "ALTER STATISTICS users_stats RENAME TO users_stats_v2", wantRuleID: "ddl.pg.alter_statistics.notice"},
+		{name:       "drop_statistics_warn", sql: "DROP STATISTICS users_stats", wantRuleID: "ddl.pg.drop_statistics.warn"},
 	}
 
 	for _, tt := range tests {

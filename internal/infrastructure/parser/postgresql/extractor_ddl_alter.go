@@ -147,6 +147,15 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_STATISTIC_EXT:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterStatistics,
+			ObjectName: objectName,
+			ObjectType: "statistics",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
 	default:
 	}
 
@@ -263,6 +272,19 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			Operation:  spec.DDLOperationAlterCollation,
 			ObjectName: objectName,
 			ObjectType: "collation",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_STATISTIC_EXT {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterStatistics,
+			ObjectName: objectName,
+			ObjectType: "statistics",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -988,6 +1010,15 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 			Options:    map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_STATISTIC_EXT:
+		objectName := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterStatistics,
+			ObjectName: objectName,
+			ObjectType: "statistics",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
 	}
@@ -1112,6 +1143,41 @@ func extractDefineStmt(statement spec.Statement, stmt *pg_query.DefineStmt) spec
 	default:
 		return unsupportedStatement(statement, "unknown", fmt.Sprintf("postgresql define statement for %s is deferred", stmt.GetKind()))
 	}
+}
+
+func extractCreateStatsStmt(statement spec.Statement, stmt *pg_query.CreateStatsStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_statistics", "postgresql create statistics statement payload is missing")
+	}
+	objectName := lastStringFromNodes(stmt.GetDefnames())
+	options := map[string]string{}
+	for _, rel := range stmt.GetRelations() {
+		if rv := rel.GetRangeVar(); rv != nil {
+			options["target_table"] = rv.GetRelname()
+			break
+		}
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateStatistics,
+		ObjectName: objectName,
+		ObjectType: "statistics",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractAlterStatsStmt(statement spec.Statement, stmt *pg_query.AlterStatsStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_statistics", "postgresql alter statistics statement payload is missing")
+	}
+	objectName := lastStringFromNodes(stmt.GetDefnames())
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationAlterStatistics,
+		ObjectName: objectName,
+		ObjectType: "statistics",
+		Options:    map[string]string{"action": "set_statistics_target"},
+	}
+	return statement
 }
 
 func renameObjectCollationName(stmt *pg_query.RenameStmt) string {
