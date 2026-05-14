@@ -88,19 +88,19 @@ var pgDDLLongTailCensusCases = []struct {
 
 	{Name: "CREATE COLLATION",
 		SQL:      "CREATE COLLATION app_collation (provider = libc, locale = 'C')",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER COLLATION RENAME TO",
 		SQL:      "ALTER COLLATION app_collation RENAME TO app_collation_v2",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER COLLATION OWNER TO",
 		SQL:      "ALTER COLLATION app_collation OWNER TO app_owner",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER COLLATION SET SCHEMA",
 		SQL:      "ALTER COLLATION app_collation SET SCHEMA app",
-		Expected: ddlCoverageNormalizedSilent},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP COLLATION",
 		SQL:      "DROP COLLATION app_collation",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 
 	// ===== 3. Extended statistics lifecycle =====
 

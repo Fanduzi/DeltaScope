@@ -299,6 +299,10 @@ const (
 	ruleIDPGCreateRuleNotice = "ddl.pg.create_rule.notice"
 	ruleIDPGAlterRuleNotice  = "ddl.pg.alter_rule.notice"
 	ruleIDPGDropRuleWarn     = "ddl.pg.drop_rule.warn"
+
+	ruleIDPGCreateCollationNotice = "ddl.pg.create_collation.notice"
+	ruleIDPGAlterCollationNotice  = "ddl.pg.alter_collation.notice"
+	ruleIDPGDropCollationWarn     = "ddl.pg.drop_collation.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

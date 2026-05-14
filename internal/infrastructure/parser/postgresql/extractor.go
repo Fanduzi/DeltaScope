@@ -125,6 +125,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractAlterEventTrigStmt(statement, node.AlterEventTrigStmt), nil
 	case *pg_query.Node_RuleStmt:
 		return extractRuleStmt(statement, node.RuleStmt), nil
+	case *pg_query.Node_DefineStmt:
+		return extractDefineStmt(statement, node.DefineStmt), nil
 	case *pg_query.Node_AlterOwnerStmt:
 		return extractAlterOwnerStmt(statement, node.AlterOwnerStmt), nil
 	case *pg_query.Node_InsertStmt:

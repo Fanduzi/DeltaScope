@@ -911,6 +911,18 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_collation.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_collation.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_collation.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

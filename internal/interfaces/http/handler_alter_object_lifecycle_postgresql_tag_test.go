@@ -238,6 +238,22 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 			sql:        "DROP RULE users_insert_ignore ON users",
 			wantRuleID: "ddl.pg.drop_rule.warn",
 		},
+		// Collation lifecycle
+		{
+			name:       "create_collation_notice",
+			sql:        "CREATE COLLATION app_collation (provider = libc, locale = 'C')",
+			wantRuleID: "ddl.pg.create_collation.notice",
+		},
+		{
+			name:       "alter_collation_notice_rename",
+			sql:        "ALTER COLLATION app_collation RENAME TO app_collation_v2",
+			wantRuleID: "ddl.pg.alter_collation.notice",
+		},
+		{
+			name:       "drop_collation_warn",
+			sql:        "DROP COLLATION app_collation",
+			wantRuleID: "ddl.pg.drop_collation.warn",
+		},
 	}
 
 	for _, tt := range tests {

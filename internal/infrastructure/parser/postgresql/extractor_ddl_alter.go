@@ -138,6 +138,15 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 		return extractRenameEventTrigger(statement, stmt)
 	case pg_query.ObjectType_OBJECT_RULE:
 		return extractRenameRule(statement, stmt)
+	case pg_query.ObjectType_OBJECT_COLLATION:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterCollation,
+			ObjectName: objectName,
+			ObjectType: "collation",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
 	default:
 	}
 
@@ -241,6 +250,19 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			Operation:  spec.DDLOperationAlterMaterializedView,
 			ObjectName: objectName,
 			ObjectType: "materialized_view",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_COLLATION {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterCollation,
+			ObjectName: objectName,
+			ObjectType: "collation",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -957,6 +979,15 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 			Options:    map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_COLLATION:
+		objectName := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterCollation,
+			ObjectName: objectName,
+			ObjectType: "collation",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
 	}
@@ -1063,4 +1094,46 @@ func grantGranteeNames(grantees []*pg_query.Node) []string {
 		}
 	}
 	return names
+}
+
+func extractDefineStmt(statement spec.Statement, stmt *pg_query.DefineStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "unknown", "postgresql define statement payload is missing")
+	}
+	switch stmt.GetKind() {
+	case pg_query.ObjectType_OBJECT_COLLATION:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateCollation,
+			ObjectName: objectName,
+			ObjectType: "collation",
+		}
+		return statement
+	default:
+		return unsupportedStatement(statement, "unknown", fmt.Sprintf("postgresql define statement for %s is deferred", stmt.GetKind()))
+	}
+}
+
+func renameObjectCollationName(stmt *pg_query.RenameStmt) string {
+	obj := stmt.GetObject()
+	if obj == nil {
+		return ""
+	}
+	if list := obj.GetList(); list != nil {
+		return lastStringFromNodes(list.GetItems())
+	}
+	return firstStringFromNodes([]*pg_query.Node{obj})
+}
+
+func alterObjectSchemaObjectName(stmt *pg_query.AlterObjectSchemaStmt) string {
+	if obj := stmt.GetObject(); obj != nil {
+		if list := obj.GetList(); list != nil {
+			return lastStringFromNodes(list.GetItems())
+		}
+		return firstStringFromNodes([]*pg_query.Node{obj})
+	}
+	if stmt.GetRelation() != nil {
+		return stmt.GetRelation().GetRelname()
+	}
+	return ""
 }

@@ -113,6 +113,10 @@ const (
 	DDLOperationCreateRule DDLOperation = "create_rule"
 	DDLOperationAlterRule  DDLOperation = "alter_rule"
 	DDLOperationDropRule   DDLOperation = "drop_rule"
+
+	DDLOperationCreateCollation DDLOperation = "create_collation"
+	DDLOperationAlterCollation  DDLOperation = "alter_collation"
+	DDLOperationDropCollation   DDLOperation = "drop_collation"
 )
 
 // Table describes a table-level object.
