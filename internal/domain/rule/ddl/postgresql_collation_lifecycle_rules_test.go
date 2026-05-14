@@ -44,7 +44,7 @@ func TestPGCollationLifecycleRules(t *testing.T) {
 			name:      "alter_collation_notice_owner",
 			construct: newAlterCollationNoticeRule,
 			operation: spec.DDLOperationAlterCollation,
-			options:   map[string]string{"action": "owner"},
+			options:   map[string]string{"action": "set_owner", "owner": "app_owner"},
 			level:     rule.LevelNotice,
 		},
 		{
