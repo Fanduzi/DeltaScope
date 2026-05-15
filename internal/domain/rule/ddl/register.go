@@ -556,6 +556,16 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateStatisticsNotice, construct: newCreateStatisticsNoticeRule},
 		{ruleID: ruleIDPGAlterStatisticsNotice, construct: newAlterStatisticsNoticeRule},
 		{ruleID: ruleIDPGDropStatisticsWarn, construct: newDropStatisticsWarnRule},
+		// PostgreSQL semantic object lifecycle rules (PG-only).
+		{ruleID: ruleIDPGCreateAggregateNotice, construct: newCreateAggregateNoticeRule},
+		{ruleID: ruleIDPGAlterAggregateNotice, construct: newAlterAggregateNoticeRule},
+		{ruleID: ruleIDPGDropAggregateWarn, construct: newDropAggregateWarnRule},
+		{ruleID: ruleIDPGCreateOperatorNotice, construct: newCreateOperatorNoticeRule},
+		{ruleID: ruleIDPGAlterOperatorNotice, construct: newAlterOperatorNoticeRule},
+		{ruleID: ruleIDPGDropOperatorWarn, construct: newDropOperatorWarnRule},
+		{ruleID: ruleIDPGCreateConversionNotice, construct: newCreateConversionNoticeRule},
+		{ruleID: ruleIDPGAlterConversionNotice, construct: newAlterConversionNoticeRule},
+		{ruleID: ruleIDPGDropConversionWarn, construct: newDropConversionWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

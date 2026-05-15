@@ -71,6 +71,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_event_rule_lifecycle_rules_test.go | Verifies PG event trigger and rule lifecycle rules with positive, negative, cross-dialect, action-specific disable-vs-enable, registration, and defaults coverage |
 | postgresql_collation_lifecycle_rules.go | Implements PostgreSQL-only collation lifecycle rules: create/alter collation notices, drop collation warning |
 | postgresql_collation_lifecycle_rules_test.go | Verifies PG collation lifecycle rules with positive, cross-dialect, wrong-operation, and registry coverage |
+| postgresql_statistics_lifecycle_rules.go | Implements PostgreSQL-only statistics lifecycle rules: create/alter statistics notices, drop statistics warning |
+| postgresql_statistics_lifecycle_rules_test.go | Verifies PG statistics lifecycle rules with positive, cross-dialect, wrong-operation, and registry coverage |
+| postgresql_semantic_object_lifecycle_rules.go | Implements PostgreSQL-only aggregate, operator, and conversion lifecycle rules: create/alter notices, drop warnings |
+| postgresql_semantic_object_lifecycle_rules_test.go | Verifies PG aggregate/operator/conversion lifecycle rules with positive, cross-dialect, wrong-operation, and registry coverage |
 | object_metadata_projection_test.go | Verifies `projectObjectMetadata` helper and object metadata projection across all PG lifecycle rule families covering confirmed, not_found, ambiguous, unavailable statuses, sensitive attribute filtering, and finding count preservation |
 
 ## Exports

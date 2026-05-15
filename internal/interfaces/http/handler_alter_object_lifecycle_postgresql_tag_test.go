@@ -258,6 +258,18 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 		{name:       "create_statistics_notice", sql: "CREATE STATISTICS users_stats ON email, status FROM users", wantRuleID: "ddl.pg.create_statistics.notice"},
 		{name:       "alter_statistics_notice_rename", sql: "ALTER STATISTICS users_stats RENAME TO users_stats_v2", wantRuleID: "ddl.pg.alter_statistics.notice"},
 		{name:       "drop_statistics_warn", sql: "DROP STATISTICS users_stats", wantRuleID: "ddl.pg.drop_statistics.warn"},
+		// Aggregate lifecycle
+		{name:       "create_aggregate_notice", sql: "CREATE AGGREGATE sum2(integer) (SFUNC = int4pl, STYPE = integer)", wantRuleID: "ddl.pg.create_aggregate.notice"},
+		{name:       "alter_aggregate_notice", sql: "ALTER AGGREGATE sum2(integer) OWNER TO app_owner", wantRuleID: "ddl.pg.alter_aggregate.notice"},
+		{name:       "drop_aggregate_warn", sql: "DROP AGGREGATE sum2(integer)", wantRuleID: "ddl.pg.drop_aggregate.warn"},
+		// Operator lifecycle
+		{name:       "create_operator_notice", sql: "CREATE OPERATOR === (LEFTARG = integer, RIGHTARG = integer, PROCEDURE = int4eq)", wantRuleID: "ddl.pg.create_operator.notice"},
+		{name:       "alter_operator_notice", sql: "ALTER OPERATOR === (integer, integer) OWNER TO app_owner", wantRuleID: "ddl.pg.alter_operator.notice"},
+		{name:       "drop_operator_warn", sql: "DROP OPERATOR === (integer, integer)", wantRuleID: "ddl.pg.drop_operator.warn"},
+		// Conversion lifecycle
+		{name:       "create_conversion_notice", sql: "CREATE CONVERSION conv FOR 'UTF8' TO 'LATIN1' FROM utf8_to_latin1", wantRuleID: "ddl.pg.create_conversion.notice"},
+		{name:       "alter_conversion_notice", sql: "ALTER CONVERSION conv OWNER TO app_owner", wantRuleID: "ddl.pg.alter_conversion.notice"},
+		{name:       "drop_conversion_warn", sql: "DROP CONVERSION conv", wantRuleID: "ddl.pg.drop_conversion.warn"},
 	}
 
 	for _, tt := range tests {

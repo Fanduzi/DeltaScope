@@ -935,6 +935,42 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_aggregate.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_aggregate.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_aggregate.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_operator.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_operator.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_operator.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_conversion.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_conversion.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_conversion.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

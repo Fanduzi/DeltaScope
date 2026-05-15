@@ -156,6 +156,24 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_AGGREGATE:
+		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterAggregate,
+			ObjectName: objectName,
+			ObjectType: "aggregate",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_CONVERSION:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterConversion,
+			ObjectName: objectName,
+			ObjectType: "conversion",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
 	default:
 	}
 
@@ -285,6 +303,45 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 			Operation:  spec.DDLOperationAlterStatistics,
 			ObjectName: objectName,
 			ObjectType: "statistics",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_AGGREGATE {
+		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterAggregate,
+			ObjectName: objectName,
+			ObjectType: "aggregate",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPERATOR {
+		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterOperator,
+			ObjectName: objectName,
+			ObjectType: "operator",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_CONVERSION {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterConversion,
+			ObjectName: objectName,
+			ObjectType: "conversion",
 			Options: map[string]string{
 				"action":     "set_schema",
 				"new_schema": stmt.GetNewschema(),
@@ -1019,6 +1076,33 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 			Options:    map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_AGGREGATE:
+		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterAggregate,
+			ObjectName: objectName,
+			ObjectType: "aggregate",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_OPERATOR:
+		objectName := objectNameFromObjectWithArgsOrList(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterOperator,
+			ObjectName: objectName,
+			ObjectType: "operator",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_CONVERSION:
+		objectName := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterConversion,
+			ObjectName: objectName,
+			ObjectType: "conversion",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
 	}
@@ -1140,6 +1224,22 @@ func extractDefineStmt(statement spec.Statement, stmt *pg_query.DefineStmt) spec
 			ObjectType: "collation",
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_AGGREGATE:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateAggregate,
+			ObjectName: objectName,
+			ObjectType: "aggregate",
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_OPERATOR:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateOperator,
+			ObjectName: objectName,
+			ObjectType: "operator",
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "unknown", fmt.Sprintf("postgresql define statement for %s is deferred", stmt.GetKind()))
 	}
@@ -1202,4 +1302,33 @@ func alterObjectSchemaObjectName(stmt *pg_query.AlterObjectSchemaStmt) string {
 		return stmt.GetRelation().GetRelname()
 	}
 	return ""
+}
+
+// objectNameFromObjectWithArgsOrList extracts the object name from a Node that
+// may contain ObjectWithArgs (name with signature, e.g. aggregates/operators)
+// or a simple List (e.g. conversions).
+func objectNameFromObjectWithArgsOrList(node *pg_query.Node) string {
+	if node == nil {
+		return ""
+	}
+	if owa := node.GetObjectWithArgs(); owa != nil {
+		return firstStringFromNodes(owa.GetObjname())
+	}
+	if list := node.GetList(); list != nil {
+		return lastStringFromNodes(list.GetItems())
+	}
+	return firstStringFromNodes([]*pg_query.Node{node})
+}
+
+func extractCreateConversionStmt(statement spec.Statement, stmt *pg_query.CreateConversionStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_conversion", "postgresql create conversion statement payload is missing")
+	}
+	objectName := lastStringFromNodes(stmt.GetConversionName())
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateConversion,
+		ObjectName: objectName,
+		ObjectType: "conversion",
+	}
+	return statement
 }

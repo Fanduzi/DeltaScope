@@ -214,6 +214,39 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "statistics",
 			Options:    options,
 		}
+	case pg_query.ObjectType_OBJECT_AGGREGATE:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropAggregate,
+			ObjectName: dropObjectWithArgsName(stmt),
+			ObjectType: "aggregate",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_OPERATOR:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropOperator,
+			ObjectName: dropObjectWithArgsName(stmt),
+			ObjectType: "operator",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_CONVERSION:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropConversion,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "conversion",
+			Options:    options,
+		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}

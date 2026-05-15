@@ -307,6 +307,16 @@ const (
 	ruleIDPGCreateStatisticsNotice = "ddl.pg.create_statistics.notice"
 	ruleIDPGAlterStatisticsNotice  = "ddl.pg.alter_statistics.notice"
 	ruleIDPGDropStatisticsWarn     = "ddl.pg.drop_statistics.warn"
+	// PostgreSQL semantic object lifecycle rules (PG-only).
+	ruleIDPGCreateAggregateNotice  = "ddl.pg.create_aggregate.notice"
+	ruleIDPGAlterAggregateNotice   = "ddl.pg.alter_aggregate.notice"
+	ruleIDPGDropAggregateWarn      = "ddl.pg.drop_aggregate.warn"
+	ruleIDPGCreateOperatorNotice   = "ddl.pg.create_operator.notice"
+	ruleIDPGAlterOperatorNotice    = "ddl.pg.alter_operator.notice"
+	ruleIDPGDropOperatorWarn       = "ddl.pg.drop_operator.warn"
+	ruleIDPGCreateConversionNotice = "ddl.pg.create_conversion.notice"
+	ruleIDPGAlterConversionNotice  = "ddl.pg.alter_conversion.notice"
+	ruleIDPGDropConversionWarn     = "ddl.pg.drop_conversion.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

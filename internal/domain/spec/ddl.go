@@ -121,6 +121,16 @@ const (
 	DDLOperationCreateStatistics DDLOperation = "create_statistics"
 	DDLOperationAlterStatistics  DDLOperation = "alter_statistics"
 	DDLOperationDropStatistics   DDLOperation = "drop_statistics"
+
+	DDLOperationCreateAggregate  DDLOperation = "create_aggregate"
+	DDLOperationAlterAggregate   DDLOperation = "alter_aggregate"
+	DDLOperationDropAggregate    DDLOperation = "drop_aggregate"
+	DDLOperationCreateOperator   DDLOperation = "create_operator"
+	DDLOperationAlterOperator    DDLOperation = "alter_operator"
+	DDLOperationDropOperator     DDLOperation = "drop_operator"
+	DDLOperationCreateConversion DDLOperation = "create_conversion"
+	DDLOperationAlterConversion  DDLOperation = "alter_conversion"
+	DDLOperationDropConversion   DDLOperation = "drop_conversion"
 )
 
 // Table describes a table-level object.
