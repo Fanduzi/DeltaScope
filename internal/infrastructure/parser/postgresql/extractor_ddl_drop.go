@@ -247,36 +247,36 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "conversion",
 			Options:    options,
 		}
-		case pg_query.ObjectType_OBJECT_OPFAMILY:
-			options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
-			if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
-				options["cascade"] = "true"
-			}
-			objectName, am := opNameAndAccessMethodFromDropObjects(stmt)
-			if am != "" {
-				options["access_method"] = am
-			}
-			statement.DDL = &spec.DDL{
-				Operation:  spec.DDLOperationDropOperatorFamily,
-				ObjectName: objectName,
-				ObjectType: "operator_family",
-				Options:    options,
-			}
-		case pg_query.ObjectType_OBJECT_OPCLASS:
-			options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
-			if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
-				options["cascade"] = "true"
-			}
-			objectName, am := opNameAndAccessMethodFromDropObjects(stmt)
-			if am != "" {
-				options["access_method"] = am
-			}
-			statement.DDL = &spec.DDL{
-				Operation:  spec.DDLOperationDropOperatorClass,
-				ObjectName: objectName,
-				ObjectType: "operator_class",
-				Options:    options,
-			}
+	case pg_query.ObjectType_OBJECT_OPFAMILY:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName, am := opNameAndAccessMethodFromDropObjects(stmt)
+		if am != "" {
+			options["access_method"] = am
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropOperatorFamily,
+			ObjectName: objectName,
+			ObjectType: "operator_family",
+			Options:    options,
+		}
+	case pg_query.ObjectType_OBJECT_OPCLASS:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName, am := opNameAndAccessMethodFromDropObjects(stmt)
+		if am != "" {
+			options["access_method"] = am
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropOperatorClass,
+			ObjectName: objectName,
+			ObjectType: "operator_class",
+			Options:    options,
+		}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}

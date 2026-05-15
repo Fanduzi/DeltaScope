@@ -368,34 +368,34 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 		return statement
 	}
 
-		if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPFAMILY {
-			objectName, am := opNameAndAccessMethod(stmt.GetObject())
-			statement.DDL = &spec.DDL{
-				Operation:  spec.DDLOperationAlterOperatorFamily,
-				ObjectName: objectName,
-				ObjectType: "operator_family",
-				Options: map[string]string{
-					"action":        "set_schema",
-					"new_schema":    stmt.GetNewschema(),
-					"access_method": am,
-				},
-			}
-			return statement
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPFAMILY {
+		objectName, am := opNameAndAccessMethod(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterOperatorFamily,
+			ObjectName: objectName,
+			ObjectType: "operator_family",
+			Options: map[string]string{
+				"action":        "set_schema",
+				"new_schema":    stmt.GetNewschema(),
+				"access_method": am,
+			},
 		}
-		if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPCLASS {
-			objectName, am := opNameAndAccessMethod(stmt.GetObject())
-			statement.DDL = &spec.DDL{
-				Operation:  spec.DDLOperationAlterOperatorClass,
-				ObjectName: objectName,
-				ObjectType: "operator_class",
-				Options: map[string]string{
-					"action":        "set_schema",
-					"new_schema":    stmt.GetNewschema(),
-					"access_method": am,
-				},
-			}
-			return statement
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPCLASS {
+		objectName, am := opNameAndAccessMethod(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterOperatorClass,
+			ObjectName: objectName,
+			ObjectType: "operator_class",
+			Options: map[string]string{
+				"action":        "set_schema",
+				"new_schema":    stmt.GetNewschema(),
+				"access_method": am,
+			},
 		}
+		return statement
+	}
 	statement.DDL = &spec.DDL{
 		Operation: spec.DDLOperationAlterTable,
 		Table:     tableFromRangeVar(stmt.GetRelation()),
@@ -1150,24 +1150,24 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 			Options:    map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
-		case pg_query.ObjectType_OBJECT_OPFAMILY:
-			objectName, am := opNameAndAccessMethod(stmt.GetObject())
-			statement.DDL = &spec.DDL{
-				Operation:  spec.DDLOperationAlterOperatorFamily,
-				ObjectName: objectName,
-				ObjectType: "operator_family",
-				Options:    map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
-			}
-			return statement
-		case pg_query.ObjectType_OBJECT_OPCLASS:
-			objectName, am := opNameAndAccessMethod(stmt.GetObject())
-			statement.DDL = &spec.DDL{
-				Operation:  spec.DDLOperationAlterOperatorClass,
-				ObjectName: objectName,
-				ObjectType: "operator_class",
-				Options:    map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
-			}
-			return statement
+	case pg_query.ObjectType_OBJECT_OPFAMILY:
+		objectName, am := opNameAndAccessMethod(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterOperatorFamily,
+			ObjectName: objectName,
+			ObjectType: "operator_family",
+			Options:    map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_OPCLASS:
+		objectName, am := opNameAndAccessMethod(stmt.GetObject())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterOperatorClass,
+			ObjectName: objectName,
+			ObjectType: "operator_class",
+			Options:    map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
 	}
