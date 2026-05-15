@@ -1,0 +1,1 @@
+ALTER TEXT SEARCH CONFIGURATION english_copy RENAME TO english_copy_v2

@@ -138,6 +138,19 @@ const (
 	DDLOperationCreateOperatorClass  DDLOperation = "create_operator_class"
 	DDLOperationAlterOperatorClass   DDLOperation = "alter_operator_class"
 	DDLOperationDropOperatorClass    DDLOperation = "drop_operator_class"
+
+	DDLOperationCreateTextSearchConfiguration DDLOperation = "create_text_search_configuration"
+	DDLOperationAlterTextSearchConfiguration  DDLOperation = "alter_text_search_configuration"
+	DDLOperationDropTextSearchConfiguration   DDLOperation = "drop_text_search_configuration"
+	DDLOperationCreateTextSearchDictionary    DDLOperation = "create_text_search_dictionary"
+	DDLOperationAlterTextSearchDictionary     DDLOperation = "alter_text_search_dictionary"
+	DDLOperationDropTextSearchDictionary      DDLOperation = "drop_text_search_dictionary"
+	DDLOperationCreateTextSearchParser        DDLOperation = "create_text_search_parser"
+	DDLOperationAlterTextSearchParser         DDLOperation = "alter_text_search_parser"
+	DDLOperationDropTextSearchParser          DDLOperation = "drop_text_search_parser"
+	DDLOperationCreateTextSearchTemplate      DDLOperation = "create_text_search_template"
+	DDLOperationAlterTextSearchTemplate       DDLOperation = "alter_text_search_template"
+	DDLOperationDropTextSearchTemplate        DDLOperation = "drop_text_search_template"
 )
 
 // Table describes a table-level object.

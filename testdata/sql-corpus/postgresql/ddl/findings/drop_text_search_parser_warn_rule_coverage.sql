@@ -1,0 +1,1 @@
+DROP TEXT SEARCH PARSER parser_name

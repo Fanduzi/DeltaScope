@@ -1135,6 +1135,19 @@ func TestAuditSQLToolPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 			sql:         "DROP OPERATOR CLASS int4_ops_class USING btree",
 			wantRuleIDs: []string{"ddl.pg.drop_operator_class.warn"},
 		},
+		{name: "create_text_search_configuration_notice", sql: "CREATE TEXT SEARCH CONFIGURATION english_copy ( COPY = pg_catalog.english )", wantRuleIDs: []string{"ddl.pg.create_text_search_configuration.notice"}},
+		{name: "alter_text_search_configuration_notice", sql: "ALTER TEXT SEARCH CONFIGURATION english_copy RENAME TO english_copy_v2", wantRuleIDs: []string{"ddl.pg.alter_text_search_configuration.notice"}},
+		{name: "drop_text_search_configuration_warn", sql: "DROP TEXT SEARCH CONFIGURATION english_copy", wantRuleIDs: []string{"ddl.pg.drop_text_search_configuration.warn"}},
+		{name: "create_text_search_dictionary_notice", sql: "CREATE TEXT SEARCH DICTIONARY simple_dict (TEMPLATE = simple)", wantRuleIDs: []string{"ddl.pg.create_text_search_dictionary.notice"}},
+		{name: "alter_text_search_dictionary_notice", sql: "ALTER TEXT SEARCH DICTIONARY simple_dict RENAME TO simple_dict_v2", wantRuleIDs: []string{"ddl.pg.alter_text_search_dictionary.notice"}},
+		{name: "drop_text_search_dictionary_warn", sql: "DROP TEXT SEARCH DICTIONARY simple_dict", wantRuleIDs: []string{"ddl.pg.drop_text_search_dictionary.warn"}},
+		{name: "create_text_search_parser_notice", sql: "CREATE TEXT SEARCH PARSER parser_name (START = start_func, GETTOKEN = token_func, END = end_func, LEXTYPES = lextype_func)", wantRuleIDs: []string{"ddl.pg.create_text_search_parser.notice"}},
+		{name: "alter_text_search_parser_notice", sql: "ALTER TEXT SEARCH PARSER parser_name RENAME TO parser_name_v2", wantRuleIDs: []string{"ddl.pg.alter_text_search_parser.notice"}},
+		{name: "drop_text_search_parser_warn", sql: "DROP TEXT SEARCH PARSER parser_name", wantRuleIDs: []string{"ddl.pg.drop_text_search_parser.warn"}},
+		{name: "create_text_search_template_notice", sql: "CREATE TEXT SEARCH TEMPLATE template_name (LEXIZE = lexize_func)", wantRuleIDs: []string{"ddl.pg.create_text_search_template.notice"}},
+		{name: "alter_text_search_template_notice", sql: "ALTER TEXT SEARCH TEMPLATE template_name RENAME TO template_name_v2", wantRuleIDs: []string{"ddl.pg.alter_text_search_template.notice"}},
+		{name: "drop_text_search_template_warn", sql: "DROP TEXT SEARCH TEMPLATE template_name", wantRuleIDs: []string{"ddl.pg.drop_text_search_template.warn"}},
+
 	}
 
 	for _, tt := range tests {

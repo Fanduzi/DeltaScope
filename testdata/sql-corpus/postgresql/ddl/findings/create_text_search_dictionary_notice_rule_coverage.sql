@@ -1,0 +1,1 @@
+CREATE TEXT SEARCH DICTIONARY simple_dict (TEMPLATE = simple)

@@ -1,0 +1,1 @@
+DROP TEXT SEARCH TEMPLATE template_name

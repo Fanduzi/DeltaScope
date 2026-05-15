@@ -277,6 +277,59 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "operator_class",
 			Options:    options,
 		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSCONFIGURATION:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName := dropObjectFirstName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropTextSearchConfiguration,
+			ObjectName: objectName,
+			ObjectType: "text_search_configuration",
+			Options:    options,
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSDICTIONARY:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName := dropObjectFirstName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropTextSearchDictionary,
+			ObjectName: objectName,
+			ObjectType: "text_search_dictionary",
+			Options:    options,
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSPARSER:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName := dropObjectFirstName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropTextSearchParser,
+			ObjectName: objectName,
+			ObjectType: "text_search_parser",
+			Options:    options,
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSTEMPLATE:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName := dropObjectFirstName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropTextSearchTemplate,
+			ObjectName: objectName,
+			ObjectType: "text_search_template",
+			Options:    options,
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}
@@ -289,6 +342,16 @@ func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) 
 	}
 	statement.DDL = &spec.DDL{Operation: spec.DDLOperationTruncateTable, Table: tableFromRelationNodeList(stmt.GetRelations())}
 	return statement
+}
+
+func dropObjectFirstName(stmt *pg_query.DropStmt) string {
+	for _, obj := range stmt.GetObjects() {
+		if list := obj.GetList(); list != nil {
+			return firstStringFromNodes(list.GetItems())
+		}
+		return firstStringFromNodes([]*pg_query.Node{obj})
+	}
+	return ""
 }
 
 func dropTargetName(stmt *pg_query.DropStmt) string {

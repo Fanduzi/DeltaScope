@@ -1,0 +1,10 @@
+name: create_text_search_template_notice_rule_coverage
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.create_text_search_template.notice

@@ -77,6 +77,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_semantic_object_lifecycle_rules_test.go | Verifies PG aggregate/operator/conversion lifecycle rules with positive, cross-dialect, wrong-operation, and registry coverage |
 | postgresql_operator_family_lifecycle_rules.go | Implements PostgreSQL-only operator class/family lifecycle rules: create/alter operator family/class notices, drop operator family/class warnings |
 | postgresql_operator_family_lifecycle_rules_test.go | Verifies PG operator family/class lifecycle rules with positive, cross-dialect, wrong-operation, and registry coverage |
+| postgresql_text_search_lifecycle_rules.go | Implements PostgreSQL-only text search lifecycle rules: create/alter text search configuration/dictionary/parser/template notices, drop text search configuration/dictionary/parser/template warnings |
+| postgresql_text_search_lifecycle_rules_test.go | Verifies PG text search lifecycle rules with positive, cross-dialect, wrong-operation, and registry coverage |
 | object_metadata_projection_test.go | Verifies `projectObjectMetadata` helper and object metadata projection across all PG lifecycle rule families covering confirmed, not_found, ambiguous, unavailable statuses, sensitive attribute filtering, and finding count preservation |
 
 ## Exports

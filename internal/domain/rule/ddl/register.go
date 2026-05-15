@@ -572,6 +572,18 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateOperatorClassNotice, construct: newCreateOperatorClassNoticeRule},
 		{ruleID: ruleIDPGAlterOperatorClassNotice, construct: newAlterOperatorClassNoticeRule},
 		{ruleID: ruleIDPGDropOperatorClassWarn, construct: newDropOperatorClassWarnRule},
+		{ruleID: ruleIDPGCreateTextSearchConfigurationNotice, construct: newCreateTextSearchConfigurationNoticeRule},
+		{ruleID: ruleIDPGAlterTextSearchConfigurationNotice, construct: newAlterTextSearchConfigurationNoticeRule},
+		{ruleID: ruleIDPGDropTextSearchConfigurationWarn, construct: newDropTextSearchConfigurationWarnRule},
+		{ruleID: ruleIDPGCreateTextSearchDictionaryNotice, construct: newCreateTextSearchDictionaryNoticeRule},
+		{ruleID: ruleIDPGAlterTextSearchDictionaryNotice, construct: newAlterTextSearchDictionaryNoticeRule},
+		{ruleID: ruleIDPGDropTextSearchDictionaryWarn, construct: newDropTextSearchDictionaryWarnRule},
+		{ruleID: ruleIDPGCreateTextSearchParserNotice, construct: newCreateTextSearchParserNoticeRule},
+		{ruleID: ruleIDPGAlterTextSearchParserNotice, construct: newAlterTextSearchParserNoticeRule},
+		{ruleID: ruleIDPGDropTextSearchParserWarn, construct: newDropTextSearchParserWarnRule},
+		{ruleID: ruleIDPGCreateTextSearchTemplateNotice, construct: newCreateTextSearchTemplateNoticeRule},
+		{ruleID: ruleIDPGAlterTextSearchTemplateNotice, construct: newAlterTextSearchTemplateNoticeRule},
+		{ruleID: ruleIDPGDropTextSearchTemplateWarn, construct: newDropTextSearchTemplateWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

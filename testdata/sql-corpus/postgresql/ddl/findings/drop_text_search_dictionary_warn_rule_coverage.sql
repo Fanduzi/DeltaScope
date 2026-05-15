@@ -1,0 +1,1 @@
+DROP TEXT SEARCH DICTIONARY simple_dict

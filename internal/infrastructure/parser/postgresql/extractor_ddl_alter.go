@@ -192,6 +192,43 @@ func extractRenameStmt(statement spec.Statement, stmt *pg_query.RenameStmt) spec
 			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname(), "access_method": am},
 		}
 		return statement
+
+	case pg_query.ObjectType_OBJECT_TSCONFIGURATION:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchConfiguration,
+			ObjectName: objectName,
+			ObjectType: "text_search_configuration",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSDICTIONARY:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchDictionary,
+			ObjectName: objectName,
+			ObjectType: "text_search_dictionary",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSPARSER:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchParser,
+			ObjectName: objectName,
+			ObjectType: "text_search_parser",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSTEMPLATE:
+		objectName := renameObjectCollationName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchTemplate,
+			ObjectName: objectName,
+			ObjectType: "text_search_template",
+			Options:    map[string]string{"action": "rename", "new_name": stmt.GetNewname()},
+		}
+		return statement
 	default:
 	}
 
@@ -367,7 +404,6 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 		}
 		return statement
 	}
-
 	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_OPFAMILY {
 		objectName, am := opNameAndAccessMethod(stmt.GetObject())
 		statement.DDL = &spec.DDL{
@@ -392,6 +428,58 @@ func extractAlterObjectSchemaStmt(statement spec.Statement, stmt *pg_query.Alter
 				"action":        "set_schema",
 				"new_schema":    stmt.GetNewschema(),
 				"access_method": am,
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TSCONFIGURATION {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchConfiguration,
+			ObjectName: objectName,
+			ObjectType: "text_search_configuration",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TSDICTIONARY {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchDictionary,
+			ObjectName: objectName,
+			ObjectType: "text_search_dictionary",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TSPARSER {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchParser,
+			ObjectName: objectName,
+			ObjectType: "text_search_parser",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
+			},
+		}
+		return statement
+	}
+	if stmt.GetObjectType() == pg_query.ObjectType_OBJECT_TSTEMPLATE {
+		objectName := alterObjectSchemaObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchTemplate,
+			ObjectName: objectName,
+			ObjectType: "text_search_template",
+			Options: map[string]string{
+				"action":     "set_schema",
+				"new_schema": stmt.GetNewschema(),
 			},
 		}
 		return statement
@@ -1168,6 +1256,25 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 			Options:    map[string]string{"action": "set_owner", "owner": owner, "access_method": am},
 		}
 		return statement
+
+	case pg_query.ObjectType_OBJECT_TSCONFIGURATION:
+		objectName := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchConfiguration,
+			ObjectName: objectName,
+			ObjectType: "text_search_configuration",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSDICTIONARY:
+		objectName := alterOwnerObjectName(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterTextSearchDictionary,
+			ObjectName: objectName,
+			ObjectType: "text_search_dictionary",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
 	}
@@ -1303,6 +1410,38 @@ func extractDefineStmt(statement spec.Statement, stmt *pg_query.DefineStmt) spec
 			Operation:  spec.DDLOperationCreateOperator,
 			ObjectName: objectName,
 			ObjectType: "operator",
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSCONFIGURATION:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateTextSearchConfiguration,
+			ObjectName: objectName,
+			ObjectType: "text_search_configuration",
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSDICTIONARY:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateTextSearchDictionary,
+			ObjectName: objectName,
+			ObjectType: "text_search_dictionary",
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSPARSER:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateTextSearchParser,
+			ObjectName: objectName,
+			ObjectType: "text_search_parser",
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_TSTEMPLATE:
+		objectName := lastStringFromNodes(stmt.GetDefnames())
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationCreateTextSearchTemplate,
+			ObjectName: objectName,
+			ObjectType: "text_search_template",
 		}
 		return statement
 	default:

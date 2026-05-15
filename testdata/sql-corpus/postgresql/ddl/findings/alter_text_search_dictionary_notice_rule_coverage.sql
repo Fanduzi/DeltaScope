@@ -1,0 +1,1 @@
+ALTER TEXT SEARCH DICTIONARY simple_dict RENAME TO simple_dict_v2

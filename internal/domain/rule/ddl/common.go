@@ -324,6 +324,18 @@ const (
 	ruleIDPGCreateOperatorClassNotice  = "ddl.pg.create_operator_class.notice"
 	ruleIDPGAlterOperatorClassNotice   = "ddl.pg.alter_operator_class.notice"
 	ruleIDPGDropOperatorClassWarn      = "ddl.pg.drop_operator_class.warn"
+	ruleIDPGCreateTextSearchConfigurationNotice = "ddl.pg.create_text_search_configuration.notice"
+	ruleIDPGAlterTextSearchConfigurationNotice  = "ddl.pg.alter_text_search_configuration.notice"
+	ruleIDPGDropTextSearchConfigurationWarn     = "ddl.pg.drop_text_search_configuration.warn"
+	ruleIDPGCreateTextSearchDictionaryNotice    = "ddl.pg.create_text_search_dictionary.notice"
+	ruleIDPGAlterTextSearchDictionaryNotice     = "ddl.pg.alter_text_search_dictionary.notice"
+	ruleIDPGDropTextSearchDictionaryWarn        = "ddl.pg.drop_text_search_dictionary.warn"
+	ruleIDPGCreateTextSearchParserNotice        = "ddl.pg.create_text_search_parser.notice"
+	ruleIDPGAlterTextSearchParserNotice         = "ddl.pg.alter_text_search_parser.notice"
+	ruleIDPGDropTextSearchParserWarn            = "ddl.pg.drop_text_search_parser.warn"
+	ruleIDPGCreateTextSearchTemplateNotice      = "ddl.pg.create_text_search_template.notice"
+	ruleIDPGAlterTextSearchTemplateNotice       = "ddl.pg.alter_text_search_template.notice"
+	ruleIDPGDropTextSearchTemplateWarn          = "ddl.pg.drop_text_search_template.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

@@ -995,6 +995,43 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_text_search_configuration.notice:
+    enabled: true
+    level: notice
+  ddl.pg.alter_text_search_configuration.notice:
+    enabled: true
+    level: notice
+  ddl.pg.drop_text_search_configuration.warn:
+    enabled: true
+    level: warning
+  ddl.pg.create_text_search_dictionary.notice:
+    enabled: true
+    level: notice
+  ddl.pg.alter_text_search_dictionary.notice:
+    enabled: true
+    level: notice
+  ddl.pg.drop_text_search_dictionary.warn:
+    enabled: true
+    level: warning
+  ddl.pg.create_text_search_parser.notice:
+    enabled: true
+    level: notice
+  ddl.pg.alter_text_search_parser.notice:
+    enabled: true
+    level: notice
+  ddl.pg.drop_text_search_parser.warn:
+    enabled: true
+    level: warning
+  ddl.pg.create_text_search_template.notice:
+    enabled: true
+    level: notice
+  ddl.pg.alter_text_search_template.notice:
+    enabled: true
+    level: notice
+  ddl.pg.drop_text_search_template.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice
