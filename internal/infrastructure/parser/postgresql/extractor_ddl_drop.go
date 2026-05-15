@@ -247,6 +247,36 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			ObjectType: "conversion",
 			Options:    options,
 		}
+		case pg_query.ObjectType_OBJECT_OPFAMILY:
+			options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+			if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+				options["cascade"] = "true"
+			}
+			objectName, am := opNameAndAccessMethodFromDropObjects(stmt)
+			if am != "" {
+				options["access_method"] = am
+			}
+			statement.DDL = &spec.DDL{
+				Operation:  spec.DDLOperationDropOperatorFamily,
+				ObjectName: objectName,
+				ObjectType: "operator_family",
+				Options:    options,
+			}
+		case pg_query.ObjectType_OBJECT_OPCLASS:
+			options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+			if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+				options["cascade"] = "true"
+			}
+			objectName, am := opNameAndAccessMethodFromDropObjects(stmt)
+			if am != "" {
+				options["access_method"] = am
+			}
+			statement.DDL = &spec.DDL{
+				Operation:  spec.DDLOperationDropOperatorClass,
+				ObjectName: objectName,
+				ObjectType: "operator_class",
+				Options:    options,
+			}
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}
@@ -286,6 +316,25 @@ func dropObjectWithArgsName(stmt *pg_query.DropStmt) string {
 		}
 	}
 	return ""
+}
+
+// opNameAndAccessMethodFromDropObjects extracts (name, access_method) from DropStmt objects
+// where each element is a list [access_method, object_name].
+func opNameAndAccessMethodFromDropObjects(stmt *pg_query.DropStmt) (string, string) {
+	for _, obj := range stmt.GetObjects() {
+		list := obj.GetList()
+		if list == nil {
+			continue
+		}
+		items := list.GetItems()
+		name := lastStringFromNodes(items)
+		am := ""
+		if len(items) > 0 {
+			am = firstStringFromNodes([]*pg_query.Node{items[0]})
+		}
+		return name, am
+	}
+	return "", ""
 }
 func dropTypeNameFromObjects(objects []*pg_query.Node) string {
 	for _, obj := range objects {

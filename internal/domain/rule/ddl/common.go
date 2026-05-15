@@ -317,6 +317,13 @@ const (
 	ruleIDPGCreateConversionNotice = "ddl.pg.create_conversion.notice"
 	ruleIDPGAlterConversionNotice  = "ddl.pg.alter_conversion.notice"
 	ruleIDPGDropConversionWarn     = "ddl.pg.drop_conversion.warn"
+
+	ruleIDPGCreateOperatorFamilyNotice = "ddl.pg.create_operator_family.notice"
+	ruleIDPGAlterOperatorFamilyNotice  = "ddl.pg.alter_operator_family.notice"
+	ruleIDPGDropOperatorFamilyWarn     = "ddl.pg.drop_operator_family.warn"
+	ruleIDPGCreateOperatorClassNotice  = "ddl.pg.create_operator_class.notice"
+	ruleIDPGAlterOperatorClassNotice   = "ddl.pg.alter_operator_class.notice"
+	ruleIDPGDropOperatorClassWarn      = "ddl.pg.drop_operator_class.warn"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

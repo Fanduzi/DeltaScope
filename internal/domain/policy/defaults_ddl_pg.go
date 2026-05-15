@@ -731,5 +731,35 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.create_operator_family.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_operator_family.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.drop_operator_family.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.create_operator_class.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_operator_class.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.drop_operator_class.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
 	}
 }

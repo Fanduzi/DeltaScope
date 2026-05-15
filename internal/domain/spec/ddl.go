@@ -131,6 +131,13 @@ const (
 	DDLOperationCreateConversion DDLOperation = "create_conversion"
 	DDLOperationAlterConversion  DDLOperation = "alter_conversion"
 	DDLOperationDropConversion   DDLOperation = "drop_conversion"
+
+	DDLOperationCreateOperatorFamily DDLOperation = "create_operator_family"
+	DDLOperationAlterOperatorFamily  DDLOperation = "alter_operator_family"
+	DDLOperationDropOperatorFamily   DDLOperation = "drop_operator_family"
+	DDLOperationCreateOperatorClass  DDLOperation = "create_operator_class"
+	DDLOperationAlterOperatorClass   DDLOperation = "alter_operator_class"
+	DDLOperationDropOperatorClass    DDLOperation = "drop_operator_class"
 )
 
 // Table describes a table-level object.

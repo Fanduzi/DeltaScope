@@ -1103,6 +1103,38 @@ func TestAuditSQLToolPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 			sql:         "DROP CONVERSION conv",
 			wantRuleIDs: []string{"ddl.pg.drop_conversion.warn"},
 		},
+		// Operator family lifecycle
+		{
+			name:        "create_operator_family_notice",
+			sql:         "CREATE OPERATOR FAMILY int4_ops_family USING btree",
+			wantRuleIDs: []string{"ddl.pg.create_operator_family.notice"},
+		},
+		{
+			name:        "alter_operator_family_notice",
+			sql:         "ALTER OPERATOR FAMILY int4_ops_family USING btree RENAME TO int4_ops_family_v2",
+			wantRuleIDs: []string{"ddl.pg.alter_operator_family.notice"},
+		},
+		{
+			name:        "drop_operator_family_warn",
+			sql:         "DROP OPERATOR FAMILY int4_ops_family USING btree",
+			wantRuleIDs: []string{"ddl.pg.drop_operator_family.warn"},
+		},
+		// Operator class lifecycle
+		{
+			name:        "create_operator_class_notice",
+			sql:         "CREATE OPERATOR CLASS int4_ops_class DEFAULT FOR TYPE int4 USING btree FAMILY int4_ops_family AS OPERATOR 1 < (int4, int4)",
+			wantRuleIDs: []string{"ddl.pg.create_operator_class.notice"},
+		},
+		{
+			name:        "alter_operator_class_notice",
+			sql:         "ALTER OPERATOR CLASS int4_ops_class USING btree RENAME TO int4_ops_class_v2",
+			wantRuleIDs: []string{"ddl.pg.alter_operator_class.notice"},
+		},
+		{
+			name:        "drop_operator_class_warn",
+			sql:         "DROP OPERATOR CLASS int4_ops_class USING btree",
+			wantRuleIDs: []string{"ddl.pg.drop_operator_class.warn"},
+		},
 	}
 
 	for _, tt := range tests {

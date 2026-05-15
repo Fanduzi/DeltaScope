@@ -1,0 +1,1 @@
+DROP OPERATOR FAMILY int4_ops_family USING btree

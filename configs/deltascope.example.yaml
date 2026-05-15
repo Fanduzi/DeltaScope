@@ -971,6 +971,30 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_operator_family.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_operator_family.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_operator_family.warn:
+    enabled: true
+    level: warning
+
+  ddl.pg.create_operator_class.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.alter_operator_class.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.drop_operator_class.warn:
+    enabled: true
+    level: warning
+
   dml.impact.estimate:
     enabled: true
     level: notice

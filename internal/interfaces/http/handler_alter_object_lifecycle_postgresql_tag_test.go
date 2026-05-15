@@ -270,6 +270,14 @@ func TestHandlerAuditPostgreSQLAlterObjectLifecycleRuleCoverage(t *testing.T) {
 		{name:       "create_conversion_notice", sql: "CREATE CONVERSION conv FOR 'UTF8' TO 'LATIN1' FROM utf8_to_latin1", wantRuleID: "ddl.pg.create_conversion.notice"},
 		{name:       "alter_conversion_notice", sql: "ALTER CONVERSION conv OWNER TO app_owner", wantRuleID: "ddl.pg.alter_conversion.notice"},
 		{name:       "drop_conversion_warn", sql: "DROP CONVERSION conv", wantRuleID: "ddl.pg.drop_conversion.warn"},
+		// Operator family lifecycle
+		{name:       "create_operator_family_notice", sql: "CREATE OPERATOR FAMILY int4_ops_family USING btree", wantRuleID: "ddl.pg.create_operator_family.notice"},
+		{name:       "alter_operator_family_notice", sql: "ALTER OPERATOR FAMILY int4_ops_family USING btree RENAME TO int4_ops_family_v2", wantRuleID: "ddl.pg.alter_operator_family.notice"},
+		{name:       "drop_operator_family_warn", sql: "DROP OPERATOR FAMILY int4_ops_family USING btree", wantRuleID: "ddl.pg.drop_operator_family.warn"},
+		// Operator class lifecycle
+		{name:       "create_operator_class_notice", sql: "CREATE OPERATOR CLASS int4_ops_class DEFAULT FOR TYPE int4 USING btree FAMILY int4_ops_family AS OPERATOR 1 < (int4, int4)", wantRuleID: "ddl.pg.create_operator_class.notice"},
+		{name:       "alter_operator_class_notice", sql: "ALTER OPERATOR CLASS int4_ops_class USING btree RENAME TO int4_ops_class_v2", wantRuleID: "ddl.pg.alter_operator_class.notice"},
+		{name:       "drop_operator_class_warn", sql: "DROP OPERATOR CLASS int4_ops_class USING btree", wantRuleID: "ddl.pg.drop_operator_class.warn"},
 	}
 
 	for _, tt := range tests {

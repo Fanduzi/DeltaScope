@@ -566,6 +566,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateConversionNotice, construct: newCreateConversionNoticeRule},
 		{ruleID: ruleIDPGAlterConversionNotice, construct: newAlterConversionNoticeRule},
 		{ruleID: ruleIDPGDropConversionWarn, construct: newDropConversionWarnRule},
+		{ruleID: ruleIDPGCreateOperatorFamilyNotice, construct: newCreateOperatorFamilyNoticeRule},
+		{ruleID: ruleIDPGAlterOperatorFamilyNotice, construct: newAlterOperatorFamilyNoticeRule},
+		{ruleID: ruleIDPGDropOperatorFamilyWarn, construct: newDropOperatorFamilyWarnRule},
+		{ruleID: ruleIDPGCreateOperatorClassNotice, construct: newCreateOperatorClassNoticeRule},
+		{ruleID: ruleIDPGAlterOperatorClassNotice, construct: newAlterOperatorClassNoticeRule},
+		{ruleID: ruleIDPGDropOperatorClassWarn, construct: newDropOperatorClassWarnRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {
