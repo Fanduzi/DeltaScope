@@ -374,7 +374,9 @@ func dropObjectFirstName(stmt *pg_query.DropStmt) string {
 		if list := obj.GetList(); list != nil {
 			return firstStringFromNodes(list.GetItems())
 		}
-		return firstStringFromNodes([]*pg_query.Node{obj})
+		if s := obj.GetString_(); s != nil && s.GetSval() != "" {
+			return s.GetSval()
+		}
 	}
 	return ""
 }
