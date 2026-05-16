@@ -290,15 +290,22 @@ func TestExtractDropTextSearchConfigurationIfExists(t *testing.T) {
 
 func assertNoLeakedTextSearchPayload(t *testing.T, options map[string]string) {
 	t.Helper()
-	forbidden := []string{
+	leaked := []string{
 		"procedure", "function", "support", "strategy", "definition",
 		"body", "query", "options", "password", "secret", "token",
 		"copy", "template", "start", "gettoken", "end", "lextypes",
-		"lexize", "has_options",
+		"lexize",
 	}
-	for _, key := range forbidden {
+	for _, key := range leaked {
 		if _, ok := options[key]; ok {
-			t.Errorf("forbidden key %q found in options", key)
+			t.Errorf("leaked payload key %q found in options", key)
 		}
+	}
+	// has_options is intentionally omitted for text search CREATE forms:
+	// the extractor does not emit has_options to avoid implying option-level
+	// analysis when raw definitions (COPY, TEMPLATE, START, LEXIZE etc.)
+	// are suppressed. Omission is not a payload leak.
+	if _, ok := options["has_options"]; ok {
+		t.Errorf("has_options unexpectedly present in options; text search CREATE forms intentionally omit it")
 	}
 }
