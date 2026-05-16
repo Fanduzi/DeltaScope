@@ -318,12 +318,12 @@ const (
 	ruleIDPGAlterConversionNotice  = "ddl.pg.alter_conversion.notice"
 	ruleIDPGDropConversionWarn     = "ddl.pg.drop_conversion.warn"
 
-	ruleIDPGCreateOperatorFamilyNotice = "ddl.pg.create_operator_family.notice"
-	ruleIDPGAlterOperatorFamilyNotice  = "ddl.pg.alter_operator_family.notice"
-	ruleIDPGDropOperatorFamilyWarn     = "ddl.pg.drop_operator_family.warn"
-	ruleIDPGCreateOperatorClassNotice  = "ddl.pg.create_operator_class.notice"
-	ruleIDPGAlterOperatorClassNotice   = "ddl.pg.alter_operator_class.notice"
-	ruleIDPGDropOperatorClassWarn      = "ddl.pg.drop_operator_class.warn"
+	ruleIDPGCreateOperatorFamilyNotice          = "ddl.pg.create_operator_family.notice"
+	ruleIDPGAlterOperatorFamilyNotice           = "ddl.pg.alter_operator_family.notice"
+	ruleIDPGDropOperatorFamilyWarn              = "ddl.pg.drop_operator_family.warn"
+	ruleIDPGCreateOperatorClassNotice           = "ddl.pg.create_operator_class.notice"
+	ruleIDPGAlterOperatorClassNotice            = "ddl.pg.alter_operator_class.notice"
+	ruleIDPGDropOperatorClassWarn               = "ddl.pg.drop_operator_class.warn"
 	ruleIDPGCreateTextSearchConfigurationNotice = "ddl.pg.create_text_search_configuration.notice"
 	ruleIDPGAlterTextSearchConfigurationNotice  = "ddl.pg.alter_text_search_configuration.notice"
 	ruleIDPGDropTextSearchConfigurationWarn     = "ddl.pg.drop_text_search_configuration.warn"
@@ -336,6 +336,10 @@ const (
 	ruleIDPGCreateTextSearchTemplateNotice      = "ddl.pg.create_text_search_template.notice"
 	ruleIDPGAlterTextSearchTemplateNotice       = "ddl.pg.alter_text_search_template.notice"
 	ruleIDPGDropTextSearchTemplateWarn          = "ddl.pg.drop_text_search_template.warn"
+
+	ruleIDPGDropTransformWarn           = "ddl.pg.drop_transform.warn"
+	ruleIDPGDropAccessMethodWarn        = "ddl.pg.drop_access_method.warn"
+	ruleIDPGAlterLargeObjectOwnerNotice = "ddl.pg.alter_large_object.owner.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

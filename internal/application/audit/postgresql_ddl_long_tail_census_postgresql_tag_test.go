@@ -208,16 +208,16 @@ var pgDDLLongTailCensusCases = []struct {
 		Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP TRANSFORM",
 		SQL:      "DROP TRANSFORM FOR jsonb LANGUAGE plpython3u",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE ACCESS METHOD",
 		SQL:      "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler",
 		Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP ACCESS METHOD",
 		SQL:      "DROP ACCESS METHOD heap2",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER LARGE OBJECT OWNER TO",
 		SQL:      "ALTER LARGE OBJECT 12345 OWNER TO app_owner",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 }
 
 func TestPostgreSQLDDLLongTailCensus(t *testing.T) {

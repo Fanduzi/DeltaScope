@@ -1,0 +1,1 @@
+DROP TRANSFORM FOR jsonb LANGUAGE plpython3u

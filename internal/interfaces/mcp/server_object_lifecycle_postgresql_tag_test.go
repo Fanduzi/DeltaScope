@@ -1147,7 +1147,9 @@ func TestAuditSQLToolPostgreSQLExtensionLifecycleRuleCoverage(t *testing.T) {
 		{name: "create_text_search_template_notice", sql: "CREATE TEXT SEARCH TEMPLATE template_name (LEXIZE = lexize_func)", wantRuleIDs: []string{"ddl.pg.create_text_search_template.notice"}},
 		{name: "alter_text_search_template_notice", sql: "ALTER TEXT SEARCH TEMPLATE template_name RENAME TO template_name_v2", wantRuleIDs: []string{"ddl.pg.alter_text_search_template.notice"}},
 		{name: "drop_text_search_template_warn", sql: "DROP TEXT SEARCH TEMPLATE template_name", wantRuleIDs: []string{"ddl.pg.drop_text_search_template.warn"}},
-
+		{name: "drop_transform_warn", sql: "DROP TRANSFORM FOR jsonb LANGUAGE plpython3u", wantRuleIDs: []string{"ddl.pg.drop_transform.warn"}},
+		{name: "drop_access_method_warn", sql: "DROP ACCESS METHOD heap2", wantRuleIDs: []string{"ddl.pg.drop_access_method.warn"}},
+		{name: "alter_large_object_owner_notice", sql: "ALTER LARGE OBJECT 12345 OWNER TO app_owner", wantRuleIDs: []string{"ddl.pg.alter_large_object.owner.notice"}},
 	}
 
 	for _, tt := range tests {

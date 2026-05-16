@@ -1275,6 +1275,15 @@ func extractAlterOwnerStmt(statement spec.Statement, stmt *pg_query.AlterOwnerSt
 			Options:    map[string]string{"action": "set_owner", "owner": owner},
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_LARGEOBJECT:
+		oid := alterOwnerLargeObjectOID(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationAlterLargeObject,
+			ObjectName: oid,
+			ObjectType: "large_object",
+			Options:    map[string]string{"action": "set_owner", "owner": owner},
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "alter_owner", fmt.Sprintf("postgresql alter owner for %s is deferred", stmt.GetObjectType()))
 	}
@@ -1340,6 +1349,15 @@ func alterOwnerObjectName(stmt *pg_query.AlterOwnerStmt) string {
 	}
 	if rv := stmt.GetRelation(); rv != nil {
 		return rv.GetRelname()
+	}
+	return ""
+}
+
+func alterOwnerLargeObjectOID(stmt *pg_query.AlterOwnerStmt) string {
+	if obj := stmt.GetObject(); obj != nil {
+		if iv := obj.GetInteger(); iv != nil {
+			return fmt.Sprintf("%d", iv.GetIval())
+		}
 	}
 	return ""
 }

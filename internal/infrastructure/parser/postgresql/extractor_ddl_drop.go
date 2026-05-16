@@ -330,6 +330,31 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 			Options:    options,
 		}
 		return statement
+	case pg_query.ObjectType_OBJECT_TRANSFORM:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		objectName := dropTransformIdentity(stmt)
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropTransform,
+			ObjectName: objectName,
+			ObjectType: "transform",
+			Options:    options,
+		}
+		return statement
+	case pg_query.ObjectType_OBJECT_ACCESS_METHOD:
+		options := map[string]string{"if_exists": fmt.Sprintf("%t", stmt.GetMissingOk())}
+		if stmt.GetBehavior() == pg_query.DropBehavior_DROP_CASCADE {
+			options["cascade"] = "true"
+		}
+		statement.DDL = &spec.DDL{
+			Operation:  spec.DDLOperationDropAccessMethod,
+			ObjectName: dropTargetName(stmt),
+			ObjectType: "access_method",
+			Options:    options,
+		}
+		return statement
 	default:
 		return unsupportedStatement(statement, "drop", "postgresql drop target is not in the approved v1 subset")
 	}
@@ -411,6 +436,35 @@ func dropTypeNameFromObjects(objects []*pg_query.Node) string {
 				return s.GetSval()
 			}
 		}
+	}
+	return ""
+}
+
+// dropTransformIdentity extracts a bounded identity from DROP TRANSFORM objects.
+// Objects = [List([TypeName(type_name), String(language)])] -> identity = "type@language".
+func dropTransformIdentity(stmt *pg_query.DropStmt) string {
+	var typeName, lang string
+	for _, obj := range stmt.GetObjects() {
+		if list := obj.GetList(); list != nil {
+			for _, item := range list.GetItems() {
+				if tn := item.GetTypeName(); tn != nil {
+					for _, n := range tn.GetNames() {
+						if s := n.GetString_(); s != nil && s.GetSval() != "" {
+							typeName = s.GetSval()
+						}
+					}
+				}
+				if s := item.GetString_(); s != nil && s.GetSval() != "" {
+					lang = s.GetSval()
+				}
+			}
+		}
+	}
+	if typeName != "" && lang != "" {
+		return typeName + "@" + lang
+	}
+	if typeName != "" {
+		return typeName
 	}
 	return ""
 }

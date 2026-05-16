@@ -821,5 +821,20 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.drop_transform.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.drop_access_method.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter_large_object.owner.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 	}
 }
