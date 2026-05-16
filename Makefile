@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates lint lint-fix
+.PHONY: test sql-corpus-gates sql-corpus-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates lint lint-fix lint-landing
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -329,4 +329,25 @@ lint:
 
 lint-fix:
 	golangci-lint run --fix ./...
+
+# Validate inline JS syntax in landing page HTML files.
+# Uses new Function() to parse without executing. Catches mismatched quotes,
+# unterminated strings, and other SyntaxErrors before deploy.
+lint-landing:
+	@for f in docs/landing/*.html; do \
+		node -e "\
+		const fs = require('fs'); \
+		const html = fs.readFileSync('$$f', 'utf8'); \
+		const blocks = html.match(/<script[^>]*>([\\s\\S]*?)<\\/script>/gi) || []; \
+		let errors = 0; \
+		blocks.forEach((block, i) => { \
+			const js = block.replace(/<script[^>]*>/i, '').replace(/<\\/script>/i, '').trim(); \
+			if (!js || block.includes('application/ld+json')) return; \
+			try { new Function(js); } \
+			catch (e) { console.error('$$f script block ' + (i+1) + ': ' + e.message); errors++; } \
+		}); \
+		if (errors) process.exit(1); \
+		"; \
+	done
+	@echo "landing page JS syntax OK"
 

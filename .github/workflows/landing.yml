@@ -1,0 +1,25 @@
+name: Landing Page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/landing/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/landing/**'
+
+jobs:
+  js-syntax:
+    name: Inline JS syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate inline JS in landing pages
+        run: make lint-landing
