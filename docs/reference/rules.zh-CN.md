@@ -861,6 +861,98 @@ v0.20.0 引入了增量行为，帮助识别方言误配和未支持的功能面
 
 从 `v0.44.0` 开始，`make release-contract-gates VERSION=vX.Y.Z` 将版本面校验、二进制版本输出、默认策略方言隔离和 archive 完整性合并为统一的 pre-publish gate。未新增规则 ID、解析器功能或公共 API 契约。
 
+### PostgreSQL 排序规则生命周期（v0.100.0）
+
+v0.100.0 新增 PostgreSQL 排序规则对象生命周期审核规则。这些规则仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+
+| 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
+|---------|---------|:--------:|:--------------:|
+| `ddl.pg.create_collation.notice` | CREATE COLLATION 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_collation.notice` | ALTER COLLATION（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_collation.warn` | DROP COLLATION 触发结构销毁警告 | warning | 否 |
+
+> **注意：** 这些规则仅适用于 PostgreSQL，审核 MySQL 或 TiDB SQL 时自动跳过。均为离线规则，不需要数据库连接。
+
+### PostgreSQL 扩展统计生命周期（v0.100.0）
+
+v0.100.0 新增 PostgreSQL 扩展统计对象生命周期审核规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+| 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
+|---------|---------|:--------:|:--------------:|
+| `ddl.pg.create_statistics.notice` | CREATE STATISTICS 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_statistics.notice` | ALTER STATISTICS（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_statistics.warn` | DROP STATISTICS 触发结构销毁警告 | warning | 否 |
+
+> **注意：** 这些规则仅适用于 PostgreSQL，审核 MySQL 或 TiDB SQL 时自动跳过。均为离线规则，不需要数据库连接。
+
+### PostgreSQL 聚合/操作符/转换生命周期（v0.100.0）
+
+v0.100.0 新增 PostgreSQL 聚合、操作符和转换对象生命周期审核规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+| 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
+|---------|---------|:--------:|:--------------:|
+| `ddl.pg.create_aggregate.notice` | CREATE AGGREGATE 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_aggregate.notice` | ALTER AGGREGATE（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_aggregate.warn` | DROP AGGREGATE 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.create_operator.notice` | CREATE OPERATOR 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_operator.notice` | ALTER OPERATOR（属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_operator.warn` | DROP OPERATOR 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.create_conversion.notice` | CREATE CONVERSION 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_conversion.notice` | ALTER CONVERSION（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_conversion.warn` | DROP CONVERSION 触发结构销毁警告 | warning | 否 |
+
+> **注意：** 这些规则仅适用于 PostgreSQL，审核 MySQL 或 TiDB SQL 时自动跳过。均为离线规则，不需要数据库连接。规范化发现避免将聚合函数、操作符过程或转换函数名称投射到输出中。
+
+### PostgreSQL 操作符族/类生命周期（v0.100.0）
+
+v0.100.0 新增 PostgreSQL 操作符族和操作符类对象生命周期审核规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+| 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
+|---------|---------|:--------:|:--------------:|
+| `ddl.pg.create_operator_family.notice` | CREATE OPERATOR FAMILY 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_operator_family.notice` | ALTER OPERATOR FAMILY（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_operator_family.warn` | DROP OPERATOR FAMILY 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.create_operator_class.notice` | CREATE OPERATOR CLASS 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_operator_class.notice` | ALTER OPERATOR CLASS（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_operator_class.warn` | DROP OPERATOR CLASS 触发结构销毁警告 | warning | 否 |
+
+> **注意：** 这些规则仅适用于 PostgreSQL，审核 MySQL 或 TiDB SQL 时自动跳过。均为离线规则，不需要数据库连接。
+
+### PostgreSQL 全文搜索对象生命周期（v0.100.0）
+
+v0.100.0 新增 PostgreSQL 全文搜索配置、字典、解析器和模板对象生命周期审核规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+| 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
+|---------|---------|:--------:|:--------------:|
+| `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_text_search_dictionary.notice` | ALTER TEXT SEARCH DICTIONARY（重命名/属主/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_text_search_dictionary.warn` | DROP TEXT SEARCH DICTIONARY 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.create_text_search_parser.notice` | CREATE TEXT SEARCH PARSER 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_text_search_parser.notice` | ALTER TEXT SEARCH PARSER（重命名/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_text_search_parser.warn` | DROP TEXT SEARCH PARSER 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.create_text_search_template.notice` | CREATE TEXT SEARCH TEMPLATE 触发信息通知 | notice | 否 |
+| `ddl.pg.alter_text_search_template.notice` | ALTER TEXT SEARCH TEMPLATE（重命名/模式）触发信息通知 | notice | 否 |
+| `ddl.pg.drop_text_search_template.warn` | DROP TEXT SEARCH TEMPLATE 触发结构销毁警告 | warning | 否 |
+
+> **注意：** 这些规则仅适用于 PostgreSQL，审核 MySQL 或 TiDB SQL 时自动跳过。均为离线规则，不需要数据库连接。规范化发现避免将全文搜索函数名称（start/end/lextype/lexize）投射到输出中。
+
+### PostgreSQL 边界闭合（v0.100.0）
+
+v0.100.0 新增选定 PostgreSQL 边界对象生命周期审核规则：DROP TRANSFORM、DROP ACCESS METHOD 和 ALTER LARGE OBJECT 属主变更。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+| 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
+|---------|---------|:--------:|:--------------:|
+| `ddl.pg.drop_transform.warn` | DROP TRANSFORM 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD 触发结构销毁警告 | warning | 否 |
+| `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT ... OWNER TO 触发信息通知 | notice | 否 |
+
+> **注意：** 这些规则仅适用于 PostgreSQL，审核 MySQL 或 TiDB SQL 时自动跳过。均为离线规则，不需要数据库连接。
+>
+> **延迟的边界情形：** CREATE TRANSFORM 和 CREATE ACCESS METHOD 被有意不覆盖，因为其处理函数名称即对象身份，安全规范化与载荷安全约束不兼容。
+
 ### PostgreSQL 元数据感知对象验证（v0.90.0）
 
 v0.90.0 新增已选 PostgreSQL 生命周期规则发现的元数据感知对象验证。当配置了 PostgreSQL 元数据连接时，DeltaScope 通过 `pg_catalog` 查询解析非表对象，并将对象存在性和安全属性信息注入生命周期发现。**未新增规则 ID。** 现有生命周期规则发现在元数据可用时被元数据字段增强。

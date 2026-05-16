@@ -722,6 +722,114 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
+## DDL：PostgreSQL 长尾对象生命周期（v0.100.0）
+
+`v0.100.0` 扩展 PostgreSQL DDL 审核覆盖范围至选定的长尾对象生命周期族：排序规则、扩展统计、聚合/操作符/转换、操作符族/类、全文搜索对象以及边界闭合（DROP TRANSFORM、DROP ACCESS METHOD、ALTER LARGE OBJECT）。DeltaScope 规范化这些 DDL 形态，新增 36 条 PostgreSQL-only 生命周期发现/规则。这些规则仅在设置 `--dialect postgresql` 时生效。
+
+### 规范化操作
+
+| SQL | 规范化操作 |
+|-----|-----------|
+| `CREATE COLLATION ...` | `create_collation` |
+| `ALTER COLLATION ... RENAME TO` | `alter_collation` |
+| `ALTER COLLATION ... OWNER TO` | `alter_collation` |
+| `ALTER COLLATION ... SET SCHEMA` | `alter_collation` |
+| `DROP COLLATION ...` | `drop_collation` |
+| `CREATE STATISTICS ...` | `create_statistics` |
+| `ALTER STATISTICS ... RENAME TO` | `alter_statistics` |
+| `ALTER STATISTICS ... OWNER TO` | `alter_statistics` |
+| `ALTER STATISTICS ... SET SCHEMA` | `alter_statistics` |
+| `DROP STATISTICS ...` | `drop_statistics` |
+| `CREATE AGGREGATE ...` | `create_aggregate` |
+| `ALTER AGGREGATE ... RENAME TO` | `alter_aggregate` |
+| `ALTER AGGREGATE ... OWNER TO` | `alter_aggregate` |
+| `ALTER AGGREGATE ... SET SCHEMA` | `alter_aggregate` |
+| `DROP AGGREGATE ...` | `drop_aggregate` |
+| `CREATE OPERATOR ...` | `create_operator` |
+| `ALTER OPERATOR ... OWNER TO` | `alter_operator` |
+| `ALTER OPERATOR ... SET SCHEMA` | `alter_operator` |
+| `DROP OPERATOR ...` | `drop_operator` |
+| `CREATE CONVERSION ...` | `create_conversion` |
+| `ALTER CONVERSION ... RENAME TO` | `alter_conversion` |
+| `ALTER CONVERSION ... OWNER TO` | `alter_conversion` |
+| `ALTER CONVERSION ... SET SCHEMA` | `alter_conversion` |
+| `DROP CONVERSION ...` | `drop_conversion` |
+| `CREATE OPERATOR FAMILY ...` | `create_operator_family` |
+| `ALTER OPERATOR FAMILY ... RENAME TO` | `alter_operator_family` |
+| `ALTER OPERATOR FAMILY ... OWNER TO` | `alter_operator_family` |
+| `ALTER OPERATOR FAMILY ... SET SCHEMA` | `alter_operator_family` |
+| `DROP OPERATOR FAMILY ...` | `drop_operator_family` |
+| `CREATE OPERATOR CLASS ...` | `create_operator_class` |
+| `ALTER OPERATOR CLASS ... RENAME TO` | `alter_operator_class` |
+| `ALTER OPERATOR CLASS ... OWNER TO` | `alter_operator_class` |
+| `ALTER OPERATOR CLASS ... SET SCHEMA` | `alter_operator_class` |
+| `DROP OPERATOR CLASS ...` | `drop_operator_class` |
+| `CREATE TEXT SEARCH CONFIGURATION ...` | `create_text_search_configuration` |
+| `ALTER TEXT SEARCH CONFIGURATION ...` | `alter_text_search_configuration` |
+| `DROP TEXT SEARCH CONFIGURATION ...` | `drop_text_search_configuration` |
+| `CREATE TEXT SEARCH DICTIONARY ...` | `create_text_search_dictionary` |
+| `ALTER TEXT SEARCH DICTIONARY ...` | `alter_text_search_dictionary` |
+| `DROP TEXT SEARCH DICTIONARY ...` | `drop_text_search_dictionary` |
+| `CREATE TEXT SEARCH PARSER ...` | `create_text_search_parser` |
+| `ALTER TEXT SEARCH PARSER ...` | `alter_text_search_parser` |
+| `DROP TEXT SEARCH PARSER ...` | `drop_text_search_parser` |
+| `CREATE TEXT SEARCH TEMPLATE ...` | `create_text_search_template` |
+| `ALTER TEXT SEARCH TEMPLATE ...` | `alter_text_search_template` |
+| `DROP TEXT SEARCH TEMPLATE ...` | `drop_text_search_template` |
+| `DROP TRANSFORM FOR ... LANGUAGE ...` | `drop_transform` |
+| `DROP ACCESS METHOD ...` | `drop_access_method` |
+| `ALTER LARGE OBJECT ... OWNER TO` | `alter_large_object` |
+
+### 长尾生命周期规则
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.pg.create_collation.notice` | CREATE COLLATION 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_collation.notice` | ALTER COLLATION 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_collation.warn` | DROP COLLATION 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_statistics.notice` | CREATE STATISTICS 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_statistics.notice` | ALTER STATISTICS 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_statistics.warn` | DROP STATISTICS 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_aggregate.notice` | CREATE AGGREGATE 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_aggregate.notice` | ALTER AGGREGATE 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_aggregate.warn` | DROP AGGREGATE 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_operator.notice` | CREATE OPERATOR 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_operator.notice` | ALTER OPERATOR 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_operator.warn` | DROP OPERATOR 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_conversion.notice` | CREATE CONVERSION 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_conversion.notice` | ALTER CONVERSION 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_conversion.warn` | DROP CONVERSION 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_operator_family.notice` | CREATE OPERATOR FAMILY 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_operator_family.notice` | ALTER OPERATOR FAMILY 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_operator_family.warn` | DROP OPERATOR FAMILY 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_operator_class.notice` | CREATE OPERATOR CLASS 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_operator_class.notice` | ALTER OPERATOR CLASS 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_operator_class.warn` | DROP OPERATOR CLASS 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_dictionary.notice` | ALTER TEXT SEARCH DICTIONARY 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_dictionary.warn` | DROP TEXT SEARCH DICTIONARY 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_parser.notice` | CREATE TEXT SEARCH PARSER 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_parser.notice` | ALTER TEXT SEARCH PARSER 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_parser.warn` | DROP TEXT SEARCH PARSER 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_template.notice` | CREATE TEXT SEARCH TEMPLATE 通知 | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_template.notice` | ALTER TEXT SEARCH TEMPLATE 通知 | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_template.warn` | DROP TEXT SEARCH TEMPLATE 警告 | ✓ | ✗ | warning |
+| `ddl.pg.drop_transform.warn` | DROP TRANSFORM 警告 | ✓ | ✗ | warning |
+| `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD 警告 | ✓ | ✗ | warning |
+| `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT 属主变更通知 | ✓ | ✗ | notice |
+
+### 延迟的边界情形
+
+| SQL | 状态 | 原因 |
+|-----|------|------|
+| `CREATE TRANSFORM FOR ... LANGUAGE ... (FROM SQL WITH FUNCTION ..., TO SQL WITH FUNCTION ...)` | 延迟 | 处理函数名称即对象身份 |
+| `CREATE ACCESS METHOD ... TYPE ... HANDLER ...` | 延迟 | 处理函数名称即对象身份 |
+
+---
+
 ## DDL：PostgreSQL 覆盖范围扩展（v0.21.0 / v0.23.0 / v0.24.0）
 
 `v0.21.0` 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。`v0.23.0` 进一步扩展了 PostgreSQL `CREATE TABLE` 常见约束形态的覆盖范围。`v0.24.0` 深化了这些建表形态的语义信息，通过共享 `spec.Constraint` 模型保留解析器拥有的 `ReferencedTable` 和 `ReferencedColumns`。这些功能面此前会落入能力边界错误或结构不完整；现在会产生带有渐进丰富语义的正常审计结果。不引入新规则——已有的共享规则族在适用时自动生效。

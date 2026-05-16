@@ -736,6 +736,114 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
+## DDL: PostgreSQL Long-Tail Object Lifecycle (v0.100.0)
+
+`v0.100.0` extends PostgreSQL DDL audit coverage to selected long-tail object lifecycle families: collation, extended statistics, aggregate/operator/conversion, operator family/class, text search objects, and boundary closure (DROP TRANSFORM, DROP ACCESS METHOD, ALTER LARGE OBJECT). DeltaScope normalizes these DDL forms and adds 36 PostgreSQL-only lifecycle findings/rules. These rules only apply when `--dialect postgresql` is set.
+
+### Normalized Operations
+
+| SQL | Normalized Operation |
+|-----|---------------------|
+| `CREATE COLLATION ...` | `create_collation` |
+| `ALTER COLLATION ... RENAME TO` | `alter_collation` |
+| `ALTER COLLATION ... OWNER TO` | `alter_collation` |
+| `ALTER COLLATION ... SET SCHEMA` | `alter_collation` |
+| `DROP COLLATION ...` | `drop_collation` |
+| `CREATE STATISTICS ...` | `create_statistics` |
+| `ALTER STATISTICS ... RENAME TO` | `alter_statistics` |
+| `ALTER STATISTICS ... OWNER TO` | `alter_statistics` |
+| `ALTER STATISTICS ... SET SCHEMA` | `alter_statistics` |
+| `DROP STATISTICS ...` | `drop_statistics` |
+| `CREATE AGGREGATE ...` | `create_aggregate` |
+| `ALTER AGGREGATE ... RENAME TO` | `alter_aggregate` |
+| `ALTER AGGREGATE ... OWNER TO` | `alter_aggregate` |
+| `ALTER AGGREGATE ... SET SCHEMA` | `alter_aggregate` |
+| `DROP AGGREGATE ...` | `drop_aggregate` |
+| `CREATE OPERATOR ...` | `create_operator` |
+| `ALTER OPERATOR ... OWNER TO` | `alter_operator` |
+| `ALTER OPERATOR ... SET SCHEMA` | `alter_operator` |
+| `DROP OPERATOR ...` | `drop_operator` |
+| `CREATE CONVERSION ...` | `create_conversion` |
+| `ALTER CONVERSION ... RENAME TO` | `alter_conversion` |
+| `ALTER CONVERSION ... OWNER TO` | `alter_conversion` |
+| `ALTER CONVERSION ... SET SCHEMA` | `alter_conversion` |
+| `DROP CONVERSION ...` | `drop_conversion` |
+| `CREATE OPERATOR FAMILY ...` | `create_operator_family` |
+| `ALTER OPERATOR FAMILY ... RENAME TO` | `alter_operator_family` |
+| `ALTER OPERATOR FAMILY ... OWNER TO` | `alter_operator_family` |
+| `ALTER OPERATOR FAMILY ... SET SCHEMA` | `alter_operator_family` |
+| `DROP OPERATOR FAMILY ...` | `drop_operator_family` |
+| `CREATE OPERATOR CLASS ...` | `create_operator_class` |
+| `ALTER OPERATOR CLASS ... RENAME TO` | `alter_operator_class` |
+| `ALTER OPERATOR CLASS ... OWNER TO` | `alter_operator_class` |
+| `ALTER OPERATOR CLASS ... SET SCHEMA` | `alter_operator_class` |
+| `DROP OPERATOR CLASS ...` | `drop_operator_class` |
+| `CREATE TEXT SEARCH CONFIGURATION ...` | `create_text_search_configuration` |
+| `ALTER TEXT SEARCH CONFIGURATION ...` | `alter_text_search_configuration` |
+| `DROP TEXT SEARCH CONFIGURATION ...` | `drop_text_search_configuration` |
+| `CREATE TEXT SEARCH DICTIONARY ...` | `create_text_search_dictionary` |
+| `ALTER TEXT SEARCH DICTIONARY ...` | `alter_text_search_dictionary` |
+| `DROP TEXT SEARCH DICTIONARY ...` | `drop_text_search_dictionary` |
+| `CREATE TEXT SEARCH PARSER ...` | `create_text_search_parser` |
+| `ALTER TEXT SEARCH PARSER ...` | `alter_text_search_parser` |
+| `DROP TEXT SEARCH PARSER ...` | `drop_text_search_parser` |
+| `CREATE TEXT SEARCH TEMPLATE ...` | `create_text_search_template` |
+| `ALTER TEXT SEARCH TEMPLATE ...` | `alter_text_search_template` |
+| `DROP TEXT SEARCH TEMPLATE ...` | `drop_text_search_template` |
+| `DROP TRANSFORM FOR ... LANGUAGE ...` | `drop_transform` |
+| `DROP ACCESS METHOD ...` | `drop_access_method` |
+| `ALTER LARGE OBJECT ... OWNER TO` | `alter_large_object` |
+
+### Long-Tail Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.pg.create_collation.notice` | CREATE COLLATION notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_collation.notice` | ALTER COLLATION notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_collation.warn` | DROP COLLATION warning | ✓ | ✗ | warning |
+| `ddl.pg.create_statistics.notice` | CREATE STATISTICS notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_statistics.notice` | ALTER STATISTICS notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_statistics.warn` | DROP STATISTICS warning | ✓ | ✗ | warning |
+| `ddl.pg.create_aggregate.notice` | CREATE AGGREGATE notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_aggregate.notice` | ALTER AGGREGATE notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_aggregate.warn` | DROP AGGREGATE warning | ✓ | ✗ | warning |
+| `ddl.pg.create_operator.notice` | CREATE OPERATOR notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_operator.notice` | ALTER OPERATOR notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_operator.warn` | DROP OPERATOR warning | ✓ | ✗ | warning |
+| `ddl.pg.create_conversion.notice` | CREATE CONVERSION notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_conversion.notice` | ALTER CONVERSION notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_conversion.warn` | DROP CONVERSION warning | ✓ | ✗ | warning |
+| `ddl.pg.create_operator_family.notice` | CREATE OPERATOR FAMILY notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_operator_family.notice` | ALTER OPERATOR FAMILY notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_operator_family.warn` | DROP OPERATOR FAMILY warning | ✓ | ✗ | warning |
+| `ddl.pg.create_operator_class.notice` | CREATE OPERATOR CLASS notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_operator_class.notice` | ALTER OPERATOR CLASS notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_operator_class.warn` | DROP OPERATOR CLASS warning | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION warning | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_dictionary.notice` | ALTER TEXT SEARCH DICTIONARY notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_dictionary.warn` | DROP TEXT SEARCH DICTIONARY warning | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_parser.notice` | CREATE TEXT SEARCH PARSER notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_parser.notice` | ALTER TEXT SEARCH PARSER notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_parser.warn` | DROP TEXT SEARCH PARSER warning | ✓ | ✗ | warning |
+| `ddl.pg.create_text_search_template.notice` | CREATE TEXT SEARCH TEMPLATE notice | ✓ | ✗ | notice |
+| `ddl.pg.alter_text_search_template.notice` | ALTER TEXT SEARCH TEMPLATE notice | ✓ | ✗ | notice |
+| `ddl.pg.drop_text_search_template.warn` | DROP TEXT SEARCH TEMPLATE warning | ✓ | ✗ | warning |
+| `ddl.pg.drop_transform.warn` | DROP TRANSFORM warning | ✓ | ✗ | warning |
+| `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD warning | ✓ | ✗ | warning |
+| `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT owner notice | ✓ | ✗ | notice |
+
+### Deferred Boundary Cases
+
+| SQL | Status | Reason |
+|-----|--------|--------|
+| `CREATE TRANSFORM FOR ... LANGUAGE ... (FROM SQL WITH FUNCTION ..., TO SQL WITH FUNCTION ...)` | Deferred | Handler function names are the object identity |
+| `CREATE ACCESS METHOD ... TYPE ... HANDLER ...` | Deferred | Handler function name is the object identity |
+
+---
+
 ## DDL: PostgreSQL Coverage Expansion (v0.21.0 / v0.23.0 / v0.24.0)
 
 `v0.21.0` normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. `v0.23.0` extends PostgreSQL `CREATE TABLE` coverage for more common constraint forms. `v0.24.0` deepens the semantic value of those create-table shapes by preserving parser-owned `ReferencedTable` and `ReferencedColumns` through the shared `spec.Constraint` model. These surfaces previously returned capability-boundary errors or incomplete structure; they now produce normal audit results with progressively richer semantics. No new rules are introduced — existing shared rule families apply where relevant.

@@ -873,6 +873,98 @@ Each boundary is backed by corpus cases and surface parity tests across CLI, HTT
 
 Starting with `v0.44.0`, `make release-contract-gates VERSION=vX.Y.Z` verifies version surfaces, binary version output, default policy dialect isolation, and archive integrity as a unified pre-publish gate. No new rule IDs, parser features, or public API contracts were added.
 
+### PostgreSQL Collation Lifecycle (v0.100.0)
+
+v0.100.0 adds lifecycle audit rules for PostgreSQL collation objects. These rules only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+
+| Rule ID | Check Description | Default Level | Metadata Required |
+|---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.create_collation.notice` | CREATE COLLATION emits an informational notice | notice | No |
+| `ddl.pg.alter_collation.notice` | ALTER COLLATION (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_collation.warn` | DROP COLLATION emits a destructure warning | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection.
+
+### PostgreSQL Extended Statistics Lifecycle (v0.100.0)
+
+v0.100.0 adds lifecycle audit rules for PostgreSQL extended statistics objects. These rules only apply when `--dialect postgresql` is set.
+
+| Rule ID | Check Description | Default Level | Metadata Required |
+|---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.create_statistics.notice` | CREATE STATISTICS emits an informational notice | notice | No |
+| `ddl.pg.alter_statistics.notice` | ALTER STATISTICS (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_statistics.warn` | DROP STATISTICS emits a destructure warning | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection.
+
+### PostgreSQL Aggregate/Operator/Conversion Lifecycle (v0.100.0)
+
+v0.100.0 adds lifecycle audit rules for PostgreSQL aggregate, operator, and conversion objects. These rules only apply when `--dialect postgresql` is set.
+
+| Rule ID | Check Description | Default Level | Metadata Required |
+|---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.create_aggregate.notice` | CREATE AGGREGATE emits an informational notice | notice | No |
+| `ddl.pg.alter_aggregate.notice` | ALTER AGGREGATE (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_aggregate.warn` | DROP AGGREGATE emits a destructure warning | warning | No |
+| `ddl.pg.create_operator.notice` | CREATE OPERATOR emits an informational notice | notice | No |
+| `ddl.pg.alter_operator.notice` | ALTER OPERATOR (owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_operator.warn` | DROP OPERATOR emits a destructure warning | warning | No |
+| `ddl.pg.create_conversion.notice` | CREATE CONVERSION emits an informational notice | notice | No |
+| `ddl.pg.alter_conversion.notice` | ALTER CONVERSION (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_conversion.warn` | DROP CONVERSION emits a destructure warning | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Normalized findings avoid projecting aggregate functions, operator procedures, or conversion function names into output.
+
+### PostgreSQL Operator Family/Class Lifecycle (v0.100.0)
+
+v0.100.0 adds lifecycle audit rules for PostgreSQL operator family and operator class objects. These rules only apply when `--dialect postgresql` is set.
+
+| Rule ID | Check Description | Default Level | Metadata Required |
+|---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.create_operator_family.notice` | CREATE OPERATOR FAMILY emits an informational notice | notice | No |
+| `ddl.pg.alter_operator_family.notice` | ALTER OPERATOR FAMILY (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_operator_family.warn` | DROP OPERATOR FAMILY emits a destructure warning | warning | No |
+| `ddl.pg.create_operator_class.notice` | CREATE OPERATOR CLASS emits an informational notice | notice | No |
+| `ddl.pg.alter_operator_class.notice` | ALTER OPERATOR CLASS (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_operator_class.warn` | DROP OPERATOR CLASS emits a destructure warning | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection.
+
+### PostgreSQL Text Search Object Lifecycle (v0.100.0)
+
+v0.100.0 adds lifecycle audit rules for PostgreSQL text search configuration, dictionary, parser, and template objects. These rules only apply when `--dialect postgresql` is set.
+
+| Rule ID | Check Description | Default Level | Metadata Required |
+|---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.create_text_search_configuration.notice` | CREATE TEXT SEARCH CONFIGURATION emits an informational notice | notice | No |
+| `ddl.pg.alter_text_search_configuration.notice` | ALTER TEXT SEARCH CONFIGURATION (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_text_search_configuration.warn` | DROP TEXT SEARCH CONFIGURATION emits a destructure warning | warning | No |
+| `ddl.pg.create_text_search_dictionary.notice` | CREATE TEXT SEARCH DICTIONARY emits an informational notice | notice | No |
+| `ddl.pg.alter_text_search_dictionary.notice` | ALTER TEXT SEARCH DICTIONARY (rename/owner/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_text_search_dictionary.warn` | DROP TEXT SEARCH DICTIONARY emits a destructure warning | warning | No |
+| `ddl.pg.create_text_search_parser.notice` | CREATE TEXT SEARCH PARSER emits an informational notice | notice | No |
+| `ddl.pg.alter_text_search_parser.notice` | ALTER TEXT SEARCH PARSER (rename/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_text_search_parser.warn` | DROP TEXT SEARCH PARSER emits a destructure warning | warning | No |
+| `ddl.pg.create_text_search_template.notice` | CREATE TEXT SEARCH TEMPLATE emits an informational notice | notice | No |
+| `ddl.pg.alter_text_search_template.notice` | ALTER TEXT SEARCH TEMPLATE (rename/schema) emits an informational notice | notice | No |
+| `ddl.pg.drop_text_search_template.warn` | DROP TEXT SEARCH TEMPLATE emits a destructure warning | warning | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Normalized findings avoid projecting text search function names (start/end/lextype/lexize) into output.
+
+### PostgreSQL Boundary Closure (v0.100.0)
+
+v0.100.0 adds lifecycle audit rules for selected PostgreSQL boundary objects: DROP TRANSFORM, DROP ACCESS METHOD, and ALTER LARGE OBJECT owner changes. These rules only apply when `--dialect postgresql` is set.
+
+| Rule ID | Check Description | Default Level | Metadata Required |
+|---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.drop_transform.warn` | DROP TRANSFORM emits a destructure warning | warning | No |
+| `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD emits a destructure warning | warning | No |
+| `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT ... OWNER TO emits an informational notice | notice | No |
+
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection.
+>
+> **Deferred boundary cases:** CREATE TRANSFORM and CREATE ACCESS METHOD are intentionally not covered because their handler/function names are the object identity, making safe normalization incompatible with payload safety constraints.
+
 ### PostgreSQL Metadata-Aware Object Validation (v0.90.0)
 
 v0.90.0 adds metadata-aware object validation for selected PostgreSQL lifecycle rule findings. When a PostgreSQL metadata connection is configured, DeltaScope resolves non-table objects through `pg_catalog` queries and enriches lifecycle findings with object existence and safe attribute information. **No new rule IDs were added.** Existing lifecycle rule findings are enriched with metadata fields when metadata is available.

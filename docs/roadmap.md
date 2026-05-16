@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.90.0 PostgreSQL Metadata-Aware Object Validation
+## Latest Completed Milestone: v0.100.0 PostgreSQL DDL Long-Tail Coverage
+
+**Goal:** extend DeltaScope's PostgreSQL DDL audit coverage to selected long-tail object lifecycle families beyond v0.90.0: collation, extended statistics, aggregate/operator/conversion, operator family/class, text search objects, and boundary closure (DROP TRANSFORM, DROP ACCESS METHOD, ALTER LARGE OBJECT).
+
+### Completed Scope
+
+- 36 new PostgreSQL-only DDL lifecycle and boundary rules across 6 object families.
+- Long-tail census: 55 of 57 forms `finding_covered`, 2 `unsupported_boundary` (CREATE TRANSFORM, CREATE ACCESS METHOD — intentionally deferred due to handler/function name identity constraints).
+- Payload safety: normalized findings avoid handler, function, body, query, definition, and options payloads. Object identities use bounded tokens only.
+- SQL corpus: 314 policy rule IDs, 505/505 supported rule-dialect targets (100%), 213 expected YAML fixtures.
+- Public surface coverage: 36 rules x SDK/CLI/HTTP/MCP = 144 assertions.
+
+### Key Design Decisions
+
+- No full PostgreSQL DDL support claim. Selected long-tail object lifecycle families are covered.
+- CREATE TRANSFORM and CREATE ACCESS METHOD deferred: handler/function names are the object identity, incompatible with payload safety normalization.
+- No DCL/permission expansion.
+- No live DDL execution or migration outcome validation.
+- No v1.0/stable API contract claim.
+
+## Previous Milestone: v0.90.0 PostgreSQL Metadata-Aware Object Validation
 
 **Goal:** enrich selected PostgreSQL lifecycle rule findings with live object metadata during metadata-aware audit. DeltaScope resolves non-table PostgreSQL objects (types, domains, extensions, sequences, materialized views, schemas, foreign servers, user mappings, publications, comments) through `pg_catalog` queries and projects safe attributes into findings.
 

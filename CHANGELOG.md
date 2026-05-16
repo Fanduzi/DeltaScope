@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.100.0] - 2026-05-16
+
+### Added
+
+- 36 new PostgreSQL-only DDL lifecycle and boundary rules across 6 object families:
+  - Collation lifecycle (3): `create_collation`, `alter_collation`, `drop_collation`.
+  - Extended statistics lifecycle (3): `create_statistics`, `alter_statistics`, `drop_statistics`.
+  - Aggregate/operator/conversion lifecycle (9): `create/alter/drop` for aggregate, operator, and conversion.
+  - Operator family/class lifecycle (6): `create/alter/drop` for operator family and operator class.
+  - Text search object lifecycle (12): `create/alter/drop` for text search configuration, dictionary, parser, and template.
+  - Boundary closure (3): `drop_transform`, `drop_access_method`, `alter_large_object` (owner change).
+- PostgreSQL DDL long-tail census: 55 of 57 forms `finding_covered`, 2 `unsupported_boundary` (intentionally deferred: `CREATE TRANSFORM` and `CREATE ACCESS METHOD` — handler/function names are the object identity, making safe normalization incompatible with payload safety constraints).
+- SQL corpus: 314 policy rule IDs, 505/505 supported rule-dialect targets covered (100%), 213 expected YAML fixtures (postgresql: 189, mysql: 13, tidb: 11).
+- Payload safety: normalized findings avoid handler, function, body, query, definition, and options payloads. Object identities use bounded tokens only (e.g., `jsonb@plpython3u` for transforms, OID integers for large objects, names for access methods).
+
+### Non-Goals
+
+- No full PostgreSQL DDL support claim. Selected long-tail object lifecycle families are covered; many forms remain deferred.
+- No DCL/permission expansion beyond existing table-level grant/revoke support.
+- No live DDL execution or migration outcome validation.
+- No v1.0/stable API contract claim.
+
 ## [v0.90.0] - 2026-05-13
 
 ### Added
