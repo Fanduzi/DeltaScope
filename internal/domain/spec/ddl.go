@@ -179,6 +179,7 @@ type Column struct {
 	AutoIncrement             bool           `json:"auto_increment,omitempty"`
 	HasDefault                bool           `json:"has_default,omitempty"`
 	DefaultValue              string         `json:"default_value,omitempty"`
+	DefaultKind               string         `json:"default_kind,omitempty"`
 	DefaultIsNull             bool           `json:"default_is_null,omitempty"`
 	DefaultIsCurrentTimestamp bool           `json:"default_is_current_timestamp,omitempty"`
 	OnUpdateCurrentTimestamp  bool           `json:"on_update_current_timestamp,omitempty"`

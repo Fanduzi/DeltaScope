@@ -1367,3 +1367,122 @@ func TestNotValidConstraintValidateRequiredRule_LaterValidateSuppressesViaRegist
 		}
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Task 3 (v0.120.0): add-column rule bounded metadata projection
+// ---------------------------------------------------------------------------
+
+func TestAddColumnNonNullDefaultRewriteWarnRuleProjectsBoundedMetadata(t *testing.T) {
+	t.Parallel()
+	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+		spec.Alter{
+			Action: "add_column",
+			Name:   "status",
+			Column: &spec.AlterColumn{
+				Definition: &spec.Column{
+					Name:        "status",
+					Type:        "varchar(32)",
+					NotNull:     true,
+					HasDefault:  true,
+					DefaultKind: "function_call",
+				},
+			},
+		},
+	)
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	meta := findings[0].Metadata
+
+	assertMetadataEqual(t, meta, "action", "add_column")
+	assertMetadataEqual(t, meta, "column", "status")
+	assertMetadataEqual(t, meta, "table", "users")
+	assertMetadataEqual(t, meta, "not_null", true)
+	assertMetadataEqual(t, meta, "has_default", true)
+	assertMetadataEqual(t, meta, "default_kind", "function_call")
+}
+
+func TestAddColumnNonNullDefaultRewriteWarnRuleMetadataNoLeak(t *testing.T) {
+	t.Parallel()
+	r := mustNewAddColumnNonNullDefaultRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+		spec.Alter{
+			Action: "add_column",
+			Name:   "created_at",
+			Column: &spec.AlterColumn{
+				Definition: &spec.Column{
+					Name:        "created_at",
+					Type:        "timestamptz",
+					NotNull:     true,
+					HasDefault:  true,
+					DefaultKind: "function_call",
+				},
+			},
+		},
+	)
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	meta := findings[0].Metadata
+
+	forbidden := []string{"now", "uuid_generate_v4", "gen_random_uuid", "DEFAULT now", "now()", "default_sql", "default_expr", "expression_sql"}
+	for _, word := range forbidden {
+		for key, val := range meta {
+			s, ok := val.(string)
+			if !ok {
+				continue
+			}
+			if strings.Contains(strings.ToLower(s), strings.ToLower(word)) {
+				t.Fatalf("metadata[%q] = %q contains forbidden string %q", key, s, word)
+			}
+		}
+	}
+}
+
+func TestAddColumnNonNullNoDefaultWarnRuleProjectsBoundedMetadata(t *testing.T) {
+	t.Parallel()
+	r := mustNewAddColumnNonNullNoDefaultWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := alterStatementWithDialect(spec.DialectPostgreSQL,
+		spec.Alter{
+			Action: "add_column",
+			Name:   "bio",
+			Column: &spec.AlterColumn{
+				Definition: &spec.Column{
+					Name:       "bio",
+					Type:       "text",
+					NotNull:    true,
+					HasDefault: false,
+				},
+			},
+		},
+	)
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	meta := findings[0].Metadata
+
+	assertMetadataEqual(t, meta, "action", "add_column")
+	assertMetadataEqual(t, meta, "column", "bio")
+	assertMetadataEqual(t, meta, "table", "users")
+	assertMetadataEqual(t, meta, "not_null", true)
+	assertMetadataEqual(t, meta, "has_default", false)
+}

@@ -133,9 +133,12 @@ func (r addColumnNonNullDefaultRewriteWarnRule) Evaluate(ctx context.Context, st
 				Suggestion: "Split into safe steps: 1) ADD COLUMN as nullable with no default. 2) Backfill existing rows. 3) SET DEFAULT for new rows. 4) SET NOT NULL once all rows are populated.",
 			},
 			Metadata: map[string]any{
-				"action": "add_column",
-				"column": alter.Name,
-				"table":  statement.DDL.Table.Name,
+				"action":       "add_column",
+				"column":       alter.Name,
+				"table":        statement.DDL.Table.Name,
+				"not_null":     col.NotNull,
+				"has_default":  col.HasDefault,
+				"default_kind": col.DefaultKind,
 			},
 		})
 	}
@@ -356,9 +359,11 @@ func (r addColumnNonNullNoDefaultWarnRule) Evaluate(ctx context.Context, stateme
 				Suggestion: "Use a phased migration: 1) ADD COLUMN as nullable. 2) Backfill values in batches. 3) SET DEFAULT for future inserts. 4) SET NOT NULL once all rows are populated.",
 			},
 			Metadata: map[string]any{
-				"action": "add_column",
-				"column": alter.Name,
-				"table":  statement.DDL.Table.Name,
+				"action":      "add_column",
+				"column":      alter.Name,
+				"table":       statement.DDL.Table.Name,
+				"not_null":    col.NotNull,
+				"has_default": col.HasDefault,
 			},
 		})
 	}

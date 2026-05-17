@@ -9,6 +9,80 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+func TestPostgreSQLAddColumnDefaultKind(t *testing.T) {
+	t.Parallel()
+	parser := New()
+
+	tests := []struct {
+		name string
+		sql  string
+		want string
+	}{
+		{
+			name: "string_literal",
+			sql:  "ALTER TABLE users ADD COLUMN status text NOT NULL DEFAULT 'pending'",
+			want: "literal",
+		},
+		{
+			name: "integer_literal",
+			sql:  "ALTER TABLE users ADD COLUMN score integer NOT NULL DEFAULT 0",
+			want: "literal",
+		},
+		{
+			name: "null_default",
+			sql:  "ALTER TABLE users ADD COLUMN archived_at timestamptz DEFAULT NULL",
+			want: "null",
+		},
+		{
+			name: "function_call",
+			sql:  "ALTER TABLE users ADD COLUMN created_at timestamptz NOT NULL DEFAULT now()",
+			want: "function_call",
+		},
+		{
+			name: "expression",
+			sql:  "ALTER TABLE users ADD COLUMN score integer NOT NULL DEFAULT (1 + 2)",
+			want: "expression",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := parser.Parse(context.Background(), tt.sql)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			stmt, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+				t.Fatalf("expected alter table, got %#v", stmt.DDL)
+			}
+			if len(stmt.DDL.Alter) != 1 {
+				t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+			}
+			alter := stmt.DDL.Alter[0]
+			if alter.Action != "add_column" {
+				t.Fatalf("expected add_column action, got %q", alter.Action)
+			}
+			if alter.Column == nil || alter.Column.Definition == nil {
+				t.Fatal("expected column definition")
+			}
+			col := alter.Column.Definition
+			if !col.HasDefault {
+				t.Fatal("expected HasDefault=true")
+			}
+			if col.DefaultKind != tt.want {
+				t.Fatalf("DefaultKind = %q, want %q", col.DefaultKind, tt.want)
+			}
+		})
+	}
+}
+
 func TestExtractAlterAddCheckNotValidFlag(t *testing.T) {
 	t.Parallel()
 	parser := New()

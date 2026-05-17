@@ -466,8 +466,51 @@ func columnFromDef(column *pg_query.ColumnDef) spec.Column {
 		NotNull:    column.GetIsNotNull() || hasColumnConstraint(column, pg_query.ConstrType_CONSTR_NOTNULL),
 		HasDefault: column.GetRawDefault() != nil || column.GetCookedDefault() != nil || hasColumnConstraint(column, pg_query.ConstrType_CONSTR_DEFAULT),
 	}
+	if result.HasDefault {
+		result.DefaultKind = classifyDefaultKind(column)
+		if result.DefaultKind == "" {
+			result.DefaultKind = "unknown"
+		}
+	}
 	applyGeneratedIdentityFacts(&result, column)
 	return result
+}
+
+func classifyDefaultKind(column *pg_query.ColumnDef) string {
+	node := column.GetRawDefault()
+	if node == nil {
+		node = column.GetCookedDefault()
+	}
+	if node != nil {
+		return defaultKindFromNode(node)
+	}
+	for _, item := range column.GetConstraints() {
+		con := item.GetConstraint()
+		if con == nil || con.GetContype() != pg_query.ConstrType_CONSTR_DEFAULT {
+			continue
+		}
+		expr := con.GetRawExpr()
+		if expr == nil {
+			return "unknown"
+		}
+		return defaultKindFromNode(expr)
+	}
+	return ""
+}
+
+func defaultKindFromNode(node *pg_query.Node) string {
+	switch node.GetNode().(type) {
+	case *pg_query.Node_AConst:
+		aconst := node.GetAConst()
+		if aconst.GetIsnull() {
+			return "null"
+		}
+		return "literal"
+	case *pg_query.Node_FuncCall:
+		return "function_call"
+	default:
+		return "expression"
+	}
 }
 
 func hasColumnConstraint(column *pg_query.ColumnDef, wantType pg_query.ConstrType) bool {
