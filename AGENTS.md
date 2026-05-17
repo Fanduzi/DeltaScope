@@ -58,7 +58,7 @@ Any DeltaScope release handoff prompt must be skill-first. It must explicitly re
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **DeltaScope** (10993 symbols, 23552 relationships, 273 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **DeltaScope** (11023 symbols, 23582 relationships, 273 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
