@@ -47,9 +47,11 @@ func (r createIndexConcurrentlyRequiredRule) Evaluate(ctx context.Context, state
 		return nil, nil
 	}
 
+	var idx spec.Index
 	indexName := ""
 	if len(statement.DDL.Indexes) > 0 {
-		indexName = statement.DDL.Indexes[0].Name
+		idx = statement.DDL.Indexes[0]
+		indexName = idx.Name
 	}
 	tableName := ""
 	if statement.DDL.Table != nil {
@@ -70,10 +72,17 @@ func (r createIndexConcurrentlyRequiredRule) Evaluate(ctx context.Context, state
 			Suggestion: "Use CREATE INDEX CONCURRENTLY to build the index without blocking writes. Note that CONCURRENTLY cannot run inside a transaction; run it as a standalone migration step.",
 		},
 		Metadata: map[string]any{
-			"operation":    "create_index",
-			"index":        indexName,
-			"table":        tableName,
-			"concurrently": false,
+			"operation":             "create_index",
+			"index":                 indexName,
+			"table":                 tableName,
+			"concurrently":          false,
+			"index_kind":            string(idx.Kind),
+			"access_method":         idx.AccessMethod,
+			"column_count":          len(idx.Columns),
+			"included_column_count": len(idx.IncludedColumns),
+			"has_predicate":         idx.HasPredicate,
+			"has_expression_keys":   idx.HasExpressionKeys,
+			"expression_count":      idx.ExpressionCount,
 		},
 	}}, nil
 }

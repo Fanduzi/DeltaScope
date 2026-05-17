@@ -723,6 +723,64 @@ func TestRegisterIncludesPostgreSQLMigrationRules(t *testing.T) {
 // Task 4: Suggestion quality pass — actionable phrase assertions
 // ---------------------------------------------------------------------------
 
+func TestCreateIndexConcurrentlyRequiredRuleProjectsBoundedIndexMetadata(t *testing.T) {
+	t.Parallel()
+	r := mustNewCreateIndexConcurrentlyRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationCreateIndex,
+			Table:     &spec.Table{Schema: "public", Name: "users"},
+			Indexes: []spec.Index{{
+				Name:              "idx_users_active_email",
+				Kind:              spec.IndexKindSecondary,
+				Columns:           []string{"email"},
+				AccessMethod:      "gin",
+				IncludedColumns:   []string{"status", "created_at"},
+				HasPredicate:      true,
+				HasExpressionKeys: true,
+				ExpressionCount:   1,
+			}},
+			Options: map[string]string{"concurrently": "false"},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	meta := findings[0].Metadata
+
+	assertMetadataEqual(t, meta, "operation", "create_index")
+	assertMetadataEqual(t, meta, "index", "idx_users_active_email")
+	assertMetadataEqual(t, meta, "table", "users")
+	assertMetadataEqual(t, meta, "concurrently", false)
+
+	assertMetadataEqual(t, meta, "index_kind", "secondary")
+	assertMetadataEqual(t, meta, "access_method", "gin")
+	assertMetadataEqual(t, meta, "column_count", 1)
+	assertMetadataEqual(t, meta, "included_column_count", 2)
+	assertMetadataEqual(t, meta, "has_predicate", true)
+	assertMetadataEqual(t, meta, "has_expression_keys", true)
+	assertMetadataEqual(t, meta, "expression_count", 1)
+}
+
+func assertMetadataEqual(t *testing.T, meta map[string]any, key string, want any) {
+	t.Helper()
+	got, ok := meta[key]
+	if !ok {
+		t.Fatalf("missing metadata key %q", key)
+	}
+	if got != want {
+		t.Fatalf("metadata[%q] = %v (%T), want %v (%T)", key, got, got, want, want)
+	}
+}
+
 func TestCreateIndexConcurrentlyRequiredRuleProvidesActionableSuggestion(t *testing.T) {
 	t.Parallel()
 	r := mustNewCreateIndexConcurrentlyRequiredRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
