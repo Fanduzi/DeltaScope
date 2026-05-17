@@ -4,7 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.110.0 PostgreSQL Deferred Boundary Identity
+## Latest Completed Milestone: v0.120.0 PostgreSQL Migration-Safety Semantic Metadata
+
+**Goal:** enrich PostgreSQL migration-safety findings with bounded semantic metadata for CREATE INDEX, ADD COLUMN, and ALTER COLUMN TYPE operations, without emitting raw SQL text.
+
+### Completed Scope
+
+- CREATE INDEX findings include bounded index shape metadata: `index_kind`, `access_method`, `column_count`, `included_column_count`, `has_predicate`, `has_expression_keys`, `expression_count`.
+- ADD COLUMN findings include default semantics metadata: `not_null`, `has_default`, `default_kind`.
+- ALTER COLUMN TYPE findings include USING clause metadata: `has_using`.
+- SDK/CLI/HTTP/MCP parity tests cover all metadata across four public surfaces.
+- No-leak contract: no predicate SQL, expression SQL, default SQL, or USING SQL text emitted.
+
+### Key Design Decisions
+
+- No full PostgreSQL DDL support claim. Bounded metadata enrichment for selected migration-safety findings.
+- No full expression analysis. Presence/count metadata only; SQL text never emitted.
+- No function volatility/immutability analysis. `default_kind` classifies AST node shape.
+- No live database/catalog validation.
+- No DCL/permission expansion.
+- No v1.0/stable API contract claim.
+
+## Previous Milestone: v0.110.0 PostgreSQL Deferred Boundary Identity
 
 **Goal:** promote two previously deferred PostgreSQL DDL boundary forms — CREATE TRANSFORM and CREATE ACCESS METHOD — to supported lifecycle findings with bounded identity, completing the long-tail census at 57/57 `finding_covered`.
 

@@ -248,17 +248,17 @@ These rules require a live table snapshot and are skipped in offline mode.
 
 ## DDL: PostgreSQL Migration-Safety
 
-These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
+These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects. v0.120.0 enriches selected rules with bounded semantic metadata (index shape, default classification, USING presence); metadata is additive and does not emit raw SQL text.
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
-| `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` without `CONCURRENTLY` holds an exclusive lock, blocking reads and writes | ✓ | ✗ | warning |
-| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite | ✓ | ✗ | warning |
+| `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` without `CONCURRENTLY` holds an exclusive lock, blocking reads and writes. Finding metadata: `index_kind`, `access_method`, `column_count`, `included_column_count`, `has_predicate`, `has_expression_keys`, `expression_count` (bounded, no SQL text). | ✓ | ✗ | warning |
+| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | Adding a `NOT NULL` column with a volatile default may trigger a full table rewrite. Finding metadata: `not_null`, `has_default`, `default_kind` (bounded classification, no expression text). | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` constraint without `NOT VALID` requires a full table scan with `ACCESS EXCLUSIVE` lock | ✓ | ✗ | warning |
-| `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion | ✓ | ✗ | warning |
+| `ddl.pg.alter.set_data_type.rewrite.warn` | Changing a column type may require a full table rewrite depending on the conversion. Finding metadata: `has_using` (boolean, no USING expression text). | ✓ | ✗ | warning |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | Named CHECK/FK `NOT VALID` constraint lacks a later matching `VALIDATE CONSTRAINT` in the same audited SQL batch | ✓ | ✗ | warning |
 | `ddl.pg.drop_index.advisory` | `DROP INDEX` removes an index — advises review of dependent queries | ✓ | ✗ | notice |
-| `ddl.pg.alter.add_column.non_null_no_default.warn` | Adding a `NOT NULL` column without `DEFAULT` can cause a full table rewrite on large tables | ✓ | ✗ | warning |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | Adding a `NOT NULL` column without `DEFAULT` can cause a full table rewrite on large tables. Finding metadata: `not_null`, `has_default`. | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` without `NOT VALID` and no subsequent `CREATE UNIQUE INDEX CONCURRENTLY` — advises concurrent index creation | ✓ | ✗ | notice |
 | `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` removes a CHECK, UNIQUE, or FK constraint — advises review of data integrity | ✓ | ✗ | notice |
 

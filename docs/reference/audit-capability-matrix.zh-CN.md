@@ -234,17 +234,17 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ## DDL：PostgreSQL 迁移安全
 
-这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。
+这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。v0.120.0 为选定规则增加有界语义元数据（索引形态、默认值分类、USING 是否存在）；元数据为增量添加，不输出原始 SQL 文本。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
-| `ddl.pg.create_index.concurrently.require` | 不带 `CONCURRENTLY` 的 `CREATE INDEX` 持有排他锁，阻塞读写 | ✓ | ✗ | warning |
-| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带 volatile 默认值的 `NOT NULL` 列可能触发全表重写 | ✓ | ✗ | warning |
+| `ddl.pg.create_index.concurrently.require` | 不带 `CONCURRENTLY` 的 `CREATE INDEX` 持有排他锁，阻塞读写。发现元数据：`index_kind`、`access_method`、`column_count`、`included_column_count`、`has_predicate`、`has_expression_keys`、`expression_count`（有界，不含 SQL 文本）。 | ✓ | ✗ | warning |
+| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带 volatile 默认值的 `NOT NULL` 列可能触发全表重写。发现元数据：`not_null`、`has_default`、`default_kind`（有界分类，不含表达式文本）。 | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_check.not_valid.require` | 不带 `NOT VALID` 的 `ADD CHECK` 需要持 `ACCESS EXCLUSIVE` 锁的全表扫描 | ✓ | ✗ | warning |
-| `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换） | ✓ | ✗ | warning |
+| `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换）。发现元数据：`has_using`（布尔值，不含 USING 表达式文本）。 | ✓ | ✗ | warning |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | ✓ | ✗ | warning |
 | `ddl.pg.drop_index.advisory` | `DROP INDEX` 移除索引，建议审查依赖查询 | ✓ | ✗ | notice |
-| `ddl.pg.alter.add_column.non_null_no_default.warn` | 添加 `NOT NULL` 列但未指定 `DEFAULT`，可能导致大表全表重写 | ✓ | ✗ | warning |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | 添加 `NOT NULL` 列但未指定 `DEFAULT`，可能导致大表全表重写。发现元数据：`not_null`、`has_default`。 | ✓ | ✗ | warning |
 | `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` 不含 `NOT VALID` 且后续没有并发索引创建，建议使用并发索引 | ✓ | ✗ | notice |
 | `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` 移除 CHECK/UNIQUE/FK 约束，建议审查数据完整性 | ✓ | ✗ | notice |
 

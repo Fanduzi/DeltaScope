@@ -332,13 +332,13 @@ deltascope rules search "prefix"
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
-| `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` 必须使用 `CONCURRENTLY` 以避免阻塞读写 | warning | 否 |
-| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带有 volatile 默认值的 `NOT NULL` 列可能触发全表重写 | warning | 否 |
+| `ddl.pg.create_index.concurrently.require` | `CREATE INDEX` 必须使用 `CONCURRENTLY` 以避免阻塞读写。发现包含有界索引形态元数据：`index_kind`、`access_method`、`column_count`、`included_column_count`、`has_predicate`、`has_expression_keys`、`expression_count`。元数据为增量添加，不输出谓词或表达式 SQL 文本。 | warning | 否 |
+| `ddl.pg.alter.add_column.non_null_default.rewrite.warn` | 添加带有 volatile 默认值的 `NOT NULL` 列可能触发全表重写。发现包含：`not_null`、`has_default`、`default_kind`（`literal`、`null`、`function_call`、`expression`、`unknown`）。元数据不输出默认表达式文本或函数名。 | warning | 否 |
 | `ddl.pg.alter.add_check.not_valid.require` | `ADD CHECK` 约束应使用 `NOT VALID` 以避免持 `ACCESS EXCLUSIVE` 锁的全表扫描 | warning | 否 |
-| `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换） | warning | 否 |
+| `ddl.pg.alter.set_data_type.rewrite.warn` | 更改列类型可能需要全表重写（取决于类型转换）。发现包含：`has_using`（是否存在 USING 子句）。元数据不输出 USING 表达式 SQL 文本。 | warning | 否 |
 | `ddl.pg.alter.not_valid_constraint.validate.require` | 命名 CHECK/FK `NOT VALID` 约束在同一次审计 SQL 批次中缺少后续匹配的 `VALIDATE CONSTRAINT` | warning | 否 |
 | `ddl.pg.drop_index.advisory` | `DROP INDEX` 移除索引，建议审查依赖查询 | notice | 否 |
-| `ddl.pg.alter.add_column.non_null_no_default.warn` | 添加 `NOT NULL` 列但未指定 `DEFAULT`，可能导致大表全表重写 | warning | 否 |
+| `ddl.pg.alter.add_column.non_null_no_default.warn` | 添加 `NOT NULL` 列但未指定 `DEFAULT`，可能导致大表全表重写。发现包含：`not_null`、`has_default`。 | warning | 否 |
 | `ddl.pg.alter.add_unique_constraint.concurrent_index.advisory` | `ADD UNIQUE CONSTRAINT` 不含 `NOT VALID` 且后续没有 `CREATE UNIQUE INDEX CONCURRENTLY`，建议使用并发索引创建以实现零停机部署 | notice | 否 |
 | `ddl.pg.alter.drop_constraint.advisory` | `DROP CONSTRAINT` 移除 CHECK、UNIQUE 或 FOREIGN KEY 约束，建议审查依赖查询和数据完整性影响 | notice | 否 |
 

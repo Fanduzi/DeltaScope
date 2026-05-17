@@ -6,6 +6,37 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.120.0] - 2026-05-17
+
+### Added
+
+- PostgreSQL migration-safety findings now include bounded semantic metadata for CREATE INDEX, ADD COLUMN, and ALTER COLUMN TYPE operations.
+- `CREATE INDEX` findings include bounded index shape metadata:
+  - `index_kind` — index classification (e.g., `secondary`, `unique`).
+  - `access_method` — PostgreSQL access method name (e.g., `btree`, `gin`).
+  - `column_count` — number of indexed columns.
+  - `included_column_count` — number of INCLUDE covering columns.
+  - `has_predicate` — whether the index has a WHERE clause.
+  - `has_expression_keys` — whether any key column is an expression.
+  - `expression_count` — number of expression key columns.
+- `ADD COLUMN` rewrite and no-default findings include:
+  - `not_null` — whether the column is NOT NULL.
+  - `has_default` — whether the column has a DEFAULT.
+  - `default_kind` — default value classification (`literal`, `null`, `function_call`, `expression`, `unknown`).
+- `ALTER COLUMN TYPE` rewrite findings include:
+  - `has_using` — whether the ALTER includes a USING clause.
+- SDK/CLI/HTTP/MCP parity tests cover the new metadata across all four public surfaces.
+- No-leak contract: findings do not emit predicate SQL text, expression index SQL text, default expression SQL text, default function names, or USING expression SQL text.
+
+### Non-Goals
+
+- No full PostgreSQL DDL support claim. This is bounded semantic metadata enrichment for selected migration-safety findings.
+- No full PostgreSQL expression analysis. Expression and predicate presence is recorded as boolean/count metadata only; SQL text is not emitted.
+- No function volatility/immutability analysis. `default_kind` classifies the AST node shape, not the runtime behavior.
+- No live database/catalog validation.
+- No DCL/permission expansion.
+- No v1.0/stable API contract claim.
+
 ## [v0.110.0] - 2026-05-17
 
 ### Added
