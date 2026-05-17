@@ -1486,3 +1486,51 @@ func TestAddColumnNonNullNoDefaultWarnRuleProjectsBoundedMetadata(t *testing.T) 
 	assertMetadataEqual(t, meta, "not_null", true)
 	assertMetadataEqual(t, meta, "has_default", false)
 }
+
+// ---------------------------------------------------------------------------
+// Task 4 (v0.120.0): SET DATA TYPE has_using metadata projection
+// ---------------------------------------------------------------------------
+
+func TestSetDataTypeRewriteWarnRuleProjectsHasUsing(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetDataTypeRewriteWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	tests := []struct {
+		name      string
+		hasUsing  string
+		wantUsing bool
+	}{
+		{name: "with_using", hasUsing: "true", wantUsing: true},
+		{name: "without_using", hasUsing: "", wantUsing: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			alter := spec.Alter{
+				Action: "set_data_type",
+				Name:   "score",
+				Column: &spec.AlterColumn{
+					Definition: &spec.Column{Name: "score", Type: "bigint"},
+				},
+			}
+			if tt.hasUsing != "" {
+				alter.Options = map[string]string{"has_using": tt.hasUsing}
+			}
+			stmt := alterStatementWithDialect(spec.DialectPostgreSQL, alter)
+
+			findings, err := r.Evaluate(context.Background(), stmt)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			meta := findings[0].Metadata
+			assertMetadataEqual(t, meta, "action", "set_data_type")
+			assertMetadataEqual(t, meta, "column", "score")
+			assertMetadataEqual(t, meta, "table", "users")
+			assertMetadataEqual(t, meta, "has_using", tt.wantUsing)
+		})
+	}
+}

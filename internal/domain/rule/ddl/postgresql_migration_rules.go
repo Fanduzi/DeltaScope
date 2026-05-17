@@ -246,9 +246,10 @@ func (r setDataTypeRewriteWarnRule) Evaluate(ctx context.Context, statement spec
 				Suggestion: "Assess table size and lock impact first. For large tables, use a phased migration: add a shadow column with the new type, backfill in batches, switch application reads, then drop the old column.",
 			},
 			Metadata: map[string]any{
-				"action": "set_data_type",
-				"column": alter.Name,
-				"table":  statement.DDL.Table.Name,
+				"action":    "set_data_type",
+				"column":    alter.Name,
+				"table":     statement.DDL.Table.Name,
+				"has_using": alter.Options["has_using"] == "true",
 			},
 		})
 	}
