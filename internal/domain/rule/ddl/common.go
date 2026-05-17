@@ -337,6 +337,8 @@ const (
 	ruleIDPGAlterTextSearchTemplateNotice       = "ddl.pg.alter_text_search_template.notice"
 	ruleIDPGDropTextSearchTemplateWarn          = "ddl.pg.drop_text_search_template.warn"
 
+	ruleIDPGCreateTransformNotice       = "ddl.pg.create_transform.notice"
+	ruleIDPGCreateAccessMethodNotice    = "ddl.pg.create_access_method.notice"
 	ruleIDPGDropTransformWarn           = "ddl.pg.drop_transform.warn"
 	ruleIDPGDropAccessMethodWarn        = "ddl.pg.drop_access_method.warn"
 	ruleIDPGAlterLargeObjectOwnerNotice = "ddl.pg.alter_large_object.owner.notice"

@@ -96,20 +96,52 @@ func TestExtractAlterLargeObjectOwner(t *testing.T) {
 	}
 }
 
-func TestExtractCreateTransformDeferred(t *testing.T) {
+func TestExtractCreateTransform(t *testing.T) {
 	t.Parallel()
 	s := extractStmt(t, "CREATE TRANSFORM FOR jsonb LANGUAGE plpython3u (FROM SQL WITH FUNCTION jsonb_to_plpython(jsonb), TO SQL WITH FUNCTION plpython_to_jsonb(internal))")
-	if s.DDL != nil && s.DDL.Operation != "" {
-		t.Errorf("CREATE TRANSFORM should be deferred/unsupported, got operation %q", s.DDL.Operation)
+	assertSupportedDDL(t, s)
+	if s.DDL.Operation != spec.DDLOperationCreateTransform {
+		t.Errorf("expected operation %q, got %q", spec.DDLOperationCreateTransform, s.DDL.Operation)
 	}
+	if s.DDL.ObjectName != "jsonb@plpython3u" {
+		t.Errorf("expected object_name jsonb@plpython3u, got %q", s.DDL.ObjectName)
+	}
+	if s.DDL.ObjectType != "transform" {
+		t.Errorf("expected object_type transform, got %q", s.DDL.ObjectType)
+	}
+	assertNoLeakedBoundaryPayload(t, s.DDL.Options)
 }
 
-func TestExtractCreateAccessMethodDeferred(t *testing.T) {
+func TestExtractCreateTransformOrReplace(t *testing.T) {
+	t.Parallel()
+	s := extractStmt(t, "CREATE OR REPLACE TRANSFORM FOR jsonb LANGUAGE plpython3u (FROM SQL WITH FUNCTION jsonb_to_plpython(jsonb), TO SQL WITH FUNCTION plpython_to_jsonb(internal))")
+	assertSupportedDDL(t, s)
+	if s.DDL.Operation != spec.DDLOperationCreateTransform {
+		t.Errorf("expected operation %q, got %q", spec.DDLOperationCreateTransform, s.DDL.Operation)
+	}
+	if s.DDL.ObjectName != "jsonb@plpython3u" {
+		t.Errorf("expected object_name jsonb@plpython3u, got %q", s.DDL.ObjectName)
+	}
+	if s.DDL.Options["replace"] != "true" {
+		t.Errorf("expected replace=true, got %q", s.DDL.Options["replace"])
+	}
+	assertNoLeakedBoundaryPayload(t, s.DDL.Options)
+}
+
+func TestExtractCreateAccessMethod(t *testing.T) {
 	t.Parallel()
 	s := extractStmt(t, "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler")
-	if s.DDL != nil && s.DDL.Operation != "" {
-		t.Errorf("CREATE ACCESS METHOD should be deferred/unsupported, got operation %q", s.DDL.Operation)
+	assertSupportedDDL(t, s)
+	if s.DDL.Operation != spec.DDLOperationCreateAccessMethod {
+		t.Errorf("expected operation %q, got %q", spec.DDLOperationCreateAccessMethod, s.DDL.Operation)
 	}
+	if s.DDL.ObjectName != "heap2" {
+		t.Errorf("expected object_name heap2, got %q", s.DDL.ObjectName)
+	}
+	if s.DDL.ObjectType != "access_method" {
+		t.Errorf("expected object_type access_method, got %q", s.DDL.ObjectType)
+	}
+	assertNoLeakedBoundaryPayload(t, s.DDL.Options)
 }
 
 func assertNoLeakedBoundaryPayload(t *testing.T, options map[string]string) {

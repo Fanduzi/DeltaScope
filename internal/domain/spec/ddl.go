@@ -152,9 +152,11 @@ const (
 	DDLOperationAlterTextSearchTemplate       DDLOperation = "alter_text_search_template"
 	DDLOperationDropTextSearchTemplate        DDLOperation = "drop_text_search_template"
 
-	DDLOperationDropTransform    DDLOperation = "drop_transform"
-	DDLOperationDropAccessMethod DDLOperation = "drop_access_method"
-	DDLOperationAlterLargeObject DDLOperation = "alter_large_object"
+	DDLOperationCreateTransform    DDLOperation = "create_transform"
+	DDLOperationCreateAccessMethod DDLOperation = "create_access_method"
+	DDLOperationDropTransform      DDLOperation = "drop_transform"
+	DDLOperationDropAccessMethod   DDLOperation = "drop_access_method"
+	DDLOperationAlterLargeObject   DDLOperation = "alter_large_object"
 )
 
 // Table describes a table-level object.

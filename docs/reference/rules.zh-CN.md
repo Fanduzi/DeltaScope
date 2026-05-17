@@ -945,6 +945,8 @@ v0.100.0 新增选定 PostgreSQL 边界对象生命周期审核规则：DROP TRA
 
 | 规则 ID | 检查描述 | 默认级别 | 是否需要元数据 |
 |---------|---------|:--------:|:--------------:|
+| `ddl.pg.create_transform.notice` | CREATE TRANSFORM 触发信息通知 | notice | 否 |
+| `ddl.pg.create_access_method.notice` | CREATE ACCESS METHOD 触发信息通知 | notice | 否 |
 | `ddl.pg.drop_transform.warn` | DROP TRANSFORM 触发结构销毁警告 | warning | 否 |
 | `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD 触发结构销毁警告 | warning | 否 |
 | `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT ... OWNER TO 触发信息通知 | notice | 否 |

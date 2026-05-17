@@ -584,6 +584,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGCreateTextSearchTemplateNotice, construct: newCreateTextSearchTemplateNoticeRule},
 		{ruleID: ruleIDPGAlterTextSearchTemplateNotice, construct: newAlterTextSearchTemplateNoticeRule},
 		{ruleID: ruleIDPGDropTextSearchTemplateWarn, construct: newDropTextSearchTemplateWarnRule},
+		{ruleID: ruleIDPGCreateTransformNotice, construct: newCreateTransformNoticeRule},
+		{ruleID: ruleIDPGCreateAccessMethodNotice, construct: newCreateAccessMethodNoticeRule},
 		{ruleID: ruleIDPGDropTransformWarn, construct: newDropTransformWarnRule},
 		{ruleID: ruleIDPGDropAccessMethodWarn, construct: newDropAccessMethodWarnRule},
 		{ruleID: ruleIDPGAlterLargeObjectOwnerNotice, construct: newAlterLargeObjectOwnerNoticeRule},

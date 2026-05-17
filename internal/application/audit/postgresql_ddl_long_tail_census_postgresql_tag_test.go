@@ -13,9 +13,8 @@ import "testing"
 //   - unsupported_boundary: parser succeeds but extractor marks the statement unsupported
 //   - parser_error:         PG parser cannot parse the statement
 //
-// Observed baseline: 0 parser_error, 0 finding_covered,
-// 11 normalized_silent (all ALTER ... SET SCHEMA variants),
-// 46 unsupported_boundary (everything else).
+// Observed baseline: 0 parser_error, 57 finding_covered,
+// 0 normalized_silent, 0 unsupported_boundary.
 //
 // This file must not modify production code. It only observes current behavior.
 
@@ -205,13 +204,13 @@ var pgDDLLongTailCensusCases = []struct {
 
 	{Name: "CREATE TRANSFORM",
 		SQL:      "CREATE TRANSFORM FOR jsonb LANGUAGE plpython3u (FROM SQL WITH FUNCTION jsonb_to_plpython(jsonb), TO SQL WITH FUNCTION plpython_to_jsonb(internal))",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP TRANSFORM",
 		SQL:      "DROP TRANSFORM FOR jsonb LANGUAGE plpython3u",
 		Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE ACCESS METHOD",
 		SQL:      "CREATE ACCESS METHOD heap2 TYPE TABLE HANDLER heap_tableam_handler",
-		Expected: ddlCoverageUnsupportedBoundary},
+		Expected: ddlCoverageFindingCovered},
 	{Name: "DROP ACCESS METHOD",
 		SQL:      "DROP ACCESS METHOD heap2",
 		Expected: ddlCoverageFindingCovered},

@@ -75,6 +75,28 @@ func (r pgBoundaryLifecycleRule) Evaluate(ctx context.Context, statement spec.St
 	}}, nil
 }
 
+func newCreateTransformNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGBoundaryLifecycleRule(
+		ruleIDPGCreateTransformNotice, rule.LevelNotice, spec.DDLOperationCreateTransform,
+		"PostgreSQL transform %q created",
+		"CREATE TRANSFORM registers a mapping between a data type and a procedural language for automatic type conversion.",
+		"New transforms change how data flows between SQL and PL languages. Incorrect transforms can silently corrupt data conversion.",
+		"Verify the type-language mapping is correct and the transform is needed before deploying.",
+		cfg,
+	)
+}
+
+func newCreateAccessMethodNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGBoundaryLifecycleRule(
+		ruleIDPGCreateAccessMethodNotice, rule.LevelNotice, spec.DDLOperationCreateAccessMethod,
+		"PostgreSQL access method %q created",
+		"CREATE ACCESS METHOD registers a custom table or index access method that defines how data is stored and accessed.",
+		"A custom access method changes storage behavior for any tables that use it. Bugs in the handler can cause data corruption.",
+		"Verify the access method handler is well-tested before using it for production tables.",
+		cfg,
+	)
+}
+
 func newDropTransformWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newPGBoundaryLifecycleRule(
 		ruleIDPGDropTransformWarn, rule.LevelWarning, spec.DDLOperationDropTransform,

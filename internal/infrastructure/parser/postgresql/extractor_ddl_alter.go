@@ -1605,3 +1605,50 @@ func extractCreateOpClassStmt(statement spec.Statement, stmt *pg_query.CreateOpC
 	}
 	return statement
 }
+
+func extractCreateTransformStmt(statement spec.Statement, stmt *pg_query.CreateTransformStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_transform", "postgresql create transform statement payload is missing")
+	}
+	var typeNameStr string
+	if stmt.GetTypeName() != nil {
+		names := stmt.GetTypeName().GetNames()
+		for _, n := range names {
+			if s := n.GetString_(); s != nil && s.GetSval() != "" {
+				typeNameStr = s.GetSval()
+			}
+		}
+	}
+	lang := stmt.GetLang()
+	if typeNameStr == "" || lang == "" {
+		return unsupportedStatement(statement, "create_transform", "postgresql create transform identity fields are empty")
+	}
+	objectName := typeNameStr + "@" + lang
+	options := map[string]string{}
+	if stmt.GetReplace() {
+		options["replace"] = "true"
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateTransform,
+		ObjectName: objectName,
+		ObjectType: "transform",
+		Options:    options,
+	}
+	return statement
+}
+
+func extractCreateAmStmt(statement spec.Statement, stmt *pg_query.CreateAmStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "create_access_method", "postgresql create access method statement payload is missing")
+	}
+	amName := stmt.GetAmname()
+	if amName == "" {
+		return unsupportedStatement(statement, "create_access_method", "postgresql create access method name is empty")
+	}
+	statement.DDL = &spec.DDL{
+		Operation:  spec.DDLOperationCreateAccessMethod,
+		ObjectName: amName,
+		ObjectType: "access_method",
+	}
+	return statement
+}

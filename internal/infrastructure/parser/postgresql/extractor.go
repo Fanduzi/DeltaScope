@@ -133,6 +133,10 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractCreateOpFamilyStmt(statement, node.CreateOpFamilyStmt), nil
 	case *pg_query.Node_CreateOpClassStmt:
 		return extractCreateOpClassStmt(statement, node.CreateOpClassStmt), nil
+	case *pg_query.Node_CreateTransformStmt:
+		return extractCreateTransformStmt(statement, node.CreateTransformStmt), nil
+	case *pg_query.Node_CreateAmStmt:
+		return extractCreateAmStmt(statement, node.CreateAmStmt), nil
 	case *pg_query.Node_CreateStatsStmt:
 		return extractCreateStatsStmt(statement, node.CreateStatsStmt), nil
 	case *pg_query.Node_AlterStatsStmt:

@@ -776,7 +776,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `CREATE TEXT SEARCH TEMPLATE ...` | `create_text_search_template` |
 | `ALTER TEXT SEARCH TEMPLATE ...` | `alter_text_search_template` |
 | `DROP TEXT SEARCH TEMPLATE ...` | `drop_text_search_template` |
+| `CREATE TRANSFORM FOR ... LANGUAGE ...` | `create_transform` |
 | `DROP TRANSFORM FOR ... LANGUAGE ...` | `drop_transform` |
+| `CREATE ACCESS METHOD ... TYPE ... HANDLER ...` | `create_access_method` |
 | `DROP ACCESS METHOD ...` | `drop_access_method` |
 | `ALTER LARGE OBJECT ... OWNER TO` | `alter_large_object` |
 
@@ -817,16 +819,11 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.create_text_search_template.notice` | CREATE TEXT SEARCH TEMPLATE 通知 | ✓ | ✗ | notice |
 | `ddl.pg.alter_text_search_template.notice` | ALTER TEXT SEARCH TEMPLATE 通知 | ✓ | ✗ | notice |
 | `ddl.pg.drop_text_search_template.warn` | DROP TEXT SEARCH TEMPLATE 警告 | ✓ | ✗ | warning |
+| `ddl.pg.create_transform.notice` | CREATE TRANSFORM 通知 | ✓ | ✗ | notice |
+| `ddl.pg.create_access_method.notice` | CREATE ACCESS METHOD 通知 | ✓ | ✗ | notice |
 | `ddl.pg.drop_transform.warn` | DROP TRANSFORM 警告 | ✓ | ✗ | warning |
 | `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD 警告 | ✓ | ✗ | warning |
 | `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT 属主变更通知 | ✓ | ✗ | notice |
-
-### 延迟的边界情形
-
-| SQL | 状态 | 原因 |
-|-----|------|------|
-| `CREATE TRANSFORM FOR ... LANGUAGE ... (FROM SQL WITH FUNCTION ..., TO SQL WITH FUNCTION ...)` | 延迟 | 处理函数名称即对象身份 |
-| `CREATE ACCESS METHOD ... TYPE ... HANDLER ...` | 延迟 | 处理函数名称即对象身份 |
 
 ---
 

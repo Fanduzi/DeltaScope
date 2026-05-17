@@ -16,12 +16,16 @@ func TestBoundaryLifecycleRules(t *testing.T) {
 		operation spec.DDLOperation
 		options   map[string]string
 	}{
+		{ruleIDPGCreateTransformNotice, spec.DDLOperationCreateTransform, nil},
+		{ruleIDPGCreateAccessMethodNotice, spec.DDLOperationCreateAccessMethod, nil},
 		{ruleIDPGDropTransformWarn, spec.DDLOperationDropTransform, nil},
 		{ruleIDPGDropAccessMethodWarn, spec.DDLOperationDropAccessMethod, nil},
 		{ruleIDPGAlterLargeObjectOwnerNotice, spec.DDLOperationAlterLargeObject, map[string]string{"action": "set_owner"}},
 	}
 	cfg := policy.RulePolicy{}
 	constructors := map[string]func(policy.RulePolicy) (rule.StatementRule, error){
+		ruleIDPGCreateTransformNotice:       newCreateTransformNoticeRule,
+		ruleIDPGCreateAccessMethodNotice:    newCreateAccessMethodNoticeRule,
 		ruleIDPGDropTransformWarn:           newDropTransformWarnRule,
 		ruleIDPGDropAccessMethodWarn:        newDropAccessMethodWarnRule,
 		ruleIDPGAlterLargeObjectOwnerNotice: newAlterLargeObjectOwnerNoticeRule,

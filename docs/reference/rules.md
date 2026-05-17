@@ -957,6 +957,8 @@ v0.100.0 adds lifecycle audit rules for selected PostgreSQL boundary objects: DR
 
 | Rule ID | Check Description | Default Level | Metadata Required |
 |---------|-------------------|:-------------:|:-----------------:|
+| `ddl.pg.create_transform.notice` | CREATE TRANSFORM emits an informational notice | notice | No |
+| `ddl.pg.create_access_method.notice` | CREATE ACCESS METHOD emits an informational notice | notice | No |
 | `ddl.pg.drop_transform.warn` | DROP TRANSFORM emits a destructure warning | warning | No |
 | `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD emits a destructure warning | warning | No |
 | `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT ... OWNER TO emits an informational notice | notice | No |

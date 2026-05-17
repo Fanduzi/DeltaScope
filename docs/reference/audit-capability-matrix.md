@@ -790,7 +790,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `CREATE TEXT SEARCH TEMPLATE ...` | `create_text_search_template` |
 | `ALTER TEXT SEARCH TEMPLATE ...` | `alter_text_search_template` |
 | `DROP TEXT SEARCH TEMPLATE ...` | `drop_text_search_template` |
+| `CREATE TRANSFORM FOR ... LANGUAGE ...` | `create_transform` |
 | `DROP TRANSFORM FOR ... LANGUAGE ...` | `drop_transform` |
+| `CREATE ACCESS METHOD ... TYPE ... HANDLER ...` | `create_access_method` |
 | `DROP ACCESS METHOD ...` | `drop_access_method` |
 | `ALTER LARGE OBJECT ... OWNER TO` | `alter_large_object` |
 
@@ -831,16 +833,11 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.create_text_search_template.notice` | CREATE TEXT SEARCH TEMPLATE notice | ✓ | ✗ | notice |
 | `ddl.pg.alter_text_search_template.notice` | ALTER TEXT SEARCH TEMPLATE notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_text_search_template.warn` | DROP TEXT SEARCH TEMPLATE warning | ✓ | ✗ | warning |
+| `ddl.pg.create_transform.notice` | CREATE TRANSFORM notice | ✓ | ✗ | notice |
+| `ddl.pg.create_access_method.notice` | CREATE ACCESS METHOD notice | ✓ | ✗ | notice |
 | `ddl.pg.drop_transform.warn` | DROP TRANSFORM warning | ✓ | ✗ | warning |
 | `ddl.pg.drop_access_method.warn` | DROP ACCESS METHOD warning | ✓ | ✗ | warning |
 | `ddl.pg.alter_large_object.owner.notice` | ALTER LARGE OBJECT owner notice | ✓ | ✗ | notice |
-
-### Deferred Boundary Cases
-
-| SQL | Status | Reason |
-|-----|--------|--------|
-| `CREATE TRANSFORM FOR ... LANGUAGE ... (FROM SQL WITH FUNCTION ..., TO SQL WITH FUNCTION ...)` | Deferred | Handler function names are the object identity |
-| `CREATE ACCESS METHOD ... TYPE ... HANDLER ...` | Deferred | Handler function name is the object identity |
 
 ---
 

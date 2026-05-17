@@ -11,7 +11,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 ### Completed Scope
 
 - 36 new PostgreSQL-only DDL lifecycle and boundary rules across 6 object families.
-- Long-tail census: 55 of 57 forms `finding_covered`, 2 `unsupported_boundary` (CREATE TRANSFORM, CREATE ACCESS METHOD — intentionally deferred due to handler/function name identity constraints).
+- Long-tail census: 57 of 57 forms `finding_covered` (0 `unsupported_boundary`). CREATE TRANSFORM and CREATE ACCESS METHOD promoted with bounded identity (v0.110.0).
 - Payload safety: normalized findings avoid handler, function, body, query, definition, and options payloads. Object identities use bounded tokens only.
 - SQL corpus: 314 policy rule IDs, 505/505 supported rule-dialect targets (100%), 213 expected YAML fixtures.
 - Public surface coverage: 36 rules x SDK/CLI/HTTP/MCP = 144 assertions.
@@ -19,7 +19,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 ### Key Design Decisions
 
 - No full PostgreSQL DDL support claim. Selected long-tail object lifecycle families are covered.
-- CREATE TRANSFORM and CREATE ACCESS METHOD deferred: handler/function names are the object identity, incompatible with payload safety normalization.
+- CREATE TRANSFORM and CREATE ACCESS METHOD promoted (v0.110.0): bounded identity (type@language, amname) avoids handler/function payload.
 - No DCL/permission expansion.
 - No live DDL execution or migration outcome validation.
 - No v1.0/stable API contract claim.

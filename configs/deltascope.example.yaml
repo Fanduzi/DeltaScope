@@ -1032,6 +1032,14 @@ rules:
     enabled: true
     level: warning
 
+  ddl.pg.create_transform.notice:
+    enabled: true
+    level: notice
+
+  ddl.pg.create_access_method.notice:
+    enabled: true
+    level: notice
+
   ddl.pg.drop_transform.warn:
     enabled: true
     level: warning
