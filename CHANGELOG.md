@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.110.0] - 2026-05-17
+
+### Added
+
+- Promoted `CREATE TRANSFORM` from deferred/unsupported to supported PostgreSQL DDL finding with bounded identity (`type@language`, e.g., `jsonb@plpython3u`). No `FROM SQL`/`TO SQL` function names are emitted.
+- Promoted `CREATE ACCESS METHOD` from deferred/unsupported to supported PostgreSQL DDL finding with bounded identity (`amname`, e.g., `heap2`). No handler function name is emitted.
+- PostgreSQL DDL long-tail census: 57 of 57 forms `finding_covered`, 0 `unsupported_boundary`.
+- SQL corpus: 316 policy rule IDs, 507/507 supported rule-dialect targets covered (100%), 215 expected YAML fixtures (postgresql: 191, mysql: 13, tidb: 11).
+- Payload safety: no handler, function, body, query, definition, or options payloads emitted. Object identities use bounded tokens only.
+
+### Non-Goals
+
+- No new object families beyond CREATE TRANSFORM and CREATE ACCESS METHOD.
+- No full PostgreSQL DDL support claim. Selected long-tail object lifecycle families are covered; many forms remain deferred.
+- No DCL/permission expansion beyond existing table-level grant/revoke support.
+- No live DDL execution or migration outcome validation.
+- No v1.0/stable API contract claim.
+
 ## [v0.100.0] - 2026-05-16
 
 ### Added

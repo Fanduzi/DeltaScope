@@ -4,17 +4,17 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.100.0 PostgreSQL DDL Long-Tail Coverage
+## Latest Completed Milestone: v0.110.0 PostgreSQL Deferred Boundary Identity
 
-**Goal:** extend DeltaScope's PostgreSQL DDL audit coverage to selected long-tail object lifecycle families beyond v0.90.0: collation, extended statistics, aggregate/operator/conversion, operator family/class, text search objects, and boundary closure (DROP TRANSFORM, DROP ACCESS METHOD, ALTER LARGE OBJECT).
+**Goal:** promote two previously deferred PostgreSQL DDL boundary forms — CREATE TRANSFORM and CREATE ACCESS METHOD — to supported lifecycle findings with bounded identity, completing the long-tail census at 57/57 `finding_covered`.
 
 ### Completed Scope
 
-- 36 new PostgreSQL-only DDL lifecycle and boundary rules across 6 object families.
-- Long-tail census: 57 of 57 forms `finding_covered` (0 `unsupported_boundary`). CREATE TRANSFORM and CREATE ACCESS METHOD promoted with bounded identity (v0.110.0).
-- Payload safety: normalized findings avoid handler, function, body, query, definition, and options payloads. Object identities use bounded tokens only.
-- SQL corpus: 314 policy rule IDs, 505/505 supported rule-dialect targets (100%), 213 expected YAML fixtures.
-- Public surface coverage: 36 rules x SDK/CLI/HTTP/MCP = 144 assertions.
+- 2 promoted PostgreSQL DDL boundary forms: CREATE TRANSFORM (bounded identity: `type@language`) and CREATE ACCESS METHOD (bounded identity: `amname`).
+- Long-tail census: 57 of 57 forms `finding_covered` (0 `unsupported_boundary`).
+- Payload safety: no handler, function, body, query, definition, or options payloads emitted.
+- SQL corpus: 316 policy rule IDs, 507/507 supported rule-dialect targets (100%), 215 expected YAML fixtures.
+- Public surface coverage: 2 rules x SDK/CLI/HTTP/MCP = 8 assertions.
 
 ### Key Design Decisions
 
