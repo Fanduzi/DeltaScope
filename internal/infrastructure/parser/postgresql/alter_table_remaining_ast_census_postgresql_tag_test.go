@@ -334,10 +334,12 @@ func TestPostgreSQLAlterTableRemainingCurrentExtractionBaseline(t *testing.T) {
 			alterActions: []string{"set_unlogged"},
 			alterOpts:    []map[string]string{{"logged": "false"}},
 		},
-		// SET TABLESPACE remains explicitly unsupported.
+		// SET TABLESPACE is now finding-covered.
 		"set_tablespace": {
-			unsupported: true,
-			feature:     "set_tablespace",
+			unsupported:  false,
+			ddlOp:        string(spec.DDLOperationAlterTable),
+			alterActions: []string{"set_tablespace"},
+			alterOpts:    []map[string]string{{"tablespace": "fastspace"}},
 		},
 	}
 

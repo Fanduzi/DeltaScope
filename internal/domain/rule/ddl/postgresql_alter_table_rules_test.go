@@ -1374,3 +1374,204 @@ func mustNewSetUnloggedNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.Stat
 	}
 	return r
 }
+
+func mustNewSetTablespaceNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetTablespaceNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set tablespace notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetAccessMethodWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetAccessMethodWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new set access method warn rule: %v", err)
+	}
+	return r
+}
+
+func TestSetTablespaceNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetTablespaceNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_tablespace", Options: map[string]string{"tablespace": "fastspace"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "set_tablespace" {
+		t.Fatalf("expected action=set_tablespace, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["tablespace"] != "fastspace" {
+		t.Fatalf("expected tablespace=fastspace, got %v", findings[0].Metadata["tablespace"])
+	}
+}
+
+func TestSetAccessMethodWarnFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetAccessMethodWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_access_method", Options: map[string]string{"access_method": "heap", "is_default": "false"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "set_access_method" {
+		t.Fatalf("expected action=set_access_method, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["access_method"] != "heap" {
+		t.Fatalf("expected access_method=heap, got %v", findings[0].Metadata["access_method"])
+	}
+}
+
+func TestSetAccessMethodWarnFiresForDefault(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetAccessMethodWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_access_method", Options: map[string]string{"access_method": "default", "is_default": "true"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["access_method"] != "default" {
+		t.Fatalf("expected access_method=default, got %v", findings[0].Metadata["access_method"])
+	}
+	if findings[0].Metadata["is_default"] != "true" {
+		t.Fatalf("expected is_default=true, got %v", findings[0].Metadata["is_default"])
+	}
+}
+
+func TestStorageLayoutRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "set_tablespace_notice",
+			r:    mustNewSetTablespaceNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_tablespace", Options: map[string]string{"tablespace": "fastspace"}}},
+				},
+			},
+		},
+		{
+			name: "set_access_method_warn",
+			r:    mustNewSetAccessMethodWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_access_method", Options: map[string]string{"access_method": "heap", "is_default": "false"}}},
+				},
+			},
+		},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
+				stmt := rl.stmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestStorageLayoutRulesDoNotFireForWrongAction(t *testing.T) {
+	t.Parallel()
+	tablespaceRule := mustNewSetTablespaceNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+	accessMethodRule := mustNewSetAccessMethodWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_logged", Options: map[string]string{"logged": "true"}},
+			},
+		},
+	}
+
+	for _, r := range []rule.StatementRule{tablespaceRule, accessMethodRule} {
+		findings, err := r.Evaluate(context.Background(), stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings for set_logged action, got %d", len(findings))
+		}
+	}
+}

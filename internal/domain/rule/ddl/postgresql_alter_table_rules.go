@@ -266,6 +266,97 @@ func newSetUnloggedNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error)
 }
 
 // ---------------------------------------------------------------------------
+// Storage layout rules: SET TABLESPACE, SET ACCESS METHOD
+// ---------------------------------------------------------------------------
+
+type pgAlterStorageLayoutRule struct {
+	id         string
+	level      rule.Level
+	action     string
+	optionKey  string
+	message    string
+	why        string
+	risk       string
+	suggestion string
+}
+
+func newPGAlterStorageLayoutRule(id string, level rule.Level, action, optionKey, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return pgAlterStorageLayoutRule{
+		id:         id,
+		level:      configuredLevel(cfg, level),
+		action:     action,
+		optionKey:  optionKey,
+		message:    message,
+		why:        why,
+		risk:       risk,
+		suggestion: suggestion,
+	}, nil
+}
+
+func (r pgAlterStorageLayoutRule) ID() string { return r.id }
+
+func (r pgAlterStorageLayoutRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectPostgreSQL &&
+		appliesToAlterActions(statement, r.action)
+}
+
+func (r pgAlterStorageLayoutRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		metadata := map[string]any{
+			"operation": "alter_table",
+			"action":    r.action,
+			"table":     statement.DDL.Table.Name,
+		}
+		for k, v := range alter.Options {
+			metadata[k] = v
+		}
+		value := alter.Options[r.optionKey]
+		message := fmt.Sprintf(r.message, value)
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: message,
+			Explanation: &rule.FindingExplanation{
+				Why:        r.why,
+				Risk:       r.risk,
+				Suggestion: r.suggestion,
+			},
+			Metadata: metadata,
+		})
+	}
+	return findings, nil
+}
+
+func newSetTablespaceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetTablespaceNotice, rule.LevelNotice, "set_tablespace", "tablespace",
+		"ALTER TABLE SET TABLESPACE %s on PostgreSQL — table files will be moved",
+		"SET TABLESPACE moves all data files for the table to the named tablespace. This requires an ACCESS EXCLUSIVE lock and copies all data to the new location.",
+		"The table is inaccessible during the move. On large tables this can cause significant downtime. The target tablespace must have enough disk space.",
+		"Schedule during a maintenance window. Verify the target tablespace exists and has sufficient capacity. Consider whether the move is necessary or if the current tablespace is adequate.",
+		cfg,
+	)
+}
+
+func newSetAccessMethodWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetAccessMethodWarn, rule.LevelWarning, "set_access_method", "access_method",
+		"ALTER TABLE SET ACCESS METHOD %s on PostgreSQL — table will be rewritten",
+		"SET ACCESS METHOD changes how the table's data is stored on disk. PostgreSQL rewrites the entire table using the new access method, requiring an ACCESS EXCLUSIVE lock.",
+		"The table is inaccessible during the rewrite. All data is copied, which can be expensive for large tables. Changing to an incompatible access method may cause data loss or corruption.",
+		"Verify the target access method is installed and compatible with the table's schema. Schedule during a maintenance window and test on a non-production copy first.",
+		cfg,
+	)
+}
+
+// ---------------------------------------------------------------------------
 // Generic PG-only alter action+option rule
 // Covers: replica_identity_full, replica_identity_nothing, replica_identity_using_index
 // ---------------------------------------------------------------------------

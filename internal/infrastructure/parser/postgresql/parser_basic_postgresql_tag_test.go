@@ -285,7 +285,7 @@ func TestParserSetUnloggedNormalizesAction(t *testing.T) {
 	}
 }
 
-func TestParserSetTablespaceStillUnsupported(t *testing.T) {
+func TestParserSetTablespaceNormalizesAction(t *testing.T) {
 	t.Parallel()
 	parser := New()
 	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET TABLESPACE fastspace")
@@ -296,11 +296,67 @@ func TestParserSetTablespaceStillUnsupported(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	if statement.Unsupported == nil {
-		t.Fatal("expected unsupported for SET TABLESPACE, got nil")
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
 	}
-	if statement.Unsupported.Feature != "set_tablespace" {
-		t.Fatalf("unsupported feature = %q, want set_tablespace", statement.Unsupported.Feature)
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_tablespace" {
+		t.Fatalf("action = %q, want set_tablespace", alter.Action)
+	}
+	if alter.Options["tablespace"] != "fastspace" {
+		t.Fatalf("expected tablespace=fastspace, got %v", alter.Options)
+	}
+}
+
+func TestParserSetAccessMethodNormalizesAction(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET ACCESS METHOD heap")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_access_method" {
+		t.Fatalf("action = %q, want set_access_method", alter.Action)
+	}
+	if alter.Options["access_method"] != "heap" {
+		t.Fatalf("expected access_method=heap, got %v", alter.Options)
+	}
+	if alter.Options["is_default"] != "false" {
+		t.Fatalf("expected is_default=false, got %v", alter.Options)
+	}
+}
+
+func TestParserSetAccessMethodDefaultNormalizesAction(t *testing.T) {
+	t.Parallel()
+	parser := New()
+	result, err := parser.Parse(context.Background(), "ALTER TABLE users SET ACCESS METHOD DEFAULT")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statement, err := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if statement.Unsupported != nil {
+		t.Fatalf("expected supported, got unsupported: %s", statement.Unsupported.Feature)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != "set_access_method" {
+		t.Fatalf("action = %q, want set_access_method", alter.Action)
+	}
+	if alter.Options["access_method"] != "default" {
+		t.Fatalf("expected access_method=default, got %v", alter.Options)
+	}
+	if alter.Options["is_default"] != "true" {
+		t.Fatalf("expected is_default=true, got %v", alter.Options)
 	}
 }
 

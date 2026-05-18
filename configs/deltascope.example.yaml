@@ -21,12 +21,24 @@ rules:
     level: blocker
     params:
 
+  ddl.alter.add_index.fulltext.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.alter.add_index.fulltext.prefix.require:
     enabled: true
     level: warning
     params:
       prefix: full_
       required: true
+
+  ddl.alter.add_index.fulltext.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
 
   ddl.alter.add_index.redundant_left_prefix.forbid:
     enabled: true
@@ -40,6 +52,12 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.add_index.secondary.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.alter.add_index.secondary.prefix.require:
     enabled: true
     level: warning
@@ -47,12 +65,30 @@ rules:
       prefix: idx_
       required: true
 
+  ddl.alter.add_index.secondary.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+
+  ddl.alter.add_index.unique.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.alter.add_index.unique.prefix.require:
     enabled: true
     level: warning
     params:
       prefix: uniq_
       required: true
+
+  ddl.alter.add_index.unique.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
 
   ddl.alter.change_column.compatibility.require:
     enabled: true
@@ -107,6 +143,30 @@ rules:
     params:
       forbid: false
 
+  ddl.alter.drop_default.explicit_default_change.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.drop_default.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
+  ddl.alter.drop_expression.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
+  ddl.alter.drop_identity.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
   ddl.alter.drop_index.exists.require:
     enabled: true
     level: blocker
@@ -118,17 +178,6 @@ rules:
     params:
       forbid: false
 
-  ddl.alter.drop_primary_key.exists.require:
-    enabled: true
-    level: blocker
-    params:
-
-  ddl.alter.drop_primary_key.forbid:
-    enabled: true
-    level: blocker
-    params:
-      forbid: true
-
   ddl.alter.drop_not_null.explicit_nullability_change.forbid:
     enabled: true
     level: blocker
@@ -136,6 +185,17 @@ rules:
       forbid: true
 
   ddl.alter.drop_not_null.forbid:
+    enabled: true
+    level: warning
+    params:
+      forbid: true
+
+  ddl.alter.drop_primary_key.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.drop_primary_key.forbid:
     enabled: true
     level: blocker
     params:
@@ -225,7 +285,7 @@ rules:
 
   ddl.alter.set_data_type.forbid:
     enabled: true
-    level: blocker
+    level: warning
     params:
       forbid: true
 
@@ -237,7 +297,13 @@ rules:
 
   ddl.alter.set_default.forbid:
     enabled: true
-    level: blocker
+    level: warning
+    params:
+      forbid: true
+
+  ddl.alter.set_generated.forbid:
+    enabled: true
+    level: warning
     params:
       forbid: true
 
@@ -249,7 +315,7 @@ rules:
 
   ddl.alter.set_not_null.forbid:
     enabled: true
-    level: blocker
+    level: warning
     params:
       forbid: true
 
@@ -319,6 +385,12 @@ rules:
     params:
       forbid: false
 
+  ddl.column.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.column.name.keyword.forbid:
     enabled: true
     level: blocker
@@ -338,13 +410,17 @@ rules:
       pattern: ^[A-Za-z0-9_]+$
       required: true
 
-  # Structured naming governance examples for teams that want explicit naming conventions.
-  # These are representative policy choices in this example file, not implicit built-in defaults.
+  ddl.column.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix:
+
   ddl.column.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix: _id
+      suffix:
 
   ddl.column.not_null.require:
     enabled: true
@@ -365,6 +441,88 @@ rules:
     params:
       limit: 16383
 
+  ddl.constraint.check.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
+  ddl.constraint.check.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix:
+
+  ddl.constraint.check.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+
+  ddl.constraint.foreign_key.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
+  ddl.constraint.foreign_key.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix:
+
+  ddl.constraint.foreign_key.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+
+  ddl.constraint.primary_key.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
+  ddl.constraint.primary_key.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix:
+
+  ddl.constraint.primary_key.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+
+  ddl.constraint.unique_key.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
+  ddl.constraint.unique_key.name.prefix.require:
+    enabled: true
+    level: warning
+    params:
+      prefix:
+
+  ddl.constraint.unique_key.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+
+  ddl.database.create.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.database.drop.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.index.columns.max_count:
     enabled: true
     level: warning
@@ -377,12 +535,24 @@ rules:
     params:
       forbid: true
 
+  ddl.index.fulltext.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.index.fulltext.prefix.require:
     enabled: true
     level: warning
     params:
       prefix: full_
       required: true
+
+  ddl.index.fulltext.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
 
   ddl.index.key_length.max_bytes.require:
     enabled: true
@@ -415,6 +585,12 @@ rules:
     params:
       forbid: true
 
+  ddl.index.secondary.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.index.secondary.prefix.require:
     enabled: true
     level: warning
@@ -422,11 +598,23 @@ rules:
       prefix: idx_
       required: true
 
+  ddl.index.secondary.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+
   ddl.index.total.max_count:
     enabled: true
     level: warning
     params:
       limit: 12
+
+  ddl.index.unique.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
 
   ddl.index.unique.prefix.require:
     enabled: true
@@ -435,35 +623,837 @@ rules:
       prefix: uniq_
       required: true
 
-  ddl.constraint.check.name.prefix.require:
+  ddl.index.unique.suffix.require:
     enabled: true
     level: warning
     params:
-      prefix: chk_
+      suffix:
 
-  ddl.constraint.foreign_key.name.contains.require:
+  ddl.pg.alter.add_check.not_valid.require:
     enabled: true
     level: warning
     params:
-      contains: [user account]
 
-  ddl.constraint.foreign_key.name.prefix.require:
+  ddl.pg.alter.add_column.non_null_default.rewrite.warn:
     enabled: true
     level: warning
     params:
-      prefix: fk_
 
-  ddl.constraint.primary_key.name.prefix.require:
+  ddl.pg.alter.add_column.non_null_no_default.warn:
     enabled: true
     level: warning
     params:
-      prefix: pk_
 
-  ddl.constraint.unique_key.name.prefix.require:
+  ddl.pg.alter.add_column.nullable.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.add_unique_constraint.concurrent_index.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.attach_partition.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.detach_partition.warn:
     enabled: true
     level: warning
     params:
-      prefix: uk_
+
+  ddl.pg.alter.disable_rls.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.disable_trigger.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.drop_column.advisory:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.drop_constraint.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.enable_rls.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.enable_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.force_rls.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.no_force_rls.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.not_valid_constraint.validate.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+
+  ddl.pg.alter.owner.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.replica_identity_full.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.replica_identity_nothing.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.replica_identity_using_index.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_access_method.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.set_data_type.rewrite.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.set_logged.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_schema.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_tablespace.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_unlogged.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.validate_constraint.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_aggregate.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_collation.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_conversion.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_domain.constraint.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_domain.default.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_domain.not_null.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_domain.rename.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_event_trigger.disable.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_event_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_extension.add_member.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_extension.drop_member.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_extension.set_schema.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_extension.update.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_foreign_data_wrapper.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_foreign_server.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_foreign_table.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_index.rename.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_index.set_tablespace.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_large_object.owner.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_materialized_view.rename.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_materialized_view.set_schema.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_operator.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_operator_class.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_operator_family.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_policy.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_publication.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_rule.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_schema.owner.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_schema.rename.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_sequence.cycle.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_sequence.restart.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_statistics.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_subscription.disable.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_subscription.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_text_search_configuration.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_text_search_dictionary.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_text_search_parser.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_text_search_template.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_type.add_attribute.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_type.add_value.advisory:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_type.add_value.position.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_type.alter_attribute_type.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_type.composite_rename.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_type.composite_set_schema.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_type.drop_attribute.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter_type.rename_attribute.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_user_mapping.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_view.rename.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter_view.set_schema.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.comment_on.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.comment_on.remove.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_access_method.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_aggregate.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_collation.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_constraint_trigger.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.create_conversion.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_domain.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_event_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_extension.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.create_extension.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_foreign_data_wrapper.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_foreign_server.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_foreign_table.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_function.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_function.security_definer.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.create_index.concurrently.require:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.create_operator.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_operator_class.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_operator_family.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_or_replace_function.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_or_replace_view.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_policy.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_procedure.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_publication.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_rule.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_schema.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_sequence.cycle.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.create_statistics.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_subscription.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_temp_view.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_text_search_configuration.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_text_search_dictionary.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_text_search_parser.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_text_search_template.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_transform.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_type.composite.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_type.enum.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_user_mapping.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.create_view.check_option.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_access_method.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_aggregate.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_collation.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_conversion.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_domain.advisory:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_domain.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_event_trigger.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_extension.advisory:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_extension.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_foreign_data_wrapper.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_foreign_server.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_foreign_table.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_function.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_index.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_materialized_view.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_materialized_view.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_operator.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_operator_class.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_operator_family.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_policy.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_procedure.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_publication.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_rule.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_schema.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_schema.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_sequence.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_sequence.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_statistics.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_subscription.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_text_search_configuration.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_text_search_dictionary.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_text_search_parser.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_text_search_template.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_transform.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_trigger.advisory:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.drop_type.advisory:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_type.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_user_mapping.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.drop_view.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.grant.table_privilege.all.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.grant.table_privilege.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.refresh_materialized_view.concurrently.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.refresh_materialized_view.no_data.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.revoke.table_privilege.cascade.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.revoke.table_privilege.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.security_label.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.security_label.remove.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.table.foreign_key.cross_schema.advisory:
+    enabled: true
+    level: notice
+    params:
 
   ddl.table.audit_columns.require:
     enabled: true
@@ -565,6 +1555,12 @@ rules:
     params:
       forbid: true
 
+  ddl.table.name.contains.require:
+    enabled: true
+    level: warning
+    params:
+      contains: []
+
   ddl.table.name.keyword.forbid:
     enabled: true
     level: blocker
@@ -588,7 +1584,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix: tbl_
+      prefix:
+
+  ddl.table.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
 
   ddl.table.partition.forbid:
     enabled: true
@@ -678,396 +1680,6 @@ rules:
     level: blocker
     params:
       forbid: true
-
-  ddl.pg.create_index.concurrently.require:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter.add_column.non_null_default.rewrite.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter.add_check.not_valid.require:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter.set_data_type.rewrite.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_function.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_function.security_definer.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_or_replace_function.advisory:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_function.advisory:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_procedure.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_procedure.advisory:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_or_replace_view.advisory:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_temp_view.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_view.check_option.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_view.rename.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_view.set_schema.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_view.cascade.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter_schema.rename.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_schema.owner.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_index.rename.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_index.set_tablespace.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_materialized_view.rename.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_materialized_view.set_schema.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_type.add_attribute.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_type.drop_attribute.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter_type.alter_attribute_type.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter_type.rename_attribute.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_extension.add_member.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_extension.drop_member.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_publication.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_publication.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_publication.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_subscription.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_subscription.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_subscription.disable.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.drop_subscription.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_foreign_table.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_foreign_table.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_foreign_table.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_foreign_server.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_foreign_server.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_foreign_server.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_user_mapping.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_user_mapping.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_user_mapping.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_foreign_data_wrapper.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_foreign_data_wrapper.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_foreign_data_wrapper.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.comment_on.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.comment_on.remove.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.security_label.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.security_label.remove.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_event_trigger.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_event_trigger.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_event_trigger.disable.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.drop_event_trigger.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_rule.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_rule.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_rule.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_collation.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_collation.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_collation.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_statistics.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_statistics.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_statistics.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_aggregate.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_aggregate.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_aggregate.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_operator.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_operator.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_operator.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_conversion.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_conversion.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_conversion.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_operator_family.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_operator_family.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_operator_family.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_operator_class.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.alter_operator_class.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_operator_class.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_text_search_configuration.notice:
-    enabled: true
-    level: notice
-  ddl.pg.alter_text_search_configuration.notice:
-    enabled: true
-    level: notice
-  ddl.pg.drop_text_search_configuration.warn:
-    enabled: true
-    level: warning
-  ddl.pg.create_text_search_dictionary.notice:
-    enabled: true
-    level: notice
-  ddl.pg.alter_text_search_dictionary.notice:
-    enabled: true
-    level: notice
-  ddl.pg.drop_text_search_dictionary.warn:
-    enabled: true
-    level: warning
-  ddl.pg.create_text_search_parser.notice:
-    enabled: true
-    level: notice
-  ddl.pg.alter_text_search_parser.notice:
-    enabled: true
-    level: notice
-  ddl.pg.drop_text_search_parser.warn:
-    enabled: true
-    level: warning
-  ddl.pg.create_text_search_template.notice:
-    enabled: true
-    level: notice
-  ddl.pg.alter_text_search_template.notice:
-    enabled: true
-    level: notice
-  ddl.pg.drop_text_search_template.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.create_transform.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.create_access_method.notice:
-    enabled: true
-    level: notice
-
-  ddl.pg.drop_transform.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.drop_access_method.warn:
-    enabled: true
-    level: warning
-
-  ddl.pg.alter_large_object.owner.notice:
-    enabled: true
-    level: notice
-
-  dml.impact.estimate:
-    enabled: true
-    level: notice
-    params:
-
-  dml.impact.rows.max_count:
-    enabled: true
-    level: warning
-    params:
-      limit: 1000
-
-  dml.impact.ratio.max_percent:
-    enabled: true
-    level: warning
-    params:
-      limit: 10
 
   dml.insert.on_duplicate.forbid:
     enabled: true
