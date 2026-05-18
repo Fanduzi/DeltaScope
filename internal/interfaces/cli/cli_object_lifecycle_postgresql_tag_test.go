@@ -513,6 +513,93 @@ func TestAuditCommandPostgreSQLAlterTableLoggedStateRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditCommandPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+		wantLevel  string
+	}{
+		{
+			name:       "set_tablespace_notice",
+			sql:        "ALTER TABLE users SET TABLESPACE fastspace;",
+			wantRuleID: "ddl.pg.alter.set_tablespace.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_access_method_heap_warn",
+			sql:        "ALTER TABLE users SET ACCESS METHOD heap;",
+			wantRuleID: "ddl.pg.alter.set_access_method.warn",
+			wantLevel:  "warning",
+		},
+		{
+			name:       "set_access_method_default_warn",
+			sql:        "ALTER TABLE users SET ACCESS METHOD DEFAULT;",
+			wantRuleID: "ddl.pg.alter.set_access_method.warn",
+			wantLevel:  "warning",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+
+			code := Execute(
+				context.Background(),
+				[]string{"audit", "--sql", tt.sql, "--dialect", "postgresql", "--format", "json"},
+				strings.NewReader(""),
+				stdout,
+				stderr,
+			)
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d\nstdout=%q\nstderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr output, got %q", stderr.String())
+			}
+
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+				t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+			}
+			if unsupported, ok := decoded["unsupported"].([]any); ok && len(unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", unsupported)
+			}
+			statements, ok := decoded["statements"].([]any)
+			if !ok || len(statements) != 1 {
+				t.Fatalf("expected one rendered statement, got %#v", decoded["statements"])
+			}
+			statement, ok := statements[0].(map[string]any)
+			if !ok {
+				t.Fatalf("expected statement object, got %#v", statements[0])
+			}
+			findings, ok := statement["findings"].([]any)
+			if !ok || len(findings) == 0 {
+				t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+			}
+
+			found := false
+			for _, f := range findings {
+				finding, ok := f.(map[string]any)
+				if !ok {
+					continue
+				}
+				if finding["rule_id"] == tt.wantRuleID {
+					found = true
+					if finding["level"] != tt.wantLevel {
+						t.Errorf("expected level %s, got %v", tt.wantLevel, finding["level"])
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule_id %s, got %#v", tt.wantRuleID, findings)
+			}
+		})
+	}
+}
+
 func TestAuditCommandPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -1508,6 +1595,36 @@ func TestAuditCommandPostgreSQLSemanticMetadataParity(t *testing.T) {
 				"action": "set_data_type", "column": "score", "table": "users", "has_using": true,
 			},
 			forbidden: []string{"score::bigint", "USING score", "using_sql", "using_expr"},
+		},
+		{
+			name:   "set_tablespace_metadata",
+			sql:    "ALTER TABLE users SET TABLESPACE fastspace",
+			ruleID: "ddl.pg.alter.set_tablespace.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_tablespace", "table": "users",
+				"tablespace": "fastspace",
+			},
+			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
+		},
+		{
+			name:   "set_access_method_heap_metadata",
+			sql:    "ALTER TABLE users SET ACCESS METHOD heap",
+			ruleID: "ddl.pg.alter.set_access_method.warn",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_access_method", "table": "users",
+				"access_method": "heap", "is_default": "false",
+			},
+			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
+		},
+		{
+			name:   "set_access_method_default_metadata",
+			sql:    "ALTER TABLE users SET ACCESS METHOD DEFAULT",
+			ruleID: "ddl.pg.alter.set_access_method.warn",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_access_method", "table": "users",
+				"access_method": "default", "is_default": "true",
+			},
+			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
 		},
 	}
 

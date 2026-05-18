@@ -61,6 +61,36 @@ func TestHandlerAuditPostgreSQLSemanticMetadataParity(t *testing.T) {
 			},
 			forbidden: []string{"score::bigint", "USING score", "using_sql", "using_expr"},
 		},
+		{
+			name:   "set_tablespace_metadata",
+			sql:    "ALTER TABLE users SET TABLESPACE fastspace",
+			ruleID: "ddl.pg.alter.set_tablespace.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_tablespace", "table": "users",
+				"tablespace": "fastspace",
+			},
+			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
+		},
+		{
+			name:   "set_access_method_heap_metadata",
+			sql:    "ALTER TABLE users SET ACCESS METHOD heap",
+			ruleID: "ddl.pg.alter.set_access_method.warn",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_access_method", "table": "users",
+				"access_method": "heap", "is_default": "false",
+			},
+			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
+		},
+		{
+			name:   "set_access_method_default_metadata",
+			sql:    "ALTER TABLE users SET ACCESS METHOD DEFAULT",
+			ruleID: "ddl.pg.alter.set_access_method.warn",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_access_method", "table": "users",
+				"access_method": "default", "is_default": "true",
+			},
+			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
+		},
 	}
 
 	for _, tt := range tests {

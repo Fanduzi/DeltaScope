@@ -335,6 +335,69 @@ func TestAuditPostgreSQLAlterTableLoggedStateRuleCoverage(t *testing.T) {
 	}
 }
 
+func TestAuditPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T) {
+	tests := []struct {
+		name       string
+		sql        string
+		wantRuleID string
+		wantLevel  string
+	}{
+		{
+			name:       "set_tablespace_notice",
+			sql:        "ALTER TABLE users SET TABLESPACE fastspace;",
+			wantRuleID: "ddl.pg.alter.set_tablespace.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_access_method_heap_warn",
+			sql:        "ALTER TABLE users SET ACCESS METHOD heap;",
+			wantRuleID: "ddl.pg.alter.set_access_method.warn",
+			wantLevel:  "warning",
+		},
+		{
+			name:       "set_access_method_default_warn",
+			sql:        "ALTER TABLE users SET ACCESS METHOD DEFAULT;",
+			wantRuleID: "ddl.pg.alter.set_access_method.warn",
+			wantLevel:  "warning",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Audit(context.Background(), Request{
+				SQL:     tt.sql,
+				Dialect: DialectPostgreSQL,
+			})
+			if err != nil {
+				t.Fatalf("expected supported path, got error: %v", err)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if result.Statements[0].Kind != "ddl" {
+				t.Fatalf("expected ddl kind, got %q", result.Statements[0].Kind)
+			}
+
+			found := false
+			for _, f := range result.Statements[0].Findings {
+				if f.RuleID == tt.wantRuleID {
+					found = true
+					if f.Level != Level(tt.wantLevel) {
+						t.Errorf("expected level %s, got %q", tt.wantLevel, f.Level)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
 func TestAuditPostgreSQLTypeLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
 		name        string
