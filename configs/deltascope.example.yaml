@@ -765,6 +765,16 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.set_reloptions.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.reset_reloptions.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.pg.alter.set_data_type.rewrite.warn:
     enabled: true
     level: warning

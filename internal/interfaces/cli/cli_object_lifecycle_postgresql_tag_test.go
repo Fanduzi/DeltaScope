@@ -574,6 +574,18 @@ func TestAuditCommandPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T)
 			wantRuleID: "ddl.pg.alter.enable_always_rule.notice",
 			wantLevel:  "notice",
 		},
+		{
+			name:       "set_reloptions_warn",
+			sql:        "ALTER TABLE users SET (fillfactor = 70)",
+			wantRuleID: "ddl.pg.alter.set_reloptions.warn",
+			wantLevel:  "warning",
+		},
+		{
+			name:       "reset_reloptions_notice",
+			sql:        "ALTER TABLE users RESET (fillfactor)",
+			wantRuleID: "ddl.pg.alter.reset_reloptions.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {

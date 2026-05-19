@@ -990,6 +990,22 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "force_rls"}, true, nil
 	case pg_query.AlterTableType_AT_NoForceRowSecurity:
 		return spec.Alter{Action: "no_force_rls"}, true, nil
+	case pg_query.AlterTableType_AT_SetRelOptions:
+		count := 0
+		if defNode := cmd.GetDef(); defNode != nil {
+			if list := defNode.GetList(); list != nil {
+				count = len(list.GetItems())
+			}
+		}
+		return spec.Alter{Action: "set_reloptions", Options: map[string]string{"option_count": strconv.Itoa(count), "has_reloptions": "true"}}, true, nil
+	case pg_query.AlterTableType_AT_ResetRelOptions:
+		count := 0
+		if defNode := cmd.GetDef(); defNode != nil {
+			if list := defNode.GetList(); list != nil {
+				count = len(list.GetItems())
+			}
+		}
+		return spec.Alter{Action: "reset_reloptions", Options: map[string]string{"reset_count": strconv.Itoa(count), "has_reloptions": "true"}}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}

@@ -432,6 +432,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDisableRuleWarn, construct: newDisableRuleWarnRule},
 		{ruleID: ruleIDPGAlterEnableReplicaRuleNotice, construct: newEnableReplicaRuleNoticeRule},
 		{ruleID: ruleIDPGAlterEnableAlwaysRuleNotice, construct: newEnableAlwaysRuleNoticeRule},
+		{ruleID: ruleIDPGAlterSetReloptionsWarn, construct: newSetReloptionsWarnRule},
+		{ruleID: ruleIDPGAlterResetReloptionsNotice, construct: newResetReloptionsNoticeRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityFullWarn, construct: newReplicaIdentityFullWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityNothingWarn, construct: newReplicaIdentityNothingWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityUsingIndexNotice, construct: newReplicaIdentityUsingIndexNoticeRule},

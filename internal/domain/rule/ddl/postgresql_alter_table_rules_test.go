@@ -1453,6 +1453,24 @@ func mustNewSetAccessMethodWarnRule(t *testing.T, cfg policy.RulePolicy) rule.St
 	return r
 }
 
+func mustNewSetReloptionsWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetReloptionsWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("new set reloptions warn rule: %v", err)
+	}
+	return r
+}
+
+func mustNewResetReloptionsNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newResetReloptionsNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new reset reloptions notice rule: %v", err)
+	}
+	return r
+}
+
 func TestSetTablespaceNoticeFiresForPG(t *testing.T) {
 	t.Parallel()
 	r := mustNewSetTablespaceNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
@@ -2049,6 +2067,217 @@ func TestTriggerRuleModeRulesNoLeak(t *testing.T) {
 					Operation: spec.DDLOperationAlterTable,
 					Table:     &spec.Table{Name: "users"},
 					Alter:     []spec.Alter{{Action: "enable_always_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "always"}}},
+				},
+			},
+		},
+	}
+
+	for _, rl := range rules {
+		t.Run(rl.name, func(t *testing.T) {
+			t.Parallel()
+			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			for _, key := range forbiddenKeys {
+				if _, ok := findings[0].Metadata[key]; ok {
+					t.Fatalf("forbidden key %q present in finding metadata", key)
+				}
+			}
+		})
+	}
+}
+
+func TestSetReloptionsWarnFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetReloptionsWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_reloptions", Options: map[string]string{"option_count": "1", "has_reloptions": "true"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "set_reloptions" {
+		t.Fatalf("expected action=set_reloptions, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["option_count"] != "1" {
+		t.Fatalf("expected option_count=1, got %v", findings[0].Metadata["option_count"])
+	}
+	if findings[0].Metadata["has_reloptions"] != "true" {
+		t.Fatalf("expected has_reloptions=true, got %v", findings[0].Metadata["has_reloptions"])
+	}
+}
+
+func TestResetReloptionsNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewResetReloptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "reset_reloptions", Options: map[string]string{"reset_count": "2", "has_reloptions": "true"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "reset_reloptions" {
+		t.Fatalf("expected action=reset_reloptions, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["reset_count"] != "2" {
+		t.Fatalf("expected reset_count=2, got %v", findings[0].Metadata["reset_count"])
+	}
+}
+
+func TestReloptionsRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "set_reloptions_warn",
+			r:    mustNewSetReloptionsWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_reloptions", Options: map[string]string{"option_count": "1", "has_reloptions": "true"}}},
+				},
+			},
+		},
+		{
+			name: "reset_reloptions_notice",
+			r:    mustNewResetReloptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "reset_reloptions", Options: map[string]string{"reset_count": "1", "has_reloptions": "true"}}},
+				},
+			},
+		},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
+				stmt := rl.stmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestReloptionsRulesDoNotFireForWrongAction(t *testing.T) {
+	t.Parallel()
+	setRule := mustNewSetReloptionsWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+	resetRule := mustNewResetReloptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "set_logged", Options: map[string]string{"logged": "true"}},
+			},
+		},
+	}
+
+	for _, r := range []rule.StatementRule{setRule, resetRule} {
+		findings, err := r.Evaluate(context.Background(), stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings for set_logged action, got %d", len(findings))
+		}
+	}
+}
+
+func TestReloptionsRulesNoLeak(t *testing.T) {
+	t.Parallel()
+	forbiddenKeys := []string{"fillfactor", "autovacuum_enabled", "70", "false", "toast_tuple_target"}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "set_reloptions",
+			r:    mustNewSetReloptionsWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_reloptions", Options: map[string]string{"option_count": "2", "has_reloptions": "true"}}},
+				},
+			},
+		},
+		{
+			name: "reset_reloptions",
+			r:    mustNewResetReloptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "reset_reloptions", Options: map[string]string{"reset_count": "1", "has_reloptions": "true"}}},
 				},
 			},
 		},

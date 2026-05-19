@@ -196,6 +196,8 @@ const (
 	ruleIDPGAlterDisableRuleWarn                             = "ddl.pg.alter.disable_rule.warn"
 	ruleIDPGAlterEnableReplicaRuleNotice                     = "ddl.pg.alter.enable_replica_rule.notice"
 	ruleIDPGAlterEnableAlwaysRuleNotice                      = "ddl.pg.alter.enable_always_rule.notice"
+	ruleIDPGAlterSetReloptionsWarn                           = "ddl.pg.alter.set_reloptions.warn"
+	ruleIDPGAlterResetReloptionsNotice                       = "ddl.pg.alter.reset_reloptions.notice"
 	ruleIDPGCreateTypeEnumNotice                             = "ddl.pg.create_type.enum.notice"
 	ruleIDPGAlterTypeAddValueAdvisory                        = "ddl.pg.alter_type.add_value.advisory"
 	ruleIDPGAlterTypeAddValuePositionNotice                  = "ddl.pg.alter_type.add_value.position.notice"

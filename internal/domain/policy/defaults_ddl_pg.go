@@ -158,6 +158,16 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.set_reloptions.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.reset_reloptions.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.replica_identity_full.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

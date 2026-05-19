@@ -356,6 +356,28 @@ func newSetAccessMethodWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 	)
 }
 
+func newSetReloptionsWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetReloptionsWarn, rule.LevelWarning, "set_reloptions", "option_count",
+		"ALTER TABLE SET (...) on PostgreSQL — %s storage option(s) changed",
+		"SET (reloptions) changes table storage parameters such as fillfactor or autovacuum settings. These affect how PostgreSQL stores and maintains the table on disk.",
+		"Incorrect storage parameters can degrade performance or cause unexpected behavior. Some options require a table rewrite (e.g. fillfactor) or take effect only after the next VACUUM.",
+		"Review each storage parameter change against the table's workload profile. Apply fillfactor changes during a maintenance window if the table is large.",
+		cfg,
+	)
+}
+
+func newResetReloptionsNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterResetReloptionsNotice, rule.LevelNotice, "reset_reloptions", "reset_count",
+		"ALTER TABLE RESET (...) on PostgreSQL — %s storage option(s) reset to default",
+		"RESET (reloptions) reverts table storage parameters to their PostgreSQL defaults. The table continues to use previously set values until the next VACUUM or ANALYZE for some parameters.",
+		"Resetting parameters that were tuned for a specific workload may cause performance regression if the defaults are suboptimal for the table's access patterns.",
+		"Verify the default values are acceptable for the table's workload. Monitor query performance after resetting tuned parameters.",
+		cfg,
+	)
+}
+
 // ---------------------------------------------------------------------------
 // Constructors for trigger mode rules
 // ---------------------------------------------------------------------------

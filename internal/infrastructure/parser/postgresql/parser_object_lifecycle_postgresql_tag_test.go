@@ -958,6 +958,108 @@ func TestPGExtractorSchemaLifecycleCreateSchemaNormalized(t *testing.T) {
 	}
 }
 
+func TestPGExtractorAlterTableSetReloptionsNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users SET (fillfactor = 70)")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "set_reloptions" {
+		t.Fatalf("expected action 'set_reloptions', got %q", alter.Action)
+	}
+	if alter.Options["option_count"] != "1" {
+		t.Fatalf("expected options['option_count']='1', got %q", alter.Options["option_count"])
+	}
+	if alter.Options["has_reloptions"] != "true" {
+		t.Fatalf("expected options['has_reloptions']='true', got %q", alter.Options["has_reloptions"])
+	}
+}
+
+func TestPGExtractorAlterTableResetReloptionsNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users RESET (fillfactor)")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "reset_reloptions" {
+		t.Fatalf("expected action 'reset_reloptions', got %q", alter.Action)
+	}
+	if alter.Options["reset_count"] != "1" {
+		t.Fatalf("expected options['reset_count']='1', got %q", alter.Options["reset_count"])
+	}
+	if alter.Options["has_reloptions"] != "true" {
+		t.Fatalf("expected options['has_reloptions']='true', got %q", alter.Options["has_reloptions"])
+	}
+}
+
+func TestPGExtractorAlterTableSetReloptionsMultiOptionCountNoLeak(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users SET (fillfactor = 70, autovacuum_enabled = false)")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "set_reloptions" {
+		t.Fatalf("expected action 'set_reloptions', got %q", alter.Action)
+	}
+	if alter.Options["option_count"] != "2" {
+		t.Fatalf("expected options['option_count']='2', got %q", alter.Options["option_count"])
+	}
+	forbiddenKeys := []string{"fillfactor", "autovacuum_enabled", "70", "false"}
+	for _, k := range forbiddenKeys {
+		if _, ok := alter.Options[k]; ok {
+			t.Fatalf("options must not leak option name/value %q", k)
+		}
+	}
+}
+
 func TestPGExtractorSchemaLifecycleUnsupportedBoundaries(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
