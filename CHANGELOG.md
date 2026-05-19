@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.130.0] - 2026-05-19
+
+### Added
+
+- 10 new PostgreSQL ALTER TABLE residual rules across three semantic families:
+  - Storage/layout (2): `ddl.pg.alter.set_tablespace.notice` (notice), `ddl.pg.alter.set_access_method.warn` (warning).
+  - Trigger/rule residual (6): `ddl.pg.alter.enable_replica_trigger.notice` (notice), `ddl.pg.alter.enable_always_trigger.notice` (notice), `ddl.pg.alter.enable_rule.notice` (notice), `ddl.pg.alter.disable_rule.warn` (warning), `ddl.pg.alter.enable_replica_rule.notice` (notice), `ddl.pg.alter.enable_always_rule.notice` (notice).
+  - Reloptions (2): `ddl.pg.alter.set_reloptions.warn` (warning), `ddl.pg.alter.reset_reloptions.notice` (notice).
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 29 → 40, `unsupported_boundary` 32 → 21.
+- SQL corpus: 326 policy rule IDs, 517/517 supported rule-dialect targets covered (100%), 225 expected YAML files.
+- No-leak contract: storage/layout findings do not emit raw tablespace or access method names; trigger/rule residual findings do not emit trigger function names, trigger body, rule body, or rule query text; reloptions findings do not emit option names or values.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE support.
+- No live catalog validation.
+- No rewrite duration estimate.
+- No runtime behavior validation.
+- No DCL expansion.
+- Remaining `unsupported_boundary` forms deferred to later milestones.
+- No v1.0/stable API contract claim.
+
 ## [v0.120.0] - 2026-05-17
 
 ### Added

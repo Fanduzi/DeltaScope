@@ -485,9 +485,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0)
+## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0)
 
-`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
+`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. `v0.130.0` adds 10 more rules covering storage/layout, trigger/rule residual, and reloptions. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
 
 ### ALTER TABLE Coverage Rules
 
@@ -507,8 +507,18 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` uses a specific index for WAL old-row images — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` changes an unlogged table to logged — informational notice | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` changes a logged table to unlogged — informational notice | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` moves the table to a different tablespace — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` changes the table access method — warns about rewrite and compatibility implications (v0.130.0) | ✓ | ✗ | warning |
+| `ddl.pg.alter.enable_replica_trigger.notice` | `ALTER TABLE ... ENABLE REPLICA TRIGGER` enables a trigger in replica mode — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_always_trigger.notice` | `ALTER TABLE ... ENABLE ALWAYS TRIGGER` enables a trigger in always mode — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_rule.notice` | `ALTER TABLE ... ENABLE RULE` enables a rewrite rule — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.disable_rule.warn` | `ALTER TABLE ... DISABLE RULE` disables a rewrite rule — warns that the rule will not fire (v0.130.0) | ✓ | ✗ | warning |
+| `ddl.pg.alter.enable_replica_rule.notice` | `ALTER TABLE ... ENABLE REPLICA RULE` enables a rule in replica mode — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_always_rule.notice` | `ALTER TABLE ... ENABLE ALWAYS RULE` enables a rule in always mode — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` sets storage parameters — warns about potential rewrite or behavior changes (v0.130.0) | ✓ | ✗ | warning |
+| `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` resets storage parameters to defaults — informational notice (v0.130.0) | ✓ | ✗ | notice |
 
-> **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. `SET TABLESPACE` remains an explicit boundary. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index. DeltaScope does not verify whether the target table is currently logged or unlogged.
+> **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index. DeltaScope does not verify whether the target table is currently logged or unlogged. v0.130.0 findings do not emit trigger function names, trigger body, rule query/command text, tablespace names, access method names, or reloption keys/values.
 
 ---
 

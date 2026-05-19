@@ -471,9 +471,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0）
+## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0）
 
-`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
+`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。`v0.130.0` 新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
 
 ### ALTER TABLE 覆盖规则
 
@@ -493,8 +493,18 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` 使用指定索引用于 WAL 旧行镜像——信息性提示 | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` 将 unlogged 表转为 logged——信息性提示 | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` 将 logged 表转为 unlogged——信息性提示 | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` 将表移至不同表空间——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` 更改表访问方法——警告 rewrite 和兼容性影响 (v0.130.0) | ✓ | ✗ | warning |
+| `ddl.pg.alter.enable_replica_trigger.notice` | `ALTER TABLE ... ENABLE REPLICA TRIGGER` 以 replica 模式启用触发器——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_always_trigger.notice` | `ALTER TABLE ... ENABLE ALWAYS TRIGGER` 以 always 模式启用触发器——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_rule.notice` | `ALTER TABLE ... ENABLE RULE` 启用重写规则——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.disable_rule.warn` | `ALTER TABLE ... DISABLE RULE` 禁用重写规则——警告该规则将不再触发 (v0.130.0) | ✓ | ✗ | warning |
+| `ddl.pg.alter.enable_replica_rule.notice` | `ALTER TABLE ... ENABLE REPLICA RULE` 以 replica 模式启用规则——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.enable_always_rule.notice` | `ALTER TABLE ... ENABLE ALWAYS RULE` 以 always 模式启用规则——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` 设置存储参数——警告潜在的 rewrite 或行为变化 (v0.130.0) | ✓ | ✗ | warning |
+| `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` 将存储参数重置为默认值——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
 
-> **说明：** 触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用上方的 `enable_trigger` 和 `disable_trigger` 规则。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。这不是完整的 PostgreSQL ALTER TABLE 覆盖——`SET TABLESPACE` 仍为显式边界。这些规则均为离线规则，不需要数据库连接。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。
+> **说明：** 触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用上方的 `enable_trigger` 和 `disable_trigger` 规则。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。这不是完整的 PostgreSQL ALTER TABLE 覆盖。这些规则均为离线规则，不需要数据库连接。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。v0.130.0 发现不输出 trigger 函数名、trigger 函数体、rule 查询/命令文本、tablespace 名称、access method 名称或 reloption 键/值。
 
 ---
 

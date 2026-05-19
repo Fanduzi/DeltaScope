@@ -467,7 +467,34 @@ deltascope rules search "prefix"
 | `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` 将 unlogged 表转为 logged——信息性提示 | notice | 否 |
 | `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` 将 logged 表转为 unlogged——信息性提示 | notice | 否 |
 
-> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用这些相同规则。这不是完整的 PostgreSQL ALTER TABLE 覆盖——`SET TABLESPACE` 仍为显式边界。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。
+> **说明：** 这些规则是 PostgreSQL 专用的，审计 MySQL 或 TiDB SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用这些相同规则。这不是完整的 PostgreSQL ALTER TABLE 覆盖。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。
+
+### 存储 / 布局（v0.130.0）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` 将表移至不同表空间——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` 更改表访问方法——警告 rewrite 和兼容性影响 | warning | 否 |
+
+### Trigger / Rule 残留（v0.130.0）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.enable_replica_trigger.notice` | `ALTER TABLE ... ENABLE REPLICA TRIGGER` 以 replica 模式启用触发器——信息性提示 | notice | 否 |
+| `ddl.pg.alter.enable_always_trigger.notice` | `ALTER TABLE ... ENABLE ALWAYS TRIGGER` 以 always 模式启用触发器——信息性提示 | notice | 否 |
+| `ddl.pg.alter.enable_rule.notice` | `ALTER TABLE ... ENABLE RULE` 启用重写规则——信息性提示 | notice | 否 |
+| `ddl.pg.alter.disable_rule.warn` | `ALTER TABLE ... DISABLE RULE` 禁用重写规则——警告该规则将不再触发 | warning | 否 |
+| `ddl.pg.alter.enable_replica_rule.notice` | `ALTER TABLE ... ENABLE REPLICA RULE` 以 replica 模式启用规则——信息性提示 | notice | 否 |
+| `ddl.pg.alter.enable_always_rule.notice` | `ALTER TABLE ... ENABLE ALWAYS RULE` 以 always 模式启用规则——信息性提示 | notice | 否 |
+
+### Reloptions（v0.130.0）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` 设置存储参数——警告潜在的 rewrite 或行为变化 | warning | 否 |
+| `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` 将存储参数重置为默认值——信息性提示 | notice | 否 |
+
+> **说明（v0.130.0）：** 这些规则是 PostgreSQL 专用的离线规则。发现不输出 trigger 函数名、trigger 函数体、rule 查询文本、rule 命令文本、tablespace 名称、access method 名称或 reloption 键/值（如 `fillfactor`、`autovacuum_enabled`）。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|

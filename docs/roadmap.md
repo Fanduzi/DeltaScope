@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.120.0 PostgreSQL Migration-Safety Semantic Metadata
+## Latest Completed Milestone: v0.130.0 PostgreSQL ALTER TABLE Residual Coverage / Semantics Depth
+
+**Goal:** deepen PostgreSQL ALTER TABLE residual coverage with 10 new rules across storage/layout, trigger/rule residual, and reloptions semantic families.
+
+### Completed Scope
+
+- 10 new PostgreSQL ALTER TABLE residual rules:
+  - Storage/layout (2): `ddl.pg.alter.set_tablespace.notice`, `ddl.pg.alter.set_access_method.warn`.
+  - Trigger/rule residual (6): `ddl.pg.alter.enable_replica_trigger.notice`, `ddl.pg.alter.enable_always_trigger.notice`, `ddl.pg.alter.enable_rule.notice`, `ddl.pg.alter.disable_rule.warn`, `ddl.pg.alter.enable_replica_rule.notice`, `ddl.pg.alter.enable_always_rule.notice`.
+  - Reloptions (2): `ddl.pg.alter.set_reloptions.warn`, `ddl.pg.alter.reset_reloptions.notice`.
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 29 → 40, `unsupported_boundary` 32 → 21.
+- SQL corpus: 326 policy rule IDs, 517/517 supported rule-dialect targets (100%), 225 expected YAML files.
+- No-leak contract: storage/layout findings do not emit raw tablespace or access method names; trigger/rule residual findings do not emit trigger function names, trigger body, rule body, or rule query text; reloptions findings do not emit option names or values.
+
+### Key Design Decisions
+
+- No full PostgreSQL ALTER TABLE support claim. Selected residual families are covered; remaining `unsupported_boundary` forms deferred.
+- No live catalog validation.
+- No rewrite duration estimate.
+- No runtime behavior validation.
+- No DCL expansion.
+- No v1.0/stable API contract claim.
+
+## Previous Milestone: v0.120.0 PostgreSQL Migration-Safety Semantic Metadata
 
 **Goal:** enrich PostgreSQL migration-safety findings with bounded semantic metadata for CREATE INDEX, ADD COLUMN, and ALTER COLUMN TYPE operations, without emitting raw SQL text.
 

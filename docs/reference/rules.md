@@ -476,7 +476,34 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.set_logged.notice` | `ALTER TABLE ... SET LOGGED` changes an unlogged table to logged — informational notice | notice | No |
 | `ddl.pg.alter.set_unlogged.notice` | `ALTER TABLE ... SET UNLOGGED` changes a logged table to unlogged — informational notice | notice | No |
 
-> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse these same rules. This is not full PostgreSQL ALTER TABLE coverage — `SET TABLESPACE` remains an explicit boundary. DeltaScope does not verify whether the target table is currently logged or unlogged.
+> **Note:** These rules are PostgreSQL-specific and are automatically skipped when auditing MySQL or TiDB SQL. They are offline rules and do not require a database connection. Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse these same rules. This is not full PostgreSQL ALTER TABLE coverage. DeltaScope does not verify whether the target table is currently logged or unlogged.
+
+### Storage / Layout (v0.130.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.set_tablespace.notice` | `ALTER TABLE ... SET TABLESPACE` moves the table to a different tablespace — informational notice | notice | No |
+| `ddl.pg.alter.set_access_method.warn` | `ALTER TABLE ... SET ACCESS METHOD` changes the table access method — warns about rewrite and compatibility implications | warning | No |
+
+### Trigger / Rule Residual (v0.130.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.enable_replica_trigger.notice` | `ALTER TABLE ... ENABLE REPLICA TRIGGER` enables a trigger in replica mode — informational notice | notice | No |
+| `ddl.pg.alter.enable_always_trigger.notice` | `ALTER TABLE ... ENABLE ALWAYS TRIGGER` enables a trigger in always mode — informational notice | notice | No |
+| `ddl.pg.alter.enable_rule.notice` | `ALTER TABLE ... ENABLE RULE` enables a rewrite rule — informational notice | notice | No |
+| `ddl.pg.alter.disable_rule.warn` | `ALTER TABLE ... DISABLE RULE` disables a rewrite rule — warns that the rule will not fire | warning | No |
+| `ddl.pg.alter.enable_replica_rule.notice` | `ALTER TABLE ... ENABLE REPLICA RULE` enables a rule in replica mode — informational notice | notice | No |
+| `ddl.pg.alter.enable_always_rule.notice` | `ALTER TABLE ... ENABLE ALWAYS RULE` enables a rule in always mode — informational notice | notice | No |
+
+### Reloptions (v0.130.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` sets storage parameters — warns about potential rewrite or behavior changes | warning | No |
+| `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` resets storage parameters to defaults — informational notice | notice | No |
+
+> **Note (v0.130.0):** These rules are PostgreSQL-specific and offline. No trigger function names, trigger body text, rule query text, rule command text, tablespace names, access method names, or reloption keys/values (e.g., `fillfactor`, `autovacuum_enabled`) are emitted in findings.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
