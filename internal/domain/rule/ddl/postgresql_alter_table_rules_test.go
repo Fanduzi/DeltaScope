@@ -1106,6 +1106,12 @@ func TestRegisterIncludesPGAlterTableRules(t *testing.T) {
 		ruleIDPGAlterReplicaIdentityFullWarn,
 		ruleIDPGAlterReplicaIdentityNothingWarn,
 		ruleIDPGAlterReplicaIdentityUsingIndexNotice,
+		ruleIDPGAlterEnableReplicaTriggerNotice,
+		ruleIDPGAlterEnableAlwaysTriggerNotice,
+		ruleIDPGAlterEnableRuleNotice,
+		ruleIDPGAlterDisableRuleWarn,
+		ruleIDPGAlterEnableReplicaRuleNotice,
+		ruleIDPGAlterEnableAlwaysRuleNotice,
 	}
 	for _, ruleID := range pgAlterRuleIDs {
 		cfg.Rules[ruleID] = policy.RulePolicy{
@@ -1384,6 +1390,60 @@ func mustNewSetTablespaceNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.St
 	return r
 }
 
+func mustNewEnableReplicaTriggerNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newEnableReplicaTriggerNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("newEnableReplicaTriggerNoticeRule: %v", err)
+	}
+	return r
+}
+
+func mustNewEnableAlwaysTriggerNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newEnableAlwaysTriggerNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("newEnableAlwaysTriggerNoticeRule: %v", err)
+	}
+	return r
+}
+
+func mustNewEnableRuleNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newEnableRuleNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("newEnableRuleNoticeRule: %v", err)
+	}
+	return r
+}
+
+func mustNewDisableRuleWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newDisableRuleWarnRule(cfg)
+	if err != nil {
+		t.Fatalf("newDisableRuleWarnRule: %v", err)
+	}
+	return r
+}
+
+func mustNewEnableReplicaRuleNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newEnableReplicaRuleNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("newEnableReplicaRuleNoticeRule: %v", err)
+	}
+	return r
+}
+
+func mustNewEnableAlwaysRuleNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newEnableAlwaysRuleNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("newEnableAlwaysRuleNoticeRule: %v", err)
+	}
+	return r
+}
+
 func mustNewSetAccessMethodWarnRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
 	t.Helper()
 	r, err := newSetAccessMethodWarnRule(cfg)
@@ -1573,5 +1633,442 @@ func TestStorageLayoutRulesDoNotFireForWrongAction(t *testing.T) {
 		if len(findings) != 0 {
 			t.Fatalf("expected 0 findings for set_logged action, got %d", len(findings))
 		}
+	}
+}
+
+func TestEnableReplicaTriggerNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewEnableReplicaTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "enable_replica_trigger", Name: "sync_trigger", Options: map[string]string{"trigger": "sync_trigger", "trigger_mode": "replica"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "enable_replica_trigger" {
+		t.Fatalf("expected action=enable_replica_trigger, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["trigger"] != "sync_trigger" {
+		t.Fatalf("expected trigger=sync_trigger, got %v", findings[0].Metadata["trigger"])
+	}
+	if findings[0].Metadata["trigger_mode"] != "replica" {
+		t.Fatalf("expected trigger_mode=replica, got %v", findings[0].Metadata["trigger_mode"])
+	}
+	if findings[0].Metadata["table"] != "users" {
+		t.Fatalf("expected table=users, got %v", findings[0].Metadata["table"])
+	}
+}
+
+func TestEnableAlwaysTriggerNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewEnableAlwaysTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "enable_always_trigger", Name: "audit_trigger", Options: map[string]string{"trigger": "audit_trigger", "trigger_mode": "always"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "enable_always_trigger" {
+		t.Fatalf("expected action=enable_always_trigger, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["trigger"] != "audit_trigger" {
+		t.Fatalf("expected trigger=audit_trigger, got %v", findings[0].Metadata["trigger"])
+	}
+	if findings[0].Metadata["trigger_mode"] != "always" {
+		t.Fatalf("expected trigger_mode=always, got %v", findings[0].Metadata["trigger_mode"])
+	}
+}
+
+func TestEnableRuleNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewEnableRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "enable_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "enable_rule" {
+		t.Fatalf("expected action=enable_rule, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["rule"] != "route_rule" {
+		t.Fatalf("expected rule=route_rule, got %v", findings[0].Metadata["rule"])
+	}
+	if findings[0].Metadata["table"] != "users" {
+		t.Fatalf("expected table=users, got %v", findings[0].Metadata["table"])
+	}
+}
+
+func TestDisableRuleWarnFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewDisableRuleWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "disable_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelWarning {
+		t.Fatalf("expected warning level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "disable_rule" {
+		t.Fatalf("expected action=disable_rule, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["rule"] != "route_rule" {
+		t.Fatalf("expected rule=route_rule, got %v", findings[0].Metadata["rule"])
+	}
+}
+
+func TestEnableReplicaRuleNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewEnableReplicaRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "enable_replica_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "replica"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "enable_replica_rule" {
+		t.Fatalf("expected action=enable_replica_rule, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["rule"] != "route_rule" {
+		t.Fatalf("expected rule=route_rule, got %v", findings[0].Metadata["rule"])
+	}
+	if findings[0].Metadata["rule_mode"] != "replica" {
+		t.Fatalf("expected rule_mode=replica, got %v", findings[0].Metadata["rule_mode"])
+	}
+}
+
+func TestEnableAlwaysRuleNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewEnableAlwaysRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter: []spec.Alter{
+				{Action: "enable_always_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "always"}},
+			},
+		},
+	}
+
+	findings, err := r.Evaluate(context.Background(), stmt)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %q", findings[0].Level)
+	}
+	if findings[0].Metadata["action"] != "enable_always_rule" {
+		t.Fatalf("expected action=enable_always_rule, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["rule"] != "route_rule" {
+		t.Fatalf("expected rule=route_rule, got %v", findings[0].Metadata["rule"])
+	}
+	if findings[0].Metadata["rule_mode"] != "always" {
+		t.Fatalf("expected rule_mode=always, got %v", findings[0].Metadata["rule_mode"])
+	}
+}
+
+func TestTriggerRuleModeRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "enable_replica_trigger_notice",
+			r:    mustNewEnableReplicaTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_replica_trigger", Name: "sync_trigger", Options: map[string]string{"trigger": "sync_trigger", "trigger_mode": "replica"}}},
+				},
+			},
+		},
+		{
+			name: "enable_always_trigger_notice",
+			r:    mustNewEnableAlwaysTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_always_trigger", Name: "audit_trigger", Options: map[string]string{"trigger": "audit_trigger", "trigger_mode": "always"}}},
+				},
+			},
+		},
+		{
+			name: "enable_rule_notice",
+			r:    mustNewEnableRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule"}}},
+				},
+			},
+		},
+		{
+			name: "disable_rule_warn",
+			r:    mustNewDisableRuleWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "disable_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule"}}},
+				},
+			},
+		},
+		{
+			name: "enable_replica_rule_notice",
+			r:    mustNewEnableReplicaRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_replica_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "replica"}}},
+				},
+			},
+		},
+		{
+			name: "enable_always_rule_notice",
+			r:    mustNewEnableAlwaysRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind: spec.KindDDL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_always_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "always"}}},
+				},
+			},
+		},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
+				stmt := rl.stmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestTriggerRuleModeRulesNoLeak(t *testing.T) {
+	t.Parallel()
+	forbiddenKeys := []string{
+		"trigger_function", "trigger_body", "trigger_when", "trigger_events", "trigger_columns",
+		"rule_query", "rule_body", "rule_commands", "rule_where",
+	}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "enable_replica_trigger",
+			r:    mustNewEnableReplicaTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_replica_trigger", Name: "sync_trigger", Options: map[string]string{"trigger": "sync_trigger", "trigger_mode": "replica"}}},
+				},
+			},
+		},
+		{
+			name: "enable_always_trigger",
+			r:    mustNewEnableAlwaysTriggerNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_always_trigger", Name: "audit_trigger", Options: map[string]string{"trigger": "audit_trigger", "trigger_mode": "always"}}},
+				},
+			},
+		},
+		{
+			name: "enable_rule",
+			r:    mustNewEnableRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule"}}},
+				},
+			},
+		},
+		{
+			name: "disable_rule",
+			r:    mustNewDisableRuleWarnRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelWarning}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "disable_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule"}}},
+				},
+			},
+		},
+		{
+			name: "enable_replica_rule",
+			r:    mustNewEnableReplicaRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_replica_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "replica"}}},
+				},
+			},
+		},
+		{
+			name: "enable_always_rule",
+			r:    mustNewEnableAlwaysRuleNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "enable_always_rule", Name: "route_rule", Options: map[string]string{"rule": "route_rule", "rule_mode": "always"}}},
+				},
+			},
+		},
+	}
+
+	for _, rl := range rules {
+		t.Run(rl.name, func(t *testing.T) {
+			t.Parallel()
+			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			for _, key := range forbiddenKeys {
+				if _, ok := findings[0].Metadata[key]; ok {
+					t.Fatalf("forbidden key %q present in finding metadata", key)
+				}
+			}
+		})
 	}
 }

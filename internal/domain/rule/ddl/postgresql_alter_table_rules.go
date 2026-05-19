@@ -357,6 +357,80 @@ func newSetAccessMethodWarnRule(cfg policy.RulePolicy) (rule.StatementRule, erro
 }
 
 // ---------------------------------------------------------------------------
+// Constructors for trigger mode rules
+// ---------------------------------------------------------------------------
+
+func newEnableReplicaTriggerNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterEnableReplicaTriggerNotice, rule.LevelNotice, "enable_replica_trigger", "trigger",
+		"Trigger %s enabled in REPLICA mode on PostgreSQL — replication firing mode changed",
+		"ENABLE REPLICA TRIGGER configures the trigger to fire only in replica mode. The trigger will fire on standby servers that are in hot standby mode but not on the primary.",
+		"Applications expecting the trigger to fire on the primary will not observe side effects. Replication behavior depends on the session_replication_role setting.",
+		"Verify the trigger firing mode matches the intended replication topology. This mode is typically used for trigger-based replication setups.",
+		cfg,
+	)
+}
+
+func newEnableAlwaysTriggerNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterEnableAlwaysTriggerNotice, rule.LevelNotice, "enable_always_trigger", "trigger",
+		"Trigger %s enabled in ALWAYS mode on PostgreSQL — trigger fires regardless of replication role",
+		"ENABLE ALWAYS TRIGGER configures the trigger to fire regardless of the current session_replication_role setting. The trigger fires on the primary, on replicas, and during recovery.",
+		"The trigger will execute in all contexts, which may cause unexpected behavior if the trigger logic assumes it is running only on the primary.",
+		"Confirm the trigger logic is safe to execute in all replication contexts. This mode is typically used for audit or data-synchronization triggers that must fire unconditionally.",
+		cfg,
+	)
+}
+
+// ---------------------------------------------------------------------------
+// Constructors for rule mode rules
+// ---------------------------------------------------------------------------
+
+func newEnableRuleNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterEnableRuleNotice, rule.LevelNotice, "enable_rule", "rule",
+		"Rule %s enabled on PostgreSQL — query rewriting re-activated",
+		"ENABLE RULE re-activates the named rewrite rule for all subsequent queries targeting the table. Query routing or transformation logic will resume immediately.",
+		"Applications that relied on the rule being disabled will now observe query rewriting behavior that was previously absent.",
+		"Confirm the rule logic is compatible with current query patterns and application expectations before enabling.",
+		cfg,
+	)
+}
+
+func newDisableRuleWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterDisableRuleWarn, rule.LevelWarning, "disable_rule", "rule",
+		"Rule %s disabled on PostgreSQL — query rewriting may be affected",
+		"DISABLE RULE deactivates the named rewrite rule for all subsequent queries targeting the table. Query routing or transformation logic will no longer apply.",
+		"Applications expecting the rule to rewrite queries will observe unmodified query behavior. Views or application logic that depend on rule-based routing may return different results.",
+		"Re-enable the rule as soon as the maintenance window ends. Document the reason for disabling and verify query behavior after re-enabling.",
+		cfg,
+	)
+}
+
+func newEnableReplicaRuleNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterEnableReplicaRuleNotice, rule.LevelNotice, "enable_replica_rule", "rule",
+		"Rule %s enabled in REPLICA mode on PostgreSQL — replication rule mode changed",
+		"ENABLE REPLICA RULE configures the rewrite rule to fire only in replica mode. The rule applies on standby servers that are in hot standby mode but not on the primary.",
+		"Applications expecting the rule to rewrite queries on the primary will not observe transformation behavior. Replication behavior depends on the session_replication_role setting.",
+		"Verify the rule mode matches the intended replication topology. This mode is typically used for rule-based replication setups.",
+		cfg,
+	)
+}
+
+func newEnableAlwaysRuleNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterEnableAlwaysRuleNotice, rule.LevelNotice, "enable_always_rule", "rule",
+		"Rule %s enabled in ALWAYS mode on PostgreSQL — rule fires regardless of replication role",
+		"ENABLE ALWAYS RULE configures the rewrite rule to fire regardless of the current session_replication_role setting. The rule applies on the primary, on replicas, and during recovery.",
+		"The rule will execute in all contexts, which may cause unexpected query rewriting if the rule logic assumes it is running only on the primary.",
+		"Confirm the rule logic is safe to execute in all replication contexts. This mode is typically used for audit or data-transformation rules that must fire unconditionally.",
+		cfg,
+	)
+}
+
+// ---------------------------------------------------------------------------
 // Generic PG-only alter action+option rule
 // Covers: replica_identity_full, replica_identity_nothing, replica_identity_using_index
 // ---------------------------------------------------------------------------

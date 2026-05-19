@@ -1,0 +1,1 @@
+ALTER TABLE users ENABLE ALWAYS TRIGGER audit_trigger;

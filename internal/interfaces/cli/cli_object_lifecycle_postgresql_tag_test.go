@@ -538,6 +538,42 @@ func TestAuditCommandPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T)
 			wantRuleID: "ddl.pg.alter.set_access_method.warn",
 			wantLevel:  "warning",
 		},
+		{
+			name:       "enable_replica_trigger_notice",
+			sql:        "ALTER TABLE users ENABLE REPLICA TRIGGER sync_trigger",
+			wantRuleID: "ddl.pg.alter.enable_replica_trigger.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "enable_always_trigger_notice",
+			sql:        "ALTER TABLE users ENABLE ALWAYS TRIGGER audit_trigger",
+			wantRuleID: "ddl.pg.alter.enable_always_trigger.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "enable_rule_notice",
+			sql:        "ALTER TABLE users ENABLE RULE route_rule",
+			wantRuleID: "ddl.pg.alter.enable_rule.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "disable_rule_warn",
+			sql:        "ALTER TABLE users DISABLE RULE route_rule",
+			wantRuleID: "ddl.pg.alter.disable_rule.warn",
+			wantLevel:  "warning",
+		},
+		{
+			name:       "enable_replica_rule_notice",
+			sql:        "ALTER TABLE users ENABLE REPLICA RULE route_rule",
+			wantRuleID: "ddl.pg.alter.enable_replica_rule.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "enable_always_rule_notice",
+			sql:        "ALTER TABLE users ENABLE ALWAYS RULE route_rule",
+			wantRuleID: "ddl.pg.alter.enable_always_rule.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {

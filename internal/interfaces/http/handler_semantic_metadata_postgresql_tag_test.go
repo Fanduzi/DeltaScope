@@ -91,6 +91,60 @@ func TestHandlerAuditPostgreSQLSemanticMetadataParity(t *testing.T) {
 			},
 			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
 		},
+		{
+			name:   "enable_replica_trigger_metadata",
+			sql:    "ALTER TABLE users ENABLE REPLICA TRIGGER sync_trigger",
+			ruleID: "ddl.pg.alter.enable_replica_trigger.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "enable_replica_trigger", "table": "users",
+				"trigger": "sync_trigger", "trigger_mode": "replica",
+			},
+		},
+		{
+			name:   "enable_always_trigger_metadata",
+			sql:    "ALTER TABLE users ENABLE ALWAYS TRIGGER audit_trigger",
+			ruleID: "ddl.pg.alter.enable_always_trigger.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "enable_always_trigger", "table": "users",
+				"trigger": "audit_trigger", "trigger_mode": "always",
+			},
+		},
+		{
+			name:   "enable_rule_metadata",
+			sql:    "ALTER TABLE users ENABLE RULE route_rule",
+			ruleID: "ddl.pg.alter.enable_rule.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "enable_rule", "table": "users",
+				"rule": "route_rule",
+			},
+		},
+		{
+			name:   "disable_rule_metadata",
+			sql:    "ALTER TABLE users DISABLE RULE route_rule",
+			ruleID: "ddl.pg.alter.disable_rule.warn",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "disable_rule", "table": "users",
+				"rule": "route_rule",
+			},
+		},
+		{
+			name:   "enable_replica_rule_metadata",
+			sql:    "ALTER TABLE users ENABLE REPLICA RULE route_rule",
+			ruleID: "ddl.pg.alter.enable_replica_rule.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "enable_replica_rule", "table": "users",
+				"rule": "route_rule", "rule_mode": "replica",
+			},
+		},
+		{
+			name:   "enable_always_rule_metadata",
+			sql:    "ALTER TABLE users ENABLE ALWAYS RULE route_rule",
+			ruleID: "ddl.pg.alter.enable_always_rule.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "enable_always_rule", "table": "users",
+				"rule": "route_rule", "rule_mode": "always",
+			},
+		},
 	}
 
 	for _, tt := range tests {

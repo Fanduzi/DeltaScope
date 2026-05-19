@@ -128,6 +128,36 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.pg.alter.enable_replica_trigger.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.enable_always_trigger.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.enable_rule.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.disable_rule.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.enable_replica_rule.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.enable_always_rule.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 		"ddl.pg.alter.replica_identity_full.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

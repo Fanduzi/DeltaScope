@@ -908,6 +908,24 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "disable_trigger", Options: map[string]string{"trigger_scope": "all"}}, true, nil
 	case pg_query.AlterTableType_AT_DisableTrigUser:
 		return spec.Alter{Action: "disable_trigger", Options: map[string]string{"trigger_scope": "user"}}, true, nil
+	case pg_query.AlterTableType_AT_EnableReplicaTrig:
+		name := cmd.GetName()
+		return spec.Alter{Action: "enable_replica_trigger", Name: name, Options: map[string]string{"trigger": name, "trigger_mode": "replica"}}, true, nil
+	case pg_query.AlterTableType_AT_EnableAlwaysTrig:
+		name := cmd.GetName()
+		return spec.Alter{Action: "enable_always_trigger", Name: name, Options: map[string]string{"trigger": name, "trigger_mode": "always"}}, true, nil
+	case pg_query.AlterTableType_AT_EnableRule:
+		name := cmd.GetName()
+		return spec.Alter{Action: "enable_rule", Name: name, Options: map[string]string{"rule": name}}, true, nil
+	case pg_query.AlterTableType_AT_DisableRule:
+		name := cmd.GetName()
+		return spec.Alter{Action: "disable_rule", Name: name, Options: map[string]string{"rule": name}}, true, nil
+	case pg_query.AlterTableType_AT_EnableReplicaRule:
+		name := cmd.GetName()
+		return spec.Alter{Action: "enable_replica_rule", Name: name, Options: map[string]string{"rule": name, "rule_mode": "replica"}}, true, nil
+	case pg_query.AlterTableType_AT_EnableAlwaysRule:
+		name := cmd.GetName()
+		return spec.Alter{Action: "enable_always_rule", Name: name, Options: map[string]string{"rule": name, "rule_mode": "always"}}, true, nil
 	case pg_query.AlterTableType_AT_ReplicaIdentity:
 		identity, indexName := replicaIdentityFromDef(cmd.GetDef())
 		if identity == "" {

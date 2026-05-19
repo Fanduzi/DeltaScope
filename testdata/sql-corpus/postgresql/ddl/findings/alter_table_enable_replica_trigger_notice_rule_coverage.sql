@@ -1,0 +1,1 @@
+ALTER TABLE users ENABLE REPLICA TRIGGER sync_trigger;

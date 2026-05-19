@@ -1,0 +1,1 @@
+ALTER TABLE users ENABLE ALWAYS RULE route_rule;

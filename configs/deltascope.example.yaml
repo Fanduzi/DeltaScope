@@ -735,6 +735,36 @@ rules:
     level: warning
     params:
 
+  ddl.pg.alter.enable_replica_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.enable_always_trigger.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.enable_rule.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.disable_rule.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.pg.alter.enable_replica_rule.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.enable_always_rule.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.pg.alter.set_data_type.rewrite.warn:
     enabled: true
     level: warning

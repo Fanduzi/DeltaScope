@@ -1,0 +1,1 @@
+ALTER TABLE users ENABLE REPLICA RULE route_rule;

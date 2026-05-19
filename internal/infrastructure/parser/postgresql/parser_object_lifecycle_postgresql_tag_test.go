@@ -471,6 +471,228 @@ func TestPGExtractorAlterTableDisableTriggerUserNormalized(t *testing.T) {
 	}
 }
 
+func TestPGExtractorAlterTableEnableReplicaTriggerNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE REPLICA TRIGGER sync_trigger")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "enable_replica_trigger" {
+		t.Fatalf("expected action 'enable_replica_trigger', got %q", alter.Action)
+	}
+	if alter.Name != "sync_trigger" {
+		t.Fatalf("expected name 'sync_trigger', got %q", alter.Name)
+	}
+	if alter.Options["trigger"] != "sync_trigger" {
+		t.Fatalf("expected options['trigger']='sync_trigger', got %q", alter.Options["trigger"])
+	}
+	if alter.Options["trigger_mode"] != "replica" {
+		t.Fatalf("expected options['trigger_mode']='replica', got %q", alter.Options["trigger_mode"])
+	}
+}
+
+func TestPGExtractorAlterTableEnableAlwaysTriggerNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE ALWAYS TRIGGER audit_trigger")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "enable_always_trigger" {
+		t.Fatalf("expected action 'enable_always_trigger', got %q", alter.Action)
+	}
+	if alter.Name != "audit_trigger" {
+		t.Fatalf("expected name 'audit_trigger', got %q", alter.Name)
+	}
+	if alter.Options["trigger"] != "audit_trigger" {
+		t.Fatalf("expected options['trigger']='audit_trigger', got %q", alter.Options["trigger"])
+	}
+	if alter.Options["trigger_mode"] != "always" {
+		t.Fatalf("expected options['trigger_mode']='always', got %q", alter.Options["trigger_mode"])
+	}
+}
+
+func TestPGExtractorAlterTableEnableRuleNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE RULE route_rule")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "enable_rule" {
+		t.Fatalf("expected action 'enable_rule', got %q", alter.Action)
+	}
+	if alter.Name != "route_rule" {
+		t.Fatalf("expected name 'route_rule', got %q", alter.Name)
+	}
+	if alter.Options["rule"] != "route_rule" {
+		t.Fatalf("expected options['rule']='route_rule', got %q", alter.Options["rule"])
+	}
+}
+
+func TestPGExtractorAlterTableDisableRuleNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users DISABLE RULE route_rule")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "disable_rule" {
+		t.Fatalf("expected action 'disable_rule', got %q", alter.Action)
+	}
+	if alter.Name != "route_rule" {
+		t.Fatalf("expected name 'route_rule', got %q", alter.Name)
+	}
+	if alter.Options["rule"] != "route_rule" {
+		t.Fatalf("expected options['rule']='route_rule', got %q", alter.Options["rule"])
+	}
+}
+
+func TestPGExtractorAlterTableEnableReplicaRuleNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE REPLICA RULE route_rule")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "enable_replica_rule" {
+		t.Fatalf("expected action 'enable_replica_rule', got %q", alter.Action)
+	}
+	if alter.Name != "route_rule" {
+		t.Fatalf("expected name 'route_rule', got %q", alter.Name)
+	}
+	if alter.Options["rule"] != "route_rule" {
+		t.Fatalf("expected options['rule']='route_rule', got %q", alter.Options["rule"])
+	}
+	if alter.Options["rule_mode"] != "replica" {
+		t.Fatalf("expected options['rule_mode']='replica', got %q", alter.Options["rule_mode"])
+	}
+}
+
+func TestPGExtractorAlterTableEnableAlwaysRuleNormalized(t *testing.T) {
+	t.Parallel()
+	p := New()
+	result, err := p.Parse(context.Background(), "ALTER TABLE users ENABLE ALWAYS RULE route_rule")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+	stmt, extractErr := result.Statements[0].Extractor.Extract(spec.DialectPostgreSQL, result.Statements[0].RawSQL)
+	if extractErr != nil {
+		t.Fatalf("extract: %v", extractErr)
+	}
+	if stmt.Unsupported != nil {
+		t.Fatalf("expected no unsupported, got feature=%q reason=%q", stmt.Unsupported.Feature, stmt.Unsupported.Reason)
+	}
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter_table operation, got DDL=%v", stmt.DDL)
+	}
+	if len(stmt.DDL.Alter) != 1 {
+		t.Fatalf("expected 1 alter action, got %d", len(stmt.DDL.Alter))
+	}
+	alter := stmt.DDL.Alter[0]
+	if alter.Action != "enable_always_rule" {
+		t.Fatalf("expected action 'enable_always_rule', got %q", alter.Action)
+	}
+	if alter.Name != "route_rule" {
+		t.Fatalf("expected name 'route_rule', got %q", alter.Name)
+	}
+	if alter.Options["rule"] != "route_rule" {
+		t.Fatalf("expected options['rule']='route_rule', got %q", alter.Options["rule"])
+	}
+	if alter.Options["rule_mode"] != "always" {
+		t.Fatalf("expected options['rule_mode']='always', got %q", alter.Options["rule_mode"])
+	}
+}
+
 func TestPGExtractorAlterTableReplicaIdentityDefaultNormalized(t *testing.T) {
 	t.Parallel()
 	p := New()
