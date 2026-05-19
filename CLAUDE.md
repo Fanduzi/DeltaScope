@@ -107,7 +107,7 @@ Task reports must distinguish task-commit diff (`<previous-task>..HEAD`) from mi
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **DeltaScope** (11347 symbols, 24116 relationships, 274 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **DeltaScope** (11353 symbols, 24116 relationships, 274 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
