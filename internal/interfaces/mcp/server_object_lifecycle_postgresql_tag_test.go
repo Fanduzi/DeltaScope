@@ -608,6 +608,56 @@ func TestAuditSQLToolPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T)
 			wantRuleID: "ddl.pg.alter.reset_reloptions.notice",
 			wantLevel:  "notice",
 		},
+		// Bounded residual: column attribute rules
+		{
+			name:       "set_column_statistics_notice",
+			sql:        "ALTER TABLE users ALTER COLUMN email SET STATISTICS 100",
+			wantRuleID: "ddl.pg.alter.set_column_statistics.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_column_options_notice",
+			sql:        "ALTER TABLE users ALTER COLUMN email SET (n_distinct = -1)",
+			wantRuleID: "ddl.pg.alter.set_column_options.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "reset_column_options_notice",
+			sql:        "ALTER TABLE users ALTER COLUMN email RESET (n_distinct)",
+			wantRuleID: "ddl.pg.alter.reset_column_options.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_column_storage_notice",
+			sql:        "ALTER TABLE users ALTER COLUMN bio SET STORAGE EXTERNAL",
+			wantRuleID: "ddl.pg.alter.set_column_storage.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_column_compression_notice",
+			sql:        "ALTER TABLE users ALTER COLUMN bio SET COMPRESSION lz4",
+			wantRuleID: "ddl.pg.alter.set_column_compression.notice",
+			wantLevel:  "notice",
+		},
+		// Bounded residual: cluster/finalize rules
+		{
+			name:       "cluster_on_notice",
+			sql:        "ALTER TABLE users CLUSTER ON users_email_idx",
+			wantRuleID: "ddl.pg.alter.cluster_on.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_without_cluster_notice",
+			sql:        "ALTER TABLE users SET WITHOUT CLUSTER",
+			wantRuleID: "ddl.pg.alter.set_without_cluster.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "detach_partition_finalize_notice",
+			sql:        "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04 FINALIZE",
+			wantRuleID: "ddl.pg.alter.detach_partition_finalize.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1712,6 +1762,108 @@ func TestAuditSQLToolPostgreSQLSemanticMetadataParity(t *testing.T) {
 				"access_method": "default", "is_default": "true",
 			},
 			forbidden: []string{"fillfactor", "reloptions", "cluster", "tablespace_sql", "access_method_sql"},
+		},
+		// Bounded residual: column attribute metadata
+		{
+			name:   "set_column_statistics_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN email SET STATISTICS 100",
+			ruleID: "ddl.pg.alter.set_column_statistics.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_statistics", "table": "users",
+				"column": "email", "statistics_target_kind": "value", "has_statistics_target": "true",
+			},
+			forbidden: []string{"100", "raw_sql", "n_distinct", "-1"},
+		},
+		{
+			name:   "set_column_statistics_default_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN email SET STATISTICS DEFAULT",
+			ruleID: "ddl.pg.alter.set_column_statistics.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_statistics", "table": "users",
+				"column": "email", "statistics_target_kind": "default", "has_statistics_target": "true",
+			},
+			forbidden: []string{"raw_sql"},
+		},
+		{
+			name:   "set_column_options_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN email SET (n_distinct = -1)",
+			ruleID: "ddl.pg.alter.set_column_options.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_column_options", "table": "users",
+				"column": "email", "option_count": "1", "has_column_options": "true",
+			},
+			forbidden: []string{"n_distinct", "-1", "raw_sql", "option_names", "option_values"},
+		},
+		{
+			name:   "reset_column_options_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN email RESET (n_distinct)",
+			ruleID: "ddl.pg.alter.reset_column_options.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "reset_column_options", "table": "users",
+				"column": "email", "reset_count": "1", "has_column_options": "true",
+			},
+			forbidden: []string{"n_distinct", "-1", "raw_sql", "option_names", "option_values"},
+		},
+		{
+			name:   "set_column_storage_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN bio SET STORAGE EXTERNAL",
+			ruleID: "ddl.pg.alter.set_column_storage.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_storage", "table": "users",
+				"column": "bio", "storage_kind": "external", "has_storage_setting": "true",
+			},
+			forbidden: []string{"raw_sql", "lz4", "pglz"},
+		},
+		{
+			name:   "set_column_storage_default_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN bio SET STORAGE DEFAULT",
+			ruleID: "ddl.pg.alter.set_column_storage.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_storage", "table": "users",
+				"column": "bio", "storage_kind": "default", "has_storage_setting": "true",
+			},
+			forbidden: []string{"raw_sql"},
+		},
+		{
+			name:   "set_column_compression_metadata",
+			sql:    "ALTER TABLE users ALTER COLUMN bio SET COMPRESSION lz4",
+			ruleID: "ddl.pg.alter.set_column_compression.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_compression", "table": "users",
+				"column": "bio", "has_compression": "true",
+			},
+			forbidden: []string{"lz4", "pglz", "compression_kind", "raw_sql"},
+		},
+		// Bounded residual: cluster/finalize metadata
+		{
+			name:   "cluster_on_metadata",
+			sql:    "ALTER TABLE users CLUSTER ON users_email_idx",
+			ruleID: "ddl.pg.alter.cluster_on.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "cluster_on", "table": "users",
+				"index": "users_email_idx", "has_cluster_index": "true",
+			},
+			forbidden: []string{"cluster_sql", "raw_sql"},
+		},
+		{
+			name:   "set_without_cluster_metadata",
+			sql:    "ALTER TABLE users SET WITHOUT CLUSTER",
+			ruleID: "ddl.pg.alter.set_without_cluster.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "set_without_cluster", "table": "users",
+				"has_cluster_index": "false",
+			},
+			forbidden: []string{"cluster_sql", "raw_sql"},
+		},
+		{
+			name:   "detach_partition_finalize_metadata",
+			sql:    "ALTER TABLE measurement DETACH PARTITION measurement_y2026m04 FINALIZE",
+			ruleID: "ddl.pg.alter.detach_partition_finalize.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "detach_partition_finalize", "table": "measurement",
+				"partition": "measurement_y2026m04", "finalize": "true",
+			},
+			forbidden: []string{"partition_bound", "raw_sql", "concurrently"},
 		},
 	}
 

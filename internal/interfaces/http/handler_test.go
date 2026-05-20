@@ -1866,6 +1866,56 @@ func TestHandlerAuditPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T)
 			wantRuleID: "ddl.pg.alter.reset_reloptions.notice",
 			wantLevel:  "notice",
 		},
+		// Bounded residual: column attribute rules
+		{
+			name:       "set_column_statistics_notice",
+			sql:        `ALTER TABLE users ALTER COLUMN email SET STATISTICS 100;`,
+			wantRuleID: "ddl.pg.alter.set_column_statistics.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_column_options_notice",
+			sql:        `ALTER TABLE users ALTER COLUMN email SET (n_distinct = -1);`,
+			wantRuleID: "ddl.pg.alter.set_column_options.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "reset_column_options_notice",
+			sql:        `ALTER TABLE users ALTER COLUMN email RESET (n_distinct);`,
+			wantRuleID: "ddl.pg.alter.reset_column_options.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_column_storage_notice",
+			sql:        `ALTER TABLE users ALTER COLUMN bio SET STORAGE EXTERNAL;`,
+			wantRuleID: "ddl.pg.alter.set_column_storage.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_column_compression_notice",
+			sql:        `ALTER TABLE users ALTER COLUMN bio SET COMPRESSION lz4;`,
+			wantRuleID: "ddl.pg.alter.set_column_compression.notice",
+			wantLevel:  "notice",
+		},
+		// Bounded residual: cluster/finalize rules
+		{
+			name:       "cluster_on_notice",
+			sql:        `ALTER TABLE users CLUSTER ON users_email_idx;`,
+			wantRuleID: "ddl.pg.alter.cluster_on.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "set_without_cluster_notice",
+			sql:        `ALTER TABLE users SET WITHOUT CLUSTER;`,
+			wantRuleID: "ddl.pg.alter.set_without_cluster.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "detach_partition_finalize_notice",
+			sql:        `ALTER TABLE measurement DETACH PARTITION measurement_y2026m04 FINALIZE;`,
+			wantRuleID: "ddl.pg.alter.detach_partition_finalize.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {
