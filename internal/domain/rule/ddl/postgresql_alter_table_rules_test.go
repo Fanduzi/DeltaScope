@@ -2301,3 +2301,350 @@ func TestReloptionsRulesNoLeak(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Column attribute rule helpers
+// ---------------------------------------------------------------------------
+
+func mustNewSetColumnStatisticsNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetColumnStatisticsNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set column statistics notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetColumnOptionsNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetColumnOptionsNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set column options notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewResetColumnOptionsNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newResetColumnOptionsNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new reset column options notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetColumnStorageNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetColumnStorageNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set column storage notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetColumnCompressionNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetColumnCompressionNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set column compression notice rule: %v", err)
+	}
+	return r
+}
+
+// ---------------------------------------------------------------------------
+// Column attribute rule tests: fire for PG
+// ---------------------------------------------------------------------------
+
+func TestSetColumnStatisticsNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetColumnStatisticsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	for _, tc := range []struct {
+		name    string
+		options map[string]string
+		want    string
+	}{
+		{name: "value", options: map[string]string{"column": "email", "statistics_target_kind": "value", "has_statistics_target": "true"}, want: "value"},
+		{name: "default", options: map[string]string{"column": "email", "statistics_target_kind": "default", "has_statistics_target": "true"}, want: "default"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			findings, err := r.Evaluate(context.Background(), spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_statistics", Name: "email", Options: tc.options}},
+				},
+			})
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].Metadata["action"] != "set_statistics" {
+				t.Fatalf("expected action=set_statistics, got %v", findings[0].Metadata["action"])
+			}
+			if findings[0].Metadata["column"] != "email" {
+				t.Fatalf("expected column=email, got %v", findings[0].Metadata["column"])
+			}
+			if findings[0].Metadata["table"] != "users" {
+				t.Fatalf("expected table=users, got %v", findings[0].Metadata["table"])
+			}
+			if findings[0].Metadata["statistics_target_kind"] != tc.want {
+				t.Fatalf("expected statistics_target_kind=%s, got %v", tc.want, findings[0].Metadata["statistics_target_kind"])
+			}
+		})
+	}
+}
+
+func TestSetColumnOptionsNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	findings, err := r.Evaluate(context.Background(), spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "set_column_options", Name: "email", Options: map[string]string{"column": "email", "option_count": "2", "has_column_options": "true"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["action"] != "set_column_options" {
+		t.Fatalf("expected action=set_column_options, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestResetColumnOptionsNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewResetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	findings, err := r.Evaluate(context.Background(), spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "reset_column_options", Name: "email", Options: map[string]string{"column": "email", "reset_count": "1", "has_column_options": "true"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["action"] != "reset_column_options" {
+		t.Fatalf("expected action=reset_column_options, got %v", findings[0].Metadata["action"])
+	}
+}
+
+func TestSetColumnStorageNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetColumnStorageNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	for _, tc := range []struct {
+		name    string
+		options map[string]string
+		want    string
+	}{
+		{name: "external", options: map[string]string{"column": "bio", "storage_kind": "external", "has_storage_setting": "true"}, want: "external"},
+		{name: "default", options: map[string]string{"column": "bio", "storage_kind": "default", "has_storage_setting": "true"}, want: "default"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			findings, err := r.Evaluate(context.Background(), spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{
+					Operation: spec.DDLOperationAlterTable,
+					Table:     &spec.Table{Name: "users"},
+					Alter:     []spec.Alter{{Action: "set_storage", Name: "bio", Options: tc.options}},
+				},
+			})
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			if findings[0].Metadata["storage_kind"] != tc.want {
+				t.Fatalf("expected storage_kind=%s, got %v", tc.want, findings[0].Metadata["storage_kind"])
+			}
+		})
+	}
+}
+
+func TestSetColumnCompressionNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetColumnCompressionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	findings, err := r.Evaluate(context.Background(), spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "set_compression", Name: "bio", Options: map[string]string{"column": "bio", "has_compression": "true"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["action"] != "set_compression" {
+		t.Fatalf("expected action=set_compression, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["column"] != "bio" {
+		t.Fatalf("expected column=bio, got %v", findings[0].Metadata["column"])
+	}
+}
+
+func TestColumnAttributeRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{name: "set_statistics", r: mustNewSetColumnStatisticsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "set_statistics", Options: map[string]string{"statistics_target_kind": "value"}}}}}},
+		{name: "set_column_options", r: mustNewSetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "set_column_options", Options: map[string]string{"option_count": "1"}}}}}},
+		{name: "reset_column_options", r: mustNewResetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "reset_column_options", Options: map[string]string{"reset_count": "1"}}}}}},
+		{name: "set_storage", r: mustNewSetColumnStorageNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "set_storage", Options: map[string]string{"storage_kind": "external"}}}}}},
+		{name: "set_compression", r: mustNewSetColumnCompressionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "set_compression", Options: map[string]string{"has_compression": "true"}}}}}},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
+				stmt := rl.stmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestColumnAttributeRulesDoNotFireForWrongAction(t *testing.T) {
+	t.Parallel()
+	rules := []rule.StatementRule{
+		mustNewSetColumnStatisticsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewSetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewResetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewSetColumnStorageNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewSetColumnCompressionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+	}
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "set_logged", Options: map[string]string{"logged": "true"}}},
+		},
+	}
+
+	for _, r := range rules {
+		findings, err := r.Evaluate(context.Background(), stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings for set_logged action, got %d", len(findings))
+		}
+	}
+}
+
+func TestColumnAttributeRulesNoLeak(t *testing.T) {
+	t.Parallel()
+	forbiddenKeys := []string{"n_distinct", "-1", "100", "lz4", "pglz", "raw_sql", "option_names", "option_values", "expression"}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "set_statistics_value",
+			r:    mustNewSetColumnStatisticsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "set_statistics", Name: "email", Options: map[string]string{"column": "email", "statistics_target_kind": "value", "has_statistics_target": "true"}}}}},
+		},
+		{
+			name: "set_column_options",
+			r:    mustNewSetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "set_column_options", Name: "email", Options: map[string]string{"column": "email", "option_count": "1", "has_column_options": "true"}}}}},
+		},
+		{
+			name: "reset_column_options",
+			r:    mustNewResetColumnOptionsNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "reset_column_options", Name: "email", Options: map[string]string{"column": "email", "reset_count": "1", "has_column_options": "true"}}}}},
+		},
+		{
+			name: "set_storage",
+			r:    mustNewSetColumnStorageNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "set_storage", Name: "bio", Options: map[string]string{"column": "bio", "storage_kind": "external", "has_storage_setting": "true"}}}}},
+		},
+		{
+			name: "set_compression",
+			r:    mustNewSetColumnCompressionNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "set_compression", Name: "bio", Options: map[string]string{"column": "bio", "has_compression": "true"}}}}},
+		},
+	}
+
+	for _, rl := range rules {
+		t.Run(rl.name, func(t *testing.T) {
+			t.Parallel()
+			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			for _, key := range forbiddenKeys {
+				if _, ok := findings[0].Metadata[key]; ok {
+					t.Fatalf("forbidden key %q present in finding metadata", key)
+				}
+			}
+		})
+	}
+}

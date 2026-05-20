@@ -434,6 +434,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterEnableAlwaysRuleNotice, construct: newEnableAlwaysRuleNoticeRule},
 		{ruleID: ruleIDPGAlterSetReloptionsWarn, construct: newSetReloptionsWarnRule},
 		{ruleID: ruleIDPGAlterResetReloptionsNotice, construct: newResetReloptionsNoticeRule},
+		// PostgreSQL column attribute rules (PG-only).
+		{ruleID: ruleIDPGAlterSetColumnStatisticsNotice, construct: newSetColumnStatisticsNoticeRule},
+		{ruleID: ruleIDPGAlterSetColumnOptionsNotice, construct: newSetColumnOptionsNoticeRule},
+		{ruleID: ruleIDPGAlterResetColumnOptionsNotice, construct: newResetColumnOptionsNoticeRule},
+		{ruleID: ruleIDPGAlterSetColumnStorageNotice, construct: newSetColumnStorageNoticeRule},
+		{ruleID: ruleIDPGAlterSetColumnCompressionNotice, construct: newSetColumnCompressionNoticeRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityFullWarn, construct: newReplicaIdentityFullWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityNothingWarn, construct: newReplicaIdentityNothingWarnRule},
 		{ruleID: ruleIDPGAlterReplicaIdentityUsingIndexNotice, construct: newReplicaIdentityUsingIndexNoticeRule},

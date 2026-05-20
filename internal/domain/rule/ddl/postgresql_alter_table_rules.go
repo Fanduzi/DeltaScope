@@ -379,6 +379,66 @@ func newResetReloptionsNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, er
 }
 
 // ---------------------------------------------------------------------------
+// Column attribute rules: SET STATISTICS, SET/RESET column options,
+// SET STORAGE, SET COMPRESSION
+// ---------------------------------------------------------------------------
+
+func newSetColumnStatisticsNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetColumnStatisticsNotice, rule.LevelNotice, "set_statistics", "statistics_target_kind",
+		"ALTER TABLE ALTER COLUMN SET STATISTICS on PostgreSQL — statistics target kind: %s",
+		"SET STATISTICS changes the statistics target for the planner's column statistics. A higher target improves estimate accuracy but increases ANALYZE time.",
+		"Setting statistics too high on many columns can slow ANALYZE significantly. Setting too low may cause poor query plans.",
+		"Review whether the statistics target change is necessary for this column's query patterns. The default target (-1) uses the system default.",
+		cfg,
+	)
+}
+
+func newSetColumnOptionsNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetColumnOptionsNotice, rule.LevelNotice, "set_column_options", "option_count",
+		"ALTER TABLE ALTER COLUMN SET (...) on PostgreSQL — %s column option(s) changed",
+		"SET (column options) changes per-column storage parameters such as n_distinct. These affect planner statistics and query optimization.",
+		"Incorrect column options can degrade query performance by misguiding the planner. Changes take effect after the next ANALYZE.",
+		"Review each column option change against the table's query workload. Re-analyze the table after changes to apply updated statistics.",
+		cfg,
+	)
+}
+
+func newResetColumnOptionsNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterResetColumnOptionsNotice, rule.LevelNotice, "reset_column_options", "reset_count",
+		"ALTER TABLE ALTER COLUMN RESET (...) on PostgreSQL — %s column option(s) reset to default",
+		"RESET (column options) reverts per-column storage parameters to their PostgreSQL defaults.",
+		"Resetting tuned column options may cause the planner to produce less optimal query plans if defaults are unsuitable.",
+		"Verify the default values are acceptable for the column's role in query patterns. Re-analyze the table after resetting.",
+		cfg,
+	)
+}
+
+func newSetColumnStorageNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetColumnStorageNotice, rule.LevelNotice, "set_storage", "storage_kind",
+		"ALTER TABLE ALTER COLUMN SET STORAGE on PostgreSQL — storage strategy: %s",
+		"SET STORAGE controls how PostgreSQL stores the column values physically. It determines whether values are kept inline in the main table or moved to a TOAST table.",
+		"Choosing an inappropriate storage strategy can increase storage overhead or reduce query performance for frequently accessed columns.",
+		"Review whether the storage strategy change matches the column's data size and access patterns. Use EXTERNAL for large values that are frequently accessed outside the main row.",
+		cfg,
+	)
+}
+
+func newSetColumnCompressionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetColumnCompressionNotice, rule.LevelNotice, "set_compression", "has_compression",
+		"ALTER TABLE ALTER COLUMN SET COMPRESSION on PostgreSQL — compression method changed",
+		"SET COMPRESSION changes how PostgreSQL compresses the column's values. The compression method affects storage size and the overhead of reading and writing values.",
+		"Changing compression on an existing column does not rewrite existing data — only new or updated rows use the new method.",
+		"Consider whether the compression change is consistent with the table's workload. Verify the target compression method is available in the current PostgreSQL installation.",
+		cfg,
+	)
+}
+
+// ---------------------------------------------------------------------------
 // Constructors for trigger mode rules
 // ---------------------------------------------------------------------------
 

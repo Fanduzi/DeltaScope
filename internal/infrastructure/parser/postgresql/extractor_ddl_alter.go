@@ -1006,6 +1006,77 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 			}
 		}
 		return spec.Alter{Action: "reset_reloptions", Options: map[string]string{"reset_count": strconv.Itoa(count), "has_reloptions": "true"}}, true, nil
+	case pg_query.AlterTableType_AT_SetStatistics:
+		kind := "default"
+		if cmd.GetDef() != nil {
+			kind = "value"
+		}
+		return spec.Alter{
+			Action: "set_statistics",
+			Name:   cmd.GetName(),
+			Options: map[string]string{
+				"column":                 cmd.GetName(),
+				"statistics_target_kind": kind,
+				"has_statistics_target":  "true",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_SetOptions:
+		count := 0
+		if defNode := cmd.GetDef(); defNode != nil {
+			if list := defNode.GetList(); list != nil {
+				count = len(list.GetItems())
+			}
+		}
+		return spec.Alter{
+			Action: "set_column_options",
+			Name:   cmd.GetName(),
+			Options: map[string]string{
+				"column":             cmd.GetName(),
+				"option_count":       strconv.Itoa(count),
+				"has_column_options": "true",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_ResetOptions:
+		count := 0
+		if defNode := cmd.GetDef(); defNode != nil {
+			if list := defNode.GetList(); list != nil {
+				count = len(list.GetItems())
+			}
+		}
+		return spec.Alter{
+			Action: "reset_column_options",
+			Name:   cmd.GetName(),
+			Options: map[string]string{
+				"column":             cmd.GetName(),
+				"reset_count":        strconv.Itoa(count),
+				"has_column_options": "true",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_SetStorage:
+		storageKind := ""
+		if defNode := cmd.GetDef(); defNode != nil {
+			if s := defNode.GetString_(); s != nil {
+				storageKind = s.GetSval()
+			}
+		}
+		return spec.Alter{
+			Action: "set_storage",
+			Name:   cmd.GetName(),
+			Options: map[string]string{
+				"column":              cmd.GetName(),
+				"storage_kind":        storageKind,
+				"has_storage_setting": "true",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_SetCompression:
+		return spec.Alter{
+			Action: "set_compression",
+			Name:   cmd.GetName(),
+			Options: map[string]string{
+				"column":          cmd.GetName(),
+				"has_compression": "true",
+			},
+		}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}

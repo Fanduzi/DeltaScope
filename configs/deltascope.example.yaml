@@ -775,6 +775,31 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.set_column_statistics.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_column_options.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.reset_column_options.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_column_storage.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_column_compression.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.pg.alter.set_data_type.rewrite.warn:
     enabled: true
     level: warning
