@@ -1077,6 +1077,40 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 				"has_compression": "true",
 			},
 		}, true, nil
+	case pg_query.AlterTableType_AT_ClusterOn:
+		indexName := cmd.GetName()
+		return spec.Alter{
+			Action: "cluster_on",
+			Name:   indexName,
+			Options: map[string]string{
+				"index":             indexName,
+				"has_cluster_index": "true",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_DropCluster:
+		return spec.Alter{
+			Action: "set_without_cluster",
+			Options: map[string]string{
+				"has_cluster_index": "false",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_DetachPartitionFinalize:
+		partName := ""
+		if def := cmd.GetDef(); def != nil {
+			if pc := def.GetPartitionCmd(); pc != nil {
+				if rv := pc.GetName(); rv != nil {
+					partName = rv.GetRelname()
+				}
+			}
+		}
+		return spec.Alter{
+			Action: "detach_partition_finalize",
+			Name:   partName,
+			Options: map[string]string{
+				"partition": partName,
+				"finalize":  "true",
+			},
+		}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}

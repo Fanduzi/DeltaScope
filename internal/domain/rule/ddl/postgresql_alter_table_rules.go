@@ -439,6 +439,43 @@ func newSetColumnCompressionNoticeRule(cfg policy.RulePolicy) (rule.StatementRul
 }
 
 // ---------------------------------------------------------------------------
+// Cluster and detach-finalize rules
+// ---------------------------------------------------------------------------
+
+func newClusterOnNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterClusterOnNotice, rule.LevelNotice, "cluster_on", "has_cluster_index",
+		"ALTER TABLE CLUSTER ON on PostgreSQL — cluster index %s assigned",
+		"CLUSTER ON designates an index as the clustering index for the table. Future CLUSTER commands will reorder the table physically according to this index.",
+		"The CLUSTER command requires an ACCESS EXCLUSIVE lock and rewrites the entire table. On large tables this can cause significant downtime.",
+		"Verify the selected index is appropriate for the table's access patterns. Schedule CLUSTER operations during maintenance windows for large tables.",
+		cfg,
+	)
+}
+
+func newSetWithoutClusterNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterSetWithoutClusterNotice, rule.LevelNotice, "set_without_cluster", "has_cluster_index",
+		"ALTER TABLE SET WITHOUT CLUSTER on PostgreSQL — cluster index %s removed",
+		"SET WITHOUT CLUSTER removes the clustering index designation from the table. Future CLUSTER commands without an explicit index name will not reorder the table.",
+		"Removing the cluster index does not change the current physical order of data. It only affects future CLUSTER operations.",
+		"No action is typically required. This is an informational notice about the configuration change.",
+		cfg,
+	)
+}
+
+func newDetachPartitionFinalizeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterStorageLayoutRule(
+		ruleIDPGAlterDetachPartitionFinalizeNotice, rule.LevelNotice, "detach_partition_finalize", "finalize",
+		"ALTER TABLE DETACH PARTITION FINALIZE on PostgreSQL — partition %s finalize requested",
+		"DETACH PARTITION FINALIZE completes a concurrently-detached partition. The partition is fully separated from the parent table and becomes a standalone table.",
+		"Queries against the parent table will no longer include data from the finalized partition. Any ongoing concurrent detach operation is forced to complete.",
+		"Verify no queries depend on the finalized partition's data being visible through the parent. Confirm the concurrent detach was initiated intentionally before finalizing.",
+		cfg,
+	)
+}
+
+// ---------------------------------------------------------------------------
 // Constructors for trigger mode rules
 // ---------------------------------------------------------------------------
 

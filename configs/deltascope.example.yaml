@@ -800,6 +800,21 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.cluster_on.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.set_without_cluster.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.detach_partition_finalize.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.pg.alter.set_data_type.rewrite.warn:
     enabled: true
     level: warning

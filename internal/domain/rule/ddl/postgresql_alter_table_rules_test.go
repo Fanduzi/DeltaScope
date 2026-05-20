@@ -2648,3 +2648,249 @@ func TestColumnAttributeRulesNoLeak(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Cluster and detach-finalize rule helpers
+// ---------------------------------------------------------------------------
+
+func mustNewClusterOnNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newClusterOnNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new cluster on notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewSetWithoutClusterNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newSetWithoutClusterNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new set without cluster notice rule: %v", err)
+	}
+	return r
+}
+
+func mustNewDetachPartitionFinalizeNoticeRule(t *testing.T, cfg policy.RulePolicy) rule.StatementRule {
+	t.Helper()
+	r, err := newDetachPartitionFinalizeNoticeRule(cfg)
+	if err != nil {
+		t.Fatalf("new detach partition finalize notice rule: %v", err)
+	}
+	return r
+}
+
+// ---------------------------------------------------------------------------
+// Cluster and detach-finalize rule tests: fire for PG
+// ---------------------------------------------------------------------------
+
+func TestClusterOnNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewClusterOnNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	findings, err := r.Evaluate(context.Background(), spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "cluster_on", Name: "users_email_idx", Options: map[string]string{"index": "users_email_idx", "has_cluster_index": "true"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["action"] != "cluster_on" {
+		t.Fatalf("expected action=cluster_on, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["table"] != "users" {
+		t.Fatalf("expected table=users, got %v", findings[0].Metadata["table"])
+	}
+	if findings[0].Metadata["index"] != "users_email_idx" {
+		t.Fatalf("expected index=users_email_idx, got %v", findings[0].Metadata["index"])
+	}
+	if findings[0].Metadata["has_cluster_index"] != "true" {
+		t.Fatalf("expected has_cluster_index=true, got %v", findings[0].Metadata["has_cluster_index"])
+	}
+}
+
+func TestSetWithoutClusterNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewSetWithoutClusterNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	findings, err := r.Evaluate(context.Background(), spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "set_without_cluster", Options: map[string]string{"has_cluster_index": "false"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["action"] != "set_without_cluster" {
+		t.Fatalf("expected action=set_without_cluster, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["has_cluster_index"] != "false" {
+		t.Fatalf("expected has_cluster_index=false, got %v", findings[0].Metadata["has_cluster_index"])
+	}
+}
+
+func TestDetachPartitionFinalizeNoticeFiresForPG(t *testing.T) {
+	t.Parallel()
+	r := mustNewDetachPartitionFinalizeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice})
+
+	findings, err := r.Evaluate(context.Background(), spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "measurement"},
+			Alter:     []spec.Alter{{Action: "detach_partition_finalize", Name: "measurement_y2026m04", Options: map[string]string{"partition": "measurement_y2026m04", "finalize": "true"}}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if len(findings) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(findings))
+	}
+	if findings[0].Metadata["action"] != "detach_partition_finalize" {
+		t.Fatalf("expected action=detach_partition_finalize, got %v", findings[0].Metadata["action"])
+	}
+	if findings[0].Metadata["table"] != "measurement" {
+		t.Fatalf("expected table=measurement, got %v", findings[0].Metadata["table"])
+	}
+	if findings[0].Metadata["partition"] != "measurement_y2026m04" {
+		t.Fatalf("expected partition=measurement_y2026m04, got %v", findings[0].Metadata["partition"])
+	}
+	if findings[0].Metadata["finalize"] != "true" {
+		t.Fatalf("expected finalize=true, got %v", findings[0].Metadata["finalize"])
+	}
+}
+
+func TestClusterDetachFinalizeRulesSkipNonPGDialects(t *testing.T) {
+	t.Parallel()
+	nonPGDialects := []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{name: "cluster_on", r: mustNewClusterOnNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "cluster_on", Options: map[string]string{"index": "idx", "has_cluster_index": "true"}}}}}},
+		{name: "set_without_cluster", r: mustNewSetWithoutClusterNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"}, Alter: []spec.Alter{{Action: "set_without_cluster", Options: map[string]string{"has_cluster_index": "false"}}}}}},
+		{name: "detach_partition_finalize", r: mustNewDetachPartitionFinalizeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "measurement"}, Alter: []spec.Alter{{Action: "detach_partition_finalize", Options: map[string]string{"partition": "p1", "finalize": "true"}}}}}},
+	}
+
+	for _, rl := range rules {
+		for _, dialect := range nonPGDialects {
+			t.Run(rl.name+"_dialect_"+string(dialect), func(t *testing.T) {
+				t.Parallel()
+				stmt := rl.stmt
+				stmt.Dialect = dialect
+				if rl.r.AppliesTo(stmt) {
+					t.Fatalf("expected AppliesTo() == false for dialect %s", dialect)
+				}
+				findings, err := rl.r.Evaluate(context.Background(), stmt)
+				if err != nil {
+					t.Fatalf("evaluate: %v", err)
+				}
+				if len(findings) != 0 {
+					t.Fatalf("expected 0 findings for dialect %s, got %d", dialect, len(findings))
+				}
+			})
+		}
+	}
+}
+
+func TestClusterDetachFinalizeRulesDoNotFireForWrongAction(t *testing.T) {
+	t.Parallel()
+	rules := []rule.StatementRule{
+		mustNewClusterOnNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewSetWithoutClusterNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+		mustNewDetachPartitionFinalizeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+	}
+
+	stmt := spec.Statement{
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectPostgreSQL,
+		DDL: &spec.DDL{
+			Operation: spec.DDLOperationAlterTable,
+			Table:     &spec.Table{Name: "users"},
+			Alter:     []spec.Alter{{Action: "set_logged", Options: map[string]string{"logged": "true"}}},
+		},
+	}
+
+	for _, r := range rules {
+		findings, err := r.Evaluate(context.Background(), stmt)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		if len(findings) != 0 {
+			t.Fatalf("expected 0 findings for set_logged action, got %d", len(findings))
+		}
+	}
+}
+
+func TestClusterDetachFinalizeRulesNoLeak(t *testing.T) {
+	t.Parallel()
+	forbiddenKeys := []string{"cluster_sql", "partition_bound", "raw_sql", "expression"}
+
+	rules := []struct {
+		name string
+		r    rule.StatementRule
+		stmt spec.Statement
+	}{
+		{
+			name: "cluster_on",
+			r:    mustNewClusterOnNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "cluster_on", Name: "users_email_idx", Options: map[string]string{"index": "users_email_idx", "has_cluster_index": "true"}}}}},
+		},
+		{
+			name: "set_without_cluster",
+			r:    mustNewSetWithoutClusterNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "users"},
+					Alter: []spec.Alter{{Action: "set_without_cluster", Options: map[string]string{"has_cluster_index": "false"}}}}},
+		},
+		{
+			name: "detach_partition_finalize",
+			r:    mustNewDetachPartitionFinalizeNoticeRule(t, policy.RulePolicy{Enabled: true, Level: rule.LevelNotice}),
+			stmt: spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectPostgreSQL,
+				DDL: &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Name: "measurement"},
+					Alter: []spec.Alter{{Action: "detach_partition_finalize", Name: "measurement_y2026m04", Options: map[string]string{"partition": "measurement_y2026m04", "finalize": "true"}}}}},
+		},
+	}
+
+	for _, rl := range rules {
+		t.Run(rl.name, func(t *testing.T) {
+			t.Parallel()
+			findings, err := rl.r.Evaluate(context.Background(), rl.stmt)
+			if err != nil {
+				t.Fatalf("evaluate: %v", err)
+			}
+			if len(findings) != 1 {
+				t.Fatalf("expected 1 finding, got %d", len(findings))
+			}
+			for _, key := range forbiddenKeys {
+				if _, ok := findings[0].Metadata[key]; ok {
+					t.Fatalf("forbidden key %q present in finding metadata", key)
+				}
+			}
+		})
+	}
+}
