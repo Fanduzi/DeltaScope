@@ -636,6 +636,31 @@ func TestAuditCommandPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T)
 			wantRuleID: "ddl.pg.alter.detach_partition_finalize.notice",
 			wantLevel:  "notice",
 		},
+		// Table relationship rules
+		{
+			name:       "add_inherit_notice",
+			sql:        "ALTER TABLE child_users INHERIT users",
+			wantRuleID: "ddl.pg.alter.add_inherit.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "drop_inherit_notice",
+			sql:        "ALTER TABLE child_users NO INHERIT users",
+			wantRuleID: "ddl.pg.alter.drop_inherit.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "add_of_type_notice",
+			sql:        "ALTER TABLE users OF user_type",
+			wantRuleID: "ddl.pg.alter.add_of_type.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "drop_of_type_notice",
+			sql:        "ALTER TABLE users NOT OF",
+			wantRuleID: "ddl.pg.alter.drop_of_type.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1825,6 +1850,47 @@ func TestAuditCommandPostgreSQLSemanticMetadataParity(t *testing.T) {
 				"partition": "measurement_y2026m04", "finalize": "true",
 			},
 			forbidden: []string{"partition_bound", "raw_sql", "concurrently"},
+		},
+		// Table relationship metadata
+		{
+			name:   "add_inherit_metadata",
+			sql:    "ALTER TABLE child_users INHERIT users",
+			ruleID: "ddl.pg.alter.add_inherit.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "add_inherit", "table": "child_users",
+				"parent_table": "users", "relationship": "inheritance",
+			},
+			forbidden: []string{"raw_sql", "column_definition", "type_attributes", "catalog_state", "validation_result", "dependency_graph"},
+		},
+		{
+			name:   "drop_inherit_metadata",
+			sql:    "ALTER TABLE child_users NO INHERIT users",
+			ruleID: "ddl.pg.alter.drop_inherit.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "drop_inherit", "table": "child_users",
+				"parent_table": "users", "relationship": "inheritance",
+			},
+			forbidden: []string{"raw_sql", "column_definition", "type_attributes", "catalog_state", "validation_result", "dependency_graph"},
+		},
+		{
+			name:   "add_of_type_metadata",
+			sql:    "ALTER TABLE users OF user_type",
+			ruleID: "ddl.pg.alter.add_of_type.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "add_of_type", "table": "users",
+				"type": "user_type", "relationship": "typed_table",
+			},
+			forbidden: []string{"raw_sql", "column_definition", "type_attributes", "catalog_state", "validation_result", "dependency_graph", "column_shape", "type_shape", "compatibility_result"},
+		},
+		{
+			name:   "drop_of_type_metadata",
+			sql:    "ALTER TABLE users NOT OF",
+			ruleID: "ddl.pg.alter.drop_of_type.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "drop_of_type", "table": "users",
+				"relationship": "typed_table",
+			},
+			forbidden: []string{"raw_sql", "column_definition", "type_attributes", "catalog_state", "validation_result", "dependency_graph", "column_shape", "type_shape", "compatibility_result"},
 		},
 	}
 
