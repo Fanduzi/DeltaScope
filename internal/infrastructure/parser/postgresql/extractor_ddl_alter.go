@@ -1111,6 +1111,67 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 				"finalize":  "true",
 			},
 		}, true, nil
+	case pg_query.AlterTableType_AT_AddInherit:
+		parentTable := ""
+		if def := cmd.GetDef(); def != nil {
+			if rv := def.GetRangeVar(); rv != nil {
+				parentTable = rv.GetRelname()
+			}
+		}
+		if parentTable == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "addinherit", Reason: "postgresql alter table add inherit parent table is missing"}
+		}
+		return spec.Alter{
+			Action: "add_inherit",
+			Name:   parentTable,
+			Options: map[string]string{
+				"parent_table": parentTable,
+				"relationship": "inheritance",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_DropInherit:
+		parentTable := ""
+		if def := cmd.GetDef(); def != nil {
+			if rv := def.GetRangeVar(); rv != nil {
+				parentTable = rv.GetRelname()
+			}
+		}
+		if parentTable == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "dropinherit", Reason: "postgresql alter table drop inherit parent table is missing"}
+		}
+		return spec.Alter{
+			Action: "drop_inherit",
+			Name:   parentTable,
+			Options: map[string]string{
+				"parent_table": parentTable,
+				"relationship": "inheritance",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_AddOf:
+		typeName := ""
+		if def := cmd.GetDef(); def != nil {
+			if tn := def.GetTypeName(); tn != nil {
+				typeName = typeNameString(tn)
+			}
+		}
+		if typeName == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "addof", Reason: "postgresql alter table add of type name is missing"}
+		}
+		return spec.Alter{
+			Action: "add_of_type",
+			Name:   typeName,
+			Options: map[string]string{
+				"type":         typeName,
+				"relationship": "typed_table",
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_DropOf:
+		return spec.Alter{
+			Action: "drop_of_type",
+			Options: map[string]string{
+				"relationship": "typed_table",
+			},
+		}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}

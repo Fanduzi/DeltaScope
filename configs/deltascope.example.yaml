@@ -940,6 +940,26 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.add_inherit.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.drop_inherit.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.add_of_type.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.drop_of_type.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.pg.alter_materialized_view.rename.notice:
     enabled: true
     level: notice

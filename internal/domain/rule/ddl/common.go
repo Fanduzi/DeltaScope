@@ -362,6 +362,11 @@ const (
 	ruleIDPGDropTransformWarn           = "ddl.pg.drop_transform.warn"
 	ruleIDPGDropAccessMethodWarn        = "ddl.pg.drop_access_method.warn"
 	ruleIDPGAlterLargeObjectOwnerNotice = "ddl.pg.alter_large_object.owner.notice"
+	// PostgreSQL table relationship rules (PG-only).
+	ruleIDPGAlterAddInheritNotice  = "ddl.pg.alter.add_inherit.notice"
+	ruleIDPGAlterDropInheritNotice = "ddl.pg.alter.drop_inherit.notice"
+	ruleIDPGAlterAddOfTypeNotice   = "ddl.pg.alter.add_of_type.notice"
+	ruleIDPGAlterDropOfTypeNotice  = "ddl.pg.alter.drop_of_type.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {

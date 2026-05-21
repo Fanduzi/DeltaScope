@@ -1,0 +1,2 @@
+ALTER TABLE users NOT OF;
+ALTER TABLE orders NOT OF;

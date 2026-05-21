@@ -664,3 +664,112 @@ func newReplicaIdentityUsingIndexNoticeRule(cfg policy.RulePolicy) (rule.Stateme
 		cfg,
 	)
 }
+
+// ---------------------------------------------------------------------------
+// Table relationship rules: INHERIT, NO INHERIT, OF, NOT OF
+// ---------------------------------------------------------------------------
+
+type pgAlterRelationshipRule struct {
+	id         string
+	level      rule.Level
+	action     string
+	message    string
+	why        string
+	risk       string
+	suggestion string
+}
+
+func newPGAlterRelationshipRule(id string, level rule.Level, action, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return pgAlterRelationshipRule{
+		id:         id,
+		level:      configuredLevel(cfg, level),
+		action:     action,
+		message:    message,
+		why:        why,
+		risk:       risk,
+		suggestion: suggestion,
+	}, nil
+}
+
+func (r pgAlterRelationshipRule) ID() string { return r.id }
+
+func (r pgAlterRelationshipRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectPostgreSQL &&
+		appliesToAlterActions(statement, r.action)
+}
+
+func (r pgAlterRelationshipRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		metadata := map[string]any{
+			"operation": "alter_table",
+			"action":    r.action,
+			"table":     statement.DDL.Table.Name,
+		}
+		for k, v := range alter.Options {
+			metadata[k] = v
+		}
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: r.message,
+			Explanation: &rule.FindingExplanation{
+				Why:        r.why,
+				Risk:       r.risk,
+				Suggestion: r.suggestion,
+			},
+			Metadata: metadata,
+		})
+	}
+	return findings, nil
+}
+
+func newAddInheritNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterRelationshipRule(
+		ruleIDPGAlterAddInheritNotice, rule.LevelNotice, "add_inherit",
+		"ALTER TABLE INHERIT — table inheritance added on PostgreSQL",
+		"INHERIT adds a parent table to the child table's inheritance hierarchy. The child table will include columns from the parent in queries.",
+		"Applications querying the child table may observe additional columns from the parent. Triggers and policies on the parent may affect the child.",
+		"Verify the inheritance relationship is intended and that application queries handle the expanded column set correctly.",
+		cfg,
+	)
+}
+
+func newDropInheritNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterRelationshipRule(
+		ruleIDPGAlterDropInheritNotice, rule.LevelNotice, "drop_inherit",
+		"ALTER TABLE NO INHERIT — table inheritance removed on PostgreSQL",
+		"NO INHERIT removes a parent table from the child table's inheritance hierarchy. Queries against the child table will no longer include columns from the parent.",
+		"Applications that rely on inherited columns will encounter errors after this change. Views or functions referencing inherited columns may break.",
+		"Verify no queries or views depend on inherited columns from the removed parent table.",
+		cfg,
+	)
+}
+
+func newAddOfTypeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterRelationshipRule(
+		ruleIDPGAlterAddOfTypeNotice, rule.LevelNotice, "add_of_type",
+		"ALTER TABLE OF — typed table association added on PostgreSQL",
+		"OF associates the table with a composite type. The table's column structure must match the type's attributes.",
+		"The table must already have columns matching the composite type. Future ALTER TABLE operations may be constrained by the type association.",
+		"Verify the table's current column structure matches the composite type before associating.",
+		cfg,
+	)
+}
+
+func newDropOfTypeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterRelationshipRule(
+		ruleIDPGAlterDropOfTypeNotice, rule.LevelNotice, "drop_of_type",
+		"ALTER TABLE NOT OF — typed table association removed on PostgreSQL",
+		"NOT OF removes the composite type association from the table. The table retains its current column structure but is no longer bound to the type.",
+		"Applications or functions that rely on the table's typed nature may behave differently after the association is removed.",
+		"Verify no application logic depends on the typed table association before removing it.",
+		cfg,
+	)
+}

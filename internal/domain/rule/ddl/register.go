@@ -608,6 +608,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGDropTransformWarn, construct: newDropTransformWarnRule},
 		{ruleID: ruleIDPGDropAccessMethodWarn, construct: newDropAccessMethodWarnRule},
 		{ruleID: ruleIDPGAlterLargeObjectOwnerNotice, construct: newAlterLargeObjectOwnerNoticeRule},
+		// PostgreSQL table relationship rules (PG-only).
+		{ruleID: ruleIDPGAlterAddInheritNotice, construct: newAddInheritNoticeRule},
+		{ruleID: ruleIDPGAlterDropInheritNotice, construct: newDropInheritNoticeRule},
+		{ruleID: ruleIDPGAlterAddOfTypeNotice, construct: newAddOfTypeNoticeRule},
+		{ruleID: ruleIDPGAlterDropOfTypeNotice, construct: newDropOfTypeNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {
