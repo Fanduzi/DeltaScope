@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.130.0 PostgreSQL ALTER TABLE Residual Coverage / Semantics Depth
+## Latest Completed Milestone: v0.140.0 PostgreSQL ALTER TABLE Bounded Residual Pack
+
+**Goal:** add 8 new PostgreSQL-only ALTER TABLE rules covering column attribute mutations (5) and cluster/detach-finalize operations (3), advancing the PostgreSQL ALTER TABLE residual census to 50 of 66 forms `finding_covered`.
+
+### Completed Scope
+
+- 8 new PostgreSQL-only ALTER TABLE rules:
+  - Column attributes (5): `ddl.pg.alter.set_column_statistics.notice`, `ddl.pg.alter.set_column_options.notice`, `ddl.pg.alter.reset_column_options.notice`, `ddl.pg.alter.set_column_storage.notice`, `ddl.pg.alter.set_column_compression.notice`.
+  - Cluster / detach-finalize (3): `ddl.pg.alter.cluster_on.notice`, `ddl.pg.alter.set_without_cluster.notice`, `ddl.pg.alter.detach_partition_finalize.notice`.
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 40 → 50, `unsupported_boundary` 21 → 11.
+- SQL corpus: 334 policy rule IDs, 525/525 supported rule-dialect targets (100%), 233 expected YAML files.
+- No-leak contract: column attribute findings do not emit raw SQL, option names or values, storage parameter names, compression method names, or compression_kind; cluster/detach-finalize findings do not emit partition bounds, catalog index names, or live validation claims.
+
+### Key Design Decisions
+
+- No full PostgreSQL ALTER TABLE support claim. Selected bounded residual families are covered; remaining 11 `unsupported_boundary` forms deferred.
+- No live catalog validation.
+- No rewrite duration estimate.
+- No runtime behavior validation.
+- No DCL expansion.
+- No v1.0/stable API contract claim.
+
+## Previous Milestone: v0.130.0 PostgreSQL ALTER TABLE Residual Coverage / Semantics Depth
 
 **Goal:** deepen PostgreSQL ALTER TABLE residual coverage with 10 new rules across storage/layout, trigger/rule residual, and reloptions semantic families.
 

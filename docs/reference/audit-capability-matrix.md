@@ -485,9 +485,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0)
+## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0 / v0.140.0)
 
-`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. `v0.130.0` adds 10 more rules covering storage/layout, trigger/rule residual, and reloptions. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
+`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. `v0.130.0` adds 10 more rules covering storage/layout, trigger/rule residual, and reloptions. `v0.140.0` adds 8 more rules covering column attributes (statistics, options, storage, compression) and cluster/detach-finalize operations. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
 
 ### ALTER TABLE Coverage Rules
 
@@ -517,8 +517,16 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.enable_always_rule.notice` | `ALTER TABLE ... ENABLE ALWAYS RULE` enables a rule in always mode — informational notice (v0.130.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` sets storage parameters — warns about potential rewrite or behavior changes (v0.130.0) | ✓ | ✗ | warning |
 | `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` resets storage parameters to defaults — informational notice (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_column_statistics.notice` | Column statistics override | ✓ | — | notice |
+| `ddl.pg.alter.set_column_options.notice` | Column attribute options set | ✓ | — | notice |
+| `ddl.pg.alter.reset_column_options.notice` | Column attribute options reset | ✓ | — | notice |
+| `ddl.pg.alter.set_column_storage.notice` | Column storage strategy set | ✓ | — | notice |
+| `ddl.pg.alter.set_column_compression.notice` | Column compression method set | ✓ | — | notice |
+| `ddl.pg.alter.cluster_on.notice` | Table clustered on index | ✓ | — | notice |
+| `ddl.pg.alter.set_without_cluster.notice` | Table cluster removed | ✓ | — | notice |
+| `ddl.pg.alter.detach_partition_finalize.notice` | Partition detach finalized | ✓ | — | notice |
 
-> **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index. DeltaScope does not verify whether the target table is currently logged or unlogged. v0.130.0 findings do not emit trigger function names, trigger body, rule query/command text, tablespace names, access method names, or reloption keys/values.
+> **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index. DeltaScope does not verify whether the target table is currently logged or unlogged. v0.130.0 findings do not emit trigger function names, trigger body, rule query/command text, tablespace names, access method names, or reloption keys/values. v0.140.0 findings do not emit raw SQL, option names/values, storage parameter names, compression method names, compression_kind, partition bounds, or catalog index names.
 
 ---
 

@@ -471,9 +471,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0）
+## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0 / v0.140.0）
 
-`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。`v0.130.0` 新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
+`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。`v0.130.0` 新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions。`v0.140.0` 新增 8 条规则覆盖列属性（statistics、options、storage、compression）和 CLUSTER / DETACH FINALIZE。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
 
 ### ALTER TABLE 覆盖规则
 
@@ -503,8 +503,16 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.alter.enable_always_rule.notice` | `ALTER TABLE ... ENABLE ALWAYS RULE` 以 always 模式启用规则——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` 设置存储参数——警告潜在的 rewrite 或行为变化 (v0.130.0) | ✓ | ✗ | warning |
 | `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` 将存储参数重置为默认值——信息性提示 (v0.130.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.set_column_statistics.notice` | 列统计信息覆盖 | ✓ | — | notice |
+| `ddl.pg.alter.set_column_options.notice` | 列属性选项设置 | ✓ | — | notice |
+| `ddl.pg.alter.reset_column_options.notice` | 列属性选项重置 | ✓ | — | notice |
+| `ddl.pg.alter.set_column_storage.notice` | 列存储策略设置 | ✓ | — | notice |
+| `ddl.pg.alter.set_column_compression.notice` | 列压缩方法设置 | ✓ | — | notice |
+| `ddl.pg.alter.cluster_on.notice` | 表按索引聚簇 | ✓ | — | notice |
+| `ddl.pg.alter.set_without_cluster.notice` | 表聚簇移除 | ✓ | — | notice |
+| `ddl.pg.alter.detach_partition_finalize.notice` | 分区拆离完成 | ✓ | — | notice |
 
-> **说明：** 触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用上方的 `enable_trigger` 和 `disable_trigger` 规则。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。这不是完整的 PostgreSQL ALTER TABLE 覆盖。这些规则均为离线规则，不需要数据库连接。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。v0.130.0 发现不输出 trigger 函数名、trigger 函数体、rule 查询/命令文本、tablespace 名称、access method 名称或 reloption 键/值。
+> **说明：** 触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用上方的 `enable_trigger` 和 `disable_trigger` 规则。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。这不是完整的 PostgreSQL ALTER TABLE 覆盖。这些规则均为离线规则，不需要数据库连接。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。v0.130.0 发现不输出 trigger 函数名、trigger 函数体、rule 查询/命令文本、tablespace 名称、access method 名称或 reloption 键/值。v0.140.0 发现不输出原始 SQL、选项名/值、存储参数名、压缩方法名、compression_kind、分区边界或 catalog 索引名。
 
 ---
 

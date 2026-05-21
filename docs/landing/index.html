@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.130.0",
+    "softwareVersion": "v0.140.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.130.0 — PostgreSQL ALTER TABLE residual coverage / semantics depth</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.140.0 — PostgreSQL ALTER TABLE bounded residual pack</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,12 +1081,12 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.130.0</div>
+              <div class="release-version">v0.140.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL Migration-Safety Semantic Metadata</div>
-            <div class="release-copy" data-i18n="releases.items.v01300">v0.130.0 deepens PostgreSQL ALTER TABLE residual coverage with 10 new rules across storage/layout, trigger/rule residual, and reloptions. Census: finding_covered 29→40, unsupported_boundary 32→21. No-leak contract preserved.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.130.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.130.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.130.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL ALTER TABLE Bounded Residual Pack</div>
+            <div class="release-copy" data-i18n="releases.items.v01400">v0.140.0 adds 8 new PostgreSQL-only ALTER TABLE rules covering column attributes (5) and cluster/detach-finalize (3). Census: finding_covered 40→50, unsupported_boundary 21→11. No-leak contract preserved.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
@@ -1197,7 +1197,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.130.0 deepens PostgreSQL ALTER TABLE residual coverage with 10 new rules across storage/layout, trigger/rule residual, and reloptions.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.140.0 adds 8 PostgreSQL ALTER TABLE bounded residual rules covering column attributes and cluster/detach-finalize operations.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1209,7 +1209,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.130.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.130.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.130.0.zh-CN.md">Release Notes v0.130.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.zh-CN.md">Release Notes v0.140.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1253,7 +1253,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.130.0 — PostgreSQL ALTER TABLE residual coverage / semantics depth',
+          badge: 'v0.140.0 — PostgreSQL ALTER TABLE bounded residual pack',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1396,6 +1396,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v01400: 'v0.140.0 adds 8 new PostgreSQL-only ALTER TABLE rules covering column attributes (5) and cluster/detach-finalize (3). Census: finding_covered 40→50, unsupported_boundary 21→11. No-leak contract preserved.',
             v01300: 'v0.130.0 deepens PostgreSQL ALTER TABLE residual coverage with 10 new rules across storage/layout, trigger/rule residual, and reloptions. Census: finding_covered 29→40, unsupported_boundary 32→21. No-leak contract preserved.',
             v01200: 'v0.120.0 enriches PostgreSQL migration-safety findings with bounded semantic metadata for CREATE INDEX, ADD COLUMN, and ALTER COLUMN TYPE operations. No raw SQL text emitted; metadata is additive and covered by SDK/CLI/HTTP/MCP parity tests.',
             v01100: 'v0.110.0 promotes two previously deferred PostgreSQL DDL boundary forms — CREATE TRANSFORM and CREATE ACCESS METHOD — to supported lifecycle findings with bounded identity. Long-tail census: 57/57 finding_covered, 0 unsupported_boundary.',
@@ -1410,14 +1411,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.130.0 deepens PostgreSQL ALTER TABLE residual coverage with 10 new rules across storage/layout, trigger/rule residual, and reloptions.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.140.0 adds 8 PostgreSQL ALTER TABLE bounded residual rules covering column attributes and cluster/detach-finalize operations.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.130.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.140.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1435,7 +1436,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.130.0 —— PostgreSQL ALTER TABLE 残留覆盖 / 语义深度',
+          badge: 'v0.140.0 —— PostgreSQL ALTER TABLE 有界残留包',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1578,6 +1579,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v01400: 'v0.140.0 新增 8 条 PostgreSQL 专用 ALTER TABLE 规则，覆盖列属性变更（5 条）和 CLUSTER / DETACH FINALIZE（3 条）。普查：finding_covered 40→50，unsupported_boundary 21→11。无泄漏契约保持不变。',
             v01300: 'v0.130.0 深化 PostgreSQL ALTER TABLE 残留覆盖，新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions 三个语义家族。普查：finding_covered 29→40，unsupported_boundary 32→21。无泄漏契约保持不变。',
             v01200: 'v0.120.0 为 PostgreSQL 迁移安全发现引入有界语义元数据：CREATE INDEX 提供索引形状元数据（7 个键），ADD COLUMN 默认语义元数据（3 个键），ALTER COLUMN TYPE USING 信号。所有发现遵守无泄漏契约 —— 不输出原始 SQL 谓词、表达式、默认值或 USING 子句文本。',
             v01100: 'v0.110.0 将两个先前延迟的 PostgreSQL DDL 边界形态 — CREATE TRANSFORM 和 CREATE ACCESS METHOD — 提升为受支持的生命周期发现，采用有界身份。长尾普查：57/57 finding_covered，0 unsupported_boundary。',
@@ -1590,14 +1592,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.130.0 深化 PostgreSQL ALTER TABLE 残留覆盖，新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.140.0 新增 8 条 PostgreSQL ALTER TABLE 有界残留规则，覆盖列属性和 CLUSTER / DETACH FINALIZE 操作。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.130.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.140.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

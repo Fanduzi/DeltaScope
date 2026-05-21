@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.140.0] - 2026-05-21
+
+### Added
+
+- 8 new PostgreSQL-only ALTER TABLE rules covering column attribute mutations and cluster/detach-finalize operations:
+  - Column attributes (5): `ddl.pg.alter.set_column_statistics.notice` (notice), `ddl.pg.alter.set_column_options.notice` (notice), `ddl.pg.alter.reset_column_options.notice` (notice), `ddl.pg.alter.set_column_storage.notice` (notice), `ddl.pg.alter.set_column_compression.notice` (notice).
+  - Cluster / detach-finalize (3): `ddl.pg.alter.cluster_on.notice` (notice), `ddl.pg.alter.set_without_cluster.notice` (notice), `ddl.pg.alter.detach_partition_finalize.notice` (notice).
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 40 → 50, `unsupported_boundary` 21 → 11.
+- SQL corpus: 334 policy rule IDs, 525/525 supported rule-dialect targets covered (100%), 233 expected YAML files.
+- No-leak contract: column attribute findings do not emit raw SQL, option names or values, storage parameter names, compression method names, or compression_kind; cluster/detach-finalize findings do not emit partition bounds, catalog index names, or live validation claims.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE support.
+- No live catalog validation.
+- No rewrite duration estimate.
+- No runtime behavior validation.
+- No DCL expansion.
+- Remaining `unsupported_boundary` forms (11) deferred to later milestones.
+- No v1.0/stable API contract claim.
+
 ## [v0.130.0] - 2026-05-19
 
 ### Added

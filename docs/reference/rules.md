@@ -458,7 +458,7 @@ These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ...
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (14 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (22 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -504,6 +504,24 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` resets storage parameters to defaults — informational notice | notice | No |
 
 > **Note (v0.130.0):** These rules are PostgreSQL-specific and offline. No trigger function names, trigger body text, rule query text, rule command text, tablespace names, access method names, or reloption keys/values (e.g., `fillfactor`, `autovacuum_enabled`) are emitted in findings.
+
+### Column Attributes (v0.140.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.set_column_statistics.notice` | `ALTER TABLE ... ALTER COLUMN ... SET STATISTICS` overrides column statistics target — informational notice | notice | No |
+| `ddl.pg.alter.set_column_options.notice` | `ALTER TABLE ... ALTER COLUMN ... SET (...)` sets attribute options — informational notice | notice | No |
+| `ddl.pg.alter.reset_column_options.notice` | `ALTER TABLE ... ALTER COLUMN ... RESET (...)` resets attribute options — informational notice | notice | No |
+| `ddl.pg.alter.set_column_storage.notice` | `ALTER TABLE ... ALTER COLUMN ... SET STORAGE` changes column storage strategy — informational notice | notice | No |
+| `ddl.pg.alter.set_column_compression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET COMPRESSION` changes column compression method — informational notice | notice | No |
+
+### Cluster / Detach-Finalize (v0.140.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.cluster_on.notice` | `ALTER TABLE ... CLUSTER ON` clusters the table on an index — informational notice | notice | No |
+| `ddl.pg.alter.set_without_cluster.notice` | `ALTER TABLE ... SET WITHOUT CLUSTER` removes the cluster specification — informational notice | notice | No |
+| `ddl.pg.alter.detach_partition_finalize.notice` | `ALTER TABLE ... DETACH PARTITION ... FINALIZE` forcibly completes a pending detach — informational notice | notice | No |
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|

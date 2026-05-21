@@ -449,7 +449,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖规则（14 条）
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（22 条）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
 
@@ -493,6 +493,24 @@ deltascope rules search "prefix"
 |---------|------|:--------:|:--------------:|
 | `ddl.pg.alter.set_reloptions.warn` | `ALTER TABLE ... SET (...)` 设置存储参数——警告潜在的 rewrite 或行为变化 | warning | 否 |
 | `ddl.pg.alter.reset_reloptions.notice` | `ALTER TABLE ... RESET (...)` 将存储参数重置为默认值——信息性提示 | notice | 否 |
+
+### 列属性（v0.140.0）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.set_column_statistics.notice` | `ALTER TABLE ... ALTER COLUMN ... SET STATISTICS` 设置列统计信息目标——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_column_options.notice` | `ALTER TABLE ... ALTER COLUMN ... SET (...)` 设置列属性选项——信息性提示 | notice | 否 |
+| `ddl.pg.alter.reset_column_options.notice` | `ALTER TABLE ... ALTER COLUMN ... RESET (...)` 重置列属性选项——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_column_storage.notice` | `ALTER TABLE ... ALTER COLUMN ... SET STORAGE` 设置列存储策略——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_column_compression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET COMPRESSION` 设置列压缩方法——信息性提示 | notice | 否 |
+
+### CLUSTER / DETACH FINALIZE（v0.140.0）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.cluster_on.notice` | `ALTER TABLE ... CLUSTER ON` 按指定索引聚簇表——信息性提示 | notice | 否 |
+| `ddl.pg.alter.set_without_cluster.notice` | `ALTER TABLE ... SET WITHOUT CLUSTER` 移除表聚簇——信息性提示 | notice | 否 |
+| `ddl.pg.alter.detach_partition_finalize.notice` | `ALTER TABLE ... DETACH PARTITION ... FINALIZE` 完成分区拆离——信息性提示 | notice | 否 |
 
 > **说明（v0.130.0）：** 这些规则是 PostgreSQL 专用的离线规则。发现不输出 trigger 函数名、trigger 函数体、rule 查询文本、rule 命令文本、tablespace 名称、access method 名称或 reloption 键/值（如 `fillfactor`、`autovacuum_enabled`）。
 
