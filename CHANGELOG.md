@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.150.0] - 2026-05-22
+
+### Added
+
+- 4 new PostgreSQL-only ALTER TABLE table relationship rules covering INHERIT and OF type operations:
+  - Table relationship (4): `ddl.pg.alter.add_inherit.notice` (notice), `ddl.pg.alter.drop_inherit.notice` (notice), `ddl.pg.alter.add_of_type.notice` (notice), `ddl.pg.alter.drop_of_type.notice` (notice).
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 50 → 54, `unsupported_boundary` 11 → 7.
+- SQL corpus: 529/529 supported rule-dialect targets covered (100%), 237 expected YAML files.
+- No-leak contract: table relationship findings do not emit parent table names, typed table type names, or live schema validation claims.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE support.
+- No live catalog validation.
+- No rewrite duration estimate.
+- No runtime behavior validation.
+- No DCL expansion.
+- Remaining `unsupported_boundary` forms (7) deferred to later milestones.
+- No v1.0/stable API contract claim.
+
 ## [v0.140.0] - 2026-05-21
 
 ### Added

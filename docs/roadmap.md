@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.140.0 PostgreSQL ALTER TABLE Bounded Residual Pack
+## Latest Completed Milestone: v0.150.0 PostgreSQL ALTER TABLE Table Relationship Rules
+
+**Goal:** add 4 new PostgreSQL-only ALTER TABLE rules covering table relationship operations (INHERIT and OF type), advancing the PostgreSQL ALTER TABLE residual census to 54 of 66 forms `finding_covered`.
+
+### Completed Scope
+
+- 4 new PostgreSQL-only ALTER TABLE table relationship rules:
+  - `ddl.pg.alter.add_inherit.notice` — `ALTER TABLE ... INHERIT` adds a parent table relationship.
+  - `ddl.pg.alter.drop_inherit.notice` — `ALTER TABLE ... NO INHERIT` removes a parent table relationship.
+  - `ddl.pg.alter.add_of_type.notice` — `ALTER TABLE ... OF type_name` binds the table to a typed table type.
+  - `ddl.pg.alter.drop_of_type.notice` — `ALTER TABLE ... NOT OF` removes the typed table binding.
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 50 → 54, `unsupported_boundary` 11 → 7.
+- SQL corpus: 529/529 supported rule-dialect targets (100%), 237 expected YAML files.
+- No-leak contract: table relationship findings do not emit parent table names, typed table type names, or live schema validation claims.
+
+### Key Design Decisions
+
+- No full PostgreSQL ALTER TABLE support claim. Selected table relationship families are covered; remaining 7 `unsupported_boundary` forms deferred.
+- No live catalog validation.
+- No rewrite duration estimate.
+- No runtime behavior validation.
+- No DCL expansion.
+- No v1.0/stable API contract claim.
+
+## Previous Milestone: v0.140.0 PostgreSQL ALTER TABLE Bounded Residual Pack
 
 **Goal:** add 8 new PostgreSQL-only ALTER TABLE rules covering column attribute mutations (5) and cluster/detach-finalize operations (3), advancing the PostgreSQL ALTER TABLE residual census to 50 of 66 forms `finding_covered`.
 

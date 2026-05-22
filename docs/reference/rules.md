@@ -458,7 +458,7 @@ These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ...
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (22 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (26 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -522,6 +522,15 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.cluster_on.notice` | `ALTER TABLE ... CLUSTER ON` clusters the table on an index — informational notice | notice | No |
 | `ddl.pg.alter.set_without_cluster.notice` | `ALTER TABLE ... SET WITHOUT CLUSTER` removes the cluster specification — informational notice | notice | No |
 | `ddl.pg.alter.detach_partition_finalize.notice` | `ALTER TABLE ... DETACH PARTITION ... FINALIZE` forcibly completes a pending detach — informational notice | notice | No |
+
+### Table Relationship (v0.150.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.add_inherit.notice` | `ALTER TABLE ... INHERIT` adds a parent table relationship — informational notice | notice | No |
+| `ddl.pg.alter.drop_inherit.notice` | `ALTER TABLE ... NO INHERIT` removes a parent table relationship — informational notice | notice | No |
+| `ddl.pg.alter.add_of_type.notice` | `ALTER TABLE ... OF type_name` binds the table to a typed table type — informational notice | notice | No |
+| `ddl.pg.alter.drop_of_type.notice` | `ALTER TABLE ... NOT OF` removes the typed table binding — informational notice | notice | No |
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
