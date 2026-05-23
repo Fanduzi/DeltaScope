@@ -458,7 +458,7 @@ These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ...
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (26 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (28 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -534,6 +534,15 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
+### Constraint Deferrability (v0.160.0)
+
+| Rule ID | Default Level | Action | Description |
+|---------|--------------|--------|-------------|
+| `ddl.pg.alter.constraint_deferrable.notice` | notice | `alter_constraint_deferrable` | FK constraint marked DEFERRABLE |
+| `ddl.pg.alter.constraint_initially_deferred.notice` | notice | `alter_constraint_initially_deferred` | FK constraint marked INITIALLY DEFERRED |
+
+> **Note (v0.160.0):** These rules are PostgreSQL-specific and offline. Constraint deferrability findings emit bounded metadata only: operation, action, table, constraint name, constraint type (`foreign_key`), and deferrable/initially_deferred boolean flags. No raw SQL, expression text, predicate text, operator class names, exclusion operators, sequence options, catalog state, validation results, or dependency graphs are emitted. `SET WITHOUT OIDS` is normalized silently with action `set_without_oids` and produces no finding (obsolete since PG12).
+
 | `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` writes full old-row images to WAL — warns about replication overhead | warning | No |
 | `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` writes no old-row images to WAL — warns that logical replication will not work | warning | No |
 | `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` uses a specific index for WAL old-row images — informational notice | notice | No |

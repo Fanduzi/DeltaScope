@@ -449,7 +449,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖规则（26 条）
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（28 条）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
 
@@ -525,6 +525,15 @@ deltascope rules search "prefix"
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
+### 约束可延迟性（v0.160.0）
+
+| 规则 ID | 默认级别 | 动作 | 描述 |
+|---------|---------|------|------|
+| `ddl.pg.alter.constraint_deferrable.notice` | notice | `alter_constraint_deferrable` | 外键约束被标记为 DEFERRABLE |
+| `ddl.pg.alter.constraint_initially_deferred.notice` | notice | `alter_constraint_initially_deferred` | 外键约束被标记为 INITIALLY DEFERRED |
+
+> **注（v0.160.0）：** 这些规则是 PostgreSQL 专用且离线的。约束可延迟性 finding 仅输出有限元数据：operation、action、table、constraint name、constraint type（`foreign_key`）以及 deferrable/initially_deferred 布尔标志。不输出原始 SQL、表达式文本、谓词文本、操作符类名、排除操作符、序列选项、目录状态、验证结果或依赖图。`SET WITHOUT OIDS` 以动作 `set_without_oids` 静默规范化，不产生 finding（自 PG12 起已废弃）。
+
 | `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` 写入完整旧行镜像到 WAL——警告复制开销 | warning | 否 |
 | `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` 不写入旧行镜像到 WAL——警告逻辑复制将不可用 | warning | 否 |
 | `ddl.pg.alter.replica_identity_using_index.notice` | `ALTER TABLE ... REPLICA IDENTITY USING INDEX ...` 使用指定索引用于 WAL 旧行镜像——信息性提示 | notice | 否 |

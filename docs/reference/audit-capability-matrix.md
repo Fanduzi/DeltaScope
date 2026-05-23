@@ -485,9 +485,9 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0 / v0.140.0 / v0.150.0)
+## DDL: PostgreSQL ALTER TABLE Coverage (v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0 / v0.140.0 / v0.150.0 / v0.160.0)
 
-`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. `v0.130.0` adds 10 more rules covering storage/layout, trigger/rule residual, and reloptions. `v0.140.0` adds 8 more rules covering column attributes (statistics, options, storage, compression) and cluster/detach-finalize operations. `v0.150.0` adds 4 more rules covering table relationship operations (`INHERIT`, `NO INHERIT`, `OF TYPE`, `NOT OF`). These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
+`v0.51.0` extends PostgreSQL ALTER TABLE audit coverage with three new gap-fill rules. `v0.52.0` adds six more rules covering previously unsupported ALTER TABLE actions. `v0.54.0` normalizes trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) to reuse existing trigger rules and adds three replica identity rules. `v0.56.0` adds two logged-state rules for `SET LOGGED` and `SET UNLOGGED`. `v0.130.0` adds 10 more rules covering storage/layout, trigger/rule residual, and reloptions. `v0.140.0` adds 8 more rules covering column attributes (statistics, options, storage, compression) and cluster/detach-finalize operations. `v0.150.0` adds 4 more rules covering table relationship operations (`INHERIT`, `NO INHERIT`, `OF TYPE`, `NOT OF`). `v0.160.0` adds 2 more rules covering FK constraint deferrability changes and silently normalizes SET WITHOUT OIDS. These rules cover the most common ALTER TABLE safety patterns beyond the existing migration-safety and object lifecycle rule families. They only apply when `--dialect postgresql` is set.
 
 ### ALTER TABLE Coverage Rules
 
@@ -529,6 +529,8 @@ These rules guard against common PostgreSQL migration patterns that can cause ta
 | `ddl.pg.alter.drop_inherit.notice` | `ALTER TABLE ... NO INHERIT` removes a parent table — informational notice (v0.150.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.add_of_type.notice` | `ALTER TABLE ... OF type_name` binds the table to a typed table — informational notice (v0.150.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.drop_of_type.notice` | `ALTER TABLE ... NOT OF` unbinds the table from its typed table — informational notice (v0.150.0) | ✓ | ✗ | notice |
+| `ddl.pg.alter.constraint_deferrable.notice` | `ALTER TABLE ... ALTER CONSTRAINT ... DEFERRABLE` | ✓ | ✗ | notice (v0.160.0) |
+| `ddl.pg.alter.constraint_initially_deferred.notice` | `ALTER TABLE ... ALTER CONSTRAINT ... INITIALLY DEFERRED` | ✓ | ✗ | notice (v0.160.0) |
 
 > **Note:** Trigger-scope forms (`ENABLE/DISABLE TRIGGER ALL/USER`) are now normalized and reuse the `enable_trigger` and `disable_trigger` rules above. `REPLICA IDENTITY DEFAULT` is normalized and intentionally silent. This is not full PostgreSQL ALTER TABLE coverage. These rules are offline-only and do not require a database connection. DeltaScope does not verify whether `REPLICA IDENTITY USING INDEX` names a valid, unique, or non-partial index. DeltaScope does not verify whether the target table is currently logged or unlogged. v0.130.0 findings do not emit trigger function names, trigger body, rule query/command text, tablespace names, access method names, or reloption keys/values. v0.140.0 findings do not emit raw SQL, option names/values, storage parameter names, compression method names, compression_kind, partition bounds, or catalog index names. v0.150.0 findings do not emit parent table names or typed table type names.
 

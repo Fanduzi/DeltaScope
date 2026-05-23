@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.150.0 PostgreSQL ALTER TABLE Table Relationship Rules
+## Latest Completed Milestone: v0.160.0 PostgreSQL ALTER TABLE Constraint Deferrability Rules
+
+**Goal:** add 2 new PostgreSQL-only ALTER TABLE rules covering FK constraint deferrability changes, and silently normalize `SET WITHOUT OIDS`, advancing the PostgreSQL ALTER TABLE residual census to 56 of 66 forms `finding_covered`.
+
+### Completed Scope
+
+- 2 new PostgreSQL-only ALTER TABLE constraint deferrability rules:
+  - `ddl.pg.alter.constraint_deferrable.notice` — `ALTER TABLE ... ALTER CONSTRAINT ... DEFERRABLE` marks an FK constraint as deferrable.
+  - `ddl.pg.alter.constraint_initially_deferred.notice` — `ALTER TABLE ... ALTER CONSTRAINT ... INITIALLY DEFERRED` marks an FK constraint as initially deferred.
+- Silent normalization for `SET WITHOUT OIDS` (action: `set_without_oids`). No finding emitted — obsolete since PG12.
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 54 → 56, `normalized_silent` 1 → 2, `unsupported_boundary` 7 → 4.
+- SQL corpus: 531/531 supported rule-dialect targets (100%), 239 expected YAML files.
+- No-leak contract: constraint deferrability findings do not emit raw SQL, expression text, predicate text, operator class names, exclusion operators, sequence options, catalog state, validation results, or dependency graphs.
+
+### Key Design Decisions
+
+- No full PostgreSQL ALTER TABLE support claim. Selected constraint deferrability families are covered; remaining 4 `unsupported_boundary` forms deferred.
+- No PostgreSQL 18 parser support (4 `parser_error` forms blocked on `pg_query_go v7`).
+- No live catalog validation.
+- No runtime FK behavior validation.
+- No lock/rewrite duration estimate.
+- No DCL expansion.
+- No v1.0/stable API contract claim.
+
+## Previous Milestone: v0.150.0 PostgreSQL ALTER TABLE Table Relationship Rules
 
 **Goal:** add 4 new PostgreSQL-only ALTER TABLE rules covering table relationship operations (INHERIT and OF type), advancing the PostgreSQL ALTER TABLE residual census to 54 of 66 forms `finding_covered`.
 

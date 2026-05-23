@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.160.0] - 2026-05-23
+
+### Added
+
+- 2 new PostgreSQL-only ALTER TABLE constraint deferrability rules covering FK constraint deferrability changes:
+  - Constraint deferrability (2): `ddl.pg.alter.constraint_deferrable.notice` (notice), `ddl.pg.alter.constraint_initially_deferred.notice` (notice).
+- Silent normalization for `ALTER TABLE ... SET WITHOUT OIDS` (action: `set_without_oids`). No finding emitted — this is a table-only action obsolete since PG12.
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 54 → 56, `normalized_silent` 1 → 2, `unsupported_boundary` 7 → 4.
+- SQL corpus: 531/531 supported rule-dialect targets covered (100%), 239 expected YAML files.
+- No-leak contract: constraint deferrability findings do not emit raw SQL, expression text, predicate text, operator class names, exclusion operators, sequence options, catalog state, validation results, or dependency graphs. Metadata is limited to operation, action, table, constraint name, constraint type, and deferrable/initially_deferred boolean flags.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE support.
+- No PostgreSQL 18 parser support (4 `parser_error` forms remain blocked on `pg_query_go v7`).
+- No live catalog validation.
+- No runtime FK behavior validation.
+- No lock/rewrite duration estimate.
+- No support yet for `SET EXPRESSION`, `ADD GENERATED ... AS IDENTITY`, `EXCLUDE USING`, `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...`.
+- Remaining `unsupported_boundary` forms (4) deferred to later milestones.
+- No v1.0/stable API contract claim.
+
 ## [v0.150.0] - 2026-05-22
 
 ### Added
