@@ -773,3 +773,92 @@ func newDropOfTypeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) 
 		cfg,
 	)
 }
+
+// ---------------------------------------------------------------------------
+// Constraint deferrability rules: ALTER CONSTRAINT DEFERRABLE, INITIALLY DEFERRED
+// ---------------------------------------------------------------------------
+
+type pgAlterConstraintDeferrabilityRule struct {
+	id         string
+	level      rule.Level
+	action     string
+	message    string
+	why        string
+	risk       string
+	suggestion string
+}
+
+func newPGAlterConstraintDeferrabilityRule(id string, level rule.Level, action, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return pgAlterConstraintDeferrabilityRule{
+		id:         id,
+		level:      configuredLevel(cfg, level),
+		action:     action,
+		message:    message,
+		why:        why,
+		risk:       risk,
+		suggestion: suggestion,
+	}, nil
+}
+
+func (r pgAlterConstraintDeferrabilityRule) ID() string { return r.id }
+
+func (r pgAlterConstraintDeferrabilityRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectPostgreSQL &&
+		appliesToAlterActions(statement, r.action)
+}
+
+func (r pgAlterConstraintDeferrabilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, r.action) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		message := fmt.Sprintf(r.message, alter.Name)
+		metadata := map[string]any{
+			"operation":  "alter_table",
+			"action":     r.action,
+			"table":      statement.DDL.Table.Name,
+			"constraint": alter.Name,
+		}
+		for k, v := range alter.Options {
+			metadata[k] = v
+		}
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: message,
+			Explanation: &rule.FindingExplanation{
+				Why:        r.why,
+				Risk:       r.risk,
+				Suggestion: r.suggestion,
+			},
+			Metadata: metadata,
+		})
+	}
+	return findings, nil
+}
+
+func newAlterConstraintDeferrableNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterConstraintDeferrabilityRule(
+		ruleIDPGAlterConstraintDeferrableNotice, rule.LevelNotice, "alter_constraint_deferrable",
+		"ALTER CONSTRAINT %q DEFERRABLE changes PostgreSQL foreign-key timing behavior",
+		"ALTER CONSTRAINT DEFERRABLE changes the foreign-key constraint from immediate to deferrable. Deferred constraints are checked at transaction commit rather than statement completion.",
+		"Application code that assumes immediate constraint violation feedback will not see errors until COMMIT. Batch operations that previously failed mid-transaction may now succeed until commit time.",
+		"Verify application logic handles deferred constraint violations at commit time. Test batch operations that rely on immediate FK feedback.",
+		cfg,
+	)
+}
+
+func newAlterConstraintInitiallyDeferredNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterConstraintDeferrabilityRule(
+		ruleIDPGAlterConstraintInitiallyDeferredNotice, rule.LevelNotice, "alter_constraint_initially_deferred",
+		"ALTER CONSTRAINT %q INITIALLY DEFERRED changes PostgreSQL foreign-key timing behavior",
+		"INITIALLY DEFERRED makes the foreign-key constraint deferred by default at transaction start. Constraints are checked only when the transaction commits, not after each statement.",
+		"Constraint violations surface only at COMMIT. Intermediate constraint violations within the transaction are silently tolerated until commit time, which can mask data integrity issues during debugging.",
+		"Verify application logic handles deferred constraint violations at commit time. Consider whether INITIALLY IMMEDIATE with explicit SET CONSTRAINTS is more appropriate for debugging.",
+		cfg,
+	)
+}

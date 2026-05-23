@@ -1172,6 +1172,29 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 				"relationship": "typed_table",
 			},
 		}, true, nil
+	case pg_query.AlterTableType_AT_AlterConstraint:
+		constraint := cmd.GetDef().GetConstraint()
+		if constraint == nil {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alterconstraint", Reason: "postgresql alter constraint payload is missing"}
+		}
+		if constraint.GetContype() != pg_query.ConstrType_CONSTR_FOREIGN {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alterconstraint", Reason: "postgresql alter constraint type is not foreign_key"}
+		}
+		action := "alter_constraint_deferrable"
+		if constraint.GetInitdeferred() {
+			action = "alter_constraint_initially_deferred"
+		}
+		return spec.Alter{
+			Action: action,
+			Name:   constraint.GetConname(),
+			Options: map[string]string{
+				"constraint_type":    "foreign_key",
+				"deferrable":         strconv.FormatBool(constraint.GetDeferrable()),
+				"initially_deferred": strconv.FormatBool(constraint.GetInitdeferred()),
+			},
+		}, true, nil
+	case pg_query.AlterTableType_AT_DropOids:
+		return spec.Alter{Action: "set_without_oids"}, true, nil
 	default:
 		return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: alterSubtypeFeature(cmd.GetSubtype()), Reason: "postgresql alter table command is not in the approved v1 whitelist"}
 	}

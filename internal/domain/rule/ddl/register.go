@@ -613,6 +613,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDPGAlterDropInheritNotice, construct: newDropInheritNoticeRule},
 		{ruleID: ruleIDPGAlterAddOfTypeNotice, construct: newAddOfTypeNoticeRule},
 		{ruleID: ruleIDPGAlterDropOfTypeNotice, construct: newDropOfTypeNoticeRule},
+		// PostgreSQL constraint deferrability rules (PG-only).
+		{ruleID: ruleIDPGAlterConstraintDeferrableNotice, construct: newAlterConstraintDeferrableNoticeRule},
+		{ruleID: ruleIDPGAlterConstraintInitiallyDeferredNotice, construct: newAlterConstraintInitiallyDeferredNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

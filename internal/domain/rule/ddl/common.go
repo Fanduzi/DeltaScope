@@ -367,6 +367,9 @@ const (
 	ruleIDPGAlterDropInheritNotice = "ddl.pg.alter.drop_inherit.notice"
 	ruleIDPGAlterAddOfTypeNotice   = "ddl.pg.alter.add_of_type.notice"
 	ruleIDPGAlterDropOfTypeNotice  = "ddl.pg.alter.drop_of_type.notice"
+	// PostgreSQL constraint deferrability rules (PG-only).
+	ruleIDPGAlterConstraintDeferrableNotice        = "ddl.pg.alter.constraint_deferrable.notice"
+	ruleIDPGAlterConstraintInitiallyDeferredNotice = "ddl.pg.alter.constraint_initially_deferred.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
