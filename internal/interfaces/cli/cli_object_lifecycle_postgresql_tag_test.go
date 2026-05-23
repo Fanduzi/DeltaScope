@@ -661,6 +661,18 @@ func TestAuditCommandPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T)
 			wantRuleID: "ddl.pg.alter.drop_of_type.notice",
 			wantLevel:  "notice",
 		},
+		{
+			name:       "constraint_deferrable_notice",
+			sql:        "ALTER TABLE orders ALTER CONSTRAINT orders_user_id_fkey DEFERRABLE",
+			wantRuleID: "ddl.pg.alter.constraint_deferrable.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "constraint_initially_deferred_notice",
+			sql:        "ALTER TABLE orders ALTER CONSTRAINT orders_user_id_fkey INITIALLY DEFERRED",
+			wantRuleID: "ddl.pg.alter.constraint_initially_deferred.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1891,6 +1903,28 @@ func TestAuditCommandPostgreSQLSemanticMetadataParity(t *testing.T) {
 				"relationship": "typed_table",
 			},
 			forbidden: []string{"raw_sql", "column_definition", "type_attributes", "catalog_state", "validation_result", "dependency_graph", "column_shape", "type_shape", "compatibility_result"},
+		},
+		{
+			name:   "constraint_deferrable_metadata",
+			sql:    "ALTER TABLE orders ALTER CONSTRAINT orders_user_id_fkey DEFERRABLE",
+			ruleID: "ddl.pg.alter.constraint_deferrable.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "alter_constraint_deferrable", "table": "orders",
+				"constraint": "orders_user_id_fkey", "constraint_type": "foreign_key",
+				"deferrable": "true", "initially_deferred": "false",
+			},
+			forbidden: []string{"raw_sql", "expression", "predicate", "operator_class", "exclusions", "sequence_options", "catalog_state", "validation_result", "dependency_graph"},
+		},
+		{
+			name:   "constraint_initially_deferred_metadata",
+			sql:    "ALTER TABLE orders ALTER CONSTRAINT orders_user_id_fkey INITIALLY DEFERRED",
+			ruleID: "ddl.pg.alter.constraint_initially_deferred.notice",
+			wantMetadata: map[string]any{
+				"operation": "alter_table", "action": "alter_constraint_initially_deferred", "table": "orders",
+				"constraint": "orders_user_id_fkey", "constraint_type": "foreign_key",
+				"deferrable": "true", "initially_deferred": "true",
+			},
+			forbidden: []string{"raw_sql", "expression", "predicate", "operator_class", "exclusions", "sequence_options", "catalog_state", "validation_result", "dependency_graph"},
 		},
 	}
 

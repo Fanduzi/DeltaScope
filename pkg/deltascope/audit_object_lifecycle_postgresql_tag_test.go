@@ -483,6 +483,18 @@ func TestAuditPostgreSQLAlterTableStorageLayoutRuleCoverage(t *testing.T) {
 			wantRuleID: "ddl.pg.alter.drop_of_type.notice",
 			wantLevel:  "notice",
 		},
+		{
+			name:       "constraint_deferrable_notice",
+			sql:        "ALTER TABLE orders ALTER CONSTRAINT orders_user_id_fkey DEFERRABLE",
+			wantRuleID: "ddl.pg.alter.constraint_deferrable.notice",
+			wantLevel:  "notice",
+		},
+		{
+			name:       "constraint_initially_deferred_notice",
+			sql:        "ALTER TABLE orders ALTER CONSTRAINT orders_user_id_fkey INITIALLY DEFERRED",
+			wantRuleID: "ddl.pg.alter.constraint_initially_deferred.notice",
+			wantLevel:  "notice",
+		},
 	}
 
 	for _, tt := range tests {
