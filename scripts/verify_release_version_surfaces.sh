@@ -29,6 +29,17 @@ require_grep_regex() {
   grep -Eq "${pattern}" "${file}" || fail "${file} missing pattern: ${pattern}"
 }
 
+version_i18n_key() {
+  local version="$1"
+  printf 'v%s' "${version#v}" | tr -d '.'
+}
+
+recent_release_versions() {
+  grep -Eo '\[v[0-9]+\.[0-9]+\.[0-9]+\]' docs/releases/README.md \
+    | tr -d '[]' \
+    | awk '!seen[$0]++'
+}
+
 require_landing_current_surfaces() {
   local file="docs/landing/index.html"
 
@@ -49,6 +60,36 @@ require_landing_current_surfaces() {
   # Current-release i18n text must exist. Historical release cards may mention older versions.
   require_grep_regex "currentTitle: '([^']+)'" "${file}"
   require_grep_regex "brand: '([^']|\\\\')*${VERSION}" "${file}"
+}
+
+require_landing_recent_release_cards() {
+  local file="docs/landing/index.html"
+  local versions=()
+  local cards=()
+
+  mapfile -t versions < <(recent_release_versions)
+  [[ "${#versions[@]}" -ge 4 ]] || fail "docs/releases/README.md must list current release plus at least 3 historical releases"
+  [[ "${versions[0]}" == "${VERSION}" ]] || fail "docs/releases/README.md first release ${versions[0]} != ${VERSION}"
+
+  mapfile -t cards < <(
+    grep -Eo '<div class="release-card-version">v[0-9]+\.[0-9]+\.[0-9]+</div>' "${file}" \
+      | sed -E 's#.*>(v[0-9]+\.[0-9]+\.[0-9]+)<.*#\1#'
+  )
+  [[ "${#cards[@]}" -eq 3 ]] || fail "${file} must render exactly 3 recent release cards, found ${#cards[@]}"
+
+  local i expected key
+  for i in 0 1 2; do
+    expected="${versions[$((i + 1))]}"
+    key="$(version_i18n_key "${expected}")"
+    [[ "${cards[$i]}" == "${expected}" ]] || fail "${file} release card $((i + 1)) is ${cards[$i]}, expected ${expected}"
+
+    require_grep_literal "data-i18n=\"releases.labels.${key}\"" "${file}"
+    require_grep_literal "data-i18n=\"releases.items.${key}\"" "${file}"
+    require_grep_literal "data-i18n=\"releases.links.${key}\"" "${file}"
+    require_grep_literal "release-notes-${expected}.md" "${file}"
+    require_grep_literal "release-notes-${expected}.zh-CN.md" "${file}"
+    require_grep_regex "${key}: '([^']|\\\\')*${expected}" "${file}"
+  done
 }
 
 main() {
@@ -80,6 +121,7 @@ main() {
   require_grep_literal "release-notes-${VERSION}.zh-CN.md" "docs/releases/README.md"
 
   require_landing_current_surfaces
+  require_landing_recent_release_cards
 }
 
 main "$@"
