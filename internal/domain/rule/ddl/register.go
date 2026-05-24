@@ -616,6 +616,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// PostgreSQL constraint deferrability rules (PG-only).
 		{ruleID: ruleIDPGAlterConstraintDeferrableNotice, construct: newAlterConstraintDeferrableNoticeRule},
 		{ruleID: ruleIDPGAlterConstraintInitiallyDeferredNotice, construct: newAlterConstraintInitiallyDeferredNoticeRule},
+		// PostgreSQL alter table final boundary rules (PG-only).
+		{ruleID: ruleIDPGAlterSetExpressionNotice, construct: newSetExpressionNoticeRule},
+		{ruleID: ruleIDPGAlterAddIdentityNotice, construct: newAddIdentityNoticeRule},
+		{ruleID: ruleIDPGAlterAddExclusionConstraintNotice, construct: newAddExclusionConstraintNoticeRule},
+		{ruleID: ruleIDPGAlterMoveAllTablespaceNotice, construct: newMoveAllTablespaceNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

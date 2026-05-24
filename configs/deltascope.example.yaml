@@ -970,6 +970,26 @@ rules:
     level: notice
     params:
 
+  ddl.pg.alter.set_expression.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.add_identity.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.add_exclusion_constraint.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.pg.alter.move_all_tablespace.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.pg.alter_materialized_view.rename.notice:
     enabled: true
     level: notice

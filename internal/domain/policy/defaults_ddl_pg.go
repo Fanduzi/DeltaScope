@@ -968,5 +968,26 @@ func ddlPgRules() map[string]RulePolicy {
 			Level:   rule.LevelNotice,
 			Params:  map[string]any{},
 		},
+		// PostgreSQL alter table final boundary rules (PG-only).
+		"ddl.pg.alter.set_expression.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.add_identity.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.add_exclusion_constraint.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.pg.alter.move_all_tablespace.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 	}
 }

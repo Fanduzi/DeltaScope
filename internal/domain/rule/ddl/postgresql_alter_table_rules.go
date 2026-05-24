@@ -862,3 +862,145 @@ func newAlterConstraintInitiallyDeferredNoticeRule(cfg policy.RulePolicy) (rule.
 		cfg,
 	)
 }
+
+// ---------------------------------------------------------------------------
+// Bounded alter action notice rule with allowlisted metadata
+// ---------------------------------------------------------------------------
+
+type pgAlterBoundedNoticeRule struct {
+	id         string
+	level      rule.Level
+	action     string
+	allowlist  map[string]bool
+	omitTable  bool
+	message    string
+	why        string
+	risk       string
+	suggestion string
+}
+
+func newPGAlterBoundedNoticeRule(id string, level rule.Level, action string, allowlist []string, omitTable bool, message, why, risk, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	al := make(map[string]bool, len(allowlist))
+	for _, k := range allowlist {
+		al[k] = true
+	}
+	return pgAlterBoundedNoticeRule{
+		id:         id,
+		level:      configuredLevel(cfg, level),
+		action:     action,
+		allowlist:  al,
+		omitTable:  omitTable,
+		message:    message,
+		why:        why,
+		risk:       risk,
+		suggestion: suggestion,
+	}, nil
+}
+
+func (r pgAlterBoundedNoticeRule) ID() string { return r.id }
+
+func (r pgAlterBoundedNoticeRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect != spec.DialectPostgreSQL {
+		return false
+	}
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || len(statement.DDL.Alter) == 0 {
+		return false
+	}
+	for _, alter := range statement.DDL.Alter {
+		if alter.Action == r.action {
+			return true
+		}
+	}
+	return false
+}
+
+func (r pgAlterBoundedNoticeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range statement.DDL.Alter {
+		if alter.Action != r.action {
+			continue
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		metadata := map[string]any{
+			"operation": "alter_table",
+			"action":    r.action,
+		}
+		if !r.omitTable && statement.DDL.Table != nil {
+			metadata["table"] = statement.DDL.Table.Name
+		}
+		for k, v := range alter.Options {
+			if r.allowlist[k] {
+				metadata[k] = v
+			}
+		}
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: r.message,
+			Explanation: &rule.FindingExplanation{
+				Why:        r.why,
+				Risk:       r.risk,
+				Suggestion: r.suggestion,
+			},
+			Metadata: metadata,
+		})
+	}
+	return findings, nil
+}
+
+// ---------------------------------------------------------------------------
+// Constructors for final boundary notice rules
+// ---------------------------------------------------------------------------
+
+func newSetExpressionNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterBoundedNoticeRule(
+		ruleIDPGAlterSetExpressionNotice, rule.LevelNotice, "set_expression",
+		[]string{"column", "has_expression"}, false,
+		"ALTER TABLE ALTER COLUMN SET EXPRESSION on PostgreSQL — computed column expression assigned",
+		"SET EXPRESSION assigns a computed expression to a column. The column value is derived from the expression for all rows.",
+		"The expression is evaluated for every row. Changes to referenced columns will cascade through the expression. The expression cannot reference other computed columns.",
+		"Review the expression logic for correctness and performance. Verify application code does not assume the column is independently writable.",
+		cfg,
+	)
+}
+
+func newAddIdentityNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterBoundedNoticeRule(
+		ruleIDPGAlterAddIdentityNotice, rule.LevelNotice, "add_identity",
+		[]string{"column", "identity", "generated_when"}, false,
+		"ALTER TABLE ALTER COLUMN ADD GENERATED AS IDENTITY on PostgreSQL — identity sequence added",
+		"ADD GENERATED AS IDENTITY attaches an identity sequence to an existing column. The column will auto-generate values for new rows.",
+		"The identity sequence configuration affects insert behavior. Existing rows are not backfilled. Sequence options (start, increment, cache, cycle) are configured on the database side.",
+		"Verify the identity column type is compatible with auto-increment behavior. Review whether existing data needs migration for sequence alignment.",
+		cfg,
+	)
+}
+
+func newAddExclusionConstraintNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterBoundedNoticeRule(
+		ruleIDPGAlterAddExclusionConstraintNotice, rule.LevelNotice, "add_exclusion_constraint",
+		[]string{"constraint", "constraint_type", "access_method"}, false,
+		"ALTER TABLE ADD CONSTRAINT EXCLUDE on PostgreSQL — exclusion constraint added",
+		"EXCLUDE constraints prevent rows from having conflicting values in specified columns using operator-based comparisons. They are commonly used with GiST indexes for temporal or spatial ranges.",
+		"The constraint requires a supporting index. INSERT and UPDATE operations are validated against existing rows, which may affect write performance on high-throughput tables.",
+		"Verify the exclusion constraint's operator set matches the intended data integrity rule. Ensure the supporting index exists or will be created automatically.",
+		cfg,
+	)
+}
+
+func newMoveAllTablespaceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newPGAlterBoundedNoticeRule(
+		ruleIDPGAlterMoveAllTablespaceNotice, rule.LevelNotice, "move_all_tablespace",
+		[]string{"object_type", "source_tablespace", "target_tablespace", "has_table_identity"}, true,
+		"ALTER TABLE ALL IN TABLESPACE SET TABLESPACE on PostgreSQL — all tables moved between tablespaces",
+		"ALL IN TABLESPACE moves all tables (or other objects) from one tablespace to another. Each table requires an ACCESS EXCLUSIVE lock during its move.",
+		"Moving all tables can cause significant downtime on large databases. The operation is not atomic — a failure partway through leaves some tables in the source and some in the target tablespace.",
+		"Schedule during a maintenance window. Verify the target tablespace has sufficient capacity for all objects being moved.",
+		cfg,
+	)
+}

@@ -370,6 +370,11 @@ const (
 	// PostgreSQL constraint deferrability rules (PG-only).
 	ruleIDPGAlterConstraintDeferrableNotice        = "ddl.pg.alter.constraint_deferrable.notice"
 	ruleIDPGAlterConstraintInitiallyDeferredNotice = "ddl.pg.alter.constraint_initially_deferred.notice"
+	// PostgreSQL alter table final boundary rules (PG-only).
+	ruleIDPGAlterSetExpressionNotice          = "ddl.pg.alter.set_expression.notice"
+	ruleIDPGAlterAddIdentityNotice            = "ddl.pg.alter.add_identity.notice"
+	ruleIDPGAlterAddExclusionConstraintNotice = "ddl.pg.alter.add_exclusion_constraint.notice"
+	ruleIDPGAlterMoveAllTablespaceNotice      = "ddl.pg.alter.move_all_tablespace.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
