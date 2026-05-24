@@ -51,7 +51,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 2: explicit schema in connection block
 	t.Run("explicit_schema", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "delete from users where id = 1",
+			"sql":     "delete from users where id = 1",
 			"dialect": "postgresql",
 			"connection": map[string]any{
 				"host":     "127.0.0.1",
@@ -158,7 +158,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 8: rename index forbid for existing index
 	t.Run("rename_idx_forbid", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "alter index idx_accounts_email rename to idx_new",
+			"sql":     "alter index idx_accounts_email rename to idx_new",
 			"dialect": "postgresql",
 			"connection": map[string]any{
 				"host":     "127.0.0.1",
