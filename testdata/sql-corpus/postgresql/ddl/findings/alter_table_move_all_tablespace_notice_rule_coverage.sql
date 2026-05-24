@@ -1,0 +1,1 @@
+ALTER TABLE ALL IN TABLESPACE pg_default SET TABLESPACE fastspace;
