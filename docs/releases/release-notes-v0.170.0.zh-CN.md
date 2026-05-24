@@ -2,7 +2,7 @@
 
 ## 概要 — PostgreSQL ALTER TABLE 最终可解析边界规则
 
-v0.170.0 新增 4 条 PostgreSQL 专用 ALTER TABLE notice 规则，覆盖最终可解析边界形式：SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT 和 ALL IN TABLESPACE。PostgreSQL ALTER TABLE 残留普查显示 66 种形式中 64 种已 `finding_covered`（从 60 上升），`unsupported_boundary` 保持 0。PostgreSQL ALTER TABLE 规则总数升至 32 条。
+v0.170.0 新增 4 条 PostgreSQL 专用 ALTER TABLE notice 规则，覆盖最终可解析边界形式：SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT 和 ALL IN TABLESPACE。PostgreSQL ALTER TABLE 残留普查显示 66 种形式中 60 种已 `finding_covered`（从 56 上升），`unsupported_boundary` 从 4 降至 0。PostgreSQL ALTER TABLE 规则总数升至 32 条。
 
 ## 新增规则
 
@@ -20,9 +20,9 @@ v0.170.0 新增 4 条 PostgreSQL 专用 ALTER TABLE notice 规则，覆盖最终
 | 指标 | v0.170.0 之前 | v0.170.0 之后 |
 |------|-------------|-------------|
 | total | 66 | 66 |
-| finding_covered | 60 | 64 |
+| finding_covered | 56 | 60 |
 | normalized_silent | 2 | 2 |
-| unsupported_boundary | 0 | 0 |
+| unsupported_boundary | 4 | 0 |
 | parser_error | 4 | 4 |
 | unclassified | 0 | 0 |
 

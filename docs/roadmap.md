@@ -6,7 +6,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 
 ## Latest Completed Milestone: v0.170.0 PostgreSQL ALTER TABLE Final Parseable Boundary Rules
 
-**Goal:** add 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries (SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, ALL IN TABLESPACE), advancing the PostgreSQL ALTER TABLE residual census to 64 of 66 forms `finding_covered`.
+**Goal:** add 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries (SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, ALL IN TABLESPACE), advancing the PostgreSQL ALTER TABLE residual census to 60 of 66 forms `finding_covered`.
 
 ### Completed Scope
 
@@ -15,7 +15,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
   - `ddl.pg.alter.add_identity.notice` — `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` adds identity to an existing column.
   - `ddl.pg.alter.add_exclusion_constraint.notice` — `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` adds an exclusion constraint.
   - `ddl.pg.alter.move_all_tablespace.notice` — `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` moves all tables in a tablespace.
-- PostgreSQL ALTER TABLE residual census: `finding_covered` 60 → 64, `unsupported_boundary` 0 (unchanged), `parser_error` 4 (unchanged).
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 56 → 60, `unsupported_boundary` 4 → 0, `normalized_silent` 2 (unchanged), `parser_error` 4 (unchanged).
 - SQL corpus: 535/535 supported rule-dialect targets (100%), 243 expected YAML files.
 - No-leak contract: findings do not emit expression body, sequence options, exclusion operators/predicates, or raw SQL.
 

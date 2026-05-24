@@ -1085,7 +1085,7 @@ Statement 1: CREATE TABLE
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
             <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL ALTER TABLE Final Parseable Boundary Rules</div>
-            <div class="release-copy" data-i18n="releases.items.v01700">v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 60→64, unsupported_boundary 0. No-leak contract preserved.</div>
+            <div class="release-copy" data-i18n="releases.items.v01700">v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 56→60, unsupported_boundary 4→0. No-leak contract preserved.</div>
             <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.zh-CN.md">Read release notes →</a>
           </article>
 
@@ -1400,7 +1400,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
-            v01700: 'v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 60→64, unsupported_boundary 0. No-leak contract preserved.',
+            v01700: 'v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 56→60, unsupported_boundary 4→0. No-leak contract preserved.',
             v01600: 'v0.160.0 adds 2 new PostgreSQL-only ALTER TABLE constraint deferrability rules and silently normalizes SET WITHOUT OIDS. Census: finding_covered 54→56, unsupported_boundary 7→4. No-leak contract preserved.',
             v01500: 'v0.150.0 adds 4 new PostgreSQL-only ALTER TABLE table relationship rules covering INHERIT and OF type operations. Census: finding_covered 50→54, unsupported_boundary 11→7. No-leak contract preserved.',
             v01400: 'v0.140.0 adds 8 new PostgreSQL-only ALTER TABLE rules covering column attributes (5) and cluster/detach-finalize (3). Census: finding_covered 40→50, unsupported_boundary 21→11. No-leak contract preserved.',
@@ -1590,7 +1590,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
-            v01700: 'v0.170.0 新增 4 条 PostgreSQL 专用 ALTER TABLE notice 规则，覆盖最终可解析边界：SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT 和 ALL IN TABLESPACE。普查：finding_covered 60→64，unsupported_boundary 0。无泄漏合同保持不变。',
+            v01700: 'v0.170.0 新增 4 条 PostgreSQL 专用 ALTER TABLE notice 规则，覆盖最终可解析边界：SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT 和 ALL IN TABLESPACE。普查：finding_covered 56→60，unsupported_boundary 4→0。无泄漏合同保持不变。',
             v01600: 'v0.160.0 新增 2 条 PostgreSQL 专用 ALTER TABLE 外键约束延迟设置规则，静默规范化 SET WITHOUT OIDS。普查：finding_covered 54→56，unsupported_boundary 7→4。无泄漏合同保持不变。',
             v01500: 'v0.150.0 新增 4 条 PostgreSQL 专用 ALTER TABLE 表关系规则，覆盖 INHERIT 和 OF type 操作。普查：finding_covered 50→54，unsupported_boundary 11→7。无泄漏契约保持不变。',
             v01400: 'v0.140.0 新增 8 条 PostgreSQL 专用 ALTER TABLE 规则，覆盖列属性变更（5 条）和 CLUSTER / DETACH FINALIZE（3 条）。普查：finding_covered 40→50，unsupported_boundary 21→11。无泄漏契约保持不变。',

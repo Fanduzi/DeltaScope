@@ -12,7 +12,7 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 - 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries:
   - Final parseable (4): `ddl.pg.alter.set_expression.notice` (notice), `ddl.pg.alter.add_identity.notice` (notice), `ddl.pg.alter.add_exclusion_constraint.notice` (notice), `ddl.pg.alter.move_all_tablespace.notice` (notice).
-- PostgreSQL ALTER TABLE residual census: `finding_covered` 60 → 64, `unsupported_boundary` 0 (unchanged), `parser_error` 4 (unchanged).
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 56 → 60, `unsupported_boundary` 4 → 0, `normalized_silent` 2 (unchanged), `parser_error` 4 (unchanged).
 - SQL corpus: 535/535 supported rule-dialect targets covered (100%), 243 expected YAML files.
 - No-leak contract: findings do not emit expression body, sequence options, exclusion operators/predicates, or raw SQL.
 

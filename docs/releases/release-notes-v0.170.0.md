@@ -2,7 +2,7 @@
 
 ## Summary — PostgreSQL ALTER TABLE Final Parseable Boundary Rules
 
-v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering the final parseable boundary forms: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. The PostgreSQL ALTER TABLE residual census now shows 64 of 66 forms `finding_covered` (up from 60), with `unsupported_boundary` holding at 0. Total PostgreSQL ALTER TABLE rule count rises to 32.
+v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering the final parseable boundary forms: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. The PostgreSQL ALTER TABLE residual census now shows 60 of 66 forms `finding_covered` (up from 56), with `unsupported_boundary` reduced from 4 to 0. Total PostgreSQL ALTER TABLE rule count rises to 32.
 
 ## New Rules
 
@@ -20,9 +20,9 @@ v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering the final 
 | Metric | Before v0.170.0 | After v0.170.0 |
 |--------|----------------|----------------|
 | total | 66 | 66 |
-| finding_covered | 60 | 64 |
+| finding_covered | 56 | 60 |
 | normalized_silent | 2 | 2 |
-| unsupported_boundary | 0 | 0 |
+| unsupported_boundary | 4 | 0 |
 | parser_error | 4 | 4 |
 | unclassified | 0 | 0 |
 
