@@ -39,6 +39,8 @@ func (e pgExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statemen
 		return extractViewStmt(statement, node.ViewStmt), nil
 	case *pg_query.Node_AlterTableStmt:
 		return extractAlterTableStmt(statement, node.AlterTableStmt), nil
+	case *pg_query.Node_AlterTableMoveAllStmt:
+		return extractAlterTableMoveAllStmt(statement, node.AlterTableMoveAllStmt), nil
 	case *pg_query.Node_AlterObjectSchemaStmt:
 		return extractAlterObjectSchemaStmt(statement, node.AlterObjectSchemaStmt), nil
 	case *pg_query.Node_RenameStmt:

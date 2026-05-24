@@ -794,6 +794,33 @@ func extractAlterDefaultPrivilegesStmt(statement spec.Statement, stmt *pg_query.
 	return unsupportedStatement(statement, "alter_default_privileges", "postgresql alter default privileges is deferred")
 }
 
+func extractAlterTableMoveAllStmt(statement spec.Statement, stmt *pg_query.AlterTableMoveAllStmt) spec.Statement {
+	if stmt == nil {
+		return unsupportedStatement(statement, "alter_table_move_all", "postgresql alter table move all payload is missing")
+	}
+	if stmt.GetObjtype() != pg_query.ObjectType_OBJECT_TABLE {
+		return unsupportedStatement(statement, "alter_table_move_all", "postgresql alter table move all object type is unsupported in v1")
+	}
+	source := stmt.GetOrigTablespacename()
+	target := stmt.GetNewTablespacename()
+	if source == "" || target == "" {
+		return unsupportedStatement(statement, "alter_table_move_all", "postgresql alter table move all tablespace names are missing")
+	}
+	statement.DDL = &spec.DDL{
+		Operation: spec.DDLOperationAlterTable,
+		Alter: []spec.Alter{{
+			Action: "move_all_tablespace",
+			Options: map[string]string{
+				"object_type":        "table",
+				"source_tablespace":  source,
+				"target_tablespace":  target,
+				"has_table_identity": "false",
+			},
+		}},
+	}
+	return statement
+}
+
 func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.UnsupportedDetail) {
 	switch cmd.GetSubtype() {
 	case pg_query.AlterTableType_AT_AddColumn:
@@ -809,6 +836,20 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		return spec.Alter{Action: "drop_column", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
 	case pg_query.AlterTableType_AT_DropExpression:
 		return spec.Alter{Action: "drop_expression", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+	case pg_query.AlterTableType_AT_SetExpression:
+		columnName := cmd.GetName()
+		if columnName == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "setexpression", Reason: "postgresql alter table set expression column name is missing"}
+		}
+		return spec.Alter{
+			Action: "set_expression",
+			Name:   columnName,
+			Column: &spec.AlterColumn{OldName: columnName},
+			Options: map[string]string{
+				"column":         columnName,
+				"has_expression": "true",
+			},
+		}, true, nil
 	case pg_query.AlterTableType_AT_SetIdentity:
 		generatedWhen := generatedWhenFromDef(cmd.GetDef())
 		return spec.Alter{
@@ -821,10 +862,42 @@ func alterFromCmd(cmd *pg_query.AlterTableCmd) (spec.Alter, bool, *spec.Unsuppor
 		}, true, nil
 	case pg_query.AlterTableType_AT_DropIdentity:
 		return spec.Alter{Action: "drop_identity", Name: cmd.GetName(), Column: &spec.AlterColumn{OldName: cmd.GetName()}}, true, nil
+	case pg_query.AlterTableType_AT_AddIdentity:
+		columnName := cmd.GetName()
+		if columnName == "" {
+			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "addidentity", Reason: "postgresql alter table add identity column name is missing"}
+		}
+		options := map[string]string{
+			"column":   columnName,
+			"identity": "true",
+		}
+		if generatedWhen := identityGeneratedWhenFromConstraintDef(cmd.GetDef()); generatedWhen != "" {
+			options["generated_when"] = generatedWhen
+		}
+		return spec.Alter{
+			Action:  "add_identity",
+			Name:    columnName,
+			Column:  &spec.AlterColumn{OldName: columnName},
+			Options: options,
+		}, true, nil
 	case pg_query.AlterTableType_AT_AddConstraint:
 		constraint := cmd.GetDef().GetConstraint()
 		if constraint == nil {
 			return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "alter_table", Reason: "postgresql add constraint payload is missing"}
+		}
+		if constraint.GetContype() == pg_query.ConstrType_CONSTR_EXCLUSION {
+			constraintName := constraint.GetConname()
+			if constraintName == "" {
+				return spec.Alter{}, false, &spec.UnsupportedDetail{Feature: "add_constraint", Reason: "postgresql exclusion constraint name is missing"}
+			}
+			options := map[string]string{
+				"constraint":      constraintName,
+				"constraint_type": "exclusion",
+			}
+			if accessMethod := constraint.GetAccessMethod(); accessMethod != "" {
+				options["access_method"] = accessMethod
+			}
+			return spec.Alter{Action: "add_exclusion_constraint", Name: constraintName, Options: options}, true, nil
 		}
 		constraintType, ok := supportedConstraintType(constraint.GetContype())
 		if !ok {
@@ -1221,6 +1294,26 @@ func generatedWhenFromDef(defNode *pg_query.Node) string {
 		}
 	}
 	return ""
+}
+
+// identityGeneratedWhenFromConstraintDef extracts the generated mode from an
+// AT_AddIdentity def payload that wraps a CONSTR_IDENTITY constraint.
+func identityGeneratedWhenFromConstraintDef(defNode *pg_query.Node) string {
+	if defNode == nil {
+		return ""
+	}
+	constraint := defNode.GetConstraint()
+	if constraint == nil || constraint.GetContype() != pg_query.ConstrType_CONSTR_IDENTITY {
+		return ""
+	}
+	switch constraint.GetGeneratedWhen() {
+	case "d":
+		return "by_default"
+	case "a":
+		return "always"
+	default:
+		return ""
+	}
 }
 
 func replicaIdentityFromDef(defNode *pg_query.Node) (identity string, indexName string) {
