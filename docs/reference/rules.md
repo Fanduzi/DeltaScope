@@ -458,7 +458,7 @@ These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ...
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (28 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (32 rules)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 
@@ -542,6 +542,17 @@ These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-sa
 | `ddl.pg.alter.constraint_initially_deferred.notice` | notice | `alter_constraint_initially_deferred` | FK constraint marked INITIALLY DEFERRED |
 
 > **Note (v0.160.0):** These rules are PostgreSQL-specific and offline. Constraint deferrability findings emit bounded metadata only: operation, action, table, constraint name, constraint type (`foreign_key`), and deferrable/initially_deferred boolean flags. No raw SQL, expression text, predicate text, operator class names, exclusion operators, sequence options, catalog state, validation results, or dependency graphs are emitted. `SET WITHOUT OIDS` is normalized silently with action `set_without_oids` and produces no finding (obsolete since PG12).
+
+### Final Parseable Boundary (v0.170.0)
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.pg.alter.set_expression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` sets a generated column expression — informational notice | notice | No |
+| `ddl.pg.alter.add_identity.notice` | `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` adds identity to an existing column — informational notice | notice | No |
+| `ddl.pg.alter.add_exclusion_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` adds an exclusion constraint — informational notice | notice | No |
+| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` moves all tables in a tablespace — informational notice | notice | No |
+
+> **Note (v0.170.0):** These rules are PostgreSQL-specific and offline. Final parseable boundary findings emit bounded metadata only: operation, action, table, column (for SET EXPRESSION and ADD IDENTITY), and constraint name (for ADD EXCLUSION CONSTRAINT). No expression body, sequence options, exclusion operators/predicates, operator class names, catalog state, or raw SQL are emitted.
 
 | `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` writes full old-row images to WAL — warns about replication overhead | warning | No |
 | `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` writes no old-row images to WAL — warns that logical replication will not work | warning | No |

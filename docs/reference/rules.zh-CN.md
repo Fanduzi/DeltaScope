@@ -449,7 +449,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖规则（28 条）
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（32 条）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
 
@@ -533,6 +533,17 @@ deltascope rules search "prefix"
 | `ddl.pg.alter.constraint_initially_deferred.notice` | notice | `alter_constraint_initially_deferred` | 外键约束被标记为 INITIALLY DEFERRED |
 
 > **注（v0.160.0）：** 这些规则是 PostgreSQL 专用且离线的。约束可延迟性 finding 仅输出有限元数据：operation、action、table、constraint name、constraint type（`foreign_key`）以及 deferrable/initially_deferred 布尔标志。不输出原始 SQL、表达式文本、谓词文本、操作符类名、排除操作符、序列选项、目录状态、验证结果或依赖图。`SET WITHOUT OIDS` 以动作 `set_without_oids` 静默规范化，不产生 finding（自 PG12 起已废弃）。
+
+### 最终可解析边界（v0.170.0）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.pg.alter.set_expression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` 设置生成列表达式——信息性提示 | notice | 否 |
+| `ddl.pg.alter.add_identity.notice` | `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` 为已有列添加身份——信息性提示 | notice | 否 |
+| `ddl.pg.alter.add_exclusion_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` 添加排除约束——信息性提示 | notice | 否 |
+| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` 移动表空间中的所有表——信息性提示 | notice | 否 |
+
+> **注（v0.170.0）：** 这些规则是 PostgreSQL 专用且离线的。最终可解析边界 finding 仅输出有限元数据：operation、action、table、column（仅 SET EXPRESSION 和 ADD IDENTITY）以及 constraint name（仅 ADD EXCLUSION CONSTRAINT）。不输出表达式主体、序列选项、排除操作符/谓词、操作符类名、目录状态或原始 SQL。
 
 | `ddl.pg.alter.replica_identity_full.warn` | `ALTER TABLE ... REPLICA IDENTITY FULL` 写入完整旧行镜像到 WAL——警告复制开销 | warning | 否 |
 | `ddl.pg.alter.replica_identity_nothing.warn` | `ALTER TABLE ... REPLICA IDENTITY NOTHING` 不写入旧行镜像到 WAL——警告逻辑复制将不可用 | warning | 否 |

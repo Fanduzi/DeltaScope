@@ -471,9 +471,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0 / v0.140.0 / v0.150.0 / v0.160.0）
+## DDL：PostgreSQL ALTER TABLE 覆盖（v0.51.0 / v0.52.0 / v0.54.0 / v0.56.0 / v0.130.0 / v0.140.0 / v0.150.0 / v0.160.0 / v0.170.0）
 
-`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。`v0.130.0` 新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions。`v0.140.0` 新增 8 条规则覆盖列属性（statistics、options、storage、compression）和 CLUSTER / DETACH FINALIZE。`v0.150.0` 新增 4 条规则覆盖表关系操作（`INHERIT`、`NO INHERIT`、`OF TYPE`、`NOT OF`）。`v0.160.0` 新增 2 条规则覆盖外键约束可延迟性变更，并静默规范化 SET WITHOUT OIDS。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
+`v0.51.0` 扩展了 PostgreSQL ALTER TABLE 审核覆盖，新增三条补位规则。`v0.52.0` 新增六条规则覆盖此前 unsupported 的 ALTER TABLE 动作。`v0.54.0` 将触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）规范化，复用既有触发器规则，并新增三条副本标识规则。`v0.56.0` 新增两条 logged-state 规则覆盖 `SET LOGGED` 和 `SET UNLOGGED`。`v0.130.0` 新增 10 条规则覆盖存储/布局、trigger/rule 残留和 reloptions。`v0.140.0` 新增 8 条规则覆盖列属性（statistics、options、storage、compression）和 CLUSTER / DETACH FINALIZE。`v0.150.0` 新增 4 条规则覆盖表关系操作（`INHERIT`、`NO INHERIT`、`OF TYPE`、`NOT OF`）。`v0.160.0` 新增 2 条规则覆盖外键约束可延迟性变更，并静默规范化 SET WITHOUT OIDS。`v0.170.0` 新增 4 条规则覆盖最终可解析边界（SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT、ALL IN TABLESPACE）。这些规则覆盖了既有 migration-safety 和 object lifecycle 规则族之外最常见的 ALTER TABLE 安全模式。仅在设置 `--dialect postgresql` 时生效。
 
 ### ALTER TABLE 覆盖规则
 
@@ -517,8 +517,12 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | `ddl.pg.alter.drop_of_type.notice` | `ALTER TABLE ... NOT OF` 解除表与类型表的绑定——信息性提示 (v0.150.0) | ✓ | ✗ | notice |
 | `ddl.pg.alter.constraint_deferrable.notice` | `ALTER TABLE ... ALTER CONSTRAINT ... DEFERRABLE` | ✓ | ✗ | notice (v0.160.0) |
 | `ddl.pg.alter.constraint_initially_deferred.notice` | `ALTER TABLE ... ALTER CONSTRAINT ... INITIALLY DEFERRED` | ✓ | ✗ | notice (v0.160.0) |
+| `ddl.pg.alter.set_expression.notice` | `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` 设置生成列表达式 | ✓ | ✗ | notice (v0.170.0) |
+| `ddl.pg.alter.add_identity.notice` | `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` 为已有列添加身份 | ✓ | ✗ | notice (v0.170.0) |
+| `ddl.pg.alter.add_exclusion_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` 添加排除约束 | ✓ | ✗ | notice (v0.170.0) |
+| `ddl.pg.alter.move_all_tablespace.notice` | `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` 移动表空间中的所有表 | ✓ | ✗ | notice (v0.170.0) |
 
-> **说明：** 触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用上方的 `enable_trigger` 和 `disable_trigger` 规则。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。这不是完整的 PostgreSQL ALTER TABLE 覆盖。这些规则均为离线规则，不需要数据库连接。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。v0.130.0 发现不输出 trigger 函数名、trigger 函数体、rule 查询/命令文本、tablespace 名称、access method 名称或 reloption 键/值。v0.140.0 发现不输出原始 SQL、选项名/值、存储参数名、压缩方法名、compression_kind、分区边界或 catalog 索引名。v0.150.0 发现不输出父表名称或类型表类型名称。
+> **说明：** 触发器范围形式（`ENABLE/DISABLE TRIGGER ALL/USER`）已规范化，复用上方的 `enable_trigger` 和 `disable_trigger` 规则。`REPLICA IDENTITY DEFAULT` 已规范化且故意静默。这不是完整的 PostgreSQL ALTER TABLE 覆盖。这些规则均为离线规则，不需要数据库连接。DeltaScope 不会验证 `REPLICA IDENTITY USING INDEX` 所引用的索引是否有效、唯一或非部分索引。DeltaScope 不会验证目标表当前是否为 logged 或 unlogged 状态。v0.130.0 发现不输出 trigger 函数名、trigger 函数体、rule 查询/命令文本、tablespace 名称、access method 名称或 reloption 键/值。v0.140.0 发现不输出原始 SQL、选项名/值、存储参数名、压缩方法名、compression_kind、分区边界或 catalog 索引名。v0.150.0 发现不输出父表名称或类型表类型名称。v0.170.0 发现不输出表达式主体、序列选项、排除操作符/谓词或原始 SQL。
 
 ---
 

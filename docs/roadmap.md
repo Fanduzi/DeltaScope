@@ -4,31 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.160.0 PostgreSQL ALTER TABLE Constraint Deferrability Rules
+## Latest Completed Milestone: v0.170.0 PostgreSQL ALTER TABLE Final Parseable Boundary Rules
 
-**Goal:** add 2 new PostgreSQL-only ALTER TABLE rules covering FK constraint deferrability changes, and silently normalize `SET WITHOUT OIDS`, advancing the PostgreSQL ALTER TABLE residual census to 56 of 66 forms `finding_covered`.
+**Goal:** add 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries (SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, ALL IN TABLESPACE), advancing the PostgreSQL ALTER TABLE residual census to 64 of 66 forms `finding_covered`.
 
 ### Completed Scope
 
-- 2 new PostgreSQL-only ALTER TABLE constraint deferrability rules:
-  - `ddl.pg.alter.constraint_deferrable.notice` — `ALTER TABLE ... ALTER CONSTRAINT ... DEFERRABLE` marks an FK constraint as deferrable.
-  - `ddl.pg.alter.constraint_initially_deferred.notice` — `ALTER TABLE ... ALTER CONSTRAINT ... INITIALLY DEFERRED` marks an FK constraint as initially deferred.
-- Silent normalization for `SET WITHOUT OIDS` (action: `set_without_oids`). No finding emitted — obsolete since PG12.
-- PostgreSQL ALTER TABLE residual census: `finding_covered` 54 → 56, `normalized_silent` 1 → 2, `unsupported_boundary` 7 → 4.
-- SQL corpus: 531/531 supported rule-dialect targets (100%), 239 expected YAML files.
-- No-leak contract: constraint deferrability findings do not emit raw SQL, expression text, predicate text, operator class names, exclusion operators, sequence options, catalog state, validation results, or dependency graphs.
+- 4 new PostgreSQL-only ALTER TABLE final parseable boundary rules:
+  - `ddl.pg.alter.set_expression.notice` — `ALTER TABLE ... ALTER COLUMN ... SET EXPRESSION` sets a generated column expression.
+  - `ddl.pg.alter.add_identity.notice` — `ALTER TABLE ... ALTER COLUMN ... ADD GENERATED ... AS IDENTITY` adds identity to an existing column.
+  - `ddl.pg.alter.add_exclusion_constraint.notice` — `ALTER TABLE ... ADD CONSTRAINT ... EXCLUDE USING` adds an exclusion constraint.
+  - `ddl.pg.alter.move_all_tablespace.notice` — `ALTER TABLE ALL IN TABLESPACE ... SET TABLESPACE ...` moves all tables in a tablespace.
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 60 → 64, `unsupported_boundary` 0 (unchanged), `parser_error` 4 (unchanged).
+- SQL corpus: 535/535 supported rule-dialect targets (100%), 243 expected YAML files.
+- No-leak contract: findings do not emit expression body, sequence options, exclusion operators/predicates, or raw SQL.
 
 ### Key Design Decisions
 
-- No full PostgreSQL ALTER TABLE support claim. Selected constraint deferrability families are covered; remaining 4 `unsupported_boundary` forms deferred.
-- No PostgreSQL 18 parser support (4 `parser_error` forms blocked on `pg_query_go v7`).
-- No live catalog validation.
-- No runtime FK behavior validation.
-- No lock/rewrite duration estimate.
-- No DCL expansion.
+- No full PostgreSQL ALTER TABLE support claim. Final parseable boundary families are covered; remaining 2 forms are `normalized_silent`.
+- No PostgreSQL 18 parser support (4 `parser_error` forms remain blocked on `pg_query_go v7`).
+- No runtime/live validation.
+- No rewrite duration estimate.
 - No v1.0/stable API contract claim.
 
-## Previous Milestone: v0.150.0 PostgreSQL ALTER TABLE Table Relationship Rules
+## Previous Milestone: v0.160.0 PostgreSQL ALTER TABLE Constraint Deferrability Rules
 
 **Goal:** add 4 new PostgreSQL-only ALTER TABLE rules covering table relationship operations (INHERIT and OF type), advancing the PostgreSQL ALTER TABLE residual census to 54 of 66 forms `finding_covered`.
 

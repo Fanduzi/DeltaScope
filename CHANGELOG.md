@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.170.0] - 2026-05-24
+
+### Added
+
+- 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries:
+  - Final parseable (4): `ddl.pg.alter.set_expression.notice` (notice), `ddl.pg.alter.add_identity.notice` (notice), `ddl.pg.alter.add_exclusion_constraint.notice` (notice), `ddl.pg.alter.move_all_tablespace.notice` (notice).
+- PostgreSQL ALTER TABLE residual census: `finding_covered` 60 → 64, `unsupported_boundary` 0 (unchanged), `parser_error` 4 (unchanged).
+- SQL corpus: 535/535 supported rule-dialect targets covered (100%), 243 expected YAML files.
+- No-leak contract: findings do not emit expression body, sequence options, exclusion operators/predicates, or raw SQL.
+
+### Non-Goals
+
+- Not full PostgreSQL ALTER TABLE support.
+- No PostgreSQL 18 parser support (4 `parser_error` forms remain blocked on `pg_query_go v7`).
+- No runtime/live validation.
+- No rewrite duration estimate.
+- No v1.0/stable API contract claim.
+
 ## [v0.160.0] - 2026-05-23
 
 ### Added
