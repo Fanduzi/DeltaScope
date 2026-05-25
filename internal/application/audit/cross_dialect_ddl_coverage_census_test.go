@@ -36,6 +36,43 @@ type ddlCensusResult struct {
 	Classification ddlCoverageClass
 }
 
+type ddlCensusSummary struct {
+	Dialect             string
+	Total               int
+	FindingCovered      int
+	NormalizedSilent    int
+	UnsupportedBoundary int
+	ParserError         int
+	Unclassified        int
+}
+
+func summarizeDDLCensusResults(dialect string, results []ddlCensusResult) ddlCensusSummary {
+	summary := ddlCensusSummary{Dialect: dialect, Total: len(results)}
+	for _, r := range results {
+		switch r.Classification {
+		case ddlCoverageFindingCovered:
+			summary.FindingCovered++
+		case ddlCoverageNormalizedSilent:
+			summary.NormalizedSilent++
+		case ddlCoverageUnsupportedBoundary:
+			summary.UnsupportedBoundary++
+		case ddlCoverageParserError:
+			summary.ParserError++
+		default:
+			summary.Unclassified++
+		}
+	}
+	return summary
+}
+
+func (s ddlCensusSummary) assertArithmetic(t *testing.T) {
+	t.Helper()
+	sum := s.FindingCovered + s.NormalizedSilent + s.UnsupportedBoundary + s.ParserError + s.Unclassified
+	if sum != s.Total {
+		t.Fatalf("%s census arithmetic mismatch: total=%d buckets=%d", s.Dialect, s.Total, sum)
+	}
+}
+
 var mysqlDDLCensusCases = []struct {
 	Name     string
 	SQL      string
@@ -167,27 +204,16 @@ func runDDLCensus(t *testing.T, dialectName string, cases []struct {
 
 	logDDLCensusTable(t, dialectName, results)
 
-	var parseErrors, unsupported, silent, findingCovered int
-	for _, r := range results {
-		switch r.Classification {
-		case ddlCoverageParserError:
-			parseErrors++
-		case ddlCoverageUnsupportedBoundary:
-			unsupported++
-		case ddlCoverageNormalizedSilent:
-			silent++
-		case ddlCoverageFindingCovered:
-			findingCovered++
-		}
-	}
+	summary := summarizeDDLCensusResults(dialectName, results)
+	summary.assertArithmetic(t)
 
 	t.Log("")
 	t.Logf("=== %s DDL Census Summary ===", dialectName)
-	t.Logf("Total:                %d", len(results))
-	t.Logf("Finding covered:      %d", findingCovered)
-	t.Logf("Normalized silent:    %d", silent)
-	t.Logf("Unsupported boundary: %d", unsupported)
-	t.Logf("Parser error:         %d", parseErrors)
+	t.Logf("Total:                %d", summary.Total)
+	t.Logf("Finding covered:      %d", summary.FindingCovered)
+	t.Logf("Normalized silent:    %d", summary.NormalizedSilent)
+	t.Logf("Unsupported boundary: %d", summary.UnsupportedBoundary)
+	t.Logf("Parser error:         %d", summary.ParserError)
 	t.Logf("Classification mismatches: %d", mismatchCount)
 }
 
