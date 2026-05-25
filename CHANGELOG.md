@@ -6,6 +6,25 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.180.0] - 2026-05-25
+
+### Added
+
+- Release surface consistency checker (`scripts/verify_release_consistency.py`) validates that release-domain facts are consistent across all release surfaces: landing page, release notes EN/ZH, changelog, roadmap, rules reference, and capability matrix.
+- `make release-version-surface-gates` now runs both the existing shell version surface checker and the new Python release semantic consistency checker.
+- `make release-contract-gates` inherits the new checker through dependency.
+- New `make release-consistency-test` target runs the consistency checker's test suite.
+- Decision record: `docs/decisions/2026-05-25-v0.180.0-release-surface-consistency-gates.md`.
+
+### Non-Goals
+
+- Not a new SQL rule or parser feature release.
+- Not full PostgreSQL ALTER TABLE support.
+- Not PostgreSQL 18 parser support.
+- Not runtime/live validation.
+- Not rewrite duration estimate.
+- Not v1.0/stable API contract claim.
+
 ## [v0.170.0] - 2026-05-24
 
 ### Added

@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.170.0",
+    "softwareVersion": "v0.180.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.170.0 — PostgreSQL ALTER TABLE final parseable boundary rules</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.180.0 — Release Surface Consistency Gates</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,23 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.170.0</div>
+              <div class="release-version">v0.180.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PostgreSQL ALTER TABLE Final Parseable Boundary Rules</div>
-            <div class="release-copy" data-i18n="releases.items.v01700">v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 56→60, unsupported_boundary 4→0. No-leak contract preserved.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Release Surface Consistency Gates</div>
+            <div class="release-copy" data-i18n="releases.items.v01800">v0.180.0 is a release engineering milestone that adds a release surface consistency checker to the release gate pipeline. It does not add new SQL parser support, new audit rules, or new product behavior. All audit metrics remain unchanged.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.180.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.180.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.180.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.170.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v01700">PostgreSQL ALTER TABLE Final Parseable Boundary Rules</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v01700">v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 56→60, unsupported_boundary 4→0. No-leak contract preserved.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v01700" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.zh-CN.md">Open v0.170.0 notes →</a>
+            </article>
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.160.0</div>
@@ -1105,14 +1113,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v01500">v0.150.0 adds 4 new PostgreSQL ALTER TABLE table relationship rules covering INHERIT and OF type. Census: finding_covered 50→54, unsupported_boundary 11→7.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.150.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v01500" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.150.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.150.0.zh-CN.md">Open v0.150.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.140.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v01400">PostgreSQL ALTER TABLE Bounded Residual Pack</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v01400">v0.140.0 adds 8 new PostgreSQL-only ALTER TABLE rules covering column attributes (5) and cluster/detach-finalize (3). Census: finding_covered 40→50, unsupported_boundary 21→11. No-leak contract preserved.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v01400" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.140.0.zh-CN.md">Open v0.140.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1197,7 +1197,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.170.0 adds 4 PostgreSQL ALTER TABLE final parseable boundary rules covering SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.180.0 adds a release surface consistency checker to the release gate pipeline, validating release-domain facts across all release surfaces.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1209,7 +1209,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.170.0.zh-CN.md">Release Notes v0.170.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.180.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.180.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.180.0.zh-CN.md">Release Notes v0.180.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1253,7 +1253,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.170.0 — PostgreSQL ALTER TABLE final parseable boundary rules',
+          badge: 'v0.180.0 — Release Surface Consistency Gates',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1379,19 +1379,19 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL ALTER TABLE Constraint Deferrability Rules',
+          currentTitle: 'Release Surface Consistency Gates',
           currentLink: 'Read release notes →',
           labels: {
+            v01700: 'PostgreSQL ALTER TABLE Final Parseable Boundary Rules',
             v01600: 'PostgreSQL ALTER TABLE Constraint Deferrability Rules',
             v01500: 'PostgreSQL ALTER TABLE Table Relationship Rules',
-            v01400: 'PostgreSQL ALTER TABLE Bounded Residual Pack',
             v01300: 'PostgreSQL ALTER TABLE Residual Coverage',
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v01700: 'Open v0.170.0 notes →',
             v01600: 'Open v0.160.0 notes →',
             v01500: 'Open v0.150.0 notes →',
-            v01400: 'Open v0.140.0 notes →',
             v01300: 'Open v0.130.0 notes →',
             v01200: 'Open v0.120.0 notes →'
           },
@@ -1400,6 +1400,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v01800: 'v0.180.0 is a release engineering milestone that adds a release surface consistency checker to the release gate pipeline. It does not add new SQL parser support, new audit rules, or new product behavior. All audit metrics remain unchanged.',
             v01700: 'v0.170.0 adds 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries: SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE. Census: finding_covered 56→60, unsupported_boundary 4→0. No-leak contract preserved.',
             v01600: 'v0.160.0 adds 2 new PostgreSQL-only ALTER TABLE constraint deferrability rules and silently normalizes SET WITHOUT OIDS. Census: finding_covered 54→56, unsupported_boundary 7→4. No-leak contract preserved.',
             v01500: 'v0.150.0 adds 4 new PostgreSQL-only ALTER TABLE table relationship rules covering INHERIT and OF type operations. Census: finding_covered 50→54, unsupported_boundary 11→7. No-leak contract preserved.',
@@ -1418,14 +1419,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.170.0 adds 4 PostgreSQL ALTER TABLE final parseable boundary rules covering SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, and ALL IN TABLESPACE.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.180.0 adds a release surface consistency checker to the release gate pipeline, validating release-domain facts across all release surfaces.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.170.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.180.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1443,7 +1444,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.170.0 —— PostgreSQL ALTER TABLE 最终可解析边界规则',
+          badge: 'v0.180.0 —— 发布面一致性门禁',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1569,19 +1570,19 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'PostgreSQL ALTER TABLE 外键约束延迟设置规则',
+          currentTitle: '发布面一致性门禁',
           currentLink: '查看发布说明 →',
           labels: {
+            v01700: 'PostgreSQL ALTER TABLE 最终可解析边界规则',
             v01600: 'PostgreSQL ALTER TABLE 外键约束延迟设置规则',
             v01500: 'PostgreSQL ALTER TABLE 表关系规则',
-            v01400: 'PostgreSQL ALTER TABLE 有界残留包',
             v01300: 'PostgreSQL ALTER TABLE 残留覆盖',
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v01700: '查看 v0.170.0 发布说明 →',
             v01600: '查看 v0.160.0 发布说明 →',
             v01500: '查看 v0.150.0 发布说明 →',
-            v01400: '查看 v0.140.0 发布说明 →',
             v01300: '查看 v0.130.0 发布说明 →',
             v01200: '查看 v0.120.0 发布说明 →'
           },
@@ -1590,6 +1591,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v01800: 'v0.180.0 是一个发布工程里程碑，新增了发布面一致性检查器到发布门禁流水线。本版本不新增 SQL parser 支持、不新增审计规则、不改变产品行为。所有审核指标保持不变。',
             v01700: 'v0.170.0 新增 4 条 PostgreSQL 专用 ALTER TABLE notice 规则，覆盖最终可解析边界：SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT 和 ALL IN TABLESPACE。普查：finding_covered 56→60，unsupported_boundary 4→0。无泄漏合同保持不变。',
             v01600: 'v0.160.0 新增 2 条 PostgreSQL 专用 ALTER TABLE 外键约束延迟设置规则，静默规范化 SET WITHOUT OIDS。普查：finding_covered 54→56，unsupported_boundary 7→4。无泄漏合同保持不变。',
             v01500: 'v0.150.0 新增 4 条 PostgreSQL 专用 ALTER TABLE 表关系规则，覆盖 INHERIT 和 OF type 操作。普查：finding_covered 50→54，unsupported_boundary 11→7。无泄漏契约保持不变。',
@@ -1606,14 +1608,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.170.0 新增 4 条 PostgreSQL ALTER TABLE 最终可解析边界规则，覆盖 SET EXPRESSION、ADD IDENTITY、ADD EXCLUSION CONSTRAINT 和 ALL IN TABLESPACE。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.180.0 新增发布面一致性检查器到发布门禁流水线，验证发布域事实在所有发布面之间保持一致。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.170.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.180.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

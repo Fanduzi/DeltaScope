@@ -4,7 +4,34 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.170.0 PostgreSQL ALTER TABLE Final Parseable Boundary Rules
+## Latest Completed Milestone: v0.180.0 Release Surface Consistency Gates
+
+**Goal:** add a release surface consistency checker to the release gate pipeline, validating that release-domain facts are consistent across all release surfaces without adding new SQL parser support, audit rules, or product behavior.
+
+### Completed Scope
+
+- Release surface consistency checker (`scripts/verify_release_consistency.py`) validates consistency across landing page, release notes EN/ZH, changelog, roadmap, rules reference, and capability matrix.
+- `make release-version-surface-gates` runs both the existing shell version surface checker and the new Python release semantic consistency checker.
+- `make release-contract-gates` inherits the new checker through dependency.
+- New `make release-consistency-test` target runs the consistency checker's test suite.
+- Decision record: `docs/decisions/2026-05-25-v0.180.0-release-surface-consistency-gates.md`.
+
+### Unchanged Metrics
+
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- Residual census: **66/60/2/0/4/0** (unchanged).
+- SQL corpus: **535/535**, **100.0%**, **243 YAML files** (unchanged).
+
+### Key Design Decisions
+
+- No new SQL parser support, audit rules, or product behavior.
+- Not full PostgreSQL ALTER TABLE support.
+- Not PostgreSQL 18 parser support.
+- Not runtime/live validation.
+- Not rewrite duration estimate.
+- Not v1.0/stable API contract claim.
+
+## Previous Milestone: v0.170.0 PostgreSQL ALTER TABLE Final Parseable Boundary Rules
 
 **Goal:** add 4 new PostgreSQL-only ALTER TABLE notice rules covering final parseable boundaries (SET EXPRESSION, ADD IDENTITY, ADD EXCLUSION CONSTRAINT, ALL IN TABLESPACE), advancing the PostgreSQL ALTER TABLE residual census to 60 of 66 forms `finding_covered`.
 
