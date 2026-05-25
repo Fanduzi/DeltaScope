@@ -46,6 +46,8 @@ make test-e2e-http-tidb
 
 Run `make release-contract-gates VERSION=vX.Y.Z` before tagging a release. This target verifies source version constants, package docs, npm launcher package version, README install pins, release notes, release index links, landing current-version surfaces, local binary version output, npm launcher tests, GoReleaser configuration, default-policy dialect hygiene smoke, and GitLab Code Quality output contract smoke.
 
+`release-version-surface-gates` also runs the release semantic consistency checker, which validates: landing current/recent release sequence, residual census arithmetic, SQL corpus metrics, PostgreSQL ALTER TABLE rule count consistency across surfaces, required rule IDs across EN/ZH release notes/rules/matrix, no-overclaim wording, and no-leak wording. Use `make release-consistency-test` to run the checker unit tests independently.
+
 Use this alongside `make release-test-gates` when preparing a release. The GitHub release workflow also runs the contract gate for the tag version before publishing release assets.
 
 ### GitLab Code Quality Smoke

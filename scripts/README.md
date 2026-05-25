@@ -14,6 +14,8 @@ Operational scripts for local DeltaScope workflows.
 | verify_gitlab_codequality_output.sh | Validates `--format gitlab-codequality` JSON output contract against a built CLI binary (inline SQL path fallback, file path propagation, required fields, severity values, fingerprint format) |
 | verify_source_location_fidelity.sh | Validates source location fidelity across GitHub Actions, SARIF, GitLab Code Quality, and TiDB SARIF outputs (statement-start line numbers, artifact/file paths, no empty path fallbacks) |
 | verify_release_workflow_hygiene.sh | Validates release workflow Homebrew verification avoids noisy tolerated cleanup (`|| true`), uppercase tap tokens, and requires conditional probes and lowercase tap names — prevents successful workflows from carrying spurious `unavailable` error annotations |
+| verify_release_consistency.py | Validates release semantic consistency: release sequence, residual census arithmetic, SQL corpus metrics, PG ALTER TABLE rule count, required rule IDs across EN/ZH surfaces, no-overclaim wording, and no-leak wording |
+| test_verify_release_consistency.py | Unit tests for the release consistency checker |
 | test_cli_metadata_e2e.sh | Starts Docker fixtures, seeds TiDB, runs metadata-aware CLI e2e flows, and provides JSON assertion helpers |
 | test_mcp_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged MCP metadata-aware e2e smoke tests for direct and connection_ref paths |
 | test_http_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged HTTP metadata-aware e2e smoke tests against the live JSON API |
@@ -54,6 +56,8 @@ Operational scripts for local DeltaScope workflows.
 - `make release-gitlab-codequality-smoke`
 - `make release-source-location-smoke`
 - `make release-workflow-hygiene-gates`
+- `make release-consistency-test`
+- `VERSION=vX.Y.Z python3 scripts/verify_release_consistency.py`
 
 ## Dependencies
 - Upstream: local developers, `Makefile`, and release-verification workflows
