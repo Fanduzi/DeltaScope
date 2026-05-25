@@ -303,6 +303,51 @@ class TestReleaseConsistency(unittest.TestCase):
                 "docs/releases/release-notes-v0.170.0.md": bad_notes,
             })
 
+    # --- Task 4 calibration tests ---
+
+    def test_passes_markdown_table_census_format(self):
+        """Markdown table/prose census format should pass."""
+        table_notes = (
+            "# v0.170.0\n\n"
+            "| Metric | Value |\n"
+            "| total | 66 |\n"
+            "| finding_covered | 60 |\n"
+            "| normalized_silent | 2 |\n"
+            "| unsupported_boundary | 0 |\n"
+            "| parser_error | 4 |\n"
+            "| unclassified | 0 |\n\n"
+            "SQL corpus: 535/535, 100.0%, 243 YAML files.\n"
+            "PostgreSQL ALTER TABLE rule count: 32.\n"
+            "ddl.pg.alter.set_expression.notice, ddl.pg.alter.add_identity.notice, "
+            "ddl.pg.alter.add_exclusion_constraint.notice, ddl.pg.alter.move_all_tablespace.notice.\n"
+            "Not full PostgreSQL ALTER TABLE support.\n"
+            "No PostgreSQL 18 parser support.\n"
+            "No runtime/live validation.\n"
+            "No rewrite duration estimate.\n"
+        )
+        self._validate_with_fixture({
+            "docs/releases/release-notes-v0.170.0.md": table_notes,
+        })
+
+    def test_ignores_overclaim_in_old_changelog_section(self):
+        """Overclaim in old CHANGELOG sections should not trigger false positives."""
+        multi_changelog = (
+            "# Changelog\n\n"
+            "## v0.170.0\n\n"
+            "Census: 66/60/2/0/4/0.\n"
+            "finding_covered=60.\n"
+            "SQL corpus 535/535.\n"
+            "32 PostgreSQL ALTER TABLE rules.\n\n"
+            "## v0.160.0\n\n"
+            "Full PostgreSQL ALTER TABLE support.\n"
+            "Runtime validation is available.\n"
+            "Live validation is great.\n"
+            "first_name and raw_sql are in output.\n"
+        )
+        self._validate_with_fixture({
+            "CHANGELOG.md": multi_changelog,
+        })
+
 
 if __name__ == "__main__":
     unittest.main()
