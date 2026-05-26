@@ -78,35 +78,86 @@ var mysqlDDLCensusCases = []struct {
 	SQL      string
 	Expected ddlCoverageClass
 }{
-	// Table lifecycle
+	// --- 1. Table lifecycle ---
 	{Name: "CREATE TABLE", SQL: "CREATE TABLE users (id bigint primary key)", Expected: ddlCoverageFindingCovered},
-	{Name: "ALTER TABLE ADD COLUMN", SQL: "ALTER TABLE users ADD COLUMN email varchar(255)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE TEMPORARY TABLE", SQL: "CREATE TEMPORARY TABLE tmp_users (id bigint primary key)", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE TABLE LIKE", SQL: "CREATE TABLE users_copy LIKE users", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE TABLE AS SELECT", SQL: "CREATE TABLE users_backup AS SELECT * FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "RENAME TABLE", SQL: "RENAME TABLE users TO users_old", Expected: ddlCoverageNormalizedSilent},
 	{Name: "DROP TABLE", SQL: "DROP TABLE users", Expected: ddlCoverageFindingCovered},
 	{Name: "TRUNCATE TABLE", SQL: "TRUNCATE TABLE users", Expected: ddlCoverageFindingCovered},
 
-	// View lifecycle
-	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
-	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
+	// --- 2. ALTER TABLE basics ---
+	{Name: "ALTER TABLE ADD COLUMN", SQL: "ALTER TABLE users ADD COLUMN email varchar(255)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP COLUMN", SQL: "ALTER TABLE users DROP COLUMN email", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE MODIFY COLUMN", SQL: "ALTER TABLE users MODIFY COLUMN email varchar(500)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE CHANGE COLUMN", SQL: "ALTER TABLE users CHANGE COLUMN email user_email varchar(255)", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE RENAME COLUMN", SQL: "ALTER TABLE users RENAME COLUMN email TO user_email", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE RENAME TO", SQL: "ALTER TABLE users RENAME TO members", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE ADD PRIMARY KEY", SQL: "ALTER TABLE users ADD PRIMARY KEY (id)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP PRIMARY KEY", SQL: "ALTER TABLE users DROP PRIMARY KEY", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE ADD INDEX", SQL: "ALTER TABLE users ADD INDEX idx_email (email)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP INDEX", SQL: "ALTER TABLE users DROP INDEX idx_email", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE ADD UNIQUE", SQL: "ALTER TABLE users ADD UNIQUE idx_email (email)", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE ADD FOREIGN KEY", SQL: "ALTER TABLE orders ADD FOREIGN KEY (user_id) REFERENCES users(id)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP FOREIGN KEY", SQL: "ALTER TABLE orders DROP FOREIGN KEY fk_user", Expected: ddlCoverageNormalizedSilent},
 
-	// Database/Schema lifecycle
+	// --- 3. Index lifecycle ---
+	{Name: "CREATE INDEX", SQL: "CREATE INDEX idx_email ON users (email)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE UNIQUE INDEX", SQL: "CREATE UNIQUE INDEX idx_email ON users (email)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE FULLTEXT INDEX", SQL: "CREATE FULLTEXT INDEX idx_content ON posts (content)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE SPATIAL INDEX", SQL: "CREATE SPATIAL INDEX idx_location ON places (location)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP INDEX", SQL: "DROP INDEX idx_email ON users", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE RENAME INDEX", SQL: "ALTER TABLE users RENAME INDEX idx_email TO idx_user_email", Expected: ddlCoverageFindingCovered},
+
+	// --- 4. Database/Schema lifecycle ---
 	{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", Expected: ddlCoverageNormalizedSilent},
 	{Name: "DROP DATABASE", SQL: "DROP DATABASE app", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageFindingCovered},
 
-	// Trigger lifecycle — TiDB parser cannot parse triggers
+	// --- 5. View lifecycle ---
+	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE OR REPLACE VIEW", SQL: "CREATE OR REPLACE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageParserError},
+	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
+
+	// --- 6. Routine lifecycle ---
+	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER PROCEDURE", SQL: "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER", Expected: ddlCoverageParserError},
+	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageParserError},
+	{Name: "ALTER FUNCTION", SQL: "ALTER FUNCTION hello SQL SECURITY INVOKER", Expected: ddlCoverageParserError},
+	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageParserError},
+
+	// --- 7. Trigger lifecycle ---
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
 
-	// Routine lifecycle — parsed and normalized but no rules
-	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageNormalizedSilent},
-	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageNormalizedSilent},
+	// --- 8. Event lifecycle ---
+	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},
+	{Name: "ALTER EVENT", SQL: "ALTER EVENT e_cleanup ON SCHEDULE EVERY 2 DAY", Expected: ddlCoverageParserError},
+	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageParserError},
 
-	// Privilege/DCL — parsed and normalized but no rules
+	// --- 9. Privilege/User/Role lifecycle ---
+	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER USER", SQL: "ALTER USER 'admin'@'%' IDENTIFIED BY 'new_secret'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP USER", SQL: "DROP USER 'admin'@'%'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE ROLE", SQL: "CREATE ROLE manager", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP ROLE", SQL: "DROP ROLE manager", Expected: ddlCoverageNormalizedSilent},
 	{Name: "GRANT SELECT", SQL: "GRANT SELECT ON app.users TO 'reader'@'%'", Expected: ddlCoverageNormalizedSilent},
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Expected: ddlCoverageNormalizedSilent},
+
+	// --- 10. Tablespace/Resource lifecycle ---
+	{Name: "CREATE TABLESPACE", SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'", Expected: ddlCoverageParserError},
+	{Name: "ALTER TABLESPACE", SQL: "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'", Expected: ddlCoverageParserError},
+	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageParserError},
+	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageParserError},
+	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageParserError},
+	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP rg1", Expected: ddlCoverageNormalizedSilent},
 }
 
 var tidbDDLCensusCases = []struct {
@@ -114,33 +165,77 @@ var tidbDDLCensusCases = []struct {
 	SQL      string
 	Expected ddlCoverageClass
 }{
-	// Table lifecycle
+	// --- 1. Table lifecycle ---
 	{Name: "CREATE TABLE", SQL: "CREATE TABLE users (id bigint primary key)", Expected: ddlCoverageFindingCovered},
-	{Name: "ALTER TABLE ADD COLUMN", SQL: "ALTER TABLE users ADD COLUMN email varchar(255)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE TABLE LIKE", SQL: "CREATE TABLE users_copy LIKE users", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE TABLE AS SELECT", SQL: "CREATE TABLE users_backup AS SELECT * FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "RENAME TABLE", SQL: "RENAME TABLE users TO users_old", Expected: ddlCoverageNormalizedSilent},
 	{Name: "DROP TABLE", SQL: "DROP TABLE users", Expected: ddlCoverageFindingCovered},
 	{Name: "TRUNCATE TABLE", SQL: "TRUNCATE TABLE users", Expected: ddlCoverageFindingCovered},
 
-	// View lifecycle
-	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
-	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
+	// --- 2. ALTER TABLE basics ---
+	{Name: "ALTER TABLE ADD COLUMN", SQL: "ALTER TABLE users ADD COLUMN email varchar(255)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP COLUMN", SQL: "ALTER TABLE users DROP COLUMN email", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE MODIFY COLUMN", SQL: "ALTER TABLE users MODIFY COLUMN email varchar(500)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE CHANGE COLUMN", SQL: "ALTER TABLE users CHANGE COLUMN email user_email varchar(255)", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE RENAME COLUMN", SQL: "ALTER TABLE users RENAME COLUMN email TO user_email", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE ADD PRIMARY KEY", SQL: "ALTER TABLE users ADD PRIMARY KEY (id)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP PRIMARY KEY", SQL: "ALTER TABLE users DROP PRIMARY KEY", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE ADD INDEX", SQL: "ALTER TABLE users ADD INDEX idx_email (email)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP INDEX", SQL: "ALTER TABLE users DROP INDEX idx_email", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE ADD UNIQUE", SQL: "ALTER TABLE users ADD UNIQUE idx_email (email)", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE ADD FOREIGN KEY", SQL: "ALTER TABLE orders ADD FOREIGN KEY (user_id) REFERENCES users(id)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE DROP FOREIGN KEY", SQL: "ALTER TABLE orders DROP FOREIGN KEY fk_user", Expected: ddlCoverageNormalizedSilent},
 
-	// Database/Schema lifecycle
+	// --- 3. Index lifecycle ---
+	{Name: "CREATE INDEX", SQL: "CREATE INDEX idx_email ON users (email)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE UNIQUE INDEX", SQL: "CREATE UNIQUE INDEX idx_email ON users (email)", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP INDEX", SQL: "DROP INDEX idx_email ON users", Expected: ddlCoverageNormalizedSilent},
+
+	// --- 4. Database/Schema lifecycle ---
 	{Name: "CREATE DATABASE", SQL: "CREATE DATABASE app", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE DATABASE IF NOT EXISTS", SQL: "CREATE DATABASE IF NOT EXISTS app", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE SCHEMA", SQL: "CREATE SCHEMA app", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", Expected: ddlCoverageNormalizedSilent},
 	{Name: "DROP DATABASE", SQL: "DROP DATABASE app", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP DATABASE IF EXISTS", SQL: "DROP DATABASE IF EXISTS app", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP SCHEMA", SQL: "DROP SCHEMA app", Expected: ddlCoverageFindingCovered},
 
-	// Trigger lifecycle — TiDB parser cannot parse triggers
+	// --- 5. View lifecycle ---
+	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE OR REPLACE VIEW", SQL: "CREATE OR REPLACE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageParserError},
+	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
+
+	// --- 6. Placement/Policy ---
+	{Name: "CREATE PLACEMENT POLICY", SQL: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER PLACEMENT POLICY", SQL: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP PLACEMENT POLICY", SQL: "DROP PLACEMENT POLICY p1", Expected: ddlCoverageNormalizedSilent},
+
+	// --- 7. Sequence lifecycle ---
+	{Name: "CREATE SEQUENCE", SQL: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER SEQUENCE", SQL: "ALTER SEQUENCE seq1 START WITH 100", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP SEQUENCE", SQL: "DROP SEQUENCE seq1", Expected: ddlCoverageNormalizedSilent},
+
+	// --- 8. TTL/Locality/Placement table options ---
+	{Name: "ALTER TABLE TTL", SQL: "ALTER TABLE users TTL = 'created_at + INTERVAL 30 DAY'", Expected: ddlCoverageParserError},
+	{Name: "ALTER TABLE PLACEMENT POLICY", SQL: "ALTER TABLE users PLACEMENT POLICY p1", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE LOCALITY", SQL: "ALTER TABLE users LOCALITY = 'us-east-1'", Expected: ddlCoverageParserError},
+
+	// --- 9. Unsupported product areas / parser gaps ---
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
-
-	// Routine lifecycle — parsed and normalized but no rules
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageNormalizedSilent},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageNormalizedSilent},
+	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageParserError},
+	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageParserError},
+	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},
+	{Name: "DROP EVENT", SQL: "DROP EVENT e_cleanup", Expected: ddlCoverageParserError},
 
-	// Privilege/DCL — parsed and normalized but no rules
+	// --- 10. Privilege/User lifecycle ---
+	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER USER", SQL: "ALTER USER 'admin'@'%' IDENTIFIED BY 'new_secret'", Expected: ddlCoverageNormalizedSilent},
+	{Name: "DROP USER", SQL: "DROP USER 'admin'@'%'", Expected: ddlCoverageNormalizedSilent},
 	{Name: "GRANT SELECT", SQL: "GRANT SELECT ON app.users TO 'reader'@'%'", Expected: ddlCoverageNormalizedSilent},
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Expected: ddlCoverageNormalizedSilent},
 }
