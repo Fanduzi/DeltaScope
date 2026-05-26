@@ -4,7 +4,43 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.180.0 Release Surface Consistency Gates
+## Latest Completed Milestone: v0.190.0 Cross-Dialect DDL Coverage Census Consolidation
+
+**Goal:** establish a consolidated DDL coverage census across MySQL, TiDB, and PostgreSQL, providing machine-verifiable coverage inventory data to inform future MySQL/TiDB DDL rule prioritization. Does not add new SQL audit rules, parser support, or product behavior.
+
+### Completed Scope
+
+- `make ddl-census-report` prints tracked DDL coverage census for MySQL, TiDB, and PostgreSQL.
+- MySQL/TiDB tracked DDL census expanded from 18 to 61/54 forms covering 10 DDL families each.
+- PostgreSQL tracked DDL census consolidated from 5 source-specific tests into a single consolidated test.
+- Decision record: `docs/decisions/2026-05-26-v0.190.0-cross-dialect-ddl-census-consolidation.md`.
+
+### DDL Coverage Census
+
+| Dialect | Total | Finding | Silent | Unsupported | Parser Error |
+|---------|------:|--------:|-------:|:-----------:|:------------:|
+| MySQL | 61 | 21 | 25 | 0 | 15 |
+| TiDB | 54 | 18 | 27 | 0 | 9 |
+| PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
+
+### Future Direction
+
+v0.190.0 census data will be used to prioritize MySQL/TiDB DDL rule implementation. Top candidates: RENAME TABLE, standalone CREATE INDEX, ALTER DATABASE, privilege/DCL for MySQL; RENAME TABLE, ALTER TABLE ADD/DROP INDEX, PLACEMENT POLICY, SEQUENCE, privilege/DCL for TiDB.
+
+### Unchanged Metrics
+
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- Residual census: **66/60/2/0/4/0** (unchanged).
+- SQL corpus: **535/535**, **100.0%**, **243 YAML files** (unchanged).
+
+### Key Design Decisions
+
+- No new SQL audit rules, parser support, or product behavior.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+
+## Previous Milestone: v0.180.0 Release Surface Consistency Gates
 
 **Goal:** add a release surface consistency checker to the release gate pipeline, validating that release-domain facts are consistent across all release surfaces without adding new SQL parser support, audit rules, or product behavior.
 

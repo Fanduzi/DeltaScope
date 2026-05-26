@@ -13,6 +13,24 @@ from pathlib import Path
 
 
 RELEASE_FACTS = {
+    "v0.190.0": {
+        "pg_alter_table_rule_count": 32,
+        "residual_census": {
+            "total": 66,
+            "finding_covered": 60,
+            "normalized_silent": 2,
+            "unsupported_boundary": 0,
+            "parser_error": 4,
+            "unclassified": 0,
+        },
+        "sql_corpus": {
+            "supported_rule_dialect_targets": 535,
+            "covered_rule_dialect_targets": 535,
+            "coverage_percent": "100.0",
+            "expected_yaml_files_total": 243,
+        },
+        "required_rule_ids": [],
+    },
     "v0.180.0": {
         "pg_alter_table_rule_count": 32,
         "residual_census": {

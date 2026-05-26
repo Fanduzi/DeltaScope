@@ -6,6 +6,37 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.190.0] - 2026-05-26
+
+### Added
+
+- `make ddl-census-report` prints tracked DDL coverage census for MySQL, TiDB, and PostgreSQL (inventory/reporting gate, not a full SQL grammar coverage claim).
+- MySQL/TiDB tracked DDL census expanded from 18 to 61/54 forms covering 10 DDL families each.
+- PostgreSQL tracked DDL census consolidated from 5 source-specific tests into a single consolidated test with machine-verifiable arithmetic.
+- Decision record: `docs/decisions/2026-05-26-v0.190.0-cross-dialect-ddl-census-consolidation.md`.
+
+### DDL Coverage Census
+
+| Dialect | Total | Finding | Silent | Unsupported | Parser Error |
+|---------|------:|--------:|-------:|:-----------:|:------------:|
+| MySQL | 61 | 21 | 25 | 0 | 15 |
+| TiDB | 54 | 18 | 27 | 0 | 9 |
+| PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
+
+### Unchanged Metrics
+
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- Residual census: **66/60/2/0/4/0** (unchanged).
+- SQL corpus: **535/535**, **100.0%**, **243 YAML files** (unchanged).
+
+### Non-Goals
+
+- Not a new SQL audit rule release.
+- Not new parser support.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+
 ## [v0.180.0] - 2026-05-25
 
 ### Added
