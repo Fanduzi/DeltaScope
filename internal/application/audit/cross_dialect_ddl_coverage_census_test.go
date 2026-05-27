@@ -219,7 +219,7 @@ var tidbDDLCensusCases = []struct {
 
 	// --- 8. TTL/Locality/Placement table options ---
 	{Name: "ALTER TABLE TTL", SQL: "ALTER TABLE users TTL = 'created_at + INTERVAL 30 DAY'", Expected: ddlCoverageParserError},
-	{Name: "ALTER TABLE PLACEMENT POLICY", SQL: "ALTER TABLE users PLACEMENT POLICY p1", Expected: ddlCoverageNormalizedSilent},
+	{Name: "ALTER TABLE PLACEMENT POLICY", SQL: "ALTER TABLE users PLACEMENT POLICY p1", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE LOCALITY", SQL: "ALTER TABLE users LOCALITY = 'us-east-1'", Expected: ddlCoverageParserError},
 
 	// --- 9. Unsupported product areas / parser gaps ---

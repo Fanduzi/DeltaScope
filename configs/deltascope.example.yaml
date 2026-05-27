@@ -655,6 +655,11 @@ rules:
     level: notice
     params:
 
+  ddl.tidb.alter_table.placement_policy.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.index.columns.max_count:
     enabled: true
     level: warning

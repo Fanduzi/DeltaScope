@@ -89,10 +89,7 @@ var tidbPromotedMetadataCases = []metadataCensusCase{
 		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true},
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Sensitive: true,
 		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true},
-}
-
-var tidbStillNormalizedSilentCases = []metadataCensusCase{
-	{Name: "ALTER TABLE PLACEMENT POLICY", SQL: "ALTER TABLE users PLACEMENT POLICY p1", ExpectFindings: false},
+	{Name: "ALTER TABLE PLACEMENT POLICY", SQL: "ALTER TABLE users PLACEMENT POLICY p1", ExpectFindings: true},
 }
 
 func TestMySQLTiDBPromotedDDLMetadataCensus(t *testing.T) {
@@ -105,10 +102,6 @@ func TestMySQLTiDBPromotedDDLMetadataCensus(t *testing.T) {
 	t.Run("TiDB", func(t *testing.T) {
 		t.Parallel()
 		runMetadataCensus(t, "TiDB", spec.DialectTiDB, tidbPromotedMetadataCases)
-	})
-	t.Run("TiDB_Still_NormalizedSilent", func(t *testing.T) {
-		t.Parallel()
-		runMetadataCensus(t, "TiDB", spec.DialectTiDB, tidbStillNormalizedSilentCases)
 	})
 }
 

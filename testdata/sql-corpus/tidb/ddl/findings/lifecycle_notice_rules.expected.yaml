@@ -33,3 +33,4 @@ expect:
       - ddl.alter.modify_column.notice
       - ddl.alter.drop_index.notice
       - ddl.alter.drop_foreign_key.notice
+      - ddl.tidb.alter_table.placement_policy.notice

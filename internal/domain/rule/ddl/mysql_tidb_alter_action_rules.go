@@ -1,8 +1,3 @@
-// Package ddl defines Tier-1 DDL rules.
-// input: normalized ALTER TABLE Statement specs for MySQL/TiDB alter actions
-// output: notice-level findings for MySQL/TiDB add column, drop column, modify column, index, and foreign key actions
-// pos: MySQL/TiDB alter action notice rule implementations for v0.200.0 normalized-silent coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (
@@ -115,4 +110,28 @@ func newAlterDropForeignKeyNoticeRule(cfg policy.RulePolicy) (rule.StatementRule
 		"ALTER TABLE %s DROP FOREIGN KEY removes a referential constraint",
 		cfg,
 	)
+}
+
+// tidbOnlyAlterActionRule wraps alterActionNoticeRule restricting to TiDB dialect.
+type tidbOnlyAlterActionRule struct {
+	alterActionNoticeRule
+}
+
+func (r tidbOnlyAlterActionRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect != spec.DialectTiDB {
+		return false
+	}
+	return appliesToAlterActions(statement, r.action)
+}
+
+func newTiDBAlterTablePlacementPolicyNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	base, err := newAlterActionNoticeRule(
+		ruleIDTiDBAlterTablePlacementPolicyNotice, "placement_policy", "placement policy assignment", rule.LevelNotice,
+		"ALTER TABLE %s PLACEMENT POLICY assigns a placement policy",
+		cfg,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return tidbOnlyAlterActionRule{alterActionNoticeRule: base.(alterActionNoticeRule)}, nil
 }

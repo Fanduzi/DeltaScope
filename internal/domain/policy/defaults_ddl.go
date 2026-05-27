@@ -649,7 +649,8 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.alter.drop_column.notice":         {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter.modify_column.notice":       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter.drop_index.notice":          {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
-		"ddl.alter.drop_foreign_key.notice":    {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.alter.drop_foreign_key.notice":                    {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+			"ddl.tidb.alter_table.placement_policy.notice": {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 	}
 }
 

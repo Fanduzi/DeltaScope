@@ -330,6 +330,9 @@ func extractAlterSpec(specification *ast.AlterTableSpec) spec.Alter {
 	}
 	if options := extractTableOptions(specification.Options); len(options) > 0 {
 		alter.Options = options
+		if _, ok := options["placement_policy"]; ok && alter.Action == "table_option" {
+			alter.Action = "placement_policy"
+		}
 	}
 	return alter
 }
@@ -818,6 +821,10 @@ func extractTableOptions(options []*ast.TableOption) map[string]string {
 			}
 		case ast.TableOptionAutoIncrement:
 			extracted["auto_increment"] = strconv.FormatUint(option.UintValue, 10)
+		case ast.TableOptionPlacementPolicy:
+			if option.StrValue != "" {
+				extracted["placement_policy"] = option.StrValue
+			}
 		}
 	}
 	if len(extracted) == 0 {

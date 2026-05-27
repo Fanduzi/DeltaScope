@@ -402,7 +402,8 @@ const (
 	ruleIDAlterDropColumnNotice     = "ddl.alter.drop_column.notice"
 	ruleIDAlterModifyColumnNotice   = "ddl.alter.modify_column.notice"
 	ruleIDAlterDropIndexNotice      = "ddl.alter.drop_index.notice"
-	ruleIDAlterDropForeignKeyNotice = "ddl.alter.drop_foreign_key.notice"
+	ruleIDAlterDropForeignKeyNotice         = "ddl.alter.drop_foreign_key.notice"
+	ruleIDTiDBAlterTablePlacementPolicyNotice = "ddl.tidb.alter_table.placement_policy.notice"
 )
 
 func appliesToCreateTable(statement spec.Statement) bool {
