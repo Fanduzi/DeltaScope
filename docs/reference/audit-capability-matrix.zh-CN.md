@@ -234,7 +234,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ## DDL：MySQL/TiDB DDL Notice 规则（v0.200.0）
 
-`v0.200.0` 通过 26 条 notice 规则将此前为 normalized_silent 的 MySQL 和 TiDB DDL 形态提升为 finding-covered。覆盖独立 DDL 生命周期事件、ALTER TABLE 动作通知，以及 TiDB 专属的 placement policy/sequence 生命周期。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效，PostgreSQL 方言下自动跳过。
+`v0.200.0` 通过 27 条 notice 规则将此前为 normalized_silent 的 MySQL 和 TiDB DDL 形态提升为 finding-covered。覆盖独立 DDL 生命周期事件、ALTER TABLE 动作通知，以及 TiDB 专属的 placement policy/sequence 生命周期。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效，PostgreSQL 方言下自动跳过。
 
 ### 独立 DDL 生命周期规则
 

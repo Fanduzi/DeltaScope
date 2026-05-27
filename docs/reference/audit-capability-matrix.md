@@ -248,7 +248,7 @@ These rules require a live table snapshot and are skipped in offline mode.
 
 ## DDL: MySQL/TiDB DDL Notice Rules (v0.200.0)
 
-`v0.200.0` promotes previously normalized-silent MySQL and TiDB DDL forms to finding-covered status through a 26-rule notice pack. These cover standalone DDL lifecycle events, ALTER TABLE action notices, and TiDB-specific placement policy/sequence lifecycle. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.
+`v0.200.0` promotes previously normalized-silent MySQL and TiDB DDL forms to finding-covered status through a 27-rule notice pack. These cover standalone DDL lifecycle events, ALTER TABLE action notices, and TiDB-specific placement policy/sequence lifecycle. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.
 
 ### Standalone DDL Lifecycle Rules
 

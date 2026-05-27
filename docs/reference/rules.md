@@ -335,7 +335,7 @@ These rules guard against MySQL and TiDB database/schema lifecycle DDL operation
 
 ---
 
-## DDL: MySQL/TiDB DDL Notice Rules (26 rules)
+## DDL: MySQL/TiDB DDL Notice Rules (27 rules)
 
 These rules promote previously normalized-silent MySQL and TiDB DDL forms to finding-covered status. They cover lifecycle DDL events (standalone index, rename, database alteration, user/role/privilege management, procedure lifecycle, resource group), ALTER TABLE action notices (column add/drop/modify, constraint, index, foreign key), and TiDB-specific placement policy and sequence lifecycle. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.
 
@@ -364,7 +364,7 @@ These rules promote previously normalized-silent MySQL and TiDB DDL forms to fin
 | `ddl.alter.drop_index.notice` | `ALTER TABLE ... DROP INDEX` removes an index | notice | No |
 | `ddl.alter.drop_foreign_key.notice` | `ALTER TABLE ... DROP FOREIGN KEY` removes a foreign key | notice | No |
 
-### TiDB-Specific (6 rules)
+### TiDB-Specific (7 rules)
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|

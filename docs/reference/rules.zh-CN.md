@@ -326,7 +326,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：MySQL/TiDB DDL Notice 规则（26 条）
+## DDL：MySQL/TiDB DDL Notice 规则（27 条）
 
 这些规则将此前为 normalized_silent 的 MySQL 和 TiDB DDL 形态提升为 finding-covered。覆盖生命周期 DDL 事件（独立索引、重命名、数据库变更、用户/角色/权限管理、存储过程生命周期、资源组）、ALTER TABLE 动作通知（列添加/删除/修改、约束、索引、外键），以及 TiDB 专属的 placement policy 和 sequence 生命周期。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效，PostgreSQL 方言下自动跳过。
 
@@ -355,7 +355,7 @@ deltascope rules search "prefix"
 | `ddl.alter.drop_index.notice` | `ALTER TABLE ... DROP INDEX` 删除索引 | notice | 否 |
 | `ddl.alter.drop_foreign_key.notice` | `ALTER TABLE ... DROP FOREIGN KEY` 删除外键 | notice | 否 |
 
-### TiDB 专属（6 条）
+### TiDB 专属（7 条）
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
