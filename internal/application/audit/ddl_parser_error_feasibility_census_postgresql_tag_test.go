@@ -67,4 +67,3 @@ func TestDDLParserErrorFeasibilityPostgreSQLCensus(t *testing.T) {
 	}
 	t.Logf("PostgreSQL parser-error cases: %d", len(results))
 }
-
