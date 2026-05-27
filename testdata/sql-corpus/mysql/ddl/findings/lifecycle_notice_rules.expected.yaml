@@ -1,0 +1,29 @@
+name: lifecycle_notice_rules
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.rename_table.notice
+      - ddl.create_index.notice
+      - ddl.drop_index.notice
+      - ddl.alter_database.notice
+      - ddl.create_procedure.notice
+      - ddl.drop_procedure.notice
+      - ddl.create_user.notice
+      - ddl.alter_user.notice
+      - ddl.drop_user.notice
+      - ddl.create_role.notice
+      - ddl.drop_role.notice
+      - ddl.grant.notice
+      - ddl.revoke.notice
+      - ddl.drop_resource_group.notice
+      - ddl.alter.add_column.notice
+      - ddl.alter.add_constraint.notice
+      - ddl.alter.drop_column.notice
+      - ddl.alter.modify_column.notice
+      - ddl.alter.drop_index.notice
+      - ddl.alter.drop_foreign_key.notice

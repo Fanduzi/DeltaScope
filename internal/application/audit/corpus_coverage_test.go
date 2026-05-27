@@ -46,6 +46,9 @@ func corpusRuleDialectTargets(ruleID string) []string {
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}
 	}
+	if isTiDBOnlyRule(ruleID) {
+		return []string{"tidb"}
+	}
 	if isMySQLFamilyOnlyRule(ruleID) {
 		return []string{"mysql", "tidb"}
 	}
@@ -67,6 +70,21 @@ func isPostgreSQLOnlyRule(ruleID string) bool {
 		"ddl.alter.drop_default.explicit_default_change.forbid",
 		"ddl.alter.set_not_null.explicit_nullability_change.forbid",
 		"ddl.alter.drop_not_null.explicit_nullability_change.forbid":
+		return true
+	default:
+		return false
+	}
+}
+
+func isTiDBOnlyRule(ruleID string) bool {
+	switch ruleID {
+	case
+		"ddl.create_placement_policy.notice",
+		"ddl.alter_placement_policy.notice",
+		"ddl.drop_placement_policy.notice",
+		"ddl.create_sequence.notice",
+		"ddl.alter_sequence.notice",
+		"ddl.drop_sequence.notice":
 		return true
 	default:
 		return false
@@ -164,7 +182,27 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"dml.insert.on_duplicate.forbid",
 		"dml.subquery.forbid",
 		"ddl.database.create.notice",
-		"ddl.database.drop.warn":
+		"ddl.database.drop.warn",
+		"ddl.rename_table.notice",
+		"ddl.create_index.notice",
+		"ddl.drop_index.notice",
+		"ddl.alter_database.notice",
+		"ddl.create_procedure.notice",
+		"ddl.drop_procedure.notice",
+		"ddl.create_user.notice",
+		"ddl.alter_user.notice",
+		"ddl.drop_user.notice",
+		"ddl.create_role.notice",
+		"ddl.drop_role.notice",
+		"ddl.grant.notice",
+		"ddl.revoke.notice",
+		"ddl.drop_resource_group.notice",
+		"ddl.alter.add_column.notice",
+		"ddl.alter.add_constraint.notice",
+		"ddl.alter.drop_column.notice",
+		"ddl.alter.modify_column.notice",
+		"ddl.alter.drop_index.notice",
+		"ddl.alter.drop_foreign_key.notice":
 		return true
 	default:
 		return false

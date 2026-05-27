@@ -31,6 +31,22 @@ type (
 	InsertStatement        = *ast.InsertStmt
 	UpdateStatement        = *ast.UpdateStmt
 	DeleteStatement        = *ast.DeleteStmt
+
+	AlterDatabaseStatement         = *ast.AlterDatabaseStmt
+	ProcedureInfoStatement         = *ast.ProcedureInfo
+	DropProcedureStatement         = *ast.DropProcedureStmt
+	CreateUserStatement            = *ast.CreateUserStmt
+	AlterUserStatement             = *ast.AlterUserStmt
+	DropUserStatement              = *ast.DropUserStmt
+	GrantStatement                 = *ast.GrantStmt
+	RevokeStatement                = *ast.RevokeStmt
+	DropResourceGroupStatement     = *ast.DropResourceGroupStmt
+	CreatePlacementPolicyStatement = *ast.CreatePlacementPolicyStmt
+	AlterPlacementPolicyStatement  = *ast.AlterPlacementPolicyStmt
+	DropPlacementPolicyStatement   = *ast.DropPlacementPolicyStmt
+	CreateSequenceStatement        = *ast.CreateSequenceStmt
+	AlterSequenceStatement         = *ast.AlterSequenceStmt
+	DropSequenceStatement          = *ast.DropSequenceStmt
 )
 
 // ExtractedStatement is the adapter-owned parser result used by the application layer.
@@ -78,6 +94,42 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		statement.DML = extractUpdate(node)
 	case *ast.DeleteStmt:
 		statement.DML = extractDelete(node)
+	case *ast.CreateIndexStmt:
+		statement.DDL = extractCreateIndex(node)
+	case *ast.DropIndexStmt:
+		statement.DDL = extractDropIndex(node)
+	case *ast.RenameTableStmt:
+		statement.DDL = extractRenameTable(node)
+	case *ast.AlterDatabaseStmt:
+		statement.DDL = extractAlterDatabase(node)
+	case *ast.ProcedureInfo:
+		statement.DDL = extractCreateProcedure(node)
+	case *ast.DropProcedureStmt:
+		statement.DDL = extractDropProcedure(node)
+	case *ast.CreateUserStmt:
+		statement.DDL = extractCreateUser(node)
+	case *ast.AlterUserStmt:
+		statement.DDL = extractAlterUser(node)
+	case *ast.DropUserStmt:
+		statement.DDL = extractDropUser(node)
+	case *ast.GrantStmt:
+		statement.DDL = extractGrant(node)
+	case *ast.RevokeStmt:
+		statement.DDL = extractRevoke(node)
+	case *ast.DropResourceGroupStmt:
+		statement.DDL = extractDropResourceGroup(node)
+	case *ast.CreatePlacementPolicyStmt:
+		statement.DDL = extractCreatePlacementPolicy(node)
+	case *ast.AlterPlacementPolicyStmt:
+		statement.DDL = extractAlterPlacementPolicy(node)
+	case *ast.DropPlacementPolicyStmt:
+		statement.DDL = extractDropPlacementPolicy(node)
+	case *ast.CreateSequenceStmt:
+		statement.DDL = extractCreateSequence(node)
+	case *ast.AlterSequenceStmt:
+		statement.DDL = extractAlterSequence(node)
+	case *ast.DropSequenceStmt:
+		statement.DDL = extractDropSequence(node)
 	default:
 		statement.Warnings = append(statement.Warnings, fmt.Sprintf("unsupported parsed statement kind %q", e.kind))
 	}
@@ -108,7 +160,22 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.RenameTableStmt,
 		*ast.TruncateTableStmt,
 		*ast.CreateDatabaseStmt,
-		*ast.DropDatabaseStmt:
+		*ast.DropDatabaseStmt,
+		*ast.AlterDatabaseStmt,
+		*ast.ProcedureInfo,
+		*ast.DropProcedureStmt,
+		*ast.CreateUserStmt,
+		*ast.AlterUserStmt,
+		*ast.DropUserStmt,
+		*ast.GrantStmt,
+		*ast.RevokeStmt,
+		*ast.DropResourceGroupStmt,
+		*ast.CreatePlacementPolicyStmt,
+		*ast.AlterPlacementPolicyStmt,
+		*ast.DropPlacementPolicyStmt,
+		*ast.CreateSequenceStmt,
+		*ast.AlterSequenceStmt,
+		*ast.DropSequenceStmt:
 		return spec.KindDDL
 	case *ast.InsertStmt,
 		*ast.UpdateStmt,
@@ -353,6 +420,316 @@ func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
 		return &spec.AlterColumn{OldName: specification.OldColumnName.Name.L, Definition: &spec.Column{Name: specification.NewColumnName.Name.L}}
 	default:
 		return nil
+	}
+}
+
+func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
+	kind := spec.IndexKindSecondary
+	if stmt.KeyType == ast.IndexKeyTypeUnique {
+		kind = spec.IndexKindUnique
+	}
+	if stmt.KeyType == ast.IndexKeyTypeFulltext {
+		kind = spec.IndexKindFulltext
+	}
+	indexName := stmt.IndexName
+	columns := extractIndexColumns(stmt.IndexPartSpecifications)
+	return &spec.DDL{
+		Operation: spec.DDLOperationCreateIndex,
+		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
+		Alter: []spec.Alter{{
+			Action: "create_index",
+			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns}},
+		}},
+	}
+}
+
+func extractDropIndex(stmt *ast.DropIndexStmt) *spec.DDL {
+	return &spec.DDL{
+		Operation: spec.DDLOperationDropIndex,
+		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
+		Alter: []spec.Alter{{
+			Action: "drop_index",
+			Index:  &spec.AlterIndex{OldName: stmt.IndexName},
+		}},
+	}
+}
+
+func extractRenameTable(stmt *ast.RenameTableStmt) *spec.DDL {
+	if len(stmt.TableToTables) == 0 {
+		return &spec.DDL{Operation: spec.DDLOperationRenameTable}
+	}
+	first := stmt.TableToTables[0]
+	alters := make([]spec.Alter, 0, len(stmt.TableToTables))
+	for _, tt := range stmt.TableToTables {
+		a := spec.Alter{Action: "rename_table", Options: map[string]string{}}
+		if tt.OldTable != nil {
+			a.Options["old_table"] = tt.OldTable.Name.L
+			if tt.OldTable.Schema.L != "" {
+				a.Options["old_schema"] = tt.OldTable.Schema.L
+			}
+		}
+		if tt.NewTable != nil {
+			a.Options["new_table"] = tt.NewTable.Name.L
+			if tt.NewTable.Schema.L != "" {
+				a.Options["new_schema"] = tt.NewTable.Schema.L
+			}
+		}
+		alters = append(alters, a)
+	}
+	table := &spec.Table{}
+	if first.OldTable != nil {
+		table = &spec.Table{Name: first.OldTable.Name.L, Schema: first.OldTable.Schema.L}
+	}
+	return &spec.DDL{
+		Operation: spec.DDLOperationRenameTable,
+		Table:     table,
+		Alter:     alters,
+	}
+}
+
+func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
+	options := map[string]string{}
+	for _, opt := range stmt.Options {
+		if opt == nil {
+			continue
+		}
+		switch opt.Tp {
+		case ast.DatabaseOptionCharset:
+			options["charset"] = opt.Value
+		case ast.DatabaseOptionCollate:
+			options["collate"] = opt.Value
+		}
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationAlterSchema,
+		ObjectName: stmt.Name.L,
+		ObjectType: "database",
+		Options:    options,
+	}
+}
+
+func extractCreateProcedure(stmt *ast.ProcedureInfo) *spec.DDL {
+	name := ""
+	if stmt.ProcedureName != nil {
+		name = stmt.ProcedureName.Name.L
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationCreateProcedure,
+		ObjectName: name,
+		ObjectType: "procedure",
+		Options:    map[string]string{"has_body": "true"},
+	}
+}
+
+func extractDropProcedure(stmt *ast.DropProcedureStmt) *spec.DDL {
+	name := ""
+	if stmt.ProcedureName != nil {
+		name = stmt.ProcedureName.Name.L
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationDropProcedure,
+		ObjectName: name,
+		ObjectType: "procedure",
+	}
+}
+
+func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
+	if stmt.IsCreateRole {
+		name := ""
+		if len(stmt.Specs) > 0 && stmt.Specs[0] != nil && stmt.Specs[0].User != nil {
+			name = stmt.Specs[0].User.Username
+		}
+		return &spec.DDL{
+			Operation:  spec.DDLOperationCreateRole,
+			ObjectName: name,
+			ObjectType: "role",
+		}
+	}
+	name := ""
+	if len(stmt.Specs) > 0 && stmt.Specs[0] != nil && stmt.Specs[0].User != nil {
+		name = stmt.Specs[0].User.Username
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationCreateUser,
+		ObjectName: name,
+		ObjectType: "user",
+		Options:    map[string]string{"has_auth": "true"},
+	}
+}
+
+func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
+	name := ""
+	if len(stmt.Specs) > 0 && stmt.Specs[0] != nil && stmt.Specs[0].User != nil {
+		name = stmt.Specs[0].User.Username
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationAlterUser,
+		ObjectName: name,
+		ObjectType: "user",
+		Options:    map[string]string{"has_auth": "true"},
+	}
+}
+
+func extractDropUser(stmt *ast.DropUserStmt) *spec.DDL {
+	if stmt.IsDropRole {
+		names := make([]string, 0, len(stmt.UserList))
+		for _, u := range stmt.UserList {
+			if u != nil {
+				names = append(names, u.Username)
+			}
+		}
+		objectName := ""
+		if len(names) > 0 {
+			objectName = names[0]
+		}
+		return &spec.DDL{
+			Operation:  spec.DDLOperationDropRole,
+			ObjectName: objectName,
+			ObjectType: "role",
+		}
+	}
+	names := make([]string, 0, len(stmt.UserList))
+	for _, u := range stmt.UserList {
+		if u != nil {
+			names = append(names, u.Username)
+		}
+	}
+	objectName := ""
+	if len(names) > 0 {
+		objectName = names[0]
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationDropUser,
+		ObjectName: objectName,
+		ObjectType: "user",
+	}
+}
+
+func extractGrant(stmt *ast.GrantStmt) *spec.DDL {
+	options := map[string]string{}
+	if len(stmt.Privs) > 0 {
+		privNames := make([]string, 0, len(stmt.Privs))
+		for _, p := range stmt.Privs {
+			if p != nil {
+				privNames = append(privNames, strings.ToLower(p.Priv.String()))
+			}
+		}
+		if len(privNames) > 0 {
+			options["privilege"] = strings.Join(privNames, ",")
+		}
+	}
+	if stmt.Level != nil {
+		switch {
+		case stmt.Level.DBName != "":
+			options["object_type"] = "database"
+		case stmt.Level.TableName != "":
+			options["object_type"] = "table"
+		default:
+			options["object_type"] = "global"
+		}
+	}
+	return &spec.DDL{
+		Operation: spec.DDLOperationGrant,
+		Options:   options,
+	}
+}
+
+func extractRevoke(stmt *ast.RevokeStmt) *spec.DDL {
+	options := map[string]string{}
+	if len(stmt.Privs) > 0 {
+		privNames := make([]string, 0, len(stmt.Privs))
+		for _, p := range stmt.Privs {
+			if p != nil {
+				privNames = append(privNames, strings.ToLower(p.Priv.String()))
+			}
+		}
+		if len(privNames) > 0 {
+			options["privilege"] = strings.Join(privNames, ",")
+		}
+	}
+	if stmt.Level != nil {
+		switch {
+		case stmt.Level.DBName != "":
+			options["object_type"] = "database"
+		case stmt.Level.TableName != "":
+			options["object_type"] = "table"
+		default:
+			options["object_type"] = "global"
+		}
+	}
+	return &spec.DDL{
+		Operation: spec.DDLOperationRevoke,
+		Options:   options,
+	}
+}
+
+func extractDropResourceGroup(stmt *ast.DropResourceGroupStmt) *spec.DDL {
+	return &spec.DDL{
+		Operation:  spec.DDLOperationDropResourceGroup,
+		ObjectName: stmt.ResourceGroupName.L,
+		ObjectType: "resource_group",
+	}
+}
+
+func extractCreatePlacementPolicy(stmt *ast.CreatePlacementPolicyStmt) *spec.DDL {
+	return &spec.DDL{
+		Operation:  spec.DDLOperationCreatePlacementPolicy,
+		ObjectName: stmt.PolicyName.L,
+		ObjectType: "placement_policy",
+	}
+}
+
+func extractAlterPlacementPolicy(stmt *ast.AlterPlacementPolicyStmt) *spec.DDL {
+	return &spec.DDL{
+		Operation:  spec.DDLOperationAlterPlacementPolicy,
+		ObjectName: stmt.PolicyName.L,
+		ObjectType: "placement_policy",
+	}
+}
+
+func extractDropPlacementPolicy(stmt *ast.DropPlacementPolicyStmt) *spec.DDL {
+	return &spec.DDL{
+		Operation:  spec.DDLOperationDropPlacementPolicy,
+		ObjectName: stmt.PolicyName.L,
+		ObjectType: "placement_policy",
+	}
+}
+
+func extractCreateSequence(stmt *ast.CreateSequenceStmt) *spec.DDL {
+	name := ""
+	if stmt.Name != nil {
+		name = stmt.Name.Name.L
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationCreateSequence,
+		ObjectName: name,
+		ObjectType: "sequence",
+		Options:    map[string]string{"has_options": "true"},
+	}
+}
+
+func extractAlterSequence(stmt *ast.AlterSequenceStmt) *spec.DDL {
+	name := ""
+	if stmt.Name != nil {
+		name = stmt.Name.Name.L
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationAlterSequence,
+		ObjectName: name,
+		ObjectType: "sequence",
+		Options:    map[string]string{"has_options": "true"},
+	}
+}
+
+func extractDropSequence(stmt *ast.DropSequenceStmt) *spec.DDL {
+	name := ""
+	if len(stmt.Sequences) > 0 && stmt.Sequences[0] != nil {
+		name = stmt.Sequences[0].Name.L
+	}
+	return &spec.DDL{
+		Operation:  spec.DDLOperationDropSequence,
+		ObjectName: name,
+		ObjectType: "sequence",
 	}
 }
 
@@ -743,6 +1120,8 @@ func alterActionName(tp ast.AlterTableType) string {
 		return "rename_index"
 	case ast.AlterTableOption:
 		return "table_option"
+	case ast.AlterTableDropForeignKey:
+		return "drop_foreign_key"
 	default:
 		return fmt.Sprintf("alter_%d", tp)
 	}

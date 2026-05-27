@@ -75,7 +75,22 @@ const (
 	DDLOperationCreateProcedure DDLOperation = "create_procedure"
 	DDLOperationDropProcedure   DDLOperation = "drop_procedure"
 
-	DDLOperationAlterSchema           DDLOperation = "alter_schema"
+	DDLOperationAlterSchema DDLOperation = "alter_schema"
+
+	// MySQL/TiDB extended DDL operations.
+	DDLOperationRenameTable            DDLOperation = "rename_table"
+	DDLOperationCreateUser             DDLOperation = "create_user"
+	DDLOperationAlterUser              DDLOperation = "alter_user"
+	DDLOperationDropUser               DDLOperation = "drop_user"
+	DDLOperationCreateRole             DDLOperation = "create_role"
+	DDLOperationDropRole               DDLOperation = "drop_role"
+	DDLOperationGrant                  DDLOperation = "grant"
+	DDLOperationRevoke                 DDLOperation = "revoke"
+	DDLOperationCreatePlacementPolicy  DDLOperation = "create_placement_policy"
+	DDLOperationAlterPlacementPolicy   DDLOperation = "alter_placement_policy"
+	DDLOperationDropPlacementPolicy    DDLOperation = "drop_placement_policy"
+	DDLOperationDropResourceGroup      DDLOperation = "drop_resource_group"
+
 	DDLOperationAlterIndex            DDLOperation = "alter_index"
 	DDLOperationAlterMaterializedView DDLOperation = "alter_materialized_view"
 

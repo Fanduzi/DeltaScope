@@ -523,6 +523,138 @@ rules:
     level: warning
     params:
 
+  # MySQL/TiDB lifecycle notice rules.
+  ddl.rename_table.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_index.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_index.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_database.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_procedure.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_procedure.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_user.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_user.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_user.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_role.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_role.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.grant.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.revoke.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_resource_group.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_placement_policy.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_placement_policy.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_placement_policy.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.create_sequence.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_sequence.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.drop_sequence.notice:
+    enabled: true
+    level: notice
+    params:
+
+  # MySQL/TiDB alter action notice rules.
+  ddl.alter.add_column.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.add_constraint.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.drop_column.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.modify_column.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.drop_index.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.drop_foreign_key.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.index.columns.max_count:
     enabled: true
     level: warning

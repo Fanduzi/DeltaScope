@@ -1,0 +1,35 @@
+name: lifecycle_notice_rules
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.rename_table.notice
+      - ddl.create_index.notice
+      - ddl.drop_index.notice
+      - ddl.alter_database.notice
+      - ddl.create_procedure.notice
+      - ddl.drop_procedure.notice
+      - ddl.create_user.notice
+      - ddl.alter_user.notice
+      - ddl.drop_user.notice
+      - ddl.grant.notice
+      - ddl.revoke.notice
+      - ddl.create_role.notice
+      - ddl.drop_role.notice
+      - ddl.drop_resource_group.notice
+      - ddl.create_placement_policy.notice
+      - ddl.alter_placement_policy.notice
+      - ddl.drop_placement_policy.notice
+      - ddl.create_sequence.notice
+      - ddl.alter_sequence.notice
+      - ddl.drop_sequence.notice
+      - ddl.alter.add_column.notice
+      - ddl.alter.add_constraint.notice
+      - ddl.alter.drop_column.notice
+      - ddl.alter.modify_column.notice
+      - ddl.alter.drop_index.notice
+      - ddl.alter.drop_foreign_key.notice
