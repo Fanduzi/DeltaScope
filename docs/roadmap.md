@@ -4,7 +4,45 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.190.0 Cross-Dialect DDL Coverage Census Consolidation
+## Latest Completed Milestone: v0.200.0 MySQL/TiDB DDL Normalized-Silent Coverage
+
+**Goal:** promote all previously normalized-silent MySQL and TiDB DDL forms to finding-covered status through a 28-rule DDL notice pack. Does not add new parser support, change PostgreSQL audit behavior, or claim full DDL coverage.
+
+### Completed Scope
+
+- 28 new DDL notice rules covering MySQL/TiDB lifecycle DDL events, ALTER TABLE action notices, TiDB placement policy/sequence lifecycle, and MySQL DROP RESOURCE GROUP.
+- MySQL normalized_silent dropped from 25 to 0; finding_covered rose from 21 to 46.
+- TiDB normalized_silent dropped from 27 to 0; finding_covered rose from 18 to 45.
+- SQL corpus: **582/582**, **100.0%**, **245 YAML** fixture files.
+- Decision record: `docs/decisions/2026-05-27-v0.200.0-mysql-tidb-ddl-normalized-silent-coverage.md`.
+
+### DDL Coverage Census
+
+| Dialect | Total | Finding | Silent | Unsupported | Parser Error |
+|---------|------:|--------:|-------:|:-----------:|:------------:|
+| MySQL | 61 | 46 | 0 | 0 | 15 |
+| TiDB | 54 | 45 | 0 | 0 | 9 |
+| PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
+
+### Remaining Gaps
+
+- MySQL parser gaps (15 forms): triggers, events, functions, ALTER VIEW, ALTER PROCEDURE, tablespace, CREATE/ALTER RESOURCE GROUP.
+- TiDB parser gaps (9 forms): triggers, events, functions, ALTER VIEW, ALTER TABLE TTL, ALTER TABLE LOCALITY.
+
+### Unchanged Metrics
+
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- PostgreSQL consolidated DDL census: **285/274/6/0/5/0** (unchanged).
+
+### Key Design Decisions
+
+- Not new parser support.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not a parser-error fix release.
+
+## Previous Milestone: v0.190.0 Cross-Dialect DDL Coverage Census Consolidation
 
 **Goal:** establish a consolidated DDL coverage census across MySQL, TiDB, and PostgreSQL, providing machine-verifiable coverage inventory data to inform future MySQL/TiDB DDL rule prioritization. Does not add new SQL audit rules, parser support, or product behavior.
 
@@ -25,7 +63,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 
 ### Future Direction
 
-v0.190.0 census data will be used to prioritize MySQL/TiDB DDL rule implementation. Top candidates: RENAME TABLE, standalone CREATE INDEX, ALTER DATABASE, privilege/DCL for MySQL; RENAME TABLE, ALTER TABLE ADD/DROP INDEX, PLACEMENT POLICY, SEQUENCE, privilege/DCL for TiDB.
+v0.190.0 census data was used to prioritize MySQL/TiDB DDL rule implementation. Top candidates promoted to finding_covered in v0.200.0.
 
 ### Unchanged Metrics
 

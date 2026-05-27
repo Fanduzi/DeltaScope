@@ -326,6 +326,51 @@ deltascope rules search "prefix"
 
 ---
 
+## DDL：MySQL/TiDB DDL Notice 规则（26 条）
+
+这些规则将此前为 normalized_silent 的 MySQL 和 TiDB DDL 形态提升为 finding-covered。覆盖生命周期 DDL 事件（独立索引、重命名、数据库变更、用户/角色/权限管理、存储过程生命周期、资源组）、ALTER TABLE 动作通知（列添加/删除/修改、约束、索引、外键），以及 TiDB 专属的 placement policy 和 sequence 生命周期。仅在设置 `--dialect mysql` 或 `--dialect tidb` 时生效，PostgreSQL 方言下自动跳过。
+
+### 独立 DDL 生命周期（20 条，共享）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.rename_table.notice` | `RENAME TABLE` 重命名表 | notice | 否 |
+| `ddl.create_index.notice` | 独立 `CREATE INDEX` 创建新索引 | notice | 否 |
+| `ddl.drop_index.notice` | 独立 `DROP INDEX` 删除索引 | notice | 否 |
+| `ddl.alter_database.notice` | `ALTER DATABASE` 修改数据库级别设置 | notice | 否 |
+| `ddl.create_procedure.notice` | `CREATE PROCEDURE` 定义存储过程 | notice | 否 |
+| `ddl.drop_procedure.notice` | `DROP PROCEDURE` 删除存储过程 | notice | 否 |
+| `ddl.create_user.notice` | `CREATE USER` 创建数据库用户 | notice | 否 |
+| `ddl.alter_user.notice` | `ALTER USER` 修改数据库用户 | notice | 否 |
+| `ddl.drop_user.notice` | `DROP USER` 删除数据库用户 | notice | 否 |
+| `ddl.create_role.notice` | `CREATE ROLE` 创建新角色 | notice | 否 |
+| `ddl.drop_role.notice` | `DROP ROLE` 删除角色 | notice | 否 |
+| `ddl.grant.notice` | `GRANT` 分配权限 | notice | 否 |
+| `ddl.revoke.notice` | `REVOKE` 撤销权限 | notice | 否 |
+| `ddl.drop_resource_group.notice` | `DROP RESOURCE GROUP` 删除资源组（仅 MySQL） | notice | 否 |
+| `ddl.alter.add_column.notice` | `ALTER TABLE ... ADD COLUMN` 添加列 | notice | 否 |
+| `ddl.alter.add_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT` 添加约束 | notice | 否 |
+| `ddl.alter.drop_column.notice` | `ALTER TABLE ... DROP COLUMN` 删除列 | notice | 否 |
+| `ddl.alter.modify_column.notice` | `ALTER TABLE ... MODIFY COLUMN` 修改列定义 | notice | 否 |
+| `ddl.alter.drop_index.notice` | `ALTER TABLE ... DROP INDEX` 删除索引 | notice | 否 |
+| `ddl.alter.drop_foreign_key.notice` | `ALTER TABLE ... DROP FOREIGN KEY` 删除外键 | notice | 否 |
+
+### TiDB 专属（6 条）
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.create_placement_policy.notice` | `CREATE PLACEMENT POLICY` 定义放置策略 | notice | 否 |
+| `ddl.alter_placement_policy.notice` | `ALTER PLACEMENT POLICY` 修改放置策略 | notice | 否 |
+| `ddl.drop_placement_policy.notice` | `DROP PLACEMENT POLICY` 删除放置策略 | notice | 否 |
+| `ddl.create_sequence.notice` | `CREATE SEQUENCE` 定义序列 | notice | 否 |
+| `ddl.alter_sequence.notice` | `ALTER SEQUENCE` 修改序列 | notice | 否 |
+| `ddl.drop_sequence.notice` | `DROP SEQUENCE` 删除序列 | notice | 否 |
+| `ddl.tidb.alter_table.placement_policy.notice` | `ALTER TABLE ... PLACEMENT POLICY` 将放置策略关联到表 | notice | 否 |
+
+> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些仅是信息性 notice 规则——不会阻止、警告或执行在线验证。`ddl.drop_resource_group.notice` 仅限 MySQL，TiDB 下自动跳过。TiDB placement policy 和 sequence 规则在 MySQL 下自动跳过。这不是完整的 MySQL/TiDB DDL 支持——triggers、events、functions、ALTER VIEW、ALTER PROCEDURE、tablespace 和 parser-error 形态仍推迟支持。
+
+---
+
 ## DDL：PostgreSQL 迁移安全规则（9 条）
 
 这些规则用于防范常见的 PostgreSQL 迁移模式，避免引发全表重写、长时间持锁或生产事故。仅在设置 `--dialect postgresql` 时生效，MySQL/TiDB 方言下自动跳过。

@@ -6,6 +6,37 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.200.0] - 2026-05-27
+
+### Added
+
+- 28 new MySQL/TiDB DDL notice rules covering lifecycle DDL events, ALTER TABLE action notices, TiDB placement policy/sequence lifecycle, and MySQL DROP RESOURCE GROUP.
+- MySQL normalized_silent dropped from 25 to 0; finding_covered rose from 21 to 46.
+- TiDB normalized_silent dropped from 27 to 0; finding_covered rose from 18 to 45.
+- SQL corpus: **582/582**, **100.0%**, **245 YAML** fixture files.
+- Decision record: `docs/decisions/2026-05-27-v0.200.0-mysql-tidb-ddl-normalized-silent-coverage.md`.
+
+### DDL Coverage Census
+
+| Dialect | Total | Finding | Silent | Unsupported | Parser Error |
+|---------|------:|--------:|-------:|:-----------:|:------------:|
+| MySQL | 61 | 46 | 0 | 0 | 15 |
+| TiDB | 54 | 45 | 0 | 0 | 9 |
+| PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
+
+### Unchanged Metrics
+
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- PostgreSQL consolidated DDL census: **285/274/6/0/5/0** (unchanged).
+
+### Non-Goals
+
+- Not new parser support.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not a parser-error fix release.
+
 ## [v0.190.0] - 2026-05-26
 
 ### Added

@@ -246,6 +246,56 @@ These rules require a live table snapshot and are skipped in offline mode.
 
 ---
 
+## DDL: MySQL/TiDB DDL Notice Rules (v0.200.0)
+
+`v0.200.0` promotes previously normalized-silent MySQL and TiDB DDL forms to finding-covered status through a 26-rule notice pack. These cover standalone DDL lifecycle events, ALTER TABLE action notices, and TiDB-specific placement policy/sequence lifecycle. They only apply when `--dialect mysql` or `--dialect tidb` is set and are skipped for PostgreSQL dialects.
+
+### Standalone DDL Lifecycle Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.rename_table.notice` | `RENAME TABLE` renames a table | ✓ | ✗ | notice |
+| `ddl.create_index.notice` | Standalone `CREATE INDEX` creates a new index | ✓ | ✗ | notice |
+| `ddl.drop_index.notice` | Standalone `DROP INDEX` removes an index | ✓ | ✗ | notice |
+| `ddl.alter_database.notice` | `ALTER DATABASE` changes database-level settings | ✓ | ✗ | notice |
+| `ddl.create_procedure.notice` | `CREATE PROCEDURE` defines a stored procedure | ✓ | ✗ | notice |
+| `ddl.drop_procedure.notice` | `DROP PROCEDURE` removes a stored procedure | ✓ | ✗ | notice |
+| `ddl.create_user.notice` | `CREATE USER` creates a database user | ✓ | ✗ | notice |
+| `ddl.alter_user.notice` | `ALTER USER` modifies a database user | ✓ | ✗ | notice |
+| `ddl.drop_user.notice` | `DROP USER` removes a database user | ✓ | ✗ | notice |
+| `ddl.create_role.notice` | `CREATE ROLE` creates a new role | ✓ | ✗ | notice |
+| `ddl.drop_role.notice` | `DROP ROLE` removes a role | ✓ | ✗ | notice |
+| `ddl.grant.notice` | `GRANT` assigns privileges | ✓ | ✗ | notice |
+| `ddl.revoke.notice` | `REVOKE` removes privileges | ✓ | ✗ | notice |
+| `ddl.drop_resource_group.notice` | `DROP RESOURCE GROUP` removes a resource group (MySQL-only) | ✓ | ✗ | notice |
+
+### ALTER TABLE Action Notice Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.alter.add_column.notice` | `ALTER TABLE ... ADD COLUMN` adds a column | ✓ | ✗ | notice |
+| `ddl.alter.add_constraint.notice` | `ALTER TABLE ... ADD CONSTRAINT` adds a constraint | ✓ | ✗ | notice |
+| `ddl.alter.drop_column.notice` | `ALTER TABLE ... DROP COLUMN` removes a column | ✓ | ✗ | notice |
+| `ddl.alter.modify_column.notice` | `ALTER TABLE ... MODIFY COLUMN` changes column definition | ✓ | ✗ | notice |
+| `ddl.alter.drop_index.notice` | `ALTER TABLE ... DROP INDEX` removes an index | ✓ | ✗ | notice |
+| `ddl.alter.drop_foreign_key.notice` | `ALTER TABLE ... DROP FOREIGN KEY` removes a foreign key | ✓ | ✗ | notice |
+
+### TiDB-Specific Rules
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|---------------|
+| `ddl.create_placement_policy.notice` | `CREATE PLACEMENT POLICY` defines a placement policy | ✓ | ✗ | notice |
+| `ddl.alter_placement_policy.notice` | `ALTER PLACEMENT POLICY` modifies a placement policy | ✓ | ✗ | notice |
+| `ddl.drop_placement_policy.notice` | `DROP PLACEMENT POLICY` removes a placement policy | ✓ | ✗ | notice |
+| `ddl.create_sequence.notice` | `CREATE SEQUENCE` defines a sequence | ✓ | ✗ | notice |
+| `ddl.alter_sequence.notice` | `ALTER SEQUENCE` modifies a sequence | ✓ | ✗ | notice |
+| `ddl.drop_sequence.notice` | `DROP SEQUENCE` removes a sequence | ✓ | ✗ | notice |
+| `ddl.tidb.alter_table.placement_policy.notice` | `ALTER TABLE ... PLACEMENT POLICY` attaches a placement policy to a table | ✓ | ✗ | notice |
+
+> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. These are informational notice rules only — they do not block, warn, or perform live validation. `ddl.drop_resource_group.notice` is MySQL-only. TiDB placement policy and sequence rules are automatically skipped for MySQL. This is not full MySQL/TiDB DDL support — triggers, events, functions, ALTER VIEW, ALTER PROCEDURE, tablespace, and parser-error forms remain deferred.
+
+---
+
 ## DDL: PostgreSQL Migration-Safety
 
 These rules guard against common PostgreSQL migration patterns that can cause table rewrites, long-held locks, or production incidents. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects. v0.120.0 enriches selected rules with bounded semantic metadata (index shape, default classification, USING presence); metadata is additive and does not emit raw SQL text.
