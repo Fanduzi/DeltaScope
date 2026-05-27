@@ -624,6 +624,7 @@ deltascope audit \
 | `make release-surface-gates VERSION=vX.Y.Z` | 校验该版本的 package/release 合同 |
 | `make release-version-surface-gates VERSION=vX.Y.Z` | 校验带版本的文档/安装面、双语 release notes、以及 release 语义一致性（census、corpus、规则数、无 overclaim、无泄漏） |
 | `make ddl-census-report` | 打印 MySQL、TiDB、PostgreSQL 的 tracked DDL coverage census —— inventory/reporting gate，不是 full SQL grammar coverage claim |
+| `make ddl-parser-error-feasibility-report` | 打印所有 tracked DDL parser-error 用例（MySQL 15、TiDB 9、PostgreSQL 5）的可行性分类 —— classification/report gate，不增加 parser 支持或 fallback 提取 |
 
 `v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。
 

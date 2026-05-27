@@ -38,6 +38,7 @@ make test-e2e-http-tidb
 - `make sql-corpus-report` prints the current supported-rule inventory: rule count, supported `rule_id × dialect` target count, covered count, corpus fixture counts by dialect, and deferred surfaces.
 - That contract is intentionally narrower than “every policy key on every dialect”. The coverage gate tracks the current stable extractor/rule support surface, not theoretical future support.
 - `make ddl-census-report` prints the tracked DDL coverage census for MySQL, TiDB, and PostgreSQL. This is an inventory/reporting gate — it shows how many tracked DDL forms are finding-covered, silently normalized, explicitly unsupported, or parser-blocked for each dialect. It is not a full SQL grammar coverage claim. The current census informs future MySQL/TiDB DDL rule prioritization.
+- `make ddl-parser-error-feasibility-report` prints the parser-error feasibility classification for all 29 tracked DDL parser-error cases across MySQL (15), TiDB (9), and PostgreSQL (5). Each case is classified into one bucket (`parser_upgrade_candidate`, `bounded_fallback_candidate`, `product_unsupported_or_inapplicable`, `unsafe_fallback_defer`, `needs_research`). This is a classification/report gate — it does not add parser support, rules, or fallback extraction.
 - CLI metadata e2e targets require Docker, Go, and Python 3.
 - MCP metadata e2e targets require Docker and Go.
 - HTTP metadata e2e targets require Docker and Go.

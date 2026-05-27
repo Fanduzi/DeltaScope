@@ -664,6 +664,7 @@ This does not add new rule IDs, parser features, public API contracts, live sche
 | `make release-surface-gates VERSION=vX.Y.Z` | Verify the package/release contract for the tagged release |
 | `make release-version-surface-gates VERSION=vX.Y.Z` | Verify versioned docs/install surfaces, bilingual release notes, and release semantic consistency (census, corpus, rule counts, no-overclaim, no-leak) |
 | `make ddl-census-report` | Print tracked DDL coverage census for MySQL, TiDB, and PostgreSQL — inventory/reporting gate, not a full SQL grammar coverage claim |
+| `make ddl-parser-error-feasibility-report` | Print parser-error feasibility classification for all tracked DDL parser-error cases (MySQL 15, TiDB 9, PostgreSQL 5) — classification/report gate, not parser support or fallback extraction |
 
 `v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints. `v0.23.0` then extends the documented PostgreSQL `CREATE TABLE` coverage while keeping these release-surface gates as the canonical verification path.
 
