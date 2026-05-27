@@ -4,6 +4,8 @@ Versioned release notes for published DeltaScope tags.
 
 ## Contents
 
+- [v0.210.0](release-notes-v0.210.0.md)
+- [v0.210.0 中文版](release-notes-v0.210.0.zh-CN.md)
 - [v0.200.0](release-notes-v0.200.0.md)
 - [v0.200.0 中文版](release-notes-v0.200.0.zh-CN.md)
 - [v0.190.0](release-notes-v0.190.0.md)

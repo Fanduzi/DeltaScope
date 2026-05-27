@@ -4,7 +4,49 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.200.0 MySQL/TiDB DDL Normalized-Silent Coverage
+## Latest Completed Milestone: v0.210.0 Cross-Dialect Parser-Error Feasibility Census
+
+**Goal:** classify all 29 parser-error cases across MySQL (15), TiDB (9), and PostgreSQL (5) into feasibility buckets, enabling prioritized fallback-strategy work in future milestones. Does not add new parser support, new SQL audit rules, fallback parser implementation, or reduce parser_error counts.
+
+### Completed Scope
+
+- 29 parser-error cases classified into 4 feasibility buckets.
+- `make ddl-parser-error-feasibility-report` prints classified census.
+- Decision record: `docs/decisions/2026-05-27-v0.210.0-cross-dialect-parser-error-feasibility-census.md`.
+
+### Parser-Error Feasibility Buckets
+
+| Bucket | MySQL | TiDB | PostgreSQL | Total |
+|--------|-------|------|------------|-------|
+| `parser_upgrade_candidate` | 5 | 0 | 5 | 10 |
+| `bounded_fallback_candidate` | 1 | 3 | 0 | 4 |
+| `product_unsupported_or_inapplicable` | 0 | 6 | 0 | 6 |
+| `unsafe_fallback_defer` | 9 | 0 | 0 | 9 |
+
+### DDL Coverage Census (unchanged)
+
+| Dialect | Total | Finding | Silent | Unsupported | Parser Error |
+|---------|------:|--------:|-------:|:-----------:|:------------:|
+| MySQL | 61 | 46 | 0 | 0 | 15 |
+| TiDB | 54 | 45 | 0 | 0 | 9 |
+| PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
+
+### Unchanged Metrics
+
+- SQL corpus: **582/582**, **100.0%**, **245 YAML** fixture files.
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- PostgreSQL consolidated DDL census: **285/274/6/0/5/0** (unchanged).
+
+### Key Design Decisions
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+
+## Previous Milestone: v0.200.0 MySQL/TiDB DDL Normalized-Silent Coverage
 
 **Goal:** promote all previously normalized-silent MySQL and TiDB DDL forms to finding-covered status through a 28-rule DDL notice pack. Does not add new parser support, change PostgreSQL audit behavior, or claim full DDL coverage.
 
@@ -23,16 +65,6 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 | MySQL | 61 | 46 | 0 | 0 | 15 |
 | TiDB | 54 | 45 | 0 | 0 | 9 |
 | PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
-
-### Remaining Gaps
-
-- MySQL parser gaps (15 forms): triggers, events, functions, ALTER VIEW, ALTER PROCEDURE, tablespace, CREATE/ALTER RESOURCE GROUP.
-- TiDB parser gaps (9 forms): triggers, events, functions, ALTER VIEW, ALTER TABLE TTL, ALTER TABLE LOCALITY.
-
-### Unchanged Metrics
-
-- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
-- PostgreSQL consolidated DDL census: **285/274/6/0/5/0** (unchanged).
 
 ### Key Design Decisions
 
