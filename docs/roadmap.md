@@ -4,24 +4,25 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.210.0 Cross-Dialect Parser-Error Feasibility Census
+## Latest Completed Milestone: v0.220.0 Parser-Error Unsupported Contract Hardening
 
-**Goal:** classify all 29 parser-error cases across MySQL (15), TiDB (9), and PostgreSQL (5) into feasibility buckets, enabling prioritized fallback-strategy work in future milestones. Does not add new parser support, new SQL audit rules, fallback parser implementation, or reduce parser_error counts.
+**Goal:** harden the public unsupported-contract diagnostic across SDK, CLI, HTTP, and MCP so parser-error statements emit a standardized diagnostic instead of raw parser fragments or forbidden payloads. Does not add new parser support, new SQL audit rules, fallback parser implementation, or reduce parser_error counts.
 
 ### Completed Scope
 
-- 29 parser-error cases classified into 4 feasibility buckets.
-- `make ddl-parser-error-feasibility-report` prints classified census.
-- Decision record: `docs/decisions/2026-05-27-v0.210.0-cross-dialect-parser-error-feasibility-census.md`.
+- Standardized diagnostic: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`.
+- Raw parser `near ...` fragments and tracked forbidden payloads removed from public output.
+- PostgreSQL capability boundary error preserved.
+- Public surface coverage: SDK, CLI, HTTP, MCP.
 
-### Parser-Error Feasibility Buckets
+### Parser-Error Counts (unchanged)
 
-| Bucket | MySQL | TiDB | PostgreSQL | Total |
-|--------|-------|------|------------|-------|
-| `parser_upgrade_candidate` | 5 | 0 | 5 | 10 |
-| `bounded_fallback_candidate` | 1 | 3 | 0 | 4 |
-| `product_unsupported_or_inapplicable` | 0 | 6 | 0 | 6 |
-| `unsafe_fallback_defer` | 9 | 0 | 0 | 9 |
+| Dialect | Parser Error |
+|---------|:------------:|
+| MySQL | 15 |
+| TiDB | 9 |
+| PostgreSQL | 5 |
+| **Total** | **29** |
 
 ### DDL Coverage Census (unchanged)
 
@@ -46,7 +47,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Not full MySQL/TiDB/PostgreSQL DDL support.
 - Not dialect parity.
 
-## Previous Milestone: v0.200.0 MySQL/TiDB DDL Normalized-Silent Coverage
+## Previous Milestone: v0.210.0 Cross-Dialect Parser-Error Feasibility Census
 
 **Goal:** promote all previously normalized-silent MySQL and TiDB DDL forms to finding-covered status through a 28-rule DDL notice pack. Does not add new parser support, change PostgreSQL audit behavior, or claim full DDL coverage.
 

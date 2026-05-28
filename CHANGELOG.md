@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.220.0] - 2026-05-28
+
+### Changed
+
+- Parser-error statements now emit a standardized diagnostic across SDK, CLI, HTTP, and MCP surfaces: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`.
+- Raw parser `near ...` fragments and tracked forbidden payloads are no longer exposed in public output for parser-error statements.
+- PostgreSQL capability boundary error remains preserved.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+
 ## [v0.210.0] - 2026-05-27
 
 ### Added
