@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test lint lint-fix lint-landing decision-record-gate
+.PHONY: test sql-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-error-unsupported-contract-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test lint lint-fix lint-landing decision-record-gate
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -26,6 +26,14 @@ ddl-census-report:
 ddl-parser-error-feasibility-report:
 	go test ./internal/application/audit -count=1 -run TestDDLParserErrorFeasibilityCensus -v
 	go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLParserErrorFeasibilityPostgreSQLCensus -v
+
+parser-error-unsupported-contract-test:
+	go test ./internal/application/audit -count=1 -run TestDDLParserErrorUnsupportedContract
+	go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLParserErrorUnsupportedContract
+	go test ./pkg/deltascope -count=1 -run ParserErrorUnsupportedContract
+	go test ./internal/interfaces/cli -count=1 -run CLIparserErrorUnsupported
+	go test ./internal/interfaces/http -count=1 -run HandlerAuditParserErrorUnsupportedContract
+	go test ./internal/interfaces/mcp -count=1 -run MCPParserErrorUnsupportedContract
 
 release-test-gates:
 	go test ./...

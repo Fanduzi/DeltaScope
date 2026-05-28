@@ -317,6 +317,10 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 
 当 PG-capable 构建版本遇到尚未完全支持的 PostgreSQL 专属功能（如 DDL 解析）时，返回类型化的 `PostgreSQLCapabilityBoundaryError`。这区分了已知的能力限制和真正的解析失败。错误包含关于请求的功能面和当前构建支持能力的清晰信息。
 
+#### Parser-Error Unsupported 合同
+
+当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。
+
 #### PostgreSQL DDL 覆盖范围
 
 从 `v0.21.0` 开始，DeltaScope 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。以下形式不再返回能力边界错误：
@@ -625,6 +629,7 @@ deltascope audit \
 | `make release-version-surface-gates VERSION=vX.Y.Z` | 校验带版本的文档/安装面、双语 release notes、以及 release 语义一致性（census、corpus、规则数、无 overclaim、无泄漏） |
 | `make ddl-census-report` | 打印 MySQL、TiDB、PostgreSQL 的 tracked DDL coverage census —— inventory/reporting gate，不是 full SQL grammar coverage claim |
 | `make ddl-parser-error-feasibility-report` | 打印所有 tracked DDL parser-error 用例（MySQL 15、TiDB 9、PostgreSQL 5）的可行性分类 —— classification/report gate，不增加 parser 支持或 fallback 提取 |
+| `make parser-error-unsupported-contract-test` | 运行跨 application、SDK、CLI、HTTP、MCP 面的 parser-error unsupported contract 测试 —— 验证诊断信息清晰、未推断 findings、无禁止载荷泄漏；不增加 parser 支持、fallback 解析或新 SQL 审计规则 |
 
 `v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。
 

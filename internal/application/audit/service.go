@@ -81,6 +81,10 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 				return result, err
 			}
 		}
+		var pgCap *PostgreSQLCapabilityBoundaryError
+		if errors.As(err, &pgCap) {
+			return report.Result{}, err
+		}
 		return report.Result{}, errParserUnsupported
 	}
 	if err := ctx.Err(); err != nil {

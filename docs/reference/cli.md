@@ -357,6 +357,10 @@ If the SQL does target PostgreSQL, re-run with `--dialect postgresql`. If not, t
 
 When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality that is not yet fully supported (e.g., DDL parsing), it returns a typed `PostgreSQLCapabilityBoundaryError`. This distinguishes known capability limits from real parse failures. The error includes a clear message about what surface was requested and what the current build supports.
 
+#### Parser-Error Unsupported Contract
+
+When the selected dialect parser cannot parse a tracked DDL statement, DeltaScope returns a diagnostic stating that no audit was performed and no findings were inferred from the unparsed SQL. This is an unsupported parser surface, not a fallback parser. DeltaScope does not infer findings from unparsed SQL. The parser-error count is not reduced by this contract. No parser support is added, no fallback parser is introduced, and no new SQL audit rules are created. The diagnostic message is: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`.
+
 #### PostgreSQL DDL Coverage
 
 Starting with `v0.21.0`, DeltaScope normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. These forms no longer return capability-boundary errors:
@@ -665,6 +669,7 @@ This does not add new rule IDs, parser features, public API contracts, live sche
 | `make release-version-surface-gates VERSION=vX.Y.Z` | Verify versioned docs/install surfaces, bilingual release notes, and release semantic consistency (census, corpus, rule counts, no-overclaim, no-leak) |
 | `make ddl-census-report` | Print tracked DDL coverage census for MySQL, TiDB, and PostgreSQL — inventory/reporting gate, not a full SQL grammar coverage claim |
 | `make ddl-parser-error-feasibility-report` | Print parser-error feasibility classification for all tracked DDL parser-error cases (MySQL 15, TiDB 9, PostgreSQL 5) — classification/report gate, not parser support or fallback extraction |
+| `make parser-error-unsupported-contract-test` | Run parser-error unsupported contract tests across application, SDK, CLI, HTTP, and MCP surfaces — verifies diagnostic clarity, no findings inferred, no forbidden payload leak; does not add parser support, fallback parsing, or new SQL audit rules |
 
 `v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints. `v0.23.0` then extends the documented PostgreSQL `CREATE TABLE` coverage while keeping these release-surface gates as the canonical verification path.
 
