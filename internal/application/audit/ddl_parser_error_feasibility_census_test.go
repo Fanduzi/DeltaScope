@@ -10,11 +10,11 @@ import (
 type ddlParserErrorFeasibility string
 
 const (
-	parserUpgradeCandidate          ddlParserErrorFeasibility = "parser_upgrade_candidate"
-	boundedFallbackCandidate        ddlParserErrorFeasibility = "bounded_fallback_candidate"
+	parserUpgradeCandidate           ddlParserErrorFeasibility = "parser_upgrade_candidate"
+	boundedFallbackCandidate         ddlParserErrorFeasibility = "bounded_fallback_candidate"
 	productUnsupportedOrInapplicable ddlParserErrorFeasibility = "product_unsupported_or_inapplicable"
-	unsafeFallbackDefer            ddlParserErrorFeasibility = "unsafe_fallback_defer"
-	needsResearch                  ddlParserErrorFeasibility = "needs_research"
+	unsafeFallbackDefer              ddlParserErrorFeasibility = "unsafe_fallback_defer"
+	needsResearch                    ddlParserErrorFeasibility = "needs_research"
 )
 
 type ddlParserErrorFeasibilityCase struct {

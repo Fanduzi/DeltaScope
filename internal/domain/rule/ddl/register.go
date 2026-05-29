@@ -649,7 +649,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterModifyColumnNotice, construct: newAlterModifyColumnNoticeRule},
 		{ruleID: ruleIDAlterDropIndexNotice, construct: newAlterDropIndexNoticeRule},
 		{ruleID: ruleIDAlterDropForeignKeyNotice, construct: newAlterDropForeignKeyNoticeRule},
-			{ruleID: ruleIDTiDBAlterTablePlacementPolicyNotice, construct: newTiDBAlterTablePlacementPolicyNoticeRule},
+		{ruleID: ruleIDTiDBAlterTablePlacementPolicyNotice, construct: newTiDBAlterTablePlacementPolicyNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]
 		if !ok || !ruleCfg.Enabled {

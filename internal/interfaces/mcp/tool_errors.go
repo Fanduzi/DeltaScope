@@ -36,14 +36,14 @@ type toolDiagnosticErrorPayload struct {
 	Diagnostics []spec.Diagnostic `json:"diagnostics,omitempty"`
 }
 
-func toolDiagnosticError(code, message string, diagnostics []spec.Diagnostic) (*sdkmcp.CallToolResult, error) {
+func toolDiagnosticError(code, message string, diagnostics []spec.Diagnostic) *sdkmcp.CallToolResult {
 	return &sdkmcp.CallToolResult{
 		IsError: true,
 		Content: []sdkmcp.Content{
 			&sdkmcp.TextContent{Text: message},
 		},
 		StructuredContent: toolDiagnosticErrorPayload{Code: code, Message: message, Diagnostics: diagnostics},
-	}, nil
+	}
 }
 
 func mapAuditToolError(err error) string {

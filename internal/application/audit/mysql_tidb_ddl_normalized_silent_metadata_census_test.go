@@ -235,8 +235,7 @@ func assertNoForbiddenPayload(t *testing.T, dialectName, caseName string, stmt *
 func collectDDLStringValues(ddl *spec.DDL) []string {
 	var vals []string
 
-	vals = append(vals, ddl.ObjectName)
-	vals = append(vals, ddl.ObjectType)
+	vals = append(vals, ddl.ObjectName, ddl.ObjectType)
 
 	if ddl.Table != nil {
 		vals = append(vals, ddl.Table.Name, ddl.Table.Schema, ddl.Table.Comment)

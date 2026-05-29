@@ -133,5 +133,9 @@ func newTiDBAlterTablePlacementPolicyNoticeRule(cfg policy.RulePolicy) (rule.Sta
 	if err != nil {
 		return nil, err
 	}
-	return tidbOnlyAlterActionRule{alterActionNoticeRule: base.(alterActionNoticeRule)}, nil
+	alterActionRule, ok := base.(alterActionNoticeRule)
+	if !ok {
+		return nil, fmt.Errorf("unexpected alter action rule type %T", base)
+	}
+	return tidbOnlyAlterActionRule{alterActionNoticeRule: alterActionRule}, nil
 }

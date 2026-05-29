@@ -537,8 +537,8 @@ func handleAudit(
 	}
 	if err != nil {
 		status, code := mapAuditError(err)
-		if len(response.Result.Diagnostics) > 0 {
-			writeDiagnosticError(w, status, code, err.Error(), response.Result.Diagnostics)
+		if len(response.Diagnostics) > 0 {
+			writeDiagnosticError(w, status, code, err.Error(), response.Diagnostics)
 			return
 		}
 		writeError(w, status, code, err.Error())
@@ -596,7 +596,7 @@ func writeError(w http.ResponseWriter, status int, code, message string) {
 }
 
 type diagnosticEnvelope struct {
-	Error       serviceError       `json:"error"`
+	Error       serviceError      `json:"error"`
 	Diagnostics []spec.Diagnostic `json:"diagnostics,omitempty"`
 }
 
