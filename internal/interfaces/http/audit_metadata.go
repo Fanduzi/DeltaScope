@@ -63,6 +63,9 @@ func executeOfflineAudit(
 		Schema:     schema,
 	})
 	if err != nil {
+		if len(result.Diagnostics) > 0 {
+			return auditResponse{Result: result}, err
+		}
 		return auditResponse{}, err
 	}
 	return auditResponse{

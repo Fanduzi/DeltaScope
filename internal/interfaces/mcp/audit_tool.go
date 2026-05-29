@@ -77,6 +77,10 @@ func auditSQLOffline(ctx context.Context, input AuditSQLParams) (*sdkmcp.CallToo
 		ConfigPath: strings.TrimSpace(input.ConfigPath),
 	})
 	if err != nil {
+		if len(result.Diagnostics) > 0 {
+			toolResult, toolErr := toolDiagnosticError(mapAuditToolError(err), err.Error(), result.Diagnostics)
+			return toolResult, nil, toolErr
+		}
 		toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())
 		return toolResult, nil, toolErr
 	}
@@ -145,6 +149,10 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 		MetadataProvider: publicMetadataProvider{client: prepared.Client},
 	})
 	if err != nil {
+		if len(result.Diagnostics) > 0 {
+			toolResult, toolErr := toolDiagnosticError(mapAuditToolError(err), err.Error(), result.Diagnostics)
+			return toolResult, nil, toolErr
+		}
 		toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())
 		return toolResult, nil, toolErr
 	}

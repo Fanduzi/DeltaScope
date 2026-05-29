@@ -188,6 +188,7 @@ type Result struct {
 	GlobalFindings []Finding                `json:"global_findings,omitempty"`
 	Unsupported    []spec.UnsupportedDetail `json:"unsupported,omitempty"`
 	Explanation    *Explanation             `json:"explanation,omitempty"`
+	Diagnostics    []spec.Diagnostic        `json:"diagnostics,omitempty"`
 }
 
 // Audit executes the stable public audit flow.
@@ -207,6 +208,9 @@ func Audit(ctx context.Context, request Request) (Result, error) {
 	if err != nil {
 		if errors.Is(err, appaudit.ErrUnsupportedStatement) {
 			return publicResult, fmt.Errorf("%w: %v", ErrUnsupportedStatement, err)
+		}
+		if len(publicResult.Diagnostics) > 0 {
+			return publicResult, err
 		}
 		return Result{}, err
 	}
@@ -235,6 +239,7 @@ func fromDomainResult(result report.Result) Result {
 		GlobalFindings: make([]Finding, 0, len(result.GlobalFindings)),
 		Unsupported:    append([]spec.UnsupportedDetail(nil), result.Unsupported...),
 		Explanation:    fromDomainExplanation(result.Explanation),
+		Diagnostics:    append([]spec.Diagnostic(nil), result.Diagnostics...),
 	}
 
 	for _, stmt := range result.Statements {

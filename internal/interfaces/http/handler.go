@@ -27,6 +27,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -536,6 +537,10 @@ func handleAudit(
 	}
 	if err != nil {
 		status, code := mapAuditError(err)
+		if len(response.Result.Diagnostics) > 0 {
+			writeDiagnosticError(w, status, code, err.Error(), response.Result.Diagnostics)
+			return
+		}
 		writeError(w, status, code, err.Error())
 		return
 	}
@@ -587,6 +592,18 @@ func writeError(w http.ResponseWriter, status int, code, message string) {
 			Code:    code,
 			Message: message,
 		},
+	})
+}
+
+type diagnosticEnvelope struct {
+	Error       serviceError       `json:"error"`
+	Diagnostics []spec.Diagnostic `json:"diagnostics,omitempty"`
+}
+
+func writeDiagnosticError(w http.ResponseWriter, status int, code, message string, diagnostics []spec.Diagnostic) {
+	writeJSON(w, status, diagnosticEnvelope{
+		Error:       serviceError{Code: code, Message: message},
+		Diagnostics: diagnostics,
 	})
 }
 

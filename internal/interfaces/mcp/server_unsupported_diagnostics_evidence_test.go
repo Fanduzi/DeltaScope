@@ -1,0 +1,69 @@
+package mcpapi
+
+import (
+	"context"
+	"encoding/json"
+	"strings"
+	"testing"
+
+	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+func TestUnsupportedDiagnosticsEvidenceMCPParserError(t *testing.T) {
+	t.Parallel()
+
+	server := NewServer(Config{Version: "test-version"})
+
+	session, err := connectClientSession(context.Background(), server)
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
+		Name:      "audit_sql",
+		Arguments: map[string]any{"sql": "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'secret_body_value'", "dialect": "mysql"},
+	})
+	if err != nil {
+		t.Fatalf("call audit_sql: %v", err)
+	}
+	if !result.IsError {
+		t.Fatalf("expected error result for parser-error SQL, got success: %#v", result)
+	}
+
+	body, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("expected structured map result, got %T", result.StructuredContent)
+	}
+
+	bodyJSON, _ := json.Marshal(body)
+	bodyLower := strings.ToLower(string(bodyJSON))
+
+	if strings.Contains(bodyLower, "secret_body_value") {
+		t.Fatalf("MCP response leaked forbidden payload in %s", bodyJSON)
+	}
+	if strings.Contains(bodyLower, "near ") {
+		t.Fatalf("MCP response leaked raw parser fragment in %s", bodyJSON)
+	}
+
+	if !strings.Contains(bodyLower, "parser_error") {
+		t.Fatalf("expected 'parser_error' classification in MCP response, got %s", bodyJSON)
+	}
+	if !strings.Contains(bodyLower, "action_hint") {
+		t.Fatalf("expected 'action_hint' field in MCP response, got %s", bodyJSON)
+	}
+	if !strings.Contains(bodyLower, "not audited") {
+		t.Fatalf("expected 'not audited' reason text in MCP response, got %s", bodyJSON)
+	}
+
+	for _, content := range result.Content {
+		if text, ok := content.(*sdkmcp.TextContent); ok {
+			if strings.Contains(text.Text, "secret_body_value") {
+				t.Fatalf("MCP text content leaked forbidden payload in %q", text.Text)
+			}
+			if strings.Contains(strings.ToLower(text.Text), "near ") {
+				t.Fatalf("MCP text content leaked raw parser fragment in %q", text.Text)
+			}
+		}
+	}
+}

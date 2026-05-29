@@ -284,7 +284,7 @@ func dialectSource(explicit bool) string {
 }
 
 func hasRenderableAuditResult(result report.Result) bool {
-	return len(result.Statements) > 0 || len(result.GlobalFindings) > 0 || len(result.Unsupported) > 0 || result.RuleSummary != nil || result.Explanation != nil || result.Verdict != "" || result.Summary != (report.Summary{})
+	return len(result.Statements) > 0 || len(result.GlobalFindings) > 0 || len(result.Unsupported) > 0 || result.RuleSummary != nil || result.Explanation != nil || result.Verdict != "" || result.Summary != (report.Summary{}) || len(result.Diagnostics) > 0
 }
 
 func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string) ([]byte, error) {
@@ -336,6 +336,12 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 			fmt.Fprintf(&b, "- Statement %d: `%s` — %s\n", item.Index+1, item.Feature, item.Reason)
 		}
 	}
+	if len(result.Diagnostics) > 0 {
+		b.WriteString("\n\n## Diagnostics\n")
+		for _, d := range result.Diagnostics {
+			fmt.Fprintf(&b, "- classification: %s\n  action_hint: %s\n  reason: %s\n  audited: %v\n  dialect: %s\n", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
+		}
+	}
 	return []byte(b.String()), nil
 }
 
@@ -370,6 +376,9 @@ func renderQuietResult(result report.Result, runContext *auditRunContext) []byte
 	}
 	for _, item := range result.Unsupported {
 		lines = append(lines, fmt.Sprintf("[unsupported] %s: %s", item.Feature, item.Reason))
+	}
+	for _, d := range result.Diagnostics {
+		lines = append(lines, fmt.Sprintf("[diagnostic] classification=%s action_hint=%s reason=%s audited=%v dialect=%s", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect))
 	}
 	if result.RuleSummary != nil {
 		lines = append(lines, fmt.Sprintf("[summary] loaded=%d applicable=%d skipped=%d",

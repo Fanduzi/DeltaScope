@@ -11,6 +11,7 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -26,6 +27,22 @@ func toolError(code, message string) (*sdkmcp.CallToolResult, error) {
 			&sdkmcp.TextContent{Text: message},
 		},
 		StructuredContent: toolErrorPayload{Code: code, Message: message},
+	}, nil
+}
+
+type toolDiagnosticErrorPayload struct {
+	Code        string            `json:"code"`
+	Message     string            `json:"message"`
+	Diagnostics []spec.Diagnostic `json:"diagnostics,omitempty"`
+}
+
+func toolDiagnosticError(code, message string, diagnostics []spec.Diagnostic) (*sdkmcp.CallToolResult, error) {
+	return &sdkmcp.CallToolResult{
+		IsError: true,
+		Content: []sdkmcp.Content{
+			&sdkmcp.TextContent{Text: message},
+		},
+		StructuredContent: toolDiagnosticErrorPayload{Code: code, Message: message, Diagnostics: diagnostics},
 	}, nil
 }
 
