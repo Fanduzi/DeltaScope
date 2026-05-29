@@ -4,7 +4,52 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.220.0 Parser-Error Unsupported Contract Hardening
+## Latest Completed Milestone: v0.230.0 Unsupported Diagnostics Evidence
+
+**Goal:** introduce structured diagnostics evidence for parser-error and unsupported-statement outcomes across all four product surfaces (SDK, CLI, HTTP, MCP). Every statement that DeltaScope cannot fully audit now carries a `spec.Diagnostic` with `classification`, `reason`, `action_hint`, `audited`, and `dialect` fields. Does not add new parser support, new SQL audit rules, fallback parser implementation, or reduce parser_error counts.
+
+### Completed Scope
+
+- `spec.Diagnostic` structured diagnostic with `classification`, `reason`, `action_hint`, `audited`, `dialect` fields.
+- `report.Result.Diagnostics` diagnostics array on the public result.
+- Parser-error diagnostic: `classification=parser_error`, standardized reason and action hint.
+- Unsupported-statement diagnostic: `classification=unsupported_statement`, standardized reason and action hint.
+- Public surface coverage: SDK, CLI, HTTP, MCP.
+- No raw SQL or payload copied into diagnostics.
+
+### Parser-Error Counts (unchanged)
+
+| Dialect | Parser Error |
+|---------|:------------:|
+| MySQL | 15 |
+| TiDB | 9 |
+| PostgreSQL | 5 |
+| **Total** | **29** |
+
+### DDL Coverage Census (unchanged)
+
+| Dialect | Total | Finding | Silent | Unsupported | Parser Error |
+|---------|------:|--------:|-------:|:-----------:|:------------:|
+| MySQL | 61 | 46 | 0 | 0 | 15 |
+| TiDB | 54 | 45 | 0 | 0 | 9 |
+| PostgreSQL (consolidated tracked-case) | 285 | 274 | 6 | 0 | 5 |
+
+### Unchanged Metrics
+
+- SQL corpus: **582/582**, **100.0%**, **245 YAML** fixture files.
+- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- PostgreSQL consolidated DDL census: **285/274/6/0/5/0** (unchanged).
+
+### Key Design Decisions
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+
+## Previous Milestone: v0.220.0 Parser-Error Unsupported Contract Hardening
 
 **Goal:** harden the public unsupported-contract diagnostic across SDK, CLI, HTTP, and MCP so parser-error statements emit a standardized diagnostic instead of raw parser fragments or forbidden payloads. Does not add new parser support, new SQL audit rules, fallback parser implementation, or reduce parser_error counts.
 

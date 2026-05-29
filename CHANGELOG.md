@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.230.0] - 2026-05-29
+
+### Added
+
+- `spec.Diagnostic` structured diagnostic per statement with `classification`, `reason`, `action_hint`, `audited`, and `dialect` fields.
+- `report.Result.Diagnostics` diagnostics array on the public result.
+- Parser-error diagnostic: `classification=parser_error`, standardized reason and action hint, `audited=false`.
+- Unsupported-statement diagnostic: `classification=unsupported_statement`, standardized reason and action hint, `audited=false`.
+- Public surface coverage: SDK, CLI, HTTP, MCP.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- No raw SQL or payload copied into diagnostics.
+
 ## [v0.220.0] - 2026-05-28
 
 ### Changed
