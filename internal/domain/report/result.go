@@ -98,6 +98,7 @@ type Result struct {
 	Unsupported    []spec.UnsupportedDetail `json:"unsupported,omitempty"`
 	Explanation    *Explanation             `json:"explanation,omitempty"`
 	RuleSummary    *RuleSummary             `json:"rule_summary,omitempty"`
+	Diagnostics    []spec.Diagnostic        `json:"diagnostics,omitempty"`
 }
 
 // Aggregate builds a final Result from statement and global findings.

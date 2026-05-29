@@ -62,3 +62,12 @@ type UnsupportedDetail struct {
 	Reason   string         `json:"reason"`
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
+
+// Diagnostic carries safe, structured evidence about unaudited or unsupported outcomes.
+type Diagnostic struct {
+	Classification string `json:"classification"`
+	Reason         string `json:"reason"`
+	ActionHint     string `json:"action_hint"`
+	Audited        bool   `json:"audited"`
+	Dialect        string `json:"dialect,omitempty"`
+}

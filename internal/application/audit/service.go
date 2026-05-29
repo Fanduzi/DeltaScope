@@ -85,7 +85,9 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		if errors.As(err, &pgCap) {
 			return report.Result{}, err
 		}
-		return report.Result{}, errParserUnsupported
+		return report.Result{
+			Diagnostics: []spec.Diagnostic{newParserErrorDiagnostic(request.Dialect)},
+		}, errParserUnsupported
 	}
 	if err := ctx.Err(); err != nil {
 		return report.Result{}, err
@@ -127,6 +129,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		}
 	}
 	if len(result.Unsupported) > 0 {
+		result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
 		return result, fmt.Errorf("%w: %d item(s)", ErrUnsupportedStatement, len(result.Unsupported))
 	}
 	return result, nil
