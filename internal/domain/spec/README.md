@@ -17,6 +17,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 - `Statement`
 - `UnsupportedDetail`
+- `Diagnostic`
 - `StatementExtractor`
 - `Kind`
 - `Dialect`
@@ -50,6 +51,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 - `Statement` may now carry optional metadata-aware context through `Metadata` and an additive `Unsupported` payload for recognized-but-unsupported statements so mixed PostgreSQL results can preserve supported statements while surfacing structured unsupported details.
 - `UnsupportedDetail` carries the unsupported statement index, feature name, original SQL, and reason so CLI/API surfaces can render machine-readable partial-support outcomes.
+- `Diagnostic` carries structured evidence about unaudited or unsupported outcomes with five JSON fields: `classification` (stable category: `parser_error` or `unsupported_statement`), `reason` (safe human-readable explanation), `action_hint` (generic next step), `audited` (always `false` for diagnostic outcomes), and `dialect` (selected dialect when available). The no-leak contract prohibits raw SQL text, parser `near ...` fragments, routine bodies, and all other forbidden payloads. `action_hint` must stay generic — it must not suggest object names inferred from failed parse text.
 - `Statement` may now carry optional metadata-aware context through `Metadata`:
   - `Schema` for request-level schema context even when no provider is attached
   - `Instance` for normalized server-level facts such as version and InnoDB defaults

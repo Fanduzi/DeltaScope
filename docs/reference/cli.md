@@ -361,6 +361,24 @@ When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality
 
 When the selected dialect parser cannot parse a tracked DDL statement, DeltaScope returns a diagnostic stating that no audit was performed and no findings were inferred from the unparsed SQL. This is an unsupported parser surface, not a fallback parser. DeltaScope does not infer findings from unparsed SQL. The parser-error count is not reduced by this contract. No parser support is added, no fallback parser is introduced, and no new SQL audit rules are created. The diagnostic message is: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`.
 
+#### Unsupported Diagnostics Evidence (v0.230.0)
+
+Starting with `v0.230.0`, parser-error and unsupported statement outcomes expose structured diagnostic evidence through all public surfaces (CLI JSON/text, HTTP, MCP, SDK). Each diagnostic carries five fields:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `classification` | string | Stable category: `parser_error` or `unsupported_statement` |
+| `reason` | string | Safe human-readable explanation of why the statement was not audited |
+| `action_hint` | string | Generic next step for the user |
+| `audited` | bool | `false` — the statement was not audited |
+| `dialect` | string | Selected dialect when available |
+
+For `parser_error` diagnostics, `reason` contains the v0.220.0 standard diagnostic message and `action_hint` suggests verifying the dialect and syntax, splitting multi-statement input, or upgrading DeltaScope.
+
+For `unsupported_statement` diagnostics, `reason` reuses the existing `UnsupportedDetail.Reason` and `action_hint` suggests manual review.
+
+Diagnostics do not contain raw SQL text, parser `near ...` fragments, routine bodies, or any other forbidden payload. This is not parser support, not a fallback parser, and not new SQL audit rules. Parser-error counts are not reduced. The census is unchanged.
+
 #### PostgreSQL DDL Coverage
 
 Starting with `v0.21.0`, DeltaScope normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. These forms no longer return capability-boundary errors:
@@ -670,6 +688,7 @@ This does not add new rule IDs, parser features, public API contracts, live sche
 | `make ddl-census-report` | Print tracked DDL coverage census for MySQL, TiDB, and PostgreSQL — inventory/reporting gate, not a full SQL grammar coverage claim |
 | `make ddl-parser-error-feasibility-report` | Print parser-error feasibility classification for all tracked DDL parser-error cases (MySQL 15, TiDB 9, PostgreSQL 5) — classification/report gate, not parser support or fallback extraction |
 | `make parser-error-unsupported-contract-test` | Run parser-error unsupported contract tests across application, SDK, CLI, HTTP, and MCP surfaces — verifies diagnostic clarity, no findings inferred, no forbidden payload leak; does not add parser support, fallback parsing, or new SQL audit rules |
+| `make unsupported-diagnostics-evidence-test` | Run unsupported diagnostics evidence contract tests across application, SDK, CLI, HTTP, and MCP surfaces — verifies structured diagnostic evidence (classification, reason, action_hint, audited, dialect) without leaking raw SQL or parser internals; does not add parser support, fallback parsing, or new SQL audit rules |
 
 `v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints. `v0.23.0` then extends the documented PostgreSQL `CREATE TABLE` coverage while keeping these release-surface gates as the canonical verification path.
 

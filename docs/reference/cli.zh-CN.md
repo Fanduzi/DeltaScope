@@ -321,6 +321,24 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 
 当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。
 
+#### Unsupported Diagnostics Evidence（v0.230.0）
+
+从 `v0.230.0` 开始，parser-error 和 unsupported statement 结果通过所有公共面（CLI JSON/文本、HTTP、MCP、SDK）暴露结构化诊断证据。每条诊断携带五个字段：
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| `classification` | string | 稳定类别：`parser_error` 或 `unsupported_statement` |
+| `reason` | string | 安全的人类可读解释，说明为何未执行审计 |
+| `action_hint` | string | 通用的用户下一步操作建议 |
+| `audited` | bool | `false` — 该语句未被审计 |
+| `dialect` | string | 所选方言（可用时） |
+
+对于 `parser_error` 诊断，`reason` 包含 v0.220.0 标准诊断消息，`action_hint` 建议验证方言和语法、拆分多语句输入或升级 DeltaScope。
+
+对于 `unsupported_statement` 诊断，`reason` 复用现有 `UnsupportedDetail.Reason`，`action_hint` 建议人工审查。
+
+诊断不包含原始 SQL 文本、parser `near ...` 片段、routine body 或其他禁止载荷。这不是 parser 支持、不是 fallback parser、不是新增 SQL 审计规则。parser-error 数量不会减少。census 不变。
+
 #### PostgreSQL DDL 覆盖范围
 
 从 `v0.21.0` 开始，DeltaScope 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。以下形式不再返回能力边界错误：
@@ -630,6 +648,7 @@ deltascope audit \
 | `make ddl-census-report` | 打印 MySQL、TiDB、PostgreSQL 的 tracked DDL coverage census —— inventory/reporting gate，不是 full SQL grammar coverage claim |
 | `make ddl-parser-error-feasibility-report` | 打印所有 tracked DDL parser-error 用例（MySQL 15、TiDB 9、PostgreSQL 5）的可行性分类 —— classification/report gate，不增加 parser 支持或 fallback 提取 |
 | `make parser-error-unsupported-contract-test` | 运行跨 application、SDK、CLI、HTTP、MCP 面的 parser-error unsupported contract 测试 —— 验证诊断信息清晰、未推断 findings、无禁止载荷泄漏；不增加 parser 支持、fallback 解析或新 SQL 审计规则 |
+| `make unsupported-diagnostics-evidence-test` | 运行跨 application、SDK、CLI、HTTP、MCP 面的 unsupported diagnostics evidence 合同测试 —— 验证结构化诊断证据（classification、reason、action_hint、audited、dialect），不泄漏原始 SQL 或 parser 内部信息；不增加 parser 支持、fallback 解析或新 SQL 审计规则 |
 
 `v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。
 
