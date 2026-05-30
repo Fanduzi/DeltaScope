@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test lint lint-fix lint-landing decision-record-gate
+.PHONY: test sql-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql pg-unit-test-gates pg-e2e-gates pg-confidence-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight lint lint-fix lint-landing decision-record-gate
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -378,6 +378,13 @@ lint-landing:
 
 release-consistency-test:
 	python3 ./scripts/test_verify_release_consistency.py
+
+# Release recovery preflight: verify GitHub Release assets and npm package state.
+# Read-only — never publishes, uploads, or deletes.
+release-recovery-preflight:
+	@test -n "$(VERSION)" || (echo "VERSION is required (e.g. VERSION=v0.230.0)" >&2; exit 1)
+	VERSION="$(VERSION)" python3 ./scripts/verify_release_assets.py
+	VERSION="$(VERSION)" bash ./scripts/verify_npm_package_state.sh
 
 # Heuristic gate: if changed paths + diff keywords suggest a decision record
 # is needed but no docs/decisions/*.md is present, fail.
