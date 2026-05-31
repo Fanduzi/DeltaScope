@@ -8,6 +8,11 @@ on:
         description: "Release version, for example v0.230.0"
         required: true
         type: string
+      dry_run:
+        description: "Exercise recovery without pushing Homebrew or publishing npm"
+        required: true
+        default: true
+        type: boolean
       recover_homebrew:
         description: "Publish or update Homebrew cask"
         required: true
@@ -120,6 +125,7 @@ jobs:
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           VERSION: ${{ inputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
           TAP_DIR="${RUNNER_TEMP}/homebrew-deltascope-repo"
@@ -130,6 +136,11 @@ jobs:
             echo "Homebrew cask already up to date"
             exit 0
           fi
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "Homebrew cask would be updated"
+            git diff --stat -- Casks/deltascope.rb
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Casks/deltascope.rb
@@ -138,7 +149,7 @@ jobs:
 
   verify-homebrew-cask-install:
     needs: publish-homebrew-cask
-    if: ${{ inputs.verify_homebrew && inputs.recover_homebrew }}
+    if: ${{ !inputs.dry_run && inputs.verify_homebrew && inputs.recover_homebrew }}
     runs-on: macos-15
     timeout-minutes: 15
 
@@ -206,4 +217,11 @@ jobs:
         if: ${{ steps.npm-state.outputs.state == 'absent' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public --provenance ./packages/deltascope-mcp
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "npm package would be published"
+            exit 0
+          fi
+          npm publish --access public --provenance ./packages/deltascope-mcp
