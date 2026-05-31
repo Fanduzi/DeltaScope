@@ -67,3 +67,53 @@ VERSION=v0.230.0 make release-recovery-preflight
 ```
 
 This validates that the GitHub Release exists, has the expected 9 assets, checksums are consistent, and reports npm package state.
+
+## Dry-Run Recovery Validation
+
+The recovery workflow accepts a `dry_run` input (default: `true`) that exercises all non-destructive recovery logic without mutating downstream state.
+
+### What dry-run validates
+
+- Release asset existence and checksum extraction
+- Homebrew cask render and syntax verification
+- Homebrew tap clone and cask diff (`Homebrew cask would be updated` or `already up to date`)
+- npm package state check (`present` or `absent`)
+
+### What dry-run does not do
+
+- Does not push to the Homebrew tap
+- Does not run `brew install`
+- Does not run `npm publish`
+- Does not mutate tags, releases, or assets
+
+### Safe dry-run dispatch
+
+```bash
+gh workflow run release-recover.yml \
+  --repo Fanduzi/DeltaScope \
+  --ref main \
+  -f version=v0.240.0 \
+  -f dry_run=true \
+  -f recover_homebrew=true \
+  -f verify_homebrew=true \
+  -f recover_npm=true
+```
+
+### Real recovery
+
+Real recovery requires explicit `dry_run=false` and should only be used when:
+
+- Release assets exist and are correct
+- A known downstream failure has been confirmed (Homebrew or npm)
+- The operator intends to push/publish
+
+```bash
+gh workflow run release-recover.yml \
+  --repo Fanduzi/DeltaScope \
+  --ref main \
+  -f version=v0.240.0 \
+  -f dry_run=false \
+  -f recover_homebrew=true \
+  -f verify_homebrew=true \
+  -f recover_npm=true
+```

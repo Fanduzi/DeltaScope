@@ -111,3 +111,14 @@ The tap/install/version-check/audit commands must also not use `|| true` — rea
 ## Release Recovery
 
 See [release-recovery.md](release-recovery.md) for the failure matrix and recovery procedures when a release partially fails.
+
+### Release Recovery Contract Gate
+
+`make release-recovery-contract-test` runs the preflight checks against an existing release and statically verifies that `.github/workflows/release-recover.yml` contains the expected dry-run contract markers:
+
+- `dry_run` input is defined
+- Homebrew cask dry-run marker (`Homebrew cask would be updated`)
+- npm dry-run marker (`npm package would be published`)
+- Destructive operations guarded behind `!inputs.dry_run`
+
+This target does not dispatch any workflow. It combines the read-only preflight (`make release-recovery-preflight`) with static grep checks on the workflow file. Defaults to `VERSION=v0.240.0`; override with `RELEASE_RECOVERY_CONTRACT_VERSION=vX.Y.Z`.
