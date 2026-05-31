@@ -81,6 +81,16 @@ jobs:
           version: "~> v2"
           args: check
 
+      - name: Guard against rerunning an existing release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "::error::GitHub Release ${GITHUB_REF_NAME} already exists. Do not rerun the full release workflow because GoReleaser will try to upload existing assets again. If GitHub Release assets already exist and only Homebrew or npm publishing needs recovery, run the release-recover workflow instead."
+            exit 1
+          fi
+
       - name: Publish converged release assets
         uses: goreleaser/goreleaser-action@v7
         with:

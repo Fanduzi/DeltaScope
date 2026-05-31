@@ -107,3 +107,7 @@ fi
 The tap/install/version-check/audit commands must also not use `|| true` — real failures must block the release.
 
 `make release-workflow-hygiene-gates` (included in `release-contract-gates`) statically checks the release workflow for these violations.
+
+## Release Recovery
+
+See [release-recovery.md](release-recovery.md) for the failure matrix and recovery procedures when a release partially fails.
