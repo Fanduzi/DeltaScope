@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.241.0] - 2026-05-31
+
+### Added
+
+- Default-safe `dry_run` input on `release-recover.yml` workflow (default `true`): operators must explicitly set `dry_run=false` to execute real recovery actions.
+- Dry-run verification scope: release asset/checksum preflight, Homebrew cask render/verify with tap clone/diff, npm package state check.
+- `make release-recovery-contract-test` target verifying dry-run default and contract gates.
+- Decision record: `docs/decisions/2026-05-31-v0.241.0-release-recovery-dry-run-patch.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+
 ## [v0.240.0] - 2026-05-31
 
 ### Added

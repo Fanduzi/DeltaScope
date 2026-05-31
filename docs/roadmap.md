@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.240.0 Release Workflow Idempotency & Recovery Hardening
+## Latest Completed Milestone: v0.241.0 Release Recovery Dry-Run Patch
+
+**Goal:** make the `release-recover.yml` workflow default-safe by adding a `dry_run` input (default `true`). In dry-run mode, the workflow exercises the full recovery preflight pipeline without executing destructive or publishing side effects. Real recovery requires explicitly setting `dry_run=false`. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
+
+### Completed Scope
+
+- Default-safe `dry_run` input on `release-recover.yml` (default `true`).
+- Dry-run verification scope: release asset/checksum preflight, Homebrew cask render/verify with tap clone/diff, npm package state check.
+- Dry-run suppresses: Homebrew tap push, Homebrew install verification, npm publish, GitHub release upload/delete, git tag operations.
+- `make release-recovery-contract-test` target verifying dry-run default and contract gates.
+- Decision record: `docs/decisions/2026-05-31-v0.241.0-release-recovery-dry-run-patch.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not SQL audit behavior changes of any kind.
+
+## Previous Milestone: v0.240.0 Release Workflow Idempotency & Recovery Hardening
 
 **Goal:** harden the release workflow against partial downstream failures and accidental reruns. Adds release asset and npm package preflight verification helpers, a manual `release-recover.yml` workflow for operator-driven recovery, and an idempotency guard in the full release workflow. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
 
