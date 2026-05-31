@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.230.0 Unsupported Diagnostics Evidence
+## Latest Completed Milestone: v0.240.0 Release Workflow Idempotency & Recovery Hardening
+
+**Goal:** harden the release workflow against partial downstream failures and accidental reruns. Adds release asset and npm package preflight verification helpers, a manual `release-recover.yml` workflow for operator-driven recovery, and an idempotency guard in the full release workflow. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
+
+### Completed Scope
+
+- Release recovery preflight helpers (`scripts/verify_release_assets.py`, `scripts/verify_npm_package_state.sh`): read-only verification of release assets, checksums, and npm package state.
+- Manual release recovery workflow (`.github/workflows/release-recover.yml`): operator-triggered downstream job recovery without re-running GoReleaser.
+- Full release idempotency guard (`.github/workflows/release.yml`): prevents rerunning GoReleaser after release assets already exist.
+- Operator docs for release recovery procedures (`docs/dev/release-recovery.md`).
+- Decision record: `docs/decisions/2026-05-30-v0.240.0-release-workflow-idempotency-recovery-hardening.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not SQL audit behavior changes of any kind.
+
+## Previous Milestone: v0.230.0 Unsupported Diagnostics Evidence
 
 **Goal:** introduce structured diagnostics evidence for parser-error and unsupported-statement outcomes across all four product surfaces (SDK, CLI, HTTP, MCP). Every statement that DeltaScope cannot fully audit now carries a `spec.Diagnostic` with `classification`, `reason`, `action_hint`, `audited`, and `dialect` fields. Does not add new parser support, new SQL audit rules, fallback parser implementation, or reduce parser_error counts.
 

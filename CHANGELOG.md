@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.240.0] - 2026-05-31
+
+### Added
+
+- Release recovery preflight helpers (`scripts/verify_release_assets.py`, `scripts/verify_npm_package_state.sh`): read-only verification of release assets, checksums, and npm package state for a given version.
+- Manual release recovery workflow (`.github/workflows/release-recover.yml`): operator-triggered workflow that re-runs select downstream release jobs after a partial failure. Does not re-run GoReleaser or overwrite existing assets.
+- Full release idempotency guard (`.github/workflows/release.yml`): prevents rerunning GoReleaser after release assets already exist, directing operators to use the recovery workflow instead.
+- Operator docs for release recovery procedures (`docs/dev/release-recovery.md`).
+- `make release-recovery-preflight VERSION=vX.Y.Z` target for preflight verification.
+- Decision record: `docs/decisions/2026-05-30-v0.240.0-release-workflow-idempotency-recovery-hardening.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+
 ## [v0.230.0] - 2026-05-29
 
 ### Added
