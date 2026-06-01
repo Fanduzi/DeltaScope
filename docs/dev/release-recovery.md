@@ -57,6 +57,7 @@ gh workflow run release-recover.yml \
 |--------|---------|
 | `HOMEBREW_TAP_TOKEN` | Write access to `Fanduzi/homebrew-deltascope` |
 | `NPM_TOKEN` | npm publish for `@fanduzi/deltascope-mcp` |
+| `GITHUB_TOKEN` | Read access to release assets during preflight (auto-provisioned by Actions, must be explicitly wired as `GH_TOKEN` env var) |
 
 ## Preflight Check
 
@@ -67,6 +68,10 @@ VERSION=v0.230.0 make release-recovery-preflight
 ```
 
 This validates that the GitHub Release exists, has the expected 9 assets, checksums are consistent, and reports npm package state.
+
+### Preflight Auth Wiring
+
+The preflight step uses `gh release download` and `gh release view`, which require GitHub CLI authentication. The workflow wires this via `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` in the preflight step environment. This env var was missing in v0.241.0 and added in `0e3f31c` (shipped in v0.242.0). The contract test gate (`make release-recovery-contract-test`) statically verifies that this wiring is present, preventing silent regressions.
 
 ## Dry-Run Recovery Validation
 

@@ -6,6 +6,25 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.242.0] - 2026-06-01
+
+### Added
+
+- `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` env wiring in release recovery workflow preflight step (`.github/workflows/release-recover.yml`). This fix was committed as `0e3f31c` after v0.241.0 was tagged.
+- `make release-recovery-contract-test` regression gate: statically verifies `GH_TOKEN` wiring is present in the recovery workflow. If removed, the contract test fails.
+- Decision record: `docs/decisions/2026-06-01-v0.242.0-release-recovery-ci-polish.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+
 ## [v0.241.0] - 2026-05-31
 
 ### Added

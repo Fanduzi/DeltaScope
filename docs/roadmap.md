@@ -4,7 +4,25 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.241.0 Release Recovery Dry-Run Patch
+## Latest Completed Milestone: v0.242.0 Release Recovery CI Polish
+
+**Goal:** formally ship the post-v0.241.0 `GH_TOKEN` preflight fix and add a regression gate so the release recovery workflow's preflight authentication wiring cannot be silently removed. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
+
+### Completed Scope
+
+- `GH_TOKEN` wiring in release recovery workflow preflight step (`.github/workflows/release-recover.yml`).
+- `make release-recovery-contract-test` regression gate: statically verifies `GH_TOKEN` wiring is present.
+- Decision record: `docs/decisions/2026-06-01-v0.242.0-release-recovery-ci-polish.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not SQL audit behavior changes of any kind.
+
+## Previous Milestone: v0.241.0 Release Recovery Dry-Run Patch
 
 **Goal:** make the `release-recover.yml` workflow default-safe by adding a `dry_run` input (default `true`). In dry-run mode, the workflow exercises the full recovery preflight pipeline without executing destructive or publishing side effects. Real recovery requires explicitly setting `dry_run=false`. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
 
