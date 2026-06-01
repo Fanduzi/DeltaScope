@@ -396,7 +396,8 @@ release-recovery-contract-test:
 	@grep -q "Homebrew cask would be updated" .github/workflows/release-recover.yml
 	@grep -q "npm package would be published" .github/workflows/release-recover.yml
 	@grep -q "!inputs.dry_run" .github/workflows/release-recover.yml
-	@echo "release-recovery-contract-test: dry-run contract OK"
+	@grep -q 'GH_TOKEN:.*secrets\.GITHUB_TOKEN' .github/workflows/release-recover.yml
+	@echo "release-recovery-contract-test: dry-run contract OK, preflight auth wiring OK"
 
 # Heuristic gate: if changed paths + diff keywords suggest a decision record
 # is needed but no docs/decisions/*.md is present, fail.
