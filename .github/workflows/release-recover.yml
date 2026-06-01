@@ -59,6 +59,7 @@ jobs:
 
       - name: Run release recovery preflight
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
