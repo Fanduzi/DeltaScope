@@ -60,6 +60,14 @@ Run `make release-contract-gates VERSION=vX.Y.Z` before tagging a release. This 
 
 Use this alongside `make release-test-gates` when preparing a release. The GitHub release workflow also runs the contract gate for the tag version before publishing release assets.
 
+### Release Tag Annotation Guard
+
+`make release-tag-annotation-test` runs offline unit tests for the tag annotation verifier (no tag required, safe to run pre-release).
+
+`VERSION=vX.Y.Z make release-tag-annotation-gate` checks that an existing local tag is annotated (`git cat-file -t` returns `tag`), not lightweight. Run this after tagging, before or after pushing. The GitHub release workflow also runs this check as an early guard step — lightweight tags fail the build before any artifacts are published.
+
+If the gate detects a lightweight tag, do not move or delete the published tag. Instead, decide whether a new patch release with a correctly annotated tag is warranted.
+
 ### GitLab Code Quality Smoke
 
 `make release-gitlab-codequality-smoke` validates the `--format gitlab-codequality` output against the GitLab Code Quality JSON contract. It requires no Docker and no GitLab API connection — it runs the built CLI binary locally and checks:

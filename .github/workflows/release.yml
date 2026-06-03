@@ -21,6 +21,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Guard against lightweight tag
+        run: |
+          set -euo pipefail
+          TAG_TYPE="$(git cat-file -t "${GITHUB_REF_NAME}")"
+          if [ "$TAG_TYPE" != "tag" ]; then
+            echo "::error::${GITHUB_REF_NAME} is a lightweight tag (object type: ${TAG_TYPE}). Full release requires an annotated tag. Recreate using: git tag -a ${GITHUB_REF_NAME} -m 'Release ${GITHUB_REF_NAME}'"
+            exit 1
+          fi
+          echo "release-tag-annotation: type=${TAG_TYPE} PASS"
+
       - name: Setup Go
         uses: actions/setup-go@v6
         with:

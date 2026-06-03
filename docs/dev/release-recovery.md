@@ -49,6 +49,7 @@ gh workflow run release-recover.yml \
 
 - **Do not rerun the full `release.yml` workflow after assets exist.** The existing-release guard will block it. Even without the guard, GoReleaser would fail with `422 already_exists`.
 - **Do not delete a tag or release unless you have made an explicit replacement decision.** Deleting a published release is destructive and cannot be undone.
+- **Release tags must be annotated.** The release workflow guard rejects lightweight tags. If you discover a lightweight tag post-push, do not move it — decide whether a new patch release with an annotated tag is warranted. Verify locally with `VERSION=vX.Y.Z make release-tag-annotation-gate`.
 - **Do not overwrite npm package versions.** npm does not allow re-publishing the same version. If the published package is wrong, a new patch version is required.
 
 ## Required Secrets

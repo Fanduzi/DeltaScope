@@ -6,6 +6,29 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.251.0] - 2026-06-03
+
+### Added
+
+- Release tag annotation guard: `scripts/verify_release_tag_annotation.py` verifies a local tag is annotated, not lightweight.
+- `make release-tag-annotation-test` — runs offline unit tests (no tag required).
+- `make release-tag-annotation-gate VERSION=vX.Y.Z` — verifies an existing tag is annotated (post-tag only).
+- Release workflow guard: early step in `release-linux` job rejects lightweight tags before any artifacts are published.
+- Operator docs: tag annotation verification guidance in `docs/dev/testing.md` and `docs/dev/release-recovery.md`.
+- Decision record: `docs/decisions/2026-06-03-v0.251.0-release-tag-annotation-guard.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+- Not public output shape changes.
+
 ## [v0.250.0] - 2026-06-03
 
 ### Added

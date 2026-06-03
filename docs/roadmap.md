@@ -4,7 +4,30 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.250.0 Parser Upgrade Candidate Evidence Pack
+## Latest Completed Milestone: v0.251.0 Release Tag Annotation Guard
+
+**Goal:** add a release tag annotation guard that prevents lightweight git tags from passing through the release pipeline. Does not change SQL audit behavior, parser support, audit rules, parser_error counts, or public output shapes.
+
+### Completed Scope
+
+- Tag annotation verification script (`scripts/verify_release_tag_annotation.py`) and offline tests.
+- `make release-tag-annotation-test` and `make release-tag-annotation-gate VERSION=vX.Y.Z` Makefile targets.
+- Release workflow guard: early step in `release-linux` job rejects lightweight tags.
+- Operator docs in `docs/dev/testing.md` and `docs/dev/release-recovery.md`.
+- Decision record: `docs/decisions/2026-06-03-v0.251.0-release-tag-annotation-guard.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not SQL audit behavior changes of any kind.
+- Not public output shape changes.
+
+## Previous Milestone: v0.250.0 Parser Upgrade Candidate Evidence Pack
 
 **Goal:** document all parser-upgrade candidates across MySQL, TiDB, and PostgreSQL. Record current census facts, feasibility bucket counts, and explicit non-candidate boundaries. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
 
@@ -25,8 +48,6 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Not full MySQL/TiDB/PostgreSQL DDL support.
 - Not dialect parity.
 - Not SQL audit behavior changes of any kind.
-
-## Previous Milestone: v0.242.0 Release Recovery CI Polish
 
 **Goal:** make the `release-recover.yml` workflow default-safe by adding a `dry_run` input (default `true`). In dry-run mode, the workflow exercises the full recovery preflight pipeline without executing destructive or publishing side effects. Real recovery requires explicitly setting `dry_run=false`. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
 
