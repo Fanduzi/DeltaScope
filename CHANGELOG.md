@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.250.0] - 2026-06-03
+
+### Added
+
+- Parser-upgrade candidate evidence classification: all 29 remaining `parser_error` cases across MySQL, TiDB, and PostgreSQL classified into feasibility buckets (`parser_upgrade_candidate`, `bounded_fallback_candidate`, `product_unsupported_or_inapplicable`, `unsafe_fallback_defer`, `needs_research`).
+- User-facing reference documentation for parser-upgrade candidate evidence classification (EN/ZH synced).
+- `make parser-upgrade-candidate-evidence-report` stable Makefile alias.
+- Decision record: `docs/decisions/2026-06-02-v0.250.0-parser-upgrade-candidate-evidence-pack.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+- Not public output shape changes.
+
 ## [v0.242.0] - 2026-06-01
 
 ### Added

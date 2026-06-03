@@ -4,15 +4,17 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.242.0 Release Recovery CI Polish
+## Latest Completed Milestone: v0.250.0 Parser Upgrade Candidate Evidence Pack
 
-**Goal:** formally ship the post-v0.241.0 `GH_TOKEN` preflight fix and add a regression gate so the release recovery workflow's preflight authentication wiring cannot be silently removed. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
+**Goal:** document all parser-upgrade candidates across MySQL, TiDB, and PostgreSQL. Record current census facts, feasibility bucket counts, and explicit non-candidate boundaries. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
 
 ### Completed Scope
 
-- `GH_TOKEN` wiring in release recovery workflow preflight step (`.github/workflows/release-recover.yml`).
-- `make release-recovery-contract-test` regression gate: statically verifies `GH_TOKEN` wiring is present.
-- Decision record: `docs/decisions/2026-06-01-v0.242.0-release-recovery-ci-polish.md`.
+- Parser-upgrade candidate evidence classification: all 29 remaining `parser_error` cases classified into 5 feasibility buckets.
+- Parser-upgrade candidates identified: MySQL 5 (ALTER VIEW, ALTER PROCEDURE, CREATE FUNCTION, ALTER FUNCTION, DROP FUNCTION), PostgreSQL 5 (DROP SUBSCRIPTION ... WITH, NOT NULL NOT VALID, ALTER CONSTRAINT NOT ENFORCED/INHERIT/NO INHERIT).
+- User-facing reference documentation (EN/ZH synced): audit capability matrix, CLI reference.
+- `make parser-upgrade-candidate-evidence-report` stable Makefile alias.
+- Decision record: `docs/decisions/2026-06-02-v0.250.0-parser-upgrade-candidate-evidence-pack.md`.
 
 ### Non-Goals
 
@@ -20,9 +22,11 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Not new SQL audit rules.
 - Not fallback parser implementation.
 - Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
 - Not SQL audit behavior changes of any kind.
 
-## Previous Milestone: v0.241.0 Release Recovery Dry-Run Patch
+## Previous Milestone: v0.242.0 Release Recovery CI Polish
 
 **Goal:** make the `release-recover.yml` workflow default-safe by adding a `dry_run` input (default `true`). In dry-run mode, the workflow exercises the full recovery preflight pipeline without executing destructive or publishing side effects. Real recovery requires explicitly setting `dry_run=false`. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
 
