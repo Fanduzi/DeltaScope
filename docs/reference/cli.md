@@ -379,6 +379,31 @@ For `unsupported_statement` diagnostics, `reason` reuses the existing `Unsupport
 
 Diagnostics do not contain raw SQL text, parser `near ...` fragments, routine bodies, or any other forbidden payload. This is not parser support, not a fallback parser, and not new SQL audit rules. Parser-error counts are not reduced. The census is unchanged.
 
+#### Parser Upgrade Candidate Evidence (v0.250.0)
+
+Starting with `v0.250.0`, all 29 remaining parser-error DDL cases (MySQL 15, TiDB 9, PostgreSQL 5) are classified by feasibility bucket. This classification is a documented evidence pack — not current parser support, not a fallback parser, and not new SQL audit rules.
+
+Feasibility bucket facts:
+
+| Bucket | MySQL | TiDB | PostgreSQL | Total |
+|---|---:|---:|---:|---:|
+| `parser_upgrade_candidate` | 5 | 0 | 5 | 10 |
+| `bounded_fallback_candidate` | 1 | 3 | 0 | 4 |
+| `product_unsupported_or_inapplicable` | 0 | 6 | 0 | 6 |
+| `unsafe_fallback_defer` | 9 | 0 | 0 | 9 |
+| `needs_research` | 0 | 0 | 0 | 0 |
+
+Key points:
+
+- `parser_upgrade_candidate` identifies 10 DDL forms (MySQL 5, PostgreSQL 5) that would become parseable after a parser/library upgrade. This is not current support.
+- DeltaScope does not infer findings from failed parse text. No fallback parser is used.
+- CLI output shape is unchanged. `parser_upgrade_candidate` is a documented classification, not a new CLI field.
+- The `parser_error` diagnostic still means the statement was not audited. Users should not treat `parser_error` as PASS.
+- Users should review parser-error statements manually.
+- No promise that future versions will support these syntax forms.
+
+The developer/verification entry point `make parser-upgrade-candidate-evidence-report` delegates to the existing `ddl-parser-error-feasibility-report` target. It is not a CLI user command.
+
 #### PostgreSQL DDL Coverage
 
 Starting with `v0.21.0`, DeltaScope normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. These forms no longer return capability-boundary errors:

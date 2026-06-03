@@ -339,6 +339,31 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 
 诊断不包含原始 SQL 文本、parser `near ...` 片段、routine body 或其他禁止载荷。这不是 parser 支持、不是 fallback parser、不是新增 SQL 审计规则。parser-error 数量不会减少。census 不变。
 
+#### Parser Upgrade Candidate Evidence（v0.250.0）
+
+从 `v0.250.0` 开始，所有 29 条剩余 parser-error DDL 用例（MySQL 15、TiDB 9、PostgreSQL 5）已按可行性 bucket 分类。此分类是文档化的证据包——不是当前 parser 支持、不是 fallback parser、也不是新增 SQL 审计规则。
+
+可行性 bucket 数据：
+
+| Bucket | MySQL | TiDB | PostgreSQL | 合计 |
+|---|---:|---:|---:|---:|
+| `parser_upgrade_candidate` | 5 | 0 | 5 | 10 |
+| `bounded_fallback_candidate` | 1 | 3 | 0 | 4 |
+| `product_unsupported_or_inapplicable` | 0 | 6 | 0 | 6 |
+| `unsafe_fallback_defer` | 9 | 0 | 0 | 9 |
+| `needs_research` | 0 | 0 | 0 | 0 |
+
+要点：
+
+- `parser_upgrade_candidate` 标识了 10 条 DDL 形态（MySQL 5、PostgreSQL 5），它们在 parser/库升级后将可变为可解析形态。这不是当前支持。
+- DeltaScope 不从解析失败文本推断 findings。不启用 fallback parser。
+- CLI 输出结构不变。`parser_upgrade_candidate` 是文档化分类，不是新的 CLI 字段。
+- `parser_error` 诊断仍表示该语句未被审计。用户不应将 `parser_error` 视为 PASS。
+- 用户应手动审查 parser-error 语句。
+- 不承诺未来版本一定支持这些语法形态。
+
+开发者/验证入口 `make parser-upgrade-candidate-evidence-report` 委托到已有的 `ddl-parser-error-feasibility-report` target。这不是 CLI 用户命令。
+
 #### PostgreSQL DDL 覆盖范围
 
 从 `v0.21.0` 开始，DeltaScope 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。以下形式不再返回能力边界错误：
