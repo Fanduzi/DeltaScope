@@ -41,6 +41,12 @@ make test-e2e-http-tidb
 - `make ddl-parser-error-feasibility-report` prints the parser-error feasibility classification for all 29 tracked DDL parser-error cases across MySQL (15), TiDB (9), and PostgreSQL (5). Each case is classified into one bucket (`parser_upgrade_candidate`, `bounded_fallback_candidate`, `product_unsupported_or_inapplicable`, `unsafe_fallback_defer`, `needs_research`). This is a classification/report gate — it does not add parser support, rules, or fallback extraction.
 - `make parser-error-unsupported-contract-test` runs the parser-error unsupported contract tests across application, SDK, CLI, HTTP, and MCP surfaces. This gate verifies that when the selected dialect parser cannot parse a tracked DDL statement, all public surfaces return a clear diagnostic stating that no audit was performed and no findings were inferred from unparsed SQL. This does not add parser support, fallback parsing, or new SQL audit rules. Parser-error counts are not reduced.
 - `make unsupported-diagnostics-evidence-test` runs the unsupported diagnostics evidence contract tests across application, SDK, CLI, HTTP, and MCP surfaces. This gate verifies that parser-error and unsupported statement outcomes expose structured diagnostic evidence (`classification`, `reason`, `action_hint`, `audited`, `dialect`) without leaking raw SQL or parser internals. This does not add parser support, fallback parsing, or new SQL audit rules. Parser-error counts are not reduced.
+- `make parser-upgrade-candidate-evidence-report` prints the parser-upgrade candidate evidence report. It delegates directly to `ddl-parser-error-feasibility-report` and shows all 29 tracked `parser_error` feasibility buckets across MySQL, TiDB, and PostgreSQL. This is a classification/report gate only — it does not add parser support, SQL audit rules, or fallback extraction, and it does not reduce `parser_error` counts. Expected bucket facts:
+  - `parser_upgrade_candidate`: MySQL 5, TiDB 0, PostgreSQL 5, total 10
+  - `bounded_fallback_candidate`: MySQL 1, TiDB 3, PostgreSQL 0, total 4
+  - `product_unsupported_or_inapplicable`: MySQL 0, TiDB 6, PostgreSQL 0, total 6
+  - `unsafe_fallback_defer`: MySQL 9, TiDB 0, PostgreSQL 0, total 9
+  - `needs_research`: MySQL 0, TiDB 0, PostgreSQL 0, total 0
 - CLI metadata e2e targets require Docker, Go, and Python 3.
 - MCP metadata e2e targets require Docker and Go.
 - HTTP metadata e2e targets require Docker and Go.
