@@ -4,17 +4,18 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.251.0 Release Tag Annotation Guard
+## Latest Completed Milestone: v0.260.0 Unsupported Diagnostics Guidance Codes
 
-**Goal:** add a release tag annotation guard that prevents lightweight git tags from passing through the release pipeline. Does not change SQL audit behavior, parser support, audit rules, parser_error counts, or public output shapes.
+**Goal:** add `guidance_code` and `evidence_ref` to parser_error diagnostics so users can tell which unsupported boundary a statement falls into and find detailed evidence documentation. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
 
 ### Completed Scope
 
-- Tag annotation verification script (`scripts/verify_release_tag_annotation.py`) and offline tests.
-- `make release-tag-annotation-test` and `make release-tag-annotation-gate VERSION=vX.Y.Z` Makefile targets.
-- Release workflow guard: early step in `release-linux` job rejects lightweight tags.
-- Operator docs in `docs/dev/testing.md` and `docs/dev/release-recovery.md`.
-- Decision record: `docs/decisions/2026-06-03-v0.251.0-release-tag-annotation-guard.md`.
+- `spec.Diagnostic.GuidanceCode` and `spec.Diagnostic.EvidenceRef` optional fields on diagnostics.
+- Guidance classification logic: `classifyParserErrorGuidance(sql, dialect)` for safe, fixed-keyword matching.
+- First verified parser-upgrade candidates: MySQL `ALTER VIEW`, PostgreSQL `DROP SUBSCRIPTION ... WITH (drop_slot = true)`.
+- Public surface parity: SDK, CLI JSON, CLI text (markdown and quiet), HTTP, MCP.
+- No-leak guarantee: guidance fields never contain raw SQL, parser near-text, object names, or user payload.
+- Decision record: `docs/decisions/2026-06-04-v0.260.0-unsupported-diagnostics-guidance-codes.md`.
 
 ### Non-Goals
 
@@ -25,19 +26,18 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Not full MySQL/TiDB/PostgreSQL DDL support.
 - Not dialect parity.
 - Not SQL audit behavior changes of any kind.
-- Not public output shape changes.
 
-## Previous Milestone: v0.250.0 Parser Upgrade Candidate Evidence Pack
+## Previous Milestone: v0.251.0 Release Tag Annotation Guard
 
-**Goal:** document all parser-upgrade candidates across MySQL, TiDB, and PostgreSQL. Record current census facts, feasibility bucket counts, and explicit non-candidate boundaries. Does not change SQL audit behavior, parser support, audit rules, or parser_error counts.
+**Goal:** add a release tag annotation guard that prevents lightweight git tags from passing through the release pipeline. Does not change SQL audit behavior, parser support, audit rules, parser_error counts, or public output shapes.
 
 ### Completed Scope
 
-- Parser-upgrade candidate evidence classification: all 29 remaining `parser_error` cases classified into 5 feasibility buckets.
-- Parser-upgrade candidates identified: MySQL 5 (ALTER VIEW, ALTER PROCEDURE, CREATE FUNCTION, ALTER FUNCTION, DROP FUNCTION), PostgreSQL 5 (DROP SUBSCRIPTION ... WITH, NOT NULL NOT VALID, ALTER CONSTRAINT NOT ENFORCED/INHERIT/NO INHERIT).
-- User-facing reference documentation (EN/ZH synced): audit capability matrix, CLI reference.
-- `make parser-upgrade-candidate-evidence-report` stable Makefile alias.
-- Decision record: `docs/decisions/2026-06-02-v0.250.0-parser-upgrade-candidate-evidence-pack.md`.
+- Tag annotation verification script (`scripts/verify_release_tag_annotation.py`) and offline tests.
+- `make release-tag-annotation-test` and `make release-tag-annotation-gate VERSION=vX.Y.Z` Makefile targets.
+- Release workflow guard: early step in `release-linux` job rejects lightweight tags.
+- Operator docs in `docs/dev/testing.md` and `docs/dev/release-recovery.md`.
+- Decision record: `docs/decisions/2026-06-03-v0.251.0-release-tag-annotation-guard.md`.
 
 ### Non-Goals
 

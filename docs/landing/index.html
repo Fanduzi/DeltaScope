@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.251.0",
+    "softwareVersion": "v0.260.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.251.0 — Release Tag Annotation Guard</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.260.0 — Unsupported Diagnostics Guidance Codes</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,23 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.251.0</div>
+              <div class="release-version">v0.260.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">Release Tag Annotation Guard</div>
-            <div class="release-copy" data-i18n="releases.items.v02510">v0.251.0 adds a release tag annotation guard that prevents lightweight git tags from passing through the release pipeline. No SQL audit behavior changes.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Unsupported Diagnostics Guidance Codes</div>
+            <div class="release-copy" data-i18n="releases.items.v02600">v0.260.0 adds guidance_code and evidence_ref to parser_error diagnostics, connecting runtime output to the parser-upgrade candidate evidence classification. No SQL audit behavior changes.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.251.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v02510">Release Tag Annotation Guard</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v02510">v0.251.0 adds a release tag annotation guard that prevents lightweight git tags from passing through the release pipeline. No SQL audit behavior changes.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v02510" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.zh-CN.md">Open v0.251.0 notes →</a>
+            </article>
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.250.0</div>
@@ -1105,14 +1113,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v02420">v0.242.0 formally ships the post-v0.241.0 GH_TOKEN preflight fix and adds a regression gate so the release recovery workflow's preflight authentication wiring cannot be silently removed. No SQL audit behavior changes.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.242.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v02420" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.242.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.242.0.zh-CN.md">Open v0.242.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.241.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v02410">Release Recovery Dry-Run Patch</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v02410">v0.241.0 makes the release recovery workflow default-safe with a dry_run=true input. Dry-run exercises the full preflight pipeline without publishing side effects. Real recovery requires explicit dry_run=false. No SQL audit behavior changes.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.241.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v02410" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.241.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.241.0.zh-CN.md">Open v0.241.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1209,7 +1209,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.251.0.zh-CN.md">Release Notes v0.251.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.zh-CN.md">Release Notes v0.260.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1253,7 +1253,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.251.0 — Release Tag Annotation Guard',
+          badge: 'v0.260.0 — Unsupported Diagnostics Guidance Codes',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1379,9 +1379,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'Release Tag Annotation Guard',
+          currentTitle: 'Unsupported Diagnostics Guidance Codes',
           currentLink: 'Read release notes →',
           labels: {
+            v02510: 'Release Tag Annotation Guard',
             v02500: 'Parser Upgrade Candidate Evidence Pack',
             v02420: 'Release Recovery CI Polish',
             v02410: 'Release Recovery Dry-Run Patch',
@@ -1399,6 +1400,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v02510: 'Open v0.251.0 notes →',
             v02500: 'Open v0.250.0 notes →',
             v02420: 'Open v0.242.0 notes →',
             v02410: 'Open v0.241.0 notes →',
@@ -1419,6 +1421,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v02600: 'v0.260.0 adds guidance_code and evidence_ref to parser_error diagnostics, connecting runtime output to the parser-upgrade candidate evidence classification. No SQL audit behavior changes.',
             v02510: 'v0.251.0 adds a release tag annotation guard that prevents lightweight git tags from passing through the release pipeline. No SQL audit behavior changes.',
             v02500: 'v0.250.0 documents all parser-upgrade candidates across MySQL, TiDB, and PostgreSQL, classifying 29 remaining parser_error cases into feasibility buckets. No parser support added, no SQL audit behavior changes.',
             v02420: 'v0.242.0 formally ships the post-v0.241.0 GH_TOKEN preflight fix and adds a regression gate so the release recovery workflow\'s preflight authentication wiring cannot be silently removed. No SQL audit behavior changes.',
@@ -1448,14 +1451,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.251.0 adds a release tag annotation guard preventing lightweight git tags from passing the release pipeline.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.260.0 adds guidance_code and evidence_ref to parser_error diagnostics, connecting runtime output to parser-upgrade candidate evidence.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.251.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.260.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1473,7 +1476,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.251.0 —— Release Tag Annotation Guard / Release Tag 标注守卫',
+          badge: 'v0.260.0 —— Unsupported Diagnostics Guidance Codes / 不支持诊断引导码',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1599,9 +1602,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'Release Tag Annotation Guard / Release Tag 标注守卫',
+          currentTitle: 'Unsupported Diagnostics Guidance Codes / 不支持诊断引导码',
           currentLink: '查看发布说明 →',
           labels: {
+            v02510: 'Release Tag Annotation Guard / Release Tag 标注守卫',
             v02500: 'Parser Upgrade Candidate Evidence Pack / Parser 升级候选证据包',
             v02420: 'Release Recovery CI Polish / 恢复工作流 CI 修补',
             v02410: 'Release Recovery Dry-Run Patch / 恢复工作流 Dry-Run 补丁',
@@ -1619,6 +1623,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v02510: '查看 v0.251.0 发布说明 →',
             v02500: '查看 v0.250.0 发布说明 →',
             v02420: '查看 v0.242.0 发布说明 →',
             v02410: '查看 v0.241.0 发布说明 →',
@@ -1640,6 +1645,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v02600: 'v0.260.0 为 parser_error 诊断新增 guidance_code 和 evidence_ref 字段，连接运行时输出与 parser-upgrade 候选证据分类。无 SQL 审核行为变更。',
             v02510: 'v0.251.0 新增 release tag 标注守卫，防止 lightweight git tag 通过发布流水线。无 SQL 审核行为变更。',
             v02500: 'v0.250.0 记录所有 parser-upgrade 候选形态，将 29 个剩余 parser_error 案例分类至可行性桶。不新增 parser 支持，无 SQL 审核行为变更。',
             v02420: 'v0.242.0 正式包含 v0.241.0 后的 GH_TOKEN preflight 修复，并增加防回归门禁确保恢复工作流的 preflight 认证 wiring 不会被静默删除。无 SQL 审核行为变更。',
@@ -1666,14 +1672,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.251.0 新增 release tag 标注守卫，防止 lightweight git tag 通过发布流水线。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.260.0 为 parser_error 诊断新增 guidance_code 和 evidence_ref，连接运行时输出与 parser-upgrade 候选证据分类。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.251.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.260.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

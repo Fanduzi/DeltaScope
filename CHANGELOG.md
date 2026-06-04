@@ -6,6 +6,32 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.260.0] - 2026-06-04
+
+### Added
+
+- Unsupported diagnostics guidance codes: `parser_error` diagnostics now expose optional `guidance_code` and `evidence_ref` fields, connecting runtime diagnostic output to the v0.250.0 parser-upgrade candidate evidence classification.
+- `spec.Diagnostic.GuidanceCode` — stable machine-readable string identifying the unsupported boundary category (e.g., `parser_upgrade_candidate`).
+- `spec.Diagnostic.EvidenceRef` — GitHub documentation URL pointing to the relevant evidence section.
+- Guidance classification logic: `classifyParserErrorGuidance(sql, dialect)` performs safe, fixed-keyword matching to classify parser_error diagnostics.
+- First verified parser-upgrade candidates:
+  - MySQL: `ALTER VIEW` → `guidance_code=parser_upgrade_candidate`
+  - PostgreSQL: `DROP SUBSCRIPTION ... WITH (drop_slot = true)` → `guidance_code=parser_upgrade_candidate`
+- Public surface coverage: SDK, CLI JSON, CLI text (markdown and quiet), HTTP, MCP parity.
+- No-leak guarantee: `guidance_code` and `evidence_ref` never contain raw SQL, parser near-text, object names, function bodies, default expressions, or any user payload.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+- Not public output shape changes beyond additive optional `guidance_code` / `evidence_ref` fields.
+
 ## [v0.251.0] - 2026-06-03
 
 ### Added
