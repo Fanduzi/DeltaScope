@@ -28,7 +28,7 @@ func TestParserUpgradeCandidateGuidanceCoveragePostgreSQL(t *testing.T) {
 		{
 			name:           "PostgreSQL NOT NULL NOT VALID",
 			sql:            "ALTER TABLE accounts ALTER COLUMN email SET NOT NULL NOT VALID",
-			forbiddenNames: []string{"accounts_email_key"},
+			forbiddenNames: []string{"accounts", "email"},
 		},
 		{
 			name:           "PostgreSQL ALTER CONSTRAINT NOT ENFORCED",
