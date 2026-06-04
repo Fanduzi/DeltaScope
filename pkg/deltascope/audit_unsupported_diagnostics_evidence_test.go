@@ -67,3 +67,60 @@ func TestUnsupportedDiagnosticsEvidenceSDKParserError(t *testing.T) {
 		t.Fatalf("v0.220.0 error contract: expected 'not audited', got %q", err.Error())
 	}
 }
+
+func TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL(t *testing.T) {
+	t.Parallel()
+
+	result, err := Audit(context.Background(), Request{
+		SQL:     "ALTER VIEW v_users AS SELECT id, name FROM users",
+		Dialect: DialectMySQL,
+	})
+	if err == nil {
+		t.Fatalf("expected parser-error diagnostic, got nil error and result=%#v", result)
+	}
+
+	if len(result.Diagnostics) == 0 {
+		t.Fatal("expected at least one diagnostic")
+	}
+
+	var pe *spec.Diagnostic
+	for i := range result.Diagnostics {
+		if result.Diagnostics[i].Classification == "parser_error" {
+			pe = &result.Diagnostics[i]
+			break
+		}
+	}
+	if pe == nil {
+		t.Fatalf("expected parser_error diagnostic, got %#v", result.Diagnostics)
+	}
+
+	if pe.Audited {
+		t.Fatal("parser-error diagnostic must mark audited=false")
+	}
+	if pe.Dialect != "mysql" {
+		t.Fatalf("expected dialect mysql, got %q", pe.Dialect)
+	}
+
+	if pe.GuidanceCode != "parser_upgrade_candidate" {
+		t.Fatalf("expected guidance_code parser_upgrade_candidate, got %q", pe.GuidanceCode)
+	}
+
+	const expectedRef = "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500"
+	if pe.EvidenceRef != expectedRef {
+		t.Fatalf("expected evidence_ref %q, got %q", expectedRef, pe.EvidenceRef)
+	}
+	if !strings.HasPrefix(pe.EvidenceRef, "https://github.com/Fanduzi/DeltaScope/") {
+		t.Fatalf("evidence_ref must start with GitHub base URL, got %q", pe.EvidenceRef)
+	}
+
+	if strings.Contains(pe.EvidenceRef, "v_users") {
+		t.Fatal("evidence_ref must not contain raw SQL object names")
+	}
+	if strings.Contains(pe.GuidanceCode+pe.EvidenceRef+pe.Reason+pe.ActionHint, "v_users") {
+		t.Fatal("diagnostic fields must not contain raw SQL object names")
+	}
+	combined := pe.GuidanceCode + pe.EvidenceRef + pe.Reason + pe.ActionHint + err.Error()
+	if strings.Contains(strings.ToLower(combined), "near ") {
+		t.Fatalf("SDK diagnostic leaked raw parser fragment: %q", combined)
+	}
+}
