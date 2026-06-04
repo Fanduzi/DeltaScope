@@ -323,7 +323,7 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 
 #### Unsupported Diagnostics Evidence（v0.230.0）
 
-从 `v0.230.0` 开始，parser-error 和 unsupported statement 结果通过所有公共面（CLI JSON/文本、HTTP、MCP、SDK）暴露结构化诊断证据。每条诊断携带五个字段：
+从 `v0.230.0` 开始，parser-error 和 unsupported statement 结果通过所有公共面（CLI JSON/文本、HTTP、MCP、SDK）暴露结构化诊断证据。每条诊断携带以下字段：
 
 | 字段 | 类型 | 含义 |
 |------|------|------|
@@ -332,6 +332,8 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 | `action_hint` | string | 通用的用户下一步操作建议 |
 | `audited` | bool | `false` — 该语句未被审计 |
 | `dialect` | string | 所选方言（可用时） |
+| `guidance_code` | string | 可选的机器可读边界类别（v0.260.0+） |
+| `evidence_ref` | string | 可选的 GitHub 文档 URL，指向边界证据（v0.260.0+） |
 
 对于 `parser_error` 诊断，`reason` 包含 v0.220.0 标准诊断消息，`action_hint` 建议验证方言和语法、拆分多语句输入或升级 DeltaScope。
 
@@ -363,6 +365,25 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 - 不承诺未来版本一定支持这些语法形态。
 
 开发者/验证入口 `make parser-upgrade-candidate-evidence-report` 委托到已有的 `ddl-parser-error-feasibility-report` target。这不是 CLI 用户命令。
+
+#### Unsupported Diagnostics Guidance Codes（v0.260.0）
+
+从 `v0.260.0` 开始，parser-upgrade candidate 的 parser-error 诊断携带两个额外字段，用于解释为何该语句未被审计以及在哪里可以找到详细证据：
+
+- `guidance_code` — 稳定的机器可读字符串，标识不支持的边界类别。对于 parser-upgrade candidate，值为 `parser_upgrade_candidate`。
+- `evidence_ref` — GitHub 文档 URL，指向相关的证据章节。对于 parser-upgrade candidate，链接到上方的 [Parser Upgrade Candidate Evidence (v0.250.0)](#parser-upgrade-candidate-evidence-v02500) 章节。
+
+这些字段是可选的。仅在诊断匹配已知的不支持边界时出现。未出现时，诊断仍携带 `classification`、`reason`、`action_hint`、`audited` 和 `dialect`。
+
+所有四个公共面（SDK、CLI JSON、CLI 文本、HTTP、MCP）一致暴露这些字段。CLI 文本输出在 `[diagnostic]` 行末尾追加 `guidance_code=` 和 `evidence_ref=` 键值对（存在时）。
+
+CLI 文本输出示例：
+
+```text
+[diagnostic] classification=parser_error action_hint=verify the selected dialect and syntax... guidance_code=parser_upgrade_candidate evidence_ref=https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500
+```
+
+这两个字段不包含原始 SQL、parser near-text、对象名、函数体或任何用户载荷。这不是新增 parser 支持、不是 fallback parser、也不是新增 SQL 审计规则。
 
 #### PostgreSQL DDL 覆盖范围
 
@@ -673,7 +694,7 @@ deltascope audit \
 | `make ddl-census-report` | 打印 MySQL、TiDB、PostgreSQL 的 tracked DDL coverage census —— inventory/reporting gate，不是 full SQL grammar coverage claim |
 | `make ddl-parser-error-feasibility-report` | 打印所有 tracked DDL parser-error 用例（MySQL 15、TiDB 9、PostgreSQL 5）的可行性分类 —— classification/report gate，不增加 parser 支持或 fallback 提取 |
 | `make parser-error-unsupported-contract-test` | 运行跨 application、SDK、CLI、HTTP、MCP 面的 parser-error unsupported contract 测试 —— 验证诊断信息清晰、未推断 findings、无禁止载荷泄漏；不增加 parser 支持、fallback 解析或新 SQL 审计规则 |
-| `make unsupported-diagnostics-evidence-test` | 运行跨 application、SDK、CLI、HTTP、MCP 面的 unsupported diagnostics evidence 合同测试 —— 验证结构化诊断证据（classification、reason、action_hint、audited、dialect），不泄漏原始 SQL 或 parser 内部信息；不增加 parser 支持、fallback 解析或新 SQL 审计规则 |
+| `make unsupported-diagnostics-evidence-test` | 运行跨 application、SDK、CLI、HTTP、MCP 面的 unsupported diagnostics evidence 合同测试 —— 验证结构化诊断证据（classification、reason、action_hint、audited、dialect、guidance_code、evidence_ref），不泄漏原始 SQL 或 parser 内部信息；不增加 parser 支持、fallback 解析或新 SQL 审计规则 |
 
 `v0.22.0` 是 **E2E & Release Confidence Pack**。它不引入新的 PostgreSQL SQL 规则语义，而是用规范化的仓库入口来记录并验证既有的 PostgreSQL 产品面与 release surface。后续的 `v0.23.0` 在保留这些 release-surface gates 作为规范验证路径的前提下，继续扩展 PostgreSQL `CREATE TABLE` 覆盖范围。
 

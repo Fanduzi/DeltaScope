@@ -56,6 +56,14 @@ func TestUnsupportedDiagnosticsEvidenceHTTPParserError(t *testing.T) {
 		if dialect != "mysql" {
 			t.Fatalf("expected dialect mysql, got %q", dialect)
 		}
+		guidanceCode, _ := first["guidance_code"].(string)
+		if guidanceCode != "parser_upgrade_candidate" {
+			t.Fatalf("expected guidance_code parser_upgrade_candidate, got %q", guidanceCode)
+		}
+		evidenceRef, _ := first["evidence_ref"].(string)
+		if !strings.HasPrefix(evidenceRef, "https://github.com/Fanduzi/DeltaScope/") {
+			t.Fatalf("expected GitHub evidence_ref URL, got %q", evidenceRef)
+		}
 	} else {
 		errPayload, ok := payload["error"].(map[string]any)
 		if !ok {

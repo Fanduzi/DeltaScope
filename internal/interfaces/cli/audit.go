@@ -340,6 +340,12 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 		b.WriteString("\n\n## Diagnostics\n")
 		for _, d := range result.Diagnostics {
 			fmt.Fprintf(&b, "- classification: %s\n  action_hint: %s\n  reason: %s\n  audited: %v\n  dialect: %s\n", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
+			if d.GuidanceCode != "" {
+				fmt.Fprintf(&b, "  guidance_code: %s\n", d.GuidanceCode)
+			}
+			if d.EvidenceRef != "" {
+				fmt.Fprintf(&b, "  evidence_ref: %s\n", d.EvidenceRef)
+			}
 		}
 	}
 	return []byte(b.String()), nil
@@ -378,7 +384,14 @@ func renderQuietResult(result report.Result, runContext *auditRunContext) []byte
 		lines = append(lines, fmt.Sprintf("[unsupported] %s: %s", item.Feature, item.Reason))
 	}
 	for _, d := range result.Diagnostics {
-		lines = append(lines, fmt.Sprintf("[diagnostic] classification=%s action_hint=%s reason=%s audited=%v dialect=%s", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect))
+		line := fmt.Sprintf("[diagnostic] classification=%s action_hint=%s reason=%s audited=%v dialect=%s", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
+		if d.GuidanceCode != "" {
+			line += fmt.Sprintf(" guidance_code=%s", d.GuidanceCode)
+		}
+		if d.EvidenceRef != "" {
+			line += fmt.Sprintf(" evidence_ref=%s", d.EvidenceRef)
+		}
+		lines = append(lines, line)
 	}
 	if result.RuleSummary != nil {
 		lines = append(lines, fmt.Sprintf("[summary] loaded=%d applicable=%d skipped=%d",

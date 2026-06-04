@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 )
 
 func TestUnsupportedDiagnosticsEvidenceCLIParserErrorJSON(t *testing.T) {
@@ -112,5 +115,99 @@ func TestUnsupportedDiagnosticsEvidenceCLIParserErrorText(t *testing.T) {
 	}
 	if !strings.Contains(combined, "action_hint") || !strings.Contains(combined, "not audited") {
 		t.Fatalf("expected action_hint and 'not audited' in text output, got stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	if !strings.Contains(combined, "guidance_code") {
+		t.Fatalf("expected 'guidance_code' in text output for parser-upgrade candidate, got stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	if !strings.Contains(combined, "parser_upgrade_candidate") {
+		t.Fatalf("expected 'parser_upgrade_candidate' guidance_code value in text output, got stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	if !strings.Contains(combined, "evidence_ref") {
+		t.Fatalf("expected 'evidence_ref' in text output for parser-upgrade candidate, got stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	if !strings.Contains(combined, "https://github.com/fanduzi/deltascope/") {
+		t.Fatalf("expected GitHub evidence_ref URL in text output, got stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
+func TestUnsupportedDiagnosticsGuidanceMarkdownRender(t *testing.T) {
+	t.Parallel()
+
+	output, err := renderMarkdownResult(report.Result{
+		Verdict: report.VerdictPass,
+		Diagnostics: []spec.Diagnostic{
+			{
+				Classification: "parser_error",
+				Reason:         "statement was not audited",
+				ActionHint:     "verify the selected dialect",
+				Audited:        false,
+				Dialect:        "mysql",
+				GuidanceCode:   "parser_upgrade_candidate",
+				EvidenceRef:    "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+			},
+		},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render markdown: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "guidance_code: parser_upgrade_candidate") {
+		t.Fatalf("expected guidance_code in markdown diagnostics, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "evidence_ref: https://github.com/Fanduzi/DeltaScope/") {
+		t.Fatalf("expected evidence_ref URL in markdown diagnostics, got %q", rendered)
+	}
+}
+
+func TestUnsupportedDiagnosticsGuidanceQuietRender(t *testing.T) {
+	t.Parallel()
+
+	output := renderQuietResult(report.Result{
+		Verdict: report.VerdictPass,
+		Diagnostics: []spec.Diagnostic{
+			{
+				Classification: "parser_error",
+				Reason:         "statement was not audited",
+				ActionHint:     "verify the selected dialect",
+				Audited:        false,
+				Dialect:        "mysql",
+				GuidanceCode:   "parser_upgrade_candidate",
+				EvidenceRef:    "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+			},
+		},
+	}, nil)
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "guidance_code=parser_upgrade_candidate") {
+		t.Fatalf("expected guidance_code in quiet output, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "evidence_ref=https://github.com/Fanduzi/DeltaScope/") {
+		t.Fatalf("expected evidence_ref URL in quiet output, got %q", rendered)
+	}
+}
+
+func TestUnsupportedDiagnosticsNoGuidanceOmitsFields(t *testing.T) {
+	t.Parallel()
+
+	output := renderQuietResult(report.Result{
+		Verdict: report.VerdictPass,
+		Diagnostics: []spec.Diagnostic{
+			{
+				Classification: "parser_error",
+				Reason:         "statement was not audited",
+				ActionHint:     "verify the selected dialect",
+				Audited:        false,
+				Dialect:        "mysql",
+			},
+		},
+	}, nil)
+
+	rendered := string(output)
+	if strings.Contains(rendered, "guidance_code=") {
+		t.Fatalf("expected no guidance_code for diagnostic without guidance, got %q", rendered)
+	}
+	if strings.Contains(rendered, "evidence_ref=") {
+		t.Fatalf("expected no evidence_ref for diagnostic without guidance, got %q", rendered)
 	}
 }

@@ -55,6 +55,18 @@ func TestUnsupportedDiagnosticsEvidenceMCPParserError(t *testing.T) {
 	if !strings.Contains(bodyLower, "not audited") {
 		t.Fatalf("expected 'not audited' reason text in MCP response, got %s", bodyJSON)
 	}
+	if !strings.Contains(bodyLower, "guidance_code") {
+		t.Fatalf("expected guidance_code in MCP response, got %s", bodyJSON)
+	}
+	if !strings.Contains(bodyLower, "parser_upgrade_candidate") {
+		t.Fatalf("expected parser_upgrade_candidate guidance_code value in MCP response, got %s", bodyJSON)
+	}
+	if !strings.Contains(bodyLower, "evidence_ref") {
+		t.Fatalf("expected evidence_ref in MCP response, got %s", bodyJSON)
+	}
+	if !strings.Contains(bodyLower, "https://github.com/fanduzi/deltascope/") {
+		t.Fatalf("expected GitHub evidence_ref URL in MCP response, got %s", bodyJSON)
+	}
 
 	for _, content := range result.Content {
 		if text, ok := content.(*sdkmcp.TextContent); ok {

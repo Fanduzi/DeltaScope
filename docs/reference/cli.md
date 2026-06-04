@@ -363,7 +363,7 @@ When the selected dialect parser cannot parse a tracked DDL statement, DeltaScop
 
 #### Unsupported Diagnostics Evidence (v0.230.0)
 
-Starting with `v0.230.0`, parser-error and unsupported statement outcomes expose structured diagnostic evidence through all public surfaces (CLI JSON/text, HTTP, MCP, SDK). Each diagnostic carries five fields:
+Starting with `v0.230.0`, parser-error and unsupported statement outcomes expose structured diagnostic evidence through all public surfaces (CLI JSON/text, HTTP, MCP, SDK). Each diagnostic carries these fields:
 
 | Field | Type | Meaning |
 |-------|------|---------|
@@ -372,6 +372,8 @@ Starting with `v0.230.0`, parser-error and unsupported statement outcomes expose
 | `action_hint` | string | Generic next step for the user |
 | `audited` | bool | `false` — the statement was not audited |
 | `dialect` | string | Selected dialect when available |
+| `guidance_code` | string | Optional machine-readable boundary category (v0.260.0+) |
+| `evidence_ref` | string | Optional GitHub documentation URL for the boundary evidence (v0.260.0+) |
 
 For `parser_error` diagnostics, `reason` contains the v0.220.0 standard diagnostic message and `action_hint` suggests verifying the dialect and syntax, splitting multi-statement input, or upgrading DeltaScope.
 
@@ -401,6 +403,25 @@ Key points:
 - The `parser_error` diagnostic still means the statement was not audited. Users should not treat `parser_error` as PASS.
 - Users should review parser-error statements manually.
 - No promise that future versions will support these syntax forms.
+
+#### Unsupported Diagnostics Guidance Codes (v0.260.0)
+
+Starting with `v0.260.0`, parser-error diagnostics for parser-upgrade candidates carry two additional fields to explain why the statement was not audited and where to find detailed evidence:
+
+- `guidance_code` — a stable machine-readable string identifying the unsupported boundary category. For parser-upgrade candidates, the value is `parser_upgrade_candidate`.
+- `evidence_ref` — a GitHub documentation URL pointing to the relevant evidence section. For parser-upgrade candidates, this links to the [Parser Upgrade Candidate Evidence (v0.250.0)](#parser-upgrade-candidate-evidence-v02500) section above.
+
+These fields are optional. They appear only when the diagnostic matches a known unsupported boundary. When absent, the diagnostic still carries `classification`, `reason`, `action_hint`, `audited`, and `dialect`.
+
+All four public surfaces (SDK, CLI JSON, CLI text, HTTP, MCP) expose these fields consistently. CLI text output appends `guidance_code=` and `evidence_ref=` key-value pairs to the `[diagnostic]` line when present.
+
+Example CLI text output for a parser-upgrade candidate:
+
+```text
+[diagnostic] classification=parser_error action_hint=verify the selected dialect and syntax... guidance_code=parser_upgrade_candidate evidence_ref=https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500
+```
+
+Neither field contains raw SQL, parser near-text, object names, function bodies, or any user payload. This is not new parser support, not a fallback parser, and not new SQL audit rules.
 
 The developer/verification entry point `make parser-upgrade-candidate-evidence-report` delegates to the existing `ddl-parser-error-feasibility-report` target. It is not a CLI user command.
 
@@ -713,7 +734,7 @@ This does not add new rule IDs, parser features, public API contracts, live sche
 | `make ddl-census-report` | Print tracked DDL coverage census for MySQL, TiDB, and PostgreSQL — inventory/reporting gate, not a full SQL grammar coverage claim |
 | `make ddl-parser-error-feasibility-report` | Print parser-error feasibility classification for all tracked DDL parser-error cases (MySQL 15, TiDB 9, PostgreSQL 5) — classification/report gate, not parser support or fallback extraction |
 | `make parser-error-unsupported-contract-test` | Run parser-error unsupported contract tests across application, SDK, CLI, HTTP, and MCP surfaces — verifies diagnostic clarity, no findings inferred, no forbidden payload leak; does not add parser support, fallback parsing, or new SQL audit rules |
-| `make unsupported-diagnostics-evidence-test` | Run unsupported diagnostics evidence contract tests across application, SDK, CLI, HTTP, and MCP surfaces — verifies structured diagnostic evidence (classification, reason, action_hint, audited, dialect) without leaking raw SQL or parser internals; does not add parser support, fallback parsing, or new SQL audit rules |
+| `make unsupported-diagnostics-evidence-test` | Run unsupported diagnostics evidence contract tests across application, SDK, CLI, HTTP, and MCP surfaces — verifies structured diagnostic evidence (classification, reason, action_hint, audited, dialect, guidance_code, evidence_ref) without leaking raw SQL or parser internals; does not add parser support, fallback parsing, or new SQL audit rules |
 
 `v0.22.0` is the **E2E & Release Confidence Pack**. It does not add new PostgreSQL SQL rule semantics; it documents and validates the existing PostgreSQL product and release surfaces with canonical repository entrypoints. `v0.23.0` then extends the documented PostgreSQL `CREATE TABLE` coverage while keeping these release-surface gates as the canonical verification path.
 
