@@ -70,4 +70,6 @@ type Diagnostic struct {
 	ActionHint     string `json:"action_hint"`
 	Audited        bool   `json:"audited"`
 	Dialect        string `json:"dialect,omitempty"`
+	GuidanceCode   string `json:"guidance_code,omitempty"`
+	EvidenceRef    string `json:"evidence_ref,omitempty"`
 }

@@ -86,7 +86,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 			return report.Result{}, err
 		}
 		return report.Result{
-			Diagnostics: []spec.Diagnostic{newParserErrorDiagnostic(request.Dialect)},
+			Diagnostics: []spec.Diagnostic{newParserErrorDiagnosticWithGuidance(request.Dialect, request.SQL)},
 		}, errParserUnsupported
 	}
 	if err := ctx.Err(); err != nil {

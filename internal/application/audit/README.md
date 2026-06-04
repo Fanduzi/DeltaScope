@@ -20,7 +20,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | service.go | Orchestrates the full audit flow across policy loading, parsing, extraction, top-level request metadata plumbing, optional metadata enrichment, post-enrichment DML impact attachment/refinement, rule registration, evaluation, partial-support error propagation for unsupported statements, and diagnostic evidence attachment for parser-error and unsupported outcomes |
 | service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, multi-statement SQL, PostgreSQL validation-boundary acceptance, mixed supported/unsupported partial results, metadata enrichment behavior, metadata-backed DML `impact` surfacing, and schema-only context/top-level request plumbing |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches schema, instance, target-table, and non-table object snapshots to statements before evaluation |
-| diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint) and helpers for constructing parser-error and unsupported statement diagnostics |
+| diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
 
 ## Exports
 
@@ -43,7 +43,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 ## Notes
 
-- `report.Result` carries an additive `Diagnostics []spec.Diagnostic` field. When the parser fails to parse a statement (parser-error path) or when a statement is an explicitly unsupported boundary (unsupported path), diagnostics are populated with `classification` (`parser_error` or `unsupported_statement`), `reason`, `action_hint`, `audited` (always `false`), and `dialect`. Diagnostics do not contain raw SQL text, parser `near ...` fragments, or any other forbidden payload.
+- `report.Result` carries an additive `Diagnostics []spec.Diagnostic` field. When the parser fails to parse a statement (parser-error path) or when a statement is an explicitly unsupported boundary (unsupported path), diagnostics are populated with `classification` (`parser_error` or `unsupported_statement`), `reason`, `action_hint`, `audited` (always `false`), and `dialect`. Parser-error diagnostics may also carry `guidance_code` (e.g., `parser_upgrade_candidate`) and `evidence_ref` (GitHub documentation URL) when the statement form matches a known unsupported boundary. Diagnostics do not contain raw SQL text, parser `near ...` fragments, or any other forbidden payload.
 
 ## Dependencies
 - Upstream: future CLI and public audit entrypoints
