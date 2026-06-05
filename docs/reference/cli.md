@@ -425,6 +425,8 @@ Neither field contains raw SQL, parser near-text, object names, function bodies,
 
 The developer/verification entry point `make parser-upgrade-candidate-evidence-report` delegates to the existing `ddl-parser-error-feasibility-report` target. It is not a CLI user command.
 
+For a complete DDL coverage catalog across all dialects with per-form classification, see [ddl-coverage.md](ddl-coverage.md).
+
 #### PostgreSQL DDL Coverage
 
 Starting with `v0.21.0`, DeltaScope normalizes common PostgreSQL migration follow-up DDL through the shared audit pipeline. These forms no longer return capability-boundary errors:

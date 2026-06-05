@@ -385,6 +385,8 @@ CLI 文本输出示例：
 
 这两个字段不包含原始 SQL、parser near-text、对象名、函数体或任何用户载荷。这不是新增 parser 支持、不是 fallback parser、也不是新增 SQL 审计规则。
 
+跨方言 DDL 覆盖目录（含每条形态的分类）见 [ddl-coverage.zh-CN.md](ddl-coverage.zh-CN.md)。
+
 #### PostgreSQL DDL 覆盖范围
 
 从 `v0.21.0` 开始，DeltaScope 将常见 PostgreSQL 迁移后续 DDL 通过共享审核管线进行标准化处理。以下形式不再返回能力边界错误：
