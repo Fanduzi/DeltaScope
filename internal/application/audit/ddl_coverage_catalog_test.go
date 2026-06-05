@@ -44,9 +44,9 @@ type catalogJSON struct {
 // --- Constants ---
 
 const (
-	catalogVersion      = "v0.270.0"
-	catalogJSONRelPath  = "../../../docs/reference/ddl-coverage-catalog.json"
-	catalogProjectRoot  = "../../../"
+	catalogVersion     = "v0.270.0"
+	catalogJSONRelPath = "../../../docs/reference/ddl-coverage-catalog.json"
+	catalogProjectRoot = "../../../"
 )
 
 var catalogGeneratedFrom = []string{

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestUnsupportedDiagnosticsEvidenceCLIParserErrorJSON(t *testing.T) {

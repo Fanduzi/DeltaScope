@@ -14,40 +14,40 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
 	const expectedRef = "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500"
 
 	tests := []struct {
-		name         string
-		sql          string
-		dialect      spec.Dialect
+		name           string
+		sql            string
+		dialect        spec.Dialect
 		forbiddenNames []string
 	}{
 		// MySQL candidates (5)
 		{
-			name:         "MySQL ALTER VIEW",
-			sql:          "ALTER VIEW v_users AS SELECT id, name FROM users",
-			dialect:      spec.DialectMySQL,
+			name:           "MySQL ALTER VIEW",
+			sql:            "ALTER VIEW v_users AS SELECT id, name FROM users",
+			dialect:        spec.DialectMySQL,
 			forbiddenNames: []string{"v_users"},
 		},
 		{
-			name:         "MySQL ALTER PROCEDURE",
-			sql:          "ALTER PROCEDURE p1 COMMENT 'x'",
-			dialect:      spec.DialectMySQL,
+			name:           "MySQL ALTER PROCEDURE",
+			sql:            "ALTER PROCEDURE p1 COMMENT 'x'",
+			dialect:        spec.DialectMySQL,
 			forbiddenNames: []string{"p1"},
 		},
 		{
-			name:         "MySQL CREATE FUNCTION",
-			sql:          "CREATE FUNCTION f1() RETURNS INT RETURN 1",
-			dialect:      spec.DialectMySQL,
+			name:           "MySQL CREATE FUNCTION",
+			sql:            "CREATE FUNCTION f1() RETURNS INT RETURN 1",
+			dialect:        spec.DialectMySQL,
 			forbiddenNames: []string{"f1"},
 		},
 		{
-			name:         "MySQL ALTER FUNCTION",
-			sql:          "ALTER FUNCTION f1 COMMENT 'x'",
-			dialect:      spec.DialectMySQL,
+			name:           "MySQL ALTER FUNCTION",
+			sql:            "ALTER FUNCTION f1 COMMENT 'x'",
+			dialect:        spec.DialectMySQL,
 			forbiddenNames: []string{"f1"},
 		},
 		{
-			name:         "MySQL DROP FUNCTION",
-			sql:          "DROP FUNCTION f1",
-			dialect:      spec.DialectMySQL,
+			name:           "MySQL DROP FUNCTION",
+			sql:            "DROP FUNCTION f1",
+			dialect:        spec.DialectMySQL,
 			forbiddenNames: []string{"f1"},
 		},
 		// PostgreSQL candidates (5) are in the postgresql-tag counterpart.
