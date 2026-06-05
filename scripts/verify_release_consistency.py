@@ -13,6 +13,23 @@ from pathlib import Path
 
 
 RELEASE_FACTS = {
+    "v0.270.0": {
+        "pg_alter_table_rule_count": 32,
+        "sql_corpus": {
+            "supported_rule_dialect_targets": 582,
+            "covered_rule_dialect_targets": 582,
+            "coverage_percent": "100.0",
+            "expected_yaml_files_total": 245,
+        },
+        "required_rule_ids": [],
+        "ddl_coverage_catalog": {
+            "total_entries": 400,
+            "mysql_entries": 61,
+            "tidb_entries": 54,
+            "postgresql_entries": 285,
+            "parser_upgrade_candidate_count": 18,
+        },
+    },
     "v0.260.0": {
         "pg_alter_table_rule_count": 32,
         "sql_corpus": {
@@ -596,6 +613,67 @@ def _validate_no_leak(root, version, errors):
                         )
 
 
+def _validate_ddl_coverage_catalog(root, version, facts, errors):
+    catalog_facts = facts.get("ddl_coverage_catalog")
+    if catalog_facts is None:
+        return
+
+    import json as _json
+
+    catalog_path = root / "docs/reference/ddl-coverage-catalog.json"
+    if not catalog_path.exists():
+        errors.append(
+            "docs/reference/ddl-coverage-catalog.json does not exist"
+        )
+        return
+
+    try:
+        catalog = _json.loads(catalog_path.read_text(encoding="utf-8"))
+    except _json.JSONDecodeError as exc:
+        errors.append(
+            f"docs/reference/ddl-coverage-catalog.json is not valid JSON: {exc}"
+        )
+        return
+
+    entries = catalog.get("entries", [])
+    if len(entries) != catalog_facts["total_entries"]:
+        errors.append(
+            f"catalog has {len(entries)} entries, "
+            f"expected {catalog_facts['total_entries']}"
+        )
+
+    summary = catalog.get("summary", {})
+    for dialect, expected_key in [
+        ("mysql", "mysql_entries"),
+        ("tidb", "tidb_entries"),
+        ("postgresql", "postgresql_entries"),
+    ]:
+        dialect_summary = summary.get(dialect, {})
+        count = dialect_summary.get("total", 0)
+        if count != catalog_facts[expected_key]:
+            errors.append(
+                f"catalog summary {dialect} total is {count}, "
+                f"expected {catalog_facts[expected_key]}"
+            )
+
+    puc_count = sum(
+        1 for e in entries
+        if e.get("guidance_code") == "parser_upgrade_candidate"
+    )
+    if puc_count != catalog_facts["parser_upgrade_candidate_count"]:
+        errors.append(
+            f"catalog has {puc_count} parser_upgrade_candidate entries, "
+            f"expected {catalog_facts['parser_upgrade_candidate_count']}"
+        )
+
+    en_doc = root / "docs/reference/ddl-coverage.md"
+    zh_doc = root / "docs/reference/ddl-coverage.zh-CN.md"
+    if not en_doc.exists():
+        errors.append("docs/reference/ddl-coverage.md does not exist")
+    if not zh_doc.exists():
+        errors.append("docs/reference/ddl-coverage.zh-CN.md does not exist")
+
+
 def validate_all(root, version):
     """Run all release surface consistency gates."""
     root = Path(root)
@@ -612,6 +690,7 @@ def validate_all(root, version):
     _validate_required_rule_ids(root, version, facts, errors)
     _validate_no_overclaim(root, version, errors)
     _validate_no_leak(root, version, errors)
+    _validate_ddl_coverage_catalog(root, version, facts, errors)
 
     if errors:
         raise ReleaseConsistencyError("\n".join(errors))
@@ -668,6 +747,18 @@ def main():
         print(
             f"release-consistency: pg alter table rule count "
             f"{facts['pg_alter_table_rule_count']}"
+        )
+
+    catalog = facts.get("ddl_coverage_catalog")
+    if catalog:
+        print(
+            f"release-consistency: ddl coverage catalog "
+            f"{catalog['total_entries']} entries "
+            f"(mysql {catalog['mysql_entries']}, "
+            f"tidb {catalog['tidb_entries']}, "
+            f"postgresql {catalog['postgresql_entries']}), "
+            f"{catalog['parser_upgrade_candidate_count']} "
+            f"parser_upgrade_candidate"
         )
 
     print("release-consistency: PASS")

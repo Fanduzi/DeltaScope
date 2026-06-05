@@ -6,6 +6,31 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.270.0] - 2026-06-05
+
+### Added
+
+- DDL coverage catalog: a machine-readable JSON artifact at `docs/reference/ddl-coverage-catalog.json` listing 400 verified DDL forms across MySQL (61), TiDB (54), and PostgreSQL (285).
+- Each catalog entry includes dialect, family, form label, classification, guidance metadata, rule IDs, and a human-readable note.
+- Classification vocabulary: `finding_covered`, `normalized_silent`, `unsupported_boundary`, `parser_error`, `unclassified`.
+- 18 entries with `guidance_code=parser_upgrade_candidate` and `evidence_ref` documentation links, including all 10 required candidates.
+- Drift gate: `make ddl-coverage-catalog-test` verifies catalog JSON stays aligned with census tests.
+- English user documentation: `docs/reference/ddl-coverage.md`.
+- Chinese user documentation: `docs/reference/ddl-coverage.zh-CN.md` (full parity).
+- Decision record: `docs/decisions/2026-06-05-v0.270.0-ddl-coverage-catalog.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not runtime/catalog validation.
+- Not SQL audit behavior changes of any kind.
+- Not public output shape changes.
+
 ## [v0.260.0] - 2026-06-04
 
 ### Added

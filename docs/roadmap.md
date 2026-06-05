@@ -4,7 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.260.0 Unsupported Diagnostics Guidance Codes
+## Latest Completed Milestone: v0.270.0 DDL Coverage Catalog
+
+**Goal:** create a consolidated DDL coverage catalog listing every DDL form DeltaScope has verified across MySQL, TiDB, and PostgreSQL. The catalog is machine-readable JSON generated from census data, with bilingual user documentation and a drift gate. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
+
+### Completed Scope
+
+- Machine-readable catalog: `docs/reference/ddl-coverage-catalog.json` — 400 entries (MySQL 61, TiDB 54, PostgreSQL 285).
+- Classification vocabulary: `finding_covered`, `normalized_silent`, `unsupported_boundary`, `parser_error`, `unclassified`.
+- 18 entries with `guidance_code=parser_upgrade_candidate`, including all 10 required candidates.
+- Drift gate: `make ddl-coverage-catalog-test` keeps catalog JSON aligned with census tests.
+- English documentation: `docs/reference/ddl-coverage.md`.
+- Chinese documentation: `docs/reference/ddl-coverage.zh-CN.md` (full parity).
+- No-leak guarantee: catalog contains no raw SQL, parser near-text, object names, or user payload.
+- Decision record: `docs/decisions/2026-06-05-v0.270.0-ddl-coverage-catalog.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not full MySQL/TiDB/PostgreSQL DDL support.
+- Not dialect parity.
+- Not SQL audit behavior changes of any kind.
+
+## Previous Milestone: v0.260.0 Unsupported Diagnostics Guidance Codes
 
 **Goal:** add `guidance_code` and `evidence_ref` to parser_error diagnostics so users can tell which unsupported boundary a statement falls into and find detailed evidence documentation. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
 
