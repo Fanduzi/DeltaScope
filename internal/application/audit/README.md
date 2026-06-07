@@ -21,6 +21,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, multi-statement SQL, PostgreSQL validation-boundary acceptance, mixed supported/unsupported partial results, metadata enrichment behavior, metadata-backed DML `impact` surfacing, and schema-only context/top-level request plumbing |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches schema, instance, target-table, and non-table object snapshots to statements before evaluation |
 | diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
+| ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadCatalog, QueryCatalog, and Validate for reading and filtering the checked-in DDL coverage catalog without invoking the audit engine |
 
 ## Exports
 
@@ -40,6 +41,12 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 - `ParsedStatement`
 - `ParsedSQL`
 - `PostgreSQLCapabilityBoundaryError`
+- `CatalogEntry`
+- `CatalogQuery`
+- `CatalogResult`
+- `LoadCatalog(path string) ([]CatalogEntry, error)`
+- `QueryCatalog(entries []CatalogEntry, q CatalogQuery) CatalogResult`
+- `CatalogQuery.Validate() error`
 
 ## Notes
 
