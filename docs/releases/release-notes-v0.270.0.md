@@ -74,7 +74,7 @@ A machine-readable catalog at `docs/reference/ddl-coverage-catalog.json` now lis
 ## Unchanged Metrics
 
 - SQL corpus: **582/582**, **100.0%**, **245 YAML** fixture files.
-- PostgreSQL ALTER TABLE rule count: **32** (unchanged).
+- PostgreSQL ALTER TABLE config entries: **53** (v0.170.0 stated 32; corrected after post-release audit found the count had drifted).
 - PostgreSQL consolidated DDL census: **285/274/6/0/5/0** (unchanged).
 - Parser-error total: **29** cases across all dialects (unchanged).
 - MySQL/TiDB DDL Notice section: **27** (unchanged).

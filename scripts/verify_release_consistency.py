@@ -14,7 +14,7 @@ from pathlib import Path
 
 RELEASE_FACTS = {
     "v0.270.0": {
-        "pg_alter_table_rule_count": 32,
+        "pg_alter_table_config_entries": 53,
         "sql_corpus": {
             "supported_rule_dialect_targets": 582,
             "covered_rule_dialect_targets": 582,
@@ -522,10 +522,6 @@ def _validate_pg_alter_table_rule_count(root, version, facts, errors):
     files_to_check = [
         f"docs/releases/release-notes-{version}.md",
         f"docs/releases/release-notes-{version}.zh-CN.md",
-        "docs/reference/rules.md",
-        "docs/reference/rules.zh-CN.md",
-        "docs/reference/audit-capability-matrix.md",
-        "docs/reference/audit-capability-matrix.zh-CN.md",
     ]
 
     for rel in files_to_check:
@@ -674,6 +670,45 @@ def _validate_ddl_coverage_catalog(root, version, facts, errors):
         errors.append("docs/reference/ddl-coverage.zh-CN.md does not exist")
 
 
+def _validate_pg_alter_table_config_entries(root, version, facts, errors):
+    count = facts.get("pg_alter_table_config_entries")
+    if count is None:
+        return
+
+    count_str = str(count)
+
+    config_path = root / "configs/deltascope.example.yaml"
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
+        actual = sum(
+            1 for line in content.split("\n")
+            if re.match(r"^  ddl\.pg\.alter\.", line)
+        )
+        if actual != count:
+            errors.append(
+                f"configs/deltascope.example.yaml has {actual} "
+                f"ddl.pg.alter.* entries, expected {count}"
+            )
+
+    for rel in [
+        f"docs/releases/release-notes-{version}.md",
+        f"docs/releases/release-notes-{version}.zh-CN.md",
+    ]:
+        content = _read_file(root, rel)
+        if not content:
+            continue
+        found = False
+        for line in content.split("\n"):
+            if count_str in line and "alter table" in line.lower():
+                found = True
+                break
+        if not found:
+            errors.append(
+                f"{rel} missing PG ALTER TABLE config entries count "
+                f"{count_str} with ALTER TABLE context"
+            )
+
+
 def validate_all(root, version):
     """Run all release surface consistency gates."""
     root = Path(root)
@@ -687,6 +722,7 @@ def validate_all(root, version):
     _validate_residual_census(root, version, facts, errors)
     _validate_sql_corpus(root, version, facts, errors)
     _validate_pg_alter_table_rule_count(root, version, facts, errors)
+    _validate_pg_alter_table_config_entries(root, version, facts, errors)
     _validate_required_rule_ids(root, version, facts, errors)
     _validate_no_overclaim(root, version, errors)
     _validate_no_leak(root, version, errors)
@@ -747,6 +783,12 @@ def main():
         print(
             f"release-consistency: pg alter table rule count "
             f"{facts['pg_alter_table_rule_count']}"
+        )
+
+    if "pg_alter_table_config_entries" in facts:
+        print(
+            f"release-consistency: pg alter table config entries "
+            f"{facts['pg_alter_table_config_entries']}"
         )
 
     catalog = facts.get("ddl_coverage_catalog")

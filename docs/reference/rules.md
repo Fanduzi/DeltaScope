@@ -503,7 +503,7 @@ These rules guard PostgreSQL table-level privilege DCL operations — `GRANT ...
 
 ---
 
-## DDL: PostgreSQL ALTER TABLE Coverage Rules (32 rules)
+## DDL: PostgreSQL ALTER TABLE Coverage Rules (53 config entries)
 
 These rules extend PostgreSQL ALTER TABLE audit coverage beyond the migration-safety and object lifecycle families. They only apply when `--dialect postgresql` is set and are skipped for MySQL/TiDB dialects.
 

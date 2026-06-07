@@ -348,6 +348,54 @@ class TestReleaseConsistency(unittest.TestCase):
             "CHANGELOG.md": multi_changelog,
         })
 
+    # --- Config entries validator tests ---
+
+    def test_config_entry_counter_counts_only_alter_table(self):
+        """ddl.pg.alter.* should count ALTER TABLE entries, not alter_*."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config_dir = root / "configs"
+            config_dir.mkdir()
+            config_content = (
+                "rules:\n"
+                "  ddl.pg.alter.add_column.nullable.notice:\n"
+                "    enabled: true\n"
+                "  ddl.pg.alter.set_tablespace.notice:\n"
+                "    enabled: true\n"
+                "  ddl.pg.alter_aggregate.notice:\n"
+                "    enabled: true\n"
+            )
+            (config_dir / "deltascope.example.yaml").write_text(
+                config_content, encoding="utf-8"
+            )
+            errors = []
+            vrc._validate_pg_alter_table_config_entries(
+                root, "v0.test", {"pg_alter_table_config_entries": 2}, errors
+            )
+            self.assertEqual(
+                errors, [], f"Expected no errors, got: {errors}"
+            )
+
+    def test_config_entry_counter_rejects_wrong_count(self):
+        """Wrong config entry count should be rejected."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config_dir = root / "configs"
+            config_dir.mkdir()
+            config_content = (
+                "rules:\n"
+                "  ddl.pg.alter.add_column.nullable.notice:\n"
+                "    enabled: true\n"
+            )
+            (config_dir / "deltascope.example.yaml").write_text(
+                config_content, encoding="utf-8"
+            )
+            errors = []
+            vrc._validate_pg_alter_table_config_entries(
+                root, "v0.test", {"pg_alter_table_config_entries": 99}, errors
+            )
+            self.assertTrue(len(errors) > 0, "Expected error for wrong count")
+
 
 if __name__ == "__main__":
     unittest.main()

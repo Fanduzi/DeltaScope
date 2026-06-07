@@ -494,7 +494,7 @@ deltascope rules search "prefix"
 
 ---
 
-## DDL：PostgreSQL ALTER TABLE 覆盖规则（32 条）
+## DDL：PostgreSQL ALTER TABLE 覆盖规则（53 条配置）
 
 这些规则在 PostgreSQL Migration-Safety 和 Object Lifecycle 规则族之外扩展 ALTER TABLE 审核覆盖。仅在 `--dialect postgresql` 时生效，MySQL/TiDB 方言自动跳过。
 

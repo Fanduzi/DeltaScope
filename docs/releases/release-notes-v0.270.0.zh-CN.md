@@ -74,7 +74,7 @@ v0.270.0 引入 DDL 覆盖范围目录，将 DeltaScope 在 MySQL、TiDB 和 Pos
 ## 未变指标
 
 - SQL 语料库: **582/582**, **100.0%**, **245 YAML** fixture 文件。
-- PostgreSQL ALTER TABLE 规则计数: **32**（未变）。
+- PostgreSQL ALTER TABLE 配置条目: **53**（v0.170.0 记载 32；发售后审计发现计数已漂移，予以纠正）。
 - PostgreSQL 合并 DDL 普查: **285/274/6/0/5/0**（未变）。
 - Parser-error 合计: **29** 例跨所有方言（未变）。
 - MySQL/TiDB DDL Notice 段: **27**（未变）。
