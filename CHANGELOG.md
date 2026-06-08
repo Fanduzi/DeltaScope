@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.280.0] - 2026-06-08
+
+### Added
+
+- CLI catalog lookup: `deltascope ddl-coverage` command queries the DDL coverage catalog with filters for dialect, classification, guidance code, family, form, and free-text search.
+- Output formats: human-readable table (default) and JSON (`--format json`).
+- Configurable row limit (`--limit`, default 50; `0` for unlimited).
+- Decision record: `docs/decisions/2026-06-07-v0.280.0-ddl-coverage-catalog-query.md`.
+
+### Non-Goals
+
+- Not new parser support.
+- Not new SQL audit rules.
+- Not fallback parser implementation.
+- Not reduced parser_error counts.
+- Not audit verdict or finding semantic changes.
+- Not SQL audit behavior changes.
+
 ## [v0.270.0] - 2026-06-05
 
 ### Added

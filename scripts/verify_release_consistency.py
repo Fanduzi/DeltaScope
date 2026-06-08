@@ -13,6 +13,23 @@ from pathlib import Path
 
 
 RELEASE_FACTS = {
+    "v0.280.0": {
+        "pg_alter_table_config_entries": 53,
+        "sql_corpus": {
+            "supported_rule_dialect_targets": 582,
+            "covered_rule_dialect_targets": 582,
+            "coverage_percent": "100.0",
+            "expected_yaml_files_total": 245,
+        },
+        "required_rule_ids": [],
+        "ddl_coverage_catalog": {
+            "total_entries": 400,
+            "mysql_entries": 61,
+            "tidb_entries": 54,
+            "postgresql_entries": 285,
+            "parser_upgrade_candidate_count": 18,
+        },
+    },
     "v0.270.0": {
         "pg_alter_table_config_entries": 53,
         "sql_corpus": {

@@ -4,20 +4,18 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.270.0 DDL Coverage Catalog
+## Latest Completed Milestone: v0.280.0 DDL Coverage Catalog Query
 
-**Goal:** create a consolidated DDL coverage catalog listing every DDL form DeltaScope has verified across MySQL, TiDB, and PostgreSQL. The catalog is machine-readable JSON generated from census data, with bilingual user documentation and a drift gate. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
+**Goal:** add a `deltascope ddl-coverage` CLI command that queries the DDL coverage catalog with filters (dialect, classification, guidance code, family, form, search) and outputs results as a table or JSON. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
 
 ### Completed Scope
 
-- Machine-readable catalog: `docs/reference/ddl-coverage-catalog.json` — 400 entries (MySQL 61, TiDB 54, PostgreSQL 285).
-- Classification vocabulary: `finding_covered`, `normalized_silent`, `unsupported_boundary`, `parser_error`, `unclassified`.
-- 18 entries with `guidance_code=parser_upgrade_candidate`, including all 10 required candidates.
-- Drift gate: `make ddl-coverage-catalog-test` keeps catalog JSON aligned with census tests.
-- English documentation: `docs/reference/ddl-coverage.md`.
-- Chinese documentation: `docs/reference/ddl-coverage.zh-CN.md` (full parity).
-- No-leak guarantee: catalog contains no raw SQL, parser near-text, object names, or user payload.
-- Decision record: `docs/decisions/2026-06-05-v0.270.0-ddl-coverage-catalog.md`.
+- CLI command: `deltascope ddl-coverage` with filter flags (`--dialect`, `--classification`, `--guidance-code`, `--family`, `--form`, `--search`).
+- Output formats: human-readable table (default) and JSON (`--format json`).
+- Configurable row limit (`--limit`, default 50; `0` for unlimited).
+- Core query logic: `internal/application/ddlcoverage` package.
+- CLI integration: `internal/interfaces/cli/ddl_coverage.go`.
+- Decision record: `docs/decisions/2026-06-07-v0.280.0-ddl-coverage-catalog-query.md`.
 
 ### Non-Goals
 
@@ -25,11 +23,10 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Not new SQL audit rules.
 - Not fallback parser implementation.
 - Not reduced parser_error counts.
-- Not full MySQL/TiDB/PostgreSQL DDL support.
-- Not dialect parity.
-- Not SQL audit behavior changes of any kind.
+- Not audit verdict or finding semantic changes.
+- Not SQL audit behavior changes.
 
-## Previous Milestone: v0.260.0 Unsupported Diagnostics Guidance Codes
+## Previous Milestone: v0.270.0 DDL Coverage Catalog
 
 **Goal:** add `guidance_code` and `evidence_ref` to parser_error diagnostics so users can tell which unsupported boundary a statement falls into and find detailed evidence documentation. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
 
