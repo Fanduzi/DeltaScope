@@ -111,6 +111,110 @@ deltascope audit --dialect postgresql --sql "DROP SUBSCRIPTION sub WITH (DROP SL
 
 ---
 
+## 覆盖目录查询（v0.280.0）
+
+从 `v0.280.0` 开始，`deltascope ddl-coverage` CLI 命令可直接查询生成的覆盖目录。这是目录查询工具——它不执行审计、不解析 SQL、不调用审计服务。
+
+### 概要
+
+```bash
+deltascope ddl-coverage [flags]
+```
+
+### 标志
+
+| 标志 | 默认值 | 描述 |
+|------|--------|------|
+| `--dialect` | （无） | 按方言过滤：`mysql`、`tidb`、`postgresql` |
+| `--classification` | （无） | 按分类过滤：`finding_covered`、`normalized_silent`、`unsupported_boundary`、`parser_error`、`unclassified` |
+| `--guidance-code` | （无） | 按 guidance code 过滤：`parser_upgrade_candidate` |
+| `--family` | （无） | 对目录 family 字段做大小写不敏感子串匹配 |
+| `--form` | （无） | 对目录 form 字段做大小写不敏感子串匹配 |
+| `--search` | （无） | 对 family、form、notes、guidance code 和 rule IDs 做大小写不敏感子串匹配 |
+| `--format` | `text` | 输出格式：`text` 或 `json` |
+| `--limit` | `0` | 限制返回条数；`0` 表示不限制 |
+
+所有过滤条件均为可选。多个过滤条件同时提供时，以 AND 方式组合。
+
+### 输出格式
+
+#### 文本输出（默认）
+
+```text
+DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
+mysql    parser_error    view_lifecycle  ALTER VIEW                   parser_upgrade_candidate
+mysql    parser_error    view_lifecycle  CREATE VIEW                  parser_upgrade_candidate
+
+2 entries
+```
+
+文本输出面向人工审查，稳定性足以满足日常使用，但 JSON 才是机器可读的稳定契约。
+
+#### JSON 输出
+
+```json
+{
+  "version": "v0.280.0",
+  "summary": {
+    "total": 2,
+    "returned": 2,
+    "filters": {
+      "dialect": "mysql",
+      "classification": "parser_error"
+    }
+  },
+  "entries": [
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
+      "form": "ALTER VIEW",
+      "classification": "parser_error",
+      "finding_rule_ids": null,
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "...",
+      "notes": ""
+    }
+  ]
+}
+```
+
+JSON 输出包含 `version`、`summary`（含 `total`、`returned` 和当前 `filters`）以及 `entries`。这是面向自动化的稳定机器可读契约。
+
+### 示例
+
+MySQL parser-upgrade 候选：
+
+```bash
+deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+```
+
+PostgreSQL DROP SUBSCRIPTION（JSON 格式）：
+
+```bash
+deltascope ddl-coverage --dialect postgresql --search "drop subscription" --format json
+```
+
+所有 TiDB 条目（JSON 格式）：
+
+```bash
+deltascope ddl-coverage --dialect tidb --format json
+```
+
+空查询——无目录匹配时返回成功，`entries` 为空数组：
+
+```bash
+deltascope ddl-coverage --search definitely-not-present --format json
+```
+
+### 重要说明
+
+- 查询结果反映 DeltaScope 已验证的目录条目，不是数据库厂商语法的完整覆盖。
+- 空结果表示搜索未匹配任何目录条目。它不表示数据库不支持该形态，也不是失败。
+- 未出现在目录中表示 DeltaScope 尚未验证该形态——不代表数据库不支持。
+- 此命令不审计 SQL、不增加 parser 支持、不引入 fallback parser 行为、不新增 SQL 审计规则，也不声称完整 DDL 支持或方言对等。
+
+---
+
 ## 如何在本地验证
 
 运行以下命令验证目录完整性和 census 一致性：

@@ -111,6 +111,110 @@ A URL pointing to public documentation about the classification. For parser-upgr
 
 ---
 
+## Querying the Catalog (v0.280.0)
+
+Starting with `v0.280.0`, the `deltascope ddl-coverage` CLI command queries the generated catalog directly. This is a catalog lookup tool — it does not execute audits, parse SQL, or call the audit service.
+
+### Synopsis
+
+```bash
+deltascope ddl-coverage [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dialect` | (none) | Filter by dialect: `mysql`, `tidb`, `postgresql` |
+| `--classification` | (none) | Filter by classification: `finding_covered`, `normalized_silent`, `unsupported_boundary`, `parser_error`, `unclassified` |
+| `--guidance-code` | (none) | Filter by guidance code: `parser_upgrade_candidate` |
+| `--family` | (none) | Case-insensitive substring match on catalog family |
+| `--form` | (none) | Case-insensitive substring match on catalog form |
+| `--search` | (none) | Case-insensitive substring match across family, form, notes, guidance code, and rule IDs |
+| `--format` | `text` | Output format: `text` or `json` |
+| `--limit` | `0` | Limit result count; `0` means no limit |
+
+All filters are optional. When multiple filters are provided, they combine as AND conditions.
+
+### Output Formats
+
+#### Text Output (default)
+
+```text
+DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
+mysql    parser_error    view_lifecycle  ALTER VIEW                   parser_upgrade_candidate
+mysql    parser_error    view_lifecycle  CREATE VIEW                  parser_upgrade_candidate
+
+2 entries
+```
+
+Text output is designed for human review. It is stable enough for casual use, but JSON is the machine-readable contract.
+
+#### JSON Output
+
+```json
+{
+  "version": "v0.280.0",
+  "summary": {
+    "total": 2,
+    "returned": 2,
+    "filters": {
+      "dialect": "mysql",
+      "classification": "parser_error"
+    }
+  },
+  "entries": [
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
+      "form": "ALTER VIEW",
+      "classification": "parser_error",
+      "finding_rule_ids": null,
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "...",
+      "notes": ""
+    }
+  ]
+}
+```
+
+JSON output includes `version`, `summary` (with `total`, `returned`, and active `filters`), and `entries`. This is the stable machine-readable contract for automation.
+
+### Examples
+
+MySQL parser-upgrade candidates:
+
+```bash
+deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+```
+
+PostgreSQL DROP SUBSCRIPTION in JSON:
+
+```bash
+deltascope ddl-coverage --dialect postgresql --search "drop subscription" --format json
+```
+
+All TiDB entries in JSON:
+
+```bash
+deltascope ddl-coverage --dialect tidb --format json
+```
+
+Empty lookup — no catalog match returns success with an empty `entries` array:
+
+```bash
+deltascope ddl-coverage --search definitely-not-present --format json
+```
+
+### Important Clarifications
+
+- Query results reflect verified DeltaScope catalog entries, not vendor grammar completeness.
+- An empty result means the search did not match any catalog entry. It does not mean the database does not support the form, and it is not a failure.
+- Absence from the catalog means DeltaScope has not verified that form in its census tests — it does not mean the form is unsupported by the database.
+- This command does not audit SQL, add parser support, introduce fallback parser behavior, add new SQL audit rules, or claim full DDL support or dialect parity.
+
+---
+
 ## How to Verify Locally
 
 Run the following commands to verify catalog integrity and census consistency:

@@ -868,6 +868,79 @@ deltascope capabilities
 
 ---
 
+## deltascope ddl-coverage
+
+查询已生成的 DDL 覆盖目录中的 DeltaScope 已验证条目。这是目录查询命令——它不执行审计、不解析 SQL、不调用审计服务。
+
+### 概要
+
+```bash
+deltascope ddl-coverage [flags]
+```
+
+### 标志
+
+| 标志 | 默认值 | 描述 |
+|------|--------|------|
+| `--dialect` | （无） | 按方言过滤：`mysql`、`tidb`、`postgresql` |
+| `--classification` | （无） | 按分类过滤：`finding_covered`、`normalized_silent`、`unsupported_boundary`、`parser_error`、`unclassified` |
+| `--guidance-code` | （无） | 按 guidance code 过滤：`parser_upgrade_candidate` |
+| `--family` | （无） | 对目录 family 字段做大小写不敏感子串匹配 |
+| `--form` | （无） | 对目录 form 字段做大小写不敏感子串匹配 |
+| `--search` | （无） | 对 family、form、notes、guidance code 和 rule IDs 做大小写不敏感子串匹配 |
+| `--format` | `text` | 输出格式：`text` 或 `json` |
+| `--limit` | `0` | 限制返回条数；`0` 表示不限制 |
+
+所有过滤条件均为可选。多个过滤条件以 AND 方式组合。
+
+### 示例
+
+```bash
+# MySQL parser-upgrade 候选
+deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+
+# PostgreSQL DROP SUBSCRIPTION（JSON 格式）
+deltascope ddl-coverage --dialect postgresql --search "drop subscription" --format json
+
+# 所有 TiDB 条目（JSON 格式）
+deltascope ddl-coverage --dialect tidb --format json
+
+# 空查询返回成功，entries 为空数组
+deltascope ddl-coverage --search definitely-not-present --format json
+```
+
+### 输出格式
+
+文本输出（默认）打印列对齐的表格，含 `DIALECT`、`CLASSIFICATION`、`FAMILY`、`FORM` 和 `GUIDANCE` 列，末尾显示计数。
+
+JSON 输出（`--format json`）返回稳定的机器可读契约：
+
+```json
+{
+  "version": "v0.280.0",
+  "summary": {
+    "total": 2,
+    "returned": 2,
+    "filters": { "dialect": "mysql" }
+  },
+  "entries": [...]
+}
+```
+
+### 非目标
+
+此命令不会：
+
+- 审计 SQL 语句
+- 增加 parser 支持或 fallback parser 行为
+- 新增 SQL 审计规则
+- 声称完整 DDL 支持或方言对等
+- 声称数据库厂商语法完整性
+
+查询结果反映已验证的目录条目。空结果表示无目录匹配——不是失败，也不表示数据库不支持该形态。完整目录信息见 [ddl-coverage.zh-CN.md](ddl-coverage.zh-CN.md) 和 [ddl-coverage-catalog.json](ddl-coverage-catalog.json)。
+
+---
+
 ## deltascope version
 
 打印完整版本字符串，若有构建元数据则一并包含。

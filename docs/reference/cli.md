@@ -923,6 +923,79 @@ deltascope capabilities
 
 ---
 
+## deltascope ddl-coverage
+
+Query the generated DDL coverage catalog for verified DeltaScope entries. This is a catalog lookup command — it does not execute audits, parse SQL, or call the audit service.
+
+### Synopsis
+
+```bash
+deltascope ddl-coverage [flags]
+```
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dialect` | (none) | Filter by dialect: `mysql`, `tidb`, `postgresql` |
+| `--classification` | (none) | Filter by classification: `finding_covered`, `normalized_silent`, `unsupported_boundary`, `parser_error`, `unclassified` |
+| `--guidance-code` | (none) | Filter by guidance code: `parser_upgrade_candidate` |
+| `--family` | (none) | Case-insensitive substring match on catalog family |
+| `--form` | (none) | Case-insensitive substring match on catalog form |
+| `--search` | (none) | Case-insensitive substring match across family, form, notes, guidance code, and rule IDs |
+| `--format` | `text` | Output format: `text` or `json` |
+| `--limit` | `0` | Limit result count; `0` means no limit |
+
+All filters are optional. Multiple filters combine as AND conditions.
+
+### Examples
+
+```bash
+# MySQL parser-upgrade candidates
+deltascope ddl-coverage --dialect mysql --classification parser_error --guidance-code parser_upgrade_candidate
+
+# PostgreSQL DROP SUBSCRIPTION in JSON
+deltascope ddl-coverage --dialect postgresql --search "drop subscription" --format json
+
+# All TiDB entries in JSON
+deltascope ddl-coverage --dialect tidb --format json
+
+# Empty lookup returns success with entries: []
+deltascope ddl-coverage --search definitely-not-present --format json
+```
+
+### Output Formats
+
+Text output (default) prints a column-aligned table with `DIALECT`, `CLASSIFICATION`, `FAMILY`, `FORM`, and `GUIDANCE` columns, followed by a count.
+
+JSON output (`--format json`) returns a stable machine-readable contract:
+
+```json
+{
+  "version": "v0.280.0",
+  "summary": {
+    "total": 2,
+    "returned": 2,
+    "filters": { "dialect": "mysql" }
+  },
+  "entries": [...]
+}
+```
+
+### Non-Goals
+
+This command does not:
+
+- Audit SQL statements
+- Add parser support or fallback parser behavior
+- Add new SQL audit rules
+- Claim full DDL support or dialect parity
+- Claim vendor grammar completeness
+
+Query results reflect verified catalog entries. An empty result means no catalog match — not a failure, and not a statement about database support. See [ddl-coverage.md](ddl-coverage.md) and [ddl-coverage-catalog.json](ddl-coverage-catalog.json) for full catalog details.
+
+---
+
 ## deltascope version
 
 Prints the full version string, including build metadata if available.
