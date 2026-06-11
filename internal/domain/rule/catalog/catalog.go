@@ -33,6 +33,7 @@ type MetadataNotes struct {
 // Entry describes one shipped rule in the CLI-facing catalog.
 type Entry struct {
 	RuleID          string
+	ConfigKey       string
 	Summary         string
 	Description     string
 	StatementKinds  []string
@@ -49,6 +50,10 @@ type Entry struct {
 	Suggestion      string
 	ConfigHints     []string
 	MetadataNotes   *MetadataNotes
+	Dialects        []string
+	Category        string
+	Tags            []string
+	Source          string
 	SearchText      string
 }
 
@@ -102,6 +107,7 @@ func buildEntries() []Entry {
 		policy := defaults.Rules[ruleID]
 		entry := Entry{
 			RuleID:          ruleID,
+			ConfigKey:       ruleID,
 			Summary:         summaryForRule(ruleID),
 			Description:     descriptionForRule(ruleID, policy),
 			StatementKinds:  statementKindsForRule(ruleID),
@@ -118,6 +124,10 @@ func buildEntries() []Entry {
 			Suggestion:      suggestionForRule(ruleID),
 			ConfigHints:     configHintsForRule(ruleID, policy),
 			MetadataNotes:   metadataNotesForRule(ruleID),
+			Dialects:        dialectsForRule(ruleID),
+			Category:        categoryForRule(ruleID),
+			Tags:            tagsForRule(ruleID),
+			Source:          sourceForRule(),
 		}
 		entry.SearchText = strings.Join([]string{
 			entry.RuleID,
@@ -135,6 +145,8 @@ func cloneEntry(in Entry) Entry {
 	out.StatementKinds = append([]string(nil), in.StatementKinds...)
 	out.DefaultParams = cloneParams(in.DefaultParams)
 	out.ConfigHints = append([]string(nil), in.ConfigHints...)
+	out.Dialects = append([]string(nil), in.Dialects...)
+	out.Tags = append([]string(nil), in.Tags...)
 	if in.MetadataNotes != nil {
 		out.MetadataNotes = &MetadataNotes{
 			Kinds:    append([]MetadataKind(nil), in.MetadataNotes.Kinds...),
@@ -380,6 +392,265 @@ func formatYAMLScalar(value any) string {
 	default:
 		return fmt.Sprintf("%v", typed)
 	}
+}
+
+// dialectsForRule derives the dialect scope from the rule ID.
+// PG-prefixed rules target PostgreSQL only.
+// TiDB-prefixed or merge.tidb rules target TiDB only.
+// merge.mysql rules target MySQL only.
+// All other rules (including DML) apply to common dialect scope.
+func dialectsForRule(ruleID string) []string {
+	switch {
+	case strings.HasPrefix(ruleID, "ddl.pg."):
+		return []string{"postgresql"}
+	case strings.HasPrefix(ruleID, "ddl.tidb."):
+		return []string{"tidb"}
+	case strings.Contains(ruleID, ".merge.mysql."):
+		return []string{"mysql"}
+	case strings.Contains(ruleID, ".merge.tidb."):
+		return []string{"tidb"}
+	default:
+		return []string{"common"}
+	}
+}
+
+// categoryForRule derives a stable grouping category from the rule ID.
+func categoryForRule(ruleID string) string {
+	if strings.HasPrefix(ruleID, "dml.") {
+		return "dml_safety"
+	}
+	if strings.HasPrefix(ruleID, "ddl.pg.") {
+		return categoryForPGRule(ruleID)
+	}
+	return categoryForDDLRule(ruleID)
+}
+
+// categoryForDDLRule maps non-PG DDL rule IDs to categories.
+func categoryForDDLRule(ruleID string) string {
+	rest := ruleID[len("ddl."):]
+
+	// Compound verb_noun patterns where the second segment is a verb+noun.
+	compoundPrefixes := []struct {
+		prefix   string
+		category string
+	}{
+		{"rename_table", "table"},
+		{"create_index", "index"},
+		{"drop_index", "index"},
+		{"alter_database", "database"},
+		{"create_procedure", "procedure"},
+		{"drop_procedure", "procedure"},
+		{"create_user", "user_management"},
+		{"alter_user", "user_management"},
+		{"drop_user", "user_management"},
+		{"create_role", "user_management"},
+		{"drop_role", "user_management"},
+		{"grant", "privilege"},
+		{"revoke", "privilege"},
+		{"drop_resource_group", "resource_management"},
+		{"create_placement_policy", "resource_management"},
+		{"alter_placement_policy", "resource_management"},
+		{"drop_placement_policy", "resource_management"},
+		{"create_sequence", "sequence"},
+		{"alter_sequence", "sequence"},
+		{"drop_sequence", "sequence"},
+		{"tidb.alter_table", "alter_table"},
+	}
+	for _, cp := range compoundPrefixes {
+		if strings.HasPrefix(rest, cp.prefix) {
+			return cp.category
+		}
+	}
+
+	// Standard pattern: second segment is the category.
+	segment := rest
+	if idx := strings.Index(rest, "."); idx >= 0 {
+		segment = rest[:idx]
+	}
+	if segment == "alter" {
+		return "alter_table"
+	}
+	return segment
+}
+
+// categoryForPGRule maps PG DDL rule IDs to categories.
+func categoryForPGRule(ruleID string) string {
+	rest := ruleID[len("ddl.pg."):]
+
+	// PG alter rules: most map to alter_table, except RLS and large_object.
+	if strings.HasPrefix(rest, "alter.") {
+		switch {
+		case strings.Contains(rest, "enable_rls"),
+			strings.Contains(rest, "disable_rls"),
+			strings.Contains(rest, "force_rls"),
+			strings.Contains(rest, "no_force_rls"):
+			return "rls"
+		case strings.Contains(rest, "large_object"):
+			return "large_object"
+		default:
+			return "alter_table"
+		}
+	}
+
+	// Map PG verb_object prefixes to categories.
+	pgPrefixes := []struct {
+		prefix   string
+		category string
+	}{
+		{"create_index", "index"},
+		{"drop_index", "index"},
+		{"alter_index", "index"},
+		{"table", "table"},
+		{"drop_schema", "schema"},
+		{"create_schema", "schema"},
+		{"alter_schema", "schema"},
+		{"create_sequence", "sequence"},
+		{"alter_sequence", "sequence"},
+		{"drop_sequence", "sequence"},
+		{"drop_materialized_view", "materialized_view"},
+		{"refresh_materialized_view", "materialized_view"},
+		{"alter_materialized_view", "materialized_view"},
+		{"create_type", "type"},
+		{"alter_type", "type"},
+		{"drop_type", "type"},
+		{"create_domain", "domain"},
+		{"alter_domain", "domain"},
+		{"drop_domain", "domain"},
+		{"grant", "privilege"},
+		{"revoke", "privilege"},
+		{"create_extension", "extension"},
+		{"alter_extension", "extension"},
+		{"drop_extension", "extension"},
+		{"create_policy", "rls"},
+		{"alter_policy", "rls"},
+		{"drop_policy", "rls"},
+		{"create_trigger", "trigger"},
+		{"create_constraint_trigger", "trigger"},
+		{"drop_trigger", "trigger"},
+		{"create_function", "function"},
+		{"create_or_replace_function", "function"},
+		{"drop_function", "function"},
+		{"create_procedure", "procedure"},
+		{"drop_procedure", "procedure"},
+		{"create_or_replace_view", "view"},
+		{"create_temp_view", "view"},
+		{"create_view", "view"},
+		{"alter_view", "view"},
+		{"drop_view", "view"},
+		{"create_publication", "publication"},
+		{"alter_publication", "publication"},
+		{"drop_publication", "publication"},
+		{"create_subscription", "subscription"},
+		{"alter_subscription", "subscription"},
+		{"drop_subscription", "subscription"},
+		{"create_foreign_table", "foreign_table"},
+		{"alter_foreign_table", "foreign_table"},
+		{"drop_foreign_table", "foreign_table"},
+		{"create_foreign_server", "foreign_server"},
+		{"alter_foreign_server", "foreign_server"},
+		{"drop_foreign_server", "foreign_server"},
+		{"create_user_mapping", "user_mapping"},
+		{"alter_user_mapping", "user_mapping"},
+		{"drop_user_mapping", "user_mapping"},
+		{"create_foreign_data_wrapper", "foreign_data_wrapper"},
+		{"alter_foreign_data_wrapper", "foreign_data_wrapper"},
+		{"drop_foreign_data_wrapper", "foreign_data_wrapper"},
+		{"comment_on", "annotation"},
+		{"security_label", "annotation"},
+		{"create_event_trigger", "event_trigger"},
+		{"alter_event_trigger", "event_trigger"},
+		{"drop_event_trigger", "event_trigger"},
+		{"create_rule", "rewrite_rule"},
+		{"alter_rule", "rewrite_rule"},
+		{"drop_rule", "rewrite_rule"},
+		{"create_collation", "collation"},
+		{"alter_collation", "collation"},
+		{"drop_collation", "collation"},
+		{"create_statistics", "statistics"},
+		{"alter_statistics", "statistics"},
+		{"drop_statistics", "statistics"},
+		{"create_aggregate", "aggregate"},
+		{"alter_aggregate", "aggregate"},
+		{"drop_aggregate", "aggregate"},
+		{"create_operator_family", "operator_family"},
+		{"alter_operator_family", "operator_family"},
+		{"drop_operator_family", "operator_family"},
+		{"create_operator_class", "operator_class"},
+		{"alter_operator_class", "operator_class"},
+		{"drop_operator_class", "operator_class"},
+		{"create_operator", "operator"},
+		{"alter_operator", "operator"},
+		{"drop_operator", "operator"},
+		{"create_conversion", "conversion"},
+		{"alter_conversion", "conversion"},
+		{"drop_conversion", "conversion"},
+		{"create_text_search_configuration", "text_search"},
+		{"alter_text_search_configuration", "text_search"},
+		{"drop_text_search_configuration", "text_search"},
+		{"create_text_search_dictionary", "text_search"},
+		{"alter_text_search_dictionary", "text_search"},
+		{"drop_text_search_dictionary", "text_search"},
+		{"create_text_search_parser", "text_search"},
+		{"alter_text_search_parser", "text_search"},
+		{"drop_text_search_parser", "text_search"},
+		{"create_text_search_template", "text_search"},
+		{"alter_text_search_template", "text_search"},
+		{"drop_text_search_template", "text_search"},
+		{"create_transform", "transform"},
+		{"drop_transform", "transform"},
+		{"create_access_method", "access_method"},
+		{"drop_access_method", "access_method"},
+		{"alter_large_object", "large_object"},
+	}
+	for _, p := range pgPrefixes {
+		if strings.HasPrefix(rest, p.prefix) {
+			return p.category
+		}
+	}
+	return "other"
+}
+
+// tagsForRule derives searchable tags from the rule ID and its derived metadata.
+func tagsForRule(ruleID string) []string {
+	tags := make([]string, 0, 4)
+
+	// Add kind tag.
+	if strings.HasPrefix(ruleID, "ddl.") {
+		tags = append(tags, "ddl")
+	} else if strings.HasPrefix(ruleID, "dml.") {
+		tags = append(tags, "dml")
+	}
+
+	// Add dialect tag.
+	dialects := dialectsForRule(ruleID)
+	tags = append(tags, dialects...)
+
+	// Add category tag.
+	if cat := categoryForRule(ruleID); cat != "" {
+		tags = append(tags, cat)
+	}
+
+	// Add level-pattern tag from rule ID suffix.
+	switch {
+	case strings.HasSuffix(ruleID, ".forbid"):
+		tags = append(tags, "forbid")
+	case strings.HasSuffix(ruleID, ".require"):
+		tags = append(tags, "require")
+	case strings.HasSuffix(ruleID, ".warn"):
+		tags = append(tags, "warn")
+	case strings.HasSuffix(ruleID, ".notice"):
+		tags = append(tags, "notice")
+	case strings.HasSuffix(ruleID, ".advisory"):
+		tags = append(tags, "advisory")
+	}
+
+	return tags
+}
+
+// sourceForRule returns the provenance of catalog metadata.
+// All current entries derive from the shipped default policy.
+func sourceForRule() string {
+	return "policy"
 }
 
 var metadataAwareRuleIDs = map[string]bool{
