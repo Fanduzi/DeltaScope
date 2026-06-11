@@ -973,19 +973,19 @@ func TestRulesListPrintsShippedRules(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, expected := range []string{"RULE ID", "LEVEL", "KIND", "SUMMARY", "dml.where.require"} {
+	for _, expected := range []string{"RULE ID", "LEVEL", "DIALECT", "KIND", "CATEGORY", "dml.where.require"} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected table output to contain %q, got %q", expected, output)
 		}
 	}
 }
 
-func TestRulesListSupportsKindLevelAndEnabledFilters(t *testing.T) {
+func TestRulesListSupportsKindAndLevelFilters(t *testing.T) {
 	stdout := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"rules", "list", "--kind", "dml", "--level", "blocker", "--enabled-only"},
+		[]string{"rules", "list", "--kind", "dml", "--level", "blocker"},
 		strings.NewReader(""),
 		stdout,
 		&strings.Builder{},
@@ -1003,12 +1003,12 @@ func TestRulesListSupportsKindLevelAndEnabledFilters(t *testing.T) {
 	}
 }
 
-func TestRulesShowPrintsExamplesConfigAndRemediation(t *testing.T) {
+func TestRulesExplainPrintsDetailSections(t *testing.T) {
 	stdout := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"rules", "show", "dml.where.require"},
+		[]string{"rules", "explain", "dml.where.require"},
 		strings.NewReader(""),
 		stdout,
 		&strings.Builder{},
@@ -1018,17 +1018,17 @@ func TestRulesShowPrintsExamplesConfigAndRemediation(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	if !strings.Contains(output, "Trigger Example") || !strings.Contains(output, "Config Example") || !strings.Contains(output, "Remediation") {
+	if !strings.Contains(output, "Trigger Example") || !strings.Contains(output, "Config Example") || !strings.Contains(output, "Suggestion") {
 		t.Fatalf("expected detailed rule sections, got %q", output)
 	}
 }
 
-func TestRulesSearchMatchesByKeyword(t *testing.T) {
+func TestRulesListSearchMatchesByKeyword(t *testing.T) {
 	stdout := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"rules", "search", "where"},
+		[]string{"rules", "list", "--search", "where"},
 		strings.NewReader(""),
 		stdout,
 		&strings.Builder{},
@@ -1623,27 +1623,27 @@ func TestConfigAndRuleCommandHelpersHandleValidationAndWriteFailures(t *testing.
 		}
 	})
 
-	t.Run("rules show unknown rule", func(t *testing.T) {
+	t.Run("rules explain unknown rule", func(t *testing.T) {
 		exitCode := 0
-		cmd := newRulesShowCmd(&exitCode)
+		cmd := newRulesExplainCmd(&exitCode)
 		cmd.SetArgs([]string{"made.up.rule"})
 
 		err := cmd.Execute()
-		if err == nil || !strings.Contains(err.Error(), "unknown rule") {
-			t.Fatalf("expected unknown rule error, got %v", err)
+		if err == nil || !strings.Contains(err.Error(), "not found") {
+			t.Fatalf("expected not found error, got %v", err)
 		}
 		if exitCode != exitUser {
 			t.Fatalf("expected user exit code, got %d", exitCode)
 		}
 	})
 
-	t.Run("rules list invalid filters", func(t *testing.T) {
+	t.Run("rules list invalid kind", func(t *testing.T) {
 		exitCode := 0
 		cmd := newRulesListCmd(&exitCode)
 		cmd.SetArgs([]string{"--kind", "bad"})
 
 		err := cmd.Execute()
-		if err == nil || !strings.Contains(err.Error(), "--kind") {
+		if err == nil || !strings.Contains(err.Error(), "kind") {
 			t.Fatalf("expected invalid kind error, got %v", err)
 		}
 		if exitCode != exitUser {

@@ -6,6 +6,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -20,161 +21,381 @@ func newRulesCmd(exitCode *int) *cobra.Command {
 		Short: "Inspect shipped DeltaScope rules",
 	}
 	cmd.AddCommand(newRulesListCmd(exitCode))
-	cmd.AddCommand(newRulesShowCmd(exitCode))
-	cmd.AddCommand(newRulesSearchCmd(exitCode))
+	cmd.AddCommand(newRulesExplainCmd(exitCode))
 	return cmd
 }
 
+// ---------- rules list ----------
+
+type rulesListJSONOutput struct {
+	Version string              `json:"version"`
+	Summary rulesListJSONSummary `json:"summary"`
+	Rules   []rulesListJSONRule `json:"rules"`
+}
+
+type rulesListJSONSummary struct {
+	Total    int               `json:"total"`
+	Returned int               `json:"returned"`
+	Filters  map[string]string `json:"filters,omitempty"`
+}
+
+type rulesListJSONRule struct {
+	RuleID    string   `json:"rule_id"`
+	Level     string   `json:"level"`
+	Dialect   string   `json:"dialect"`
+	Kind      string   `json:"kind"`
+	Category  string   `json:"category"`
+	Summary   string   `json:"summary"`
+	Enabled   bool     `json:"enabled"`
+	Tags      []string `json:"tags,omitempty"`
+	ConfigKey string   `json:"config_key"`
+}
+
 func newRulesListCmd(exitCode *int) *cobra.Command {
-	var level string
-	var kind string
-	var enabledOnly bool
+	var dialect, level, kind, category, search, format string
+	var limit int
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List shipped rules",
+		Long:  "List rules from the shipped catalog with optional filters.\nDoes not execute audits, parse SQL, or call the audit service.",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			items := filterCatalogEntries(rulecatalog.All(), kind, level, enabledOnly)
-			if _, err := fmt.Fprint(cmd.OutOrStdout(), renderCatalogList(items)); err != nil {
+			if err := validateRulesListFlags(format, limit); err != nil {
+				*exitCode = exitUser
+				return err
+			}
+
+			q := rulecatalog.Query{
+				Dialect:  dialect,
+				Level:    level,
+				Kind:     kind,
+				Category: category,
+				Search:   search,
+				Limit:    limit,
+			}
+			if err := q.Validate(); err != nil {
+				*exitCode = exitUser
+				return err
+			}
+
+			result, err := rulecatalog.QueryEntries(rulecatalog.All(), q)
+			if err != nil {
+				*exitCode = exitInternal
+				return err
+			}
+
+			var output string
+			if format == "json" {
+				output = renderRulesListJSON(result, q)
+			} else {
+				output = renderRulesListText(result)
+			}
+
+			if _, err := fmt.Fprint(cmd.OutOrStdout(), output); err != nil {
 				*exitCode = exitInternal
 				return err
 			}
 			*exitCode = exitOK
 			return nil
 		},
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if kind != "" && kind != "ddl" && kind != "dml" {
-				*exitCode = exitUser
-				return newUserError("rules list --kind must be ddl or dml")
-			}
-			if level != "" && level != "blocker" && level != "warning" && level != "notice" {
-				*exitCode = exitUser
-				return newUserError("rules list --level must be blocker, warning, or notice")
-			}
-			return nil
-		},
-		Args: cobra.NoArgs,
 	}
-	cmd.Flags().StringVar(&kind, "kind", "", "filter to ddl or dml rules")
-	cmd.Flags().StringVar(&level, "level", "", "filter to blocker, warning, or notice")
-	cmd.Flags().BoolVar(&enabledOnly, "enabled-only", false, "show only rules enabled in the shipped default policy")
+
+	cmd.Flags().StringVar(&dialect, "dialect", "", "filter by dialect: mysql, tidb, postgresql, common")
+	cmd.Flags().StringVar(&level, "level", "", "filter by level: blocker, warning, notice")
+	cmd.Flags().StringVar(&kind, "kind", "", "filter by kind: ddl, dml")
+	cmd.Flags().StringVar(&category, "category", "", "filter by category (case-insensitive substring)")
+	cmd.Flags().StringVar(&search, "search", "", "search across rule fields (case-insensitive substring)")
+	cmd.Flags().StringVar(&format, "format", "text", "output format: text or json")
+	cmd.Flags().IntVar(&limit, "limit", 0, "limit result count; 0 means no limit")
+
 	return cmd
 }
 
-func newRulesShowCmd(exitCode *int) *cobra.Command {
-	return &cobra.Command{
-		Use:   "show <rule-id>",
-		Short: "Show one shipped rule in detail",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			entry, ok := rulecatalog.Lookup(args[0])
-			if !ok {
-				*exitCode = exitUser
-				return newUserError(fmt.Sprintf("unknown rule %q", args[0]))
-			}
-			if _, err := fmt.Fprint(cmd.OutOrStdout(), renderCatalogEntry(entry)); err != nil {
-				*exitCode = exitInternal
-				return err
-			}
-			*exitCode = exitOK
-			return nil
+func validateRulesListFlags(format string, limit int) error {
+	if format != "text" && format != "json" {
+		return newUserError(fmt.Sprintf("invalid format %q: must be text or json", format))
+	}
+	if limit < 0 {
+		return newUserError(fmt.Sprintf("invalid limit %d: must be 0 or positive", limit))
+	}
+	return nil
+}
+
+func renderRulesListJSON(result rulecatalog.Result, q rulecatalog.Query) string {
+	filters := make(map[string]string)
+	if q.Dialect != "" {
+		filters["dialect"] = q.Dialect
+	}
+	if q.Level != "" {
+		filters["level"] = q.Level
+	}
+	if q.Kind != "" {
+		filters["kind"] = q.Kind
+	}
+	if q.Category != "" {
+		filters["category"] = q.Category
+	}
+	if q.Search != "" {
+		filters["search"] = q.Search
+	}
+	if q.Limit > 0 {
+		filters["limit"] = fmt.Sprintf("%d", q.Limit)
+	}
+
+	rules := make([]rulesListJSONRule, 0, len(result.Entries))
+	for _, e := range result.Entries {
+		rules = append(rules, rulesListJSONRule{
+			RuleID:    e.RuleID,
+			Level:     string(e.DefaultLevel),
+			Dialect:   strings.Join(e.Dialects, ","),
+			Kind:      strings.Join(e.StatementKinds, ","),
+			Category:  e.Category,
+			Summary:   e.Summary,
+			Enabled:   e.DefaultEnabled,
+			Tags:      e.Tags,
+			ConfigKey: e.ConfigKey,
+		})
+	}
+
+	out := rulesListJSONOutput{
+		Version: Version,
+		Summary: rulesListJSONSummary{
+			Total:    result.Total,
+			Returned: len(rules),
+			Filters:  filters,
 		},
+		Rules: rules,
 	}
+
+	data, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return fmt.Sprintf(`{"error": "marshal failed: %v"}`, err)
+	}
+	return string(data) + "\n"
 }
 
-func newRulesSearchCmd(exitCode *int) *cobra.Command {
-	return &cobra.Command{
-		Use:   "search <keyword>",
-		Short: "Search shipped rules by ID or summary",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			items := rulecatalog.Search(args[0])
-			if _, err := fmt.Fprint(cmd.OutOrStdout(), renderCatalogList(items)); err != nil {
-				*exitCode = exitInternal
-				return err
-			}
-			*exitCode = exitOK
-			return nil
-		},
-	}
-}
-
-func filterCatalogEntries(entries []rulecatalog.Entry, kind string, level string, enabledOnly bool) []rulecatalog.Entry {
-	filtered := make([]rulecatalog.Entry, 0, len(entries))
-	for _, entry := range entries {
-		if kind != "" && !contains(entry.StatementKinds, kind) {
-			continue
-		}
-		if level != "" && string(entry.DefaultLevel) != level {
-			continue
-		}
-		if enabledOnly && !entry.DefaultEnabled {
-			continue
-		}
-		filtered = append(filtered, entry)
-	}
-	return filtered
-}
-
-func renderCatalogList(entries []rulecatalog.Entry) string {
+func renderRulesListText(result rulecatalog.Result) string {
 	var b strings.Builder
-	b.WriteString("# DeltaScope Rules\n\n")
-	if len(entries) == 0 {
-		b.WriteString("No rules matched.\n")
-		return b.String()
+
+	headers := []string{"RULE ID", "LEVEL", "DIALECT", "KIND", "CATEGORY"}
+	widths := make([]int, len(headers))
+	for i, h := range headers {
+		widths[i] = len(h)
 	}
 
-	headers := []string{"RULE ID", "LEVEL", "KIND", "SUMMARY"}
-	rows := make([][]string, 0, len(entries))
-	widths := []int{len(headers[0]), len(headers[1]), len(headers[2]), len(headers[3])}
-	for _, entry := range entries {
-		row := []string{entry.RuleID, string(entry.DefaultLevel), strings.Join(entry.StatementKinds, ","), entry.Summary}
-		rows = append(rows, row)
-		for index, value := range row {
-			if len(value) > widths[index] {
-				widths[index] = len(value)
+	rows := make([][]string, len(result.Entries))
+	for i, e := range result.Entries {
+		row := []string{
+			e.RuleID,
+			string(e.DefaultLevel),
+			strings.Join(e.Dialects, ","),
+			strings.Join(e.StatementKinds, ","),
+			e.Category,
+		}
+		rows[i] = row
+		for j, v := range row {
+			if len(v) > widths[j] {
+				widths[j] = len(v)
 			}
 		}
 	}
 
-	writeRow := func(columns []string) {
-		fmt.Fprintf(&b, "%-*s  %-*s  %-*s  %-*s\n",
-			widths[0], columns[0],
-			widths[1], columns[1],
-			widths[2], columns[2],
-			widths[3], columns[3],
-		)
+	writeRow := func(cols []string) {
+		for i, col := range cols {
+			if i > 0 {
+				b.WriteString("  ")
+			}
+			fmt.Fprintf(&b, "%-*s", widths[i], col)
+		}
+		b.WriteByte('\n')
 	}
 
-	writeRule := func() {
-		fmt.Fprintf(&b, "%s  %s  %s  %s\n",
-			strings.Repeat("-", widths[0]),
-			strings.Repeat("-", widths[1]),
-			strings.Repeat("-", widths[2]),
-			strings.Repeat("-", widths[3]),
-		)
+	writeSep := func() {
+		for i, w := range widths {
+			if i > 0 {
+				b.WriteString("  ")
+			}
+			b.WriteString(strings.Repeat("-", w))
+		}
+		b.WriteByte('\n')
 	}
 
 	writeRow(headers)
-	writeRule()
+	writeSep()
 	for _, row := range rows {
 		writeRow(row)
 	}
+
+	if len(result.Entries) == 0 {
+		b.WriteString("\nNo rules matched.\n")
+		return b.String()
+	}
+
+	fmt.Fprintf(&b, "\n%d rules", len(result.Entries))
+	if result.Total > len(result.Entries) {
+		fmt.Fprintf(&b, " (%d total before limit)", result.Total)
+	}
+	b.WriteByte('\n')
+
 	return b.String()
 }
 
-func renderCatalogEntry(entry rulecatalog.Entry) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "# %s\n\n", entry.RuleID)
-	fmt.Fprintf(&b, "%s\n\n", entry.Description)
-	fmt.Fprintf(&b, "- Default Enabled: `%t`\n", entry.DefaultEnabled)
-	fmt.Fprintf(&b, "- Default Level: `%s`\n", entry.DefaultLevel)
-	fmt.Fprintf(&b, "- Statement Kinds: `%s`\n", strings.Join(entry.StatementKinds, ", "))
-	fmt.Fprintf(&b, "- Metadata Aware: `%t`\n\n", entry.MetadataAware)
+// ---------- rules explain ----------
 
-	b.WriteString("## Default Params\n")
+type rulesExplainJSONOutput struct {
+	Version string              `json:"version"`
+	Rule    rulesExplainJSONRule `json:"rule"`
+}
+
+type rulesExplainJSONRule struct {
+	RuleID         string                       `json:"rule_id"`
+	Level          string                       `json:"level"`
+	Enabled        bool                         `json:"enabled"`
+	Dialects       []string                     `json:"dialects"`
+	Kind           string                       `json:"kind"`
+	Category       string                       `json:"category"`
+	Summary        string                       `json:"summary"`
+	Why            string                       `json:"why"`
+	Risk           string                       `json:"risk"`
+	Suggestion     string                       `json:"suggestion"`
+	ConfigKey      string                       `json:"config_key"`
+	Tags           []string                     `json:"tags,omitempty"`
+	Description    string                       `json:"description"`
+	StatementKinds []string                     `json:"statement_kinds"`
+	DefaultParams  map[string]any               `json:"default_params"`
+	MetadataAware  bool                         `json:"metadata_aware"`
+	TriggerExample string                       `json:"trigger_example"`
+	ValidExample   string                       `json:"valid_example"`
+	ConfigExample  string                       `json:"config_example"`
+	Remediation    string                       `json:"remediation"`
+	ConfigHints    []string                     `json:"config_hints"`
+	MetadataNotes  *rulesExplainJSONMetaNotes   `json:"metadata_notes,omitempty"`
+}
+
+type rulesExplainJSONMetaNotes struct {
+	Kinds    []string `json:"kinds"`
+	Required string   `json:"required"`
+	Missing  string   `json:"missing"`
+}
+
+func newRulesExplainCmd(exitCode *int) *cobra.Command {
+	var format string
+
+	cmd := &cobra.Command{
+		Use:   "explain <rule-id>",
+		Short: "Explain one shipped rule in detail",
+		Long:  "Show detailed information about a single rule.\nDoes not execute audits, parse SQL, or call the audit service.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if format != "text" && format != "json" {
+				*exitCode = exitUser
+				return newUserError(fmt.Sprintf("invalid format %q: must be text or json", format))
+			}
+
+			entry, ok := rulecatalog.Lookup(args[0])
+			if !ok {
+				*exitCode = exitUser
+				return newUserError(fmt.Sprintf("rule %q not found", args[0]))
+			}
+
+			var output string
+			if format == "json" {
+				output = renderRulesExplainJSON(entry)
+			} else {
+				output = renderRulesExplainText(entry)
+			}
+
+			if _, err := fmt.Fprint(cmd.OutOrStdout(), output); err != nil {
+				*exitCode = exitInternal
+				return err
+			}
+			*exitCode = exitOK
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&format, "format", "text", "output format: text or json")
+
+	return cmd
+}
+
+func renderRulesExplainJSON(entry rulecatalog.Entry) string {
+	rule := rulesExplainJSONRule{
+		RuleID:         entry.RuleID,
+		Level:          string(entry.DefaultLevel),
+		Enabled:        entry.DefaultEnabled,
+		Dialects:       entry.Dialects,
+		Kind:           strings.Join(entry.StatementKinds, ","),
+		Category:       entry.Category,
+		Summary:        entry.Summary,
+		Why:            entry.Why,
+		Risk:           entry.Risk,
+		Suggestion:     entry.Suggestion,
+		ConfigKey:      entry.ConfigKey,
+		Tags:           entry.Tags,
+		Description:    entry.Description,
+		StatementKinds: entry.StatementKinds,
+		DefaultParams:  entry.DefaultParams,
+		MetadataAware:  entry.MetadataAware,
+		TriggerExample: entry.TriggerExample,
+		ValidExample:   entry.ValidExample,
+		ConfigExample:  entry.ConfigExample,
+		Remediation:    entry.RemediationHint,
+		ConfigHints:    entry.ConfigHints,
+	}
+	if entry.MetadataNotes != nil {
+		kinds := make([]string, 0, len(entry.MetadataNotes.Kinds))
+		for _, k := range entry.MetadataNotes.Kinds {
+			kinds = append(kinds, string(k))
+		}
+		rule.MetadataNotes = &rulesExplainJSONMetaNotes{
+			Kinds:    kinds,
+			Required: entry.MetadataNotes.Required,
+			Missing:  entry.MetadataNotes.Missing,
+		}
+	}
+
+	out := rulesExplainJSONOutput{
+		Version: Version,
+		Rule:    rule,
+	}
+
+	data, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return fmt.Sprintf(`{"error": "marshal failed: %v"}`, err)
+	}
+	return string(data) + "\n"
+}
+
+func renderRulesExplainText(entry rulecatalog.Entry) string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "Rule ID:    %s\n", entry.RuleID)
+	fmt.Fprintf(&b, "Level:      %s\n", string(entry.DefaultLevel))
+	fmt.Fprintf(&b, "Enabled:    %t\n", entry.DefaultEnabled)
+	fmt.Fprintf(&b, "Dialects:   %s\n", strings.Join(entry.Dialects, ", "))
+	fmt.Fprintf(&b, "Kind:       %s\n", strings.Join(entry.StatementKinds, ", "))
+	fmt.Fprintf(&b, "Category:   %s\n", entry.Category)
+	fmt.Fprintf(&b, "Config Key: %s\n", entry.ConfigKey)
+	b.WriteByte('\n')
+
+	fmt.Fprintf(&b, "Summary:\n  %s\n\n", entry.Summary)
+	fmt.Fprintf(&b, "Why:\n  %s\n\n", entry.Why)
+	fmt.Fprintf(&b, "Risk:\n  %s\n\n", entry.Risk)
+	fmt.Fprintf(&b, "Suggestion:\n  %s\n\n", entry.Suggestion)
+
+	if len(entry.Tags) > 0 {
+		fmt.Fprintf(&b, "Tags: %s\n", strings.Join(entry.Tags, ", "))
+	}
+
+	fmt.Fprintf(&b, "Trigger Example:\n  %s\n", entry.TriggerExample)
+	fmt.Fprintf(&b, "Valid Example:\n  %s\n", entry.ValidExample)
+
+	b.WriteByte('\n')
+	b.WriteString("Default Params:\n")
 	if len(entry.DefaultParams) == 0 {
-		b.WriteString("`{}`\n\n")
+		b.WriteString("  (none)\n")
 	} else {
 		keys := make([]string, 0, len(entry.DefaultParams))
 		for key := range entry.DefaultParams {
@@ -182,23 +403,11 @@ func renderCatalogEntry(entry rulecatalog.Entry) string {
 		}
 		sort.Strings(keys)
 		for _, key := range keys {
-			fmt.Fprintf(&b, "- `%s`: `%v`\n", key, entry.DefaultParams[key])
+			fmt.Fprintf(&b, "  %s: %v\n", key, entry.DefaultParams[key])
 		}
-		b.WriteString("\n")
 	}
 
-	fmt.Fprintf(&b, "## Trigger Example\n```sql\n%s\n```\n\n", entry.TriggerExample)
-	fmt.Fprintf(&b, "## Valid Example\n```sql\n%s\n```\n\n", entry.ValidExample)
-	fmt.Fprintf(&b, "## Config Example\n```yaml\n%s\n```\n\n", entry.ConfigExample)
-	fmt.Fprintf(&b, "## Remediation\n%s\n", entry.RemediationHint)
+	fmt.Fprintf(&b, "\nConfig Example:\n  %s\n", strings.ReplaceAll(entry.ConfigExample, "\n", "\n  "))
+
 	return b.String()
-}
-
-func contains(items []string, needle string) bool {
-	for _, item := range items {
-		if item == needle {
-			return true
-		}
-	}
-	return false
 }
