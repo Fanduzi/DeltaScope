@@ -211,9 +211,6 @@ func descriptionForRule(ruleID string, policy domainpolicy.RulePolicy) string {
 func statementKindsForRule(ruleID string) []string {
 	switch {
 	case strings.HasPrefix(ruleID, "ddl."):
-		if strings.Contains(ruleID, ".merge.") {
-			return []string{"ddl", "batch"}
-		}
 		return []string{"ddl"}
 	case strings.HasPrefix(ruleID, "dml."):
 		return []string{"dml"}

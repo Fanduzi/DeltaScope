@@ -27,7 +27,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 | ConfigKey | Yes | Config key controlling the rule (equals RuleID) |
 | Summary | Yes | One-line human-readable description |
 | Description | Yes | Detailed description with scope and metadata mode |
-| StatementKinds | Yes | SQL statement kinds: `ddl`, `dml`, or `batch` |
+| StatementKinds | Yes | SQL statement kinds: `ddl` or `dml` |
 | DefaultEnabled | Yes | Default enabled state from shipped policy |
 | DefaultLevel | Yes | One of `blocker`, `warning`, `notice` |
 | DefaultParams | Yes | Default parameter map from shipped policy |
