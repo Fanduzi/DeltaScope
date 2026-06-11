@@ -7,8 +7,10 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 | File | Responsibility |
 |------|---------------|
 | catalog.go | Builds stable catalog entries from shipped defaults, explanation templates, and discoverability metadata for CLI discovery |
+| query.go | Structured query core: Query/Result types, Validate, QueryEntries with dialect/level/kind/category/search/limit filters |
 | catalog_test.go | Verifies catalog completeness, lookup stability, and metadata-aware flags |
 | catalog_discoverability_test.go | Verifies rule discoverability contract: completeness, field validity, deterministic ordering, dialect/category coverage, drift prevention |
+| query_test.go | Verifies query core: filters, validation, combined filters, limit, case-insensitive search, determinism, no severity |
 
 ## Exports
 
@@ -18,6 +20,10 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 - `All()`
 - `Lookup(ruleID)`
 - `Search(query)`
+- `Query` — structured filter with Dialect, Level, Kind, Category, Search, Limit
+- `Result` — filtered entries with Total count
+- `Query.Validate() error` — validates enum filters and limit
+- `QueryEntries(entries []Entry, q Query) (Result, error)` — filters entries by query
 
 ## Entry Fields
 
