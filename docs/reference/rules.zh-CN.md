@@ -37,73 +37,204 @@ DeltaScope 将所有审计逻辑以可发现的稳定规则 ID 形式提供，�
 
 ## 发现规则
 
+DeltaScope 提供两个只读的规则元数据查询命令。这些命令查询内置规则目录——不执行审计、不解析 SQL、不调用审计服务。
+
+DeltaScope 使用已有的 `level` 字段（取值为 `blocker`、`warning`、`notice`）来表示严重程度。该字段在发现 JSON、配置 YAML 和目录输出中均命名为 `level`，不存在单独的 `severity` 字段。
+
 ### deltascope rules list
 
-列出所有已注册的规则，支持可选过滤：
+从内置目录列出规则，支持可选过滤：
 
 ```bash
 # 所有规则
 deltascope rules list
 
-# 按类型过滤
+# 按 level 过滤
+deltascope rules list --level blocker
+deltascope rules list --level warning
+deltascope rules list --level notice
+
+# 按方言和 level 过滤，JSON 输出
+deltascope rules list --dialect postgresql --level warning --format json
+
+# 按 kind 过滤
 deltascope rules list --kind ddl
 deltascope rules list --kind dml
 
-# 按严重级别过滤
-deltascope rules list --level blocker
-deltascope rules list --level warning
+# 关键词搜索
+deltascope rules list --search drop_column
 
-# 仅显示当前已加载策略中启用的规则
-deltascope rules list --enabled-only
+# 按 category 过滤
+deltascope rules list --category alter_table
+
+# 限制结果数量
+deltascope rules list --level blocker --limit 5
 ```
 
-输出示例：
+过滤条件：
+
+| 标志 | 取值 | 描述 |
+|------|------|------|
+| `--dialect` | `mysql`、`tidb`、`postgresql`、`common` | 按方言范围过滤 |
+| `--level` | `blocker`、`warning`、`notice` | 按默认 level 过滤 |
+| `--kind` | `ddl`、`dml` | 按 SQL 语句类型过滤 |
+| `--category` | （自由文本） | 按类别/分组进行大小写不敏感的子串匹配 |
+| `--search` | （自由文本） | 在规则 ID、摘要、标签、配置键中进行大小写不敏感的搜索 |
+| `--format` | `text`、`json` | 输出格式（默认：`text`） |
+| `--limit` | 整数 | 限制结果数量；`0` 表示不限制 |
+
+所有过滤条件均为可选。多个过滤条件以 AND 方式组合。空结果返回成功（零条规则）。
+
+文本输出示例：
 
 ```text
-# DeltaScope Rules
-
-RULE ID                              LEVEL    KIND  SUMMARY
------------------------------------  -------  ----  ----------------------------------------------
-ddl.table.comment.require           warning  ddl   Require DDL table comment require
-ddl.table.row_size.max_bytes.require  blocker  ddl   Require DDL table row size max bytes require
-dml.limit.forbid                    warning  dml   Forbid DML limit forbid
-dml.where.require                   blocker  dml   Require DML where require
+RULE ID                                        LEVEL    DIALECT  KIND  CATEGORY
+---------------------------------------------  -------  -------  ----  -----------
+ddl.alter.drop_column.forbid                   warning  common   ddl   alter_table
+ddl.alter.drop_column.notice                   notice   common   ddl   alter_table
+ddl.pg.alter.drop_column.advisory              warning  postgresql  ddl   alter_table
+3 rules
 ```
 
-### deltascope rules show
-
-显示单条规则的完整详情：
+JSON 输出示例：
 
 ```bash
-deltascope rules show dml.where.require
+deltascope rules list --dialect postgresql --level warning --format json
 ```
 
-输出示例：
-
-```md
-# dml.where.require
-
-Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
-
-- Default Enabled: `true`
-- Default Level: `blocker`
-- Statement Kinds: `dml`
-- Metadata Aware: `false`
-
-## Default Params
-- `required`: `true`
-
-## Trigger Example
-```sql
-DELETE FROM users;
+```json
+{
+  "version": "v0.290.0",
+  "summary": {
+    "total": 62,
+    "returned": 62,
+    "filters": {
+      "dialect": "postgresql",
+      "level": "warning"
+    }
+  },
+  "rules": [
+    {
+      "rule_id": "ddl.pg.alter.add_check.not_valid.require",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL pg alter add check not valid require",
+      "enabled": true,
+      "tags": ["ddl", "postgresql", "alter_table", "require"]
+    }
+  ]
+}
 ```
 
-## Valid Example
-```sql
-DELETE FROM users WHERE id = 1;
+无效的枚举值会产生明确的校验错误并以退出码 2 退出：
+
+```text
+invalid level "severe": must be one of blocker, warning, notice
 ```
 
-## Config Example
+### deltascope rules explain
+
+通过精确的规则 ID 显示单条规则的详细信息：
+
+```bash
+deltascope rules explain dml.where.require
+deltascope rules explain dml.where.require --format json
+```
+
+`rules explain` 不运行审计，不解析 SQL。它返回内置目录中的静态规则元数据。
+
+文本输出示例：
+
+```text
+Rule ID:    dml.where.require
+Level:      blocker
+Enabled:    true
+Dialects:   common
+Kind:       dml
+Category:   dml_safety
+Config Key: dml.where.require
+
+Summary:
+  Require DML where require
+
+Why:
+  The statement is missing a clause, option, or object that the shipped policy requires.
+
+Risk:
+  Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+
+Suggestion:
+  Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+
+Tags: dml, common, dml_safety, require
+Trigger Example:
+  DELETE FROM users;
+Valid Example:
+  DELETE FROM users WHERE id = 1;
+
+Default Params:
+  required: true
+
+Config Example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: blocker
+      params:
+        required: true
+```
+
+JSON 输出示例：
+
+```bash
+deltascope rules explain dml.where.require --format json
+```
+
+```json
+{
+  "version": "v0.290.0",
+  "rule": {
+    "rule_id": "dml.where.require",
+    "level": "blocker",
+    "enabled": true,
+    "dialects": ["common"],
+    "kind": "dml",
+    "category": "dml_safety",
+    "summary": "Require DML where require",
+    "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+    "risk": "Ignoring this rule can allow high-impact data changes to proceed with less safety review.",
+    "suggestion": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent.",
+    "config_key": "dml.where.require",
+    "tags": ["dml", "common", "dml_safety", "require"],
+    "description": "Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.",
+    "statement_kinds": ["dml"],
+    "default_params": { "required": true },
+    "metadata_aware": false,
+    "trigger_example": "DELETE FROM users;",
+    "valid_example": "DELETE FROM users WHERE id = 1;",
+    "config_example": "rules:\n  dml.where.require:\n    enabled: true\n    level: blocker\n    params:\n      required: true",
+    "remediation": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent.",
+    "config_hints": [
+      "rules.dml.where.require.enabled",
+      "rules.dml.where.require.level",
+      "rules.dml.where.require.params.required"
+    ]
+  }
+}
+```
+
+未知的规则 ID 会产生明确的错误并以退出码 2 退出：
+
+```text
+rule "nonexistent_rule" not found
+```
+
+### 配置键关系
+
+对于大多数规则，`config_key` 与 `rule_id` 相同。要配置一条规则，在策略 YAML 的 `rules` 节下使用其 `config_key`：
+
 ```yaml
 rules:
   dml.where.require:
@@ -113,19 +244,16 @@ rules:
       required: true
 ```
 
-## Remediation
-Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
-```
+### 非目标
 
-### deltascope rules search
+规则发现命令不：
 
-按关键词搜索规则（匹配规则 ID 和描述文本）：
-
-```bash
-deltascope rules search "where clause"
-deltascope rules search metadata
-deltascope rules search "prefix"
-```
+- 审计 SQL 语句
+- 添加新的审计规则或更改规则行为
+- 更改发现 JSON 的结构
+- 引入 `severity` 字段
+- 声称返回所有可能的数据库风险
+- 提供 SDK、HTTP 或 MCP 接口
 
 ---
 

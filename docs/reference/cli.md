@@ -756,107 +756,177 @@ This is useful for scripted processing or minimalist CI log output.
 
 ## deltascope rules
 
-Commands for discovering, inspecting, and searching the registered rule set.
+Commands for discovering and inspecting the registered rule set. These are read-only metadata lookup commands — they do not execute audits, parse SQL, or call the audit service.
 
 ### rules list
 
-List all registered rules. Combine filters freely.
+List rules from the shipped catalog with optional filters.
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--kind` | string | (none) | Filter to `ddl` or `dml` rules. |
-| `--level` | string | (none) | Filter to `blocker`, `warning`, or `notice`. |
-| `--enabled-only` | bool | false | Show only rules enabled in the shipped default policy. |
+| `--dialect` | string | (none) | Filter by dialect: `mysql`, `tidb`, `postgresql`, or `common`. |
+| `--level` | string | (none) | Filter by level: `blocker`, `warning`, or `notice`. |
+| `--kind` | string | (none) | Filter by kind: `ddl` or `dml`. |
+| `--category` | string | (none) | Case-insensitive category/family substring match. |
+| `--search` | string | (none) | Case-insensitive search across rule ID, summary, tags, and config key. |
+| `--format` | string | `text` | Output format: `text` or `json`. |
+| `--limit` | int | `0` | Limit result count; `0` means no limit. |
+
+All filters are optional and combine as AND conditions. Invalid enum values produce a clear validation error and exit code 2. Empty results return success with zero rules.
 
 ```bash
 # All rules
 deltascope rules list
 
-# DDL rules only
-deltascope rules list --kind ddl
-
-# DML rules only
-deltascope rules list --kind dml
-
-# Blocker-level rules only
+# Blocker-level rules
 deltascope rules list --level blocker
 
-# Warning-level rules only
-deltascope rules list --level warning
+# PostgreSQL warning rules in JSON
+deltascope rules list --dialect postgresql --level warning --format json
 
-# Only rules enabled under the currently loaded policy
-deltascope rules list --enabled-only
+# Search by keyword
+deltascope rules list --search drop_column
+
+# DDL rules in the alter_table category
+deltascope rules list --kind ddl --category alter_table
+
+# Limit output
+deltascope rules list --level blocker --limit 5
 ```
 
-Example output:
+Example text output:
 
 ```text
-RULE ID                              LEVEL    KIND  SUMMARY
------------------------------------  -------  ----  ----------------------------------------------
-ddl.table.comment.require           warning  ddl   Require DDL table comment require
-ddl.table.row_size.max_bytes.require  blocker  ddl   Require DDL table row size max bytes require
-dml.impact.rows.max_count           warning  dml   Require DML impact rows max count
-dml.impact.ratio.max_percent        warning  dml   Require DML impact ratio max percent
-dml.limit.forbid                    warning  dml   Forbid DML limit forbid
-dml.where.require                   blocker  dml   Require DML where require
+RULE ID                               LEVEL    DIALECT     KIND  CATEGORY
+------------------------------------  -------  ----------  ----  -----------
+ddl.alter.drop_column.exists.require  blocker  common      ddl   alter_table
+ddl.alter.drop_column.forbid          warning  common      ddl   alter_table
+ddl.pg.alter.drop_column.advisory     warning  postgresql  ddl   alter_table
+3 rules
 ```
 
-### rules show
-
-Display full detail for a single rule, including its defaults, examples, and remediation guidance.
+Example JSON output:
 
 ```bash
-deltascope rules show dml.where.require
+deltascope rules list --dialect postgresql --level warning --format json
 ```
 
-Example output:
-
-```md
-# dml.where.require
-
-Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
-
-- Default Enabled: `true`
-- Default Level: `blocker`
-- Statement Kinds: `dml`
-- Metadata Aware: `false`
-
-## Default Params
-- `required`: `true`
-
-## Trigger Example
-```sql
-DELETE FROM users;
+```json
+{
+  "version": "v0.290.0",
+  "summary": {
+    "total": 62,
+    "returned": 62,
+    "filters": { "dialect": "postgresql", "level": "warning" }
+  },
+  "rules": [
+    {
+      "rule_id": "ddl.pg.alter.add_check.not_valid.require",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL pg alter add check not valid require",
+      "enabled": true,
+      "tags": ["ddl", "postgresql", "alter_table", "require"]
+    }
+  ]
+}
 ```
 
-## Valid Example
-```sql
-DELETE FROM users WHERE id = 42;
-```
+### rules explain
 
-## Config Example
-```yaml
-rules:
-  dml.where.require:
-    enabled: true
-    level: blocker
-    params:
-      required: true
-```
+Show detailed information about a single rule by exact rule ID.
 
-## Remediation
-Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
-```
-
-### rules search
-
-Search rules by keyword. Matches against both rule ID and description text.
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--format` | string | `text` | Output format: `text` or `json`. |
 
 ```bash
-deltascope rules search "where"
-deltascope rules search "metadata"
-deltascope rules search "prefix"
+# Text output
+deltascope rules explain dml.where.require
+
+# JSON output
+deltascope rules explain dml.where.require --format json
 ```
+
+`rules explain` does not run an audit and does not parse SQL. It returns static rule metadata from the shipped catalog. The JSON output contains `level`, not `severity`.
+
+Unknown rule IDs produce a clear error and exit code 2:
+
+```text
+rule "nonexistent_rule" not found
+```
+
+Example text output:
+
+```text
+Rule ID:    dml.where.require
+Level:      blocker
+Enabled:    true
+Dialects:   common
+Kind:       dml
+Category:   dml_safety
+Config Key: dml.where.require
+
+Summary:
+  Require DML where require
+
+Why:
+  The statement is missing a clause, option, or object that the shipped policy requires.
+
+Risk:
+  Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+
+Suggestion:
+  Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+
+Tags: dml, common, dml_safety, require
+Trigger Example:
+  DELETE FROM users;
+Valid Example:
+  DELETE FROM users WHERE id = 1;
+
+Default Params:
+  required: true
+
+Config Example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: blocker
+      params:
+        required: true
+```
+
+Example JSON output (abbreviated):
+
+```json
+{
+  "version": "v0.290.0",
+  "rule": {
+    "rule_id": "dml.where.require",
+    "level": "blocker",
+    "enabled": true,
+    "dialects": ["common"],
+    "kind": "dml",
+    "category": "dml_safety",
+    "summary": "Require DML where require",
+    "config_key": "dml.where.require",
+    "tags": ["dml", "common", "dml_safety", "require"]
+  }
+}
+```
+
+### Non-Goals
+
+These commands do not:
+
+- Audit SQL statements
+- Add new audit rules or change rule behavior
+- Change the finding JSON shape
+- Introduce a `severity` field
+- Provide SDK, HTTP, or MCP rule discovery surfaces
 
 ---
 
