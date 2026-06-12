@@ -13,6 +13,35 @@ from pathlib import Path
 
 
 RELEASE_FACTS = {
+    "v0.290.0": {
+        "pg_alter_table_config_entries": 53,
+        "sql_corpus": {
+            "supported_rule_dialect_targets": 582,
+            "covered_rule_dialect_targets": 582,
+            "coverage_percent": "100.0",
+            "expected_yaml_files_total": 245,
+        },
+        "required_rule_ids": [],
+        "ddl_coverage_catalog": {
+            "total_entries": 400,
+            "mysql_entries": 61,
+            "tidb_entries": 54,
+            "postgresql_entries": 285,
+            "parser_upgrade_candidate_count": 18,
+        },
+        "rule_catalog": {
+            "total_rules": 371,
+            "level_blocker": 72,
+            "level_warning": 142,
+            "level_notice": 157,
+            "dialect_common": 177,
+            "dialect_postgresql": 191,
+            "dialect_mysql": 1,
+            "dialect_tidb": 2,
+            "kind_ddl": 361,
+            "kind_dml": 10,
+        },
+    },
     "v0.280.0": {
         "pg_alter_table_config_entries": 53,
         "sql_corpus": {
@@ -687,6 +716,61 @@ def _validate_ddl_coverage_catalog(root, version, facts, errors):
         errors.append("docs/reference/ddl-coverage.zh-CN.md does not exist")
 
 
+def _validate_rule_catalog(root, version, facts, errors):
+    """Validate rule catalog facts in release notes EN/ZH."""
+    rule_catalog = facts.get("rule_catalog")
+    if rule_catalog is None:
+        return
+
+    total = rule_catalog["total_rules"]
+    total_str = str(total)
+
+    en_notes = _read_file(root, f"docs/releases/release-notes-{version}.md")
+    zh_notes = _read_file(
+        root, f"docs/releases/release-notes-{version}.zh-CN.md"
+    )
+
+    for label, content in [
+        (f"docs/releases/release-notes-{version}.md", en_notes),
+        (f"docs/releases/release-notes-{version}.zh-CN.md", zh_notes),
+    ]:
+        if total_str not in content:
+            errors.append(
+                f"{label} missing rule catalog total {total_str}"
+            )
+
+        # Verify no severity field claim
+        if "severity" in content.lower():
+            # Check if it's used in a negative context (no severity field)
+            for line in content.split("\n"):
+                if "severity" in line.lower():
+                    negative_markers = [
+                        "no severity", "not a severity", "not severity",
+                        "不存在", "非 severity", "不是 severity",
+                        "而非", "不引入", "不将",
+                        "rename", "no `severity`",
+                    ]
+                    if not any(m in line.lower() for m in negative_markers):
+                        errors.append(
+                            f'{label} contains "severity" outside '
+                            f"negative context"
+                        )
+
+    # Verify level distribution appears in EN notes
+    level_facts = {
+        "blocker": rule_catalog["level_blocker"],
+        "warning": rule_catalog["level_warning"],
+        "notice": rule_catalog["level_notice"],
+    }
+    for level_name, count in level_facts.items():
+        count_str = str(count)
+        if count_str not in en_notes:
+            errors.append(
+                f"docs/releases/release-notes-{version}.md "
+                f"missing {level_name} count {count_str}"
+            )
+
+
 def _validate_pg_alter_table_config_entries(root, version, facts, errors):
     count = facts.get("pg_alter_table_config_entries")
     if count is None:
@@ -744,6 +828,7 @@ def validate_all(root, version):
     _validate_no_overclaim(root, version, errors)
     _validate_no_leak(root, version, errors)
     _validate_ddl_coverage_catalog(root, version, facts, errors)
+    _validate_rule_catalog(root, version, facts, errors)
 
     if errors:
         raise ReleaseConsistencyError("\n".join(errors))
@@ -806,6 +891,22 @@ def main():
         print(
             f"release-consistency: pg alter table config entries "
             f"{facts['pg_alter_table_config_entries']}"
+        )
+
+    rule_catalog = facts.get("rule_catalog")
+    if rule_catalog:
+        print(
+            f"release-consistency: rule catalog "
+            f"{rule_catalog['total_rules']} rules "
+            f"(blocker {rule_catalog['level_blocker']}, "
+            f"warning {rule_catalog['level_warning']}, "
+            f"notice {rule_catalog['level_notice']}), "
+            f"dialects (common {rule_catalog['dialect_common']}, "
+            f"postgresql {rule_catalog['dialect_postgresql']}, "
+            f"mysql {rule_catalog['dialect_mysql']}, "
+            f"tidb {rule_catalog['dialect_tidb']}), "
+            f"kinds (ddl {rule_catalog['kind_ddl']}, "
+            f"dml {rule_catalog['kind_dml']})"
         )
 
     catalog = facts.get("ddl_coverage_catalog")

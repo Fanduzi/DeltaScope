@@ -6,6 +6,29 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.290.0] - 2026-06-12
+
+### Added
+
+- CLI rule discovery: `deltascope rules list` lists rules with filters for dialect, level, kind, category, and free-text search.
+- CLI rule explanation: `deltascope rules explain <rule_id>` shows full metadata for one rule.
+- Both commands support JSON output for automation.
+- Rule catalog: 371 entries across dialect scopes (common 177, postgresql 191, mysql 1, tidb 2) and statement kinds (ddl 361, dml 10).
+- Level distribution: blocker 72, warning 142, notice 157.
+- `level` is the existing public finding field (not `severity`); no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-11-v0.290.0-rule-discoverability.md`.
+
+### Non-Goals
+
+- Not new audit rules.
+- Not rule evaluation behavior changes.
+- Not finding JSON shape changes.
+- Not a `severity` field.
+- Not parser support changes.
+- Not SDK/HTTP/MCP rule discovery surfaces.
+- Not config file shape changes.
+- Not default rule level changes.
+
 ## [v0.280.0] - 2026-06-08
 
 ### Added

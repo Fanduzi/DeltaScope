@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.280.0 DDL Coverage Catalog Query
+## Latest Completed Milestone: v0.290.0 Rule Discoverability and Explain
+
+**Goal:** add CLI commands for browsing and explaining DeltaScope's built-in rule catalog. `deltascope rules list` lists rules with filters for dialect, level, kind, category, and free-text search. `deltascope rules explain <rule_id>` shows full metadata for one rule. Both commands support JSON output. Does not add new audit rules, change rule evaluation behavior, change finding JSON shape, add a `severity` field, or change parser support.
+
+### Completed Scope
+
+- CLI rule discovery: `deltascope rules list` with filter flags (`--dialect`, `--level`, `--kind`, `--category`, `--search`).
+- CLI rule explanation: `deltascope rules explain <rule_id>` with full metadata output.
+- Output formats: human-readable text (default) and JSON (`--format json`).
+- Rule catalog: 371 entries (blocker 72, warning 142, notice 157; common 177, postgresql 191, mysql 1, tidb 2; ddl 361, dml 10).
+- `level` vocabulary: `blocker`, `warning`, `notice` (unchanged; no `severity` field).
+- Decision record: `docs/decisions/2026-06-11-v0.290.0-rule-discoverability.md`.
+
+### Non-Goals
+
+- Not new audit rules.
+- Not rule evaluation behavior changes.
+- Not finding JSON shape changes.
+- Not a `severity` field.
+- Not parser support changes.
+- Not SDK/HTTP/MCP rule discovery surfaces.
+- Not config file shape changes.
+- Not default rule level changes.
+
+## Previous Milestone: v0.280.0 DDL Coverage Catalog Query
 
 **Goal:** add a `deltascope ddl-coverage` CLI command that queries the DDL coverage catalog with filters (dialect, classification, guidance code, family, form, search) and outputs results as a table or JSON. Does not add parser support, SQL audit rules, fallback parser, reduce parser_error counts, or change SQL audit behavior.
 
