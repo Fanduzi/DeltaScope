@@ -14,6 +14,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output"
 )
 
@@ -35,6 +36,7 @@ func Render(result report.Result) ([]byte, error) {
 	builder.WriteString("\n- Notices: ")
 	builder.WriteString(strconv.Itoa(result.Summary.Notices))
 	builder.WriteString("\n\n")
+	writeActionSummary(builder, result)
 	writeAggregateExplanation(builder, 2, "Result Explanation", result.Explanation)
 
 	for _, statement := range result.Statements {
@@ -97,6 +99,75 @@ func Render(result report.Result) ([]byte, error) {
 	}
 
 	return []byte(builder.String()), nil
+}
+
+// writeActionSummary appends the derived action summary section when the result has findings.
+// It groups findings by rule via report.BuildActionSummary using the shipped rule catalog,
+// caps displayed rule groups at 10, and never emits raw SQL, finding metadata, or a severity
+// field. Clean results (no findings) omit the section entirely.
+func writeActionSummary(builder *strings.Builder, result report.Result) {
+	summary := report.BuildActionSummary(result, catalog.All(), report.ActionSummaryOptions{Limit: 10})
+	if summary.TotalItems == 0 {
+		return
+	}
+
+	builder.WriteString("## Action Summary\n\n")
+	for _, item := range summary.Items {
+		writeActionItem(builder, item)
+	}
+	if shown := len(summary.Items); summary.TotalItems > shown {
+		fmt.Fprintf(builder, "Showing %d of %d rule groups.\n", shown, summary.TotalItems)
+	}
+	builder.WriteString("\n")
+}
+
+// writeActionItem renders one derived rule group as a Markdown list item.
+func writeActionItem(builder *strings.Builder, item report.ActionItem) {
+	builder.WriteString("- [")
+	builder.WriteString(string(item.Level))
+	builder.WriteString("] `")
+	builder.WriteString(item.RuleID)
+	builder.WriteString("`: ")
+	builder.WriteString(formatFindingCount(item.Count))
+	builder.WriteString("\n")
+	if item.Summary != "" {
+		builder.WriteString("  Summary: ")
+		builder.WriteString(item.Summary)
+		builder.WriteString("\n")
+	}
+	if item.Suggestion != "" {
+		builder.WriteString("  Suggestion: ")
+		builder.WriteString(item.Suggestion)
+		builder.WriteString("\n")
+	}
+	builder.WriteString("  Explain: ")
+	builder.WriteString(item.ExplainCommand)
+	builder.WriteString("\n")
+	if len(item.StatementIndexes) > 0 {
+		builder.WriteString("  Statements: ")
+		builder.WriteString(formatStatementIndexes(item.StatementIndexes))
+		builder.WriteString("\n")
+	}
+	if item.HasGlobalFindings {
+		builder.WriteString("  Scope: global\n")
+	}
+}
+
+// formatFindingCount renders a singular/plural finding count, e.g. "1 finding" or "2 findings".
+func formatFindingCount(count int) string {
+	if count == 1 {
+		return "1 finding"
+	}
+	return strconv.Itoa(count) + " findings"
+}
+
+// formatStatementIndexes renders 1-based statement indexes as a comma-separated list, e.g. "1, 3".
+func formatStatementIndexes(indexes []int) string {
+	parts := make([]string, 0, len(indexes))
+	for _, index := range indexes {
+		parts = append(parts, strconv.Itoa(index))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func writeImpact(builder *strings.Builder, impact *report.Impact) {
