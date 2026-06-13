@@ -18,7 +18,7 @@ CLI adapter layer for the DeltaScope application.
 | capability_surface.go | Defines the pure-Go build capability surface and root CLI wording |
 | capability_surface_pg.go | Defines the PostgreSQL-tagged build capability surface and root CLI wording |
 | version.go | Implements the `version` subcommand with ASCII logo plus build-version and supported-dialect output |
-| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, and explanation rendering in Markdown/JSON results |
+| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, explanation rendering in Markdown/JSON results, and the user-facing Action Summary markdown contract (section presence, rule explain command, statement index, clean-result omission, JSON/quiet non-regression, and no severity field) |
 | ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, and no-leak sanity across all 400 catalog entries |
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, and no-severity sanity |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, create-table partial behavior, and metadata-connect-timeout flag validation |

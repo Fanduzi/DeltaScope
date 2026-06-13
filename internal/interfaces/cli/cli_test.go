@@ -326,6 +326,173 @@ func TestAuditCommandMarkdownIncludesOfflineTrustContext(t *testing.T) {
 	}
 }
 
+// TestAuditCommandMarkdownActionSummaryContract locks the user-facing Action
+// Summary block that the default markdown audit path renders for a blocker
+// finding. It asserts the section appears, names the rule id and its explain
+// command, surfaces the 1-based statement index, and never introduces a
+// severity field.
+func TestAuditCommandMarkdownActionSummaryContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "DELETE FROM users"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit-failure exit code 1 for blocker finding, got %d", code)
+	}
+
+	output := stdout.String()
+	if !strings.Contains(output, "## Action Summary") {
+		t.Fatalf("expected action summary section in default markdown output, got:\n%s", output)
+	}
+	for _, want := range []string{
+		"`dml.where.require`",
+		"deltascope rules explain dml.where.require",
+		"Statements: 1",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected default markdown output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "severity") {
+		t.Fatalf("default markdown action summary must not introduce a severity field, got:\n%s", output)
+	}
+}
+
+// TestAuditCommandExplicitMarkdownActionSummaryContract confirms that an
+// explicit --format markdown request renders the same Action Summary block as
+// the default markdown path, including the rule explain command.
+func TestAuditCommandExplicitMarkdownActionSummaryContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--format", "markdown", "--sql", "DELETE FROM users"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit-failure exit code 1 for blocker finding, got %d", code)
+	}
+
+	output := stdout.String()
+	if !strings.Contains(output, "## Action Summary") {
+		t.Fatalf("expected action summary section in explicit markdown output, got:\n%s", output)
+	}
+	if !strings.Contains(output, "deltascope rules explain dml.where.require") {
+		t.Fatalf("expected rule explain command in explicit markdown output, got:\n%s", output)
+	}
+}
+
+// TestAuditCommandJSONActionSummaryOmittedContract locks the JSON contract: the
+// derived Action Summary is a markdown-only surface, so JSON output must not
+// carry an action_summary key, must keep findings on the existing level field
+// (blocker), and must not introduce a severity field.
+func TestAuditCommandJSONActionSummaryOmittedContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--format", "json", "--sql", "DELETE FROM users"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit-failure exit code 1 for blocker finding, got %d", code)
+	}
+
+	raw := stdout.String()
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(raw), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, raw)
+	}
+	if _, ok := decoded["action_summary"]; ok {
+		t.Fatalf("JSON output must not expose action_summary, got:\n%s", raw)
+	}
+	if strings.Contains(raw, "severity") {
+		t.Fatalf("JSON output must not introduce a severity field, got:\n%s", raw)
+	}
+
+	statements, ok := decoded["statements"].([]any)
+	if !ok || len(statements) != 1 {
+		t.Fatalf("expected one statement, got %#v", decoded["statements"])
+	}
+	statement, ok := statements[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected statement object, got %#v", statements[0])
+	}
+	findings, ok := statement["findings"].([]any)
+	if !ok || len(findings) == 0 {
+		t.Fatalf("expected at least one finding, got %#v", statement["findings"])
+	}
+	finding, ok := findings[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected finding object, got %#v", findings[0])
+	}
+	if finding["level"] != "blocker" {
+		t.Fatalf("expected finding level blocker, got %#v", finding["level"])
+	}
+}
+
+// TestAuditCommandQuietOmitsActionSummaryContract locks the quiet contract:
+// quiet output keeps the single-line finding identity but never renders the
+// markdown Action Summary block. Action Summary must not change quiet behavior.
+func TestAuditCommandQuietOmitsActionSummaryContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--quiet", "--sql", "DELETE FROM users"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit-failure exit code 1 for blocker finding, got %d", code)
+	}
+
+	output := stdout.String()
+	if strings.Contains(output, "## Action Summary") {
+		t.Fatalf("quiet output must omit the action summary block, got:\n%s", output)
+	}
+	if !strings.Contains(output, "dml.where.require") {
+		t.Fatalf("quiet output must keep the finding rule identity, got:\n%s", output)
+	}
+}
+
+// TestAuditCommandCleanResultOmitsActionSummaryContract locks the clean-result
+// contract: an audit with no findings must report a pass and omit the Action
+// Summary section entirely. SELECT 1 is a stable clean input (no rules apply).
+func TestAuditCommandCleanResultOmitsActionSummaryContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "SELECT 1"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected clean exit code 0, got %d\nstdout=%s", code, stdout.String())
+	}
+
+	if strings.Contains(stdout.String(), "## Action Summary") {
+		t.Fatalf("clean result must omit the action summary section, got:\n%s", stdout.String())
+	}
+}
+
 func TestAuditCommandShowsPostgreSQLSyntaxNoticeOnParseErrorStdout(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
