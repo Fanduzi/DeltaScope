@@ -8,6 +8,8 @@ Audit result aggregation, summary counts, and verdict calculation.
 |------|---------------|
 | result.go | Defines result types and verdict aggregation |
 | result_test.go | Verifies verdict and summary behavior |
+| action_summary.go | Derives a human-oriented action summary from findings and catalog entries |
+| action_summary_test.go | Verifies action summary grouping, ordering, and fallbacks |
 
 ## Exports
 
@@ -21,6 +23,23 @@ Audit result aggregation, summary counts, and verdict calculation.
 - `Summary`
 - `Result`
 - `Aggregate()`
+- `ActionSummaryOptions`
+- `ActionSummary`
+- `ActionItem`
+- `BuildActionSummary()`
+
+## Action Summary
+
+`BuildActionSummary` is a **derived human-report helper**. It groups statement and global findings by `rule_id` and orders them by remediation priority so a human reader can decide what to fix first.
+
+- It is derived from `report.Result` and `internal/domain/rule/catalog` entries. It does **not** change `Result` JSON shape.
+- It uses `rule.Level` (`blocker`, `warning`, `notice`). It does **not** introduce a `severity` field.
+- It does **not** parse SQL, run the audit, evaluate rules, read raw SQL, or read metadata. It only reads existing findings and catalog metadata.
+- Statement indexes are 1-based positions into `Result.Statements` and are deduplicated within a rule group; global findings set `HasGlobalFindings` and carry no statement index.
+- Ordering is deterministic: level priority (`blocker`, `warning`, `notice`), then count descending, then `rule_id` ascending.
+- `ActionSummaryOptions.Limit <= 0` means no truncation; a positive limit truncates `Items` but preserves `TotalItems`.
+- An empty result returns a non-nil empty `Items` slice.
+- It does not mutate `Result` or catalog entries.
 
 ## Notes
 
@@ -31,7 +50,7 @@ Audit result aggregation, summary counts, and verdict calculation.
 
 ## Dependencies
 - Upstream: application audit orchestration
-- Downstream: `internal/domain/rule`
+- Downstream: `internal/domain/rule`, `internal/domain/rule/catalog` (catalog read by `BuildActionSummary`)
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
