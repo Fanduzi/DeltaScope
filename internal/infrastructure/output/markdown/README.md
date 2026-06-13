@@ -35,6 +35,25 @@ SARIF, GitHub Actions, or GitLab Code Quality outputs, it does **not** change au
 behavior or the finding JSON shape, and it never introduces a `severity` field. It carries
 no raw SQL and no raw finding metadata.
 
+### Rendered Example
+
+A single `DELETE FROM users` blocker renders one rule group. The `Summary:`/`Suggestion:`
+text is taken from the rule catalog when present, the `Statements:` index is 1-based, and no
+raw SQL or finding metadata appears in the section:
+
+```text
+## Action Summary
+
+- [blocker] `dml.where.require`: 1 finding
+  Summary: Require DML where require
+  Suggestion: Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+  Explain: deltascope rules explain dml.where.require
+  Statements: 1
+```
+
+When more than 10 rule groups exist, the section keeps the first 10 and appends a
+`Showing 10 of N rule groups.` line.
+
 ## Dependencies
 - Upstream: CLI and future API adapters that need human-readable output
 - Downstream: `internal/domain/report`, `internal/domain/rule`, `internal/domain/rule/catalog`

@@ -106,6 +106,14 @@ Verdict: `reject`
 - Warnings: 0
 - Notices: 0
 
+## Action Summary
+
+- [blocker] `dml.where.require`: 1 finding
+  Summary: Require DML where require
+  Suggestion: Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+  Explain: deltascope rules explain dml.where.require
+  Statements: 1
+
 ## Result Explanation
 
 Audit produced 1 finding(s) across 1 statement(s)
@@ -131,6 +139,30 @@ Statement 1 has 1 finding(s)
   Metadata:
   - `operation`: `delete`
 ```
+
+#### Action Summary（操作摘要）
+
+当 markdown 审计存在 findings 时，默认 `deltascope audit` 路径和 `--format markdown` 都会在计数（`Statements / Blockers / Warnings / Notices`）与 `## Result Explanation` 之间渲染一个 `## Action Summary` 区段。它按 `rule_id` 聚合 findings，让你无需逐条语句阅读就能看出先修什么。
+
+每个 rule group 最多显示：
+
+- `[level] \`rule_id\`: N finding(s)` —— 优先级 `level`（`blocker`、`warning` 或 `notice`）与去重后的 finding 计数
+- `Summary:` 与 `Suggestion:` —— 优先取规则目录文本，缺失时回退到首条 finding 的 message 和 suggestion
+- `Explain: deltascope rules explain <rule_id>` —— 可直接复制运行的命令，用于查看该规则详情
+- `Statements:` —— 触发该规则的语句序号（1 开始计数、去重；仅 global finding 时省略）
+- `Scope: global` —— 仅当该 group 包含 global finding 时出现
+
+排序按修复优先级：先 `blocker`，再 `warning`，再 `notice`；同级内按 finding 计数降序，再按 `rule_id` 升序。默认最多显示 10 个 rule group；超过时末尾追加 `Showing 10 of N rule groups.`。
+
+干净审计（无 findings）完全不显示该区段。该摘要不携带任何原始 SQL 和 finding metadata —— 只有 rule ID、level、计数、目录文本、1-based 语句序号和 explain 命令。
+
+范围与非目标：
+
+- Action Summary 仅适用于 markdown。审计 JSON 输出不新增 `action_summary` 字段，finding JSON 结构不变。
+- 优先级字段仍是 `level`；不引入 `severity` 字段。
+- SDK、HTTP、MCP、SARIF、GitHub Actions、GitLab Code Quality 输出不变。
+- 不新增 parser 支持，不新增审计规则，不改变审计或规则行为。
+- 文本布局是面向人类的辅助信息，不是机器契约。自动化场景请使用 `--format json` 自行聚合 findings。
 
 #### JSON 输出
 

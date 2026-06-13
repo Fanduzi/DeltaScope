@@ -121,6 +121,14 @@ Verdict: `reject`
 - Warnings: 0
 - Notices: 0
 
+## Action Summary
+
+- [blocker] `dml.where.require`: 1 finding
+  Summary: Require DML where require
+  Suggestion: Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+  Explain: deltascope rules explain dml.where.require
+  Statements: 1
+
 ## Result Explanation
 
 Audit produced 1 finding(s) across 1 statement(s)
@@ -146,6 +154,30 @@ Statement 1 has 1 finding(s)
   Metadata:
   - `operation`: `delete`
 ```
+
+#### Action Summary
+
+When a markdown audit has findings, both the default `deltascope audit` path and `--format markdown` render an `## Action Summary` section between the counts (`Statements / Blockers / Warnings / Notices`) and `## Result Explanation`. It groups findings by `rule_id` so you can see what to fix first without reading the report statement-by-statement.
+
+Each rule group shows, at most:
+
+- `[level] \`rule_id\`: N finding(s)` — the priority `level` (`blocker`, `warning`, or `notice`) and the deduplicated finding count
+- `Summary:` and `Suggestion:` — rule catalog text when available, otherwise the first finding's message and suggestion
+- `Explain: deltascope rules explain <rule_id>` — a copy-paste command to inspect the rule
+- `Statements:` — 1-based indexes of the statements that triggered the rule (deduplicated; omitted for global-only findings)
+- `Scope: global` — present only when the group includes a global finding
+
+Groups are ordered by remediation priority: `blocker`, then `warning`, then `notice`, then by finding count descending, then by `rule_id` ascending. At most 10 rule groups are shown; when there are more, a final `Showing 10 of N rule groups.` line is appended.
+
+Clean audits (no findings) omit the section entirely. The summary carries no raw SQL and no finding metadata — only rule IDs, levels, counts, catalog text, 1-based statement indexes, and the explain command.
+
+Scope and non-goals:
+
+- The Action Summary is markdown-only. Audit JSON output does not add an `action_summary` field, and the finding JSON shape is unchanged.
+- `level` remains the priority field; no `severity` field is introduced.
+- SDK, HTTP, MCP, SARIF, GitHub Actions, and GitLab Code Quality outputs are unchanged.
+- This adds no parser support, no audit rules, and no change to audit or rule behavior.
+- The text layout is a human-readable aid, not a machine contract. For automation, use `--format json` and aggregate findings yourself.
 
 #### JSON Output
 
