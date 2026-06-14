@@ -45,6 +45,10 @@ deltascope config init > deltascope.yaml
 # 校验配置文件语法与 rule ID
 deltascope config lint --file ./deltascope.yaml
 
+# 查看某条规则在当前配置下的有效状态
+deltascope config status dml.where.require
+deltascope --config ./deltascope.yaml config status dml.where.require --format json
+
 # 查看内置默认配置
 deltascope config show-default
 ```
@@ -59,6 +63,26 @@ Config file ./deltascope.yaml is valid.
 Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.comment.require"?)
 ```
 
+### config status
+
+`deltascope config status <rule-id>` 展示某条规则在当前配置下是 ON 还是 OFF、触发时会使用哪个 `level`，以及你的配置相对于默认值改动了 `enabled`、`level` 或哪些 params。配置文件通过全局 `--config` 标志选择。
+
+```bash
+deltascope config status dml.where.require
+deltascope --config ./deltascope.yaml config status dml.where.require
+deltascope --config ./deltascope.yaml config status dml.where.require --format json
+```
+
+它回答的问题与其它规则命令不同：
+
+- `rules explain <rule-id>` 解释规则本身的含义（它忽略你的配置）。
+- `config status <rule-id>` 展示你的配置让这条规则做什么。
+- `config lint --file` 校验配置文件的结构与取值。
+
+`config status` 不运行 audit、不解析 SQL、不连接数据库、不改变 audit 行为或规则行为、不改变 finding JSON 结构，也不新增 `severity` 字段。完整的文本与 JSON 输出契约见 [cli.zh-CN.md](cli.zh-CN.md#config-status)。
+
+`config status` 报告的有效策略与 audit 路径实际应用的一致。正因如此，在编辑部分规则之前，有一项配置文件行为必须先理解：规则级替换语义。
+
 ### 文件来源
 
 - 通过 `deltascope config init` 生成
@@ -70,6 +94,56 @@ Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.com
 - 生成一次后，将策略文件提交至 CI 中统一使用
 - 上线前先用 `config lint` 校验变更
 - 将 `configs/deltascope.example.yaml` 作为文档参考，而非唯一的配置来源
+
+---
+
+## Rule-Level Replacement Semantics
+
+规则级替换语义（rule-level replacement semantics）：当你在 YAML 中 **mention** 一条规则时，加载器会替换该规则的整条 policy——它**不会**把你写下的字段局部合并（partial merge）到默认值上。被省略的字段会变成其零值：
+
+| 字段 | 省略后的有效取值 |
+|---|---|
+| `enabled` | `false` |
+| `level` | `""`（空） |
+| `params` | 空 |
+
+YAML 中**未 mention** 的规则保持其默认 policy 不变。
+
+这与 audit 路径实际应用的行为完全一致，因此 `config status` 如实报告，而不是隐藏它。最常见的陷阱是只写下你想改的字段：
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
+
+这看起来像是“把 level 从 `blocker` 放宽到 `warning`”。并非如此。因为该规则现在被 mention，它的整条 policy 被替换，`enabled` 被省略因而变为 `false`，规则最终是 **OFF**——它根本不会产生 finding。`config status` 会明确指出：
+
+```text
+Current status:
+  OFF
+  This rule will not produce findings.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `enabled` is omitted, so the effective value is false.
+  `level` changes from blocker to warning.
+  `params.required` is removed.
+  This rule is OFF.
+```
+
+若只想改 `level` 又保持规则开启，请写明所有字段，使替换后其余字段保持不变：
+
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+```
+
+加载器是否应改为采用局部合并语义（partial merge）是一个更大、独立的决策，不在本版本范围内。在此之前，请把被 mention 的规则视为一次完整替换（rule-level replacement，不是局部合并）。
 
 ---
 

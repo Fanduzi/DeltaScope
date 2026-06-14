@@ -40,6 +40,10 @@ deltascope config init > deltascope.yaml
 # Validate a config file for syntax and rule ID correctness
 deltascope config lint --file ./deltascope.yaml
 
+# Show the effective status of one rule under your config
+deltascope config status dml.where.require
+deltascope --config ./deltascope.yaml config status dml.where.require --format json
+
 # Print the built-in default policy to stdout
 deltascope config show-default
 ```
@@ -53,6 +57,88 @@ Config file ./deltascope.yaml is valid.
 ```
 Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.comment.require"?)
 ```
+
+### config status
+
+`deltascope config status <rule-id>` shows whether one rule is ON or OFF under the active config,
+which `level` it will use if it fires, and how your config changed `enabled`, `level`, or params
+versus the default. The config file is selected with the global `--config` flag.
+
+```bash
+deltascope config status dml.where.require
+deltascope --config ./deltascope.yaml config status dml.where.require
+deltascope --config ./deltascope.yaml config status dml.where.require --format json
+```
+
+It answers a different question from the other rule commands:
+
+- `rules explain <rule-id>` explains what the rule means (it ignores your config).
+- `config status <rule-id>` shows what your config makes the rule do.
+- `config lint --file` validates a config file's shape and values.
+
+`config status` does not run an audit, parse SQL, connect to a database, change audit or rule
+behavior, change the finding JSON shape, or add a `severity` field. See [cli.md](cli.md#config-status)
+for the full text and JSON output contracts.
+
+`config status` reports effective policy exactly as the audit path applies it. That makes one
+config-file behavior important to understand before you edit partial rules: rule-level replacement.
+
+---
+
+## Rule-Level Replacement Semantics
+
+When you **mention** a rule in the YAML, the loader replaces that rule's whole policy — it does
+**not** partial-merge the fields you wrote onto the defaults. Omitted fields become their zero
+values:
+
+| Field | Omitted effective value |
+|---|---|
+| `enabled` | `false` |
+| `level` | `""` (empty) |
+| `params` | empty |
+
+Rules **not mentioned** in the YAML keep their default policy unchanged.
+
+This is the same behavior the audit path applies, so `config status` reports it faithfully rather
+than hiding it. The common trap is writing only the field you want to change:
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
+
+This looks like "soften the level from `blocker` to `warning`". It is not. Because the rule is now
+mentioned, its whole policy is replaced, `enabled` is omitted and therefore becomes `false`, and
+the rule ends up **OFF** — it will not produce findings at all. `config status` calls this out:
+
+```text
+Current status:
+  OFF
+  This rule will not produce findings.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `enabled` is omitted, so the effective value is false.
+  `level` changes from blocker to warning.
+  `params.required` is removed.
+  This rule is OFF.
+```
+
+To change only the `level` while keeping the rule on, specify every field so the replacement
+leaves the others intact:
+
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+```
+
+Whether the loader should adopt partial-merge semantics instead is a separate, larger decision and
+is out of scope for this release. Until then, treat a mentioned rule as a full replacement.
 
 ---
 

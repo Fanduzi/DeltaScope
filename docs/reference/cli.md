@@ -1012,6 +1012,243 @@ Prints the built-in default policy. Equivalent to `config init`.
 deltascope config show-default
 ```
 
+### config status
+
+Show the effective status of one shipped rule under the current config. It answers: is this rule
+ON or OFF right now, and which `level` will it use if it fires?
+
+```bash
+deltascope config status <rule-id> [--format text|json]
+deltascope --config ./deltascope.yaml config status <rule-id>
+deltascope --config ./deltascope.yaml config status <rule-id> --format json
+```
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--format` | string | `text` | Output format: `text` or `json`. |
+
+The config file is selected with the global `--config` flag, the same flag `audit` uses. When
+`--config` is omitted, the command reports the built-in default policy and states that no config
+override is active.
+
+#### How `config status` differs from the other rule commands
+
+These three commands answer different questions. Pick by intent:
+
+- `deltascope rules explain <rule-id>` explains **what the rule means** — its summary, why, risk,
+  suggestion, tags, and default params from the shipped catalog. It does not look at your config.
+- `deltascope config status <rule-id>` shows **what your config makes the rule do** — whether it is
+  ON or OFF under the active config and which `level` it will use.
+- `deltascope config lint --file` **validates a config file** — YAML shape, valid rule IDs, valid
+  levels, and param types. It does not report effective status for any rule.
+
+#### Text output
+
+Default policy (no `--config`):
+
+```bash
+deltascope config status dml.where.require
+```
+
+```text
+Rule: dml.where.require
+
+Current status:
+  ON
+  Findings from this rule fail as: blocker.
+
+Config effect:
+  No config supplied. This rule uses the default policy.
+
+Default:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Current:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Rule details:
+  deltascope rules explain dml.where.require
+```
+
+Full-spec override — every field specified, only `level` differs, rule stays ON:
+
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+```
+
+```bash
+deltascope --config ./deltascope.yaml config status dml.where.require
+```
+
+```text
+Rule: dml.where.require
+
+Current status:
+  ON
+  Findings from this rule fail as: warning.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `level` changes from blocker to warning.
+
+Default:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Current:
+  enabled: true
+  level: warning
+  params:
+    required: true
+
+Rule details:
+  deltascope rules explain dml.where.require
+```
+
+Partial config — the dangerous case (see [Rule-Level Replacement Semantics](config.md#rule-level-replacement-semantics)).
+Writing only `level` mentions the rule, which replaces its whole policy, so the omitted `enabled`
+becomes `false` and the rule ends up OFF:
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
+
+```bash
+deltascope --config ./deltascope.yaml config status dml.where.require
+```
+
+```text
+Rule: dml.where.require
+
+Current status:
+  OFF
+  This rule will not produce findings.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `enabled` is omitted, so the effective value is false.
+  `level` changes from blocker to warning.
+  `params.required` is removed.
+  This rule is OFF.
+
+Default:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Current:
+  enabled: false
+  level: warning
+  params:
+    (none)
+
+Rule details:
+  deltascope rules explain dml.where.require
+```
+
+Text output is intended for humans. For automation, use JSON.
+
+#### JSON output
+
+`--format json` returns a stable wrapper. The public priority field is `level`; there is no
+`severity` field.
+
+```bash
+deltascope config status dml.where.require --format json
+```
+
+```json
+{
+  "version": "v0.310.0",
+  "rule_id": "dml.where.require",
+  "status": {
+    "enabled": true,
+    "level": "blocker",
+    "state": "on"
+  },
+  "default": {
+    "enabled": true,
+    "level": "blocker",
+    "params": {
+      "required": true
+    }
+  },
+  "current": {
+    "enabled": true,
+    "level": "blocker",
+    "params": {
+      "required": true
+    }
+  },
+  "config_effect": {
+    "has_config": false,
+    "has_override": false,
+    "changed_fields": [],
+    "messages": [
+      "No config supplied. This rule uses the default policy."
+    ]
+  },
+  "rule_details_command": "deltascope rules explain dml.where.require"
+}
+```
+
+Required JSON fields:
+
+| Field | Meaning |
+|---|---|
+| `version` | DeltaScope build version |
+| `rule_id` | Requested rule ID |
+| `status.enabled` | Effective enabled state |
+| `status.level` | Effective rule level |
+| `status.state` | `on` or `off` |
+| `default` | Built-in default policy values for the rule |
+| `current` | Effective values after config loading |
+| `config_effect.has_config` | Whether global `--config` was supplied |
+| `config_effect.has_override` | Whether the requested rule was mentioned in the config file |
+| `config_effect.changed_fields` | Changed fields, such as `enabled`, `level`, or `params.required` |
+| `config_effect.messages` | Human-readable explanation lines |
+| `rule_details_command` | `deltascope rules explain <rule_id>` |
+
+#### Errors
+
+The command exits with code 2 (bad user input) when:
+
+- `<rule-id>` is missing or more than one positional arg is supplied.
+- `<rule-id>` is not a shipped rule (`rule "not.real.rule" not found`).
+- `--format` is not `text` or `json`.
+- `--config` points to a missing, unreadable, or invalid YAML file.
+- The config contains an unknown rule, an invalid level, an unknown param, or a param type
+  mismatch. `config status` reuses `config lint` semantics, so it never silently accepts a
+  malformed config.
+
+#### Non-Goals
+
+`config status` does not:
+
+- Run an audit or parse SQL.
+- Connect to a database.
+- Change audit behavior, rule behavior, or the finding JSON shape.
+- Add a `severity` field.
+- Add SDK, HTTP, or MCP config-status surfaces.
+- Print the status of every rule at once. A future `config effective` command for bulk inspection
+  is out of scope for this release.
+
 ---
 
 ## deltascope capabilities

@@ -960,6 +960,231 @@ Error: unknown rule ID "ddl.table.comments.require" in ./deltascope.yaml (did yo
 deltascope config show-default
 ```
 
+### config status
+
+查看某一条 shipped rule 在当前配置下的有效状态（effective status）。它回答的问题是：这条规则当前是 ON 还是 OFF？如果触发，会使用哪个 `level`？
+
+```bash
+deltascope config status <rule-id> [--format text|json]
+deltascope --config ./deltascope.yaml config status <rule-id>
+deltascope --config ./deltascope.yaml config status <rule-id> --format json
+```
+
+| 标志 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `--format` | string | `text` | 输出格式：`text` 或 `json`。 |
+
+配置文件通过全局 `--config` 标志选择，与 `audit` 使用的标志相同。当省略 `--config` 时，命令报告内置默认策略，并说明当前没有配置覆盖。
+
+#### `config status` 与其它规则命令的区别
+
+这三条命令回答的是不同的问题，请按意图选择：
+
+- `deltascope rules explain <rule-id>` 解释**规则本身的含义**——来自 shipped catalog 的 summary、why、risk、suggestion、tags 与默认 params。它不看你的配置。
+- `deltascope config status <rule-id>` 展示**你的配置让这条规则做什么**——在当前配置下它是 ON 还是 OFF，会使用哪个 `level`。
+- `deltascope config lint --file` **校验配置文件**——YAML 结构、合法的 rule ID、合法的 level 以及参数类型。它不报告任何规则的有效状态。
+
+#### 文本输出
+
+默认策略（不带 `--config`）：
+
+```bash
+deltascope config status dml.where.require
+```
+
+```text
+Rule: dml.where.require
+
+Current status:
+  ON
+  Findings from this rule fail as: blocker.
+
+Config effect:
+  No config supplied. This rule uses the default policy.
+
+Default:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Current:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Rule details:
+  deltascope rules explain dml.where.require
+```
+
+完整字段覆盖——所有字段都写明，只有 `level` 不同，规则保持 ON：
+
+```yaml
+rules:
+  dml.where.require:
+    enabled: true
+    level: warning
+    params:
+      required: true
+```
+
+```bash
+deltascope --config ./deltascope.yaml config status dml.where.require
+```
+
+```text
+Rule: dml.where.require
+
+Current status:
+  ON
+  Findings from this rule fail as: warning.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `level` changes from blocker to warning.
+
+Default:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Current:
+  enabled: true
+  level: warning
+  params:
+    required: true
+
+Rule details:
+  deltascope rules explain dml.where.require
+```
+
+部分配置——危险情况（见 [Rule-Level Replacement Semantics](config.zh-CN.md#rule-level-replacement-semantics)）。只写 `level` 会 mention 这条规则，从而替换它的整条 policy，因此被省略的 `enabled` 变为 `false`，规则最终是 OFF：
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
+
+```bash
+deltascope --config ./deltascope.yaml config status dml.where.require
+```
+
+```text
+Rule: dml.where.require
+
+Current status:
+  OFF
+  This rule will not produce findings.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `enabled` is omitted, so the effective value is false.
+  `level` changes from blocker to warning.
+  `params.required` is removed.
+  This rule is OFF.
+
+Default:
+  enabled: true
+  level: blocker
+  params:
+    required: true
+
+Current:
+  enabled: false
+  level: warning
+  params:
+    (none)
+
+Rule details:
+  deltascope rules explain dml.where.require
+```
+
+文本输出面向人类阅读。自动化场景请使用 JSON。
+
+#### JSON 输出
+
+`--format json` 返回稳定的包装结构。公开的优先级字段是 `level`；没有 `severity` 字段。
+
+```bash
+deltascope config status dml.where.require --format json
+```
+
+```json
+{
+  "version": "v0.310.0",
+  "rule_id": "dml.where.require",
+  "status": {
+    "enabled": true,
+    "level": "blocker",
+    "state": "on"
+  },
+  "default": {
+    "enabled": true,
+    "level": "blocker",
+    "params": {
+      "required": true
+    }
+  },
+  "current": {
+    "enabled": true,
+    "level": "blocker",
+    "params": {
+      "required": true
+    }
+  },
+  "config_effect": {
+    "has_config": false,
+    "has_override": false,
+    "changed_fields": [],
+    "messages": [
+      "No config supplied. This rule uses the default policy."
+    ]
+  },
+  "rule_details_command": "deltascope rules explain dml.where.require"
+}
+```
+
+必需的 JSON 字段：
+
+| 字段 | 含义 |
+|---|---|
+| `version` | DeltaScope 构建版本 |
+| `rule_id` | 请求的 rule ID |
+| `status.enabled` | 有效的启用状态 |
+| `status.level` | 有效的规则 level |
+| `status.state` | `on` 或 `off` |
+| `default` | 该规则的内置默认策略取值 |
+| `current` | 加载配置后的有效取值 |
+| `config_effect.has_config` | 是否提供了全局 `--config` |
+| `config_effect.has_override` | 请求的规则是否在配置文件中被 mention |
+| `config_effect.changed_fields` | 发生变化的字段，例如 `enabled`、`level` 或 `params.required` |
+| `config_effect.messages` | 人类可读的说明行 |
+| `rule_details_command` | `deltascope rules explain <rule_id>` |
+
+#### 错误行为
+
+下列情况命令以退出码 2（用户输入错误）退出：
+
+- 缺少 `<rule-id>` 或传入多于一个位置参数。
+- `<rule-id>` 不是 shipped rule（`rule "not.real.rule" not found`）。
+- `--format` 不是 `text` 或 `json`。
+- `--config` 指向缺失、不可读或无效的 YAML 文件。
+- 配置包含未知 rule、无效 level、未知参数或参数类型不匹配。`config status` 复用 `config lint` 的校验语义，因此绝不会静默接受格式错误的配置。
+
+#### 非目标
+
+`config status` 不会：
+
+- 运行 audit 或解析 SQL。
+- 连接数据库。
+- 改变 audit 行为、规则行为或 finding JSON 结构。
+- 新增 `severity` 字段。
+- 新增 SDK、HTTP 或 MCP 的 config-status 接口。
+- 一次打印所有规则的状态。用于批量查看的 `config effective` 命令在本版本中属于 out-of-scope。
+
 ---
 
 ## deltascope capabilities
