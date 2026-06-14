@@ -715,8 +715,8 @@ func TestRenderActionSummaryTruncatesAfterTenRuleGroups(t *testing.T) {
 func TestRenderActionSummaryMarksGlobalScope(t *testing.T) {
 	t.Parallel()
 	rendered, err := Render(report.Result{
-		Verdict:        report.VerdictReview,
-		Summary:        report.Summary{Warnings: 1},
+		Verdict: report.VerdictReview,
+		Summary: report.Summary{Warnings: 1},
 		GlobalFindings: []rule.Finding{{
 			RuleID:  "batch.warning",
 			Level:   rule.LevelWarning,

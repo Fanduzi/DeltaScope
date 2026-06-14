@@ -28,9 +28,9 @@ func newRulesCmd(exitCode *int) *cobra.Command {
 // ---------- rules list ----------
 
 type rulesListJSONOutput struct {
-	Version string              `json:"version"`
+	Version string               `json:"version"`
 	Summary rulesListJSONSummary `json:"summary"`
-	Rules   []rulesListJSONRule `json:"rules"`
+	Rules   []rulesListJSONRule  `json:"rules"`
 }
 
 type rulesListJSONSummary struct {
@@ -244,33 +244,33 @@ func renderRulesListText(result rulecatalog.Result) string {
 // ---------- rules explain ----------
 
 type rulesExplainJSONOutput struct {
-	Version string              `json:"version"`
+	Version string               `json:"version"`
 	Rule    rulesExplainJSONRule `json:"rule"`
 }
 
 type rulesExplainJSONRule struct {
-	RuleID         string                       `json:"rule_id"`
-	Level          string                       `json:"level"`
-	Enabled        bool                         `json:"enabled"`
-	Dialects       []string                     `json:"dialects"`
-	Kind           string                       `json:"kind"`
-	Category       string                       `json:"category"`
-	Summary        string                       `json:"summary"`
-	Why            string                       `json:"why"`
-	Risk           string                       `json:"risk"`
-	Suggestion     string                       `json:"suggestion"`
-	ConfigKey      string                       `json:"config_key"`
-	Tags           []string                     `json:"tags,omitempty"`
-	Description    string                       `json:"description"`
-	StatementKinds []string                     `json:"statement_kinds"`
-	DefaultParams  map[string]any               `json:"default_params"`
-	MetadataAware  bool                         `json:"metadata_aware"`
-	TriggerExample string                       `json:"trigger_example"`
-	ValidExample   string                       `json:"valid_example"`
-	ConfigExample  string                       `json:"config_example"`
-	Remediation    string                       `json:"remediation"`
-	ConfigHints    []string                     `json:"config_hints"`
-	MetadataNotes  *rulesExplainJSONMetaNotes   `json:"metadata_notes,omitempty"`
+	RuleID         string                     `json:"rule_id"`
+	Level          string                     `json:"level"`
+	Enabled        bool                       `json:"enabled"`
+	Dialects       []string                   `json:"dialects"`
+	Kind           string                     `json:"kind"`
+	Category       string                     `json:"category"`
+	Summary        string                     `json:"summary"`
+	Why            string                     `json:"why"`
+	Risk           string                     `json:"risk"`
+	Suggestion     string                     `json:"suggestion"`
+	ConfigKey      string                     `json:"config_key"`
+	Tags           []string                   `json:"tags,omitempty"`
+	Description    string                     `json:"description"`
+	StatementKinds []string                   `json:"statement_kinds"`
+	DefaultParams  map[string]any             `json:"default_params"`
+	MetadataAware  bool                       `json:"metadata_aware"`
+	TriggerExample string                     `json:"trigger_example"`
+	ValidExample   string                     `json:"valid_example"`
+	ConfigExample  string                     `json:"config_example"`
+	Remediation    string                     `json:"remediation"`
+	ConfigHints    []string                   `json:"config_hints"`
+	MetadataNotes  *rulesExplainJSONMetaNotes `json:"metadata_notes,omitempty"`
 }
 
 type rulesExplainJSONMetaNotes struct {

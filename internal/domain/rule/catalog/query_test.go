@@ -686,19 +686,19 @@ func TestQueryResultJSONNoSeverity(t *testing.T) {
 	// Marshal a projection of each entry and check for "severity".
 	for _, e := range res.Entries {
 		proj := map[string]any{
-			"rule_id":     e.RuleID,
-			"config_key":  e.ConfigKey,
-			"level":       string(e.DefaultLevel),
-			"enabled":     e.DefaultEnabled,
-			"kind":        e.StatementKinds[0],
-			"dialects":    e.Dialects,
-			"category":    e.Category,
-			"summary":     e.Summary,
-			"why":         e.Why,
-			"risk":        e.Risk,
-			"suggestion":  e.Suggestion,
-			"tags":        e.Tags,
-			"source":      e.Source,
+			"rule_id":    e.RuleID,
+			"config_key": e.ConfigKey,
+			"level":      string(e.DefaultLevel),
+			"enabled":    e.DefaultEnabled,
+			"kind":       e.StatementKinds[0],
+			"dialects":   e.Dialects,
+			"category":   e.Category,
+			"summary":    e.Summary,
+			"why":        e.Why,
+			"risk":       e.Risk,
+			"suggestion": e.Suggestion,
+			"tags":       e.Tags,
+			"source":     e.Source,
 		}
 		data, err := json.Marshal(proj)
 		if err != nil {

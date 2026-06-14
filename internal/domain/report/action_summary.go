@@ -45,15 +45,15 @@ type ActionItem struct {
 // actionGroup accumulates findings for a single rule ID during derivation.
 // It is internal and is never exposed on report.Result or in JSON output.
 type actionGroup struct {
-	level               rule.Level
-	bestRank            int
-	count               int
-	statementIndexSet   map[int]struct{}
-	hasGlobal           bool
-	firstMessage        string
-	hasMessage          bool
-	fallbackSuggestion  string
-	hasFallbackSuggest  bool
+	level              rule.Level
+	bestRank           int
+	count              int
+	statementIndexSet  map[int]struct{}
+	hasGlobal          bool
+	firstMessage       string
+	hasMessage         bool
+	fallbackSuggestion string
+	hasFallbackSuggest bool
 }
 
 // BuildActionSummary derives an action summary from a report result and rule catalog entries.

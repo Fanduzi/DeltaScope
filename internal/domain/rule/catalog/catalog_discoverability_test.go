@@ -285,19 +285,19 @@ func TestNoSeverityFieldInJSON(t *testing.T) {
 	t.Parallel()
 	// Marshal the first entry as a discoverability projection.
 	type discoverabilityEntry struct {
-		RuleID    string `json:"rule_id"`
-		ConfigKey string `json:"config_key"`
-		Level     string `json:"level"`
-		Enabled   bool   `json:"enabled"`
-		Kind      string `json:"kind"`
-		Dialects  []string `json:"dialects"`
-		Category  string `json:"category"`
-		Summary   string `json:"summary"`
-		Why       string `json:"why,omitempty"`
-		Risk      string `json:"risk,omitempty"`
-		Suggestion string `json:"suggestion,omitempty"`
-		Tags      []string `json:"tags"`
-		Source    string `json:"source"`
+		RuleID     string   `json:"rule_id"`
+		ConfigKey  string   `json:"config_key"`
+		Level      string   `json:"level"`
+		Enabled    bool     `json:"enabled"`
+		Kind       string   `json:"kind"`
+		Dialects   []string `json:"dialects"`
+		Category   string   `json:"category"`
+		Summary    string   `json:"summary"`
+		Why        string   `json:"why,omitempty"`
+		Risk       string   `json:"risk,omitempty"`
+		Suggestion string   `json:"suggestion,omitempty"`
+		Tags       []string `json:"tags"`
+		Source     string   `json:"source"`
 	}
 
 	items := All()
