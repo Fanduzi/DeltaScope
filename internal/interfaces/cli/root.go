@@ -83,7 +83,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 
 	rootCmd.AddCommand(newAuditCmd(options, exitCode))
 	rootCmd.AddCommand(newRulesCmd(exitCode))
-	rootCmd.AddCommand(newConfigCmd(exitCode))
+	rootCmd.AddCommand(newConfigCmd(options, exitCode))
 	rootCmd.AddCommand(newCapabilitiesCmd(exitCode))
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newDDLCoverageCmd(exitCode))

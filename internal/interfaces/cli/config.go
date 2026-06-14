@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: config command invocations, YAML files, and built-in default policy metadata
-// output: config lint results plus stable default-config rendering for CLI users and automation
+// output: config lint results, stable default-config rendering, and wiring for rule config status
 // pos: CLI config command group for policy inspection and validation
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -16,7 +16,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-func newConfigCmd(exitCode *int) *cobra.Command {
+func newConfigCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Generate and validate DeltaScope config",
@@ -24,6 +24,7 @@ func newConfigCmd(exitCode *int) *cobra.Command {
 	cmd.AddCommand(newConfigInitCmd(exitCode))
 	cmd.AddCommand(newConfigLintCmd(exitCode))
 	cmd.AddCommand(newConfigShowDefaultCmd(exitCode))
+	cmd.AddCommand(newConfigStatusCmd(options, exitCode))
 	return cmd
 }
 
