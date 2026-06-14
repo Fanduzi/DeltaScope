@@ -6,6 +6,30 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.300.0] - 2026-06-14
+
+### Added
+
+- Markdown audit output now includes a `## Action Summary` section when findings exist.
+- Action Summary groups findings by `rule_id`, deriving `level`, count, catalog-backed summary/suggestion, and a `deltascope rules explain <rule_id>` next step per group.
+- Ordering is deterministic: `level` priority (`blocker`, `warning`, `notice`), then count descending, then `rule_id` ascending.
+- Statement references use 1-based indexes (deduplicated); global-only findings omit the statement list.
+- Markdown renders at most 10 rule groups with a `Showing 10 of N rule groups.` line when truncated.
+- Clean audits omit the section.
+- `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-13-v0.300.0-audit-action-summary.md`.
+
+### Non-Goals
+
+- Not new audit rules.
+- Not rule evaluation behavior changes.
+- Not audit behavior changes.
+- Not finding JSON shape changes.
+- Not a `severity` field.
+- Not parser support changes.
+- Not SDK/HTTP/MCP/SARIF/GitHub Actions/GitLab Code Quality output changes.
+- Not audit JSON changes (no `action_summary` field added).
+
 ## [v0.290.0] - 2026-06-12
 
 ### Added

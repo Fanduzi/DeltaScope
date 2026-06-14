@@ -4,7 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.290.0 Rule Discoverability and Explain
+## Latest Completed Milestone: v0.300.0 Audit Action Summary
+
+**Goal:** add a derived `## Action Summary` section to the default markdown audit report so users can see what to fix first without reading findings statement-by-statement. The summary groups findings by `rule_id`, orders them by `level` priority then count then `rule_id`, references statements by 1-based index, and gives a `deltascope rules explain <rule_id>` next step. Does not add new audit rules, change rule evaluation behavior, change audit behavior, change finding JSON shape, add a `severity` field, add parser support, or change SDK/HTTP/MCP/SARIF/GitHub Actions/GitLab Code Quality outputs.
+
+### Completed Scope
+
+- Markdown audit output renders `## Action Summary` when findings exist, for both the default `deltascope audit` path and `--format markdown`.
+- Findings grouped by `rule_id`; each group shows `[level] \`rule_id\`: N finding(s)`, catalog-backed `Summary:`/`Suggestion:` (with finding fallback), `Explain: deltascope rules explain <rule_id>`, deduplicated 1-based `Statements:` indexes, and an optional `Scope: global` marker.
+- Ordering: `blocker` → `warning` → `notice`, then count descending, then `rule_id` ascending. Default cap is 10 rule groups with a `Showing 10 of N rule groups.` line when truncated.
+- Clean audits omit the section. The summary carries no raw SQL and no finding metadata.
+- Derived summary core: `internal/domain/report/action_summary.go`; markdown integration: `internal/infrastructure/output/markdown/render.go`; CLI contract tests: `internal/interfaces/cli/cli_test.go`.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-13-v0.300.0-audit-action-summary.md`.
+
+### Non-Goals
+
+- Not new audit rules.
+- Not rule evaluation behavior changes.
+- Not audit behavior changes.
+- Not finding JSON shape changes.
+- Not a `severity` field.
+- Not parser support changes.
+- Not SDK/HTTP/MCP/SARIF/GitHub Actions/GitLab Code Quality output changes.
+- Not audit JSON changes (no `action_summary` field added).
+
+## Previous Milestone: v0.290.0 Rule Discoverability and Explain
 
 **Goal:** add CLI commands for browsing and explaining DeltaScope's built-in rule catalog. `deltascope rules list` lists rules with filters for dialect, level, kind, category, and free-text search. `deltascope rules explain <rule_id>` shows full metadata for one rule. Both commands support JSON output. Does not add new audit rules, change rule evaluation behavior, change finding JSON shape, add a `severity` field, or change parser support.
 

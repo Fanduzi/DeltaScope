@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.290.0",
+    "softwareVersion": "v0.300.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.290.0 — Rule Discoverability and Explain</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.300.0 — Audit Action Summary</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,23 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.290.0</div>
+              <div class="release-version">v0.300.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">Rule Discoverability and Explain</div>
-            <div class="release-copy" data-i18n="releases.items.v02900">v0.290.0 adds `deltascope rules list` and `deltascope rules explain` commands for browsing and explaining the built-in rule catalog. 371 rules across MySQL, TiDB, PostgreSQL, and common dialect scopes. No SQL audit behavior changes.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Audit Action Summary</div>
+            <div class="release-copy" data-i18n="releases.items.v03000">v0.300.0 adds an Action Summary section to the default markdown audit report that groups findings by rule and points at the next step. No SQL audit behavior changes.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.300.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.300.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.300.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.290.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v02900">Rule Discoverability and Explain</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v02900">v0.290.0 adds `deltascope rules list` and `deltascope rules explain` commands for browsing and explaining the built-in rule catalog. 371 rules across MySQL, TiDB, PostgreSQL, and common dialect scopes. No SQL audit behavior changes.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v02900" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.zh-CN.md">Open v0.290.0 notes →</a>
+            </article>
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.280.0</div>
@@ -1105,14 +1113,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v02700">v0.270.0 introduces a DDL coverage catalog with 400 verified entries across MySQL, TiDB, and PostgreSQL, generated from census data with a drift gate. No SQL audit behavior changes.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.270.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v02700" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.270.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.270.0.zh-CN.md">Open v0.270.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.260.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v02600">Unsupported Diagnostics Guidance Codes</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v02600">v0.260.0 adds guidance_code and evidence_ref to parser_error diagnostics, connecting runtime output to the parser-upgrade candidate evidence classification. No SQL audit behavior changes.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v02600" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.260.0.zh-CN.md">Open v0.260.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1209,7 +1209,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.290.0.zh-CN.md">Release Notes v0.290.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.300.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.300.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.300.0.zh-CN.md">Release Notes v0.300.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1253,7 +1253,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.290.0 — Rule Discoverability and Explain',
+          badge: 'v0.300.0 — Audit Action Summary',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1379,9 +1379,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'Rule Discoverability and Explain',
+          currentTitle: 'Audit Action Summary',
           currentLink: 'Read release notes →',
           labels: {
+            v02900: 'Rule Discoverability and Explain',
             v02800: 'DDL Coverage Catalog Query',
             v02700: 'DDL Coverage Catalog',
             v02600: 'Unsupported Diagnostics Guidance Codes',
@@ -1403,6 +1404,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v02900: 'Open v0.290.0 notes →',
             v02800: 'Open v0.280.0 notes →',
             v02700: 'Open v0.270.0 notes →',
             v02600: 'Open v0.260.0 notes →',
@@ -1427,6 +1429,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v03000: 'v0.300.0 adds an Action Summary section to the default markdown audit report that groups findings by rule and points at the next step. No SQL audit behavior changes.',
             v02900: 'v0.290.0 adds `deltascope rules list` and `deltascope rules explain` commands for browsing and explaining the built-in rule catalog. 371 rules across MySQL, TiDB, PostgreSQL, and common dialect scopes. No SQL audit behavior changes.',
             v02800: 'v0.280.0 adds a CLI catalog lookup command that queries the DDL coverage catalog with filters for dialect, classification, guidance code, family, form, and free-text search. No SQL audit behavior changes.',
             v02700: 'v0.270.0 introduces a DDL coverage catalog with 400 verified entries across MySQL, TiDB, and PostgreSQL, generated from census data with a drift gate. No SQL audit behavior changes.',
@@ -1459,14 +1462,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.290.0 adds rule discovery commands for browsing and explaining the built-in rule catalog.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.300.0 adds an Action Summary section to the default markdown audit report that groups findings by rule and points at the next step.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.290.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.300.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1484,7 +1487,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.290.0 —— Rule Discoverability and Explain / 规则可发现性与解释',
+          badge: 'v0.300.0 —— Audit Action Summary / 审计动作摘要',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1610,9 +1613,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'Rule Discoverability and Explain / 规则可发现性与解释',
+          currentTitle: 'Audit Action Summary / 审计动作摘要',
           currentLink: '查看发布说明 →',
           labels: {
+            v02900: 'Rule Discoverability and Explain / 规则可发现性与解释',
             v02800: 'DDL Coverage Catalog Query / DDL 覆盖范围目录查询',
             v02700: 'DDL Coverage Catalog / DDL 覆盖范围目录',
             v02600: 'Unsupported Diagnostics Guidance Codes / 不支持诊断引导码',
@@ -1634,6 +1638,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v02900: '查看 v0.290.0 发布说明 →',
             v02800: '查看 v0.280.0 发布说明 →',
             v02700: '查看 v0.270.0 发布说明 →',
             v02600: '查看 v0.260.0 发布说明 →',
@@ -1659,6 +1664,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v03000: 'v0.300.0 为默认 markdown 审计报告新增 Action Summary 段落，按规则分组并指向下一步。无 SQL 审核行为变更。',
             v02900: 'v0.290.0 新增 `deltascope rules list` 和 `deltascope rules explain` 命令，用于浏览和解释内置规则目录。371 条规则覆盖 MySQL、TiDB、PostgreSQL 和通用方言范围。无 SQL 审核行为变更。',
             v02800: 'v0.280.0 新增 CLI 目录查询命令，支持按方言、分类、引导代码、家族、形态和自由文本搜索筛选 DDL 覆盖范围目录。无 SQL 审核行为变更。',
             v02700: 'v0.270.0 引入 DDL 覆盖范围目录，包含 400 条已验证记录，覆盖 MySQL、TiDB 和 PostgreSQL，由普查数据生成并带漂移门禁。无 SQL 审核行为变更。',
@@ -1688,14 +1694,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.290.0 新增规则发现命令，支持浏览和解释内置规则目录。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.300.0 为默认 markdown 审计报告新增 Action Summary 段落，按规则分组并指向下一步。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.290.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.300.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }
