@@ -350,8 +350,22 @@ release-source-location-smoke: build-cli
 release-workflow-hygiene-gates:
 	bash ./scripts/verify_release_workflow_hygiene.sh
 
-# release-contract-gates: unified pre-release gate composing all version, surface, binary, launcher, dialect, output format, and source location checks.
-release-contract-gates: release-surface-gates release-version-surface-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates
+# release-gofmt-gate: gofmt must be clean on all tracked Go sources.
+# Mirrors the gofmt check the CI Lint workflow enforces (golangci-lint gofmt), so
+# formatting drift is caught locally before tagging instead of turning main red.
+# Checks tracked files only, so untracked scratch dirs never block a release.
+release-gofmt-gate:
+	@unformatted=$$(git ls-files '*.go' | xargs gofmt -l 2>/dev/null); \
+	if [ -n "$$unformatted" ]; then \
+		echo "release-gofmt-gate: gofmt violations in tracked Go files:" >&2; \
+		printf '%s\n' "$$unformatted" | sed 's/^/  /' >&2; \
+		echo "Fix with: gofmt -w \$$(git ls-files '*.go')  (or: make lint-fix)" >&2; \
+		exit 1; \
+	fi
+	@echo "release-gofmt-gate: gofmt clean"
+
+# release-contract-gates: unified pre-release gate composing all version, surface, binary, launcher, dialect, output format, source location, and gofmt checks.
+release-contract-gates: release-surface-gates release-version-surface-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-gofmt-gate
 	npm test --prefix packages/deltascope-mcp
 
 # Static analysis
