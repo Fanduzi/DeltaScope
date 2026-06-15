@@ -6,6 +6,31 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.310.0] - 2026-06-15
+
+### Added
+
+- New CLI command: `deltascope config status <rule-id> [--format text|json]` reports whether one shipped rule is ON or OFF under the active config and which `level` it uses if it fires.
+- Text output shows `ON` or `OFF`, the effective `level`, a concise config-effect explanation, default and current values, and a link to `deltascope rules explain <rule-id>` for rule meaning.
+- JSON output returns a stable wrapper with a top-level `version` field plus `rule_id`, `status`, `default`, `current`, `config_effect`, and `rule_details_command`.
+- The command uses the existing global `--config` flag; without `--config` it reports the built-in default policy status.
+- The command documents rule-level replacement semantics: mentioning a rule in YAML replaces its whole policy, partial YAML is not merged with defaults, and an omitted `enabled` becomes `false`, so a `level`-only override turns the rule OFF.
+- `config lint --file` remains the validation-only command and is unchanged.
+- `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-14-v0.310.0-rule-config-status.md`.
+
+### Non-Goals
+
+- Not new audit rules.
+- Not rule behavior changes.
+- Not audit behavior changes.
+- Not finding JSON shape changes.
+- Not a `severity` field.
+- Not parser support changes.
+- Not SDK/HTTP/MCP config-status surfaces.
+- Not a bulk `config effective` command (single-rule status only).
+- The command does not run an audit, parse SQL, or connect to a database.
+
 ## [v0.300.0] - 2026-06-14
 
 ### Added

@@ -4,7 +4,33 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.300.0 Audit Action Summary
+## Latest Completed Milestone: v0.310.0 Rule Config Status
+
+**Goal:** add a `deltascope config status <rule-id>` CLI command that reports whether one shipped rule is ON or OFF under the active config, which `level` it will use if it fires, and how the user's config changed it versus the default policy. It points at `deltascope rules explain <rule-id>` for rule meaning. Does not add new audit rules, change rule behavior, change audit behavior, change finding JSON shape, add a `severity` field, add parser support, or change SDK/HTTP/MCP outputs.
+
+### Completed Scope
+
+- CLI command: `deltascope config status <rule-id> [--format text|json]`, using the existing global `--config` flag; without `--config` it reports the default policy status.
+- Text output states `ON` or `OFF`, the effective `level`, a concise config-effect explanation, default and current values, and a `Rule details:` link to `deltascope rules explain <rule-id>`.
+- JSON output returns a stable wrapper with a top-level `version` field plus `rule_id`, `status`, `default`, `current`, `config_effect`, and `rule_details_command`; it does not add `severity`.
+- Rule-level replacement semantics are reported verbatim: mentioning a rule replaces its whole policy, partial YAML is not merged with defaults, and an omitted `enabled` becomes `false`, so a `level`-only override turns the rule OFF.
+- Status derivation core: `internal/application/configstatus/status.go`; CLI integration: `internal/interfaces/cli/config_status.go`; CLI tests: `internal/interfaces/cli/config_status_test.go`.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-14-v0.310.0-rule-config-status.md`.
+
+### Non-Goals
+
+- Not new audit rules.
+- Not rule behavior changes.
+- Not audit behavior changes.
+- Not finding JSON shape changes.
+- Not a `severity` field.
+- Not parser support changes.
+- Not SDK/HTTP/MCP config-status surfaces.
+- Not a bulk `config effective` command.
+- The command does not run an audit, parse SQL, or connect to a database.
+
+## Previous Milestone: v0.300.0 Audit Action Summary
 
 **Goal:** add a derived `## Action Summary` section to the default markdown audit report so users can see what to fix first without reading findings statement-by-statement. The summary groups findings by `rule_id`, orders them by `level` priority then count then `rule_id`, references statements by 1-based index, and gives a `deltascope rules explain <rule_id>` next step. Does not add new audit rules, change rule evaluation behavior, change audit behavior, change finding JSON shape, add a `severity` field, add parser support, or change SDK/HTTP/MCP/SARIF/GitHub Actions/GitLab Code Quality outputs.
 
