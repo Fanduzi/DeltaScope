@@ -4,7 +4,34 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.310.0 Rule Config Status
+## Latest Completed Milestone: v0.320.0 Config Lint Replacement Warnings
+
+**Goal:** teach `deltascope config lint --file` to warn when a rule entry in the YAML will silently disable or gut a rule because of rule-level replacement semantics, and add a `--strict` flag that exits 2 for CI. The warnings document existing audit policy semantics; lint does not change audit behavior, the loader, the default policy, any rule, parser support, or any output shape. Does not add a `severity` field.
+
+### Completed Scope
+
+- `config lint --file <path>` emits non-fatal warnings for rule entries mentioned without `enabled`, `level`, or `params`, explaining that the rule policy is replaced (not partially merged) so omitted fields become their zero values.
+- `--strict` flag: identical text output, exit code 2; default lint still exits 0 with warnings; errors still exit non-zero without `--strict`.
+- Deterministic ordering: rule ID ascending, then `enabled`, `level`, `params.<key>`.
+- `config status` remains the follow-up to confirm effective ON/OFF (see v0.310.0).
+- Public docs cleanup: clearer `config lint`, `config status`, and `rules explain` wording (English and Chinese); `docs/decisions/` documented as maintainer rationale, not a user guide.
+- Lint warning core: `internal/application/configlint/`; CLI integration: `internal/interfaces/cli/config.go`; CLI tests: `internal/interfaces/cli/config_lint_test.go`.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-15-v0.320.0-config-lint-warnings-docs-cleanup.md`.
+
+### Non-Goals
+
+- Not audit behavior changes.
+- Not config loader (`LoadPolicy`) changes; partial rule configs still do not merge onto defaults.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not SARIF, GitHub Actions, or GitLab CodeQuality renderer changes.
+- Not a `severity` field.
+
+## Previous Milestone: v0.310.0 Rule Config Status
 
 **Goal:** add a `deltascope config status <rule-id>` CLI command that reports whether one shipped rule is ON or OFF under the active config, which `level` it will use if it fires, and how the user's config changed it versus the default policy. It points at `deltascope rules explain <rule-id>` for rule meaning. Does not add new audit rules, change rule behavior, change audit behavior, change finding JSON shape, add a `severity` field, add parser support, or change SDK/HTTP/MCP outputs.
 

@@ -183,7 +183,7 @@ If `context.mode` is not `"metadata-aware"`, connection flags were not supplied 
 
 ### Metadata Rules Not Firing
 
-Metadata-backed rules (those with `Metadata: true` in `deltascope rules show` output) are no-ops in offline mode. If you expect a metadata rule to fire but it does not:
+Metadata-backed rules (those whose `metadata_aware` field is `true` in `deltascope rules explain --format json` output) are no-ops in offline mode. If you expect a metadata rule to fire but it does not:
 
 1. Confirm the audit is running in metadata-aware mode (see above — look for `"mode": "metadata-aware"` in JSON output).
 2. Confirm the rule is enabled in your policy (`deltascope config show-default` or your `deltascope.yaml`).

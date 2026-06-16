@@ -5,7 +5,7 @@ DeltaScope 专为 AI 智能体集成而设计。JSON 输出格式提供稳定的
 ## 为何使用 JSON 模式
 
 - **字段名称稳定**——智能体可以稳定依赖 `verdict`、`rule_id`、`level`、`message`、`suggestion` 以及嵌套的 `explanation` 字段，而无需为文本变化做适配。
-- **`rule_id` 值稳定**——智能体可通过 `deltascope rules show` 查询完整描述和修复指引。
+- **`rule_id` 值稳定**——智能体可通过 `deltascope rules explain` 查询完整描述和修复指引。
 - **`verdict` 字段**提供单一可操作结论：`pass` / `review` / `reject`——无需文本解析。
 - **`global_findings`** 捕获跨语句问题（例如，当一批语句中多个 `ALTER TABLE` 针对同一张表时，merge-alter 规则会触发）。
 - **`--quiet` 标志**抑制进度输出，使标准输出仅包含 JSON 对象——可安全地通过 `$(...)` 捕获或管道传给 `jq`。
@@ -82,46 +82,48 @@ deltascope audit --sql "$SQL" --format json --quiet
 当发现包含 `rule_id` 时，智能体可以获取完整的规则描述（包含参数信息）：
 
 ```bash
-deltascope rules show dml.where.require
+deltascope rules explain dml.where.require
 ```
 
 输出：
 
-```md
-# dml.where.require
+```text
+Rule ID:    dml.where.require
+Level:      blocker
+Enabled:    true
+Dialects:   common
+Kind:       dml
+Category:   dml_safety
+Config Key: dml.where.require
 
-Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+Summary:
+  Require DML where require
 
-- Default Enabled: `true`
-- Default Level: `blocker`
-- Statement Kinds: `dml`
-- Metadata Aware: `false`
+Why:
+  The statement is missing a clause, option, or object that the shipped policy requires.
 
-## Default Params
-- `required`: `true`
+Risk:
+  Ignoring this rule can allow high-impact data changes to proceed with less safety review.
 
-## Trigger Example
-```sql
-DELETE FROM users;
-```
+Suggestion:
+  Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
 
-## Valid Example
-```sql
-DELETE FROM users WHERE id = 42;
-```
+Tags: dml, common, dml_safety, require
+Trigger Example:
+  DELETE FROM users;
+Valid Example:
+  DELETE FROM users WHERE id = 1;
 
-## Config Example
-```yaml
-rules:
-  dml.where.require:
-    enabled: true
-    level: blocker
-    params:
-      required: true
-```
+Default Params:
+  required: true
 
-## Remediation
-Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+Config Example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: blocker
+      params:
+        required: true
 ```
 
 这为智能体提供了更完整的修复上下文：规则名称、默认级别、是否启用、适用语句类型、是否依赖元数据、默认参数、触发/合法示例以及 remediation 指引。智能体可据此向用户解释问题，或自行修正生成的 SQL。
@@ -140,7 +142,7 @@ Add the required clause, option, or object explicitly so the rule no longer has 
 4. 收集所有 `level == "blocker"` 发现中的 `rule_id` 值。
 5. 针对每个 `rule_id`，运行：
    ```bash
-   deltascope rules show <rule_id>
+   deltascope rules explain <rule_id>
    ```
    利用规则页中的默认参数、触发示例、合法示例、配置示例与 remediation 小节准确理解规则要求。
 6. 根据规则描述、finding 的 `explanation` 字段以及建议修正 SQL。
@@ -160,7 +162,7 @@ Rules:
 - If the verdict is "review", explain the warnings to the user and ask whether they want them fixed.
 - If the verdict is "pass", return the SQL directly.
 
-When fixing findings, use `deltascope rules show <rule_id>` to understand the exact requirement before making changes.
+When fixing findings, use `deltascope rules explain <rule_id>` to understand the exact requirement before making changes.
 ```
 
 ## MCP / Tool-Use 集成

@@ -147,7 +147,7 @@ exit code: 2
 
 ### 元数据规则未触发
 
-依赖元数据的规则（在 `deltascope rules show` 输出中 `Metadata: true` 的规则）在离线模式下无效。若期望某个元数据规则触发但未触发，请检查：
+依赖元数据的规则（在 `deltascope rules explain --format json` 输出中 `metadata_aware` 为 `true` 的规则）在离线模式下无效。若期望某个元数据规则触发但未触发，请检查：
 
 1. 确认审计在元数据感知模式下运行（见上方——在 JSON 输出中查找 `"mode": "metadata-aware"`）。
 2. 确认规则在策略中已启用（`deltascope config show-default` 或您的 `deltascope.yaml`）。

@@ -5,7 +5,7 @@ DeltaScope is designed for AI agent integration. The JSON output format provides
 ## Why JSON Mode
 
 - **Stable field names** across versions — agents can rely on `verdict`, `rule_id`, `level`, `message`, `suggestion`, and nested `explanation` fields without adapting to text changes.
-- **`rule_id` values are stable** — agents can look them up with `deltascope rules show` to get full descriptions and fix guidance.
+- **`rule_id` values are stable** — agents can look them up with `deltascope rules explain` to get full descriptions and fix guidance.
 - **`verdict` field** gives a single actionable outcome: `pass` / `review` / `reject` — no text parsing required.
 - **`global_findings`** captures cross-statement issues (e.g., the merge-alter rule fires when multiple `ALTER TABLE` statements target the same table in one batch).
 - **`--quiet` flag** is safe to combine with `--format json`; the JSON contract is unchanged, so the command remains safe to capture with `$(...)` or pipe to `jq`.
@@ -82,46 +82,48 @@ Complete CLI JSON output example for a risky DML statement:
 When a finding contains a `rule_id`, agents can fetch the shipped rule summary, defaults, examples, and remediation guidance:
 
 ```bash
-deltascope rules show dml.where.require
+deltascope rules explain dml.where.require
 ```
 
 Output:
 
-```md
-# dml.where.require
+```text
+Rule ID:    dml.where.require
+Level:      blocker
+Enabled:    true
+Dialects:   common
+Kind:       dml
+Category:   dml_safety
+Config Key: dml.where.require
 
-Require DML where require. Default level is blocker, enabled=true, scope=dml, and the shipped policy treats it as a offline-safe rule.
+Summary:
+  Require DML where require
 
-- Default Enabled: `true`
-- Default Level: `blocker`
-- Statement Kinds: `dml`
-- Metadata Aware: `false`
+Why:
+  The statement is missing a clause, option, or object that the shipped policy requires.
 
-## Default Params
-- `required`: `true`
+Risk:
+  Ignoring this rule can allow high-impact data changes to proceed with less safety review.
 
-## Trigger Example
-```sql
-DELETE FROM users;
-```
+Suggestion:
+  Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
 
-## Valid Example
-```sql
-DELETE FROM users WHERE id = 42;
-```
+Tags: dml, common, dml_safety, require
+Trigger Example:
+  DELETE FROM users;
+Valid Example:
+  DELETE FROM users WHERE id = 1;
 
-## Config Example
-```yaml
-rules:
-  dml.where.require:
-    enabled: true
-    level: blocker
-    params:
-      required: true
-```
+Default Params:
+  required: true
 
-## Remediation
-Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+Config Example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: blocker
+      params:
+        required: true
 ```
 
 This gives the agent stable rule metadata in one response: rule ID, defaults, supported statement kinds, trigger examples, config knobs, and remediation guidance.
@@ -140,7 +142,7 @@ This gives the agent stable rule metadata in one response: rule ID, defaults, su
 4. Collect all `rule_id` values from findings where `level == "blocker"`.
 5. For each `rule_id`, run:
    ```bash
-   deltascope rules show <rule_id>
+   deltascope rules explain <rule_id>
    ```
    Use the rule summary, default params, examples, and remediation sections to understand exactly what is required.
 6. Revise the SQL based on the rule descriptions and suggestions.
@@ -160,7 +162,7 @@ Rules:
 - If the verdict is "review", explain the warnings to the user and ask whether they want them fixed.
 - If the verdict is "pass", return the SQL directly.
 
-When fixing findings, use `deltascope rules show <rule_id>` to understand the exact requirement before making changes.
+When fixing findings, use `deltascope rules explain <rule_id>` to understand the exact requirement before making changes.
 ```
 
 ## MCP / Tool-Use Integration

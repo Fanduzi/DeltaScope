@@ -6,6 +6,30 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.320.0] - 2026-06-16
+
+### Added
+
+- `deltascope config lint --file <path>` now emits non-fatal warnings when a rule entry in the YAML will silently disable or gut a rule because of rule-level replacement semantics (omitted `enabled` becomes `false`, omitted `level` becomes empty, omitted `params` become empty).
+- New `--strict` flag on `config lint`: prints the identical warnings text but exits 2, for CI steps that want to fail on any warning. Default lint still exits 0 with warnings; errors still exit non-zero without `--strict`.
+- Warnings are deterministic, ordered by rule ID then by `enabled`, `level`, `params.<key>`.
+- `config status` remains the follow-up to confirm a rule's effective ON/OFF; see v0.310.0.
+- Public docs cleanup: clearer `config lint`, `config status`, and `rules explain` wording (English and Chinese); `docs/decisions/` documented as maintainer rationale, not a user guide.
+- `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-15-v0.320.0-config-lint-warnings-docs-cleanup.md`.
+
+### Non-Goals
+
+- Not audit behavior changes.
+- Not config loader (`LoadPolicy`) changes; partial rule configs still do not merge onto defaults.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not SARIF, GitHub Actions, or GitLab CodeQuality renderer changes.
+- Not a `severity` field.
+
 ## [v0.310.0] - 2026-06-15
 
 ### Added
