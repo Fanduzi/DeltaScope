@@ -1819,33 +1819,6 @@ func TestConfigAndRuleCommandHelpersHandleValidationAndWriteFailures(t *testing.
 	})
 }
 
-func TestParamTypeMatchesCoversSupportedShapes(t *testing.T) {
-	tests := []struct {
-		name    string
-		raw     any
-		def     any
-		matches bool
-	}{
-		{name: "string slice from any slice", raw: []any{"a", "b"}, def: []string{}, matches: true},
-		{name: "string slice from typed slice", raw: []string{"a"}, def: []string{}, matches: true},
-		{name: "string slice rejects mixed items", raw: []any{"a", 1}, def: []string{}, matches: false},
-		{name: "int accepts int64", raw: int64(1), def: int(0), matches: true},
-		{name: "int rejects string", raw: "1", def: int(0), matches: false},
-		{name: "bool accepts bool", raw: true, def: false, matches: true},
-		{name: "string accepts string", raw: "x", def: "", matches: true},
-		{name: "default reflect path", raw: 1.5, def: 0.0, matches: true},
-		{name: "default reflect path mismatch", raw: 1, def: 0.0, matches: false},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := paramTypeMatches(tc.raw, tc.def); got != tc.matches {
-				t.Fatalf("paramTypeMatches(%T, %T) = %t, want %t", tc.raw, tc.def, got, tc.matches)
-			}
-		})
-	}
-}
-
 func TestVersionCommandPrintsLogoAndVersion(t *testing.T) {
 	stdout := &strings.Builder{}
 	previous := Version

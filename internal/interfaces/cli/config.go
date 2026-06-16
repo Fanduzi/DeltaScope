@@ -1,19 +1,16 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: config command invocations, YAML files, and built-in default policy metadata
-// output: config lint results, stable default-config rendering, and wiring for rule config status
+// input: config command invocations and YAML config files
+// output: config lint results with validation errors and replacement warnings, default-config rendering, and rule config status wiring
 // pos: CLI config command group for policy inspection and validation
 // note: if this file changes, update this header and module README.md.
 package cli
 
 import (
 	"fmt"
-	"os"
-	"reflect"
-	"sort"
+	"strings"
 
-	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
+	"github.com/Fanduzi/DeltaScope/internal/application/configlint"
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v3"
 )
 
 func newConfigCmd(options *cliOptions, exitCode *int) *cobra.Command {
@@ -30,6 +27,7 @@ func newConfigCmd(options *cliOptions, exitCode *int) *cobra.Command {
 
 func newConfigLintCmd(exitCode *int) *cobra.Command {
 	var filePath string
+	var strict bool
 
 	cmd := &cobra.Command{
 		Use:   "lint",
@@ -39,20 +37,59 @@ func newConfigLintCmd(exitCode *int) *cobra.Command {
 				*exitCode = exitUser
 				return newUserError("config lint requires --file")
 			}
-			if err := lintConfigFile(filePath); err != nil {
+
+			result, err := configlint.Inspect(cmd.Context(), configlint.Request{Path: filePath})
+			if err != nil {
+				// Validation errors (unknown rule, invalid level, unknown param, param type
+				// mismatch, malformed YAML, missing/unreadable file) take precedence over
+				// warnings and map to the same user-error path the CLI always used.
 				*exitCode = exitUser
 				return err
 			}
-			if _, err := fmt.Fprintln(cmd.OutOrStdout(), "Config OK"); err != nil {
+
+			out := cmd.OutOrStdout()
+			if len(result.Warnings) == 0 {
+				if _, err := fmt.Fprintln(out, "Config OK"); err != nil {
+					*exitCode = exitInternal
+					return err
+				}
+				*exitCode = exitOK
+				return nil
+			}
+
+			// No errors but replacement-hazard warnings. Warnings are advisory, so the
+			// default exit code stays 0; --strict promotes a warnings-only result to exit 2.
+			// The warning text goes to stdout so the output reads like a successful lint.
+			if _, err := fmt.Fprint(out, renderConfigLintWarnings(result.Warnings)); err != nil {
 				*exitCode = exitInternal
 				return err
+			}
+			if strict {
+				*exitCode = exitUser
+				return nil
 			}
 			*exitCode = exitOK
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&filePath, "file", "", "path to the YAML config file to lint")
+	cmd.Flags().BoolVar(&strict, "strict", false, "fail when lint warnings are present")
 	return cmd
+}
+
+// renderConfigLintWarnings renders the deterministic warning block for a config that lints
+// clean except for rule-level replacement hazards. configlint returns warnings already
+// ordered by rule_id then field (enabled, level, params.<key>), and each message already
+// carries the rule id, the field name, the "replaced, not partially merged" framing, and
+// the effective consequence. The text output never introduces a severity field.
+func renderConfigLintWarnings(warnings []configlint.Warning) string {
+	var b strings.Builder
+	b.WriteString("Config OK with warnings\n\n")
+	b.WriteString("Warnings:\n")
+	for _, warning := range warnings {
+		fmt.Fprintf(&b, "- %s\n", warning.Message)
+	}
+	return b.String()
 }
 
 func newConfigShowDefaultCmd(exitCode *int) *cobra.Command {
@@ -72,95 +109,5 @@ func newConfigShowDefaultCmd(exitCode *int) *cobra.Command {
 			*exitCode = exitOK
 			return nil
 		},
-	}
-}
-
-type rawConfigFile struct {
-	Rules map[string]rawRuleConfig `yaml:"rules"`
-}
-
-type rawRuleConfig struct {
-	Enabled *bool          `yaml:"enabled"`
-	Level   string         `yaml:"level"`
-	Params  map[string]any `yaml:"params"`
-}
-
-func lintConfigFile(path string) error {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return newUserError(fmt.Sprintf("read config file: %v", err))
-	}
-
-	var raw rawConfigFile
-	if err := yaml.Unmarshal(content, &raw); err != nil {
-		return newUserError(fmt.Sprintf("parse yaml: %v", err))
-	}
-
-	defaults := policy.Default()
-	for ruleID, rawRule := range raw.Rules {
-		defaultRule, ok := defaults.Rules[ruleID]
-		if !ok {
-			return newUserError(fmt.Sprintf("unknown rule %q", ruleID))
-		}
-		if rawRule.Level != "" && rawRule.Level != "blocker" && rawRule.Level != "warning" && rawRule.Level != "notice" {
-			return newUserError(fmt.Sprintf("invalid level %q for rule %q", rawRule.Level, ruleID))
-		}
-		if err := lintRuleParams(ruleID, rawRule.Params, defaultRule.Params); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func lintRuleParams(ruleID string, rawParams map[string]any, defaultParams map[string]any) error {
-	keys := make([]string, 0, len(rawParams))
-	for key := range rawParams {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		rawValue := rawParams[key]
-		defaultValue, ok := defaultParams[key]
-		if !ok {
-			return newUserError(fmt.Sprintf("unknown param %q for rule %q", key, ruleID))
-		}
-		if !paramTypeMatches(rawValue, defaultValue) {
-			return newUserError(fmt.Sprintf("invalid type for %s.%s: got %T, want %T", ruleID, key, rawValue, defaultValue))
-		}
-	}
-	return nil
-}
-
-func paramTypeMatches(rawValue any, defaultValue any) bool {
-	switch defaultValue.(type) {
-	case []string:
-		items, ok := rawValue.([]any)
-		if !ok {
-			if typed, ok := rawValue.([]string); ok {
-				return len(typed) >= 0
-			}
-			return false
-		}
-		for _, item := range items {
-			if _, ok := item.(string); !ok {
-				return false
-			}
-		}
-		return true
-	case int:
-		switch rawValue.(type) {
-		case int, int64, uint64:
-			return true
-		default:
-			return false
-		}
-	case bool:
-		_, ok := rawValue.(bool)
-		return ok
-	case string:
-		_, ok := rawValue.(string)
-		return ok
-	default:
-		return reflect.TypeOf(rawValue) == reflect.TypeOf(defaultValue)
 	}
 }
