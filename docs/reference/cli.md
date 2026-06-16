@@ -979,30 +979,57 @@ explicitly set. Edit it to customize your policy.
 
 ### config lint
 
-Validates a config file for YAML syntax correctness and valid rule IDs. Useful as a pre-commit check
-or in CI.
+Validates a config file for YAML syntax, valid rule IDs, valid levels, and valid param types, and
+warns about rule-level replacement hazards. Useful as a pre-commit check or in CI.
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--file` | string | (none) | Path to the YAML config file to lint. Required. |
+| `--strict` | bool | `false` | Fail (exit 2) when lint warnings are present. |
 
 ```bash
 deltascope config lint --file ./deltascope.yaml
+deltascope config lint --file ./deltascope.yaml --strict
 ```
 
-Success output:
+A clean file prints `Config OK` and exits 0:
 
 ```
 Config OK
 ```
 
-Failure output (example):
+When the file is valid but mentions a rule without all of its fields, `config lint` warns. A common
+hazard is mentioning a rule only to change its `level`, which replaces the whole rule policy and
+turns the rule OFF (see [Rule-Level Replacement](config.md#rule-level-replacement-semantics)):
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
 
 ```
-Error: unknown rule ID "ddl.table.comments.require" in ./deltascope.yaml (did you mean "ddl.table.comment.require"?)
+Config OK with warnings
+
+Warnings:
+- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
 ```
 
-The command exits with code 2 on any validation error.
+Warnings are advisory. Without `--strict`, the command still exits 0 after printing them. With
+`--strict`, the same text is printed and the command exits 2. To confirm the effective state a
+warned rule lands in, follow up with `config status` (see [config status](#config-status)).
+
+On a validation error the message is printed and the command exits 2. Errors take precedence over
+warnings, so a file with both an error and a hazard reports only the error:
+
+```
+unknown rule "ddl.table.comments.require"
+```
+
+`config lint` has no JSON output, and the global `--format` flag does not change what it prints
+(that flag controls audit output formats). To inspect effective policy as JSON, use
+`config status <rule-id> --format json`.
 
 ### config show-default
 
@@ -1040,7 +1067,8 @@ These three commands answer different questions. Pick by intent:
 - `deltascope config status <rule-id>` shows **what your config makes the rule do** — whether it is
   ON or OFF under the active config and which `level` it will use.
 - `deltascope config lint --file` **validates a config file** — YAML shape, valid rule IDs, valid
-  levels, and param types. It does not report effective status for any rule.
+  levels, and param types — and warns about rule-level replacement hazards. It does not report
+  effective status for any rule; use `config status` for that.
 
 #### Text output
 

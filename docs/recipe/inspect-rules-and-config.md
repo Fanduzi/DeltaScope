@@ -13,26 +13,23 @@ deltascope rules list
 Output example (truncated — your build may include more rules):
 
 ```
-RULE ID                                    KIND  LEVEL    METADATA
-dml.where.require                          dml   blocker  false
-dml.limit.forbid                           dml   warning  false
-dml.subquery.forbid                        dml   blocker  false
-dml.join.on.require                        dml   blocker  false
-dml.insert.rows.max_count                  dml   warning  false
-dml.orderby.require                        dml   warning  false
-ddl.table.comment.require                  ddl   warning  false
-ddl.table.name.max_length                  ddl   blocker  false
-ddl.column.comment.require                 ddl   warning  false
-ddl.column.charset.forbid                  ddl   warning  false
-ddl.column.nullable.forbid                 ddl   warning  false
-ddl.alter.drop_column.forbid               ddl   blocker  false
-ddl.alter.merge.mysql.require              ddl   warning  false
-ddl.table.row_size.max_bytes.require       ddl   blocker  true
-ddl.table.rows.max_count.require           ddl   blocker  true
+RULE ID                                    LEVEL    DIALECT  KIND  CATEGORY
+dml.where.require                          blocker  common   dml   dml_safety
+dml.limit.forbid                           warning  common   dml   dml_safety
+dml.subquery.forbid                        blocker  common   dml   dml_safety
+dml.join.on.require                        blocker  common   dml   dml_safety
+dml.insert.rows.max_count                  warning  common   dml   dml_safety
+dml.order_by.forbid                        warning  common   dml   dml_safety
+ddl.table.comment.require                  warning  common   ddl   table
+ddl.table.name.max_length                  blocker  common   ddl   table
+ddl.column.comment.require                 warning  common   ddl   column
+ddl.alter.drop_column.forbid               warning  common   ddl   alter_table
 ...
 ```
 
-The `METADATA` column indicates whether the rule requires a live database connection (`true`) or runs offline (`false`).
+`DIALECT` is `common` (applies to MySQL, TiDB, and PostgreSQL) or a specific dialect such as
+`mysql` or `postgresql`. Some rules need a live database connection to evaluate; those are
+documented in [Audit SQL with metadata](audit-sql-with-metadata.md) and run as no-ops offline.
 
 ### Filter by kind or level
 
@@ -46,83 +43,101 @@ deltascope rules list --kind ddl --level blocker
 # All warning-level rules (any kind)
 deltascope rules list --level warning
 
-# All metadata-requiring rules
-deltascope rules list --metadata
+# Rules scoped to one dialect
+deltascope rules list --dialect postgresql
+
+# Rules whose ID or metadata mentions a keyword
+deltascope rules list --search drop
 ```
 
 ### Show rule details
 
 ```bash
-deltascope rules show dml.where.require
+deltascope rules explain dml.where.require
 ```
 
 Output:
 
 ```
-Rule ID:     dml.where.require
-Kind:        dml
-Level:       blocker
-Description: UPDATE or DELETE must include a WHERE clause to prevent full-table modifications
-Metadata:    false
-Params:
-  required (bool, default: true)
+Rule ID:    dml.where.require
+Level:      blocker
+Enabled:    true
+Dialects:   common
+Kind:       dml
+Category:   dml_safety
+Config Key: dml.where.require
+
+Summary:
+  Require DML where require
+
+Why:
+  The statement is missing a clause, option, or object that the shipped policy requires.
+
+Risk:
+  Ignoring this rule can allow high-impact data changes to proceed with less safety review.
+
+Suggestion:
+  Add the required clause, option, or object explicitly so the rule no longer has to infer intent.
+
+Tags: dml, common, dml_safety, require
+Trigger Example:
+  DELETE FROM users;
+Valid Example:
+  DELETE FROM users WHERE id = 1;
+
+Default Params:
+  required: true
+
+Config Example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: blocker
+      params:
+        required: true
 ```
 
-Another example — a DDL rule with a numeric parameter:
+A DDL rule with a numeric parameter:
 
 ```bash
-deltascope rules show ddl.table.name.max_length
+deltascope rules explain ddl.table.name.max_length
 ```
 
-Output:
+Output (tail):
 
 ```
-Rule ID:     ddl.table.name.max_length
-Kind:        ddl
-Level:       blocker
-Description: Table name must not exceed the configured maximum length
-Metadata:    false
-Params:
-  max_length (int, default: 64)
+Default Params:
+  limit: 64
+
+Config Example:
+  rules:
+    ddl.table.name.max_length:
+      enabled: true
+      level: blocker
+      params:
+        limit: 64
 ```
 
-And a metadata-backed rule:
-
-```bash
-deltascope rules show ddl.table.row_size.max_bytes.require
-```
-
-Output:
-
-```
-Rule ID:     ddl.table.row_size.max_bytes.require
-Kind:        ddl
-Level:       blocker
-Description: Estimated row size must not exceed the configured limit; requires metadata (table snapshot) to evaluate
-Metadata:    true
-Params:
-  max_bytes (int, default: 65535)
-```
+`rules explain` reads only the shipped catalog — it does not look at your config. To see what your
+config makes a rule do, use `config status <rule-id>` (see [Managing Config](#validate-a-config-file)
+below).
 
 ### Search rules by keyword
 
 ```bash
-# Find all rules mentioning "metadata"
-deltascope rules search metadata
-
-# Find rules related to table prefixes
-deltascope rules search prefix
-
-# Find rules related to DROP
-deltascope rules search drop
+# Find rules whose ID or metadata mentions a keyword
+deltascope rules list --search drop
 ```
 
-Output example (`deltascope rules search drop`):
+Output (truncated):
 
 ```
-RULE ID                          KIND  LEVEL    METADATA
-ddl.alter.drop_column.forbid     ddl   blocker  false
-ddl.object.drop_table.forbid     ddl   blocker  false
+RULE ID                                  LEVEL    DIALECT  KIND  CATEGORY
+ddl.alter.drop_column.exists.require     blocker  common   ddl   alter_table
+ddl.alter.drop_column.forbid             warning  common   ddl   alter_table
+ddl.alter.drop_index.forbid              warning  common   ddl   alter_table
+ddl.table.drop.forbid                    blocker  common   ddl   table
+...
 ```
 
 ## Managing Config
@@ -139,35 +154,72 @@ This produces a YAML file with every rule listed, its default `enabled` state, `
 
 ### Validate a config file
 
-Before deploying a modified config, lint it to catch typos in rule IDs or invalid parameter values:
+Before deploying a modified config, lint it to catch typos in rule IDs, invalid parameter types,
+and rule-level replacement hazards:
 
 ```bash
 deltascope config lint --file ./deltascope.yaml
 ```
 
-Success output:
+A clean file prints `Config OK` and exits 0:
 
 ```
-Config file ./deltascope.yaml is valid.
+Config OK
 ```
 
-Failure output — unknown rule ID (with a did-you-mean suggestion):
+A valid file that mentions a rule without all of its fields prints a warning per omitted field and
+still exits 0. This is the same replacement hazard shown below in [Common Config Tasks](#disable-a-rule):
+mentioning a rule replaces its whole policy, so an omitted `enabled` turns the rule OFF.
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
 
 ```
-Error: unknown rule ID "ddl.table.comments.require" in ./deltascope.yaml (did you mean "ddl.table.comment.require"?)
+Config OK with warnings
+
+Warnings:
+- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
 ```
 
-Failure output — invalid parameter type:
+Add `--strict` to fail (exit 2) when warnings are present, which is what you want in CI:
+
+```bash
+deltascope config lint --file ./deltascope.yaml --strict
+```
+
+Validation errors print to stderr and exit 2, and take precedence over warnings:
 
 ```
-Error: rule "dml.insert.rows.max_count": param "limit" expects int, got string "five hundred"
+unknown rule "ddl.table.comments.require"
+invalid level "critical" for rule "ddl.column.comment.require"
+invalid type for dml.insert.rows.max_count.limit: got string, want int
 ```
 
-Failure output — invalid level value:
+`config lint` has no JSON output. To confirm the effective state a warned rule lands in, follow up
+with `config status`:
 
+```bash
+deltascope --config ./deltascope.yaml config status dml.where.require
 ```
-Error: rule "ddl.column.comment.require": unknown level "critical" (expected: blocker, warning, notice)
+
+```text
+Current status:
+  OFF
+  This rule will not produce findings.
+
+Config effect:
+  Your config mentions this rule, so it replaces the default rule policy.
+  `enabled` is omitted, so the effective value is false.
+  `level` changes from blocker to warning.
+  This rule is OFF.
 ```
+
+See [cli.md](../reference/cli.md#config-lint) for the full `config lint` warning list and exit-code
+contract.
 
 ### Print built-in defaults
 
@@ -195,7 +247,7 @@ rules:
     enabled: false
 ```
 
-### Lower a rule's severity
+### Lower a rule's level
 
 Change `level` to downgrade a finding from `warning` to `notice` (or any valid level):
 
@@ -206,7 +258,7 @@ rules:
     level: notice    # default is warning — lowered for this team
 ```
 
-### Upgrade a rule's severity
+### Upgrade a rule's level
 
 ```yaml
 rules:
@@ -231,7 +283,7 @@ rules:
     enabled: true
     level: blocker
     params:
-      max_length: 32    # stricter than the default 64
+      limit: 32    # stricter than the default 64
 ```
 
 ### Full example config snippet
@@ -270,7 +322,7 @@ rules:
     enabled: true
     level: blocker
     params:
-      max_length: 48
+      limit: 48
 ```
 
 After editing, always validate before use:

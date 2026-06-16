@@ -53,14 +53,23 @@ deltascope --config ./deltascope.yaml config status dml.where.require --format j
 deltascope config show-default
 ```
 
-**`config lint` 成功示例：**
+**`config lint` 干净通过：**
 ```text
-Config file ./deltascope.yaml is valid.
+Config OK
 ```
 
-**`config lint` 失败示例（未知 rule ID）：**
+当 mention 的规则省略了字段时，`config lint` 也会给出警告，因为规则级替换会把省略的 `enabled` 变成 `false`（见 [Rule-Level Replacement Semantics](#rule-level-replacement-semantics)）。默认情况下警告仅供参考（退出码 0）；加 `--strict` 则以退出码 2 失败：
+
 ```text
-Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.comment.require"?)
+Config OK with warnings
+
+Warnings:
+- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+```
+
+**`config lint` 错误（未知 rule ID）——错误优先于警告：**
+```text
+unknown rule "ddl.table.comments.require"
 ```
 
 ### config status
@@ -131,6 +140,8 @@ Config effect:
   `params.required` is removed.
   This rule is OFF.
 ```
+
+`config lint` 会在部署前提示这个陷阱。mention 一条规则但没写全字段时，`config lint` 会对每个省略的字段各打印一条警告；带 `--strict` 时命令会直接失败。用 `config status <rule-id>` 查看最终的有效状态。完整的警告列表与退出码契约见 [cli.zh-CN.md](cli.zh-CN.md#config-lint)。
 
 若只想改 `level` 又保持规则开启，请写明所有字段，使替换后其余字段保持不变：
 

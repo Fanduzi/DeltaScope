@@ -214,7 +214,7 @@ deltascope audit \
 See all shipped rules:
 
 ```bash
-deltascope rules
+deltascope rules list
 ```
 
 ## Why DeltaScope

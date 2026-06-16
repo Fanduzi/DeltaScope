@@ -212,7 +212,7 @@ deltascope audit \
 查看所有内置规则：
 
 ```bash
-deltascope rules
+deltascope rules list
 ```
 
 ## 为什么是 DeltaScope

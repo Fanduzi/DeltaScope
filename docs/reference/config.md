@@ -1,6 +1,6 @@
 # Configuration Reference
 
-DeltaScope uses a YAML policy file to tune rule enablement, severity levels, and rule-specific parameters without recompiling or changing the binary.
+DeltaScope uses a YAML policy file to tune rule enablement, levels, and rule-specific parameters without recompiling or changing the binary.
 
 ## Config File Format
 
@@ -48,14 +48,25 @@ deltascope --config ./deltascope.yaml config status dml.where.require --format j
 deltascope config show-default
 ```
 
-**`config lint` success:**
+**`config lint` clean:**
 ```
-Config file ./deltascope.yaml is valid.
+Config OK
 ```
 
-**`config lint` failure (unknown rule ID):**
+`config lint` also warns when a mentioned rule omits fields, because rule-level replacement turns
+omitted `enabled` into `false` (see [Rule-Level Replacement Semantics](#rule-level-replacement-semantics)).
+Warnings are advisory by default (exit 0); add `--strict` to fail with exit 2:
+
 ```
-Error: unknown rule ID "ddl.table.comments.require" (did you mean "ddl.table.comment.require"?)
+Config OK with warnings
+
+Warnings:
+- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+```
+
+**`config lint` error (unknown rule ID) — errors take precedence over warnings:**
+```
+unknown rule "ddl.table.comments.require"
 ```
 
 ### config status
@@ -124,6 +135,11 @@ Config effect:
   `params.required` is removed.
   This rule is OFF.
 ```
+
+`config lint` flags this hazard before you deploy. Mentioning a rule without all of its fields makes
+`config lint` print a warning for each omitted field; with `--strict` the command fails instead.
+Inspect the effective result with `config status <rule-id>`. See [cli.md](cli.md#config-lint) for the
+full warning list and exit-code contract.
 
 To change only the `level` while keeping the rule on, specify every field so the replacement
 leaves the others intact:

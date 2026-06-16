@@ -23,6 +23,26 @@ Create a decision record when:
 - **Not full task reports.** Do not paste execution logs, step-by-step task narratives, or agent transcripts.
 - **Not transcripts.** Conversational context belongs in `docs/plans/` (local/ignored) or chat history.
 - **Not release notes.** User-facing change descriptions belong in `docs/releases/`.
+- **Not user guides.** Decision records are written for contributors and architects working on
+  DeltaScope itself, not for people using the CLI, server, MCP, or library.
+
+## Audience: Maintainers, Not End Users
+
+Decision records explain internal rationale for future contributors (human or agent). They are not
+end-user documentation, and user-facing docs should not link to them as a primary reference.
+
+End-user documentation lives in:
+
+- Top-level `README.md` and `README_ZH.md` — first contact and quick start
+- `docs/reference/` — reference (CLI, config, capabilities, HTTP/MCP contracts)
+- `docs/recipe/` — end-to-end recipes for common tasks
+- `docs/releases/` — release notes
+
+If a user-facing doc needs to point at the engineering background, link the decision record under a
+low-prominence "Maintainer notes" or "Engineering notes" line rather than inline in the main flow.
+
+`docs/decisions/` stays committed and durable. Do not add it to `.gitignore`, and do not delete
+records — supersede a decision with a new record that links the one it replaces.
 
 ## Required Fields
 
@@ -53,9 +73,11 @@ Examples:
 
 | Artifact | Purpose | Committed |
 |----------|---------|-----------|
-| `docs/plans/` | Local planning and task execution notes | No (gitignored) |
-| `docs/decisions/` | Durable rationale for non-obvious choices | Yes |
+| `README.md`, `README_ZH.md` | First contact and quick start | Yes |
+| `docs/reference/` | Reference documentation (CLI, config, capabilities, HTTP/MCP) | Yes |
+| `docs/recipe/` | End-to-end recipes for common tasks | Yes |
 | `docs/releases/` | Public user-facing release notes | Yes |
-| `docs/reference/` | Reference documentation (rules, capabilities) | Yes |
+| `docs/decisions/` | Maintainer-facing durable rationale for non-obvious choices | Yes |
+| `docs/plans/`, `docs/plans_zh/` | Local planning and task execution notes | No (gitignored) |
 | `testdata/sql-corpus/` | Machine-verifiable SQL behavior contracts | Yes |
 | Tests (`*_test.go`) | Machine-verifiable code contracts | Yes |

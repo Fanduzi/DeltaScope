@@ -928,29 +928,49 @@ deltascope config init > deltascope.yaml
 
 ### config lint
 
-验证配置文件的 YAML 语法正确性和规则 ID 有效性。适合用作预提交检查或 CI 步骤。
+校验配置文件的 YAML 语法、合法的 rule ID、合法的 level 以及合法的参数类型，并对规则级替换风险（replacement hazard）给出警告。适合用作预提交检查或 CI 步骤。
 
 | 标志 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `--file` | string | （无） | 要校验的 YAML 配置文件路径。必填。 |
+| `--strict` | bool | `false` | 出现 lint 警告时以退出码 2 失败。 |
 
 ```bash
 deltascope config lint --file ./deltascope.yaml
+deltascope config lint --file ./deltascope.yaml --strict
 ```
 
-成功输出：
+干净的文件输出 `Config OK`，退出码 0：
 
 ```
 Config OK
 ```
 
-失败输出（示例）：
+当文件合法、但 mention 某条规则时没有写全字段，`config lint` 会给出警告。一个常见的陷阱是只想改 `level` 就 mention 一条规则，这会替换整条 rule policy 并把规则关成 OFF（见 [Rule-Level Replacement](config.zh-CN.md#rule-level-replacement-semantics)）：
+
+```yaml
+rules:
+  dml.where.require:
+    level: warning
+```
 
 ```
-Error: unknown rule ID "ddl.table.comments.require" in ./deltascope.yaml (did you mean "ddl.table.comment.require"?)
+Config OK with warnings
+
+Warnings:
+- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
 ```
 
-命令在任何验证错误时以退出码 2 退出。
+警告仅供参考。不带 `--strict` 时，命令打印警告后仍以退出码 0 退出；带 `--strict` 时，输出文本相同，但以退出码 2 退出。想确认被警告的规则最终落在什么有效状态，接着用 `config status` 查看（见 [config status](#config-status)）。
+
+校验错误时，错误信息会被打印，命令以退出码 2 退出。错误优先于警告：当文件同时存在错误和替换风险时，只会报告错误：
+
+```
+unknown rule "ddl.table.comments.require"
+```
+
+`config lint` 没有 JSON 输出，全局 `--format` 标志也不会改变它的输出（该标志控制的是 audit 的输出格式）。要以 JSON 查看有效策略，请用 `config status <rule-id> --format json`。
 
 ### config show-default
 
@@ -982,7 +1002,7 @@ deltascope --config ./deltascope.yaml config status <rule-id> --format json
 
 - `deltascope rules explain <rule-id>` 解释**规则本身的含义**——来自 shipped catalog 的 summary、why、risk、suggestion、tags 与默认 params。它不看你的配置。
 - `deltascope config status <rule-id>` 展示**你的配置让这条规则做什么**——在当前配置下它是 ON 还是 OFF，会使用哪个 `level`。
-- `deltascope config lint --file` **校验配置文件**——YAML 结构、合法的 rule ID、合法的 level 以及参数类型。它不报告任何规则的有效状态。
+- `deltascope config lint --file` **校验配置文件**——YAML 结构、合法的 rule ID、合法的 level 以及参数类型——并对规则级替换风险给出警告。它不报告任何规则的有效状态；需要时请用 `config status`。
 
 #### 文本输出
 
