@@ -173,6 +173,6 @@ dml.<area>.<check>
 
 ```bash
 deltascope rules list                      # list all rules
-deltascope rules show dml.where.require    # detailed info for one rule
-deltascope rules search "where clause"     # full-text search
+deltascope rules explain dml.where.require # detailed info for one rule
+deltascope rules list --search "where"     # full-text search
 ```

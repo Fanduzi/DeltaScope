@@ -953,7 +953,7 @@ The goal is simple: catch risky changes early, keep policy consistent, and avoid
 <span class="prompt">$</span> deltascope rules list
 
 <span class="c"># Show detail for one rule</span>
-<span class="prompt">$</span> deltascope rules show dml.where.require
+<span class="prompt">$</span> deltascope rules explain dml.where.require
 
 <span class="c"># Audit with custom policy</span>
 <span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml</code>
@@ -1341,7 +1341,7 @@ Statement 1: CREATE TABLE
             mergeAlter: 'Multiple ALTER TABLE statements on the same table should be merged',
             indexLength: 'Index key length must stay within InnoDB instance limits'
           },
-          code: '<span class="c"># View all rules</span>\n<span class="prompt">$</span> deltascope rules list\n\nRULE ID                     LEVEL    KIND  SUMMARY\n--------------------------  -------  ----  ----------------------------------------\nddl.table.comment.require  warning  ddl   Require DDL table comment require\ndml.where.require          blocker  dml   Require DML where require\n\n<span class="c"># Show detail for one rule</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># Audit with custom policy</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
+          code: '<span class="c"># View all rules</span>\n<span class="prompt">$</span> deltascope rules list\n\nRULE ID                     LEVEL    KIND  SUMMARY\n--------------------------  -------  ----  ----------------------------------------\nddl.table.comment.require  warning  ddl   Require DDL table comment require\ndml.where.require          blocker  dml   Require DML where require\n\n<span class="c"># Show detail for one rule</span>\n<span class="prompt">$</span> deltascope rules explain dml.where.require\n\n<span class="c"># Audit with custom policy</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
         },
         integrations: {
           label: 'Integrations',
@@ -1581,7 +1581,7 @@ Statement 1: CREATE TABLE
             mergeAlter: '针对同一张表的多个 ALTER TABLE 应合并',
             indexLength: '索引键长度必须在 InnoDB 实例限制内'
           },
-          code: '<span class="c"># 查看所有规则</span>\n<span class="prompt">$</span> deltascope rules list\n\nRULE ID                     LEVEL    KIND  SUMMARY\n--------------------------  -------  ----  ----------------------------------------\nddl.table.comment.require  warning  ddl   Require DDL table comment require\ndml.where.require          blocker  dml   Require DML where require\n\n<span class="c"># 查看单条规则详情</span>\n<span class="prompt">$</span> deltascope rules show dml.where.require\n\n<span class="c"># 使用自定义策略审计</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
+          code: '<span class="c"># 查看所有规则</span>\n<span class="prompt">$</span> deltascope rules list\n\nRULE ID                     LEVEL    KIND  SUMMARY\n--------------------------  -------  ----  ----------------------------------------\nddl.table.comment.require  warning  ddl   Require DDL table comment require\ndml.where.require          blocker  dml   Require DML where require\n\n<span class="c"># 查看单条规则详情</span>\n<span class="prompt">$</span> deltascope rules explain dml.where.require\n\n<span class="c"># 使用自定义策略审计</span>\n<span class="prompt">$</span> deltascope audit --file ./migrations.sql --config ./strict-policy.yaml'
         },
         integrations: {
           label: '集成',
