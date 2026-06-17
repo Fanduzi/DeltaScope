@@ -160,6 +160,14 @@ deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql
 
 在 GitLab CI 中使用 `--format gitlab-codequality` 并将 `gl-code-quality-report.json` 发布为 Code Quality 制品；详见 [use-deltascope-in-gitlab-ci.zh-CN.md](docs/recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。
 
+在 CI 中校验策略配置。干净的配置打印 `Config OK`；仅有替换风险告警的配置打印 `Config OK with warnings` 并以退出码 0 结束。加上 `--strict` 可在这些告警上失败：
+
+```bash
+deltascope config lint --file ./deltascope.yaml --strict
+```
+
+随后可用 `deltascope config status` 查看单条规则的生效 ON/OFF 状态。
+
 ## DML 影响估算
 
 对于 `DELETE FROM users WHERE id = 42` 这类选择性较强的 DML，DeltaScope 可能会在该语句结果上附加一个 `impact` 对象。这个对象以保守估算为原则，包含 `estimated_rows`、`estimated_ratio`、`risk_level`、`confidence`、`source`、`reason_codes`，以及可选的 `notes`。
@@ -422,7 +430,7 @@ result, err := deltascope.Audit(ctx, deltascope.Request{
 | `internal/interfaces/mcp` | MCP 适配层 | [README](internal/interfaces/mcp/README.md) |
 | `internal/application/audit` | 审核用例 | [README](internal/application/audit/README.md) |
 | `internal/application/auditmeta` | 元数据感知审核用例 | [README](internal/application/auditmeta/README.md) |
-| `internal/domain/rule` | rule/finding/severity 模型 | [README](internal/domain/rule/README.md) |
+| `internal/domain/rule` | rule/finding/level 模型 | [README](internal/domain/rule/README.md) |
 | `internal/domain/rule/catalog` | 面向解释和发现的内置规则目录 | [README](internal/domain/rule/catalog/README.md) |
 | `internal/domain/rule/ddl` | DDL 规则目录 | [README](internal/domain/rule/ddl/README.md) |
 | `internal/domain/rule/dml` | DML 规则目录 | [README](internal/domain/rule/dml/README.md) |

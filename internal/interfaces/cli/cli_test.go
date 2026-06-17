@@ -1230,6 +1230,29 @@ func TestCapabilitiesPrintsStableSummary(t *testing.T) {
 	}
 }
 
+func TestRootAndAuditHelpAdvertiseGitLabCodeQualityFormat(t *testing.T) {
+	for _, args := range [][]string{
+		{"--help"},
+		{"audit", "--help"},
+	} {
+		stdout := &strings.Builder{}
+		code := Execute(
+			context.Background(),
+			args,
+			strings.NewReader(""),
+			stdout,
+			&strings.Builder{},
+		)
+
+		if code != 0 {
+			t.Fatalf("args=%v: expected exit code 0, got %d", args, code)
+		}
+		if output := stdout.String(); !strings.Contains(output, "gitlab-codequality") {
+			t.Fatalf("args=%v: expected help output to advertise gitlab-codequality, got %q", args, output)
+		}
+	}
+}
+
 func TestAuditHelpIncludesOfflineAndMetadataAwareExamples(t *testing.T) {
 	stdout := &strings.Builder{}
 	code := Execute(

@@ -30,7 +30,7 @@ Stable public package surface for library consumers.
 - `FindingExplanation`
 - `ExplanationMetadata`
 - `Level`
-  Public finding severity type for `blocker`, `warning`, and `notice`
+  Public finding level type for `blocker`, `warning`, and `notice`
 - `Summary`
 - `Location`
 - `Dialect`

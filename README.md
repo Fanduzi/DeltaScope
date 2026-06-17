@@ -162,6 +162,14 @@ deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql
 
 For GitLab CI, use `--format gitlab-codequality` and publish `gl-code-quality-report.json` as a Code Quality artifact; see [use-deltascope-in-gitlab-ci.md](docs/recipe/use-deltascope-in-gitlab-ci.md).
 
+Validate a policy config in CI. A clean config prints `Config OK`; a config with only replacement-hazard warnings prints `Config OK with warnings` and exits 0. Add `--strict` to fail on those warnings:
+
+```bash
+deltascope config lint --file ./deltascope.yaml --strict
+```
+
+Follow up with `deltascope config status` to inspect a single rule's effective ON/OFF state.
+
 ## DML Impact Estimation
 
 For a selective DML such as `DELETE FROM users WHERE id = 42`, DeltaScope may add an `impact` object to the statement result. The object is conservative by design and reports `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`.
@@ -414,7 +422,7 @@ DeltaScope keeps one audit path and exposes it through multiple entrypoints. Pro
 | `internal/application/policy` | Application policy loader | [README](internal/application/policy/README.md) |
 | `internal/domain` | Core domain types and rules | [README](internal/domain/README.md) |
 | `internal/domain/spec` | Normalized statement specifications | [README](internal/domain/spec/README.md) |
-| `internal/domain/rule` | Rule findings and severity model | [README](internal/domain/rule/README.md) |
+| `internal/domain/rule` | Rule findings and level model | [README](internal/domain/rule/README.md) |
 | `internal/domain/rule/catalog` | Explanation-oriented shipped rule catalog | [README](internal/domain/rule/catalog/README.md) |
 | `internal/domain/rule/ddl` | DDL rule catalog | [README](internal/domain/rule/ddl/README.md) |
 | `internal/domain/rule/dml` | DML rule catalog | [README](internal/domain/rule/dml/README.md) |
