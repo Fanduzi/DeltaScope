@@ -21,6 +21,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif"
@@ -293,6 +294,8 @@ func renderResult(format string, quiet bool, result report.Result, runContext *a
 		return renderJSONResult(result, runContext)
 	case "github-actions":
 		return githubactions.Render(result, githubactions.Options{Path: sourcePath})
+	case "github-summary":
+		return githubsummary.Render(result)
 	case "sarif":
 		return sarif.Render(result, sarif.Options{Path: sourcePath})
 	case "gitlab-codequality":

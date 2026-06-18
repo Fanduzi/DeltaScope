@@ -1897,6 +1897,130 @@ func TestAuditCommandSupportsGitHubActionsFormat(t *testing.T) {
 	}
 }
 
+// TestAuditGitHubSummaryOutput locks the job-summary contract that
+// --format github-summary emits for a blocker finding: the fixed title,
+// canonical REJECT verdict, the derived Action Summary with the rule id and
+// its explain command, and no raw SQL or severity wording.
+func TestAuditGitHubSummaryOutput(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "github-summary", "--fail-on", "none"},
+		nil,
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 with --fail-on none, got %d\nstdout=%s\nstderr=%s", code, stdout.String(), stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr for github-summary output, got %q", stderr.String())
+	}
+
+	output := stdout.String()
+	for _, want := range []string{
+		"## DeltaScope SQL Review",
+		"Verdict: REJECT",
+		"## Action Summary",
+		"`dml.where.require`",
+		"Explain: deltascope rules explain dml.where.require",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected github-summary output to contain %q, got:\n%s", want, output)
+		}
+	}
+	for _, banned := range []string{
+		"delete from users",
+		"DELETE FROM users",
+		"severity",
+	} {
+		if strings.Contains(output, banned) {
+			t.Fatalf("github-summary output must not contain %q, got:\n%s", banned, output)
+		}
+	}
+}
+
+// TestAuditGitHubSummaryCleanOutput locks the clean-result contract for the
+// github-summary format: a pass verdict, the "No findings." line, and no
+// Action Summary section.
+func TestAuditGitHubSummaryCleanOutput(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "SELECT 1", "--format", "github-summary", "--fail-on", "none"},
+		nil,
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for clean github-summary result, got %d\nstdout=%s", code, stdout.String())
+	}
+
+	output := stdout.String()
+	for _, want := range []string{
+		"Verdict: PASS",
+		"No findings.",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected clean github-summary output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "## Action Summary") {
+		t.Fatalf("clean github-summary output must not include action summary, got:\n%s", output)
+	}
+}
+
+// TestRootAndAuditHelpAdvertiseGitHubSummaryFormat verifies that both the root
+// and audit help text advertise the github-summary output format.
+func TestRootAndAuditHelpAdvertiseGitHubSummaryFormat(t *testing.T) {
+	for _, args := range [][]string{
+		{"--help"},
+		{"audit", "--help"},
+	} {
+		stdout := &strings.Builder{}
+		code := Execute(
+			context.Background(),
+			args,
+			strings.NewReader(""),
+			stdout,
+			&strings.Builder{},
+		)
+
+		if code != 0 {
+			t.Fatalf("args=%v: expected exit code 0, got %d", args, code)
+		}
+		if output := stdout.String(); !strings.Contains(output, "github-summary") {
+			t.Fatalf("args=%v: expected help output to advertise github-summary, got %q", args, output)
+		}
+	}
+}
+
+// TestUnsupportedFormatMessageMentionsGitHubSummary verifies that an invalid
+// --format value produces a user error whose message lists github-summary.
+func TestUnsupportedFormatMessageMentionsGitHubSummary(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "bad-format"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != exitUser {
+		t.Fatalf("expected user error exit code %d for bad format, got %d", exitUser, code)
+	}
+	if !strings.Contains(stderr.String(), "github-summary") {
+		t.Fatalf("expected unsupported-format error to mention github-summary, got %q", stderr.String())
+	}
+}
+
 func TestAuditCommandSupportsSARIFFormat(t *testing.T) {
 	stdout := &strings.Builder{}
 	stderr := &strings.Builder{}
