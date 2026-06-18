@@ -8,6 +8,7 @@ Rendering adapters for turning internal audit results into transport-friendly fo
 |------|---------------|
 | markdown/README.md | Documents the Markdown renderer module |
 | json/README.md | Documents the JSON renderer module |
+| githubsummary/README.md | Documents the GitHub Actions job-summary renderer module |
 
 ## Exports
 
@@ -15,7 +16,7 @@ Rendering adapters for turning internal audit results into transport-friendly fo
 
 ## Dependencies
 - Upstream: `internal/interfaces/cli`, future HTTP API and MCP adapters
-- Downstream: `internal/domain/report`
+- Downstream: `internal/domain/report`, `internal/domain/rule`, `internal/domain/rule/catalog`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
