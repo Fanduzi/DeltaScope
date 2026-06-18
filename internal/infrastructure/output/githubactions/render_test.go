@@ -281,3 +281,160 @@ func TestRenderEscapesSpecialCharacters(t *testing.T) {
 		t.Fatalf("expected \\n → %%0A encoding, got %q", rendered)
 	}
 }
+
+// TestRenderAnnotationTitleIncludesLevelAndRuleID verifies that a finding
+// annotation title carries the level and rule id so a reviewer can triage
+// without opening raw logs.
+func TestRenderAnnotationTitleIncludesLevelAndRuleID(t *testing.T) {
+	t.Parallel()
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause is required",
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "::error") {
+		t.Fatalf("expected ::error annotation for blocker, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "title=[blocker] dml.where.require") {
+		t.Fatalf("expected title=[blocker] dml.where.require, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "dml.where.require") {
+		t.Fatalf("expected rule id still present in annotation, got %q", rendered)
+	}
+}
+
+// TestRenderAnnotationMessageIncludesExplainCommand verifies the message
+// carries the follow-up explain command so a reviewer can resolve a finding
+// without searching docs. Workflow commands escape newlines as %0A.
+func TestRenderAnnotationMessageIncludesExplainCommand(t *testing.T) {
+	t.Parallel()
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause is required",
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "%0AExplain: deltascope rules explain dml.where.require") {
+		t.Fatalf("expected escaped explain command in message, got %q", rendered)
+	}
+}
+
+// TestRenderAnnotationSuggestionPrecedesExplain verifies that when a finding
+// carries a suggestion it is emitted before the explain command, preserving
+// remediation-before-followup ordering.
+func TestRenderAnnotationSuggestionPrecedesExplain(t *testing.T) {
+	t.Parallel()
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:      "dml.where.require",
+				Level:       rule.LevelBlocker,
+				Message:     "where clause is required",
+				Explanation: &rule.FindingExplanation{Suggestion: "Add a WHERE clause."},
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	suggestion := strings.Index(rendered, "Suggestion: Add a WHERE clause.")
+	explain := strings.Index(rendered, "Explain: deltascope rules explain dml.where.require")
+	if suggestion < 0 {
+		t.Fatalf("expected suggestion text in annotation, got %q", rendered)
+	}
+	if explain < 0 {
+		t.Fatalf("expected explain command in annotation, got %q", rendered)
+	}
+	if suggestion >= explain {
+		t.Fatalf("expected suggestion before explain; suggestion at %d, explain at %d, got %q", suggestion, explain, rendered)
+	}
+}
+
+// TestRenderUnsupportedNoticeDoesNotAddExplainCommand verifies that
+// unsupported-statement notices keep their existing shape and do not gain a
+// rules explain command, since unsupported statements have no rule id.
+func TestRenderUnsupportedNoticeDoesNotAddExplainCommand(t *testing.T) {
+	t.Parallel()
+	result := report.Result{
+		Unsupported: []spec.UnsupportedDetail{
+			{Index: 0, Feature: "select", Reason: "not supported"},
+		},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "::notice") {
+		t.Fatalf("expected ::notice for unsupported statement, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "not supported") {
+		t.Fatalf("expected unsupported reason in output, got %q", rendered)
+	}
+	if strings.Contains(rendered, "rules explain") {
+		t.Fatalf("expected unsupported notice to omit rules explain command, got %q", rendered)
+	}
+}
+
+// TestRenderEscapesExplainMessageNewline verifies the newline inserted before
+// the Explain line is escaped as %0A, consistent with workflow-command rules.
+func TestRenderEscapesExplainMessageNewline(t *testing.T) {
+	t.Parallel()
+	result := report.Result{
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause is required",
+			}},
+		}},
+	}
+
+	output, err := Render(result, Options{})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	rendered := string(output)
+	if !strings.Contains(rendered, "%0AExplain:") {
+		t.Fatalf("expected %%0A-escaped newline before Explain:, got %q", rendered)
+	}
+	if strings.Contains(rendered, "\nExplain:") {
+		t.Fatalf("expected no raw newline before Explain:, got %q", rendered)
+	}
+}

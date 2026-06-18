@@ -8,6 +8,7 @@ Rendering adapters for turning internal audit results into transport-friendly fo
 |------|---------------|
 | markdown/README.md | Documents the Markdown renderer module |
 | json/README.md | Documents the JSON renderer module |
+| githubactions/README.md | Documents the GitHub Actions annotation renderer module |
 | githubsummary/README.md | Documents the GitHub Actions job-summary renderer module |
 
 ## Exports

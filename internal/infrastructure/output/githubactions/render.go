@@ -43,19 +43,24 @@ func Render(result report.Result, options Options) ([]byte, error) {
 
 func formatAnnotation(finding rule.Finding, options Options) string {
 	level := mapLevel(finding.Level)
-	title := escapeValue(finding.RuleID)
-	message := escapeValue(finding.Message)
+	title := escapeValue(fmt.Sprintf("[%s] %s", finding.Level, finding.RuleID))
+
+	// Build the message before escaping so the inserted newlines are encoded
+	// once. Suggestion precedes the explain command so remediation reads first.
+	message := finding.Message
 	if finding.Explanation != nil && finding.Explanation.Suggestion != "" {
-		message = escapeValue(fmt.Sprintf("%s Suggestion: %s", finding.Message, finding.Explanation.Suggestion))
+		message = fmt.Sprintf("%s\nSuggestion: %s", message, finding.Explanation.Suggestion)
 	}
+	message = fmt.Sprintf("%s\nExplain: deltascope rules explain %s", message, finding.RuleID)
+	escapedMessage := escapeValue(message)
 
 	if finding.Location != nil {
 		if options.Path != "" {
-			return fmt.Sprintf("::%s file=%s,line=%d,col=%d,title=%s::%s", level, escapeValue(options.Path), finding.Location.Line, finding.Location.Column, title, message)
+			return fmt.Sprintf("::%s file=%s,line=%d,col=%d,title=%s::%s", level, escapeValue(options.Path), finding.Location.Line, finding.Location.Column, title, escapedMessage)
 		}
-		return fmt.Sprintf("::%s line=%d,col=%d,title=%s::%s", level, finding.Location.Line, finding.Location.Column, title, message)
+		return fmt.Sprintf("::%s line=%d,col=%d,title=%s::%s", level, finding.Location.Line, finding.Location.Column, title, escapedMessage)
 	}
-	return fmt.Sprintf("::%s title=%s::%s", level, title, message)
+	return fmt.Sprintf("::%s title=%s::%s", level, title, escapedMessage)
 }
 
 // escapeValue encodes values embedded in GitHub Actions workflow commands.
