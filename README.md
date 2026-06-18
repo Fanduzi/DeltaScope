@@ -160,6 +160,14 @@ Use CI-native output with any dialect:
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
+Write a short review summary to the GitHub Actions run page with `--format github-summary`:
+
+```bash
+deltascope audit --file ./migrations.sql --format github-summary --fail-on none >> "$GITHUB_STEP_SUMMARY"
+```
+
+For a complete GitHub Actions workflow that combines a `config lint --strict` gate, inline `github-actions` annotations, and a `github-summary` job summary, see [github-actions.yml](docs/examples/github-actions.yml). Output formats are documented in [cli.md](docs/reference/cli.md).
+
 For GitLab CI, use `--format gitlab-codequality` and publish `gl-code-quality-report.json` as a Code Quality artifact; see [use-deltascope-in-gitlab-ci.md](docs/recipe/use-deltascope-in-gitlab-ci.md).
 
 Validate a policy config in CI. A clean config prints `Config OK`; a config with only replacement-hazard warnings prints `Config OK with warnings` and exits 0. Add `--strict` to fail on those warnings:

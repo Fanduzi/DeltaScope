@@ -14,7 +14,7 @@ These flags apply to all subcommands.
 |------|------|---------|-------------|
 | `--config` | string | (none) | Path to YAML policy config file. When omitted, `policy.Default()` is used. |
 | `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable DeltaScope binary. Starting with the `v0.17.0` public release line, the supported macOS and Linux `deltascope` archives are PG-capable, so PostgreSQL offline audit uses the normal main CLI path. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
-| `--format` | string | `markdown` | Output format: `markdown` (human-readable), `json` (stable machine-readable contract), `github-actions` (CI inline annotations), or `sarif` (SARIF 2.1.0 for GitHub Code Scanning). |
+| `--format` | string | `markdown` | Output format: `markdown` (human-readable local report), `json` (stable machine-readable contract), `github-actions` (inline GitHub Actions annotations), `github-summary` (Markdown for `$GITHUB_STEP_SUMMARY`), `sarif` (SARIF 2.1.0 for GitHub Code Scanning and SARIF consumers), or `gitlab-codequality` (GitLab Code Quality artifact). |
 | `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
 | `--version` | bool | false | Print only the semantic version string and exit. |
@@ -306,7 +306,23 @@ Use `--format github-actions` to produce inline CI annotations that render in th
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
-Each finding maps to a GitHub Actions workflow command (`::error`, `::warning`, or `::notice`) based on the rule severity. Special characters in titles and messages are escaped per the GitHub workflow command specification. When `--file` is provided, each annotation includes `file=<path>,line=N,col=N` pointing at the exact statement that triggered the finding.
+Each finding maps to a GitHub Actions workflow command (`::error`, `::warning`, or `::notice`) based on the rule `level` (`blocker` → `::error`, `warning` → `::warning`, `notice` → `::notice`). Special characters in titles and messages are escaped per the GitHub workflow command specification. When `--file` is provided, each annotation includes `file=<path>,line=N,col=N` pointing at the exact statement that triggered the finding.
+
+Each finding annotation is self-contained:
+
+- The **title** is `[<level>] <rule_id>`, for example `[blocker] dml.where.require`.
+- The **message** keeps the finding message, adds an optional `Suggestion:` line, and appends a trailing `Explain: deltascope rules explain <rule_id>` line, so a reviewer can copy-paste the explain command without opening the full report.
+- Unsupported-statement **notices** carry no `Explain:` line, because unsupported statements have no rule id.
+
+#### GitHub Job Summary Output
+
+Use `--format github-summary` when writing a short review summary to `$GITHUB_STEP_SUMMARY` in GitHub Actions:
+
+```bash
+deltascope audit --file ./migrations.sql --format github-summary --fail-on none >> "$GITHUB_STEP_SUMMARY"
+```
+
+This output is GitHub-flavored Markdown for humans. It includes the verdict, counts, and Action Summary, and it omits raw SQL. It is not a machine-readable contract. Use `--format json`, `--format sarif`, or `--format gitlab-codequality` for automation.
 
 #### SARIF Output
 

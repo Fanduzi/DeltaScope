@@ -12,7 +12,7 @@
 |------|------|--------|------|
 | `--config` | string | （无） | YAML 策略配置文件路径。省略时使用 `policy.Default()`。 |
 | `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable DeltaScope 二进制。从 `v0.17.0` 公开 release 开始，受支持的 macOS 和 Linux `deltascope` 主 archive 都直接提供该能力，因此 PostgreSQL offline 审计走的就是正常主 CLI 路径。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
-| `--format` | string | `markdown` | 输出格式：`markdown`（人类可读）、`json`（稳定的机器可读契约）、`github-actions`（CI 内联注解）或 `sarif`（SARIF 2.1.0，用于 GitHub Code Scanning）。 |
+| `--format` | string | `markdown` | 输出格式：`markdown`（人类可读的本地报告）、`json`（稳定的机器可读契约）、`github-actions`（GitHub Actions 内联注解）、`github-summary`（写入 `$GITHUB_STEP_SUMMARY` 的 Markdown）、`sarif`（SARIF 2.1.0，用于 GitHub Code Scanning 和 SARIF 消费方）或 `gitlab-codequality`（GitLab Code Quality 报告）。 |
 | `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
 | `--version` | bool | false | 仅打印语义化版本字符串后退出。 |
@@ -260,13 +260,29 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
 
 #### GitHub Actions 输出
 
-使用 `--format github-actions` 生成 CI 内联注解，渲染在 GitHub Actions 工作流日志中。
+使用 `--format github-actions` 生成 GitHub Actions 内联注解，渲染在工作流日志中。
 
 ```bash
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
-每条发现根据规则严重级别映射为 GitHub Actions 工作流命令（`::error`、`::warning` 或 `::notice`）。标题和消息中的特殊字符按照 GitHub 工作流命令规范进行转义。当提供 `--file` 时，每条注解包含 `file=<path>,line=N,col=N`，指向触发发现的具体语句。
+每条 finding 按规则 `level` 映射为 GitHub Actions 工作流命令（`blocker` → `::error`、`warning` → `::warning`、`notice` → `::notice`）。标题和消息中的特殊字符按 GitHub 工作流命令规范转义。当提供 `--file` 时，每条注解包含 `file=<path>,line=N,col=N`，指向触发该 finding 的具体语句。
+
+每条 finding 注解自包含：
+
+- **标题**为 `[<level>] <rule_id>`，例如 `[blocker] dml.where.require`。
+- **消息**保留 finding 消息，追加可选的 `Suggestion:` 行，并在末尾追加 `Explain: deltascope rules explain <rule_id>` 行，reviewer 可直接复制该命令，无需打开完整报告。
+- 不支持语句的 **notice** 不包含 `Explain:` 行，因为不支持语句没有 rule id。
+
+#### GitHub Job Summary 输出
+
+在 GitHub Actions 中向 `$GITHUB_STEP_SUMMARY` 写入简短审核摘要时使用 `--format github-summary`：
+
+```bash
+deltascope audit --file ./migrations.sql --format github-summary --fail-on none >> "$GITHUB_STEP_SUMMARY"
+```
+
+该输出是面向人类的 GitHub-flavored Markdown，包含 verdict、计数和 Action Summary，不包含原始 SQL。它不是机器可读契约。自动化场景请使用 `--format json`、`--format sarif` 或 `--format gitlab-codequality`。
 
 #### SARIF 输出
 

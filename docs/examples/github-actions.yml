@@ -1,9 +1,21 @@
-# docs/examples/github-actions.yml — Example GitHub Actions workflow using DeltaScope
-# L3: Drop this file into .github/workflows/ (or adapt it) to audit SQL migration
-# files on every push and pull request that touches the migrations/ directory.
-# The workflow uses the official DeltaScope composite action and posts a PR comment
-# with the audit summary when a pull_request event is detected.
-# Requirements: a GitHub repository with SQL migrations under migrations/.
+# docs/examples/github-actions.yml
+#
+# Example GitHub Actions workflow that audits SQL migration files with DeltaScope.
+# Copy it into .github/workflows/ and adapt the file paths to your repository.
+#
+# The job runs three steps:
+#   1. a `config lint --strict` gate, only when deltascope.yaml exists,
+#   2. inline annotations via --format github-actions,
+#   3. a short job summary via --format github-summary, appended to $GITHUB_STEP_SUMMARY.
+#
+# The job uses only the default contents: read permission. It posts no PR
+# comments and makes no GitHub API calls; annotations and the summary are
+# produced entirely by the local CLI.
+#
+# NOTE: the github-summary format and the [level] rule_id annotation wording
+# ship in DeltaScope v0.330.0. The CLI pin below uses the latest released
+# version; release-prep Task 6 bumps it to v0.330.0 once tagged. Before then,
+# the --format github-summary step needs a v0.330.0 (or later) build.
 
 name: SQL Audit
 
@@ -11,11 +23,13 @@ on:
   push:
     paths:
       - 'migrations/**'
+      - 'deltascope.yaml'
   pull_request:
     paths:
       - 'migrations/**'
+      - 'deltascope.yaml'
 
-# Limit concurrent runs on the same branch/PR to avoid redundant audits.
+# Limit concurrent runs on the same branch/PR so audits are not duplicated.
 concurrency:
   group: sql-audit-${{ github.ref }}
   cancel-in-progress: true
@@ -25,49 +39,71 @@ jobs:
     name: DeltaScope SQL Audit
     runs-on: ubuntu-latest
     permissions:
-      # Required to post PR comments when token is provided.
-      pull-requests: write
-      # Required to read repo contents.
+      # Read-only access to the repository is enough. No write scopes and no
+      # PR comment posting are required.
       contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run DeltaScope SQL audit
-        id: deltascope
-        uses: Fanduzi/DeltaScope@v0.14.0
-        with:
-          # Glob pattern relative to the repository root.
-          files: 'migrations/*.sql'
+      - name: Install DeltaScope CLI
+        # Pin a specific release for reproducible audits. Bump to v0.330.0 once
+        # it is released; that version ships github-summary and the new
+        # annotation wording referenced by the steps below.
+        env:
+          DELTASCOPE_VERSION: v0.320.0
+        shell: bash
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/Fanduzi/DeltaScope/${DELTASCOPE_VERSION}/install.sh" | sh
+          deltascope --version
 
-          # Pin to a specific release for reproducible builds, or use 'latest'.
-          version: 'v0.14.0'
+      # Gate the policy config before auditing SQL. --strict fails the job
+      # (exit 2) when config lint reports rule-level replacement hazards. When
+      # no deltascope.yaml is checked in, the default policy is used instead.
+      - name: Lint policy config
+        shell: bash
+        run: |
+          if [[ -f deltascope.yaml ]]; then
+            deltascope config lint --file deltascope.yaml --strict
+          else
+            echo "No deltascope.yaml found; DeltaScope will use the default policy."
+          fi
 
-          # Exit with a non-zero code if any finding at this level or above exists.
-          # Valid values: blocker | warning | notice | none
-          fail-on: 'blocker'
+      # Inline annotations in the workflow log. Replace ./migrations.sql with
+      # the path to your migration file (or expand a glob in the shell).
+      # CONFIG_ARGS is rebuilt in each step, so a missing deltascope.yaml does
+      # not make --config fail.
+      - name: Audit SQL (inline annotations)
+        env:
+          MIGRATION_FILE: ./migrations.sql
+        shell: bash
+        run: |
+          CONFIG_ARGS=()
+          if [[ -f deltascope.yaml ]]; then
+            CONFIG_ARGS=(--config deltascope.yaml)
+          fi
+          deltascope audit "${CONFIG_ARGS[@]}" \
+            --dialect postgresql \
+            --file "$MIGRATION_FILE" \
+            --format github-actions
 
-          # Provide GITHUB_TOKEN to enable automatic PR comments with audit results.
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Optional: upload the raw JSON results as a workflow artifact for later review.
-      - name: Upload audit results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: deltascope-audit-results
-          path: |
-            /tmp/deltascope-*.json
-          retention-days: 30
-          if-no-files-found: ignore
-
-      # Optional: surface the summary in the GitHub Actions job summary UI.
+      # Short human summary on the run page. if: always() keeps this step
+      # running even when the annotations step exits non-zero on blockers, so
+      # reviewers always see the verdict, counts, and Action Summary. With
+      # --fail-on none, writing the summary itself never fails the job.
       - name: Write job summary
         if: always()
-        shell: bash
         env:
-          HAS_ISSUES: ${{ steps.deltascope.outputs.has-issues }}
-          RESULT: ${{ steps.deltascope.outputs.result }}
+          MIGRATION_FILE: ./migrations.sql
+        shell: bash
         run: |
-          if [[
+          CONFIG_ARGS=()
+          if [[ -f deltascope.yaml ]]; then
+            CONFIG_ARGS=(--config deltascope.yaml)
+          fi
+          deltascope audit "${CONFIG_ARGS[@]}" \
+            --dialect postgresql \
+            --file "$MIGRATION_FILE" \
+            --format github-summary \
+            --fail-on none >> "$GITHUB_STEP_SUMMARY"

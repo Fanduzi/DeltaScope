@@ -158,6 +158,14 @@ deltascope audit --file ./migrations.sql --format sarif > deltascope.sarif
 deltascope audit --dialect postgresql --file ./migrations/20260409_add_index.sql --format github-actions
 ```
 
+向 GitHub Actions 运行页面写入简短审核摘要，使用 `--format github-summary`：
+
+```bash
+deltascope audit --file ./migrations.sql --format github-summary --fail-on none >> "$GITHUB_STEP_SUMMARY"
+```
+
+完整的 GitHub Actions 工作流（结合 `config lint --strict` 门禁、`github-actions` 内联注解和 `github-summary` 任务摘要）见 [github-actions.yml](docs/examples/github-actions.yml)。各输出格式见 [cli.zh-CN.md](docs/reference/cli.zh-CN.md)。
+
 在 GitLab CI 中使用 `--format gitlab-codequality` 并将 `gl-code-quality-report.json` 发布为 Code Quality 制品；详见 [use-deltascope-in-gitlab-ci.zh-CN.md](docs/recipe/use-deltascope-in-gitlab-ci.zh-CN.md)。
 
 在 CI 中校验策略配置。干净的配置打印 `Config OK`；仅有替换风险告警的配置打印 `Config OK with warnings` 并以退出码 0 结束。加上 `--strict` 可在这些告警上失败：
