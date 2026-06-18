@@ -4,7 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.320.0 Config Lint Replacement Warnings
+## Latest Completed Milestone: v0.330.0 CI/PR Review UX
+
+**Goal:** add a `--format github-summary` audit output for the GitHub Actions job summary, sharpen `--format github-actions` inline annotation wording, and refresh the shipped GitHub Actions workflow example to combine a `config lint --strict` gate, annotations, and a job summary with only `contents: read`. This is presentation and documentation only; it does not change audit behavior, the default policy, any rule, parser support, or any machine-readable output shape. Does not add a `severity` field.
+
+### Completed Scope
+
+- New audit output format `--format github-summary`: GitHub-flavored Markdown for `$GITHUB_STEP_SUMMARY` with a fixed title, the canonical verdict (`PASS` / `REVIEW` / `REJECT`), a counts table, the derived Action Summary, and an unsupported-statement count. A human surface, not a stable machine schema.
+- `--format github-actions` annotation wording: title becomes `[<level>] <rule_id>` (was rule id only); message appends `Explain: deltascope rules explain <rule_id>` with an optional `Suggestion:` line. Level-to-command mapping, file/line/column behavior, and `%`/newline/`CR` escaping are unchanged.
+- Refreshed `docs/examples/github-actions.yml`: `contents: read` only, `config lint --strict` gate, `--format github-actions` annotations, `--format github-summary` under `if: always()`. No PR comments, no `pull-requests: write`, no GitHub App, no GitHub API or network call, no token, no `workflow_dispatch`.
+- Privacy/no-leak: the summary and annotation wording omit raw SQL, normalized SQL, parser fragments, secrets, connection strings, and metadata payloads.
+- Renderer: `internal/infrastructure/output/githubsummary/`; CLI wiring: `internal/interfaces/cli/root.go`, `internal/interfaces/cli/audit.go`; annotation wording: `internal/infrastructure/output/githubactions/render.go`.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-18-v0.330.0-ci-pr-review-ux.md`.
+
+### Non-Goals
+
+- Not audit behavior changes.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not JSON, SARIF, or GitLab Code Quality renderer changes.
+- Not a `severity` field.
+
+## Previous Milestone: v0.320.0 Config Lint Replacement Warnings
 
 **Goal:** teach `deltascope config lint --file` to warn when a rule entry in the YAML will silently disable or gut a rule because of rule-level replacement semantics, and add a `--strict` flag that exits 2 for CI. The warnings document existing audit policy semantics; lint does not change audit behavior, the loader, the default policy, any rule, parser support, or any output shape. Does not add a `severity` field.
 

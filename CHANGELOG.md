@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.330.0] - 2026-06-18
+
+### Added
+
+- New audit output format `--format github-summary`: emits GitHub-flavored Markdown for `$GITHUB_STEP_SUMMARY` (fixed title, verdict, counts table, derived Action Summary, unsupported-statement count). A human surface, not a stable machine schema; machine consumers continue to use `json`, `sarif`, or `gitlab-codequality`.
+- `--format github-actions` annotation wording: the title is now `[<level>] <rule_id>` (was rule id only) and the message appends `Explain: deltascope rules explain <rule_id>` (with an optional `Suggestion:` line on its own line). Level-to-command mapping, file/line/column behavior, and `%`/newline/`CR` escaping are unchanged.
+- Refreshed `docs/examples/github-actions.yml`: `contents: read` only, a `config lint --strict` gate, `--format github-actions` annotations, and `--format github-summary` appended to `$GITHUB_STEP_SUMMARY` under `if: always()`. No PR comments, no `pull-requests: write`, no GitHub App, no GitHub API or network call, no token, no `workflow_dispatch`.
+- Privacy/no-leak: the job summary and annotation wording do not include raw SQL, normalized SQL, parser fragments, secrets, connection strings, or metadata payloads.
+- `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-18-v0.330.0-ci-pr-review-ux.md`.
+
+### Non-Goals
+
+- Not audit behavior changes.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not JSON, SARIF, or GitLab Code Quality renderer changes.
+- Not a `severity` field.
+
 ## [v0.320.0] - 2026-06-16
 
 ### Added

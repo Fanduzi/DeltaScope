@@ -56,17 +56,17 @@ log "checking github-actions format..."
 
 ga_output="$(cat "${tmp_dir}/github-actions.txt")"
 
-echo "${ga_output}" | grep -q "title=dml.where.require" \
-  || fail "github-actions: missing title=dml.where.require"
+echo "${ga_output}" | grep -q "title=\[blocker\] dml.where.require" \
+  || fail "github-actions: missing title=[blocker] dml.where.require"
 echo "${ga_output}" | grep -q "file=${sql_file}" \
   || fail "github-actions: missing file=${sql_file}"
 echo "${ga_output}" | grep -q "line=9" \
   || fail "github-actions: missing line=9"
 echo "${ga_output}" | grep -q "col=1" \
   || fail "github-actions: missing col=1"
-echo "${ga_output}" | grep "title=dml.where.require" | grep -q "file=," \
+echo "${ga_output}" | grep "title=\[blocker\] dml.where.require" | grep -q "file=," \
   && fail "github-actions: found empty file= (file=,)"
-echo "${ga_output}" | grep "title=dml.where.require" | grep -q "line=2" \
+echo "${ga_output}" | grep "title=\[blocker\] dml.where.require" | grep -q "line=2" \
   && fail "github-actions: found line=2 fallback instead of real line=9"
 
 log "github-actions: OK"
