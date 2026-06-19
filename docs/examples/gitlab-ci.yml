@@ -4,6 +4,9 @@
 # The job manually downloads the deltascope binary from GitHub Releases — no
 # external GitLab CI includes or Docker images beyond the standard debian slim
 # base are required.
+# Output: findings are emitted in DeltaScope's native `gitlab-codequality`
+# format and exposed through `artifacts:reports:codequality`, so they render
+# inline as Code Quality annotations in merge request diffs.
 # Requirements: a GitLab project with SQL migrations under migrations/,
 # and internet access from the runner (curl + jq available).
 
@@ -15,6 +18,7 @@ stages:
 # ── Variables ─────────────────────────────────────────────────────────────────
 variables:
   DELTASCOPE_VERSION: "v0.14.0"   # Pin to a release tag, or set to "latest"
+  DELTASCOPE_DIALECT: "postgresql"  # postgresql | mysql | tidb
   DELTASCOPE_FAIL_ON: "blocker"   # blocker | warning | notice | none
   DELTASCOPE_FILES: "migrations/*.sql"  # Glob relative to repository root
 
@@ -98,6 +102,15 @@ sql-audit:
           ;;
       esac
 
+      # Validate dialect value
+      case "${DELTASCOPE_DIALECT}" in
+        postgresql|mysql|tidb) ;;
+        *)
+          echo "ERROR: Invalid DELTASCOPE_DIALECT='${DELTASCOPE_DIALECT}'. Must be: postgresql | mysql | tidb"
+          exit 1
+          ;;
+      esac
+
       # Expand glob and collect SQL files
       SQL_FILES=$(find . -path "./${DELTASCOPE_FILES}" -name '*.sql' 2>/dev/null || true)
 
@@ -107,33 +120,46 @@ sql-audit:
         SQL_FILES=$(ls ${DELTASCOPE_FILES} 2>/dev/null || true)
       fi
 
+      # GitLab Code Quality expects ONE report: a JSON array of issues, collected
+      # as an artifact under artifacts:reports:codequality. DeltaScope emits one
+      # such array per audited file, so audit each file and merge the arrays with jq.
+      REPORT="gl-code-quality-report.json"
+      PART="/tmp/deltascope-part.json"
+      rm -f /tmp/deltascope-has-issues
+
       if [ -z "${SQL_FILES}" ]; then
         echo "WARNING: No SQL files matched pattern: ${DELTASCOPE_FILES}"
+        # Emit an empty report so GitLab still accepts the codequality artifact.
+        echo "[]" > "${REPORT}"
         exit 0
       fi
 
       FILE_COUNT=$(echo "${SQL_FILES}" | wc -l | tr -d ' ')
       echo "Found ${FILE_COUNT} SQL file(s) to audit."
 
-      RESULTS="[]"
-      HAS_ISSUES=0
-      RESULTS_DIR="/tmp/deltascope-results"
-      mkdir -p "${RESULTS_DIR}"
+      echo "[]" > "${REPORT}"
 
-      # Audit each file
+      # Audit each file and merge its issues into the single report.
       echo "${SQL_FILES}" | while IFS= read -r SQL_FILE; do
         [ -z "${SQL_FILE}" ] && continue
         echo "Auditing: ${SQL_FILE}"
 
-        AUDIT_EXIT=0
-        RAW_OUTPUT=$(/tmp/deltascope-bin/deltascope audit \
+        set +e
+        /tmp/deltascope-bin/deltascope audit \
+          --dialect "${DELTASCOPE_DIALECT}" \
           --file "${SQL_FILE}" \
-          --format json \
-          --fail-on "${DELTASCOPE_FAIL_ON}" 2>&1) || AUDIT_EXIT=$?
+          --format gitlab-codequality \
+          --fail-on "${DELTASCOPE_FAIL_ON}" > "${PART}" 2>/tmp/deltascope-part.err
+        AUDIT_EXIT=$?
+        set -e
 
-        # Save per-file result
-        SAFE_NAME=$(echo "${SQL_FILE}" | tr '/' '_' | tr -dc 'a-zA-Z0-9_.-')
-        echo "${RAW_OUTPUT}" > "${RESULTS_DIR}/${SAFE_NAME}.json"
+        # Merge this file's issue array into the accumulated report.
+        if jq -s '.[0] + .[1]' "${REPORT}" "${PART}" > "${REPORT}.tmp" 2>/dev/null; then
+          mv -f "${REPORT}.tmp" "${REPORT}" || echo "  -> WARNING: failed to update report for ${SQL_FILE}"
+        else
+          echo "  -> WARNING: no parseable Code Quality output for ${SQL_FILE}"
+          cat /tmp/deltascope-part.err || true
+        fi
 
         if [ "${AUDIT_EXIT}" -ne 0 ]; then
           echo "  -> Issues found in ${SQL_FILE} (exit ${AUDIT_EXIT})"
@@ -143,26 +169,30 @@ sql-audit:
         fi
       done
 
-      # Check if any file had issues
+      ISSUE_COUNT=$(jq 'length' "${REPORT}" 2>/dev/null || echo 0)
+      echo "Code Quality report: ${ISSUE_COUNT} issue(s) across ${FILE_COUNT} file(s) -> ${REPORT}"
+
+      # The report is uploaded below regardless of outcome so that issues still
+      # render in the merge request. Fail the job only when the threshold is tripped.
       if [ -f /tmp/deltascope-has-issues ]; then
         echo ""
         echo "ERROR: DeltaScope found SQL issues at or above the '${DELTASCOPE_FAIL_ON}' severity threshold."
-        echo "Review the per-file JSON results in the artifacts below."
+        echo "Review the Code Quality annotations in the merge request or download ${REPORT}."
         exit 1
       fi
 
       echo "Audit complete. No issues found at '${DELTASCOPE_FAIL_ON}' level or above."
 
-  # Expose per-file JSON results as CI artifacts for download and review.
+  # Expose the GitLab Code Quality report. GitLab collects artifact paths
+  # relative to the project root, so the report is written at the repo root.
   artifacts:
     name: "deltascope-audit-${CI_COMMIT_SHORT_SHA}"
     when: always
     expire_in: 30 days
     paths:
-      - /tmp/deltascope-results/*.json
+      - gl-code-quality-report.json
     reports:
-      # If you convert results to JUnit XML format, reference the file here.
-      # junit: /tmp/deltascope-results/junit.xml
+      codequality: gl-code-quality-report.json
 
 # ── Optional: audit with a custom policy file ─────────────────────────────────
 # Uncomment and adapt this job if you maintain a deltascope.yml policy config.
