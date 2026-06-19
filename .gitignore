@@ -1,5 +1,6 @@
 .idea/
 bin/
+scripts/__pycache__/
 .worktrees/
 /.tool-versions
 .gitnexus

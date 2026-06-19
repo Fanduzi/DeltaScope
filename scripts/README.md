@@ -16,6 +16,8 @@ Operational scripts for local DeltaScope workflows.
 | verify_release_workflow_hygiene.sh | Validates release workflow Homebrew verification avoids noisy tolerated cleanup (`|| true`), uppercase tap tokens, and requires conditional probes and lowercase tap names — prevents successful workflows from carrying spurious `unavailable` error annotations |
 | verify_release_consistency.py | Validates release semantic consistency: release sequence, residual census arithmetic, SQL corpus metrics, PG ALTER TABLE rule count, required rule IDs across EN/ZH surfaces, no-overclaim wording, and no-leak wording |
 | test_verify_release_consistency.py | Unit tests for the release consistency checker |
+| verify_docs_examples.py | Static, release-oriented drift check for current public docs/examples: catches stale DeltaScope commands, incomplete audit output-format inventories, GitHub Actions/GitLab CI workflow-shape drift, and release-version pins; does not execute docs snippets or call external services |
+| test_verify_docs_examples.py | Unit tests for the docs/examples drift checker |
 | test_cli_metadata_e2e.sh | Starts Docker fixtures, seeds TiDB, runs metadata-aware CLI e2e flows, and provides JSON assertion helpers |
 | test_mcp_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged MCP metadata-aware e2e smoke tests for direct and connection_ref paths |
 | test_http_metadata_e2e.sh | Starts Docker MySQL/TiDB fixtures and runs the tagged HTTP metadata-aware e2e smoke tests against the live JSON API |
@@ -58,6 +60,8 @@ Operational scripts for local DeltaScope workflows.
 - `make release-workflow-hygiene-gates`
 - `make release-consistency-test`
 - `VERSION=vX.Y.Z python3 scripts/verify_release_consistency.py`
+- `VERSION=vX.Y.Z python3 scripts/verify_docs_examples.py`
+- `make docs-example-gates VERSION=vX.Y.Z`
 
 ## Dependencies
 - Upstream: local developers, `Makefile`, and release-verification workflows
@@ -73,6 +77,7 @@ Operational scripts for local DeltaScope workflows.
 - The manylinux baseline verifier is the reusable gate for the converged Linux PG-capable binaries and enforces the approved glibc baseline before release packaging.
 - The manylinux verifier and manylinux release packagers inherit host `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` plus Go module env like `GOPROXY` and `GOSUMDB`, so constrained networks can use local proxies or domestic mirrors without patching scripts.
 - `make verify-pg-linux-release-archive-cn` is a local-only convenience wrapper that defaults to `GOPROXY=https://goproxy.cn,direct` and `GOSUMDB=off` before delegating to the normal Linux archive verifier.
+- `verify_docs_examples.py` is a static, release-oriented checker: it scans curated public docs/examples for known drift patterns (stale commands, missing audit output formats, GitHub Actions/GitLab CI workflow shape, version pins) and never executes Markdown/YAML snippets or contacts external services. It runs via `make docs-example-gates VERSION=vX.Y.Z`, is wired into `release-surface-gates`, and is intentionally not part of `make test`.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
