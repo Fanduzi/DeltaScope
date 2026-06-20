@@ -1,0 +1,12 @@
+# Canonical valid GitLab CI example for the docs drift checker.
+# Kept deliberately small and readable; the real example lives at
+# docs/examples/gitlab-ci.yml. Exercises --format gitlab-codequality plus the
+# artifacts.reports.codequality report the structural check requires.
+stages:
+  - audit
+sql-audit:
+  script:
+    - deltascope audit --file migrations.sql --format gitlab-codequality > gl-code-quality-report.json
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json

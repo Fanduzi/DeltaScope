@@ -6,7 +6,9 @@ Run with:
 
 The checker is intentionally static: it never executes snippets and never
 touches the network. These tests build small in-memory fixtures and temp
-repos to lock the curated drift contract.
+repos to lock the curated drift contract, and read two canonical on-disk
+fixtures (``testdata/docs_examples/*-valid.yml``) so the YAML-aware structural
+checks are also exercised against realistic files.
 """
 
 import os
@@ -20,6 +22,7 @@ import verify_docs_examples as vde
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 CHECKER = SCRIPT_DIR / "verify_docs_examples.py"
+FIXTURES_DIR = SCRIPT_DIR / "testdata" / "docs_examples"
 
 FORMATS = [
     "markdown",
@@ -54,13 +57,24 @@ jobs:
           deltascope audit --file migrations.sql --format github-summary --fail-on none >> "$GITHUB_STEP_SUMMARY"
 """
 
+# Stricter than the legacy fixture: the GitLab example must now expose both the
+# --format gitlab-codequality command and the artifacts.reports.codequality
+# report (plus the gl-code-quality-report.json filename).
 VALID_GITLAB = """\
 stages:
   - audit
 sql-audit:
   script:
-    - deltascope audit --file migrations.sql --format gitlab-codequality
+    - deltascope audit --file migrations.sql --format gitlab-codequality > gl-code-quality-report.json
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
 """
+
+
+def github_without(token):
+    """VALID_GITHUB with the first occurrence of ``token`` removed."""
+    return VALID_GITHUB.replace(token, "", 1)
 
 
 class TestHelpers(unittest.TestCase):
@@ -83,6 +97,11 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(vde.line_number(text, 6), 2)   # 'b' of beta
         self.assertEqual(vde.line_number(text, 11), 3)  # 'g' of gamma
 
+    def test_first_anchor_returns_present_line_else_one(self):
+        text = "one\ntwo: x\n"
+        self.assertEqual(vde._first_anchor(text, "two:", "one"), 2)
+        self.assertEqual(vde._first_anchor(text, "missing"), 1)
+
     def test_extract_version_pin_unquoted(self):
         self.assertEqual(
             vde.extract_version_pin("  DELTASCOPE_VERSION: v0.330.0\n"),
@@ -97,6 +116,84 @@ class TestHelpers(unittest.TestCase):
 
     def test_extract_version_pin_absent(self):
         self.assertIsNone(vde.extract_version_pin("nothing here\n"))
+
+
+class TestYamlStructure(unittest.TestCase):
+    def test_parse_mapping_key_value(self):
+        self.assertEqual(vde._parse_mapping("contents: read"), ("contents", "read"))
+
+    def test_parse_mapping_block_key(self):
+        key, value = vde._parse_mapping("permissions:")
+        self.assertEqual(key, "permissions")
+        self.assertEqual(value, "")
+
+    def test_parse_mapping_list_item_is_not_mapping(self):
+        self.assertEqual(vde._parse_mapping("- gl-code-quality-report.json"), (None, ""))
+
+    def test_parse_mapping_scalar_without_colon(self):
+        self.assertEqual(vde._parse_mapping("deltascope --version"), (None, ""))
+
+    def test_block_children_respects_indent(self):
+        text = (
+            "artifacts:\n"
+            "  name: x\n"
+            "  reports:\n"
+            "    codequality: gl-code-quality-report.json\n"
+            "next: y\n"
+        )
+        lines = vde._logical_lines(text)
+        artifacts = next(
+            i for i, ln in enumerate(lines)
+            if vde._parse_mapping(ln.text)[0] == "artifacts"
+        )
+        kids = [ln.text for _i, ln in vde._block_children(lines, artifacts, 0)]
+        self.assertIn("name: x", kids)
+        self.assertIn("reports:", kids)
+        self.assertNotIn("next: y", kids)
+
+    def test_logical_lines_skip_block_scalar_bodies(self):
+        text = (
+            "run: |\n"
+            "  echo hello\n"
+            "  fakekey: should-be-skipped\n"
+            "next: kept\n"
+        )
+        lines = [ln.text for ln in vde._logical_lines(text)]
+        self.assertIn("run: |", lines)
+        self.assertIn("next: kept", lines)
+        self.assertNotIn("echo hello", lines)
+        self.assertNotIn("fakekey: should-be-skipped", lines)
+
+    def test_logical_lines_skip_list_item_block_scalar(self):
+        text = (
+            "script:\n"
+            "  - |\n"
+            "    set -euo pipefail\n"
+            "artifacts:\n"
+            "  reports:\n"
+            "    codequality: gl-code-quality-report.json\n"
+        )
+        lines = [ln.text for ln in vde._logical_lines(text)]
+        self.assertNotIn("set -euo pipefail", lines)
+        self.assertIn("codequality: gl-code-quality-report.json", lines)
+
+    def test_permissions_contents_read_finds_job_level(self):
+        lines = vde._permissions_contents_read_lines(VALID_GITHUB)
+        self.assertEqual(len(lines), 1)
+
+    def test_permissions_contents_read_ignores_comments(self):
+        text = VALID_GITHUB.replace(
+            "      contents: read\n",
+            "      # uses contents: read by default\n",
+        )
+        self.assertEqual(vde._permissions_contents_read_lines(text), [])
+
+    def test_has_codequality_report_true_for_valid(self):
+        self.assertTrue(vde._has_codequality_report(VALID_GITLAB))
+
+    def test_has_codequality_report_false_without_reports(self):
+        text = VALID_GITLAB.replace("    codequality: gl-code-quality-report.json\n", "")
+        self.assertFalse(vde._has_codequality_report(text))
 
 
 class TestStaleCommands(unittest.TestCase):
@@ -167,6 +264,11 @@ class TestFormatInventory(unittest.TestCase):
         self.assertEqual(failures[0].path, "README.md")
         self.assertIn("sarif", failures[0].message)
 
+    def test_missing_format_uses_line_one_not_zero(self):
+        files = [vde.File("README.md", md_with_formats(missing="sarif"))]
+        failures = vde.check_format_inventory(files)
+        self.assertEqual(failures[0].line, 1)
+
     def test_all_formats_present_passes(self):
         files = [
             vde.File("README.md", md_with_formats()),
@@ -214,10 +316,49 @@ class TestGitHubActionsExample(unittest.TestCase):
         self.assertEqual(vde.check_github_actions_example(VALID_GITHUB, "v0.330.0"), [])
         self.assertEqual(vde.check_github_actions_example(VALID_GITHUB, None), [])
 
+    def test_job_level_permissions_accepted(self):
+        # VALID_GITHUB declares permissions under the `audit` job.
+        lines = vde._permissions_contents_read_lines(VALID_GITHUB)
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(vde.check_github_actions_example(VALID_GITHUB, None), [])
+
+    def test_top_level_permissions_accepted(self):
+        text = VALID_GITHUB.replace(
+            "    permissions:\n      contents: read\n",
+            "permissions:\n  contents: read\n",
+        )
+        self.assertEqual(vde.check_github_actions_example(text, "v0.330.0"), [])
+
+    def test_contents_read_only_in_comment_fails_structurally(self):
+        # The legacy substring check passed here (comment carries the phrase);
+        # the structural check must fail because no permissions block has it.
+        text = VALID_GITHUB.replace(
+            "      contents: read\n",
+            "      # uses contents: read by default\n",
+        )
+        failures = vde.check_github_actions_example(text, None)
+        perms = [f for f in failures if "permissions.contents: read" in f.message]
+        self.assertEqual(len(perms), 1)
+        self.assertGreaterEqual(perms[0].line, 1)
+
+    def test_missing_permissions_block_fails(self):
+        text = VALID_GITHUB.replace("    permissions:\n      contents: read\n", "")
+        failures = vde.check_github_actions_example(text, None)
+        self.assertTrue(any("permissions.contents: read" in f.message for f in failures))
+
     def test_pull_requests_write_fails(self):
         text = VALID_GITHUB + "      pull-requests: write\n"
         failures = vde.check_github_actions_example(text, None)
         self.assertTrue(any("pull-requests: write" in f.message for f in failures))
+
+    def test_pull_requests_write_reports_actual_line(self):
+        appended = "      pull-requests: write\n"
+        text = VALID_GITHUB + appended
+        expected_line = VALID_GITHUB.count("\n") + 1
+        failures = vde.check_github_actions_example(text, None)
+        hit = [f for f in failures if "pull-requests: write" in f.message]
+        self.assertEqual(len(hit), 1)
+        self.assertEqual(hit[0].line, expected_line)
 
     def test_github_token_fails(self):
         text = VALID_GITHUB.replace(
@@ -242,24 +383,54 @@ class TestGitHubActionsExample(unittest.TestCase):
                 msg="expected failure for forbidden token %r" % token,
             )
 
+    def test_workflow_dispatch_reports_actual_line(self):
+        appended = "  workflow_dispatch:\n"
+        text = VALID_GITHUB + appended
+        expected_line = VALID_GITHUB.count("\n") + 1
+        failures = vde.check_github_actions_example(text, None)
+        hit = [f for f in failures if "workflow_dispatch" in f.message]
+        self.assertEqual(len(hit), 1)
+        self.assertEqual(hit[0].line, expected_line)
+
     def test_missing_required_token_fails(self):
-        text = VALID_GITHUB.replace(
-            'deltascope config lint --file deltascope.yaml --strict\n', ""
+        text = github_without(
+            "deltascope config lint --file deltascope.yaml --strict\n"
         )
         failures = vde.check_github_actions_example(text, None)
-        self.assertTrue(
-            any("config lint" in f.message for f in failures)
-        )
+        self.assertTrue(any("config lint" in f.message for f in failures))
+
+    def test_missing_required_token_reports_useful_line(self):
+        text = github_without("--format github-actions\n")
+        failures = vde.check_github_actions_example(text, None)
+        hit = [f for f in failures if "--format github-actions" in f.message]
+        self.assertEqual(len(hit), 1)
+        # Anchored to the run: or steps: line, never 0.
+        self.assertGreaterEqual(hit[0].line, 1)
 
     def test_stale_version_pin_fails(self):
         failures = vde.check_github_actions_example(VALID_GITHUB, "v0.340.0")
         self.assertTrue(any("v0.330.0" in f.message and "v0.340.0" in f.message
                             for f in failures))
 
+    def test_stale_version_pin_reports_actual_line(self):
+        failures = vde.check_github_actions_example(VALID_GITHUB, "v0.340.0")
+        hit = [f for f in failures if "DELTASCOPE_VERSION pin" in f.message]
+        self.assertEqual(len(hit), 1)
+        # Line of the DELTASCOPE_VERSION pin (line 10 in VALID_GITHUB).
+        self.assertGreaterEqual(hit[0].line, 1)
+
     def test_missing_version_pin_fails_when_version_set(self):
         text = VALID_GITHUB.replace("DELTASCOPE_VERSION: v0.330.0", "")
         failures = vde.check_github_actions_example(text, "v0.330.0")
         self.assertTrue(any("DELTASCOPE_VERSION" in f.message for f in failures))
+
+    def test_missing_version_pin_reports_useful_line(self):
+        text = VALID_GITHUB.replace("DELTASCOPE_VERSION: v0.330.0", "")
+        failures = vde.check_github_actions_example(text, "v0.330.0")
+        hit = [f for f in failures if "no DELTASCOPE_VERSION pin" in f.message]
+        self.assertEqual(len(hit), 1)
+        # Anchored to env:/steps:/jobs:, never 0.
+        self.assertGreaterEqual(hit[0].line, 1)
 
 
 class TestGitLabExample(unittest.TestCase):
@@ -271,6 +442,36 @@ class TestGitLabExample(unittest.TestCase):
         failures = vde.check_gitlab_example(text)
         self.assertTrue(any("gitlab-codequality" in f.message for f in failures))
 
+    def test_missing_codequality_format_reports_useful_line(self):
+        text = VALID_GITLAB.replace("--format gitlab-codequality", "--format json")
+        failures = vde.check_gitlab_example(text)
+        hit = [f for f in failures if "--format gitlab-codequality" in f.message]
+        self.assertEqual(len(hit), 1)
+        self.assertGreaterEqual(hit[0].line, 1)
+
+    def test_missing_report_filename_reports_useful_line(self):
+        text = VALID_GITLAB.replace("gl-code-quality-report.json", "report.json")
+        failures = vde.check_gitlab_example(text)
+        hit = [f for f in failures if "gl-code-quality-report.json" in f.message]
+        self.assertEqual(len(hit), 1)
+        self.assertGreaterEqual(hit[0].line, 1)
+
+    def test_missing_artifacts_reports_codequality_fails(self):
+        # Command + filename still present in the script line, but no artifacts block.
+        text = VALID_GITLAB.split("  artifacts:")[0]
+        failures = vde.check_gitlab_example(text)
+        hit = [f for f in failures if "artifacts.reports.codequality" in f.message]
+        self.assertEqual(len(hit), 1)
+        self.assertGreaterEqual(hit[0].line, 1)
+
+    def test_command_present_but_codequality_report_missing_fails(self):
+        # artifacts: and reports: kept, but the codequality: line is gone.
+        text = VALID_GITLAB.replace("    codequality: gl-code-quality-report.json\n", "")
+        failures = vde.check_gitlab_example(text)
+        hit = [f for f in failures if "artifacts.reports.codequality" in f.message]
+        self.assertEqual(len(hit), 1)
+        self.assertGreaterEqual(hit[0].line, 1)
+
     def test_github_summary_in_gitlab_fails(self):
         text = VALID_GITLAB + "# see also github-summary\n"
         failures = vde.check_gitlab_example(text)
@@ -280,6 +481,51 @@ class TestGitLabExample(unittest.TestCase):
         text = VALID_GITLAB + "# see also github-actions\n"
         failures = vde.check_gitlab_example(text)
         self.assertTrue(any("github-actions" in f.message for f in failures))
+
+
+class TestLineNumbersNeverZero(unittest.TestCase):
+    """Contract: no checker-produced finding reports line 0."""
+
+    def _cases(self):
+        return [
+            ("format_inventory_missing", lambda: vde.check_format_inventory(
+                [vde.File("README.md", md_with_formats(missing="sarif"))])),
+            ("github_missing_perms", lambda: vde.check_github_actions_example(
+                VALID_GITHUB.replace("      contents: read\n", ""), None)),
+            ("github_missing_fragment", lambda: vde.check_github_actions_example(
+                github_without("--format github-actions\n"), None)),
+            ("github_missing_pin", lambda: vde.check_github_actions_example(
+                VALID_GITHUB.replace("DELTASCOPE_VERSION: v0.330.0", ""), "v0.330.0")),
+            ("github_stale_pin", lambda: vde.check_github_actions_example(
+                VALID_GITHUB, "v0.340.0")),
+            ("gitlab_missing_format", lambda: vde.check_gitlab_example(
+                VALID_GITLAB.replace("--format gitlab-codequality", "--format json"))),
+            ("gitlab_missing_filename", lambda: vde.check_gitlab_example(
+                VALID_GITLAB.replace("gl-code-quality-report.json", "report.json"))),
+            ("gitlab_missing_artifact", lambda: vde.check_gitlab_example(
+                VALID_GITLAB.split("  artifacts:")[0])),
+        ]
+
+    def test_no_finding_uses_line_zero(self):
+        for name, thunk in self._cases():
+            with self.subTest(case=name):
+                failures = thunk()
+                self.assertTrue(failures, msg="%s produced no failures" % name)
+                for failure in failures:
+                    self.assertGreaterEqual(
+                        failure.line, 1,
+                        msg="%s produced line 0: %r" % (name, failure),
+                    )
+
+
+class TestFixtures(unittest.TestCase):
+    def test_github_fixture_passes(self):
+        text = (FIXTURES_DIR / "github-actions-valid.yml").read_text(encoding="utf-8")
+        self.assertEqual(vde.check_github_actions_example(text, "v0.330.0"), [])
+
+    def test_gitlab_fixture_passes(self):
+        text = (FIXTURES_DIR / "gitlab-ci-valid.yml").read_text(encoding="utf-8")
+        self.assertEqual(vde.check_gitlab_example(text), [])
 
 
 class TestRunChecksEndToEnd(unittest.TestCase):
@@ -307,6 +553,16 @@ class TestRunChecksEndToEnd(unittest.TestCase):
                 fh.write("deltascope rules show PG001\n")
             failures = vde.run_checks(root, "v0.330.0")
             self.assertTrue(any("rules explain" in f.message for f in failures))
+
+    def test_end_to_end_failures_never_use_line_zero(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write_clean_repo(root)
+            with open(os.path.join(root, "README.md"), "a") as fh:
+                fh.write("deltascope rules show PG001\n")
+            failures = vde.run_checks(root, "v0.330.0")
+            self.assertTrue(failures)
+            for failure in failures:
+                self.assertGreaterEqual(failure.line, 1)
 
 
 class TestMainContract(unittest.TestCase):
