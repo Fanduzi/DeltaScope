@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.340.0] - 2026-06-20
+
+### Added
+
+- Release-blocking docs drift guard (`scripts/verify_docs_examples.py`) for current public docs and CI examples, wired through `make docs-example-gates VERSION=vX.Y.Z` into `release-surface-gates`. Static and curated: it checks stale rule-inspection commands (`rules show`, `rules search`), audit output-format inventory, the GitHub Actions example shape plus the `DELTASCOPE_VERSION` pin, the GitLab example shape, and affirmative `severity field` wording, without executing snippets or calling external services.
+- `docs/examples/gitlab-ci.yml` now emits native `--format gitlab-codequality` output and exposes it through `artifacts:reports:codequality`, so findings render inline as Code Quality annotations in merge request diffs.
+- `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-19-v0.340.0-docs-drift-guard.md`.
+
+### Non-Goals
+
+- Not audit behavior changes.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not JSON, SARIF, GitHub Actions, or GitLab Code Quality renderer behavior changes.
+- Not a `severity` field.
+
 ## [v0.330.0] - 2026-06-18
 
 ### Added

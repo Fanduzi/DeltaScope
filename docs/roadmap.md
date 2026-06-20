@@ -4,7 +4,32 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.330.0 CI/PR Review UX
+## Latest Completed Milestone: v0.340.0 Docs Drift Guard
+
+**Goal:** add a release-blocking docs drift guard for current public docs and CI examples, wired through `make docs-example-gates VERSION=vX.Y.Z` into `release-surface-gates`. It catches stale rule-inspection commands, audit output-format inventory drift, unsafe or stale CI workflow examples, and example release pins. The guard is static and curated; it does not execute snippets, call external services, handle tokens, run Docker, or connect to databases. This is a repository release contract, not a user-facing CLI feature, and does not change audit behavior, the default policy, any rule, parser support, or any machine-readable output shape. Does not add a `severity` field.
+
+### Completed Scope
+
+- Static docs/examples drift checker: `scripts/verify_docs_examples.py` (Python stdlib only), with unit tests in `scripts/test_verify_docs_examples.py`.
+- Curated checks: stale `rules show` / `rules search` (with `rules explain` / `rules list --search` remediation hints); audit output-format inventory (`markdown`, `json`, `github-actions`, `github-summary`, `sarif`, `gitlab-codequality`); the GitHub Actions example shape plus the `DELTASCOPE_VERSION` pin; the GitLab example shape; and affirmative `severity field` wording with negative/external allow-lists.
+- `make docs-example-gates VERSION=vX.Y.Z` runs the checker, and `release-surface-gates` includes it. It is deliberately not part of `make test`.
+- `docs/examples/gitlab-ci.yml` fixed to emit native `--format gitlab-codequality` and expose it via `artifacts:reports:codequality`.
+- The checker executes no Markdown/YAML snippets and makes no network, GitHub API, npm, Homebrew, Docker, database, or token calls; it ignores `docs/decisions/**`, `docs/releases/**`, and `CHANGELOG.md`.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-19-v0.340.0-docs-drift-guard.md`.
+
+### Non-Goals
+
+- Not audit behavior changes.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not JSON, SARIF, GitHub Actions, or GitLab Code Quality renderer changes.
+- Not a `severity` field.
+
+## Previous Milestone: v0.330.0 CI/PR Review UX
 
 **Goal:** add a `--format github-summary` audit output for the GitHub Actions job summary, sharpen `--format github-actions` inline annotation wording, and refresh the shipped GitHub Actions workflow example to combine a `config lint --strict` gate, annotations, and a job summary with only `contents: read`. This is presentation and documentation only; it does not change audit behavior, the default policy, any rule, parser support, or any machine-readable output shape. Does not add a `severity` field.
 
