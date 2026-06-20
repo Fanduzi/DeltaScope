@@ -82,3 +82,9 @@ The AI agent will write the SQL to a temp file, run `deltascope audit`, and retu
 
 Generate or revise a product homepage from repository facts, with support for replication or innovation modes.
 See `./product-homepage/README.md` for the package overview and mode-based workflow.
+
+## release-readiness-and-debugging
+
+Run DeltaScope release readiness audits, release execution checks, post-release checkpoints, and failed-release diagnosis.
+
+Use this skill when preparing or verifying a DeltaScope release, checking GitHub Release assets, debugging release workflow failures, or validating npm/Homebrew publication state. The skill is a guardrail around the canonical `go-release` workflow; it does not replace `go-release`.
