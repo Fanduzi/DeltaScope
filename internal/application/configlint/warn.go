@@ -39,7 +39,8 @@ func deriveRuleWarnings(ruleID string, def policy.RulePolicy, raw rawRuleConfig)
 			RuleID: ruleID,
 			Field:  "enabled",
 			Message: fmt.Sprintf(
-				`rule %q is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF`,
+				`%s is OFF because "enabled" is omitted.
+This config replaces the whole rule policy; it does not merge with defaults.`,
 				ruleID,
 			),
 		})
@@ -53,8 +54,9 @@ func deriveRuleWarnings(ruleID string, def policy.RulePolicy, raw rawRuleConfig)
 			RuleID: ruleID,
 			Field:  "level",
 			Message: fmt.Sprintf(
-				`rule %q is mentioned without "level"; the rule policy is replaced, not partially merged, so omitted "level" becomes empty, replacing the default %q`,
-				ruleID, def.Level,
+				`%s has no effective level because "level" is omitted.
+This config replaces the whole rule policy; it does not merge with defaults.`,
+				ruleID,
 			),
 		})
 	}
@@ -68,7 +70,8 @@ func deriveRuleWarnings(ruleID string, def policy.RulePolicy, raw rawRuleConfig)
 				RuleID: ruleID,
 				Field:  "params",
 				Message: fmt.Sprintf(
-					`rule %q is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params`,
+					`%s removes default params because "params" is omitted.
+This config replaces the whole rule policy; it does not merge with defaults.`,
 					ruleID,
 				),
 			})
@@ -83,7 +86,8 @@ func deriveRuleWarnings(ruleID string, def policy.RulePolicy, raw rawRuleConfig)
 					RuleID: ruleID,
 					Field:  "params." + key,
 					Message: fmt.Sprintf(
-						`rule %q omits default params; the rule policy is replaced, not partially merged, so omitted "params.%s" removes the default value`,
+						`%s removes default "params.%s" because that key is omitted.
+This config replaces the whole rule policy; it does not merge with defaults.`,
 						ruleID, key,
 					),
 				})

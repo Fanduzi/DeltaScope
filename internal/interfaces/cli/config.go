@@ -60,7 +60,7 @@ func newConfigLintCmd(exitCode *int) *cobra.Command {
 			// No errors but replacement-hazard warnings. Warnings are advisory, so the
 			// default exit code stays 0; --strict promotes a warnings-only result to exit 2.
 			// The warning text goes to stdout so the output reads like a successful lint.
-			if _, err := fmt.Fprint(out, renderConfigLintWarnings(result.Warnings)); err != nil {
+			if _, err := fmt.Fprint(out, renderConfigLintWarnings(result.Warnings, filePath)); err != nil {
 				*exitCode = exitInternal
 				return err
 			}
@@ -80,14 +80,28 @@ func newConfigLintCmd(exitCode *int) *cobra.Command {
 // renderConfigLintWarnings renders the deterministic warning block for a config that lints
 // clean except for rule-level replacement hazards. configlint returns warnings already
 // ordered by rule_id then field (enabled, level, params.<key>), and each message already
-// carries the rule id, the field name, the "replaced, not partially merged" framing, and
-// the effective consequence. The text output never introduces a severity field.
-func renderConfigLintWarnings(warnings []configlint.Warning) string {
+// carries the rule id, the omitted field, the "replaces the whole rule policy; it does not
+// merge with defaults" framing, and the effective consequence. A message may span multiple
+// lines: the first line is the bullet and continuation lines indent two spaces. Each warning
+// is followed by an "Inspect effective rule status:" handoff pointing at
+// `deltascope config status <rule-id> --config <configPath>` so the user can confirm the
+// effective result. configPath is the --file path supplied to `config lint`. The text output
+// never introduces a severity field, and --strict prints this same text byte-for-byte.
+func renderConfigLintWarnings(warnings []configlint.Warning, configPath string) string {
 	var b strings.Builder
 	b.WriteString("Config OK with warnings\n\n")
 	b.WriteString("Warnings:\n")
 	for _, warning := range warnings {
-		fmt.Fprintf(&b, "- %s\n", warning.Message)
+		lines := strings.Split(warning.Message, "\n")
+		for i, line := range lines {
+			if i == 0 {
+				fmt.Fprintf(&b, "- %s\n", line)
+			} else {
+				fmt.Fprintf(&b, "  %s\n", line)
+			}
+		}
+		b.WriteString("  Inspect effective rule status:\n")
+		fmt.Fprintf(&b, "    deltascope config status %s --config %s\n", warning.RuleID, configPath)
 	}
 	return b.String()
 }

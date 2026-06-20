@@ -96,12 +96,18 @@ rules:
 		"Warnings:",
 		"dml.where.require",
 		"enabled",
-		"replaced, not partially merged",
-		"rule is OFF",
+		"is OFF",
+		"replaces the whole rule policy",
+		"does not merge with defaults",
+		"Inspect effective rule status:",
+		"deltascope config status dml.where.require --config " + path,
 	} {
 		if !strings.Contains(stdout, want) {
 			t.Fatalf("expected warnings output to contain %q, got:\n%s", want, stdout)
 		}
+	}
+	if strings.Contains(stdout, "Next:") {
+		t.Fatalf("warnings output must not use the 'Next:' handoff, got:\n%s", stdout)
 	}
 	if strings.Contains(stdout, "severity") {
 		t.Fatalf("warnings output must not introduce a severity field, got:\n%s", stdout)
@@ -178,9 +184,9 @@ rules:
 	}
 
 	// Each phrase appears exactly once; assert strictly increasing positions.
-	enabledAt := strings.Index(stdout, "rule is OFF")
-	levelAt := strings.Index(stdout, `is mentioned without "level"`)
-	paramsAt := strings.Index(stdout, "removes the default value")
+	enabledAt := strings.Index(stdout, "is OFF")
+	levelAt := strings.Index(stdout, "has no effective level")
+	paramsAt := strings.Index(stdout, "removes default")
 	for _, pos := range []int{enabledAt, levelAt, paramsAt} {
 		if pos < 0 {
 			t.Fatalf("missing an expected warning in output:\n%s", stdout)

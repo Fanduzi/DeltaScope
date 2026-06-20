@@ -148,8 +148,8 @@ rules:
 }
 
 // assertWarning checks the stable substrings every lint warning must carry:
-// the replaced-not-merged framing, the omitted field name, and an effective
-// consequence keyword supplied by the caller.
+// both halves of the replacement framing, the omitted field name, and an
+// effective consequence keyword supplied by the caller.
 func assertWarning(t *testing.T, w Warning, ruleID, field, consequence string) {
 	t.Helper()
 	if w.RuleID != ruleID {
@@ -158,8 +158,11 @@ func assertWarning(t *testing.T, w Warning, ruleID, field, consequence string) {
 	if w.Field != field {
 		t.Errorf("field = %q, want %q", w.Field, field)
 	}
-	if !strings.Contains(w.Message, "replaced, not partially merged") {
-		t.Errorf("message %q missing framing", w.Message)
+	if !strings.Contains(w.Message, "replaces the whole rule policy") {
+		t.Errorf("message %q missing 'replaces the whole rule policy'", w.Message)
+	}
+	if !strings.Contains(w.Message, "does not merge with defaults") {
+		t.Errorf("message %q missing 'does not merge with defaults'", w.Message)
 	}
 	if !strings.Contains(w.Message, field) {
 		t.Errorf("message %q missing field name %q", w.Message, field)
@@ -186,8 +189,8 @@ rules:
 	if len(res.Warnings) != 2 {
 		t.Fatalf("expected 2 warnings (enabled, params), got %d: %v", len(res.Warnings), res.Warnings)
 	}
-	assertWarning(t, res.Warnings[0], "dml.where.require", "enabled", "OFF")
-	assertWarning(t, res.Warnings[1], "dml.where.require", "params", "removing the default params")
+	assertWarning(t, res.Warnings[0], "dml.where.require", "enabled", "is OFF")
+	assertWarning(t, res.Warnings[1], "dml.where.require", "params", "removes default params")
 }
 
 // TestInspect_OmittedLevelWarns covers case 2: enabled and params are present,
@@ -207,9 +210,9 @@ rules:
 	if len(res.Warnings) != 1 {
 		t.Fatalf("expected 1 warning (level), got %d: %v", len(res.Warnings), res.Warnings)
 	}
-	assertWarning(t, res.Warnings[0], "dml.where.require", "level", "empty")
-	if !strings.Contains(res.Warnings[0].Message, "blocker") {
-		t.Fatalf("expected level warning to name default blocker, got %q", res.Warnings[0].Message)
+	assertWarning(t, res.Warnings[0], "dml.where.require", "level", "no effective level")
+	if !strings.Contains(res.Warnings[0].Message, `"level" is omitted`) {
+		t.Fatalf("expected level warning to state the omitted field, got %q", res.Warnings[0].Message)
 	}
 }
 
@@ -229,7 +232,7 @@ rules:
 	if len(res.Warnings) != 1 {
 		t.Fatalf("expected 1 warning (params), got %d: %v", len(res.Warnings), res.Warnings)
 	}
-	assertWarning(t, res.Warnings[0], "dml.where.require", "params", "removing the default params")
+	assertWarning(t, res.Warnings[0], "dml.where.require", "params", "removes default params")
 }
 
 // TestInspect_PartialParamsWarnsOmittedKeys covers case 4: pattern.require has
@@ -259,7 +262,137 @@ rules:
 			t.Fatalf("warnings[%d].RuleID = %q", i, res.Warnings[i].RuleID)
 		}
 	}
-	assertWarning(t, res.Warnings[2], "ddl.table.name.pattern.require", "params.pattern", "removes the default value")
+	assertWarning(t, res.Warnings[2], "ddl.table.name.pattern.require", "params.pattern", "removes default")
+}
+
+// TestInspect_WarningCopyLocksReplacementHazardPhrasing locks the human-readable wording
+// for all four replacement-hazard cases: each warning names the omitted field with an
+// "is omitted" token, states the effective consequence, and carries both the "replaces the
+// whole rule policy" and "does not merge with defaults" framing. No warning mentions severity.
+func TestInspect_WarningCopyLocksReplacementHazardPhrasing(t *testing.T) {
+	t.Run("omitted enabled", func(t *testing.T) {
+		path := writeConfig(t, `
+rules:
+  dml.where.require:
+    level: blocker
+    params:
+      required: true
+`)
+		res, err := Inspect(t.Context(), Request{Path: path})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(res.Warnings) != 1 || res.Warnings[0].Field != "enabled" {
+			t.Fatalf("expected one enabled warning, got %v", res.Warnings)
+		}
+		msg := res.Warnings[0].Message
+		for _, want := range []string{
+			"dml.where.require",
+			"is OFF",
+			`"enabled" is omitted`,
+			"replaces the whole rule policy",
+			"does not merge with defaults",
+		} {
+			if !strings.Contains(msg, want) {
+				t.Errorf("enabled warning %q missing %q", msg, want)
+			}
+		}
+	})
+
+	t.Run("omitted level", func(t *testing.T) {
+		path := writeConfig(t, `
+rules:
+  dml.where.require:
+    enabled: true
+    params:
+      required: true
+`)
+		res, err := Inspect(t.Context(), Request{Path: path})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(res.Warnings) != 1 || res.Warnings[0].Field != "level" {
+			t.Fatalf("expected one level warning, got %v", res.Warnings)
+		}
+		msg := res.Warnings[0].Message
+		for _, want := range []string{
+			"no effective level",
+			`"level" is omitted`,
+			"replaces the whole rule policy",
+			"does not merge with defaults",
+		} {
+			if !strings.Contains(msg, want) {
+				t.Errorf("level warning %q missing %q", msg, want)
+			}
+		}
+	})
+
+	t.Run("omitted whole params", func(t *testing.T) {
+		path := writeConfig(t, `
+rules:
+  dml.where.require:
+    enabled: true
+    level: blocker
+`)
+		res, err := Inspect(t.Context(), Request{Path: path})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(res.Warnings) != 1 || res.Warnings[0].Field != "params" {
+			t.Fatalf("expected one params warning, got %v", res.Warnings)
+		}
+		msg := res.Warnings[0].Message
+		for _, want := range []string{
+			"removes default params",
+			`"params" is omitted`,
+			"replaces the whole rule policy",
+			"does not merge with defaults",
+		} {
+			if !strings.Contains(msg, want) {
+				t.Errorf("params warning %q missing %q", msg, want)
+			}
+		}
+	})
+
+	t.Run("omitted params key", func(t *testing.T) {
+		// ddl.table.name.pattern.require defaults to params {required, pattern}; supplying
+		// only required omits pattern. enabled and level are supplied, so the only warning is
+		// params.pattern.
+		path := writeConfig(t, `
+rules:
+  ddl.table.name.pattern.require:
+    enabled: true
+    level: blocker
+    params:
+      required: false
+`)
+		res, err := Inspect(t.Context(), Request{Path: path})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		var msg string
+		for _, w := range res.Warnings {
+			if w.Field == "params.pattern" {
+				msg = w.Message
+			}
+		}
+		if msg == "" {
+			t.Fatalf("expected a params.pattern warning, got %v", res.Warnings)
+		}
+		for _, want := range []string{
+			"removes default",
+			`"params.pattern"`,
+			"replaces the whole rule policy",
+			"does not merge with defaults",
+		} {
+			if !strings.Contains(msg, want) {
+				t.Errorf("params.pattern warning %q missing %q", msg, want)
+			}
+		}
+		if strings.Contains(msg, "severity") {
+			t.Errorf("warning must not introduce severity: %q", msg)
+		}
+	})
 }
 
 // TestInspect_WarningsOrderedByRuleIDThenField verifies determinism across
