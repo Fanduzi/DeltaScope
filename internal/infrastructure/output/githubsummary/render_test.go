@@ -6,6 +6,7 @@
 package githubsummary
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 	"testing"
@@ -229,7 +230,7 @@ func TestRenderDeterministic(t *testing.T) {
 		if err != nil {
 			t.Fatalf("render run %d: %v", run, err)
 		}
-		if string(got) != string(first) {
+		if !bytes.Equal(got, first) {
 			t.Fatalf("run %d: non-deterministic output\nfirst:\n%s\ngot:\n%s", run, first, got)
 		}
 	}
