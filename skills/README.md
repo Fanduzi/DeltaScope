@@ -88,3 +88,9 @@ See `./product-homepage/README.md` for the package overview and mode-based workf
 Run DeltaScope release readiness audits, release execution checks, post-release checkpoints, and failed-release diagnosis.
 
 Use this skill when preparing or verifying a DeltaScope release, checking GitHub Release assets, debugging release workflow failures, or validating npm/Homebrew publication state. The skill is a guardrail around the canonical `go-release` workflow; it does not replace `go-release`.
+
+## milestone-grill
+
+Challenge proposed milestones before naming a version or roadmap theme.
+
+Use this skill when deciding what to do next after a release, evaluating a proposed milestone, or checking whether an idea is real product work versus a duplicate, patch, audit, or low-value wrapper around existing capability.
