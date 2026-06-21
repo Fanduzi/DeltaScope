@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	rulecatalog "github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
 	"github.com/spf13/cobra"
 )
@@ -407,7 +409,82 @@ func renderRulesExplainText(entry rulecatalog.Entry) string {
 		}
 	}
 
-	fmt.Fprintf(&b, "\nConfig Example:\n  %s\n", strings.ReplaceAll(entry.ConfigExample, "\n", "\n  "))
+	// Default policy block: the authoritative baseline comes from policy.Default(),
+	// not duplicated catalog values, so it tracks the engine's real defaults.
+	rp := resolveDefaultRulePolicy(entry)
+	b.WriteString("\nDefault policy:\n")
+	b.WriteString(renderRulePolicyYAML(entry.RuleID, rp))
+
+	// Safe override example: a complete rule policy override (enabled + level +
+	// params) so omitting a field can never silently turn the rule OFF. The level
+	// is downgraded to warning when the default is not already warning; otherwise
+	// the default level is kept. Either way the full policy shape is shown.
+	override := rp
+	if override.Level != rule.LevelWarning {
+		override.Level = rule.LevelWarning
+	}
+	b.WriteString("\nSafe override example:\n")
+	b.WriteString(renderRulePolicyYAML(entry.RuleID, override))
+
+	// Handoff to config status for the effective result under a real config file.
+	fmt.Fprintf(&b, "\nInspect effective rule status:\n  deltascope config status %s --config deltascope.yaml\n", entry.RuleID)
 
 	return b.String()
+}
+
+// resolveDefaultRulePolicy returns the shipped default policy for one rule from
+// policy.Default(). catalog entries are themselves derived from policy.Default,
+// so the lookup always succeeds; the fallback guards an unreachable drift case.
+func resolveDefaultRulePolicy(entry rulecatalog.Entry) policy.RulePolicy {
+	if rp, ok := policy.Default().Rules[entry.RuleID]; ok {
+		return rp
+	}
+	return policy.RulePolicy{
+		Enabled: entry.DefaultEnabled,
+		Level:   entry.DefaultLevel,
+		Params:  entry.DefaultParams,
+	}
+}
+
+// renderRulePolicyYAML renders a complete rule policy as an indented YAML
+// snippet (rules.<id>.{enabled,level,params}). It mirrors the catalog's config
+// example rendering so explain output stays consistent with config lint/status.
+func renderRulePolicyYAML(ruleID string, rp policy.RulePolicy) string {
+	var b strings.Builder
+	b.WriteString("  rules:\n")
+	fmt.Fprintf(&b, "    %s:\n", ruleID)
+	fmt.Fprintf(&b, "      enabled: %t\n", rp.Enabled)
+	fmt.Fprintf(&b, "      level: %s\n", string(rp.Level))
+	if len(rp.Params) == 0 {
+		b.WriteString("      params: {}\n")
+		return b.String()
+	}
+	b.WriteString("      params:\n")
+	keys := make([]string, 0, len(rp.Params))
+	for key := range rp.Params {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		fmt.Fprintf(&b, "        %s: %s\n", key, formatYAMLScalar(rp.Params[key]))
+	}
+	return b.String()
+}
+
+// formatYAMLScalar renders one policy param value as a YAML scalar. It is a
+// local mirror of the catalog helper; per the v0.360.0 decision record a shared
+// helper is deferred until duplication is shown.
+func formatYAMLScalar(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return typed
+	case []string:
+		quoted := make([]string, 0, len(typed))
+		for _, item := range typed {
+			quoted = append(quoted, fmt.Sprintf("%q", item))
+		}
+		return fmt.Sprintf("[%s]", strings.Join(quoted, ", "))
+	default:
+		return fmt.Sprintf("%v", typed)
+	}
 }

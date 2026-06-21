@@ -1185,7 +1185,7 @@ func TestRulesExplainPrintsDetailSections(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	if !strings.Contains(output, "Trigger Example") || !strings.Contains(output, "Config Example") || !strings.Contains(output, "Suggestion") {
+	if !strings.Contains(output, "Trigger Example") || !strings.Contains(output, "Default policy") || !strings.Contains(output, "Safe override example") || !strings.Contains(output, "Inspect effective rule status") || !strings.Contains(output, "Suggestion") {
 		t.Fatalf("expected detailed rule sections, got %q", output)
 	}
 }

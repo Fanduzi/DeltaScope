@@ -222,11 +222,67 @@ func TestRulesExplain_KnownRuleText(t *testing.T) {
 		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr)
 	}
 
-	// Text output should include key fields.
-	for _, field := range []string{"dml.where.require", "Level:", "Config Key:", "Category:", "Summary:"} {
+	// Text output should include key fields and the new policy/override blocks.
+	for _, field := range []string{
+		"dml.where.require", "Level:", "Config Key:", "Category:", "Summary:",
+		"Default policy:", "Safe override example:", "Inspect effective rule status:",
+	} {
 		if !strings.Contains(stdout, field) {
 			t.Errorf("text output should contain %q", field)
 		}
+	}
+}
+
+// --- Test 11b: rules explain default policy + safe override content ---
+
+func TestRulesExplain_DefaultPolicyAndSafeOverride(t *testing.T) {
+	code, stdout, stderr := runRulesCLI(t, []string{"rules", "explain", "dml.where.require"})
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr)
+	}
+
+	// Default policy block reflects policy.Default(): enabled, default level,
+	// and default params, all rendered as a copyable rules.<id> YAML snippet.
+	if !strings.Contains(stdout, "Default policy:\n") {
+		t.Errorf("missing Default policy: block")
+	}
+	for _, want := range []string{
+		"      enabled: true\n",
+		"      level: blocker\n",
+		"        required: true\n",
+	} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("default policy block should contain %q", want)
+		}
+	}
+
+	// Safe override example is a FULL rule policy override: it keeps default
+	// enabled and params while downgrading level, proving the complete shape that
+	// avoids the partial-override footgun. It must not be a level-only snippet.
+	overrideStart := strings.Index(stdout, "Safe override example:")
+	if overrideStart < 0 {
+		t.Fatal("missing Safe override example: block")
+	}
+	handoffStart := strings.Index(stdout, "Inspect effective rule status:")
+	if handoffStart < 0 || handoffStart < overrideStart {
+		t.Fatal("expected Inspect effective rule status: after Safe override example:")
+	}
+	override := stdout[overrideStart:handoffStart]
+	for _, want := range []string{"enabled: true", "params:", "required: true", "level: warning"} {
+		if !strings.Contains(override, want) {
+			t.Errorf("safe override should contain %q; block:\n%s", want, override)
+		}
+	}
+
+	// Handoff command points at config status with a config file path.
+	wantCmd := "Inspect effective rule status:\n  deltascope config status dml.where.require --config deltascope.yaml"
+	if !strings.Contains(stdout, wantCmd) {
+		t.Errorf("expected handoff command block:\n%s", wantCmd)
+	}
+
+	// The wizard-style Next: label is never used.
+	if strings.Contains(stdout, "Next:") {
+		t.Errorf("text output must not use Next: label")
 	}
 }
 
@@ -299,5 +355,26 @@ func TestRulesExplainJSON_NoSeverity(t *testing.T) {
 
 	if strings.Contains(stdout, `"severity"`) {
 		t.Error("JSON output must not contain quoted severity key")
+	}
+}
+
+// --- Test 16: rules explain JSON stays free of text-only labels ---
+
+func TestRulesExplainJSON_NoTextOnlyLabels(t *testing.T) {
+	code, stdout, stderr := runRulesCLI(t, []string{"rules", "explain", "dml.where.require", "--format", "json"})
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr)
+	}
+
+	// The new guidance blocks are text-only; JSON must stay on its frozen schema.
+	for _, banned := range []string{
+		"Default policy:",
+		"Safe override example:",
+		"Inspect effective rule status:",
+		"Next:",
+	} {
+		if strings.Contains(stdout, banned) {
+			t.Errorf("JSON output must not contain text-only label %q", banned)
+		}
 	}
 }
