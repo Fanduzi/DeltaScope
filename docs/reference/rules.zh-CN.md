@@ -177,13 +177,24 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
 
 JSON 输出示例：

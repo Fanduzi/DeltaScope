@@ -938,14 +938,31 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
+
+The `Default policy:` block is the rule's authoritative baseline from the engine. The `Safe override example:`
+block is a complete rule policy (it keeps `enabled` and `params`, only changing `level`) — copy it verbatim to
+change the level without disabling the rule. `Inspect effective rule status:` hands off to
+`config status` so you can confirm what your own config file actually does. `Default Params:` is the compact
+params-only view. `rules explain --format json` is unchanged and still carries the `config_example` field.
 
 Example JSON output (abbreviated):
 
@@ -1028,13 +1045,22 @@ rules:
 Config OK with warnings
 
 Warnings:
-- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
-- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
+- dml.where.require is OFF because "enabled" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
+- dml.where.require removes default params because "params" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
 ```
 
-Warnings are advisory. Without `--strict`, the command still exits 0 after printing them. With
-`--strict`, the same text is printed and the command exits 2. To confirm the effective state a
-warned rule lands in, follow up with `config status` (see [config status](#config-status)).
+Each warning states the field that was omitted, the consequence, and the `replaces the whole rule policy;
+does not merge with defaults` framing, followed by an `Inspect effective rule status:` line pointing at
+`config status` with the same file path you passed to `--file`. Warnings are advisory. Without `--strict`,
+the command still exits 0 after printing them. With `--strict`, the same text is printed and the command
+exits 2. To confirm the effective state a warned rule lands in, run the `config status` command the warning
+hands you (see [config status](#config-status)).
 
 On a validation error the message is printed and the command exits 2. Errors take precedence over
 warnings, so a file with both an error and a hazard reports only the error:

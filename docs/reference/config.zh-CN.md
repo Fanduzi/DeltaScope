@@ -58,13 +58,20 @@ deltascope config show-default
 Config OK
 ```
 
-当 mention 的规则省略了字段时，`config lint` 也会给出警告，因为规则级替换会把省略的 `enabled` 变成 `false`（见 [Rule-Level Replacement Semantics](#rule-level-replacement-semantics)）。默认情况下警告仅供参考（退出码 0）；加 `--strict` 则以退出码 2 失败：
+当 mention 的规则省略了字段时，`config lint` 也会给出警告，因为规则级替换会把省略的 `enabled` 变成 `false`（见 [Rule-Level Replacement Semantics](#rule-level-replacement-semantics)）。默认情况下警告仅供参考（退出码 0）；加 `--strict` 则以退出码 2 失败。对于下文那种部分覆盖（`level: warning`，省略了 `enabled` 和 `params`），`config lint` 会按省略的字段各打印一条警告，每条都把后续动作交给 `config status`：
 
 ```text
 Config OK with warnings
 
 Warnings:
-- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+- dml.where.require is OFF because "enabled" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
+- dml.where.require removes default params because "params" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
 ```
 
 **`config lint` 错误（未知 rule ID）——错误优先于警告：**
@@ -152,6 +159,14 @@ rules:
     level: warning
     params:
       required: true
+```
+
+完整字段集不必死记。`rules explain <rule-id>` 会打印一段 `Safe override example:`，它取自规则的真实默认值——直接照抄，再调整 level 即可。编辑规则覆盖时推荐的闭环：
+
+```bash
+deltascope config lint --file deltascope.yaml                         # 捕获替换风险
+deltascope rules explain dml.where.require                            # 复制一份安全的完整覆盖
+deltascope config status dml.where.require --config deltascope.yaml   # 确认最终有效状态
 ```
 
 加载器是否应改为采用局部合并语义（partial merge）是一个更大、独立的决策，不在本版本范围内。在此之前，请把被 mention 的规则视为一次完整替换（rule-level replacement，不是局部合并）。

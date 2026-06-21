@@ -117,13 +117,24 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
 
 这为智能体提供了更完整的修复上下文：规则名称、默认级别、是否启用、适用语句类型、是否依赖元数据、默认参数、触发/合法示例以及 remediation 指引。智能体可据此向用户解释问题，或自行修正生成的 SQL。

@@ -2,6 +2,16 @@
 
 Use the built-in discovery commands to understand what DeltaScope will enforce before running a large audit. These commands require no database connection and work entirely from the compiled rule registry and your policy file.
 
+The recommended loop when you are about to change a rule override:
+
+1. **Find the rule** — `deltascope rules list` (with `--kind`, `--level`, `--dialect`, or `--search`).
+2. **Understand it** — `deltascope rules explain <rule-id>` for the default policy and a copyable
+   `Safe override example:`.
+3. **Lint your config** — `deltascope config lint --file deltascope.yaml` catches rule-level replacement
+   hazards before you deploy.
+4. **Confirm the effective result** — `deltascope config status <rule-id> --config deltascope.yaml` shows
+   whether the rule is ON or OFF under your file.
+
 ## Discovering Rules
 
 ### List all rules
@@ -88,13 +98,24 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
 
 A DDL rule with a numeric parameter:
@@ -109,13 +130,24 @@ Output (tail):
 Default Params:
   limit: 64
 
-Config Example:
+Default policy:
   rules:
     ddl.table.name.max_length:
       enabled: true
       level: blocker
       params:
         limit: 64
+
+Safe override example:
+  rules:
+    ddl.table.name.max_length:
+      enabled: true
+      level: warning
+      params:
+        limit: 64
+
+Inspect effective rule status:
+  deltascope config status ddl.table.name.max_length --config deltascope.yaml
 ```
 
 `rules explain` reads only the shipped catalog — it does not look at your config. To see what your
@@ -181,8 +213,14 @@ rules:
 Config OK with warnings
 
 Warnings:
-- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
-- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
+- dml.where.require is OFF because "enabled" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
+- dml.where.require removes default params because "params" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
 ```
 
 Add `--strict` to fail (exit 2) when warnings are present, which is what you want in CI:

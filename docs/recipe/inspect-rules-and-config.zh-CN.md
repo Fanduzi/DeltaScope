@@ -2,6 +2,13 @@
 
 在运行大批量审计前，使用内置的发现命令了解 DeltaScope 将执行哪些规则。这些命令无需数据库连接，完全基于编译好的规则注册表和策略文件运行。
 
+当你准备修改某条规则的覆盖时，推荐的闭环：
+
+1. **找到规则**——`deltascope rules list`（可配合 `--kind`、`--level`、`--dialect` 或 `--search`）。
+2. **读懂它**——`deltascope rules explain <rule-id>`，查看默认策略与可直接照抄的 `Safe override example:`。
+3. **校验配置**——`deltascope config lint --file deltascope.yaml`，在部署前捕获规则级替换风险。
+4. **确认有效结果**——`deltascope config status <rule-id> --config deltascope.yaml`，查看规则在你的文件下是 ON 还是 OFF。
+
 ## 发现规则
 
 ### 列出所有规则
@@ -86,13 +93,24 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
 
 带数值参数的 DDL 规则示例：
@@ -107,13 +125,24 @@ deltascope rules explain ddl.table.name.max_length
 Default Params:
   limit: 64
 
-Config Example:
+Default policy:
   rules:
     ddl.table.name.max_length:
       enabled: true
       level: blocker
       params:
         limit: 64
+
+Safe override example:
+  rules:
+    ddl.table.name.max_length:
+      enabled: true
+      level: warning
+      params:
+        limit: 64
+
+Inspect effective rule status:
+  deltascope config status ddl.table.name.max_length --config deltascope.yaml
 ```
 
 `rules explain` 只读取 shipped catalog，不看你的配置。要查看配置让规则做什么，用 `config status <rule-id>`（见下文 [校验配置文件](#校验配置文件)）。
@@ -174,8 +203,14 @@ rules:
 Config OK with warnings
 
 Warnings:
-- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
-- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
+- dml.where.require is OFF because "enabled" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
+- dml.where.require removes default params because "params" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
 ```
 
 加 `--strict` 后，出现警告即以退出码 2 失败，这正是 CI 中想要的行为：

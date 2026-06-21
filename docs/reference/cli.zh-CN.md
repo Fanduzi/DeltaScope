@@ -888,14 +888,27 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
+
+`Default policy:` 是引擎给出的权威默认策略。`Safe override example:` 是一条完整的 rule policy（保留 `enabled` 与 `params`，只改 `level`）——直接照抄即可在不关闭规则的前提下调整 level。`Inspect effective rule status:` 把你交给 `config status`，用于确认你自己的配置文件到底让规则做什么。`Default Params:` 是只看参数的精简视图。`rules explain --format json` 输出不变，仍带有 `config_example` 字段。
 
 JSON 输出示例（节略）：
 
@@ -974,11 +987,17 @@ rules:
 Config OK with warnings
 
 Warnings:
-- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
-- rule "dml.where.require" is mentioned without "params"; the rule policy is replaced, not partially merged, so omitted "params" become empty, removing the default params
+- dml.where.require is OFF because "enabled" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
+- dml.where.require removes default params because "params" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
 ```
 
-警告仅供参考。不带 `--strict` 时，命令打印警告后仍以退出码 0 退出；带 `--strict` 时，输出文本相同，但以退出码 2 退出。想确认被警告的规则最终落在什么有效状态，接着用 `config status` 查看（见 [config status](#config-status)）。
+每条警告会写明被省略的字段、由此带来的后果，以及“replaces the whole rule policy; does not merge with defaults”这一说明，随后跟一行 `Inspect effective rule status:`，指向 `config status`，并把传给 `--file` 的文件路径原样带上。警告仅供参考。不带 `--strict` 时，命令打印警告后仍以退出码 0 退出；带 `--strict` 时，输出文本相同，但以退出码 2 退出。想确认被警告的规则最终落在什么有效状态，直接运行警告给出的 `config status` 命令（见 [config status](#config-status)）。
 
 校验错误时，错误信息会被打印，命令以退出码 2 退出。错误优先于警告：当文件同时存在错误和替换风险时，只会报告错误：
 

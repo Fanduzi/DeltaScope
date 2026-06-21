@@ -55,13 +55,22 @@ Config OK
 
 `config lint` also warns when a mentioned rule omits fields, because rule-level replacement turns
 omitted `enabled` into `false` (see [Rule-Level Replacement Semantics](#rule-level-replacement-semantics)).
-Warnings are advisory by default (exit 0); add `--strict` to fail with exit 2:
+Warnings are advisory by default (exit 0); add `--strict` to fail with exit 2. For the partial override
+shown below (`level: warning` with `enabled` and `params` omitted), `config lint` prints one warning per
+omitted field, each handing off to `config status`:
 
 ```
 Config OK with warnings
 
 Warnings:
-- rule "dml.where.require" is mentioned without "enabled"; the rule policy is replaced, not partially merged, so omitted "enabled" becomes false and the rule is OFF
+- dml.where.require is OFF because "enabled" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
+- dml.where.require removes default params because "params" is omitted.
+  This config replaces the whole rule policy; it does not merge with defaults.
+  Inspect effective rule status:
+    deltascope config status dml.where.require --config ./deltascope.yaml
 ```
 
 **`config lint` error (unknown rule ID) — errors take precedence over warnings:**
@@ -151,6 +160,16 @@ rules:
     level: warning
     params:
       required: true
+```
+
+You do not have to remember the full field set by hand. `rules explain <rule-id>` prints a
+`Safe override example:` block built from the rule's real defaults — copy it and adjust the level.
+The recommended loop when editing rule overrides:
+
+```bash
+deltascope config lint --file deltascope.yaml                      # catch the hazard
+deltascope rules explain dml.where.require                         # copy a safe full override
+deltascope config status dml.where.require --config deltascope.yaml   # confirm the effective result
 ```
 
 Whether the loader should adopt partial-merge semantics instead is a separate, larger decision and

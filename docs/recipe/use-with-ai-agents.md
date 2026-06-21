@@ -117,16 +117,27 @@ Valid Example:
 Default Params:
   required: true
 
-Config Example:
+Default policy:
   rules:
     dml.where.require:
       enabled: true
       level: blocker
       params:
         required: true
+
+Safe override example:
+  rules:
+    dml.where.require:
+      enabled: true
+      level: warning
+      params:
+        required: true
+
+Inspect effective rule status:
+  deltascope config status dml.where.require --config deltascope.yaml
 ```
 
-This gives the agent stable rule metadata in one response: rule ID, defaults, supported statement kinds, trigger examples, config knobs, and remediation guidance.
+This gives the agent stable rule metadata in one response: rule ID, defaults, supported statement kinds, trigger examples, a copyable safe override, and remediation guidance.
 
 ## Suggested Agent Workflow
 
