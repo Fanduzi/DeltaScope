@@ -6,6 +6,30 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.360.0] - 2026-06-21
+
+### Added
+
+- `deltascope config lint --file <path>` replacement-hazard warnings now render as a direct multi-line block: each warning names the omitted-field consequence (`enabled` omitted → rule OFF, `level` omitted → no effective level, `params` omitted → default params removed, `params.<key>` omitted → that default key removed), states the framing `This config replaces the whole rule policy; it does not merge with defaults.`, and ends with `Inspect effective rule status:` pointing at `deltascope config status <rule-id> --config <file path>`. Warning ordering stays deterministic.
+- `deltascope rules explain <rule-id>` text output gains three blocks: a `Default policy:` block built from `policy.Default()`, a `Safe override example:` block that keeps the default `enabled` and `params` while changing `level`, and an `Inspect effective rule status:` handoff pointing at `config status`. The previous `Config Example:` block was byte-identical to the new `Default policy:` block and was removed; `Default Params:` is retained.
+- Public docs (English and Chinese) now describe the `config lint → rules explain → config status` workflow, matching the new text contracts.
+- `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-20-v0.360.0-config-rule-explain-ux.md`.
+
+### Non-Goals
+
+- Not `LoadPolicy` behavior changes.
+- Not partial-merge semantics for rule policy.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not JSON, SARIF, GitHub Actions, or GitLab Code Quality renderer behavior changes.
+- Not a config auto-fix command.
+- Not CLI Chinese / i18n output; Chinese guidance is docs only.
+- Not a `severity` field.
+
 ## [v0.340.0] - 2026-06-20
 
 ### Added

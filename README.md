@@ -39,8 +39,8 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh 
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.340.0/install.sh | \
-  DELTASCOPE_VERSION=v0.340.0 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.360.0/install.sh | \
+  DELTASCOPE_VERSION=v0.360.0 sh
 ```
 
 ### Dialects & Release Archives

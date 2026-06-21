@@ -4,7 +4,34 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.340.0 Docs Drift Guard
+## Latest Completed Milestone: v0.360.0 Config + Rule Explain UX
+
+**Goal:** sharpen the human-readable handoff between `config lint`, `rules explain`, and `config status` so a rule-level partial override surfaces a direct path to the effective rule status and a safe full-override example. Guidance text only; it does not change audit behavior, the default policy, any rule, parser support, or any machine-readable output shape. Does not add a `severity` field.
+
+### Completed Scope
+
+- `config lint` replacement-hazard warnings render as a direct multi-line block: each warning names the omitted-field consequence (`enabled` omitted → rule OFF, `level` omitted → no effective level, `params` omitted → default params removed, `params.<key>` omitted → that default key removed), states the framing `This config replaces the whole rule policy; it does not merge with defaults.`, and ends with `Inspect effective rule status:` pointing at `deltascope config status <rule-id> --config <file path>`.
+- `rules explain` text output gains a `Default policy:` block built from `policy.Default()`, a `Safe override example:` block that keeps the default `enabled` and `params` while changing `level`, and an `Inspect effective rule status:` handoff. The previous `Config Example:` block was byte-identical to the new `Default policy:` block and was removed; `Default Params:` is retained.
+- Public docs (English and Chinese) describe the `config lint → rules explain → config status` workflow, matching the new text contracts.
+- JSON output, exit codes, and warning ordering are unchanged. `config lint --strict` keeps byte-identical stdout for warning-only results and only changes the exit code to `2`.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-20-v0.360.0-config-rule-explain-ux.md`.
+
+### Non-Goals
+
+- Not `LoadPolicy` behavior changes.
+- Not partial-merge semantics for rule policy.
+- Not default policy or rule changes.
+- Not parser support changes.
+- Not new audit rules.
+- Not finding JSON shape changes.
+- Not SDK/HTTP/MCP response shape changes.
+- Not JSON, SARIF, GitHub Actions, or GitLab Code Quality renderer changes.
+- Not a config auto-fix command.
+- Not CLI Chinese / i18n output; Chinese guidance is docs only.
+- Not a `severity` field.
+
+## Previous Milestone: v0.340.0 Docs Drift Guard
 
 **Goal:** add a release-blocking docs drift guard for current public docs and CI examples, wired through `make docs-example-gates VERSION=vX.Y.Z` into `release-surface-gates`. It catches stale rule-inspection commands, audit output-format inventory drift, unsafe or stale CI workflow examples, and example release pins. The guard is static and curated; it does not execute snippets, call external services, handle tokens, run Docker, or connect to databases. This is a repository release contract, not a user-facing CLI feature, and does not change audit behavior, the default policy, any rule, parser support, or any machine-readable output shape. Does not add a `severity` field.
 
