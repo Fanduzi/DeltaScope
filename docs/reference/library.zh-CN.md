@@ -48,11 +48,13 @@ type Request struct {
 
 ```go
 type Result struct {
-    Verdict        Verdict           // "pass"、"review" 或 "reject"
-    Summary        Summary           // 按级别汇总的计数
-    Statements     []StatementResult // 各语句的审计发现
-    GlobalFindings []Finding         // 全局规则（跨语句检查）产生的发现
-    Explanation    *Explanation      // 审计产生发现时可选的结果级共享解释
+    Verdict        Verdict                  // "pass"、"review" 或 "reject"
+    Summary        Summary                  // 按级别汇总的计数
+    Statements     []StatementResult        // 各语句的审计发现
+    GlobalFindings []Finding                // 全局规则（跨语句检查）产生的发现
+    Unsupported    []spec.UnsupportedDetail // DeltaScope 无法完整审计的语句的结构化详情
+    Explanation    *Explanation             // 审计产生发现时可选的结果级共享解释
+    Diagnostics    []spec.Diagnostic        // parser-error 与 unsupported-statement 结果的结构化诊断
 }
 ```
 
@@ -387,6 +389,37 @@ case deltascope.VerdictPass:
 | 配置加载失败 | `Request.ConfigPath` 指向的文件无法读取，或包含无效的 YAML |
 
 以上错误条件对应 CLI 退出码 `2`。运行时或内部故障对应退出码 `3`。
+
+### 不支持语句与部分结果
+
+当输入中包含 DeltaScope 无法完整审计的语句时，`Audit` 可能同时返回一个已填充的 `Result` 和一个非 `nil` 的错误。导出的哨兵错误为：
+
+```go
+var ErrUnsupportedStatement = errors.New("deltascope audit includes unsupported statements")
+```
+
+当存在不支持语句时，`Audit` 返回：
+
+- 一个已填充的 `Result` 值（返回类型是 `Result`，不是 `*Result`），覆盖能够审计的语句；
+- 一个非 `nil` 的 `error`，该错误包装了 `ErrUnsupportedStatement`。
+
+使用 `errors.Is` 检测这种情况，并继续检查返回的 `Result`：
+
+```go
+result, err := deltascope.Audit(ctx, req)
+if err != nil {
+    if errors.Is(err, deltascope.ErrUnsupportedStatement) {
+        // 部分结果：result.Unsupported 与 result.Diagnostics 描述未被审计的内容；
+        // result.Statements 仍持有已审计语句的 findings。
+    } else {
+        // 输入/配置错误——没有有意义的 Result 可检查。
+        return err
+    }
+}
+// 像往常一样使用 result
+```
+
+`Result.Unsupported` 为每条 DeltaScope 无法完整审计的语句携带一个 `spec.UnsupportedDetail`；`Result.Diagnostics` 携带结构化的 parser-error 与 unsupported-statement 诊断。两者都以值类型返回在 `Result` 上。这是部分结果行为，不是 fallback parser，也不是新增审计规则。
 
 ---
 

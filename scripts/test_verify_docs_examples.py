@@ -40,6 +40,43 @@ def md_with_formats(missing=None):
     return "# Title\n\nSupported formats: " + ", ".join(fmts) + "\n"
 
 
+def cli_doc_with_formats_and_flags(missing_flag=None):
+    """A CLI reference doc listing every audit format and metadata flag.
+
+    ``missing_flag`` removes one metadata connection flag so a test can assert
+    the CLI flag-inventory check catches the gap. Includes every audit format
+    so the format-inventory check also passes.
+    """
+    fmts = ", ".join(FORMATS)
+    flags = [f for f in vde.CLI_AUDIT_METADATA_FLAGS if f != missing_flag]
+    return (
+        "# CLI Reference\n\n"
+        "Supported formats: " + fmts + "\n\n"
+        "Connection flags: " + " ".join(flags) + "\n"
+    )
+
+
+def sdk_doc(missing=None):
+    """A library/pkg doc mentioning the SDK Result fields and sentinel.
+
+    ``missing`` removes one token so a test can assert the SDK field check.
+    """
+    tokens = [
+        t for t in ("Unsupported", "Diagnostics", "ErrUnsupportedStatement")
+        if t != missing
+    ]
+    return "# SDK\n\n" + "".join("- %s\n" % t for t in tokens)
+
+
+def mcp_readme_clean():
+    """An MCP README that references DefaultVersion instead of a literal."""
+    return (
+        "# MCP\n\n"
+        "- `-version` defaults to the release/source version from "
+        "`pkg/deltascope.DefaultVersion`.\n"
+    )
+
+
 VALID_GITHUB = """\
 name: SQL Audit
 on:
@@ -504,6 +541,8 @@ class TestLineNumbersNeverZero(unittest.TestCase):
                 VALID_GITLAB.replace("gl-code-quality-report.json", "report.json"))),
             ("gitlab_missing_artifact", lambda: vde.check_gitlab_example(
                 VALID_GITLAB.split("  artifacts:")[0])),
+            ("mcp_stale_version", lambda: vde.check_mcp_readme_version(
+                "- defaults to `v0.13.1` in source builds.\n")),
         ]
 
     def test_no_finding_uses_line_zero(self):
@@ -534,8 +573,16 @@ class TestRunChecksEndToEnd(unittest.TestCase):
         (rootp / "README.md").write_text(md_with_formats())
         (rootp / "README_ZH.md").write_text(md_with_formats())
         (rootp / "docs" / "reference").mkdir(parents=True)
-        (rootp / "docs" / "reference" / "cli.md").write_text(md_with_formats())
-        (rootp / "docs" / "reference" / "cli.zh-CN.md").write_text(md_with_formats())
+        (rootp / "docs" / "reference" / "cli.md").write_text(
+            cli_doc_with_formats_and_flags())
+        (rootp / "docs" / "reference" / "cli.zh-CN.md").write_text(
+            cli_doc_with_formats_and_flags())
+        (rootp / "docs" / "reference" / "library.md").write_text(sdk_doc())
+        (rootp / "docs" / "reference" / "library.zh-CN.md").write_text(sdk_doc())
+        (rootp / "pkg" / "deltascope").mkdir(parents=True)
+        (rootp / "pkg" / "deltascope" / "README.md").write_text(sdk_doc())
+        (rootp / "cmd" / "deltascope-mcp").mkdir(parents=True)
+        (rootp / "cmd" / "deltascope-mcp" / "README.md").write_text(mcp_readme_clean())
         (rootp / "docs" / "examples").mkdir(parents=True)
         (rootp / "docs" / "examples" / "github-actions.yml").write_text(github)
         (rootp / "docs" / "examples" / "gitlab-ci.yml").write_text(gitlab)
@@ -604,6 +651,117 @@ class TestMainContract(unittest.TestCase):
             ]
             self.assertTrue(fail_lines, msg=proc.stdout)
             self.assertIn(":", fail_lines[0])
+
+
+class TestCliMetadataFlags(unittest.TestCase):
+    def test_all_flags_present_passes(self):
+        text = cli_doc_with_formats_and_flags()
+        files = [
+            vde.File("docs/reference/cli.md", text),
+            vde.File("docs/reference/cli.zh-CN.md", text),
+        ]
+        self.assertEqual(vde.check_cli_metadata_flags(files), [])
+
+    def test_missing_metadata_connect_timeout_fails(self):
+        files = [
+            vde.File(
+                "docs/reference/cli.md",
+                cli_doc_with_formats_and_flags(
+                    missing_flag="--metadata-connect-timeout"),
+            )
+        ]
+        failures = vde.check_cli_metadata_flags(files)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("--metadata-connect-timeout", failures[0].message)
+        self.assertEqual(failures[0].path, "docs/reference/cli.md")
+        self.assertEqual(failures[0].line, 1)
+
+    def test_missing_flag_reports_line_one_not_zero(self):
+        files = [
+            vde.File("docs/reference/cli.md",
+                     cli_doc_with_formats_and_flags(missing_flag="--socket"))
+        ]
+        failures = vde.check_cli_metadata_flags(files)
+        self.assertEqual(len(failures), 1)
+        self.assertGreaterEqual(failures[0].line, 1)
+
+    def test_only_cli_docs_are_checked(self):
+        # A non-CLI file missing every flag must not trip the check.
+        files = [vde.File("docs/reference/library.md", "no flags here\n")]
+        self.assertEqual(vde.check_cli_metadata_flags(files), [])
+
+    def test_missing_file_is_skipped(self):
+        # Empty file list: no CLI docs present, so nothing to fail on.
+        self.assertEqual(vde.check_cli_metadata_flags([]), [])
+
+
+class TestSdkResultFields(unittest.TestCase):
+    def test_all_tokens_present_passes(self):
+        files = [
+            vde.File("docs/reference/library.md", sdk_doc()),
+            vde.File("docs/reference/library.zh-CN.md", sdk_doc()),
+            vde.File("pkg/deltascope/README.md", sdk_doc()),
+        ]
+        self.assertEqual(vde.check_sdk_result_fields(files), [])
+
+    def test_missing_unsupported_in_library_fails(self):
+        # Only Diagnostics present. Note the guard is a substring token check,
+        # so a doc that still mentioned `ErrUnsupportedStatement` would also
+        # satisfy the `Unsupported` token; this fixture omits both.
+        files = [
+            vde.File("docs/reference/library.md", "# SDK\n\n- Diagnostics\n")
+        ]
+        failures = vde.check_sdk_result_fields(files)
+        self.assertTrue(any("Unsupported" in f.message for f in failures))
+        for f in failures:
+            self.assertEqual(f.path, "docs/reference/library.md")
+            self.assertEqual(f.line, 1)
+
+    def test_missing_diagnostics_in_pkg_readme_fails(self):
+        files = [
+            vde.File("pkg/deltascope/README.md", sdk_doc(missing="Diagnostics"))
+        ]
+        failures = vde.check_sdk_result_fields(files)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("Diagnostics", failures[0].message)
+        self.assertEqual(failures[0].path, "pkg/deltascope/README.md")
+
+    def test_missing_err_unsupported_sentinel_fails(self):
+        # library.md carries the fields but not the exported sentinel.
+        files = [
+            vde.File(
+                "docs/reference/library.md",
+                sdk_doc(missing="ErrUnsupportedStatement"),
+            )
+        ]
+        failures = vde.check_sdk_result_fields(files)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("ErrUnsupportedStatement", failures[0].message)
+
+    def test_missing_file_is_skipped(self):
+        self.assertEqual(vde.check_sdk_result_fields([]), [])
+
+
+class TestMcpReadmeVersion(unittest.TestCase):
+    def test_clean_wording_passes(self):
+        self.assertEqual(vde.check_mcp_readme_version(mcp_readme_clean()), [])
+
+    def test_stale_v0_13_1_fails(self):
+        text = "# MCP\n\n- `-version` defaults to `v0.13.1` in source builds.\n"
+        failures = vde.check_mcp_readme_version(text)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("v0.13.1", failures[0].message)
+        self.assertEqual(failures[0].path, vde.MCP_README)
+        self.assertGreaterEqual(failures[0].line, 1)
+
+    def test_stale_version_reports_actual_line(self):
+        text = "line1\nline2\n- defaults to v0.99.0 now\n"
+        failures = vde.check_mcp_readme_version(text)
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0].line, 3)
+
+    def test_absent_text_passes(self):
+        self.assertEqual(vde.check_mcp_readme_version(None), [])
 
 
 if __name__ == "__main__":

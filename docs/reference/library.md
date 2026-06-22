@@ -48,11 +48,13 @@ type Request struct {
 
 ```go
 type Result struct {
-    Verdict        Verdict           // "pass", "review", or "reject"
-    Summary        Summary           // aggregate counts by level
-    Statements     []StatementResult // per-statement findings
-    GlobalFindings []Finding         // cross-statement findings from global rules
-    Explanation    *Explanation      // optional shared result-level explanation emitted when the audit produces findings
+    Verdict        Verdict                  // "pass", "review", or "reject"
+    Summary        Summary                  // aggregate counts by level
+    Statements     []StatementResult        // per-statement findings
+    GlobalFindings []Finding                // cross-statement findings from global rules
+    Unsupported    []spec.UnsupportedDetail // structured details for statements DeltaScope could not fully audit
+    Explanation    *Explanation             // optional shared result-level explanation emitted when the audit produces findings
+    Diagnostics    []spec.Diagnostic        // structured diagnostics for parser-error and unsupported-statement outcomes
 }
 ```
 
@@ -403,6 +405,37 @@ case deltascope.VerdictPass:
 | Config load failure | `Request.ConfigPath` points to a file that cannot be read or contains invalid YAML |
 
 These error conditions correspond to CLI exit code `2`. Runtime or internal failures correspond to exit code `3`.
+
+### Unsupported Statements and Partial Results
+
+`Audit` can return a populated `Result` together with a non-nil error when the input contains statements DeltaScope cannot fully audit. The exported sentinel is:
+
+```go
+var ErrUnsupportedStatement = errors.New("deltascope audit includes unsupported statements")
+```
+
+When unsupported statements are present, `Audit` returns:
+
+- a populated `Result` value (the return type is `Result`, not `*Result`) covering the statements it could audit, and
+- a non-nil `error` that wraps `ErrUnsupportedStatement`.
+
+Detect this case with `errors.Is` and still inspect the returned `Result`:
+
+```go
+result, err := deltascope.Audit(ctx, req)
+if err != nil {
+    if errors.Is(err, deltascope.ErrUnsupportedStatement) {
+        // Partial result: result.Unsupported and result.Diagnostics describe
+        // what was not audited; result.Statements still holds audited findings.
+    } else {
+        // Input/config error — no meaningful Result to inspect.
+        return err
+    }
+}
+// use result as usual
+```
+
+`Result.Unsupported` carries one `spec.UnsupportedDetail` per statement DeltaScope could not fully audit, and `Result.Diagnostics` carries structured parser-error and unsupported-statement diagnostics. Both are returned by value on the `Result`. This is partial-result behavior, not a fallback parser and not new audit rules.
 
 ---
 

@@ -20,7 +20,15 @@ patterns in the current public docs and CI examples:
      report, and must not use the GitHub-specific formats),
   5. affirmative ``severity field`` wording for DeltaScope's public priority
      (DeltaScope uses ``level``; external schemas and negative clarifications
-     are allowed).
+     are allowed),
+  6. the CLI audit metadata/connection flag inventory (every shipped audit
+     flag, including ``--metadata-connect-timeout``, must appear in both CLI
+     reference docs),
+  7. the SDK ``Result`` shape (the exported ``Unsupported`` and ``Diagnostics``
+     fields and the ``ErrUnsupportedStatement`` sentinel must appear wherever
+     the SDK result shape is documented), and
+  8. the MCP README source-build version (it must not pin a literal
+     ``vX.Y.Z`` default; it should reference ``pkg/deltascope.DefaultVersion``).
 
 Usage (from the repository root):
 
@@ -145,6 +153,68 @@ SEVERITY_ALLOW = [
 ]
 
 VERSION_PIN_RE = re.compile(r"DELTASCOPE_VERSION:\s*[\"']?(v\d+\.\d+\.\d+)", re.IGNORECASE)
+
+
+# --------------------------------------------------------------------------- #
+# Surface-contract docs drift (CLI flag inventory, SDK Result shape, MCP
+# source-build version). Static token presence only — never executes snippets
+# and never calls the network. These files are read directly in run_checks
+# (not via collect_files) so the generic stale-command/severity scans keep
+# their existing, narrower scope.
+# --------------------------------------------------------------------------- #
+
+# CLI audit metadata/connection flag table: every shipped audit flag must
+# appear in both CLI reference docs. Matches the flags surfaced by
+# `deltascope audit --help`.
+CLI_AUDIT_FLAG_FILES = [
+    "docs/reference/cli.md",
+    "docs/reference/cli.zh-CN.md",
+]
+CLI_AUDIT_METADATA_FLAGS = [
+    "--metadata-connect-timeout",
+    "--host",
+    "--port",
+    "--user",
+    "--password",
+    "--password-env",
+    "--password-file",
+    "--ask-password",
+    "--schema",
+    "--socket",
+]
+
+# SDK Result shape docs: the exported Result struct fields and the
+# unsupported-statement sentinel must appear wherever the SDK result shape is
+# documented. Token presence only, not Go AST parsing.
+SDK_RESULT_FILES = [
+    "docs/reference/library.md",
+    "docs/reference/library.zh-CN.md",
+    "pkg/deltascope/README.md",
+]
+SDK_RESULT_FIELDS = ["Unsupported", "Diagnostics"]
+SDK_SENTINEL_FILES = [
+    "docs/reference/library.md",
+    "docs/reference/library.zh-CN.md",
+]
+SDK_SENTINELS = ["ErrUnsupportedStatement"]
+
+# MCP README must not pin the source-build default version to a literal
+# vX.Y.Z; it should reference `pkg/deltascope.DefaultVersion` so it does not
+# drift every release.
+MCP_README = "cmd/deltascope-mcp/README.md"
+MCP_STALE_DEFAULT_VERSION_RE = re.compile(
+    r"defaults\s+to\s*[`'\"]?\s*v\d+\.\d+\.\d+", re.IGNORECASE
+)
+
+# Union of files the surface-contract checks read. Missing files are skipped
+# (consistent with check_format_inventory), so the guard catches missing
+# tokens in existing files rather than missing files.
+SURFACE_CONTRACT_SCAN_FILES = sorted(
+    set(CLI_AUDIT_FLAG_FILES)
+    | set(SDK_RESULT_FILES)
+    | set(SDK_SENTINEL_FILES)
+    | {MCP_README}
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -421,6 +491,97 @@ def check_severity_language(files: List[File]) -> List[Failure]:
     return failures
 
 
+def check_cli_metadata_flags(files: List[File]) -> List[Failure]:
+    """Every shipped audit metadata/connection flag must appear in both CLI docs.
+
+    Token presence only (the flag must occur somewhere in the doc). Matches
+    the flags surfaced by ``deltascope audit --help``.
+    """
+    by_path = {f.rel_path: f for f in files}
+    failures: List[Failure] = []
+    for rel in CLI_AUDIT_FLAG_FILES:
+        f = by_path.get(rel)
+        if f is None:
+            continue
+        for flag in CLI_AUDIT_METADATA_FLAGS:
+            if flag not in f.text:
+                failures.append(
+                    Failure(
+                        path=rel,
+                        line=1,
+                        message="audit metadata/connection flag table missing "
+                                "`%s`; expected all of %s"
+                                % (flag, ", ".join(CLI_AUDIT_METADATA_FLAGS)),
+                    )
+                )
+    return failures
+
+
+def check_sdk_result_fields(files: List[File]) -> List[Failure]:
+    """SDK Result docs must mention the exported Result fields and sentinel.
+
+    ``SDK_RESULT_FILES`` must mention every field in ``SDK_RESULT_FIELDS``;
+    ``SDK_SENTINEL_FILES`` must mention every sentinel in ``SDK_SENTINELS``.
+    Token presence only, not Go AST parsing.
+    """
+    by_path = {f.rel_path: f for f in files}
+    failures: List[Failure] = []
+    for rel in SDK_RESULT_FILES:
+        f = by_path.get(rel)
+        if f is None:
+            continue
+        for field in SDK_RESULT_FIELDS:
+            if field not in f.text:
+                failures.append(
+                    Failure(
+                        path=rel,
+                        line=1,
+                        message="SDK Result shape docs missing required token "
+                                "`%s`; the exported Result struct documents "
+                                "both `Unsupported` and `Diagnostics`" % field,
+                    )
+                )
+    for rel in SDK_SENTINEL_FILES:
+        f = by_path.get(rel)
+        if f is None:
+            continue
+        for sentinel in SDK_SENTINELS:
+            if sentinel not in f.text:
+                failures.append(
+                    Failure(
+                        path=rel,
+                        line=1,
+                        message="SDK docs missing exported sentinel `%s`"
+                                % sentinel,
+                    )
+                )
+    return failures
+
+
+def check_mcp_readme_version(text: Optional[str]) -> List[Failure]:
+    """MCP README must not pin the source-build default version to a literal.
+
+    A ``defaults to vX.Y.Z`` wording drifts every release; the README should
+    reference ``pkg/deltascope.DefaultVersion`` instead. Returns no findings
+    when the README is absent.
+    """
+    failures: List[Failure] = []
+    if text is None:
+        return failures
+    for match in MCP_STALE_DEFAULT_VERSION_RE.finditer(text):
+        failures.append(
+            Failure(
+                path=MCP_README,
+                line=line_number(text, match.start()),
+                message="MCP README pins the source-build default version to a "
+                        "literal `%s`; reference `pkg/deltascope.DefaultVersion` "
+                        "instead so this line does not drift every release"
+                        % match.group(0),
+            )
+        )
+    return failures
+
+
 def extract_version_pin(text: str) -> Optional[str]:
     """Return the ``DELTASCOPE_VERSION`` value (e.g. ``v0.330.0``) or None."""
     match = VERSION_PIN_RE.search(text)
@@ -552,6 +713,20 @@ def run_checks(root: str, expected_version: Optional[str]) -> List[Failure]:
     gitlab_text = _read(Path(root), GITLAB_EXAMPLE)
     if gitlab_text is not None:
         failures.extend(check_gitlab_example(gitlab_text))
+
+    # Surface-contract token checks read their own target files directly so
+    # the generic stale-command/severity scans keep their narrower scope.
+    surface_files: List[File] = []
+    for rel in SURFACE_CONTRACT_SCAN_FILES:
+        text = _read(Path(root), rel)
+        if text is not None:
+            surface_files.append(
+                File(rel_path=rel.replace("\\", "/"), text=text)
+            )
+    failures.extend(check_cli_metadata_flags(surface_files))
+    failures.extend(check_sdk_result_fields(surface_files))
+
+    failures.extend(check_mcp_readme_version(_read(Path(root), MCP_README)))
 
     return failures
 

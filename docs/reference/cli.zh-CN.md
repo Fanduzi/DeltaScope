@@ -66,6 +66,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | `--ask-password` | | false | 交互式密码提示。与 `--password`、`--password-env` 和 `--password-file` 互斥。 |
 | `--schema` | `-D` | （无） | 用于解析无限定表名的默认 schema |
 | `--socket` | `-S` | （无） | Unix socket 路径。与 `--host`/`--port` 互斥。 |
+| `--metadata-connect-timeout` | | （无） | 元数据感知审计的元数据连接超时，例如 `5s` 或 `500ms` |
 
 **元数据感知模式下的行为：**
 

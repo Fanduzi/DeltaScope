@@ -71,6 +71,7 @@ definitions, instance variables) and attaches them to each statement before rule
 | `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password`, `--password-env`, and `--password-file`. |
 | `--schema` | `-D` | (none) | Default schema for unqualified table name resolution |
 | `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port`. |
+| `--metadata-connect-timeout` | | (none) | Metadata connection timeout for metadata-aware audit, for example `5s` or `500ms` |
 
 **Behavior in metadata-aware mode:**
 
