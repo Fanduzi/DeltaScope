@@ -8,9 +8,16 @@ This package does not implement DeltaScope MCP tools itself. It downloads the ma
 
 The launcher verifies the downloaded archive against the official DeltaScope release checksums before it updates the local cache.
 
-## Supported Audit Surface
+## Supported MCP Surface
 
-The launched `deltascope-mcp` server exposes a unified `audit_sql` surface for:
+The launched `deltascope-mcp` server exposes four tools:
+
+- `audit_sql` — audit SQL statements with DeltaScope.
+- `describe_rule` — describe one shipped DeltaScope rule by rule ID.
+- `list_rules` — list shipped DeltaScope rules with optional filters.
+- `get_capabilities` — return a concise capability summary for MCP clients.
+
+The `audit_sql` tool supports:
 
 - MySQL offline audit
 - TiDB offline audit
