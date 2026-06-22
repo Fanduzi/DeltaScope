@@ -28,8 +28,10 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 - The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, metadata-preparation, and direct-connection helper logic.
 - The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances and PostgreSQL on the PG-capable builds.
 - Connection-backed PostgreSQL MCP audit requests follow the same shared metadata-preparation path as the other transports and should preserve explicit metadata-aware context rather than downgrading silently.
-- `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, dialect support, audit result fields, connection inputs, and stable structured error codes.
-- Direct and named connection inputs accept `connect_timeout` (duration string like `5s`); empty/omitted/`0s` falls back to runtime config default, invalid/negative values return `connection_invalid`.
+- `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, audit modes, dialect support, top-level and connection inputs, audit result fields, context fields, metadata features, and the stable structured error codes the server advertises (`bad_request`, `connection_invalid`, `connection_failed`, `config_invalid`).
+- Audit results also carry additive `unsupported` (`[]spec.UnsupportedDetail`) and `diagnostics` (`[]spec.Diagnostic`) arrays for partial-support and parser-error outcomes; both are omitted when empty and are not listed in the `result_fields` summary.
+- `connect_timeout` is an accepted direct and named connection input (duration string like `5s`); empty/omitted/`0s` falls back to runtime config default, invalid/negative values return `connection_invalid`. It is not listed in the `connection_inputs` summary.
+- In addition to the structured errors `get_capabilities` advertises, recovered tool panics return `internal_error`; this code is not part of the advertised `structured_errors` list.
 - `tool_errors.go` maps `connection connect_timeout` validation errors to `connection_invalid`.
 
 ## Dependencies

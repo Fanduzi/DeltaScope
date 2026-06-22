@@ -13,12 +13,12 @@ The HTTP adapter sets `X-Request-ID` on every response. If a request already inc
 -config string   path to YAML policy config file (optional)
 -auth-enabled    enable X-API-Key authentication for protected routes
 -auth-keys       comma-separated API keys for X-API-Key auth
--auth-allow-paths comma-separated paths that bypass auth (default "/healthz,/version,/metrics")
+-auth-allow-paths comma-separated paths that bypass auth (default "/healthz,/readyz,/version,/metrics")
 -rate-limit-enabled enable rate limiting middleware
 -rate-limit-rps  rate limit requests per second (default 5)
 -rate-limit-burst rate limit burst size (default 10)
 -rate-limit-key  rate limit key strategy: api-key or ip (default "api-key")
--rate-limit-allow-paths comma-separated paths that bypass rate limiting (default "/healthz,/version,/metrics")
+-rate-limit-allow-paths comma-separated paths that bypass rate limiting (default "/healthz,/readyz,/version,/metrics")
 -metrics-enabled enable Prometheus metrics endpoint at /metrics (default true)
 -trusted-proxies comma-separated trusted proxy CIDRs for client IP extraction; empty means trust no proxies
 -version         print the server build version and exit
@@ -68,6 +68,24 @@ curl http://127.0.0.1:8083/healthz
 
 ```json
 {"status": "ok"}
+```
+
+---
+
+### GET /readyz
+
+Returns server readiness status. Use this endpoint for readiness probes. `/readyz` is in the default auth and rate-limit allow paths, so it bypasses authentication and rate limiting like `/healthz`, `/version`, and `/metrics`.
+
+**Request:**
+
+```bash
+curl http://127.0.0.1:8083/readyz
+```
+
+**Response (200):**
+
+```json
+{"status": "ready"}
 ```
 
 ---
@@ -126,14 +144,59 @@ curl http://127.0.0.1:8083/v1/capabilities
 {
   "transport": "http",
   "endpoints": [
+    "GET /healthz",
+    "GET /readyz",
+    "GET /version",
+    "GET /metrics",
     "POST /v1/audit",
     "GET /v1/rules",
     "GET /v1/rules/{rule_id}",
     "GET /v1/capabilities"
   ],
   "audit_modes": ["offline", "metadata-aware"],
-  "dialects": ["mysql", "tidb", "postgresql"]
+  "dialects": ["mysql", "tidb", "postgresql"],
+  "top_level_inputs": ["sql", "dialect", "schema", "connection"],
+  "connection_inputs": [
+    "connection.host",
+    "connection.port",
+    "connection.socket",
+    "connection.user",
+    "connection.schema",
+    "connection.dialect",
+    "connection.password",
+    "connection.password_env",
+    "connection.password_file"
+  ],
+  "input_rules": [
+    "connection.password, connection.password_env, and connection.password_file are mutually exclusive",
+    "top-level schema overrides connection.schema when both are set",
+    "top-level dialect overrides connection.dialect when both are set",
+    "connection inputs support mysql, tidb, and postgresql metadata-aware audit"
+  ],
+  "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
+  "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"],
+  "structured_errors": [
+    "invalid_json",
+    "bad_request",
+    "connection_invalid",
+    "connection_failed",
+    "config_invalid",
+    "auth_required",
+    "auth_invalid",
+    "rate_limited",
+    "request_timeout",
+    "request_canceled",
+    "internal_error",
+    "not_found"
+  ],
+  "metadata_features": ["schema context", "instance facts", "target table snapshots"],
+  "query_parameters": ["GET /v1/rules?query=<text>"],
+  "rule_catalog_routes": ["GET /v1/rules", "GET /v1/rules/{rule_id}"],
+  "capability_version": "http-v1"
 }
+```
+
+`connection_inputs` lists the advertised direct connection keys. The server also accepts `connection.connect_timeout` (documented in the `connection` table below). `result_fields` lists the always-relevant result keys; an audit response may also carry additive `unsupported` and `diagnostics` arrays, documented under [Response Field Reference](#response-field-reference).
 ```
 
 ---
@@ -216,6 +279,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 | `password` | string | No | Inline password value |
 | `password_env` | string | No | Environment variable name that contains the password |
 | `password_file` | string | No | File path that contains the password |
+| `connect_timeout` | string | No | Metadata connection timeout as a duration string, for example `5s` or `500ms`. Empty, omitted, or `0s` falls back to the runtime config default; invalid or negative values are rejected with `400 connection_invalid`. |
 
 > `password`, `password_env`, and `password_file` are mutually exclusive. Set at most one of them in a single request.
 >
@@ -458,6 +522,10 @@ The top-level response object returned by `POST /v1/audit`.
 | `global_findings` | array | Findings from global rules (cross-statement checks); omitted when empty |
 | `explanation` | object | Optional aggregate explanation object with `summary` and `reasons`. The built-in HTTP audit flow now populates it whenever the audit produces one or more findings |
 | `context` | object | Additive request context describing `mode`, `dialect`, `dialect_source`, `schema`, `schema_source`, and `metadata_source` |
+| `unsupported` | array | Structured partial-support details for parser-recognized but unsupported statements. Each entry carries `index`, `feature`, `sql`, `reason`, and optional `metadata`; omitted when empty |
+| `diagnostics` | array | Structured parser-error and unsupported-statement diagnostics. Each entry carries `classification` (`parser_error` or `unsupported_statement`), `reason`, `action_hint`, `audited` (always `false`), optional `dialect`, and optional `guidance_code` / `evidence_ref`; omitted when empty |
+
+Both arrays are additive (`omitempty`). `diagnostics` carries no raw SQL text or parser `near ...` fragments; `unsupported` retains the original statement text so callers can identify which statement was not audited. Finding priority still uses the `level` field documented under [Finding](#finding).
 
 ### StatementResult
 

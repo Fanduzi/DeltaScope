@@ -13,12 +13,12 @@ HTTP 适配层会在每个响应写入 `X-Request-ID`。如果请求已经携带
 -config string   YAML 策略配置文件路径（可选）
 -auth-enabled    开启受保护路由的 X-API-Key 认证
 -auth-keys       X-API-Key 认证使用的逗号分隔 key 列表
--auth-allow-paths 逗号分隔的免认证路径（默认 "/healthz,/version,/metrics"）
+-auth-allow-paths 逗号分隔的免认证路径（默认 "/healthz,/readyz,/version,/metrics"）
 -rate-limit-enabled 开启限流中间件
 -rate-limit-rps  每秒请求上限（默认 5）
 -rate-limit-burst 限流突发桶大小（默认 10）
 -rate-limit-key  限流维度：api-key 或 ip（默认 "api-key"）
--rate-limit-allow-paths 逗号分隔的限流放行路径（默认 "/healthz,/version,/metrics"）
+-rate-limit-allow-paths 逗号分隔的限流放行路径（默认 "/healthz,/readyz,/version,/metrics"）
 -metrics-enabled 是否开启 Prometheus `/metrics`（默认 true）
 -trusted-proxies 用于提取客户端 IP 的可信代理 CIDR 列表；为空表示不信任任何代理
 -version         打印服务器构建版本并退出
@@ -68,6 +68,24 @@ curl http://127.0.0.1:8083/healthz
 
 ```json
 {"status": "ok"}
+```
+
+---
+
+### GET /readyz
+
+返回服务器就绪状态。可用于就绪探针（readiness probe）。`/readyz` 在默认的认证和限流放行路径中，和 `/healthz`、`/version`、`/metrics` 一样免认证、免限流。
+
+**请求：**
+
+```bash
+curl http://127.0.0.1:8083/readyz
+```
+
+**响应（200）：**
+
+```json
+{"status": "ready"}
 ```
 
 ---
@@ -126,14 +144,59 @@ curl http://127.0.0.1:8083/v1/capabilities
 {
   "transport": "http",
   "endpoints": [
+    "GET /healthz",
+    "GET /readyz",
+    "GET /version",
+    "GET /metrics",
     "POST /v1/audit",
     "GET /v1/rules",
     "GET /v1/rules/{rule_id}",
     "GET /v1/capabilities"
   ],
   "audit_modes": ["offline", "metadata-aware"],
-  "dialects": ["mysql", "tidb"]
+  "dialects": ["mysql", "tidb", "postgresql"],
+  "top_level_inputs": ["sql", "dialect", "schema", "connection"],
+  "connection_inputs": [
+    "connection.host",
+    "connection.port",
+    "connection.socket",
+    "connection.user",
+    "connection.schema",
+    "connection.dialect",
+    "connection.password",
+    "connection.password_env",
+    "connection.password_file"
+  ],
+  "input_rules": [
+    "connection.password, connection.password_env, and connection.password_file are mutually exclusive",
+    "top-level schema overrides connection.schema when both are set",
+    "top-level dialect overrides connection.dialect when both are set",
+    "connection inputs support mysql, tidb, and postgresql metadata-aware audit"
+  ],
+  "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
+  "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"],
+  "structured_errors": [
+    "invalid_json",
+    "bad_request",
+    "connection_invalid",
+    "connection_failed",
+    "config_invalid",
+    "auth_required",
+    "auth_invalid",
+    "rate_limited",
+    "request_timeout",
+    "request_canceled",
+    "internal_error",
+    "not_found"
+  ],
+  "metadata_features": ["schema context", "instance facts", "target table snapshots"],
+  "query_parameters": ["GET /v1/rules?query=<text>"],
+  "rule_catalog_routes": ["GET /v1/rules", "GET /v1/rules/{rule_id}"],
+  "capability_version": "http-v1"
 }
+```
+
+`connection_inputs` 列出了对外公布的直接连接字段。服务器还接受 `connection.connect_timeout`（见下方 `connection` 表）。`result_fields` 列出始终相关的结果字段；审计响应还可能携带附加的 `unsupported` 和 `diagnostics` 数组，详见[响应字段参考](#响应字段参考)。
 ```
 
 ---
@@ -216,6 +279,7 @@ curl http://127.0.0.1:8083/v1/rules/dml.where.require
 | `password` | string | 否 | 内联密码值 |
 | `password_env` | string | 否 | 包含密码的环境变量名 |
 | `password_file` | string | 否 | 包含密码的文件路径 |
+| `connect_timeout` | string | 否 | 元数据连接超时，使用时长字符串，例如 `5s` 或 `500ms`。为空、省略或 `0s` 时回退到运行时配置默认值；无效或负值会以 `400 connection_invalid` 拒绝 |
 
 > `password`、`password_env` 和 `password_file` 互斥，单次请求最多只能提供其中一个。
 >
@@ -441,6 +505,10 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | `global_findings` | array | 来自全局规则（跨语句检查）的发现；为空时省略 |
 | `explanation` | object | 可选的聚合级解释对象，包含 `summary` 和 `reasons`。当审计产生一条或多条 finding 时，内置 HTTP 审计流程会填充该字段 |
 | `context` | object | 附加的请求上下文，描述 `mode`、`dialect`、`dialect_source`、`schema`、`schema_source` 和 `metadata_source` |
+| `unsupported` | array | 针对解析器识别但不支持的语句的结构化部分支持详情。每项包含 `index`、`feature`、`sql`、`reason` 和可选的 `metadata`；为空时省略 |
+| `diagnostics` | array | 结构化的解析错误和不受支持语句诊断。每项包含 `classification`（`parser_error` 或 `unsupported_statement`）、`reason`、`action_hint`、`audited`（恒为 `false`）、可选 `dialect` 以及可选的 `guidance_code` / `evidence_ref`；为空时省略 |
+
+这两个数组都是附加字段（`omitempty`）。`diagnostics` 不含原始 SQL 文本或解析器 `near ...` 片段；`unsupported` 保留原始语句文本，便于调用者定位未被审计的语句。finding 的优先级仍使用 [Finding](#finding) 章节中的 `level` 字段。
 
 ### StatementResult
 
