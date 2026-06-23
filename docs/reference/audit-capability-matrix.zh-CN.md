@@ -1243,7 +1243,8 @@ PostgreSQL 元数据感知审核现在解析选定的非表对象元数据，并
 
 | 能力 | 状态 | 说明 |
 |------|------|------|
-| PostgreSQL 语法启发式通知 | 已覆盖 | 在 MySQL/TiDB 路径审计时，检测常见 PG 专属语法标记（`RETURNING`、`ON CONFLICT`、`::`、`ALTER COLUMN TYPE USING`、`GENERATED AS IDENTITY`），发出 `dialect.postgresql.syntax.detected.notice` 全局建议性告警。DeltaScope 不会自动切换方言。 |
+| PostgreSQL 语法启发式通知 | 已覆盖 | 在 MySQL/TiDB 路径审计时，检测常见 PG 专属语法标记（`ON CONFLICT`、`::`、`ALTER COLUMN TYPE USING`、`GENERATED AS IDENTITY`），发出 `dialect.postgresql.syntax.detected.notice` 全局建议性告警。`RETURNING` 已不在该列表中，它是合法的 TiDB 语法。DeltaScope 不会自动切换方言。 |
+| MySQL DML RETURNING 不支持通知 | 已覆盖 | 在 MySQL 方言下，当解析出的 DML 语句带有 `RETURNING` 子句时，发出 `dialect.mysql.returning.unsupported.notice` 全局建议性告警（TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 `RETURNING`）。MySQL Server 不支持 DML `RETURNING`；如果 SQL 目标是 TiDB，用 `--dialect tidb` 重跑。TiDB 方言接受 `RETURNING`，不会触发该通知。 |
 | PostgreSQL 能力边界错误 | 已覆盖 | 未支持的 PG 功能面返回类型化的 `PostgreSQLCapabilityBoundaryError`，取代启发式字符串匹配，使 CI 和工具能区分已知限制和真正的失败。 |
 | 离线信任上下文可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告审计上下文：markdown 包含 `## Audit Context` 区段和信任提示；JSON 包含 `context` 对象；quiet 包含 `[context]` 行。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含上下文元数据。 |
 | 规则摘要 / 跳过规则可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告已加载、适用和跳过的规则计数，方便确认当前方言下哪些规则运行了。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含规则摘要元数据。 |

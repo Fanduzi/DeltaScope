@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.360.0",
+    "softwareVersion": "v0.370.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.360.0 — Config + Rule Explain UX</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.370.0 — TiDB RETURNING Dialect Boundary</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,23 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-              <div class="release-version">v0.360.0</div>
+              <div class="release-version">v0.370.0</div>
               <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
             </div>
-            <div class="release-title" data-i18n="releases.currentTitle">Config + Rule Explain UX</div>
-            <div class="release-copy" data-i18n="releases.items.v03600">v0.360.0 sharpens the human-readable handoff between `config lint`, `rules explain`, and `config status`. Replacement-hazard warnings and the `rules explain` default policy now end with `Inspect effective rule status:` pointing at `config status`. Guidance text only; no audit, parser, rule, or output-shape changes.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">TiDB RETURNING Dialect Boundary</div>
+            <div class="release-copy" data-i18n="releases.items.v03700">v0.370.0 upgrades the TiDB parser and draws a dialect boundary for DML `RETURNING`. TiDB dialect accepts parser-recognized `RETURNING`; on the MySQL dialect a parsed `RETURNING` clause emits `dialect.mysql.returning.unsupported.notice`. `RETURNING` is no longer treated as a PostgreSQL-only token. Parser dialect behavior plus one additive boolean JSON field; no registered-rule change.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.370.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.370.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.370.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.360.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v03600">Config + Rule Explain UX</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v03600">v0.360.0 sharpens the human-readable handoff between `config lint`, `rules explain`, and `config status`. Replacement-hazard warnings and the `rules explain` default policy now end with `Inspect effective rule status:` pointing at `config status`. Guidance text only; no audit, parser, rule, or output-shape changes.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v03600" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.zh-CN.md">Open v0.360.0 notes →</a>
+            </article>
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.340.0</div>
@@ -1105,14 +1113,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v03300">v0.330.0 adds a `--format github-summary` output for the GitHub Actions job summary and sharpens `github-actions` inline annotations (`[level] rule_id` title plus an `Explain:` line). Read-only CI surface; no SQL audit behavior changes.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.330.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v03300" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.330.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.330.0.zh-CN.md">Open v0.330.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.320.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v03200">Config Lint Replacement Warnings</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v03200">v0.320.0 teaches `deltascope config lint` to warn when a rule entry will silently disable or gut a rule, and adds a `--strict` flag that exits 2 for CI. No SQL audit behavior changes.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.320.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v03200" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.320.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.320.0.zh-CN.md">Open v0.320.0 notes →</a>
             </article>
             <article class="release-card archive">
               <div class="release-card-head">
@@ -1196,7 +1196,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.360.0 sharpens the handoff between `config lint`, `rules explain`, and `config status`, so a partial rule override surfaces a direct path to the effective rule status.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.370.0 draws a dialect boundary for DML `RETURNING`: TiDB accepts it, while the MySQL dialect surfaces a dedicated unsupported notice.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1208,7 +1208,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.360.0.zh-CN.md">Release Notes v0.360.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.370.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.370.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.370.0.zh-CN.md">Release Notes v0.370.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1252,7 +1252,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.360.0 — Config + Rule Explain UX',
+          badge: 'v0.370.0 — TiDB RETURNING Dialect Boundary',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1378,9 +1378,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'Config + Rule Explain UX',
+          currentTitle: 'TiDB RETURNING Dialect Boundary',
           currentLink: 'Read release notes →',
           labels: {
+            v03600: 'Config + Rule Explain UX',
             v03400: 'Docs Drift Guard',
             v03300: 'CI/PR Review UX',
             v03200: 'Config Lint Replacement Warnings',
@@ -1408,6 +1409,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v03600: 'Open v0.360.0 notes →',
             v03400: 'Open v0.340.0 notes →',
             v03300: 'Open v0.330.0 notes →',
             v03200: 'Open v0.320.0 notes →',
@@ -1438,6 +1440,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v03700: 'v0.370.0 upgrades the TiDB parser and draws a dialect boundary for DML `RETURNING`. TiDB dialect accepts parser-recognized `RETURNING`; on the MySQL dialect a parsed `RETURNING` clause emits `dialect.mysql.returning.unsupported.notice`. `RETURNING` is no longer treated as a PostgreSQL-only token. Parser dialect behavior plus one additive boolean JSON field; no registered-rule change.',
             v03600: 'v0.360.0 sharpens the human-readable handoff between `config lint`, `rules explain`, and `config status`. Replacement-hazard warnings and the `rules explain` default policy now end with `Inspect effective rule status:` pointing at `config status`. Guidance text only; no audit, parser, rule, or output-shape changes.',
             v03400: 'v0.340.0 adds a release-blocking docs drift guard that keeps current public docs and CI examples aligned with the supported CLI contract. Static and curated; no audit, parser, rule, or output-shape changes.',
             v03300: 'v0.330.0 adds a `--format github-summary` output for the GitHub Actions job summary and sharpens `github-actions` inline annotations (`[level] rule_id` title plus an `Explain:` line). Read-only CI surface; no SQL audit behavior changes.',
@@ -1476,14 +1479,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.360.0 sharpens the handoff between `config lint`, `rules explain`, and `config status`, so a partial rule override surfaces a direct path to the effective rule status.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.370.0 draws a dialect boundary for DML `RETURNING`: TiDB accepts it, while the MySQL dialect surfaces a dedicated unsupported notice.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.360.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.370.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1501,7 +1504,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.360.0 —— Config + Rule Explain UX / 配置与规则解释体验',
+          badge: 'v0.370.0 —— TiDB RETURNING Dialect Boundary / TiDB RETURNING 方言边界',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1627,9 +1630,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'Config + Rule Explain UX / 配置与规则解释体验',
+          currentTitle: 'TiDB RETURNING Dialect Boundary / TiDB RETURNING 方言边界',
           currentLink: '查看发布说明 →',
           labels: {
+            v03600: 'Config + Rule Explain UX / 配置与规则解释体验',
             v03400: 'Docs Drift Guard / 文档漂移守卫',
             v03300: 'CI/PR Review UX / CI 与 PR 审查体验',
             v03200: 'Config Lint Replacement Warnings / 配置 lint 替换告警',
@@ -1657,6 +1661,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v03600: '查看 v0.360.0 发布说明 →',
             v03400: '查看 v0.340.0 发布说明 →',
             v03300: '查看 v0.330.0 发布说明 →',
             v03200: '查看 v0.320.0 发布说明 →',
@@ -1688,6 +1693,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v03700: 'v0.370.0 升级 TiDB parser，为 DML `RETURNING` 划出方言边界。TiDB 方言接受 parser 可识别的 `RETURNING`；在 MySQL 方言下，被解析出的 `RETURNING` 子句会发出 `dialect.mysql.returning.unsupported.notice`。`RETURNING` 不再被当作 PostgreSQL 专属标记。只调整 parser 方言行为并新增一个布尔 JSON 字段，不改变已注册规则。',
             v03600: 'v0.360.0 收紧了 `config lint`、`rules explain` 和 `config status` 三者之间可读文本的衔接。替换风险告警和 `rules explain` 的默认策略都以 `Inspect effective rule status:` 结尾，指向 `config status`。只改文案；不涉及审核、parser、规则或输出结构。',
             v03400: 'v0.340.0 新增发布阻断级的文档漂移守卫，让当前公开文档和 CI 示例与受支持的 CLI 契约保持一致。静态、人工维护；不改变审核、parser、规则或输出结构。',
             v03300: 'v0.330.0 为 GitHub Actions 作业摘要新增 `--format github-summary` 输出，并改进 `github-actions` 行内注解（标题改为 `[level] rule_id`，追加 `Explain:` 行）。只读 CI 界面；无 SQL 审核行为变更。',
@@ -1723,14 +1729,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.360.0 收紧了 `config lint`、`rules explain` 与 `config status` 之间的衔接，让一条规则的局部 override 能直接指向它在当前配置下的生效状态。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.370.0 为 DML `RETURNING` 划出方言边界：TiDB 接受它，MySQL 方言则给出专用的不支持通知。',
           start: '开始使用',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 使用 Apache 2.0 协议。',
           version: 'v3 草案 · 已包含 EN / 中文切换',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.360.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.370.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

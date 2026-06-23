@@ -362,6 +362,12 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 
 如果 SQL 确实面向 PostgreSQL，请使用 `--dialect postgresql` 重新运行。如果不是，可以安全地忽略该通知。
 
+#### MySQL DML RETURNING 方言通知
+
+TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 DML `RETURNING`。TiDB 支持该语法，MySQL Server 不支持。在 MySQL 方言下，被解析出的 `RETURNING` 子句会发出 `dialect.mysql.returning.unsupported.notice` 全局告警，让这个不支持边界可见，而不是被静默接受。`RETURNING` 不再被当作 PostgreSQL 专属标记，因此 TiDB 的 `RETURNING` 不再触发 `dialect.postgresql.syntax.detected.notice`。
+
+如果 SQL 面向 TiDB，请使用 `--dialect tidb` 重新运行。`REPLACE ... RETURNING` 不受支持，保持其 parser-error/unsupported 路径。
+
 #### PostgreSQL 能力边界错误
 
 当 PG-capable 构建版本遇到尚未完全支持的 PostgreSQL 专属功能（如 DDL 解析）时，返回类型化的 `PostgreSQLCapabilityBoundaryError`。这区分了已知的能力限制和真正的解析失败。错误包含关于请求的功能面和当前构建支持能力的清晰信息。

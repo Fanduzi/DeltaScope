@@ -114,6 +114,10 @@ When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to ea
 
 Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. For PostgreSQL, `UPDATE` and `DELETE` estimates may be further refined via a read-only `EXPLAIN` query against the PostgreSQL planner; `INSERT` does not trigger planner estimation. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`. The payload itself is attached in the audit flow before rule evaluation.
 
+### DML RETURNING Dialect Fact
+
+DML statements carry an additive boolean JSON field `has_returning`. It is parser-derived and set only when the parsed statement has a real `RETURNING` clause (`INSERT`, `UPDATE`, or single-table `DELETE`). DeltaScope projects only the clause-presence boolean; it does not project returned column names, expressions, aliases, or parser subtrees. On the MySQL dialect, a parsed `RETURNING` emits the global `dialect.mysql.returning.unsupported.notice` finding; TiDB dialect accepts `RETURNING` and emits no dialect notice.
+
 ### Impact
 
 ```go

@@ -114,6 +114,10 @@ type StatementResult struct {
 
 离线模式只使用 SQL 形状做估算。元数据感知模式可以基于只读表统计信息进一步收敛估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。这个 payload 会在规则评估前附加到语句结果上。
 
+### DML RETURNING 方言事实
+
+DML 语句带有一个布尔 JSON 字段 `has_returning`。它来自 parser，仅当解析出的语句确实带有 `RETURNING` 子句（`INSERT`、`UPDATE` 或单表 `DELETE`）时才置位。DeltaScope 只投影子句是否存在这个布尔值，不输出 RETURNING 列名、表达式、别名或 parser 子树。在 MySQL 方言下，被解析出的 `RETURNING` 会发出全局 `dialect.mysql.returning.unsupported.notice` 告警；TiDB 方言接受 `RETURNING`，不发出方言告警。
+
 ### Impact
 
 ```go

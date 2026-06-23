@@ -402,6 +402,12 @@ In quiet output, a `[context]` line is appended:
 
 If the SQL does target PostgreSQL, re-run with `--dialect postgresql`. If not, the notice can be safely ignored.
 
+#### MySQL DML RETURNING Dialect Notice
+
+The TiDB parser recognizes DML `RETURNING` for `INSERT`, `UPDATE`, and single-table `DELETE`. TiDB supports this syntax; MySQL Server does not. On the MySQL dialect, a parsed `RETURNING` clause emits a `dialect.mysql.returning.unsupported.notice` global finding so the unsupported boundary is visible instead of silently accepted. `RETURNING` is no longer treated as a PostgreSQL-only token, so TiDB `RETURNING` no longer triggers `dialect.postgresql.syntax.detected.notice`.
+
+If the SQL targets TiDB, re-run with `--dialect tidb`. `REPLACE ... RETURNING` is not supported and keeps its parser-error/unsupported path.
+
 #### PostgreSQL Capability-Boundary Errors
 
 When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality that is not yet fully supported (e.g., DDL parsing), it returns a typed `PostgreSQLCapabilityBoundaryError`. This distinguishes known capability limits from real parse failures. The error includes a clear message about what surface was requested and what the current build supports.

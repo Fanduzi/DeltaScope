@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.370.0] - 2026-06-23
+
+### Added
+
+- TiDB parser bumped so DML `RETURNING` parses on the MySQL/TiDB parser path for `INSERT`, `UPDATE`, and single-table `DELETE`. `spec.DML` gains an additive boolean JSON field `has_returning` (parser-derived; no returned column names, expressions, aliases, or parser subtrees projected).
+- `RETURNING` removed from the PostgreSQL mismatch token heuristic; `ON CONFLICT`, `::`, `ALTER COLUMN TYPE USING`, and `GENERATED AS IDENTITY` keep their existing PostgreSQL mismatch notices.
+- New non-configurable global finding `dialect.mysql.returning.unsupported.notice` (level `notice`) on the MySQL dialect when a parsed DML carries a `RETURNING` clause; suggests re-running with `--dialect tidb` when the SQL targets TiDB. SDK, CLI, HTTP, and MCP surface it through the shared audit result. `level` remains the public priority field (no `severity` field is introduced).
+- Decision record: `docs/decisions/2026-06-23-v0.370.0-tidb-returning-dialect-boundary.md`.
+
+### Non-Goals
+
+- Not a MariaDB dialect or a claim that MySQL dialect supports MariaDB `RETURNING`.
+- Not RETURNING column/expression projection or a `ReturningColumns`/`ReturningExpressions` field.
+- Not support for `REPLACE ... RETURNING` or unsupported multi-table `DELETE ... RETURNING`.
+- Not a configurable RETURNING policy rule, parser fallback, or inference from parse-error SQL.
+- Not new SDK, HTTP, or MCP bespoke interfaces.
+- Not a `severity` field.
+
 ## [v0.360.0] - 2026-06-21
 
 ### Added

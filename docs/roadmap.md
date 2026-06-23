@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.360.0 Config + Rule Explain UX
+## Latest Completed Milestone: v0.370.0 TiDB RETURNING Dialect Boundary
+
+**Goal:** upgrade the TiDB parser and draw a clean dialect boundary for DML `RETURNING`. TiDB dialect accepts parser-recognized `RETURNING`; MySQL Server dialect does not support DML `RETURNING`, so a parsed `RETURNING` on the MySQL dialect emits a dedicated global notice instead of a silent successful audit. `RETURNING` is no longer treated as a PostgreSQL-only syntax token. Does not add a `severity` field.
+
+### Completed Scope
+
+- TiDB parser bumped so DML `RETURNING` parses for `INSERT`, `UPDATE`, and single-table `DELETE` on the MySQL/TiDB parser path.
+- `spec.DML` gains an additive boolean JSON field `has_returning`, set only when the parsed statement has a real `RETURNING` clause. No returned column names, expressions, aliases, or parser subtrees are projected.
+- `RETURNING` removed from the PostgreSQL mismatch token heuristic. `ON CONFLICT`, `::`, `ALTER COLUMN TYPE USING`, and `GENERATED AS IDENTITY` keep their existing PostgreSQL mismatch notices.
+- New non-configurable global finding `dialect.mysql.returning.unsupported.notice` (level `notice`) on the MySQL dialect when a parsed DML carries a `RETURNING` clause; suggests re-running with `--dialect tidb` when the SQL targets TiDB. SDK, CLI, HTTP, and MCP surface it through the shared audit result.
+- SQL corpus: 582/582, 100.0%, 247 YAML fixture files.
+- Rule catalog unchanged at 371 rules.
+- `level` remains the priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-06-23-v0.370.0-tidb-returning-dialect-boundary.md`.
+
+### Non-Goals
+
+- Not a MariaDB dialect or a claim that MySQL dialect supports MariaDB `RETURNING`.
+- Not RETURNING column/expression projection or a `ReturningColumns`/`ReturningExpressions` field.
+- Not support for `REPLACE ... RETURNING` or unsupported multi-table `DELETE ... RETURNING`.
+- Not a configurable RETURNING policy rule, parser fallback, or inference from parse-error SQL.
+- Not new SDK, HTTP, or MCP bespoke interfaces.
+- Not a `severity` field.
+
+## Previous Milestone: v0.360.0 Config + Rule Explain UX
 
 **Goal:** sharpen the human-readable handoff between `config lint`, `rules explain`, and `config status` so a rule-level partial override surfaces a direct path to the effective rule status and a safe full-override example. Guidance text only; it does not change audit behavior, the default policy, any rule, parser support, or any machine-readable output shape. Does not add a `severity` field.
 
@@ -1411,6 +1435,7 @@ Tightened the PostgreSQL `CREATE TABLE` unsupported boundary contract at the ext
 
 Areas that may be addressed in future milestones (no dates committed):
 
+- TiDB parser DML `RETURNING` follow-ups: `REPLACE ... RETURNING`, unsupported multi-table `DELETE ... RETURNING`, RETURNING column/expression projection, and a possible MariaDB dialect.
 - Remaining PostgreSQL ALTER TABLE grammar branches (e.g., `SET TABLESPACE`).
 - PostgreSQL governance/admin DDL (`CREATE ROLE`, `GRANT`/`REVOKE` for non-table objects, `ALTER DEFAULT PRIVILEGES`).
 - Trigger lifecycle parity across MySQL, TiDB, and PostgreSQL (deferred from v0.64.0).

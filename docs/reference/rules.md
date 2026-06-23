@@ -1004,7 +1004,8 @@ v0.20.0 introduces additive behaviors that help identify dialect mismatches and 
 
 | Behavior | Rule-like ID | Description |
 |----------|-------------|-------------|
-| PostgreSQL syntax heuristic notice | `dialect.postgresql.syntax.detected.notice` | Emitted as a global advisory finding when MySQL/TiDB path auditing detects common PG-specific syntax tokens (`RETURNING`, `ON CONFLICT`, `::`, `ALTER COLUMN TYPE USING`, `GENERATED AS IDENTITY`). DeltaScope does not auto-switch dialect. |
+| PostgreSQL syntax heuristic notice | `dialect.postgresql.syntax.detected.notice` | Emitted as a global advisory finding when MySQL/TiDB path auditing detects common PG-specific syntax tokens (`ON CONFLICT`, `::`, `ALTER COLUMN TYPE USING`, `GENERATED AS IDENTITY`). `RETURNING` is no longer in this list; it is valid TiDB syntax. DeltaScope does not auto-switch dialect. |
+| MySQL DML RETURNING unsupported notice | `dialect.mysql.returning.unsupported.notice` | Emitted as a global advisory finding on the MySQL dialect when a parsed DML statement carries a `RETURNING` clause (the TiDB parser recognizes `INSERT`, `UPDATE`, and single-table `DELETE` `RETURNING`). MySQL Server does not support DML `RETURNING`; re-run with `--dialect tidb` if the SQL targets TiDB. TiDB dialect accepts `RETURNING` and does not fire this notice. |
 | PostgreSQL capability-boundary errors | — | Unsupported PG surfaces return typed `PostgreSQLCapabilityBoundaryError` instead of heuristic string matching. |
 | Heuristic false-positive exclusion | — | The PostgreSQL syntax heuristic does not fire for tokens inside string literals, double-quoted identifiers, backtick identifiers, line comments, or block comments. |
 | Trust context visibility | — | CLI output formats (json, markdown, quiet) include audit context with dialect source and trust notes. `github-actions` and `sarif` formats do not. |
