@@ -204,6 +204,52 @@ func TestExtractorDMLCapturesJoinAndSubqueryShapes(t *testing.T) {
 	}
 }
 
+func TestExtractorDMLProjectsReturningClause(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		Name         string
+		SQL          string
+		Operation    spec.DMLOperation
+		HasReturning bool
+	}{
+		{Name: "INSERT RETURNING sets fact", SQL: "insert into app.users (id, name) values (1, 'a') returning id", Operation: spec.DMLOperationInsert, HasReturning: true},
+		{Name: "UPDATE RETURNING sets fact", SQL: "update app.users set name = 'b' where id = 1 returning name", Operation: spec.DMLOperationUpdate, HasReturning: true},
+		{Name: "single-table DELETE RETURNING sets fact", SQL: "delete from app.users where id = 1 returning id", Operation: spec.DMLOperationDelete, HasReturning: true},
+		{Name: "INSERT without RETURNING omits fact", SQL: "insert into app.users (id, name) values (1, 'a')", Operation: spec.DMLOperationInsert, HasReturning: false},
+		{Name: "UPDATE without RETURNING omits fact", SQL: "update app.users set name = 'b' where id = 1", Operation: spec.DMLOperationUpdate, HasReturning: false},
+		{Name: "DELETE without RETURNING omits fact", SQL: "delete from app.users where id = 1", Operation: spec.DMLOperationDelete, HasReturning: false},
+		{Name: "INSERT column named returning is not a clause", SQL: "insert into app.users (id, returning) values (1, 2)", Operation: spec.DMLOperationInsert, HasReturning: false},
+		{Name: "UPDATE column named returning is not a clause", SQL: "update app.users set returning = 5 where id = 1", Operation: spec.DMLOperationUpdate, HasReturning: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			stmt := extractSingleStatement(t, tc.SQL)
+			if stmt.DML == nil || stmt.DML.Operation != tc.Operation {
+				t.Fatalf("expected %s dml statement, got %#v", tc.Operation, stmt.DML)
+			}
+			if stmt.DML.HasReturning != tc.HasReturning {
+				t.Fatalf("expected HasReturning=%v for %q, got %#v", tc.HasReturning, tc.SQL, stmt.DML)
+			}
+		})
+	}
+}
+
+func TestExtractorDMLReturningAliasDoesNotProjectClause(t *testing.T) {
+	t.Parallel()
+	// RETURNING is still a valid table alias outside the clause position. The
+	// structural fact must come from a real RETURNING clause, not the alias
+	// token, so a table aliased as "returning" must not set HasReturning.
+	stmt := extractSingleStatement(t, "update app.users returning set returning.name = 'b' where returning.id = 1")
+	if stmt.DML == nil || stmt.DML.Operation != spec.DMLOperationUpdate {
+		t.Fatalf("expected update dml statement, got %#v", stmt.DML)
+	}
+	if stmt.DML.HasReturning {
+		t.Fatalf("expected table alias 'returning' to not project a RETURNING clause, got %#v", stmt.DML)
+	}
+}
+
 func TestExtractorCapturesCreateViewDropAndTruncateFacts(t *testing.T) {
 	t.Parallel()
 	statements := extractStatements(t, `

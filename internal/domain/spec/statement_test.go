@@ -481,6 +481,51 @@ func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) 
 	}
 }
 
+func TestDMLPreservesHasReturningWhenTrue(t *testing.T) {
+	t.Parallel()
+	dml := DML{
+		Operation:    DMLOperationInsert,
+		HasReturning: true,
+	}
+
+	data, err := json.Marshal(dml)
+	if err != nil {
+		t.Fatalf("marshal dml: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if got := payload["has_returning"]; got != true {
+		t.Fatalf("expected has_returning json value true, got %#v", got)
+	}
+
+	var roundTrip DML
+	if err := json.Unmarshal(data, &roundTrip); err != nil {
+		t.Fatalf("unmarshal dml: %v", err)
+	}
+	if !roundTrip.HasReturning {
+		t.Fatalf("expected HasReturning to round-trip, got %#v", roundTrip)
+	}
+}
+
+func TestDMLOmitsHasReturningWhenFalse(t *testing.T) {
+	t.Parallel()
+	dml := DML{Operation: DMLOperationInsert}
+
+	data, err := json.Marshal(dml)
+	if err != nil {
+		t.Fatalf("marshal dml: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
+	}
+	if _, ok := payload["has_returning"]; ok {
+		t.Fatalf("expected has_returning to be omitted when false, got %#v", payload)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // v0.33.0 Task 2: Contract tests — generated/identity fact preservation
 // ---------------------------------------------------------------------------

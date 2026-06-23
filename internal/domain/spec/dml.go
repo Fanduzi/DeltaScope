@@ -29,6 +29,7 @@ type DML struct {
 	IsReplace      bool            `json:"is_replace,omitempty"`
 	IsInsertSelect bool            `json:"is_insert_select,omitempty"`
 	HasOnDuplicate bool            `json:"has_on_duplicate,omitempty"`
+	HasReturning   bool            `json:"has_returning,omitempty"`
 	PredicateShape PredicateShape  `json:"predicate_shape,omitempty"`
 	LookupColumns  []string        `json:"lookup_columns,omitempty"`
 	MatchedKeyName string          `json:"matched_key_name,omitempty"`

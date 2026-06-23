@@ -63,6 +63,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Metadata.FindObject` and `Metadata.FindObjectsByType` provide case-insensitive lookup across attached object snapshots.
 - `ObjectSnapshot.SafeAttributes` filters out sensitive attribute keys (password, secret, token, connection, body, definition, etc.) to prevent leaking secrets through metadata projection.
 - `DML.Tables` preserves the parser-neutral set of mutation target tables so denylist and future metadata-aware DML rules do not need to rediscover them from AST nodes.
+- `DML.HasReturning` records whether a real DML `RETURNING` clause was parsed. It is a structural parser fact projected from the AST (`len(stmt.Returning) > 0`), not a raw token scan, so an identifier or table alias named `returning` does not set it. It captures clause presence only; it does not carry returned column names, expressions, aliases, or any parser subtree.
 
 - `Column` now carries offline-governance facts needed by column-focused DDL rules:
   - `Length`

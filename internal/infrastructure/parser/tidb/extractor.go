@@ -343,7 +343,7 @@ func extractInsert(stmt *ast.InsertStmt) *spec.DML {
 	if len(tables) == 0 && stmt.Table != nil && stmt.Table.TableRefs != nil {
 		tables = extractMutationTables(stmt.Table.TableRefs)
 	}
-	return &spec.DML{Operation: spec.DMLOperationInsert, Tables: tables, InsertRows: len(stmt.Lists), IsReplace: stmt.IsReplace, IsInsertSelect: stmt.Select != nil, HasOnDuplicate: len(stmt.OnDuplicate) > 0, HasSubquery: nodeHasSubquery(stmt), HasJoin: joinExists(join), HasJoinOn: joinHasOn(join)}
+	return &spec.DML{Operation: spec.DMLOperationInsert, Tables: tables, InsertRows: len(stmt.Lists), IsReplace: stmt.IsReplace, IsInsertSelect: stmt.Select != nil, HasOnDuplicate: len(stmt.OnDuplicate) > 0, HasReturning: len(stmt.Returning) > 0, HasSubquery: nodeHasSubquery(stmt), HasJoin: joinExists(join), HasJoinOn: joinHasOn(join)}
 }
 
 func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
@@ -352,7 +352,7 @@ func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 	hasSubquery := nodeHasSubquery(stmt)
 	isSingleTable := len(tables) == 1 && !joinExists(join)
 	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.Where, join, isSingleTable)
-	return &spec.DML{Operation: spec.DMLOperationUpdate, Tables: tables, HasWhere: stmt.Where != nil, HasLimit: stmt.Limit != nil, HasOrderBy: stmt.Order != nil, HasSubquery: hasSubquery, HasJoin: joinExists(join), HasJoinOn: joinHasOn(join), PredicateShape: shape, LookupColumns: lookupColumns, MatchedKeyName: matchedKeyName, MatchedKeyKind: matchedKeyKind, IsSingleTable: isSingleTable}
+	return &spec.DML{Operation: spec.DMLOperationUpdate, Tables: tables, HasWhere: stmt.Where != nil, HasLimit: stmt.Limit != nil, HasOrderBy: stmt.Order != nil, HasSubquery: hasSubquery, HasJoin: joinExists(join), HasJoinOn: joinHasOn(join), HasReturning: len(stmt.Returning) > 0, PredicateShape: shape, LookupColumns: lookupColumns, MatchedKeyName: matchedKeyName, MatchedKeyKind: matchedKeyKind, IsSingleTable: isSingleTable}
 }
 
 func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
@@ -361,7 +361,7 @@ func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	hasSubquery := nodeHasSubquery(stmt)
 	isSingleTable := len(tables) == 1 && !joinExists(join)
 	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.Where, join, isSingleTable)
-	return &spec.DML{Operation: spec.DMLOperationDelete, Tables: tables, HasWhere: stmt.Where != nil, HasLimit: stmt.Limit != nil, HasOrderBy: stmt.Order != nil, HasSubquery: hasSubquery, HasJoin: joinExists(join), HasJoinOn: joinHasOn(join), PredicateShape: shape, LookupColumns: lookupColumns, MatchedKeyName: matchedKeyName, MatchedKeyKind: matchedKeyKind, IsSingleTable: isSingleTable}
+	return &spec.DML{Operation: spec.DMLOperationDelete, Tables: tables, HasWhere: stmt.Where != nil, HasLimit: stmt.Limit != nil, HasOrderBy: stmt.Order != nil, HasSubquery: hasSubquery, HasJoin: joinExists(join), HasJoinOn: joinHasOn(join), HasReturning: len(stmt.Returning) > 0, PredicateShape: shape, LookupColumns: lookupColumns, MatchedKeyName: matchedKeyName, MatchedKeyKind: matchedKeyKind, IsSingleTable: isSingleTable}
 }
 
 func extractColumn(col *ast.ColumnDef) spec.Column {
