@@ -1,0 +1,13 @@
+name: insert_returning
+dialect: tidb
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  unsupported:
+    count: 0
+  findings:
+    include: []
+    exclude:
+      - dialect.mysql.returning.unsupported.notice
+      - dialect.postgresql.syntax.detected.notice

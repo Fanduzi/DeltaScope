@@ -23,6 +23,7 @@ import (
 )
 
 const postgreSQLSyntaxNoticeRuleID = "dialect.postgresql.syntax.detected.notice"
+const mysqlReturningUnsupportedNoticeRuleID = "dialect.mysql.returning.unsupported.notice"
 
 // pgCapabilityBoundaryIsRealParser returns true when the PG-capable parser is
 // linked in (CGO_ENABLED=1 -tags postgresql). It returns false when the stub
@@ -499,7 +500,7 @@ func TestAuditCommandShowsPostgreSQLSyntaxNoticeOnParseErrorStdout(t *testing.T)
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;", "--dialect", "mysql", "--fail-on", "notice"},
+		[]string{"audit", "--sql", "insert into users(id) values (1) on conflict (id) do nothing;", "--dialect", "mysql", "--fail-on", "notice"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -535,7 +536,7 @@ func TestAuditCommandParseErrorJSONDoesNotReportPassVerdict(t *testing.T) {
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;", "--dialect", "mysql", "--fail-on", "notice", "--format", "json"},
+		[]string{"audit", "--sql", "insert into users(id) values (1) on conflict (id) do nothing;", "--dialect", "mysql", "--fail-on", "notice", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -570,7 +571,7 @@ func TestAuditCommandParseErrorNoticeDoesNotImplyDialectSwitch(t *testing.T) {
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;"},
+		[]string{"audit", "--sql", "insert into users(id) values (1) on conflict (id) do nothing;"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -592,6 +593,88 @@ func TestAuditCommandParseErrorNoticeDoesNotImplyDialectSwitch(t *testing.T) {
 	if stderr.Len() == 0 {
 		t.Fatal("expected parse error on stderr")
 	}
+}
+
+func TestAuditCommandMySQLReturningEmitsUnsupportedNoticeJSON(t *testing.T) {
+	t.Parallel()
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "insert into users(id) values (1) returning id;", "--dialect", "mysql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("expected successful audit exit code 0 for mysql returning, got %d\nstdout=%s", code, stdout.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
+	}
+	findings, ok := decoded["global_findings"].([]any)
+	if !ok {
+		t.Fatalf("expected global_findings array, got %#v", decoded["global_findings"])
+	}
+	var hasMySQLReturning, hasPostgreSQL bool
+	var notice map[string]any
+	for _, item := range findings {
+		finding, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		switch finding["rule_id"] {
+		case mysqlReturningUnsupportedNoticeRuleID:
+			hasMySQLReturning = true
+			notice = finding
+		case postgreSQLSyntaxNoticeRuleID:
+			hasPostgreSQL = true
+		}
+	}
+	if !hasMySQLReturning {
+		t.Fatalf("expected mysql returning unsupported notice, got %#v", findings)
+	}
+	if hasPostgreSQL {
+		t.Fatalf("did not expect postgresql syntax notice for mysql returning, got %#v", findings)
+	}
+	// no-leak: the finding payload (message + metadata + explanation) must not echo
+	// raw SQL, returned column names/expressions, parser fragments, or a severity field.
+	rawSQLFragments := []string{"values (1)", "insert into", "returning id"}
+	assertNoRawSQLInString := func(label, value string) {
+		t.Helper()
+		for _, fragment := range rawSQLFragments {
+			if strings.Contains(strings.ToLower(value), fragment) {
+				t.Fatalf("finding %q leaked raw sql fragment %q: %q", label, fragment, value)
+			}
+		}
+	}
+	if msg, ok := notice["message"].(string); ok {
+		assertNoRawSQLInString("message", msg)
+	}
+	if suggestion, ok := notice["suggestion"].(string); ok {
+		assertNoRawSQLInString("suggestion", suggestion)
+	}
+	if explanation, ok := notice["explanation"].(map[string]any); ok {
+		for key, value := range explanation {
+			if s, ok := value.(string); ok {
+				assertNoRawSQLInString("explanation."+key, s)
+			}
+		}
+	}
+	if metadata, ok := notice["metadata"].(map[string]any); ok {
+		for key, value := range metadata {
+			if s, ok := value.(string); ok {
+				assertNoRawSQLInString("metadata."+key, s)
+			}
+		}
+	}
+	if _, ok := notice["severity"]; ok {
+		t.Fatalf("did not expect severity field on mysql returning notice, got %#v", notice)
+	}
+	_ = stderr
 }
 
 func TestAuditCommandShowsPostgreSQLSyntaxNoticeOnStdout(t *testing.T) {

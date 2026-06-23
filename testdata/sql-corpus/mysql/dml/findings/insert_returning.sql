@@ -1,0 +1,1 @@
+INSERT INTO users (id) VALUES (1) RETURNING id;

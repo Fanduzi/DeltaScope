@@ -181,7 +181,7 @@ func TestAuditReturnsCapabilityBoundaryErrorForExplicitPostgreSQLOnUnsupportedBu
 
 func TestAuditMySQLParseablePGSyntaxReturnsInputErrorWithoutPartialResult(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
-		SQL:     "insert into users(id) values (1) returning id;",
+		SQL:     "select id::bigint from users;",
 		Dialect: DialectMySQL,
 	})
 	if err == nil {
@@ -192,6 +192,41 @@ func TestAuditMySQLParseablePGSyntaxReturnsInputErrorWithoutPartialResult(t *tes
 	}
 	if result.Verdict != "" || len(result.Statements) != 0 || len(result.GlobalFindings) != 0 || len(result.Unsupported) != 0 || result.Explanation != nil {
 		t.Fatalf("expected zero public result on input error, got %#v", result)
+	}
+}
+
+func TestAuditMySQLReturningEmitsUnsupportedNotice(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "insert into users(id) values (1) returning id;",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("expected successful audit for mysql returning, got %v", err)
+	}
+	var notice *Finding
+	for i := range result.GlobalFindings {
+		if result.GlobalFindings[i].RuleID == "dialect.mysql.returning.unsupported.notice" {
+			notice = &result.GlobalFindings[i]
+			break
+		}
+	}
+	if notice == nil {
+		t.Fatalf("expected mysql returning unsupported notice, got %#v", result.GlobalFindings)
+	}
+	if notice.Level != LevelNotice {
+		t.Fatalf("expected notice level, got %#v", notice)
+	}
+	for _, finding := range result.GlobalFindings {
+		if finding.RuleID == "dialect.postgresql.syntax.detected.notice" {
+			t.Fatalf("did not expect postgresql syntax notice for mysql returning, got %#v", finding)
+		}
+	}
+	// no-leak: the finding payload must not echo raw sql or carry a severity field.
+	if strings.Contains(strings.ToLower(notice.Message), "values (1)") || strings.Contains(strings.ToLower(notice.Message), "insert into") {
+		t.Fatalf("did not expect raw sql fragment in notice message, got %q", notice.Message)
+	}
+	if _, ok := notice.Metadata["severity"]; ok {
+		t.Fatalf("did not expect severity metadata on mysql returning notice, got %#v", notice.Metadata)
 	}
 }
 
