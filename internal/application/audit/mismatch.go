@@ -7,15 +7,21 @@ import (
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 var possiblePostgreSQLMismatchPatterns = []regexpPatternHint{
-	{pattern: regexp.MustCompile(`(?i)\breturning\b`), token: "RETURNING"},
 	{pattern: regexp.MustCompile(`(?i)\bon\s+conflict\b`), token: "ON CONFLICT"},
 	{pattern: regexp.MustCompile(`::`), token: "::"},
 	{pattern: regexp.MustCompile(`(?i)\balter\s+table\b[\s\S]*\balter\s+column\b[\s\S]*\btype\b[\s\S]*\busing\b`), token: "ALTER COLUMN TYPE USING"},
 	{pattern: regexp.MustCompile(`(?i)\bgenerated\b[\s\S]*\bas\s+identity\b`), token: "GENERATED AS IDENTITY"},
 }
+
+// mysqlReturningUnsupportedNoticeRuleID is the stable rule id for the
+// non-configurable MySQL dialect-boundary notice emitted when a parsed DML
+// statement carries a RETURNING clause on the MySQL Server path. MySQL Server
+// does not support DML RETURNING; TiDB does.
+const mysqlReturningUnsupportedNoticeRuleID = "dialect.mysql.returning.unsupported.notice"
 
 type regexpPatternHint struct {
 	pattern *regexp.Regexp
@@ -140,6 +146,42 @@ func buildPossiblePostgreSQLMismatchFinding(dialect string, token string) rule.F
 			Why:        fmt.Sprintf("Detected PostgreSQL-specific syntax %q while auditing on the %s path.", token, dialect),
 			Risk:       "DeltaScope does not auto-switch dialect. Auditing PostgreSQL SQL with the MySQL/TiDB parser can produce misleading parse errors or incomplete findings.",
 			Suggestion: "If this SQL targets PostgreSQL, re-run with --dialect postgresql to get accurate findings. If not, you can safely ignore this notice.",
+		},
+	}
+}
+
+// statementHasMySQLUnsupportedReturning reports whether a parsed statement is a
+// MySQL-dialect DML carrying a real RETURNING clause. This is a structural
+// parser fact (statement.DML.HasReturning), not a raw token scan, so an
+// identifier or alias named "returning" does not trigger it. TiDB statements
+// never match because TiDB supports DML RETURNING.
+func statementHasMySQLUnsupportedReturning(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectMySQL && statement.DML != nil && statement.DML.HasReturning
+}
+
+// buildMySQLReturningUnsupportedFinding constructs the non-configurable MySQL
+// dialect-boundary notice for a parsed DML RETURNING clause. The payload carries
+// only bounded tokens (current dialect, suggested dialect, token name); it never
+// carries raw SQL, returned column names, expressions, parser error fragments,
+// connection details, credentials, or routine bodies.
+func buildMySQLReturningUnsupportedFinding(dialect string) rule.Finding {
+	message := "MySQL Server does not support DML RETURNING; if this SQL targets TiDB, re-run with --dialect tidb."
+	suggestion := "If this SQL targets TiDB, re-run with --dialect tidb to audit RETURNING accurately. If it targets MySQL Server, remove the RETURNING clause."
+	return rule.Finding{
+		RuleID:     mysqlReturningUnsupportedNoticeRuleID,
+		Level:      rule.LevelNotice,
+		Message:    message,
+		Suggestion: suggestion,
+		Metadata: map[string]any{
+			"dialect":           dialect,
+			"suggested_dialect": "tidb",
+			"token":             "RETURNING",
+		},
+		Explanation: &rule.FindingExplanation{
+			Summary:    message,
+			Why:        fmt.Sprintf("Detected a DML RETURNING clause while auditing on the %s dialect path. MySQL Server does not support RETURNING; TiDB does.", dialect),
+			Risk:       "DeltaScope does not auto-switch dialect. RETURNING syntax is valid for TiDB but not for MySQL Server, so findings may not apply to MySQL Server.",
+			Suggestion: suggestion,
 		},
 	}
 }

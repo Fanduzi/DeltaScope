@@ -140,7 +140,7 @@ func assertHasPostgreSQLSyntaxNotice(t *testing.T, result report.Result, token s
 func TestAuditPostgreSQLSyntaxNoticeProvidesExplicitTrustGuidance(t *testing.T) {
 	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "insert into users(id) values (1) returning id;",
+		SQL:     "insert into users(id) values (1) on conflict (id) do nothing;",
 		Dialect: spec.DialectMySQL,
 	})
 	if err == nil {
@@ -206,18 +206,130 @@ func TestAuditSQLAcceptsPostgreSQLAtValidationBoundary(t *testing.T) {
 	}
 }
 
-func TestAuditAddsPostgreSQLSyntaxNoticeForReturning(t *testing.T) {
+func assertHasMySQLReturningUnsupportedNotice(t *testing.T, result report.Result) {
+	t.Helper()
+	var finding *rule.Finding
+	for i := range result.GlobalFindings {
+		if result.GlobalFindings[i].RuleID == mysqlReturningUnsupportedNoticeRuleID {
+			finding = &result.GlobalFindings[i]
+			break
+		}
+	}
+	if finding == nil {
+		t.Fatalf("expected mysql returning unsupported notice %q, got %#v", mysqlReturningUnsupportedNoticeRuleID, result.GlobalFindings)
+	}
+	if finding.Level != rule.LevelNotice {
+		t.Fatalf("expected notice level, got %#v", finding)
+	}
+	if !strings.Contains(strings.ToLower(finding.Message), "mysql server does not support") {
+		t.Fatalf("expected mysql-server-scoped message, got %#v", finding.Message)
+	}
+	if strings.Contains(strings.ToLower(finding.Message), "postgresql") {
+		t.Fatalf("did not expect postgresql wording in mysql returning notice, got %#v", finding.Message)
+	}
+	if !strings.Contains(finding.Message, "--dialect tidb") {
+		t.Fatalf("expected tidb dialect guidance in message, got %#v", finding.Message)
+	}
+	if finding.Explanation == nil {
+		t.Fatalf("expected explanation, got %#v", finding)
+	}
+	if finding.Metadata["token"] != "RETURNING" {
+		t.Fatalf("expected token metadata RETURNING, got %#v", finding.Metadata)
+	}
+	if finding.Metadata["suggested_dialect"] != "tidb" {
+		t.Fatalf("expected suggested_dialect tidb, got %#v", finding.Metadata)
+	}
+}
+
+func TestAuditMySQLReturningEmitsUnsupportedNotice(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		sql  string
+	}{
+		{name: "INSERT RETURNING", sql: "insert into users(id, name) values (1, 'a') returning id"},
+		{name: "UPDATE RETURNING", sql: "update users set name = 'b' where id = 1 returning name"},
+		{name: "single-table DELETE RETURNING", sql: "delete from users where id = 1 returning id"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tc.sql,
+				Dialect: spec.DialectMySQL,
+			})
+			if err != nil {
+				t.Fatalf("expected %s to audit without parse error on mysql, got %v", tc.name, err)
+			}
+			assertHasMySQLReturningUnsupportedNotice(t, result)
+			assertHasNoPostgreSQLSyntaxNotice(t, result)
+		})
+	}
+}
+
+func TestAuditTiDBReturningEmitsNoDialectBoundaryNotice(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		sql  string
+	}{
+		{name: "INSERT RETURNING", sql: "insert into users(id, name) values (1, 'a') returning id"},
+		{name: "UPDATE RETURNING", sql: "update users set name = 'b' where id = 1 returning name"},
+		{name: "single-table DELETE RETURNING", sql: "delete from users where id = 1 returning id"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tc.sql,
+				Dialect: spec.DialectTiDB,
+			})
+			if err != nil {
+				t.Fatalf("expected %s to audit without parse error on tidb, got %v", tc.name, err)
+			}
+			assertHasNoPostgreSQLSyntaxNotice(t, result)
+			for _, finding := range result.GlobalFindings {
+				if finding.RuleID == mysqlReturningUnsupportedNoticeRuleID {
+					t.Fatalf("did not expect mysql returning notice on tidb, got %#v", finding)
+				}
+			}
+		})
+	}
+}
+
+func TestAuditMySQLReturningIdentifierDoesNotEmitNotice(t *testing.T) {
+	t.Parallel()
+	// "returning" as a column name is not a RETURNING clause. The structural
+	// fact must not fire, and RETURNING is no longer a raw-token PG mismatch.
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "insert into users (id, returning) values (1, 2);",
+		Dialect: spec.DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+	for _, finding := range result.GlobalFindings {
+		if finding.RuleID == mysqlReturningUnsupportedNoticeRuleID {
+			t.Fatalf("did not expect mysql returning notice for a column named returning, got %#v", finding)
+		}
+	}
+}
+
+func TestAuditMySQLGenericSyntaxErrorDoesNotEmitReturningNotice(t *testing.T) {
 	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "insert into users(id) values (1) returning id;",
+		SQL:     "select from users where;",
 		Dialect: spec.DialectMySQL,
 	})
 	if err == nil {
-		t.Fatal("expected parse error")
+		t.Fatal("expected parse error for generic syntax error")
 	}
-	assertHasPostgreSQLSyntaxNotice(t, result, "RETURNING")
-	if result.Verdict == report.VerdictPass {
-		t.Fatalf("expected parse-error partial result to avoid pass verdict, got %#v", result)
+	assertHasNoPostgreSQLSyntaxNotice(t, result)
+	for _, finding := range result.GlobalFindings {
+		if finding.RuleID == mysqlReturningUnsupportedNoticeRuleID {
+			t.Fatalf("did not expect mysql returning notice for a generic syntax error, got %#v", finding)
+		}
 	}
 }
 

@@ -128,6 +128,14 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 			result = addGlobalFinding(result, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
 		}
 	}
+	if request.Dialect == spec.DialectMySQL {
+		for _, statement := range statements {
+			if statementHasMySQLUnsupportedReturning(statement) {
+				result = addGlobalFinding(result, buildMySQLReturningUnsupportedFinding(string(request.Dialect)))
+				break
+			}
+		}
+	}
 	if len(result.Unsupported) > 0 {
 		result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
 		return result, fmt.Errorf("%w: %d item(s)", ErrUnsupportedStatement, len(result.Unsupported))

@@ -57,25 +57,28 @@ func TestParseRejectsUnknownDialect(t *testing.T) {
 	}
 }
 
-func TestParseMySQLPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
+func TestParseMySQLReturningParsesWithoutError(t *testing.T) {
 	t.Parallel()
-	_, err := Parse(context.Background(), "insert into users (name) values ('alice') returning id;", spec.DialectMySQL)
-	if err == nil {
-		t.Fatal("expected parse error")
+	// After the TiDB parser bump, DML RETURNING parses successfully on the
+	// MySQL path. It is no longer a parse error, so the application layer must
+	// reflect that and surface the dialect boundary as a notice instead.
+	result, err := Parse(context.Background(), "insert into users (name) values ('alice') returning id;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("expected RETURNING to parse on mysql, got %v", err)
 	}
-	if strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("did not expect dialect mismatch hint, got %v", err)
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 parsed statement, got %d", len(result.Statements))
 	}
 }
 
-func TestParseTiDBPGSyntaxReturnsParseErrorWithoutMismatchHint(t *testing.T) {
+func TestParseTiDBReturningParsesWithoutError(t *testing.T) {
 	t.Parallel()
-	_, err := Parse(context.Background(), "insert into users (name) values ('alice') returning id;", spec.DialectTiDB)
-	if err == nil {
-		t.Fatal("expected parse error")
+	result, err := Parse(context.Background(), "insert into users (name) values ('alice') returning id;", spec.DialectTiDB)
+	if err != nil {
+		t.Fatalf("expected RETURNING to parse on tidb, got %v", err)
 	}
-	if strings.Contains(strings.ToLower(err.Error()), "dialect mismatch") {
-		t.Fatalf("did not expect dialect mismatch hint, got %v", err)
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 parsed statement, got %d", len(result.Statements))
 	}
 }
 
