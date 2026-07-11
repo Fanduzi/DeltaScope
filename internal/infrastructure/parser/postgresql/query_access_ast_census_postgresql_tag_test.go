@@ -16,6 +16,7 @@ package postgresql
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	pg_query "github.com/pganalyze/pg_query_go/v6"
@@ -23,14 +24,14 @@ import (
 
 // pgQueryAccessTestCase defines one characterization test row.
 type pgQueryAccessTestCase struct {
-	name       string
-	sql        string
-	wantErr    bool   // true if parse should fail
-	classify   string // approved | not_read_only | indeterminate
-	wantNode      string // expected AST node type name (empty = don't check)
-	wantZeroStmts     bool   // true if input should produce zero parsed statements
-	expectFuncIndicator bool // true if indeterminate case expects a function call indicator
-	notes             string // human-readable evidence note
+	name                string
+	sql                 string
+	wantErr             bool   // true if parse should fail
+	classify            string // approved | not_read_only | indeterminate
+	wantNode            string // expected AST node type name (empty = don't check)
+	wantZeroStmts       bool   // true if input should produce zero parsed statements
+	expectFuncIndicator bool   // true if indeterminate case expects a function call indicator
+	notes               string // human-readable evidence note
 }
 
 // PGQueryAccessCensus is the characterization matrix for PostgreSQL SELECT-related
@@ -478,7 +479,7 @@ func TestPGQueryAccessASTCensus(t *testing.T) {
 				return
 			}
 
-			// Assert ALL statements match expected node type (P1-1: multi-statement)
+			// Assert first statement matches expected node type (P1-1: multi-statement)
 			for i, rawStmt := range stmts {
 				node := rawStmt.GetStmt()
 				if node == nil {
@@ -490,16 +491,20 @@ func TestPGQueryAccessASTCensus(t *testing.T) {
 				}
 			}
 
-			firstNode := stmts[0].GetStmt()
-
-			// Assert classification-critical structural facts per classification
-			switch tc.classify {
-			case "approved":
-				assertPGApprovedFacts(t, tc.name, firstNode)
-			case "not_read_only":
-				assertPGNotReadOnlyFacts(t, tc.name, firstNode, tc.sql, len(stmts))
-			case "indeterminate":
-				assertPGIndeterminateFacts(t, tc.name, firstNode, tc.sql, tc.expectFuncIndicator)
+			// Assert classification-critical structural facts on EACH statement (P1-1)
+			for i, rawStmt := range stmts {
+				node := rawStmt.GetStmt()
+				if node == nil {
+					continue
+				}
+				switch tc.classify {
+				case "approved":
+					assertPGApprovedFacts(t, tc.name, node)
+				case "not_read_only":
+					assertPGNotReadOnlyFacts(t, tc.name, node, tc.sql, len(stmts), i)
+				case "indeterminate":
+					assertPGIndeterminateFacts(t, tc.name, node, tc.sql, tc.expectFuncIndicator)
+				}
 			}
 
 			// Assert multi-statement: all statements classified consistently (P1-1)
@@ -606,7 +611,7 @@ func assertPGApprovedFacts(t *testing.T, name string, node *pg_query.Node) {
 	}
 }
 
-func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sql string, stmtCount int) {
+func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sql string, stmtCount int, stmtIndex int) {
 	t.Helper()
 	switch n := node.GetNode().(type) {
 	case *pg_query.Node_SelectStmt:
@@ -615,27 +620,55 @@ func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sq
 		hasInto := sel.GetIntoClause() != nil
 		hasDataModCTE := pgSelectHasDataModifyingCTE(sel)
 		if hasLock {
-			t.Logf("census[%s]: LockingClause has %d items confirms not_read_only", name, len(sel.GetLockingClause()))
+			t.Logf("census[%s]: stmt[%d] LockingClause has %d items confirms not_read_only", name, stmtIndex, len(sel.GetLockingClause()))
 		}
 		if hasInto {
-			t.Logf("census[%s]: IntoClause != nil confirms not_read_only", name)
+			t.Logf("census[%s]: stmt[%d] IntoClause != nil confirms not_read_only", name, stmtIndex)
 		}
 		if hasDataModCTE {
-			t.Logf("census[%s]: data-modifying CTE confirms not_read_only", name)
+			t.Logf("census[%s]: stmt[%d] data-modifying CTE confirms not_read_only", name, stmtIndex)
+		}
+		caseName := name
+		if stmtIndex > 0 {
+			caseName = fmt.Sprintf("%s_stmt%d", name, stmtIndex)
+		}
+		if strings.Contains(caseName, "lock") || strings.Contains(caseName, "for_update") || strings.Contains(caseName, "for_share") || strings.Contains(caseName, "for_no_key_update") || strings.Contains(caseName, "for_key_share") {
+			if !hasLock {
+				t.Errorf("not_read_only %q[%d]: locking case requires LockingClause", name, stmtIndex)
+			}
+		}
+		if strings.Contains(caseName, "into") {
+			if !hasInto {
+				t.Errorf("not_read_only %q[%d]: INTO case requires IntoClause", name, stmtIndex)
+			}
+		}
+		if strings.Contains(caseName, "data_modifying_cte") {
+			if !hasDataModCTE {
+				t.Errorf("not_read_only %q[%d]: data-modifying CTE case requires pgSelectHasDataModifyingCTE", name, stmtIndex)
+			}
 		}
 		if stmtCount == 1 && !hasLock && !hasInto && !hasDataModCTE {
-			t.Errorf("not_read_only %q: single-statement SELECT has no LockingClause, IntoClause, or data-modifying CTE", name)
+			t.Errorf("not_read_only %q[%d]: single-statement SELECT has no LockingClause, IntoClause, or data-modifying CTE", name, stmtIndex)
 		}
 	case *pg_query.Node_ExplainStmt:
 		hasAnalyze := false
 		for _, opt := range n.ExplainStmt.GetOptions() {
 			if defElem := opt.GetDefElem(); defElem != nil && defElem.GetDefname() == "analyze" {
 				hasAnalyze = true
-				t.Logf("census[%s]: ExplainStmt has analyze option confirms not_read_only", name)
+				t.Logf("census[%s]: stmt[%d] ExplainStmt has analyze option confirms not_read_only", name, stmtIndex)
+			}
+		}
+		caseName := name
+		if stmtIndex > 0 {
+			caseName = fmt.Sprintf("%s_stmt%d", name, stmtIndex)
+		}
+		if strings.Contains(caseName, "explain_analyze") || strings.Contains(caseName, "analyze") {
+			if !hasAnalyze {
+				t.Errorf("not_read_only %q[%d]: EXPLAIN ANALYZE case requires analyze option", name, stmtIndex)
 			}
 		}
 		if !hasAnalyze {
-			t.Errorf("not_read_only %q: ExplainStmt expected analyze option, none found", name)
+			t.Errorf("not_read_only %q[%d]: ExplainStmt expected analyze option, none found", name, stmtIndex)
 		}
 	}
 }
@@ -666,8 +699,25 @@ func assertPGMultiStatementFacts(t *testing.T, name string, classify string, stm
 	case "approved":
 		for i, rawStmt := range stmts {
 			node := rawStmt.GetStmt()
-			if node != nil && pgIsWriteNode(node) {
+			if node == nil {
+				continue
+			}
+			if pgIsWriteNode(node) {
 				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, pgNodeTypeName(node))
+			}
+			if sel := node.GetSelectStmt(); sel != nil {
+				if len(sel.GetLockingClause()) > 0 {
+					t.Errorf("multi-statement %q[%d]: approved but has LockingClause", name, i)
+				}
+				if sel.GetIntoClause() != nil {
+					t.Errorf("multi-statement %q[%d]: approved but has IntoClause", name, i)
+				}
+				if pgSelectHasDataModifyingCTE(sel) {
+					t.Errorf("multi-statement %q[%d]: approved but has data-modifying CTE", name, i)
+				}
+				if pgContainsFunctionCall(node) {
+					t.Errorf("multi-statement %q[%d]: approved but has function call indicator", name, i)
+				}
 			}
 		}
 	case "not_read_only":
@@ -680,7 +730,26 @@ func assertPGMultiStatementFacts(t *testing.T, name string, classify string, stm
 			}
 		}
 		if !hasWrite {
-			t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
+			hasLockOrIntoOrCTE := false
+			for _, rawStmt := range stmts {
+				node := rawStmt.GetStmt()
+				if sel := node.GetSelectStmt(); sel != nil {
+					if len(sel.GetLockingClause()) > 0 || sel.GetIntoClause() != nil || pgSelectHasDataModifyingCTE(sel) {
+						hasLockOrIntoOrCTE = true
+						break
+					}
+				}
+			}
+			if !hasLockOrIntoOrCTE {
+				t.Errorf("multi-statement %q: classified not_read_only but no write node, lock, INTO, or data-modifying CTE found", name)
+			}
+		}
+	case "indeterminate":
+		for i, rawStmt := range stmts {
+			node := rawStmt.GetStmt()
+			if node != nil && pgContainsFunctionCall(node) {
+				t.Logf("census[%s]: multi-statement[%d] has function call → indeterminate", name, i)
+			}
 		}
 	}
 }

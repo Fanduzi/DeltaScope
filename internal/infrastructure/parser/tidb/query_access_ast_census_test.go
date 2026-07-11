@@ -15,6 +15,7 @@ package tidbparser
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -22,14 +23,14 @@ import (
 
 // queryAccessTestCase defines one characterization test row.
 type queryAccessTestCase struct {
-	name       string
-	sql        string
-	wantErr    bool   // true if parse should fail
-	classify   string // approved | not_read_only | indeterminate
-	wantNode      string // expected AST node type name (empty = don't check)
-	wantZeroStmts     bool   // true if input should produce zero parsed statements
-	expectFuncIndicator bool // true if indeterminate case expects a function call indicator
-	notes             string // human-readable evidence note
+	name                string
+	sql                 string
+	wantErr             bool   // true if parse should fail
+	classify            string // approved | not_read_only | indeterminate
+	wantNode            string // expected AST node type name (empty = don't check)
+	wantZeroStmts       bool   // true if input should produce zero parsed statements
+	expectFuncIndicator bool   // true if indeterminate case expects a function call indicator
+	notes               string // human-readable evidence note
 }
 
 // TiDBQueryAccessCensus is the characterization matrix for TiDB SELECT-related
@@ -452,7 +453,7 @@ func TestQueryAccessASTCensus(t *testing.T) {
 				return
 			}
 
-			// Assert ALL statements match expected node type (P1-1: multi-statement)
+			// Assert first statement matches expected node type (P1-1: multi-statement)
 			for i, stmt := range result.Statements {
 				nodeType := nodeTypeName(stmt)
 				if tc.wantNode != "" && i == 0 && nodeType != tc.wantNode {
@@ -460,16 +461,16 @@ func TestQueryAccessASTCensus(t *testing.T) {
 				}
 			}
 
-			firstStmt := result.Statements[0]
-
-			// Assert classification-critical structural facts per classification
-			switch tc.classify {
-			case "approved":
-				assertApprovedFacts(t, tc.name, firstStmt)
-			case "not_read_only":
-				assertNotReadOnlyFacts(t, tc.name, firstStmt, tc.sql, len(result.Statements))
-			case "indeterminate":
-				assertIndeterminateFacts(t, tc.name, firstStmt, tc.sql, tc.expectFuncIndicator)
+			// Assert classification-critical structural facts on EACH statement (P1-1)
+			for i, stmt := range result.Statements {
+				switch tc.classify {
+				case "approved":
+					assertApprovedFacts(t, tc.name, stmt)
+				case "not_read_only":
+					assertNotReadOnlyFacts(t, tc.name, stmt, tc.sql, len(result.Statements), i)
+				case "indeterminate":
+					assertIndeterminateFacts(t, tc.name, stmt, tc.sql, tc.expectFuncIndicator)
+				}
 			}
 
 			// Assert multi-statement: all statements classified consistently (P1-1)
@@ -494,26 +495,40 @@ func assertApprovedFacts(t *testing.T, name string, stmt ast.StmtNode) {
 }
 
 // assertNotReadOnlyFacts verifies that not_read_only queries have decisive write indicators.
-func assertNotReadOnlyFacts(t *testing.T, name string, stmt ast.StmtNode, sql string, stmtCount int) {
+func assertNotReadOnlyFacts(t *testing.T, name string, stmt ast.StmtNode, sql string, stmtCount int, stmtIndex int) {
 	t.Helper()
 	switch s := stmt.(type) {
 	case *ast.SelectStmt:
 		hasLock := s.LockInfo != nil
 		hasInto := s.SelectIntoOpt != nil
 		if hasLock {
-			t.Logf("census[%s]: LockInfo.LockType=%d confirms not_read_only", name, s.LockInfo.LockType)
+			t.Logf("census[%s]: stmt[%d] LockInfo.LockType=%d confirms not_read_only", name, stmtIndex, s.LockInfo.LockType)
 		}
 		if hasInto {
-			t.Logf("census[%s]: SelectIntoOpt != nil confirms not_read_only", name)
+			t.Logf("census[%s]: stmt[%d] SelectIntoOpt != nil confirms not_read_only", name, stmtIndex)
+		}
+		caseName := name
+		if stmtIndex > 0 {
+			caseName = fmt.Sprintf("%s_stmt%d", name, stmtIndex)
+		}
+		if strings.Contains(caseName, "lock") || strings.Contains(caseName, "for_update") || strings.Contains(caseName, "for_share") {
+			if !hasLock {
+				t.Errorf("not_read_only %q[%d]: locking case requires LockInfo != nil", name, stmtIndex)
+			}
+		}
+		if strings.Contains(caseName, "into") {
+			if !hasInto {
+				t.Errorf("not_read_only %q[%d]: INTO case requires SelectIntoOpt != nil", name, stmtIndex)
+			}
 		}
 		if stmtCount == 1 && !hasLock && !hasInto {
-			t.Errorf("not_read_only %q: single-statement SELECT has no LockInfo and no SelectIntoOpt", name)
+			t.Errorf("not_read_only %q[%d]: single-statement SELECT has no LockInfo and no SelectIntoOpt", name, stmtIndex)
 		}
 	case *ast.ExplainStmt:
 		if s.Analyze {
-			t.Logf("census[%s]: ExplainStmt.Analyze=true confirms not_read_only", name)
+			t.Logf("census[%s]: stmt[%d] ExplainStmt.Analyze=true confirms not_read_only", name, stmtIndex)
 		} else {
-			t.Errorf("not_read_only %q: ExplainStmt expected Analyze=true, got false", name)
+			t.Errorf("not_read_only %q[%d]: ExplainStmt expected Analyze=true, got false", name, stmtIndex)
 		}
 	}
 }
@@ -543,6 +558,17 @@ func assertMultiStatementFacts(t *testing.T, name string, classify string, stmts
 			if isWriteNode(stmt) {
 				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, nodeTypeName(stmt))
 			}
+			if sel, ok := stmt.(*ast.SelectStmt); ok {
+				if sel.LockInfo != nil {
+					t.Errorf("multi-statement %q[%d]: approved but has LockInfo", name, i)
+				}
+				if sel.SelectIntoOpt != nil {
+					t.Errorf("multi-statement %q[%d]: approved but has SelectIntoOpt", name, i)
+				}
+				if containsFunctionCall(sel) {
+					t.Errorf("multi-statement %q[%d]: approved but has function call indicator", name, i)
+				}
+			}
 		}
 	case "not_read_only":
 		hasWrite := false
@@ -553,7 +579,26 @@ func assertMultiStatementFacts(t *testing.T, name string, classify string, stmts
 			}
 		}
 		if !hasWrite {
-			t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
+			hasLockOrInto := false
+			for _, s := range stmts {
+				if sel, ok := s.(*ast.SelectStmt); ok {
+					if sel.LockInfo != nil || sel.SelectIntoOpt != nil {
+						hasLockOrInto = true
+						break
+					}
+				}
+			}
+			if !hasLockOrInto {
+				t.Errorf("multi-statement %q: classified not_read_only but no write node, lock, or INTO indicator found", name)
+			}
+		}
+	case "indeterminate":
+		for i, stmt := range stmts {
+			if sel, ok := stmt.(*ast.SelectStmt); ok {
+				if containsFunctionCall(sel) {
+					t.Logf("census[%s]: multi-statement[%d] has function call → indeterminate", name, i)
+				}
+			}
 		}
 	}
 }
@@ -631,8 +676,8 @@ func TestQueryAccessAuditRegression(t *testing.T) {
 	p := New()
 
 	cases := []struct {
-		name    string
-		sql     string
+		name     string
+		sql      string
 		wantKind string
 	}{
 		{"create_table", "CREATE TABLE t1 (id INT)", "ddl"},
