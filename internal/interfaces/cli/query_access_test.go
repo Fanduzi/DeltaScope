@@ -92,6 +92,15 @@ func TestQueryAccessAnalyzeProjectionOnlyMode(t *testing.T) {
 	}
 }
 
+func TestQueryAccessAnalyzeInvalidMode(t *testing.T) {
+	var stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--sql", "SELECT 1", "--dialect", "mysql", "--mode", "invalid"}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)
+
+	if exitCode != exitQueryAccessUsageError {
+		t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
+	}
+}
+
 func TestQueryAccessAnalyzeEmptySQL(t *testing.T) {
 	var stderr bytes.Buffer
 	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--sql", "  "}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)

@@ -57,6 +57,10 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 			if accessMode == "" {
 				accessMode = deltascope.QueryAccessModeStrict
 			}
+			if accessMode != deltascope.QueryAccessModeStrict && accessMode != deltascope.QueryAccessModeProjectionOnly {
+				*exitCode = exitQueryAccessUsageError
+				return fmt.Errorf("invalid mode %q: must be strict or projection_only", accessMode)
+			}
 
 			result, err := deltascope.AnalyzeQueryAccess(cmd.Context(), deltascope.QueryAccessRequest{
 				SQL:           sql,

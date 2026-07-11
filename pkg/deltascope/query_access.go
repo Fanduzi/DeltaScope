@@ -152,7 +152,10 @@ func AnalyzeQueryAccess(ctx context.Context, req QueryAccessRequest) (*QueryAcce
 	}
 
 	dialect := toDomainQADialect(req.Dialect)
-	mode := string(toDomainQAMode(req.Mode))
+	mode, err := toDomainQAMode(req.Mode)
+	if err != nil {
+		return nil, err
+	}
 
 	var resolver appqa.SchemaResolver
 	if req.SchemaResolver != nil {
@@ -163,7 +166,7 @@ func AnalyzeQueryAccess(ctx context.Context, req QueryAccessRequest) (*QueryAcce
 	appResult, err := service.Analyze(ctx, appqa.QueryAccessRequest{
 		SQL:            req.SQL,
 		Dialect:        dialect,
-		Mode:           mode,
+		Mode:           string(mode),
 		DefaultSchema:  req.DefaultSchema,
 		SchemaResolver: resolver,
 	})
@@ -181,6 +184,9 @@ func AnalyzeQueryAccess(ctx context.Context, req QueryAccessRequest) (*QueryAcce
 // ErrQueryAccessUnsupportedDialect is returned when the dialect is not supported for query access analysis.
 var ErrQueryAccessUnsupportedDialect = errors.New("unsupported dialect for query access analysis")
 
+// ErrInvalidQueryAccessMode is returned when the mode is not a recognized value.
+var ErrInvalidQueryAccessMode = errors.New("invalid query access mode: must be strict or projection_only")
+
 func toDomainQADialect(d Dialect) string {
 	switch d {
 	case DialectMySQL, DialectTiDB:
@@ -192,12 +198,14 @@ func toDomainQADialect(d Dialect) string {
 	}
 }
 
-func toDomainQAMode(m QueryAccessMode) domainqa.Mode {
+func toDomainQAMode(m QueryAccessMode) (domainqa.Mode, error) {
 	switch m {
+	case QueryAccessModeStrict, "":
+		return domainqa.ModeStrict, nil
 	case QueryAccessModeProjectionOnly:
-		return domainqa.ModeProjectionOnly
+		return domainqa.ModeProjectionOnly, nil
 	default:
-		return domainqa.ModeStrict
+		return "", fmt.Errorf("%w: %q", ErrInvalidQueryAccessMode, m)
 	}
 }
 

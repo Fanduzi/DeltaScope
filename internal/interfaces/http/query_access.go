@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -59,6 +60,10 @@ func handleQueryAccess(w http.ResponseWriter, r *http.Request) {
 	mode := deltascope.QueryAccessMode(strings.TrimSpace(request.Mode))
 	if mode == "" {
 		mode = deltascope.QueryAccessModeStrict
+	}
+	if mode != deltascope.QueryAccessModeStrict && mode != deltascope.QueryAccessModeProjectionOnly {
+		writeError(w, http.StatusBadRequest, "invalid_mode", fmt.Sprintf("invalid mode %q: must be strict or projection_only", mode))
+		return
 	}
 
 	result, err := analyzeQueryAccess(r.Context(), deltascope.QueryAccessRequest{

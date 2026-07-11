@@ -149,6 +149,25 @@ func TestHandlerQueryAccessDefaultModeStrict(t *testing.T) {
 	}
 }
 
+func TestHandlerQueryAccessRejectsInvalidMode(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","dialect":"mysql","mode":"invalid"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_mode"`)) {
+		t.Fatalf("expected invalid_mode code, got %q", rec.Body.String())
+	}
+}
+
 func TestHandlerQueryAccessNoAuditFieldLeakage(t *testing.T) {
 	handler, err := NewHandler("", "test-build")
 	if err != nil {

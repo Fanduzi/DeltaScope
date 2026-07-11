@@ -8,6 +8,7 @@ package deltascope
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -149,6 +150,20 @@ func TestAnalyzeQueryAccessCancelledContext(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for cancelled context")
+	}
+}
+
+func TestAnalyzeQueryAccessInvalidModeRejected(t *testing.T) {
+	_, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT 1",
+		Dialect: DialectMySQL,
+		Mode:    "invalid",
+	})
+	if err == nil {
+		t.Fatal("expected error for invalid mode")
+	}
+	if !errors.Is(err, ErrInvalidQueryAccessMode) {
+		t.Fatalf("expected ErrInvalidQueryAccessMode, got %v", err)
 	}
 }
 
