@@ -15,3 +15,4 @@ Use this section when you need exact command, config, API, or capability details
 | [http-api.md](http-api.md) | HTTP service endpoints and request/response behavior |
 | [ddl-coverage.md](ddl-coverage.md) | Verified representative DDL coverage catalog per dialect and classification, with CLI query command (`deltascope ddl-coverage`) |
 | [library.md](library.md) | Go library API reference for pkg/deltascope |
+| [query-access-analysis.md](query-access-analysis.md) | Query access analysis: read classification, admission, modes, requirements, and dialect differences |
