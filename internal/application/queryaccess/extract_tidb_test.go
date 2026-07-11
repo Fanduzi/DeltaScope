@@ -137,6 +137,120 @@ func TestExtractTiDBQueryAccess_DDLNotReadOnly(t *testing.T) {
 	}
 }
 
+func TestExtractTiDBQueryAccess_CTELineageResolvesToPhysicalSource(t *testing.T) {
+	t.Parallel()
+	result, err := appqa.ExtractTiDBQueryAccess(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "WITH x AS (SELECT id FROM users) SELECT id FROM x",
+		Dialect: "mysql",
+	})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	dr := result.DomainResult
+	if len(dr.Outputs) != 1 {
+		t.Fatalf("outputs: got %d, want 1", len(dr.Outputs))
+	}
+	wantSources := []string{"users.id"}
+	if len(dr.Outputs[0].Sources) != len(wantSources) {
+		t.Fatalf("output sources: got %v, want %v", dr.Outputs[0].Sources, wantSources)
+	}
+	if dr.Outputs[0].Sources[0] != wantSources[0] {
+		t.Errorf("output source: got %q, want %q", dr.Outputs[0].Sources[0], wantSources[0])
+	}
+}
+
+func TestExtractTiDBQueryAccess_DerivedTableLineageResolvesToPhysicalSource(t *testing.T) {
+	t.Parallel()
+	result, err := appqa.ExtractTiDBQueryAccess(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "SELECT x.id FROM (SELECT id FROM users) AS x",
+		Dialect: "mysql",
+	})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	dr := result.DomainResult
+	if len(dr.Outputs) != 1 {
+		t.Fatalf("outputs: got %d, want 1", len(dr.Outputs))
+	}
+	wantSources := []string{"users.id"}
+	if len(dr.Outputs[0].Sources) != len(wantSources) {
+		t.Fatalf("output sources: got %v, want %v", dr.Outputs[0].Sources, wantSources)
+	}
+	if dr.Outputs[0].Sources[0] != wantSources[0] {
+		t.Errorf("output source: got %q, want %q", dr.Outputs[0].Sources[0], wantSources[0])
+	}
+}
+
+func TestExtractTiDBQueryAccess_NestedCTELineageResolvesToPhysicalSource(t *testing.T) {
+	t.Parallel()
+	result, err := appqa.ExtractTiDBQueryAccess(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "WITH a AS (SELECT id FROM users), b AS (SELECT id FROM a) SELECT id FROM b",
+		Dialect: "mysql",
+	})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	dr := result.DomainResult
+	if len(dr.Outputs) != 1 {
+		t.Fatalf("outputs: got %d, want 1", len(dr.Outputs))
+	}
+	wantSources := []string{"users.id"}
+	if len(dr.Outputs[0].Sources) != len(wantSources) {
+		t.Fatalf("output sources: got %v, want %v", dr.Outputs[0].Sources, wantSources)
+	}
+	if dr.Outputs[0].Sources[0] != wantSources[0] {
+		t.Errorf("output source: got %q, want %q", dr.Outputs[0].Sources[0], wantSources[0])
+	}
+}
+
+func TestExtractTiDBQueryAccess_ExpressionDerivedTableLineage(t *testing.T) {
+	t.Parallel()
+	result, err := appqa.ExtractTiDBQueryAccess(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "SELECT CONCAT(x.a, x.b) FROM (SELECT a, b FROM t) AS x",
+		Dialect: "mysql",
+	})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	dr := result.DomainResult
+	if len(dr.Outputs) != 1 {
+		t.Fatalf("outputs: got %d, want 1", len(dr.Outputs))
+	}
+	got := dr.Outputs[0].Sources
+	wantSources := []string{"t.a", "t.b"}
+	if len(got) != len(wantSources) {
+		t.Fatalf("output sources: got %v, want %v", got, wantSources)
+	}
+	for _, w := range wantSources {
+		found := false
+		for _, g := range got {
+			if g == w {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("missing expected source %q in %v", w, got)
+		}
+	}
+}
+
+func TestExtractTiDBQueryAccess_DerivedTableNotPermissionBearing(t *testing.T) {
+	t.Parallel()
+	result, err := appqa.ExtractTiDBQueryAccess(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "SELECT x.id FROM (SELECT id FROM users) AS x",
+		Dialect: "mysql",
+	})
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	for _, rel := range result.DomainResult.Relations {
+		if rel.Kind == domain.RelationDerived && rel.PermissionRequired {
+			t.Errorf("derived table %q should not require permission", rel.Name)
+		}
+	}
+}
+
 func TestExtractTiDBQueryAccess_ColumnUsagesPreserved(t *testing.T) {
 	t.Parallel()
 	result, err := appqa.ExtractTiDBQueryAccess(context.Background(), appqa.QueryAccessRequest{

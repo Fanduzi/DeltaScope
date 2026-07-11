@@ -5,26 +5,24 @@ expect:
   read_classification: read_only
   admission: indeterminate
   relations:
-    - name: cte
-      kind: cte
-      permission_required: true
     - name: users
       kind: table
       permission_required: true
+    - name: cte
+      kind: cte
+      permission_required: false
   referenced_columns:
-    - table: cte
+    - table: users
       column: id
       usages: [projection]
   outputs:
     - name: id
-      sources: [cte.id]
+      sources: [users.id]
   requirements:
-    - object: cte
-      privilege: read_table
-    - object: cte.id
-      privilege: read_column
     - object: users
       privilege: read_table
+    - object: users.id
+      privilege: read_column
   unresolved: []
   warnings: []
   reason_codes: []

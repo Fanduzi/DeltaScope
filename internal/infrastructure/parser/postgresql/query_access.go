@@ -87,9 +87,10 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		classifications = append(classifications, classifyStatement(node))
 
 		if sel := node.GetSelectStmt(); sel != nil {
+			cteLineage := buildCTELineage(sel, defaultSchema)
 			relations = append(relations, collectRelations(sel, defaultSchema)...)
-			columnRefs = append(columnRefs, collectColumnReferences(sel, defaultSchema)...)
-			outputs = append(outputs, collectOutputs(sel, defaultSchema)...)
+			columnRefs = append(columnRefs, collectColumnReferences(sel, defaultSchema, cteLineage)...)
+			outputs = append(outputs, collectOutputs(sel, defaultSchema, cteLineage)...)
 		}
 	}
 
@@ -542,6 +543,8 @@ type selectScope struct {
 	tables       []string
 }
 
+type cteLineageMap map[string]map[string][]string
+
 func collectRelations(sel *pg_query.SelectStmt, defaultSchema string) []RelationFacts {
 	relations := make([]RelationFacts, 0)
 	if sel.GetOp() != pg_query.SetOperation_SETOP_NONE {
@@ -630,31 +633,31 @@ func collectNodeRelations(node *pg_query.Node, defaultSchema string) []RelationF
 	return nil
 }
 
-func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string) []ColumnRefFacts {
+func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cteLineage cteLineageMap) []ColumnRefFacts {
 	scope := buildSelectScope(sel)
 	refs := make([]ColumnRefFacts, 0)
 	seen := make(map[string]bool)
 
 	for _, target := range sel.GetTargetList() {
-		collectRefsFromNode(target, scope, defaultSchema, "projection", &refs, seen)
+		collectRefsFromNode(target, scope, defaultSchema, "projection", &refs, seen, cteLineage)
 	}
 	if sel.GetWhereClause() != nil {
-		collectRefsFromNode(sel.GetWhereClause(), scope, defaultSchema, "filter", &refs, seen)
+		collectRefsFromNode(sel.GetWhereClause(), scope, defaultSchema, "filter", &refs, seen, cteLineage)
 	}
 	for _, from := range sel.GetFromClause() {
 		if join := from.GetJoinExpr(); join != nil {
-			collectJoinColumnRefs(join, scope, defaultSchema, &refs, seen)
+			collectJoinColumnRefs(join, scope, defaultSchema, &refs, seen, cteLineage)
 		}
 	}
 	for _, group := range sel.GetGroupClause() {
-		collectRefsFromNode(group, scope, defaultSchema, "grouping", &refs, seen)
+		collectRefsFromNode(group, scope, defaultSchema, "grouping", &refs, seen, cteLineage)
 	}
 	if sel.GetHavingClause() != nil {
-		collectRefsFromNode(sel.GetHavingClause(), scope, defaultSchema, "having", &refs, seen)
+		collectRefsFromNode(sel.GetHavingClause(), scope, defaultSchema, "having", &refs, seen, cteLineage)
 	}
 	for _, sort := range sel.GetSortClause() {
 		if sortBy := sort.GetSortBy(); sortBy != nil {
-			collectRefsFromNode(sortBy.GetNode(), scope, defaultSchema, "ordering", &refs, seen)
+			collectRefsFromNode(sortBy.GetNode(), scope, defaultSchema, "ordering", &refs, seen, cteLineage)
 		}
 	}
 
@@ -677,7 +680,45 @@ func buildSelectScope(sel *pg_query.SelectStmt) *selectScope {
 	return scope
 }
 
-func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema string, usage string, refs *[]ColumnRefFacts, seen map[string]bool) { //nolint:unparam // defaultSchema used in recursive calls
+func buildCTELineage(sel *pg_query.SelectStmt, defaultSchema string) cteLineageMap {
+	lineage := make(cteLineageMap)
+	with := sel.GetWithClause()
+	if with == nil {
+		return lineage
+	}
+	for _, cteNode := range with.GetCtes() {
+		if cteNode == nil {
+			continue
+		}
+		cte := cteNode.GetCommonTableExpr()
+		if cte == nil {
+			continue
+		}
+		cteBody := cte.GetCtequery()
+		if cteBody == nil {
+			continue
+		}
+		subSel := cteBody.GetSelectStmt()
+		if subSel == nil {
+			continue
+		}
+		subLineage := buildCTELineage(subSel, defaultSchema)
+		for k, v := range subLineage {
+			lineage[k] = v
+		}
+		cteOutputs := collectOutputs(subSel, defaultSchema, subLineage)
+		cteEntry := make(map[string][]string)
+		for _, out := range cteOutputs {
+			if out.Name != "" && len(out.Sources) > 0 {
+				cteEntry[strings.ToLower(out.Name)] = out.Sources
+			}
+		}
+		lineage[strings.ToLower(cte.GetCtename())] = cteEntry
+	}
+	return lineage
+}
+
+func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema string, usage string, refs *[]ColumnRefFacts, seen map[string]bool, cteLineage cteLineageMap) { //nolint:unparam // defaultSchema used in recursive calls
 	if node == nil {
 		return
 	}
@@ -687,97 +728,116 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 		if resolved == nil || resolved.IsWildcard {
 			return
 		}
-		key := formatRefKey(resolved.Table, resolved.Column)
+		resTable := resolved.Table
+		if lineage, ok := cteLineage[strings.ToLower(resTable)]; ok {
+			if sources, ok := lineage[strings.ToLower(resolved.Column)]; ok && len(sources) > 0 {
+				_, physTable := pgParseSourceTable(sources[0])
+				key := formatRefKey(physTable, resolved.Column)
+				if seen[key] {
+					addUsageToRef(refs, key, usage)
+					return
+				}
+				seen[key] = true
+				*refs = append(*refs, ColumnRefFacts{
+					Table:   physTable,
+					Column:  resolved.Column,
+					Usages:  []string{usage},
+					QualRef: resolved.QualRef,
+				})
+				return
+			}
+		}
+		key := formatRefKey(resTable, resolved.Column)
 		if seen[key] {
 			addUsageToRef(refs, key, usage)
 			return
 		}
 		seen[key] = true
 		*refs = append(*refs, ColumnRefFacts{
-			Table:   resolved.Table,
+			Table:   resTable,
 			Column:  resolved.Column,
 			Usages:  []string{usage},
 			QualRef: resolved.QualRef,
 		})
 	case *pg_query.Node_ResTarget:
 		if n.ResTarget.GetVal() != nil {
-			collectRefsFromNode(n.ResTarget.GetVal(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.ResTarget.GetVal(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_AExpr:
 		if n.AExpr.GetLexpr() != nil {
-			collectRefsFromNode(n.AExpr.GetLexpr(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.AExpr.GetLexpr(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 		if n.AExpr.GetRexpr() != nil {
-			collectRefsFromNode(n.AExpr.GetRexpr(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.AExpr.GetRexpr(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_BoolExpr:
 		for _, arg := range n.BoolExpr.GetArgs() {
-			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_NullTest:
 		if n.NullTest.GetArg() != nil {
-			collectRefsFromNode(n.NullTest.GetArg(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.NullTest.GetArg(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_TypeCast:
 		if n.TypeCast.GetArg() != nil {
-			collectRefsFromNode(n.TypeCast.GetArg(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.TypeCast.GetArg(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_CoalesceExpr:
 		for _, arg := range n.CoalesceExpr.GetArgs() {
-			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_CaseExpr:
 		caseExpr := n.CaseExpr
 		if caseExpr.GetDefresult() != nil {
-			collectRefsFromNode(caseExpr.GetDefresult(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(caseExpr.GetDefresult(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 		for _, arg := range caseExpr.GetArgs() {
 			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
-				collectRefsFromNode(caseWhen.GetExpr(), scope, defaultSchema, usage, refs, seen)
-				collectRefsFromNode(caseWhen.GetResult(), scope, defaultSchema, usage, refs, seen)
+				collectRefsFromNode(caseWhen.GetExpr(), scope, defaultSchema, usage, refs, seen, cteLineage)
+				collectRefsFromNode(caseWhen.GetResult(), scope, defaultSchema, usage, refs, seen, cteLineage)
 			}
 		}
 	case *pg_query.Node_ArrayExpr:
 		for _, elem := range n.ArrayExpr.GetElements() {
-			collectRefsFromNode(elem, scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(elem, scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_RowExpr:
 		for _, arg := range n.RowExpr.GetArgs() {
-			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_FuncCall:
 		for _, arg := range n.FuncCall.GetArgs() {
-			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_SubLink:
 		if sub := n.SubLink.GetSubselect(); sub != nil {
 			if subSel := sub.GetSelectStmt(); subSel != nil {
 				subScope := buildSelectScope(subSel)
 				for _, target := range subSel.GetTargetList() {
-					collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen)
+					collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen, cteLineage)
 				}
 				if subSel.GetWhereClause() != nil {
-					collectRefsFromNode(subSel.GetWhereClause(), subScope, defaultSchema, usage, refs, seen)
+					collectRefsFromNode(subSel.GetWhereClause(), subScope, defaultSchema, usage, refs, seen, cteLineage)
 				}
 			}
 		}
 	case *pg_query.Node_MinMaxExpr:
 		for _, arg := range n.MinMaxExpr.GetArgs() {
-			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_SqlvalueFunction:
 		// No column references.
 	case *pg_query.Node_AIndirection:
 		if n.AIndirection.GetArg() != nil {
-			collectRefsFromNode(n.AIndirection.GetArg(), scope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.AIndirection.GetArg(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_SelectStmt:
 		subScope := buildSelectScope(n.SelectStmt)
 		for _, target := range n.SelectStmt.GetTargetList() {
-			collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 		if n.SelectStmt.GetWhereClause() != nil {
-			collectRefsFromNode(n.SelectStmt.GetWhereClause(), subScope, defaultSchema, usage, refs, seen)
+			collectRefsFromNode(n.SelectStmt.GetWhereClause(), subScope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_RangeVar:
 		// Table reference; no column reference.
@@ -786,30 +846,30 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 		if subSel := sub.GetSelectStmt(); subSel != nil {
 			subScope := buildSelectScope(subSel)
 			for _, target := range subSel.GetTargetList() {
-				collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen)
+				collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen, cteLineage)
 			}
 			if subSel.GetWhereClause() != nil {
-				collectRefsFromNode(subSel.GetWhereClause(), subScope, defaultSchema, usage, refs, seen)
+				collectRefsFromNode(subSel.GetWhereClause(), subScope, defaultSchema, usage, refs, seen, cteLineage)
 			}
 		}
 	case *pg_query.Node_JoinExpr:
 		join := n.JoinExpr
 		if join.GetQuals() != nil {
-			collectRefsFromNode(join.GetQuals(), scope, defaultSchema, "join", refs, seen)
+			collectRefsFromNode(join.GetQuals(), scope, defaultSchema, "join", refs, seen, cteLineage)
 		}
 	}
 }
 
-func collectJoinColumnRefs(join *pg_query.JoinExpr, scope *selectScope, defaultSchema string, refs *[]ColumnRefFacts, seen map[string]bool) {
+func collectJoinColumnRefs(join *pg_query.JoinExpr, scope *selectScope, defaultSchema string, refs *[]ColumnRefFacts, seen map[string]bool, cteLineage cteLineageMap) {
 	if join.GetQuals() != nil {
-		collectRefsFromNode(join.GetQuals(), scope, defaultSchema, "join", refs, seen)
+		collectRefsFromNode(join.GetQuals(), scope, defaultSchema, "join", refs, seen, cteLineage)
 	}
 	for _, u := range join.GetUsingClause() {
-		collectRefsFromNode(u, scope, defaultSchema, "join", refs, seen)
+		collectRefsFromNode(u, scope, defaultSchema, "join", refs, seen, cteLineage)
 	}
 }
 
-func collectOutputs(sel *pg_query.SelectStmt, _ string) []OutputFacts {
+func collectOutputs(sel *pg_query.SelectStmt, _ string, cteLineage cteLineageMap) []OutputFacts {
 	outputs := make([]OutputFacts, 0)
 	scope := buildSelectScope(sel)
 	for _, target := range sel.GetTargetList() {
@@ -864,6 +924,14 @@ func collectOutputs(sel *pg_query.SelectStmt, _ string) []OutputFacts {
 			if name == "" {
 				name = colName
 			}
+			if table != "" {
+				if lineage, ok := cteLineage[strings.ToLower(table)]; ok {
+					if sources, ok := lineage[strings.ToLower(colName)]; ok && len(sources) > 0 {
+						outputs = append(outputs, OutputFacts{Name: name, Sources: sources})
+						continue
+					}
+				}
+			}
 			source := colName
 			if table != "" {
 				source = table + "." + colName
@@ -901,6 +969,18 @@ func formatRelKey(schema, name string) string {
 		return name
 	}
 	return schema + "." + name
+}
+
+func pgParseSourceTable(source string) (schema, table string) {
+	parts := strings.SplitN(source, ".", 3)
+	switch len(parts) {
+	case 3:
+		return parts[0], parts[1]
+	case 2:
+		return "", parts[0]
+	default:
+		return "", ""
+	}
 }
 
 func formatRefKey(table, column string) string {

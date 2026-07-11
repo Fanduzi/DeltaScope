@@ -1,0 +1,1 @@
+WITH a AS (SELECT id FROM users), b AS (SELECT id FROM a) SELECT id FROM b

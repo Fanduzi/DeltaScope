@@ -146,11 +146,22 @@ func analyzeSelect(sel *ast.SelectStmt, scope *scopeStack) statementFacts {
 			f.relations = append(f.relations, RelationFact{Name: cteName, Kind: "cte"})
 			if cte.Query != nil {
 				cteScope := newScopeStack(scope.defaultSchema)
+				for k, v := range scope.lineage {
+					cteScope.lineage[k] = v
+				}
 				cteFacts := analyzeQueryNode(cte.Query, cteScope)
 				f.relations = append(f.relations, cteFacts.relations...)
 				f.columns = append(f.columns, cteFacts.columns...)
 				f.unresolved = append(f.unresolved, cteFacts.unresolved...)
 				f.reasons = append(f.reasons, cteFacts.reasons...)
+
+				cteLineage := make(lineageEntry)
+				for _, out := range cteFacts.outputs {
+					if out.Name != "" && len(out.Sources) > 0 {
+						cteLineage[strings.ToLower(out.Name)] = out.Sources
+					}
+				}
+				scope.addLineage(cteName, cteLineage)
 			}
 		}
 	}
@@ -421,6 +432,14 @@ func processResultSetNode(node ast.ResultSetNode, scope *scopeStack) joinFacts {
 				f.relations = append(f.relations, subFacts.relations...)
 				f.columns = append(f.columns, subFacts.columns...)
 				f.unresolved = append(f.unresolved, subFacts.unresolved...)
+
+				derivedLineage := make(lineageEntry)
+				for _, out := range subFacts.outputs {
+					if out.Name != "" && len(out.Sources) > 0 {
+						derivedLineage[strings.ToLower(out.Name)] = out.Sources
+					}
+				}
+				scope.addLineage(derivedName, derivedLineage)
 			}
 
 		case *ast.SelectStmt:
@@ -435,6 +454,14 @@ func processResultSetNode(node ast.ResultSetNode, scope *scopeStack) joinFacts {
 			f.relations = append(f.relations, subFacts.relations...)
 			f.columns = append(f.columns, subFacts.columns...)
 			f.unresolved = append(f.unresolved, subFacts.unresolved...)
+
+			derivedLineage := make(lineageEntry)
+			for _, out := range subFacts.outputs {
+				if out.Name != "" && len(out.Sources) > 0 {
+					derivedLineage[strings.ToLower(out.Name)] = out.Sources
+				}
+			}
+			scope.addLineage(derivedName, derivedLineage)
 		}
 	}
 
@@ -505,6 +532,20 @@ func (v *columnCollectVisitor) Enter(in ast.Node) (ast.Node, bool) {
 		tableName := colExpr.Name.Table.L
 		schemaName := colExpr.Name.Schema.L
 
+		if tableName != "" {
+			if sources, ok := v.scope.lookupLineage(tableName, colName); ok && len(sources) > 0 {
+				physSchema, physTable := parseSourceTable(sources[0])
+				*v.columns = append(*v.columns, ColumnFact{
+					Schema: physSchema,
+					Table:  physTable,
+					Column: colName,
+					Usages: []string{v.usage},
+				})
+				*v.sources = append(*v.sources, sources...)
+				return in, false
+			}
+		}
+
 		var resolvedSchema, resolvedTable string
 		if tableName != "" {
 			resolvedSchema, resolvedTable = v.scope.resolveColumn(tableName, schemaName)
@@ -515,6 +556,17 @@ func (v *columnCollectVisitor) Enter(in ast.Node) (ast.Node, bool) {
 				if v.ambiguous != nil && len(v.scope.relations) > 1 && tableName == "" {
 					*v.ambiguous = true
 				}
+				return in, false
+			}
+			if sources, ok := v.scope.lookupLineage(resolvedTable, colName); ok && len(sources) > 0 {
+				physSchema, physTable := parseSourceTable(sources[0])
+				*v.columns = append(*v.columns, ColumnFact{
+					Schema: physSchema,
+					Table:  physTable,
+					Column: colName,
+					Usages: []string{v.usage},
+				})
+				*v.sources = append(*v.sources, sources...)
 				return in, false
 			}
 		}
@@ -560,6 +612,18 @@ func (v *subqueryRelationCollector) Enter(in ast.Node) (ast.Node, bool) {
 
 func (v *subqueryRelationCollector) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
+}
+
+func parseSourceTable(source string) (schema, table string) {
+	parts := strings.SplitN(source, ".", 3)
+	switch len(parts) {
+	case 3:
+		return parts[0], parts[1]
+	case 2:
+		return "", parts[0]
+	default:
+		return "", ""
+	}
 }
 
 func exprDisplayName(expr ast.ExprNode) string {
@@ -706,11 +770,16 @@ func deduplicateStrings(items []string) []string {
 	return result
 }
 
+// lineageEntry maps a virtual column name to its physical source keys.
+// e.g. for CTE "x AS (SELECT id FROM users)", lineage["x"]["id"] = ["users.id"]
+type lineageEntry map[string][]string
+
 type scopeStack struct {
 	defaultSchema string
 	aliases       map[string]resolvedTable
 	ctes          map[string]bool
 	relations     []resolvedTable
+	lineage       map[string]lineageEntry // relation name → column → []physical sources
 }
 
 type resolvedTable struct {
@@ -724,6 +793,7 @@ func newScopeStack(defaultSchema string) *scopeStack {
 		aliases:       make(map[string]resolvedTable),
 		ctes:          make(map[string]bool),
 		relations:     make([]resolvedTable, 0),
+		lineage:       make(map[string]lineageEntry),
 	}
 }
 
@@ -739,6 +809,21 @@ func (s *scopeStack) addCTE(name string) {
 
 func (s *scopeStack) addRelation(schema, name string) {
 	s.relations = append(s.relations, resolvedTable{schema: schema, name: name})
+}
+
+func (s *scopeStack) addLineage(relationName string, entry lineageEntry) {
+	if relationName != "" && entry != nil {
+		s.lineage[strings.ToLower(relationName)] = entry
+	}
+}
+
+func (s *scopeStack) lookupLineage(relationName, columnName string) ([]string, bool) {
+	entry, ok := s.lineage[strings.ToLower(relationName)]
+	if !ok {
+		return nil, false
+	}
+	sources, ok := entry[strings.ToLower(columnName)]
+	return sources, ok
 }
 
 func (s *scopeStack) resolveColumn(tableQualifier, schemaQualifier string) (schema, table string) {

@@ -55,7 +55,7 @@ func convertRelations(facts []tidbparser.RelationFact) []domain.RelationReferenc
 			Name:               f.Name,
 			Alias:              f.Alias,
 			Kind:               domain.RelationKind(f.Kind),
-			PermissionRequired: f.Kind != "cte",
+			PermissionRequired: f.Kind == "table" || f.Kind == "view",
 		})
 	}
 	return refs

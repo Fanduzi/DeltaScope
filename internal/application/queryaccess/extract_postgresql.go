@@ -42,7 +42,7 @@ func AnalyzePostgreSQL(ctx context.Context, req QueryAccessRequest) (QueryAccess
 			Name:               r.Name,
 			Alias:              r.Alias,
 			Kind:               domain.RelationKind(r.Kind),
-			PermissionRequired: true,
+			PermissionRequired: r.Kind == "table" || r.Kind == "view",
 		})
 	}
 

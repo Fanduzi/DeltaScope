@@ -1,11 +1,14 @@
-name: select_cte
+name: select_nested_cte
 dialect: mysql
 mode: strict
 expect:
   read_classification: read_only
   admission: admissible
   relations:
-    - name: cte
+    - name: a
+      kind: cte
+      permission_required: false
+    - name: b
       kind: cte
       permission_required: false
     - name: users
