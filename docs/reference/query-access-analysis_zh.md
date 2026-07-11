@@ -22,7 +22,7 @@
 | `rejected` | 分类为 `not_read_only`。语句无资格。 |
 | `indeterminate` | 分类为 `indeterminate`。无法在缺少额外信息的情况下进行授权。 |
 
-MySQL/TiDB 的准入判定由分类推导。PostgreSQL 的准入始终为 `indeterminate`，因为 PostgreSQL 提取器尚未根据分类计算 `admissible`/`rejected`。
+准入判定由读取分类推导，适用于所有方言。
 
 ## 模式
 
@@ -39,7 +39,7 @@ MySQL/TiDB 的准入判定由分类推导。PostgreSQL 的准入始终为 `indet
 
 ## 表权限
 
-strict 和 projection_only 模式都要求对每个基表和派生表具有 `read_table` 权限。CTE 不需要权限（MySQL/TiDB）。PostgreSQL CTE 当前需要权限。
+strict 和 projection_only 模式都要求对每个基表和派生表具有 `read_table` 权限。CTE 不需要权限。
 
 ## 失败关闭行为
 
@@ -62,8 +62,8 @@ strict 和 projection_only 模式都要求对每个基表和派生表具有 `rea
 
 | 特性 | MySQL/TiDB | PostgreSQL |
 |---|---|---|
-| 由分类推导准入 | `read_only` → `admissible`，`not_read_only` → `rejected` | 始终为 `indeterminate` |
-| CTE 权限要求 | `false` | `true` |
+| 由分类推导准入 | `read_only` → `admissible`，`not_read_only` → `rejected` | 与 MySQL/TiDB 相同 |
+| CTE 权限要求 | `false` | `false` |
 | WHERE 子句列用途 | `projection` + `filter` | `projection`（WHERE 列仅在 SELECT 中引用时才获得 `filter`） |
 | 歧义列处理 | `indeterminate` 且有 `ambiguous_reference` 未解析项 | `read_only` 且有未限定列引用 |
 | `reason_codes` 填充 | 是（`write_operation`、`function_call`、`parse_failure` 等） | 否（空） |
@@ -102,21 +102,39 @@ strict 和 projection_only 模式都要求对每个基表和派生表具有 `rea
 
 ```go
 import (
-    appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
     "context"
+    "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
-svc := &appqa.Service{}
-result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+result, err := deltascope.AnalyzeQueryAccess(context.Background(), deltascope.QueryAccessRequest{
     SQL:     "SELECT id, name FROM users",
-    Dialect: "mysql",
-    Mode:    "strict",
+    Dialect: deltascope.DialectMySQL,
+    Mode:    deltascope.QueryAccessModeStrict,
 })
 ```
 
 ## CLI 用法
 
-查询访问分析通过库 API 可用。CLI 和 HTTP 表面集成计划在未来版本中发布。
+查询访问分析可通过 CLI 使用：
+
+```bash
+deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --dialect mysql
+deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
+```
+
+退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法错误。
+
+## HTTP 用法
+
+查询访问分析可通过 HTTP API 使用：
+
+```bash
+curl -X POST http://localhost:8083/v1/query-access/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict"}'
+```
+
+该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码。
 
 ## MCP 延迟
 

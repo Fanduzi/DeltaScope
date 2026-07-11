@@ -22,7 +22,7 @@ Admission is derived from read classification:
 | `rejected` | Classification is `not_read_only`. The statement is not eligible. |
 | `indeterminate` | Classification is `indeterminate`. Authorization cannot proceed without additional information. |
 
-MySQL/TiDB admission is derived from classification. PostgreSQL admission is always `indeterminate` because the PostgreSQL extractor does not yet compute `admissible`/`rejected` from classification.
+Admission is derived from read classification for all dialects.
 
 ## Modes
 
@@ -39,7 +39,7 @@ Projection-only mode emits a `projection_only_inference_risk` warning when non-p
 
 ## Table Permissions
 
-Both strict and projection-only modes require `read_table` permission for every base table and derived table. CTEs do not require permission (MySQL/TiDB). PostgreSQL CTEs currently require permission.
+Both strict and projection-only modes require `read_table` permission for every base table and derived table. CTEs do not require permission.
 
 ## Fail-Closed Behavior
 
@@ -62,8 +62,8 @@ Without metadata, wildcards (`SELECT *`) remain unresolved and the classificatio
 
 | Feature | MySQL/TiDB | PostgreSQL |
 |---|---|---|
-| Admission from classification | `read_only` → `admissible`, `not_read_only` → `rejected` | Always `indeterminate` |
-| CTE permission required | `false` | `true` |
+| Admission from classification | `read_only` → `admissible`, `not_read_only` → `rejected` | Same as MySQL/TiDB |
+| CTE permission required | `false` | `false` |
 | WHERE clause column usages | `projection` + `filter` | `projection` (WHERE columns get `filter` only if referenced in SELECT) |
 | Ambiguous column handling | `indeterminate` with `ambiguous_reference` unresolved | `read_only` with unqualified column reference |
 | `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, etc.) | No (empty) |
@@ -102,21 +102,39 @@ The result intentionally excludes raw SQL, literal values, passwords, and creden
 
 ```go
 import (
-    appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
     "context"
+    "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
-svc := &appqa.Service{}
-result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+result, err := deltascope.AnalyzeQueryAccess(context.Background(), deltascope.QueryAccessRequest{
     SQL:     "SELECT id, name FROM users",
-    Dialect: "mysql",
-    Mode:    "strict",
+    Dialect: deltascope.DialectMySQL,
+    Mode:    deltascope.QueryAccessModeStrict,
 })
 ```
 
 ## CLI Usage
 
-Query access analysis is available through the library API. CLI and HTTP surface integration is planned for a future release.
+Query access analysis is available through the CLI:
+
+```bash
+deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --dialect mysql
+deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
+```
+
+Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage error.
+
+## HTTP Usage
+
+Query access analysis is available through the HTTP API:
+
+```bash
+curl -X POST http://localhost:8083/v1/query-access/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict"}'
+```
+
+The endpoint returns the same JSON structure as the SDK. Invalid mode returns `400` with `invalid_mode` error code.
 
 ## MCP Deferral
 

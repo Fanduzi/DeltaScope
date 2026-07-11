@@ -16,3 +16,4 @@ Use this section when you need exact command, config, API, or capability details
 | [ddl-coverage.md](ddl-coverage.md) | Verified representative DDL coverage catalog per dialect and classification, with CLI query command (`deltascope ddl-coverage`) |
 | [library.md](library.md) | Go library API reference for pkg/deltascope |
 | [query-access-analysis.md](query-access-analysis.md) | Query access analysis: read classification, admission, modes, requirements, and dialect differences |
+| [query-access-analysis_zh.md](query-access-analysis_zh.md) | 查询访问分析：读取分类、准入判定、模式、权限要求和方言差异 |
