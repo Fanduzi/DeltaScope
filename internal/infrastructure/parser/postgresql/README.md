@@ -8,6 +8,8 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
+| query_access.go | Extracts query access facts (read classification, relations, column references, output lineage) from PostgreSQL AST |
+| query_access_stub.go | Returns ErrPostgreSQLNotAvailable for query access extraction when built without the `postgresql` tag |
 | parser_stub.go | Returns the PG-capable build guidance error when PostgreSQL support is not compiled in |
 
 ## Exports
@@ -17,10 +19,17 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 - `ExtractedStatement`
 - `New()`
 - `Parser.Parse(sql)`
+- `QueryAccessExtractor`
+- `QueryAccessExtractor.ExtractQueryAccess(ctx, sql, dialect, defaultSchema)`
+- `QueryAccessFacts`
+- `RelationFacts`
+- `ColumnRefFacts`
+- `OutputFacts`
+- `UnresolvedFacts`
 
 ## Dependencies
-- Upstream: `internal/application/audit`
-- Downstream: `github.com/pganalyze/pg_query_go/v6`, `internal/domain/spec`
+- Upstream: `internal/application/audit`, `internal/application/queryaccess`
+- Downstream: `github.com/pganalyze/pg_query_go/v6`, `internal/domain/spec`, `internal/domain/queryaccess`
 
 ## Notes
 - The extractor populates `CONSTR_NOTNULL` and `CONSTR_DEFAULT` constraints on `ALTER TABLE ADD COLUMN` into the normalized spec column fields, enabling rules that depend on these facts.
