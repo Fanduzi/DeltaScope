@@ -5,16 +5,18 @@ Status: Accepted
 Related milestone/version: Unassigned; versioning follows implementation evidence
 Related commits:
 - Task 1: query-access capability census and this decision record
-- Planned: parser-neutral query facts and read classification
-- Planned: relation, column-use, and output-lineage extraction
-- Planned: metadata-backed resolution and access-requirement generation
+- Task 2: parser-neutral query facts and read classification
+- Task 3: relation, column-use, and output-lineage extraction
+- Task 5: metadata-backed resolution and lineage completion
 - Planned: Go SDK, HTTP, and diagnostic CLI surfaces
 Related tests:
 - `internal/infrastructure/parser/tidb/query_access_ast_census_test.go`
 - `internal/infrastructure/parser/postgresql/query_access_ast_census_postgresql_tag_test.go`
-- Planned: read-classification table tests
-- Planned: relation/column lineage fixtures
-- Planned: strict and projection-only access-requirement tests
+- `internal/application/queryaccess/extract_tidb_test.go`
+- `internal/application/queryaccess/extract_postgresql_tag_test.go`
+- `internal/application/queryaccess/resolve_test.go`
+- `internal/application/queryaccess/service_test.go`
+- `internal/infrastructure/metadata/mysql/query_access_resolver_test.go`
 - Planned: SDK/HTTP/CLI parity and no-leak tests
 Related docs:
 - Planned: public query-access reference and integration recipe
@@ -439,6 +441,69 @@ Task 1 characterization tests confirm the following.
 - No existing `spec.Kind`, `spec.StatementExtractor`, or audit extraction code
   was modified.
 
+### Metadata Resolution Evidence (Task 5)
+
+**SchemaResolver interface** is implemented by `mysql.QueryAccessResolver` and
+`postgresql.QueryAccessResolver`. The resolver queries `information_schema` (MySQL)
+or `pg_catalog` (PostgreSQL) for relation existence, kind (table/view), and
+column listing ordered by ordinal position.
+
+**Resolution behavior verified by `resolve_test.go`:**
+
+| Scenario | Test | Outcome |
+|---|---|---|
+| Schema defaulting | `TestResolveMetadata_SchemaDefaulting` | Empty schema filled from default |
+| Cache deduplication | `TestResolveMetadata_CanonicalCacheKeys` | Same schema.name resolved once |
+| Qualified column | `TestResolveMetadata_QualifiedColumn` | table.column → schema.table.column |
+| Unqualified single-match | `TestResolveMetadata_UnqualifiedSingleMatch` | Single source → resolved |
+| Ambiguous multi-match | `TestResolveMetadata_AmbiguousMultiMatch` | Multiple sources → stays unqualified |
+| Missing relation | `TestResolveMetadata_MissingObject` | Original reference preserved |
+| Missing column | `TestResolveMetadata_MissingColumn` | Original reference preserved |
+| Provider error | `TestResolveMetadata_ProviderError` | Original reference preserved |
+| Cancellation | `TestResolveMetadata_Cancellation` | Context cancellation respected |
+| Ordinal star expansion | `TestResolveMetadata_DeterministicOrdinalStarExpansion` | Columns in ordinal order |
+| Global star expansion | `TestResolveMetadata_GlobalStarExpansion` | All relations expanded |
+| View detection | `TestResolveMetadata_ViewDetection` | Kind changed to view |
+| CTE passthrough | `TestResolveMetadata_CTERelationsNotResolved` | CTEs not sent to resolver |
+| Derived table passthrough | `TestResolveMetadata_DerivedTableNotResolved` | Derived tables not sent |
+| Alias resolution | `TestResolveMetadata_AliasResolution` | Alias → source relation |
+| Alias star expansion | `TestResolveMetadata_AliasStarExpansion` | alias.* expanded |
+| Nil resolver passthrough | `TestResolveMetadata_NilResolver` | No-op when resolver nil |
+| Wildcard cleanup | `TestResolveMetadata_WildcardRemovedWhenMetadataAvailable` | Unresolved entry removed |
+| Output lineage | `TestResolveMetadata_OutputLineage` | Source keys enriched |
+
+**Service integration verified by `service_test.go`:**
+
+| Scenario | Test | Outcome |
+|---|---|---|
+| Offline mode | `TestService_Analyze_OfflineModeNoResolver` | Partial results, no resolver |
+| With resolver | `TestService_Analyze_WithResolver` | Schema resolved |
+| Mode normalization | `TestService_Analyze_ModeNormalization` | Empty → strict |
+| Unsupported dialect | `TestService_Analyze_UnsupportedDialect` | Error returned |
+| Classification preserved | `TestService_Analyze_ClassificationPreservedThroughResolution` | NotReadOnly → Rejected |
+| Cancellation | `TestService_Analyze_Cancellation` | Error on canceled ctx |
+| Wildcard expansion | `TestService_Analyze_WildcardExpansionWithResolver` | Unresolved removed |
+
+**MySQL resolver verified by `query_access_resolver_test.go`:**
+
+| Scenario | Test | Outcome |
+|---|---|---|
+| Table exists | `TestQueryAccessResolver_TableExists` | Kind=table, columns listed |
+| View exists | `TestQueryAccessResolver_ViewExists` | Kind=view, IsView=true |
+| Column ordering | `TestQueryAccessResolver_ColumnListing` | Ordinal order preserved |
+| Missing table | `TestQueryAccessResolver_MissingTable` | Error with "not found" |
+| Empty columns | `TestQueryAccessResolver_MissingColumn` | Empty slice returned |
+| Cancellation | `TestQueryAccessResolver_Cancellation` | Context error respected |
+
+**Bounded unresolved reasons:**
+
+- `missing_metadata` — SchemaResolver returned error or not provided
+- `relation_not_found` — relation doesn't exist in schema
+- `column_not_found` — column doesn't exist in relation
+- `ambiguous_column` — multiple relations have this column
+- `unresolved_wildcard` — wildcard without metadata
+- `unresolved_alias` — alias can't be resolved
+
 ### Build-Tag Behavior
 
 - TiDB tests run without build tags (pure Go parser).
@@ -484,8 +549,14 @@ query-access development.
 ## Links
 
 - Commits:
-  - Planned: Task 1 capability census and decision record
+  - Task 1: capability census and decision record
+  - Task 2: parser-neutral query facts and read classification
+  - Task 3: relation, column-use, and output-lineage extraction
+  - Task 5: metadata-backed resolution and lineage completion
 - Tests:
+  - `internal/application/queryaccess/resolve_test.go`
+  - `internal/application/queryaccess/service_test.go`
+  - `internal/infrastructure/metadata/mysql/query_access_resolver_test.go`
   - Planned: `testdata/query-access/` fixtures and cross-surface contract tests
 - Docs:
   - Planned: query-access reference and query-platform integration recipe
