@@ -643,3 +643,126 @@ func TestResolveMetadata_OutputLineage(t *testing.T) {
 		t.Errorf("source lineage: got %q, want %q", resolved.Outputs[0].Sources[0], "app.users.id")
 	}
 }
+
+func TestResolveMetadata_AmbiguousRelationReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"schema1.users": {
+			Schema: "schema1", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+		"schema2.users": {
+			Schema: "schema2", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result := domain.Result{
+		Dialect: "mysql",
+		Mode:    domain.ModeStrict,
+		Relations: []domain.RelationReference{
+			{Schema: "schema1", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
+			{Schema: "schema2", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
+		},
+		ReferencedColumns: []domain.ColumnReference{
+			{Table: "users", Column: "id", Usages: []domain.UsageContext{domain.UsageProjection}},
+		},
+	}
+
+	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "", result)
+
+	// Ambiguous: unqualified "users" should NOT resolve to a specific schema.
+	if len(resolved.ReferencedColumns) != 1 {
+		t.Fatalf("columns: got %d, want 1", len(resolved.ReferencedColumns))
+	}
+	col := resolved.ReferencedColumns[0]
+	if col.Schema != "" {
+		t.Errorf("ambiguous column should not have schema, got %q", col.Schema)
+	}
+	// Table preserved as-is (unresolved).
+	if col.Table != "users" {
+		t.Errorf("ambiguous column table preserved: got %q, want %q", col.Table, "users")
+	}
+}
+
+func TestResolveMetadata_ResolverErrorKeepsUnresolved(t *testing.T) {
+	t.Parallel()
+	resolver := &errorResolver{err: errors.New("connection refused")}
+
+	result := domain.Result{
+		Dialect: "mysql",
+		Mode:    domain.ModeStrict,
+		Relations: []domain.RelationReference{
+			{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
+		},
+		ReferencedColumns: []domain.ColumnReference{
+			{Table: "users", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
+		},
+		Unresolved: []domain.Unresolved{
+			{Reference: "*", Reason: domain.ReasonSchemaUnavailable},
+		},
+	}
+
+	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "app", result)
+
+	// Resolver error: wildcard unresolved should persist.
+	if len(resolved.Unresolved) != 1 {
+		t.Errorf("unresolved: got %d, want 1", len(resolved.Unresolved))
+	}
+}
+
+func TestResolveMetadata_ColumnNotFoundKeepsOriginal(t *testing.T) {
+	t.Parallel()
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.users": {
+			Schema: "app", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result := domain.Result{
+		Dialect: "mysql",
+		Mode:    domain.ModeStrict,
+		Relations: []domain.RelationReference{
+			{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
+		},
+		ReferencedColumns: []domain.ColumnReference{
+			{Table: "users", Column: "nonexistent", Usages: []domain.UsageContext{domain.UsageProjection}},
+		},
+	}
+
+	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "app", result)
+
+	if len(resolved.ReferencedColumns) != 1 {
+		t.Fatalf("columns: got %d, want 1", len(resolved.ReferencedColumns))
+	}
+	if resolved.ReferencedColumns[0].Column != "nonexistent" {
+		t.Errorf("column name preserved: got %q", resolved.ReferencedColumns[0].Column)
+	}
+}
+
+func TestResolveMetadata_WildcardExpansionFailsKeepsUnresolved(t *testing.T) {
+	t.Parallel()
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{})
+
+	result := domain.Result{
+		Dialect: "mysql",
+		Mode:    domain.ModeStrict,
+		Relations: []domain.RelationReference{
+			{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
+		},
+		ReferencedColumns: []domain.ColumnReference{
+			{Table: "users", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
+		},
+		Unresolved: []domain.Unresolved{
+			{Reference: "*", Reason: domain.ReasonSchemaUnavailable},
+		},
+	}
+
+	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "app", result)
+
+	// Wildcard expansion failed (table not found): unresolved should persist.
+	if len(resolved.Unresolved) != 1 {
+		t.Errorf("unresolved: got %d, want 1", len(resolved.Unresolved))
+	}
+}

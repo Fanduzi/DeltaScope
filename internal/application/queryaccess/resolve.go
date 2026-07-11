@@ -18,6 +18,7 @@ const (
 	ReasonRelationNotFound   domain.ReasonCode = "relation_not_found"
 	ReasonColumnNotFound     domain.ReasonCode = "column_not_found"
 	ReasonAmbiguousColumn    domain.ReasonCode = "ambiguous_column"
+	ReasonRelationAmbiguous  domain.ReasonCode = "relation_ambiguous"
 	ReasonUnresolvedWildcard domain.ReasonCode = "unresolved_wildcard"
 	ReasonUnresolvedAlias    domain.ReasonCode = "unresolved_alias"
 )
@@ -110,7 +111,8 @@ func (s *resolutionState) resolveRelationRef(tableRef string) (schema, name stri
 				}
 			}
 		}
-		return refs[0].schema, refs[0].name
+		// Multiple relations with same name, no schema match — ambiguous.
+		return "", ""
 	}
 
 	return "", tableRef
@@ -125,9 +127,10 @@ func resolveMetadata(ctx context.Context, resolver SchemaResolver, dialect, defa
 	state := newResolutionState(ctx, resolver, dialect, defaultSchema, result.Relations)
 
 	result.Relations = resolveRelations(state, result.Relations)
-	result.ReferencedColumns = resolveColumns(state, result.ReferencedColumns)
+	resolvedCols, wildcardExpanded := resolveColumns(state, result.ReferencedColumns)
+	result.ReferencedColumns = resolvedCols
 	result.Outputs = resolveOutputs(state, result.Outputs)
-	result.Unresolved = filterResolvedUnresolved(result.Unresolved, state)
+	result.Unresolved = filterResolvedUnresolved(result.Unresolved, state, wildcardExpanded)
 
 	return result
 }
@@ -165,25 +168,23 @@ func resolveRelations(state *resolutionState, relations []domain.RelationReferen
 }
 
 // resolveColumns enriches column references: resolves schemas, table qualifiers, and unqualified columns.
-func resolveColumns(state *resolutionState, columns []domain.ColumnReference) []domain.ColumnReference {
+func resolveColumns(state *resolutionState, columns []domain.ColumnReference) ([]domain.ColumnReference, bool) {
 	out := make([]domain.ColumnReference, 0, len(columns))
+	anyWildcardExpanded := false
 	for _, col := range columns {
-		resolved := resolveOneColumn(state, col)
-		out = append(out, resolved...)
+		if col.Column == "*" {
+			expanded := expandStarColumn(state, col)
+			if len(expanded) > 0 && !(len(expanded) == 1 && expanded[0].Column == "*") {
+				anyWildcardExpanded = true
+			}
+			out = append(out, expanded...)
+		} else if col.Table != "" {
+			out = append(out, resolveQualifiedColumn(state, col)...)
+		} else {
+			out = append(out, resolveUnqualifiedColumn(state, col)...)
+		}
 	}
-	return out
-}
-
-func resolveOneColumn(state *resolutionState, col domain.ColumnReference) []domain.ColumnReference {
-	if col.Column == "*" {
-		return expandStarColumn(state, col)
-	}
-
-	if col.Table != "" {
-		return resolveQualifiedColumn(state, col)
-	}
-
-	return resolveUnqualifiedColumn(state, col)
+	return out, anyWildcardExpanded
 }
 
 // expandStarColumn expands a wildcard column into individual column references.
@@ -278,6 +279,10 @@ func resolveUnqualifiedColumn(state *resolutionState, col domain.ColumnReference
 
 	for _, refs := range state.nameMap {
 		for _, ref := range refs {
+			// Skip ambiguous name-map entries (multiple relations, no schema match).
+			if ref.schema == "" && ref.name == "" {
+				continue
+			}
 			rs, ok := state.resolveSchema(ref.schema, ref.name)
 			if !ok {
 				continue
@@ -347,13 +352,14 @@ func resolveSourceKeys(state *resolutionState, sources []string) []string {
 }
 
 // filterResolvedUnresolved removes unresolved entries that were successfully resolved.
-func filterResolvedUnresolved(unresolved []domain.Unresolved, state *resolutionState) []domain.Unresolved {
+func filterResolvedUnresolved(unresolved []domain.Unresolved, state *resolutionState, wildcardExpanded bool) []domain.Unresolved {
 	if len(unresolved) == 0 {
 		return nil
 	}
+	resolverSucceeded := len(state.schemaCache) > 0
 	out := make([]domain.Unresolved, 0, len(unresolved))
 	for _, u := range unresolved {
-		if isWildcardReason(u.Reason) && hasMetadata(state) {
+		if isWildcardReason(u.Reason) && (wildcardExpanded || resolverSucceeded) {
 			continue
 		}
 		out = append(out, u)
@@ -366,10 +372,6 @@ func filterResolvedUnresolved(unresolved []domain.Unresolved, state *resolutionS
 
 func isWildcardReason(r domain.ReasonCode) bool {
 	return r == ReasonUnresolvedWildcard || r == domain.ReasonSchemaUnavailable
-}
-
-func hasMetadata(state *resolutionState) bool {
-	return len(state.schemaCache) > 0 || state.resolver != nil
 }
 
 // FormatRelationSchemaKey returns a cache key for a relation schema lookup.
