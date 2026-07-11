@@ -12,6 +12,8 @@ var (
 	ErrInvalidMode = errors.New("invalid mode: must be strict or projection_only")
 	// ErrInvalidAdmission indicates an invalid admission/classification combination.
 	ErrInvalidAdmission = errors.New("invalid admission: admissible requires read_only classification")
+	// ErrUnknownAdmission indicates an unrecognized admission value.
+	ErrUnknownAdmission = errors.New("unknown admission value")
 	// ErrForbiddenField indicates the result contains a forbidden field.
 	ErrForbiddenField = errors.New("result contains forbidden field")
 )
@@ -57,11 +59,19 @@ func FoldReadClassification(classifications []ReadClassification) ReadClassifica
 
 // ValidateAdmission rejects invalid admission/classification combinations.
 // Admissible requires read_only classification.
+// Unknown admission values are rejected.
 func ValidateAdmission(rc ReadClassification, adm Admission) error {
-	if adm == Admissible && rc != ReadOnly {
-		return fmt.Errorf("%w: classification is %q", ErrInvalidAdmission, rc)
+	switch adm {
+	case Admissible:
+		if rc != ReadOnly {
+			return fmt.Errorf("%w: classification is %q", ErrInvalidAdmission, rc)
+		}
+		return nil
+	case Rejected, IndeterminateAdmission:
+		return nil
+	default:
+		return fmt.Errorf("%w: %q", ErrUnknownAdmission, adm)
 	}
-	return nil
 }
 
 // SortRelations sorts relation references by schema+name+alias+kind for deterministic output.

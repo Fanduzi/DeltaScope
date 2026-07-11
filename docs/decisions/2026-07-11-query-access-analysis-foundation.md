@@ -546,6 +546,56 @@ query-access development.
 - Documentation must describe DeltaScope as an analysis/admission component,
   not a replacement for database privileges and runtime controls.
 
+## Fail-Closed Resolution Fix Evidence (2026-07-11)
+
+### Metadata Resolution Fail-Closed
+
+`resolveRelations`, `resolveQualifiedColumn`, `resolveUnqualifiedColumn` now
+generate bounded `Unresolved` entries on resolution failure instead of silently
+keeping original references:
+
+- `relation_not_found` — resolver returns error or relation not in schema
+- `column_not_found` — column missing from resolved relation schema
+- `ambiguous_column` — unqualified column matches 0 or multiple relations
+- `missing_metadata` — context cancelled before resolution
+
+`recomputeAdmission` in the service layer downgrades `admissible` to
+`indeterminate` when unresolved entries exist after resolution. `not_read_only`
+is never downgraded (priority preserved).
+
+Tests: `TestService_Analyze_RelationLookupFailsStrict`,
+`TestService_Analyze_ColumnLookupFails`,
+`TestService_Analyze_ProviderError`,
+`TestService_Analyze_AmbiguousRelationNoSchema`,
+`TestService_Analyze_RelationLookupFailsProjectionOnly`.
+
+### Wildcard Partial Resolution
+
+`filterResolvedUnresolved` now tracks which specific wildcards expanded
+successfully via `expandedWildcards` map. Only wildcards that actually expanded
+are removed from unresolved. The TiDB parser puts `SELECT *` into `Unresolved`
+rather than `ReferencedColumns`; when the resolver succeeds, those entries are
+removed. When the resolver fails entirely, they persist.
+
+Tests: `TestResolveMetadata_PartialWildcardSuccessPreservesFailures`,
+`TestResolveMetadata_ResolverErrorKeepsAllWildcards`,
+`TestResolveMetadata_WildcardExpansionFailsKeepsUnresolved`.
+
+### Unknown Admission
+
+`ValidateAdmission` now rejects unknown admission values (not in
+`admissible`/`rejected`/`indeterminate`). `exitCodeForQueryAccess` in CLI
+returns `exitQueryAccessIndeterminate` (2) for unknown admission instead of 0.
+
+Tests: `TestValidateAdmission` (unknown/empty admission cases),
+`TestExitCodeForQueryAccess_UnknownAdmissionFailsClosed`.
+
+### Documentation
+
+EN/ZH reference docs updated: derived tables and CTEs do not require
+`read_table` directly; their permission requirements come from underlying
+physical tables and views.
+
 ## Links
 
 - Commits:

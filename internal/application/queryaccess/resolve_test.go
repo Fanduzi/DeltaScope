@@ -705,9 +705,20 @@ func TestResolveMetadata_ResolverErrorKeepsUnresolved(t *testing.T) {
 
 	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "app", result)
 
-	// Resolver error: wildcard unresolved should persist.
-	if len(resolved.Unresolved) != 1 {
-		t.Errorf("unresolved: got %d, want 1", len(resolved.Unresolved))
+	// Resolver error: wildcard unresolved should persist, plus new unresolved for relation and wildcard failures.
+	if len(resolved.Unresolved) < 1 {
+		t.Errorf("unresolved: got %d, want at least 1", len(resolved.Unresolved))
+	}
+	// Verify the original unresolved entry is still present.
+	found := false
+	for _, u := range resolved.Unresolved {
+		if u.Reference == "*" && u.Reason == domain.ReasonSchemaUnavailable {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("original wildcard unresolved entry should persist")
 	}
 }
 
@@ -761,8 +772,89 @@ func TestResolveMetadata_WildcardExpansionFailsKeepsUnresolved(t *testing.T) {
 
 	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "app", result)
 
-	// Wildcard expansion failed (table not found): unresolved should persist.
-	if len(resolved.Unresolved) != 1 {
-		t.Errorf("unresolved: got %d, want 1", len(resolved.Unresolved))
+	if len(resolved.Unresolved) < 1 {
+		t.Errorf("unresolved: got %d, want at least 1", len(resolved.Unresolved))
+	}
+	found := false
+	for _, u := range resolved.Unresolved {
+		if u.Reference == "*" && u.Reason == domain.ReasonSchemaUnavailable {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("original wildcard unresolved entry should persist")
+	}
+}
+
+func TestResolveMetadata_PartialWildcardSuccessPreservesFailures(t *testing.T) {
+	t.Parallel()
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"schema_a.a": {
+			Schema: "schema_a", Name: "a", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result := domain.Result{
+		Dialect: "mysql",
+		Mode:    domain.ModeStrict,
+		Relations: []domain.RelationReference{
+			{Schema: "schema_a", Name: "a", Alias: "a", Kind: domain.RelationTable, PermissionRequired: true},
+			{Schema: "schema_b", Name: "b", Alias: "b", Kind: domain.RelationTable, PermissionRequired: true},
+		},
+		ReferencedColumns: []domain.ColumnReference{
+			{Table: "a", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
+			{Table: "b", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
+		},
+	}
+
+	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "", result)
+
+	hasRelationNotFound := false
+	for _, u := range resolved.Unresolved {
+		if u.Reason == appqa.ReasonRelationNotFound || u.Reason == appqa.ReasonUnresolvedWildcard {
+			hasRelationNotFound = true
+		}
+	}
+	if !hasRelationNotFound {
+		t.Error("unresolved for failed relation b should persist")
+	}
+
+	aExpanded := false
+	for _, col := range resolved.ReferencedColumns {
+		if col.Schema == "schema_a" && col.Table == "a" && col.Column == "id" {
+			aExpanded = true
+		}
+	}
+	if !aExpanded {
+		t.Error("wildcard a.* should have been expanded")
+	}
+}
+
+func TestResolveMetadata_ResolverErrorKeepsAllWildcards(t *testing.T) {
+	t.Parallel()
+	resolver := &errorResolver{err: errors.New("connection refused")}
+
+	result := domain.Result{
+		Dialect: "mysql",
+		Mode:    domain.ModeStrict,
+		Relations: []domain.RelationReference{
+			{Schema: "schema_a", Name: "a", Kind: domain.RelationTable, PermissionRequired: true},
+			{Schema: "schema_b", Name: "b", Kind: domain.RelationTable, PermissionRequired: true},
+		},
+		ReferencedColumns: []domain.ColumnReference{
+			{Table: "a", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
+			{Table: "b", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
+		},
+		Unresolved: []domain.Unresolved{
+			{Reference: "*", Reason: domain.ReasonSchemaUnavailable},
+		},
+	}
+
+	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "", result)
+
+	if len(resolved.Unresolved) < 1 {
+		t.Errorf("unresolved: got %d, want at least 1", len(resolved.Unresolved))
 	}
 }

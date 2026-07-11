@@ -2,6 +2,7 @@ package queryaccess_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
@@ -246,5 +247,156 @@ func TestService_Analyze_UnknownFunctionEffect(t *testing.T) {
 	}
 	if !hasFunctionEffect {
 		t.Errorf("expected reason_codes to include %q, got %v", domain.ReasonFunctionEffect, dr.ReasonCodes)
+	}
+}
+
+func TestService_Analyze_RelationLookupFailsStrict(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT id FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+
+	hasRelationNotFound := false
+	for _, u := range dr.Unresolved {
+		if u.Reason == appqa.ReasonRelationNotFound {
+			hasRelationNotFound = true
+			break
+		}
+	}
+	if !hasRelationNotFound {
+		t.Error("expected relation_not_found unresolved entry")
+	}
+}
+
+func TestService_Analyze_RelationLookupFailsProjectionOnly(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT id FROM users",
+		Dialect:        "mysql",
+		Mode:           "projection_only",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+}
+
+func TestService_Analyze_ColumnLookupFails(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.users": {
+			Schema: "app", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT users.missing FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+
+	hasColumnNotFound := false
+	for _, u := range dr.Unresolved {
+		if u.Reason == appqa.ReasonColumnNotFound {
+			hasColumnNotFound = true
+			break
+		}
+	}
+	if !hasColumnNotFound {
+		t.Error("expected column_not_found unresolved entry")
+	}
+}
+
+func TestService_Analyze_ProviderError(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := &errorResolver{err: errors.New("connection refused")}
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT id FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+}
+
+func TestService_Analyze_AmbiguousRelationNoSchema(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"schema_a.users": {
+			Schema: "schema_a", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+		"schema_b.users": {
+			Schema: "schema_b", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT id FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
 	}
 }

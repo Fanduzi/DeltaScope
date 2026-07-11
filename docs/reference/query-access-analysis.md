@@ -39,7 +39,7 @@ Projection-only mode emits a `projection_only_inference_risk` warning when non-p
 
 ## Table Permissions
 
-Both strict and projection-only modes require `read_table` permission for every base table and derived table. CTEs do not require permission.
+Both strict and projection-only modes require `read_table` permission for every base table and view. CTEs and derived tables do not require permission directly; their permission requirements come from the underlying physical tables and views they reference.
 
 ## Fail-Closed Behavior
 

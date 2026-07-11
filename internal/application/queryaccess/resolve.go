@@ -126,18 +126,23 @@ func resolveMetadata(ctx context.Context, resolver SchemaResolver, dialect, defa
 
 	state := newResolutionState(ctx, resolver, dialect, defaultSchema, result.Relations)
 
-	result.Relations = resolveRelations(state, result.Relations)
-	resolvedCols, wildcardExpanded := resolveColumns(state, result.ReferencedColumns)
+	var newUnresolved []domain.Unresolved
+	result.Relations, newUnresolved = resolveRelations(state, result.Relations)
+	resolvedCols, expandedWildcards, colUnresolved := resolveColumns(state, result.ReferencedColumns)
 	result.ReferencedColumns = resolvedCols
+	newUnresolved = append(newUnresolved, colUnresolved...)
 	result.Outputs = resolveOutputs(state, result.Outputs)
-	result.Unresolved = filterResolvedUnresolved(result.Unresolved, state, wildcardExpanded)
+	result.Unresolved = filterResolvedUnresolved(result.Unresolved, expandedWildcards, len(state.schemaCache) > 0)
+	result.Unresolved = append(result.Unresolved, newUnresolved...)
+	result.Unresolved = domain.SortUnresolved(result.Unresolved)
 
 	return result
 }
 
 // resolveRelations enriches relation references with metadata: resolves schemas, detects views.
-func resolveRelations(state *resolutionState, relations []domain.RelationReference) []domain.RelationReference {
+func resolveRelations(state *resolutionState, relations []domain.RelationReference) ([]domain.RelationReference, []domain.Unresolved) {
 	out := make([]domain.RelationReference, 0, len(relations))
+	var unresolved []domain.Unresolved
 	for _, rel := range relations {
 		if rel.Kind == domain.RelationCTE || rel.Kind == domain.RelationDerived {
 			out = append(out, rel)
@@ -149,8 +154,22 @@ func resolveRelations(state *resolutionState, relations []domain.RelationReferen
 			resolvedSchema = state.defaultSchema
 		}
 
+		if err := state.ctx.Err(); err != nil {
+			unresolved = append(unresolved, domain.Unresolved{
+				Reference: domain.FormatRelationKey(rel.Schema, rel.Name),
+				Reason:    ReasonMissingMetadata,
+			})
+			out = append(out, rel)
+			continue
+		}
+
 		rs, ok := state.resolveSchema(resolvedSchema, rel.Name)
 		if !ok {
+			ref := domain.FormatRelationKey(rel.Schema, rel.Name)
+			unresolved = append(unresolved, domain.Unresolved{
+				Reference: ref,
+				Reason:    ReasonRelationNotFound,
+			})
 			out = append(out, rel)
 			continue
 		}
@@ -164,39 +183,47 @@ func resolveRelations(state *resolutionState, relations []domain.RelationReferen
 		}
 		out = append(out, enriched)
 	}
-	return out
+	return out, unresolved
 }
 
 // resolveColumns enriches column references: resolves schemas, table qualifiers, and unqualified columns.
-func resolveColumns(state *resolutionState, columns []domain.ColumnReference) ([]domain.ColumnReference, bool) {
+func resolveColumns(state *resolutionState, columns []domain.ColumnReference) ([]domain.ColumnReference, map[string]bool, []domain.Unresolved) {
 	out := make([]domain.ColumnReference, 0, len(columns))
-	anyWildcardExpanded := false
+	expandedWildcards := make(map[string]bool)
+	var unresolved []domain.Unresolved
 	for _, col := range columns {
 		if col.Column == "*" {
-			expanded := expandStarColumn(state, col)
+			expanded, originalRef, wcUnresolved := expandStarColumn(state, col)
 			if len(expanded) > 0 && !(len(expanded) == 1 && expanded[0].Column == "*") {
-				anyWildcardExpanded = true
+				expandedWildcards[originalRef] = true
 			}
 			out = append(out, expanded...)
+			unresolved = append(unresolved, wcUnresolved...)
 		} else if col.Table != "" {
-			out = append(out, resolveQualifiedColumn(state, col)...)
+			resolved, colUnresolved := resolveQualifiedColumn(state, col)
+			out = append(out, resolved...)
+			unresolved = append(unresolved, colUnresolved...)
 		} else {
-			out = append(out, resolveUnqualifiedColumn(state, col)...)
+			resolved, colUnresolved := resolveUnqualifiedColumn(state, col)
+			out = append(out, resolved...)
+			unresolved = append(unresolved, colUnresolved...)
 		}
 	}
-	return out, anyWildcardExpanded
+	return out, expandedWildcards, unresolved
 }
 
 // expandStarColumn expands a wildcard column into individual column references.
-func expandStarColumn(state *resolutionState, col domain.ColumnReference) []domain.ColumnReference {
+func expandStarColumn(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, string, []domain.Unresolved) {
 	if col.Table == "" {
 		return expandGlobalStar(state, col)
 	}
 	return expandTableStar(state, col)
 }
 
-func expandGlobalStar(state *resolutionState, col domain.ColumnReference) []domain.ColumnReference {
+func expandGlobalStar(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, string, []domain.Unresolved) {
 	var expanded []domain.ColumnReference
+	var unresolved []domain.Unresolved
+	originalRef := "*"
 	for _, rel := range state.nameMap {
 		for _, ref := range rel {
 			if ref.schema == "" && state.defaultSchema != "" {
@@ -204,6 +231,10 @@ func expandGlobalStar(state *resolutionState, col domain.ColumnReference) []doma
 			}
 			rs, ok := state.resolveSchema(ref.schema, ref.name)
 			if !ok {
+				unresolved = append(unresolved, domain.Unresolved{
+					Reference: domain.FormatRelationKey(ref.schema, ref.name) + ".*",
+					Reason:    ReasonUnresolvedWildcard,
+				})
 				continue
 			}
 			for _, c := range rs.Columns {
@@ -221,16 +252,23 @@ func expandGlobalStar(state *resolutionState, col domain.ColumnReference) []doma
 			Table:  col.Table,
 			Column: col.Column,
 			Usages: col.Usages,
-		}}
+		}}, originalRef, unresolved
 	}
-	return expanded
+	return expanded, originalRef, unresolved
 }
 
-func expandTableStar(state *resolutionState, col domain.ColumnReference) []domain.ColumnReference {
+func expandTableStar(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, string, []domain.Unresolved) {
 	schema, name := state.resolveRelationRef(col.Table)
+	originalRef := domain.FormatRelationKey(col.Table, "*")
+	if schema != "" && schema != col.Table {
+		originalRef = domain.FormatRelationKey(schema, name) + ".*"
+	}
 	rs, ok := state.resolveSchema(schema, name)
 	if !ok {
-		return []domain.ColumnReference{col}
+		return []domain.ColumnReference{col}, originalRef, []domain.Unresolved{{
+			Reference: originalRef,
+			Reason:    ReasonUnresolvedWildcard,
+		}}
 	}
 
 	expanded := make([]domain.ColumnReference, 0, len(rs.Columns))
@@ -242,15 +280,18 @@ func expandTableStar(state *resolutionState, col domain.ColumnReference) []domai
 			Usages: col.Usages,
 		})
 	}
-	return expanded
+	return expanded, originalRef, nil
 }
 
 // resolveQualifiedColumn resolves a table.column reference to schema.table.column.
-func resolveQualifiedColumn(state *resolutionState, col domain.ColumnReference) []domain.ColumnReference {
+func resolveQualifiedColumn(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, []domain.Unresolved) {
 	schema, name := state.resolveRelationRef(col.Table)
 	rs, ok := state.resolveSchema(schema, name)
 	if !ok {
-		return []domain.ColumnReference{col}
+		return []domain.ColumnReference{col}, []domain.Unresolved{{
+			Reference: domain.FormatColumnKey(schema, name, col.Column),
+			Reason:    ReasonColumnNotFound,
+		}}
 	}
 
 	found := false
@@ -261,7 +302,10 @@ func resolveQualifiedColumn(state *resolutionState, col domain.ColumnReference) 
 		}
 	}
 	if !found {
-		return []domain.ColumnReference{col}
+		return []domain.ColumnReference{col}, []domain.Unresolved{{
+			Reference: domain.FormatColumnKey(rs.Schema, rs.Name, col.Column),
+			Reason:    ReasonColumnNotFound,
+		}}
 	}
 
 	resolved := col
@@ -269,17 +313,16 @@ func resolveQualifiedColumn(state *resolutionState, col domain.ColumnReference) 
 		resolved.Schema = rs.Schema
 	}
 	resolved.Table = rs.Name
-	return []domain.ColumnReference{resolved}
+	return []domain.ColumnReference{resolved}, nil
 }
 
 // resolveUnqualifiedColumn resolves an unqualified column when exactly ONE source matches.
-func resolveUnqualifiedColumn(state *resolutionState, col domain.ColumnReference) []domain.ColumnReference {
+func resolveUnqualifiedColumn(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, []domain.Unresolved) {
 	var matchSchema, matchName string
 	matchCount := 0
 
 	for _, refs := range state.nameMap {
 		for _, ref := range refs {
-			// Skip ambiguous name-map entries (multiple relations, no schema match).
 			if ref.schema == "" && ref.name == "" {
 				continue
 			}
@@ -302,10 +345,17 @@ func resolveUnqualifiedColumn(state *resolutionState, col domain.ColumnReference
 		resolved := col
 		resolved.Schema = matchSchema
 		resolved.Table = matchName
-		return []domain.ColumnReference{resolved}
+		return []domain.ColumnReference{resolved}, nil
 	}
 
-	return []domain.ColumnReference{col}
+	reason := ReasonAmbiguousColumn
+	if matchCount == 0 {
+		reason = ReasonColumnNotFound
+	}
+	return []domain.ColumnReference{col}, []domain.Unresolved{{
+		Reference: col.Column,
+		Reason:    reason,
+	}}
 }
 
 // resolveOutputs enriches output columns by propagating lineage through resolved columns.
@@ -351,15 +401,16 @@ func resolveSourceKeys(state *resolutionState, sources []string) []string {
 	return out
 }
 
-// filterResolvedUnresolved removes unresolved entries that were successfully resolved.
-func filterResolvedUnresolved(unresolved []domain.Unresolved, state *resolutionState, wildcardExpanded bool) []domain.Unresolved {
+// filterResolvedUnresolved removes unresolved entries for wildcards that were successfully expanded.
+// A wildcard unresolved entry is removed if ANY wildcard was expanded OR if the resolver succeeded.
+func filterResolvedUnresolved(unresolved []domain.Unresolved, expandedWildcards map[string]bool, resolverSucceeded bool) []domain.Unresolved {
 	if len(unresolved) == 0 {
 		return nil
 	}
-	resolverSucceeded := len(state.schemaCache) > 0
+	hasExpandedWildcard := len(expandedWildcards) > 0 || resolverSucceeded
 	out := make([]domain.Unresolved, 0, len(unresolved))
 	for _, u := range unresolved {
-		if isWildcardReason(u.Reason) && (wildcardExpanded || resolverSucceeded) {
+		if isWildcardReason(u.Reason) && hasExpandedWildcard {
 			continue
 		}
 		out = append(out, u)

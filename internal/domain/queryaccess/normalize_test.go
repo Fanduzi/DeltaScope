@@ -95,6 +95,8 @@ func TestValidateAdmission(t *testing.T) {
 		{"rejected + indeterminate is valid", queryaccess.Indeterminate, queryaccess.Rejected, false},
 		{"indeterminate_admission + read_only is valid", queryaccess.ReadOnly, queryaccess.IndeterminateAdmission, false},
 		{"indeterminate_admission + not_read_only is valid", queryaccess.NotReadOnly, queryaccess.IndeterminateAdmission, false},
+		{"unknown admission is rejected", queryaccess.ReadOnly, queryaccess.Admission("bogus"), true},
+		{"empty admission is rejected", queryaccess.ReadOnly, queryaccess.Admission(""), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

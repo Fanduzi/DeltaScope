@@ -39,7 +39,7 @@
 
 ## 表权限
 
-strict 和 projection_only 模式都要求对每个基表和派生表具有 `read_table` 权限。CTE 不需要权限。
+strict 和 projection_only 模式都要求对每个基表和视图具有 `read_table` 权限。CTE 和派生表本身不需要权限；它们的权限要求来自它们引用的底层物理表和视图。
 
 ## 失败关闭行为
 

@@ -149,6 +149,6 @@ func exitCodeForQueryAccess(result *deltascope.QueryAccessResult) int {
 	case deltascope.QueryAccessIndeterminateAdmission:
 		return exitQueryAccessIndeterminate
 	default:
-		return exitQueryAccessAdmissible
+		return exitQueryAccessIndeterminate
 	}
 }

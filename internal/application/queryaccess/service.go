@@ -39,6 +39,8 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
 	}
 
+	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved)
+
 	// Build requirements based on mode
 	reqs, warnings, _, reqErr := buildRequirements(
 		extracted.DomainResult.Mode,
@@ -86,4 +88,14 @@ func hasFunctionCallReasonCode(codes []domain.ReasonCode) bool {
 		}
 	}
 	return false
+}
+
+func recomputeAdmission(classification domain.ReadClassification, current domain.Admission, unresolved []domain.Unresolved) domain.Admission {
+	if current == domain.Rejected {
+		return current
+	}
+	if len(unresolved) > 0 && current == domain.Admissible {
+		return domain.IndeterminateAdmission
+	}
+	return current
 }

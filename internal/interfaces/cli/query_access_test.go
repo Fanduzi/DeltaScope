@@ -9,6 +9,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 func TestQueryAccessAnalyzeMySQLSelect(t *testing.T) {
@@ -128,5 +130,17 @@ func TestQueryAccessAnalyzeJSONFieldNames(t *testing.T) {
 		if _, ok := result[field]; !ok {
 			t.Errorf("expected field %q in JSON output", field)
 		}
+	}
+}
+
+func TestExitCodeForQueryAccess_UnknownAdmissionFailsClosed(t *testing.T) {
+	t.Parallel()
+
+	result := &deltascope.QueryAccessResult{
+		Admission: deltascope.QueryAccessAdmission("bogus"),
+	}
+	code := exitCodeForQueryAccess(result)
+	if code != exitQueryAccessIndeterminate {
+		t.Errorf("unknown admission: got exit code %d, want %d (indeterminate)", code, exitQueryAccessIndeterminate)
 	}
 }
