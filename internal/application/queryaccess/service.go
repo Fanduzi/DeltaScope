@@ -56,7 +56,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	extracted.DomainResult.Relations = domain.SortRelations(extracted.DomainResult.Relations)
 	extracted.DomainResult.ReferencedColumns = domain.SortColumns(extracted.DomainResult.ReferencedColumns)
 	extracted.DomainResult.Requirements = domain.SortRequirements(extracted.DomainResult.Requirements)
-	extracted.DomainResult.Outputs = domain.SortOutputs(extracted.DomainResult.Outputs)
+	// Outputs preserve SELECT declaration order — do NOT sort.
 	extracted.DomainResult.Unresolved = domain.SortUnresolved(extracted.DomainResult.Unresolved)
 	extracted.DomainResult.ReasonCodes = domain.SortReasonCodes(extracted.DomainResult.ReasonCodes)
 	extracted.DomainResult.Warnings = domain.SortWarningCodes(extracted.DomainResult.Warnings)

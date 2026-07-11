@@ -191,6 +191,31 @@ func TestService_Analyze_WildcardExpansionWithResolver(t *testing.T) {
 	}
 }
 
+func TestService_Analyze_OutputPreservesDeclarationOrder(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "SELECT b, a FROM users",
+		Dialect: "mysql",
+		Mode:    "strict",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if len(dr.Outputs) < 2 {
+		t.Fatalf("outputs: got %d, want >= 2", len(dr.Outputs))
+	}
+	if dr.Outputs[0].Name != "b" {
+		t.Errorf("outputs[0].Name: got %q, want %q", dr.Outputs[0].Name, "b")
+	}
+	if dr.Outputs[1].Name != "a" {
+		t.Errorf("outputs[1].Name: got %q, want %q", dr.Outputs[1].Name, "a")
+	}
+}
+
 func TestService_Analyze_UnknownFunctionEffect(t *testing.T) {
 	t.Parallel()
 	svc := &appqa.Service{}
