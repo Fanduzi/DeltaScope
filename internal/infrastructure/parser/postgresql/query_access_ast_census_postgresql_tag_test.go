@@ -1,0 +1,558 @@
+//go:build postgresql
+
+// Package postgresql characterizes pg_query_go parser AST fields for SELECT and
+// query-related statements. This is an architecture gate: it proves what the
+// parser exposes before any production query-access extraction code is written.
+//
+// Classification legend:
+//
+//	approved      — read-only candidate; parser AST fields are sufficient for
+//	                conservative relation/column extraction
+//	not_read_only — recognized write, lock, session mutation, file output, or
+//	                DDL/DML that makes the statement non-read-only
+//	indeterminate — parser error, unknown function effect, or AST form that
+//	                cannot be modeled conservatively
+package postgresql
+
+import (
+	"fmt"
+	"testing"
+
+	pg_query "github.com/pganalyze/pg_query_go/v6"
+)
+
+// pgQueryAccessTestCase defines one characterization test row.
+type pgQueryAccessTestCase struct {
+	name       string
+	sql        string
+	wantErr    bool   // true if parse should fail
+	classify   string // approved | not_read_only | indeterminate
+	wantNode   string // expected AST node type name (empty = don't check)
+	notes      string // human-readable evidence note
+}
+
+// PGQueryAccessCensus is the characterization matrix for PostgreSQL SELECT-related
+// AST forms. Each row documents what the parser exposes and how the form should
+// be classified for query-access analysis.
+var PGQueryAccessCensus = []pgQueryAccessTestCase{
+	// --- Simple SELECT ---
+	{
+		name:     "simple_select",
+		sql:      "SELECT id, name FROM users",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "TargetList, FromClause, WhereClause=nil, GroupClause=nil, HavingClause=nil, SortClause=nil, LockingClause=nil, WithClause=nil",
+	},
+	{
+		name:     "select_with_aliases",
+		sql:      "SELECT u.id, u.name FROM users u",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "FromClause contains RangeVar with alias; column refs carry qualifier",
+	},
+	{
+		name:     "schema_qualified",
+		sql:      "SELECT id FROM app.users",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "RangeVar.Schemaname='app', RangeVar.Relname='users'",
+	},
+	// --- JOINs ---
+	{
+		name:     "inner_join",
+		sql:      "SELECT u.id, o.total FROM users u INNER JOIN orders o ON u.id = o.user_id",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "FromClause contains JoinExpr with jointype=JOIN_INNER, quals != nil",
+	},
+	{
+		name:     "left_join",
+		sql:      "SELECT u.id, o.total FROM users u LEFT JOIN orders o ON u.id = o.user_id",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "JoinExpr.jointype=JOIN_LEFT; quals != nil",
+	},
+	{
+		name:     "right_join",
+		sql:      "SELECT u.id, o.total FROM users u RIGHT JOIN orders o ON u.id = o.user_id",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "JoinExpr.jointype=JOIN_RIGHT; quals != nil",
+	},
+	{
+		name:     "cross_join",
+		sql:      "SELECT * FROM users CROSS JOIN orders",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "JoinExpr.jointype=JOIN_INNER (CROSS maps to INNER with no quals); quals=nil",
+	},
+	{
+		name:     "full_outer_join",
+		sql:      "SELECT * FROM users FULL OUTER JOIN orders ON users.id = orders.user_id",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "JoinExpr.jointype=JOIN_FULL; quals != nil",
+	},
+	{
+		name:     "using_join",
+		sql:      "SELECT * FROM users JOIN orders USING (user_id)",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "JoinExpr.jointype=JOIN_INNER; JoinExpr.usingClause contains column list",
+	},
+	{
+		name:     "natural_join",
+		sql:      "SELECT * FROM users NATURAL JOIN orders",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "JoinExpr.isNatural=true; implicit column matching",
+	},
+	// --- LATERAL join ---
+	{
+		name:     "lateral_join",
+		sql:      "SELECT * FROM users u, LATERAL (SELECT * FROM orders WHERE user_id = u.id) o",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "FromClause contains RangeSubselect with lateral=true; correlated reference",
+	},
+	// --- WHERE predicates ---
+	{
+		name:     "where_literal_equality",
+		sql:      "SELECT id FROM users WHERE id = 1",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WhereClause != nil; AExpr with kind=SIMPLE_OP",
+	},
+	{
+		name:     "where_comparison",
+		sql:      "SELECT id FROM users WHERE salary > 100000",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WhereClause != nil; AExpr with kind=SIMPLE_OP",
+	},
+	{
+		name:     "where_exists_subquery",
+		sql:      "SELECT id FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id)",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WhereClause contains SubLink with EXISTS_SUBLINK type",
+	},
+	// --- GROUP BY, HAVING, ORDER BY ---
+	{
+		name:     "group_by",
+		sql:      "SELECT dept, COUNT(*) FROM employees GROUP BY dept",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "GroupClause != nil; contains column ref nodes",
+	},
+	{
+		name:     "having",
+		sql:      "SELECT dept, COUNT(*) c FROM employees GROUP BY dept HAVING COUNT(*) > 5",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "HavingClause != nil; references aggregated expression",
+	},
+	{
+		name:     "order_by",
+		sql:      "SELECT id, name FROM users ORDER BY name ASC",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "SortClause != nil; SortBy node with column ref",
+	},
+	// --- Window functions ---
+	{
+		name:     "window_function",
+		sql:      "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM employees",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "TargetList contains WindowFunc; WindowDef with partitionClause and orderClause",
+	},
+	// --- Subqueries ---
+	{
+		name:     "scalar_subquery",
+		sql:      "SELECT (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) FROM users",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "TargetList contains SubLink with EXPR_SUBLINK; correlated reference",
+	},
+	{
+		name:     "correlated_subquery_in_where",
+		sql:      "SELECT id FROM users WHERE salary > (SELECT AVG(salary) FROM employees WHERE employees.dept = users.dept)",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WhereClause contains SubLink with EXPR_SUBLINK; correlated predicate",
+	},
+	{
+		name:     "derived_table",
+		sql:      "SELECT * FROM (SELECT id, name FROM users) AS sub",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "FromClause contains RangeSubselect with subquery",
+	},
+	// --- CTEs ---
+	{
+		name:     "simple_cte",
+		sql:      "WITH cte AS (SELECT id FROM users) SELECT * FROM cte",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WithClause != nil; CommonTableExpr with CTEquery (SelectStmt)",
+	},
+	{
+		name:     "recursive_cte",
+		sql:      "WITH RECURSIVE cte AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM cte WHERE n < 10) SELECT * FROM cte",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WithClause.recursive=true; CTE body contains UNION ALL",
+	},
+	// --- Data-modifying CTE (PostgreSQL-specific) ---
+	{
+		name:     "data_modifying_cte",
+		sql:      "WITH deleted AS (DELETE FROM users RETURNING id) SELECT id FROM deleted",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "WithClause contains CTE with DELETE statement; data-modifying CTE → not_read_only",
+	},
+	// --- Set operations ---
+	{
+		name:     "union",
+		sql:      "SELECT id FROM users UNION SELECT id FROM admins",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "SelectStmt with op=SETOP_UNION; larg/rarg contain child selects",
+	},
+	{
+		name:     "union_all",
+		sql:      "SELECT id FROM users UNION ALL SELECT id FROM admins",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "SelectStmt with op=SETOP_UNION_ALL",
+	},
+	{
+		name:     "intersect",
+		sql:      "SELECT id FROM users INTERSECT SELECT id FROM admins",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "SelectStmt with op=SETOP_INTERSECT",
+	},
+	{
+		name:     "except",
+		sql:      "SELECT id FROM users EXCEPT SELECT id FROM admins",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "SelectStmt with op=SETOP_EXCEPT",
+	},
+	// --- Wildcards ---
+	{
+		name:     "select_star",
+		sql:      "SELECT * FROM users",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "TargetList contains ResTarget with A_Star; requires metadata expansion",
+	},
+	{
+		name:     "qualified_wildcard",
+		sql:      "SELECT users.* FROM users",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "TargetList contains ResTarget with ColumnRef carrying table qualifier and A_Star",
+	},
+	// --- Locking reads ---
+	{
+		name:     "for_update",
+		sql:      "SELECT * FROM users FOR UPDATE",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "LockingClause != nil; LockClauseItem with strength=LockForUpdate",
+	},
+	{
+		name:     "for_share",
+		sql:      "SELECT * FROM users FOR SHARE",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "LockingClause != nil; LockClauseItem with strength=LockForShare",
+	},
+	{
+		name:     "for_no_key_update",
+		sql:      "SELECT * FROM users FOR NO KEY UPDATE",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "LockingClause != nil; LockClauseItem with strength=LockForNoKeyUpdate",
+	},
+	{
+		name:     "for_key_share",
+		sql:      "SELECT * FROM users FOR KEY SHARE",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "LockingClause != nil; LockClauseItem with strength=LockForKeyShare",
+	},
+	// --- SELECT INTO (PostgreSQL-specific: creates table) ---
+	{
+		name:     "select_into",
+		sql:      "SELECT id INTO archive_users FROM users",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "SelectStmt.intoClause != nil; creates a new table → not_read_only",
+	},
+	// --- Set-returning functions in FROM ---
+	{
+		name:     "generate_series",
+		sql:      "SELECT * FROM generate_series(1, 10)",
+		classify: "indeterminate",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "V1 policy: empty known-pure allowlist; set-returning function → indeterminate",
+	},
+	// --- Functions ---
+	{
+		name:     "builtin_now",
+		sql:      "SELECT NOW()",
+		classify: "indeterminate",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "V1 policy: empty known-pure allowlist; all function-bearing expressions → indeterminate",
+	},
+	{
+		name:     "builtin_concat",
+		sql:      "SELECT CONCAT(a, b) FROM t",
+		classify: "indeterminate",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "V1 policy: function call → indeterminate",
+	},
+	{
+		name:     "unknown_function",
+		sql:      "SELECT unknown_func(id) FROM users",
+		classify: "indeterminate",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "V1 policy: unknown function → indeterminate",
+	},
+	// --- Multi-statements ---
+	{
+		name:     "multi_select",
+		sql:      "SELECT 1; SELECT 2;",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "Parser returns 2 statements; both are SELECT → approved per-statement",
+	},
+	{
+		name:     "mixed_dml_select",
+		sql:      "SELECT 1; DELETE FROM users;",
+		classify: "not_read_only",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "Multi-statement: second statement is DELETE → whole input not_read_only",
+	},
+	// --- Parser errors ---
+	{
+		name:     "parser_error_select_from",
+		sql:      "SELECT FROM",
+		wantErr:  true,
+		classify: "indeterminate",
+		notes:    "Parser error → indeterminate",
+	},
+	{
+		name:     "parser_error_invalid",
+		sql:      "INVALID SQL",
+		wantErr:  true,
+		classify: "indeterminate",
+		notes:    "Parser error → indeterminate",
+	},
+	// --- EXPLAIN ---
+	{
+		name:     "explain_select",
+		sql:      "EXPLAIN SELECT * FROM users",
+		classify: "approved",
+		wantNode: "*pg_query.ExplainStmt",
+		notes:    "EXPLAIN is read-only; analyzes query plan without executing",
+	},
+	{
+		name:     "explain_analyze",
+		sql:      "EXPLAIN ANALYZE SELECT * FROM users",
+		classify: "not_read_only",
+		wantNode: "*pg_query.ExplainStmt",
+		notes:    "EXPLAIN ANALYZE actually executes the query; not_read_only",
+	},
+	// --- VALUES ---
+	{
+		name:     "values_row",
+		sql:      "VALUES (1, 2), (3, 4)",
+		classify: "approved",
+		wantNode: "*pg_query.SelectStmt",
+		notes:    "VALUES is a table value constructor; read-only",
+	},
+	// --- DDL/DML reach audit as non-query ---
+	{
+		name:     "create_table_is_ddl",
+		sql:      "CREATE TABLE t1 (id INT)",
+		classify: "not_read_only",
+		wantNode: "*pg_query.CreateStmt",
+		notes:    "DDL → not_read_only; classified as KindDDL by audit classify()",
+	},
+	{
+		name:     "insert_is_dml",
+		sql:      "INSERT INTO users (name) VALUES ('alice')",
+		classify: "not_read_only",
+		wantNode: "*pg_query.InsertStmt",
+		notes:    "DML → not_read_only; classified as KindDML by audit classify()",
+	},
+	{
+		name:     "update_is_dml",
+		sql:      "UPDATE users SET name = 'bob' WHERE id = 1",
+		classify: "not_read_only",
+		wantNode: "*pg_query.UpdateStmt",
+		notes:    "DML → not_read_only; classified as KindDML by audit classify()",
+	},
+	{
+		name:     "delete_is_dml",
+		sql:      "DELETE FROM users WHERE id = 1",
+		classify: "not_read_only",
+		wantNode: "*pg_query.DeleteStmt",
+		notes:    "DML → not_read_only; classified as KindDML by audit classify()",
+	},
+}
+
+// TestPGQueryAccessASTCensus runs the full characterization matrix against the
+// PostgreSQL parser. Each test documents what AST fields are available and proves
+// the classification boundary.
+func TestPGQueryAccessASTCensus(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range PGQueryAccessCensus {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := pg_query.Parse(tc.sql)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected parse error for %q, got nil", tc.sql)
+				}
+				if tc.classify != "indeterminate" {
+					t.Fatalf("parser error test %q must be classified indeterminate, got %q", tc.name, tc.classify)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected parse error for %q: %v", tc.sql, err)
+			}
+
+			stmts := result.GetStmts()
+			if len(stmts) == 0 {
+				t.Fatalf("expected at least 1 statement for %q, got 0", tc.sql)
+			}
+
+			node := stmts[0].GetStmt()
+			if node == nil {
+				t.Fatal("stmt node is nil")
+			}
+
+			nodeType := pgNodeTypeName(node)
+			if tc.wantNode != "" && nodeType != tc.wantNode {
+				t.Fatalf("expected node type %q, got %q for %q", tc.wantNode, nodeType, tc.sql)
+			}
+
+			// Verify SELECT AST fields are accessible (no panic)
+			if sel := node.GetSelectStmt(); sel != nil {
+				_ = sel.GetTargetList()    // field list
+				_ = sel.GetFromClause()    // FROM clause
+				_ = sel.GetWhereClause()   // WHERE predicate
+				_ = sel.GetGroupClause()   // GROUP BY
+				_ = sel.GetHavingClause()  // HAVING
+				_ = sel.GetSortClause()    // ORDER BY
+				_ = sel.GetWindowClause()  // window clauses
+				_ = sel.GetLockingClause() // locking reads
+				_ = sel.GetIntoClause()    // SELECT INTO
+				_ = sel.GetWithClause()    // CTE clause
+				_ = sel.GetLimitCount()    // LIMIT
+				_ = sel.GetLimitOffset()   // OFFSET
+				_ = sel.GetOp()            // set operation type
+				_ = sel.GetAll()           // ALL flag for set ops
+				_ = sel.GetLarg()          // left arg for set ops
+				_ = sel.GetRarg()          // right arg for set ops
+				_ = sel.GetValuesLists()   // VALUES lists
+			}
+
+			t.Logf("census[%s]: node=%s classify=%s notes=%s", tc.name, nodeType, tc.classify, tc.notes)
+		})
+	}
+}
+
+// TestPGQueryAccessClassificationConsistency proves that the PostgreSQL audit
+// classify() returns KindUnknown for SELECT statements, confirming SELECT
+// reaches audit as an unsupported boundary.
+func TestPGQueryAccessClassificationConsistency(t *testing.T) {
+	t.Parallel()
+
+	selectSQL := "SELECT id, name FROM users WHERE id = 1"
+	parser := New()
+	result, err := parser.Parse(t.Context(), selectSQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+	}
+
+	// SELECT must be KindUnknown in the current audit classify()
+	if result.Statements[0].Kind != "unknown" {
+		t.Fatalf("expected audit classify() to return KindUnknown for SELECT, got %q", result.Statements[0].Kind)
+	}
+}
+
+// TestPGQueryAccessAuditRegression proves that existing DDL/DML classification
+// is unchanged by the characterization tests.
+func TestPGQueryAccessAuditRegression(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		sql      string
+		wantKind string
+	}{
+		{"create_table", "CREATE TABLE t1 (id INT)", "ddl"},
+		{"insert", "INSERT INTO t1 (id) VALUES (1)", "dml"},
+		{"update", "UPDATE t1 SET id = 2 WHERE id = 1", "dml"},
+		{"delete", "DELETE FROM t1 WHERE id = 1", "dml"},
+		{"alter_table", "ALTER TABLE t1 ADD COLUMN name VARCHAR(255)", "ddl"},
+		{"drop_table", "DROP TABLE t1", "ddl"},
+		{"truncate", "TRUNCATE TABLE t1", "ddl"},
+		{"select", "SELECT * FROM t1", "unknown"},
+		{"explain", "EXPLAIN SELECT * FROM t1", "unknown"},
+	}
+
+	parser := New()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := parser.Parse(t.Context(), tc.sql)
+			if err != nil {
+				t.Fatalf("parse %q: %v", tc.sql, err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
+			}
+			if string(result.Statements[0].Kind) != tc.wantKind {
+				t.Fatalf("expected kind %q for %q, got %q", tc.wantKind, tc.name, result.Statements[0].Kind)
+			}
+		})
+	}
+}
+
+// pgNodeTypeName returns the type name of a pg_query.Node for assertion.
+func pgNodeTypeName(node *pg_query.Node) string {
+	if node == nil {
+		return "<nil>"
+	}
+	switch node.GetNode().(type) {
+	case *pg_query.Node_SelectStmt:
+		return "*pg_query.SelectStmt"
+	case *pg_query.Node_CreateStmt:
+		return "*pg_query.CreateStmt"
+	case *pg_query.Node_InsertStmt:
+		return "*pg_query.InsertStmt"
+	case *pg_query.Node_UpdateStmt:
+		return "*pg_query.UpdateStmt"
+	case *pg_query.Node_DeleteStmt:
+		return "*pg_query.DeleteStmt"
+	case *pg_query.Node_ExplainStmt:
+		return "*pg_query.ExplainStmt"
+	default:
+		return fmt.Sprintf("%T", node.GetNode())
+	}
+}
