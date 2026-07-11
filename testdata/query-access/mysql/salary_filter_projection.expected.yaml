@@ -1,0 +1,28 @@
+name: salary_filter_projection
+dialect: mysql
+mode: projection_only
+expect:
+  read_classification: read_only
+  admission: admissible
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection]
+    - table: users
+      column: salary
+      usages: [filter]
+  outputs:
+    - name: id
+      sources: [users.id]
+  requirements:
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved: []
+  warnings: [projection_only_inference_risk]
+  reason_codes: []

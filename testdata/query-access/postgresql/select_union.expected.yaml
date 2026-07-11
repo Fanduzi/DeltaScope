@@ -1,0 +1,23 @@
+name: select_union
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: read_only
+  admission: indeterminate
+  relations:
+    - name: orders
+      kind: table
+      permission_required: true
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns: []
+  outputs: []
+  requirements:
+    - object: orders
+      privilege: read_table
+    - object: users
+      privilege: read_table
+  unresolved: []
+  warnings: []
+  reason_codes: []

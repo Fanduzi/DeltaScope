@@ -1,0 +1,29 @@
+name: select_ambiguous_column
+dialect: mysql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: admins
+      kind: table
+      permission_required: true
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns: []
+  outputs:
+    - name: id
+      sources: []
+  requirements:
+    - object: admins
+      privilege: read_table
+    - object: unqualified_column
+      privilege: indeterminate
+    - object: users
+      privilege: read_table
+  unresolved:
+    - reference: unqualified_column
+      reason: ambiguous_reference
+  warnings: []
+  reason_codes: []

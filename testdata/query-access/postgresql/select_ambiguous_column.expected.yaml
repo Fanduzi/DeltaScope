@@ -1,0 +1,30 @@
+name: select_ambiguous_column
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: read_only
+  admission: indeterminate
+  relations:
+    - name: admins
+      kind: table
+      permission_required: true
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: ""
+      column: id
+      usages: [projection]
+  outputs:
+    - name: id
+      sources: [id]
+  requirements:
+    - object: .id
+      privilege: read_column
+    - object: admins
+      privilege: read_table
+    - object: users
+      privilege: read_table
+  unresolved: []
+  warnings: []
+  reason_codes: []

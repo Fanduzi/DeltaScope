@@ -1,0 +1,33 @@
+name: select_cte
+dialect: mysql
+mode: strict
+expect:
+  read_classification: read_only
+  admission: admissible
+  relations:
+    - name: cte
+      kind: cte
+      permission_required: false
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: cte
+      column: id
+      usages: [projection]
+    - table: users
+      column: id
+      usages: [projection]
+  outputs:
+    - name: id
+      sources: [cte.id]
+  requirements:
+    - object: cte.id
+      privilege: read_column
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

@@ -1,0 +1,41 @@
+name: select_with_join_on
+dialect: mysql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: orders
+      alias: o
+      kind: table
+      permission_required: true
+    - name: users
+      alias: u
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: orders
+      column: user_id
+      usages: [join]
+    - table: users
+      column: id
+      usages: [join]
+  outputs:
+    - name: "*"
+      sources: []
+  requirements:
+    - object: "*"
+      privilege: indeterminate
+    - object: orders
+      privilege: read_table
+    - object: orders.user_id
+      privilege: read_column
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved:
+    - reference: "*"
+      reason: schema_unavailable
+  warnings: []
+  reason_codes: []

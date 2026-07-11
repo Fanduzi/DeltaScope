@@ -1,0 +1,24 @@
+name: select_wildcard
+dialect: mysql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns: []
+  outputs:
+    - name: "*"
+      sources: []
+  requirements:
+    - object: "*"
+      privilege: indeterminate
+    - object: users
+      privilege: read_table
+  unresolved:
+    - reference: "*"
+      reason: schema_unavailable
+  warnings: []
+  reason_codes: []

@@ -1,0 +1,26 @@
+name: select_schema_qualified
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: read_only
+  admission: indeterminate
+  relations:
+    - schema: app
+      name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection]
+  outputs:
+    - name: id
+      sources: [users.id]
+  requirements:
+    - object: app.users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

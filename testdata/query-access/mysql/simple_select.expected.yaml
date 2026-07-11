@@ -1,0 +1,32 @@
+name: simple_select
+dialect: mysql
+mode: strict
+expect:
+  read_classification: read_only
+  admission: admissible
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection]
+    - table: users
+      column: name
+      usages: [projection]
+  outputs:
+    - name: id
+      sources: [users.id]
+    - name: name
+      sources: [users.name]
+  requirements:
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+    - object: users.name
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

@@ -1,0 +1,13 @@
+name: empty_input
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations: []
+  referenced_columns: []
+  outputs: []
+  requirements: []
+  unresolved: []
+  warnings: []
+  reason_codes: []
