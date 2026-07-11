@@ -82,6 +82,7 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 	rootCmd.Flags().BoolVar(&options.ShowVersion, "version", false, "print the DeltaScope build version and supported dialects")
 
 	rootCmd.AddCommand(newAuditCmd(options, exitCode))
+	rootCmd.AddCommand(newQueryAccessCmd(options, exitCode))
 	rootCmd.AddCommand(newRulesCmd(exitCode))
 	rootCmd.AddCommand(newConfigCmd(options, exitCode))
 	rootCmd.AddCommand(newCapabilitiesCmd(exitCode))

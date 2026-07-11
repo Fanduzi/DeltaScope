@@ -10,6 +10,8 @@ CLI adapter layer for the DeltaScope application.
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
 | audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, quiet/normal/github-summary rendering, and fail-threshold logic |
 | audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout) into the shared metadata-preparation flow and MySQL-compatible client opener |
+| query_access.go | Implements the `query-access analyze` subcommand with SQL input loading, mode/dialect/schema flags, JSON output, and admission-based exit codes |
+| query_access_test.go | Verifies query-access command JSON output, exit codes, field names, mode handling, and no-audit-field-leakage |
 | rules.go | Implements `rules list` (with dialect/level/kind/category/search/format/limit filters) and `rules explain <rule-id>` on top of the shipped rule catalog, including text and JSON output |
 | config.go | Implements the `config` command group, including `lint` (semantic validation plus rule-level replacement-hazard warnings and `--strict`), `show-default`, and wiring for `status` |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
@@ -33,7 +35,7 @@ CLI adapter layer for the DeltaScope application.
 
 ## Dependencies
 - Upstream: `cmd/deltascope`
-- Downstream: `bufio`, `database/sql`, `encoding/json`, `internal/application/audit`, `internal/application/auditmeta`, `internal/application/configlint`, `internal/application/configstatus`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/rule/catalog`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/output/githubsummary`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `internal/interfaces/metadata`, `github.com/spf13/cobra`, `golang.org/x/term`
+- Downstream: `bufio`, `database/sql`, `encoding/json`, `internal/application/audit`, `internal/application/auditmeta`, `internal/application/configlint`, `internal/application/configstatus`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/rule/catalog`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/output/githubsummary`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `internal/interfaces/metadata`, `pkg/deltascope`, `github.com/spf13/cobra`, `golang.org/x/term`
 
 ## Notes
 - `deltascope --version` prints the build version plus compiled dialect surface.

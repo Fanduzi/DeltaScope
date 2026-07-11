@@ -8,8 +8,10 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 |------|---------------|
 | audit_metadata.go | Executes one HTTP audit request through offline or direct metadata-aware flows and adds adapter context to the JSON response |
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
-| handler.go | Binds Gin HTTP requests to the public audit/rule/capability APIs, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
+| handler.go | Binds Gin HTTP requests to the public audit/rule/capability/query-access APIs, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
 | handler_test.go | Verifies HTTP request binding, error mapping, and JSON response shape |
+| query_access.go | Handles HTTP query access analysis requests, validates input, calls the public query access API, and returns JSON results |
+| query_access_test.go | Verifies HTTP query access request binding, response shape, default values, error handling, and capability discovery |
 | rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata |
 | server.go | Assembles the HTTP handler and long-running server wiring |
 
@@ -31,7 +33,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 - `/metrics` is exposed in Prometheus format by default and can be disabled via middleware config.
 - Default middleware chain is request-id -> recovery -> timeout -> metrics -> auth -> rate-limit -> access log.
 - Config hot-reload is achieved by re-reading the configured policy path on each audit request, so file updates take effect without restarting the server.
-- Current scope supports offline and metadata-aware audit plus HTTP-native rule discovery and capability discovery.
+- Current scope supports offline and metadata-aware audit, HTTP-native rule discovery, capability discovery, and query access analysis.
 - Responses preserve the public DeltaScope result body and add a `context` block describing mode, dialect/schema provenance, and metadata source.
 - Direct connection input accepts `connect_timeout` (duration string like `5s`); empty/omitted/`0s` falls back to runtime config default, invalid/negative values return 400.
 

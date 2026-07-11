@@ -55,6 +55,10 @@ modes:
 - offline
 - metadata-aware
 
+query access modes:
+- strict
+- projection_only
+
 metadata facts:
 - schema context
 - instance facts

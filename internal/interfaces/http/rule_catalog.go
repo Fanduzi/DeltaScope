@@ -103,6 +103,7 @@ func httpCapabilitiesPayload() httpCapabilitiesResponse {
 			"GET /version",
 			"GET /metrics",
 			"POST /v1/audit",
+			"POST /v1/query-access/analyze",
 			"GET /v1/rules",
 			"GET /v1/rules/{rule_id}",
 			"GET /v1/capabilities",

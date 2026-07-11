@@ -203,6 +203,9 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 	router.POST("/v1/audit", func(c *gin.Context) {
 		handleAudit(c.Writer, c.Request, configPath, options.auditFn, options.metadataDefault)
 	})
+	router.POST("/v1/query-access/analyze", func(c *gin.Context) {
+		handleQueryAccess(c.Writer, c.Request)
+	})
 	if options.metricsEnabled {
 		router.GET("/metrics", gin.WrapH(metricsHandler))
 	}
