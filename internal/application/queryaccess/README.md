@@ -12,9 +12,11 @@ Application-level contracts for query access analysis, defining the schema resol
 | extract_tidb_test.go | Verifies TiDB extraction bridging: classification, admission, CTE permissions, mode normalization, and column usages |
 | extract_postgresql.go | Bridges PostgreSQL infrastructure query access facts to domain types with admission computation |
 | extract_postgresql_stub.go | Returns ErrPostgreSQLNotAvailable when built without the `postgresql` tag |
-| service.go | Orchestrates query access analysis: extraction by dialect, optional metadata resolution, sorting, and validation |
+| service.go | Orchestrates query access analysis: extraction by dialect, optional metadata resolution, requirement generation, sorting, and validation |
 | resolve.go | Implements metadata-backed resolution: request-scoped caching, wildcard expansion, alias resolution, column disambiguation, view detection, and output lineage enrichment |
 | resolve_test.go | Verifies resolution logic with a fake resolver: schema defaulting, cache deduplication, qualified/unqualified columns, missing metadata, cancellation, star expansion, views, CTEs, derived tables, aliases, output lineage |
+| requirements.go | Generates access requirements based on mode: strict requires all columns, projection-only requires only output-contributing columns with inference risk warning |
+| requirements_test.go | Verifies requirement generation: salary threshold, blacklist JOIN, GROUP/HAVING, ORDER BY, hashed output, subquery correlation, mode equality, stable warnings, invalid mode, unresolved references |
 | service_test.go | Verifies service integration: offline mode, metadata mode, mode normalization, classification preservation, wildcard expansion |
 
 ## Exports
@@ -28,6 +30,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - `ExtractTiDBQueryAccess()`
 - `AnalyzePostgreSQL()`
 - `ResolveMetadata()` (testing)
+- `BuildRequirements()` (testing)
 
 ## Notes
 
@@ -37,7 +40,10 @@ Application-level contracts for query access analysis, defining the schema resol
 - `ExtractTiDBQueryAccess` computes admission from read classification: read_only → admissible, not_read_only → rejected, indeterminate → indeterminate.
 - `AnalyzePostgreSQL` follows the same admission computation pattern as TiDB.
 - CTE relations are marked with `PermissionRequired: false`; base tables and derived tables require permission.
-- `Service.Analyze` routes by dialect, applies optional metadata resolution, sorts output, and validates the result.
+- `Service.Analyze` routes by dialect, applies optional metadata resolution, generates requirements based on mode, sorts output, and validates the result.
+- `buildRequirements` generates access requirements based on mode: strict requires all resolved columns, projection-only requires only output-contributing columns and emits inference_risk warning.
+- Both modes require every permission-bearing relation (PermissionRequired: true).
+- Required unresolved references produce indeterminate requirements.
 - Resolution caches relation schemas per request (key: schema.name). CTEs and derived tables bypass resolution.
 - Views are detected from metadata and marked as `RelationView` kind without definition expansion.
 - Unqualified columns resolve only when exactly ONE source relation has the column.

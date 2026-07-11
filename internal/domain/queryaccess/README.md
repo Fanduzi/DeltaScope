@@ -49,6 +49,7 @@ Transport-neutral domain types for query access analysis, including read classif
   - `WarningAmbiguousColumn`
   - `WarningMissingSchema`
   - `WarningDeprecatedSyntax`
+  - `WarningInferenceRisk`
 - `RelationReference`
 - `ColumnReference`
 - `OutputColumn`

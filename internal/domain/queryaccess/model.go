@@ -101,6 +101,8 @@ const (
 	WarningMissingSchema WarningCode = "missing_schema"
 	// WarningDeprecatedSyntax indicates deprecated SQL syntax was encountered.
 	WarningDeprecatedSyntax WarningCode = "deprecated_syntax"
+	// WarningInferenceRisk indicates projection-only mode may leak data via non-projected columns.
+	WarningInferenceRisk WarningCode = "projection_only_inference_risk"
 )
 
 // RelationReference represents a permission-bearing relation read by the query.

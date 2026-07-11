@@ -31,6 +31,20 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult = resolveMetadata(ctx, req.SchemaResolver, req.Dialect, req.DefaultSchema, extracted.DomainResult)
 	}
 
+	// Build requirements based on mode
+	reqs, warnings, _, reqErr := buildRequirements(
+		extracted.DomainResult.Mode,
+		extracted.DomainResult.Relations,
+		extracted.DomainResult.ReferencedColumns,
+		extracted.DomainResult.Outputs,
+		extracted.DomainResult.Unresolved,
+	)
+	if reqErr != nil {
+		return QueryAccessResult{}, fmt.Errorf("build requirements: %w", reqErr)
+	}
+	extracted.DomainResult.Requirements = reqs
+	extracted.DomainResult.Warnings = append(extracted.DomainResult.Warnings, warnings...)
+
 	extracted.DomainResult.Relations = domain.SortRelations(extracted.DomainResult.Relations)
 	extracted.DomainResult.ReferencedColumns = domain.SortColumns(extracted.DomainResult.ReferencedColumns)
 	extracted.DomainResult.Requirements = domain.SortRequirements(extracted.DomainResult.Requirements)
