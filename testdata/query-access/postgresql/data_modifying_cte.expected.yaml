@@ -7,18 +7,21 @@ expect:
   relations:
     - name: d
       kind: cte
+      permission_required: false
+    - name: users
+      kind: table
       permission_required: true
   referenced_columns:
-    - table: d
+    - table: users
       column: id
       usages: [projection]
   outputs:
     - name: id
-      sources: [d.id]
+      sources: [users.id]
   requirements:
-    - object: d
+    - object: users
       privilege: read_table
-    - object: d.id
+    - object: users.id
       privilege: read_column
   unresolved: []
   warnings: []

@@ -5,12 +5,12 @@ expect:
   read_classification: read_only
   admission: indeterminate
   relations:
-    - name: users
-      kind: table
-      permission_required: true
     - name: cte
       kind: cte
       permission_required: false
+    - name: users
+      kind: table
+      permission_required: true
   referenced_columns:
     - table: users
       column: id

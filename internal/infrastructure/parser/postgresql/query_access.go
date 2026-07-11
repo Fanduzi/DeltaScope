@@ -87,8 +87,9 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		classifications = append(classifications, classifyStatement(node))
 
 		if sel := node.GetSelectStmt(); sel != nil {
-			cteLineage := buildCTELineage(sel, defaultSchema)
+			cteLineage, cteBodyRels := buildCTELineage(sel, defaultSchema)
 			relations = append(relations, collectRelations(sel, defaultSchema)...)
+			relations = append(relations, cteBodyRels...)
 			columnRefs = append(columnRefs, collectColumnReferences(sel, defaultSchema, cteLineage)...)
 			outputs = append(outputs, collectOutputs(sel, defaultSchema, cteLineage)...)
 		}
@@ -556,6 +557,8 @@ func collectRelations(sel *pg_query.SelectStmt, defaultSchema string) []Relation
 		}
 		return relations
 	}
+	cteNames := make(map[string]bool)
+	var cteBodyRelations []RelationFacts
 	if with := sel.GetWithClause(); with != nil {
 		for _, cteNode := range with.GetCtes() {
 			if cteNode == nil {
@@ -568,9 +571,10 @@ func collectRelations(sel *pg_query.SelectStmt, defaultSchema string) []Relation
 			cteBody := cte.GetCtequery()
 			if cteBody != nil {
 				if subSel := cteBody.GetSelectStmt(); subSel != nil {
-					relations = append(relations, collectRelations(subSel, defaultSchema)...)
+					cteBodyRelations = append(cteBodyRelations, collectRelations(subSel, defaultSchema)...)
 				}
 			}
+			cteNames[strings.ToLower(cte.GetCtename())] = true
 			relations = append(relations, RelationFacts{
 				Name: cte.GetCtename(),
 				Kind: "cte",
@@ -578,6 +582,13 @@ func collectRelations(sel *pg_query.SelectStmt, defaultSchema string) []Relation
 		}
 	}
 	walkFromClause(sel.GetFromClause(), defaultSchema, &relations)
+	// Mark FROM-clause references to CTEs as kind "cte" instead of "table"
+	for i := range relations {
+		if relations[i].Kind == "table" && cteNames[strings.ToLower(relations[i].Name)] {
+			relations[i].Kind = "cte"
+		}
+	}
+	relations = append(relations, cteBodyRelations...)
 	return relations
 }
 
@@ -680,11 +691,12 @@ func buildSelectScope(sel *pg_query.SelectStmt) *selectScope {
 	return scope
 }
 
-func buildCTELineage(sel *pg_query.SelectStmt, defaultSchema string) cteLineageMap {
+func buildCTELineage(sel *pg_query.SelectStmt, defaultSchema string) (cteLineageMap, []RelationFacts) {
 	lineage := make(cteLineageMap)
+	var bodyRels []RelationFacts
 	with := sel.GetWithClause()
 	if with == nil {
-		return lineage
+		return lineage, bodyRels
 	}
 	for _, cteNode := range with.GetCtes() {
 		if cteNode == nil {
@@ -698,24 +710,141 @@ func buildCTELineage(sel *pg_query.SelectStmt, defaultSchema string) cteLineageM
 		if cteBody == nil {
 			continue
 		}
-		subSel := cteBody.GetSelectStmt()
-		if subSel == nil {
-			continue
-		}
-		subLineage := buildCTELineage(subSel, defaultSchema)
-		for k, v := range subLineage {
-			lineage[k] = v
-		}
-		cteOutputs := collectOutputs(subSel, defaultSchema, subLineage)
 		cteEntry := make(map[string][]string)
-		for _, out := range cteOutputs {
-			if out.Name != "" && len(out.Sources) > 0 {
-				cteEntry[strings.ToLower(out.Name)] = out.Sources
+
+		// Try SELECT CTE body first
+		if subSel := cteBody.GetSelectStmt(); subSel != nil {
+			subLineage, subBodyRels := buildCTELineage(subSel, defaultSchema)
+			for k, v := range subLineage {
+				lineage[k] = v
+			}
+			bodyRels = append(bodyRels, subBodyRels...)
+			cteOutputs := collectOutputs(subSel, defaultSchema, subLineage)
+			for _, out := range cteOutputs {
+				if out.Name != "" && len(out.Sources) > 0 {
+					cteEntry[strings.ToLower(out.Name)] = out.Sources
+				}
+			}
+		} else {
+			// Data-modifying CTE: extract target table and lineage from RETURNING clause
+			returning := extractReturningFromNode(cteBody, defaultSchema)
+			for name, sources := range returning {
+				cteEntry[name] = sources
+			}
+			if targetTable := extractTargetTableFromNode(cteBody, defaultSchema); targetTable != nil {
+				bodyRels = append(bodyRels, *targetTable)
 			}
 		}
-		lineage[strings.ToLower(cte.GetCtename())] = cteEntry
+
+		if len(cteEntry) > 0 {
+			lineage[strings.ToLower(cte.GetCtename())] = cteEntry
+		}
 	}
-	return lineage
+	return lineage, bodyRels
+}
+
+// extractReturningFromNode extracts column lineage from RETURNING clauses of DML statements.
+func extractReturningFromNode(node *pg_query.Node, defaultSchema string) map[string][]string {
+	result := make(map[string][]string)
+	var tableName string
+	var returningList []*pg_query.Node
+
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_DeleteStmt:
+		stmt := n.DeleteStmt
+		if rel := stmt.GetRelation(); rel != nil {
+			tableName = rel.GetRelname()
+		}
+		returningList = stmt.GetReturningList()
+	case *pg_query.Node_UpdateStmt:
+		stmt := n.UpdateStmt
+		if rel := stmt.GetRelation(); rel != nil {
+			tableName = rel.GetRelname()
+		}
+		returningList = stmt.GetReturningList()
+	case *pg_query.Node_InsertStmt:
+		stmt := n.InsertStmt
+		if rel := stmt.GetRelation(); rel != nil {
+			tableName = rel.GetRelname()
+		}
+		returningList = stmt.GetReturningList()
+	default:
+		return result
+	}
+
+	if tableName == "" || len(returningList) == 0 {
+		return result
+	}
+
+	schema := defaultSchema
+	for _, retNode := range returningList {
+		resTarget := retNode.GetResTarget()
+		if resTarget == nil {
+			continue
+		}
+		val := resTarget.GetVal()
+		if val == nil {
+			continue
+		}
+		colRef := val.GetColumnRef()
+		if colRef == nil {
+			continue
+		}
+		fields := colRef.GetFields()
+		if len(fields) == 0 {
+			continue
+		}
+		colName := stringNodeValue(fields[len(fields)-1])
+		if colName == "" {
+			continue
+		}
+		alias := resTarget.GetName()
+		name := alias
+		if name == "" {
+			name = colName
+		}
+		source := formatSourceKey(schema, tableName, colName)
+		result[strings.ToLower(name)] = []string{source}
+	}
+	return result
+}
+
+func formatSourceKey(schema, table, column string) string {
+	var b strings.Builder
+	if schema != "" {
+		b.WriteString(schema)
+		b.WriteByte('.')
+	}
+	b.WriteString(table)
+	b.WriteByte('.')
+	b.WriteString(column)
+	return b.String()
+}
+
+func extractTargetTableFromNode(node *pg_query.Node, defaultSchema string) *RelationFacts {
+	var relName string
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_DeleteStmt:
+		if r := n.DeleteStmt.GetRelation(); r != nil {
+			relName = r.GetRelname()
+		}
+	case *pg_query.Node_UpdateStmt:
+		if r := n.UpdateStmt.GetRelation(); r != nil {
+			relName = r.GetRelname()
+		}
+	case *pg_query.Node_InsertStmt:
+		if r := n.InsertStmt.GetRelation(); r != nil {
+			relName = r.GetRelname()
+		}
+	}
+	if relName == "" {
+		return nil
+	}
+	return &RelationFacts{
+		Schema: defaultSchema,
+		Name:   relName,
+		Kind:   "table",
+	}
 }
 
 func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema string, usage string, refs *[]ColumnRefFacts, seen map[string]bool, cteLineage cteLineageMap) { //nolint:unparam // defaultSchema used in recursive calls
