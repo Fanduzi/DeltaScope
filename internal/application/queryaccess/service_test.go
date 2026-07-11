@@ -190,3 +190,36 @@ func TestService_Analyze_WildcardExpansionWithResolver(t *testing.T) {
 		t.Errorf("resolved schema: got %q, want %q", dr.Relations[0].Schema, "app")
 	}
 }
+
+func TestService_Analyze_UnknownFunctionEffect(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:     "SELECT unknown_func(id) FROM users",
+		Dialect: "mysql",
+		Mode:    "strict",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification: got %q, want %q", dr.ReadClassification, domain.Indeterminate)
+	}
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+
+	hasFunctionEffect := false
+	for _, rc := range dr.ReasonCodes {
+		if rc == domain.ReasonFunctionEffect {
+			hasFunctionEffect = true
+			break
+		}
+	}
+	if !hasFunctionEffect {
+		t.Errorf("expected reason_codes to include %q, got %v", domain.ReasonFunctionEffect, dr.ReasonCodes)
+	}
+}

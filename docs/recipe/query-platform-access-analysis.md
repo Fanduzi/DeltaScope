@@ -172,3 +172,14 @@ The `projection_only_inference_risk` warning indicates that `salary` is used in 
 - Does not mask sensitive columns.
 - Does not expand view definitions.
 - Does not support MCP surface (deferred).
+
+## Defense in Depth
+
+**Warning**: Query access analysis supplements, but does not replace, database authorization. It is one layer in a defense-in-depth strategy. Always pair this analysis with:
+
+- Proper authentication to verify caller identity
+- Database-level grant evaluation and enforcement
+- Row-level security for fine-grained access control
+- Audit logging for compliance and monitoring
+
+Do not rely solely on static analysis for security-critical authorization decisions.

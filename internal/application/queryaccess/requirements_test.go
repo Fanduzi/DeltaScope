@@ -464,6 +464,27 @@ func TestBuildRequirements_ProjectionOnlyNoInferenceRiskWhenAllProjected(t *test
 	assertNoWarning(t, warnings, domain.WarningInferenceRisk)
 }
 
+// Additional: projection_only generates requirements from output sources directly
+// even when output source is absent from ReferencedColumns
+func TestBuildRequirements_ProjectionOnlyOutputSourceAbsentFromColumns(t *testing.T) {
+	t.Parallel()
+	relations := []domain.RelationReference{
+		{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
+	}
+	// No columns in ReferencedColumns, but output has a source
+	columns := []domain.ColumnReference{}
+	outputs := []domain.OutputColumn{
+		{Name: "id", Sources: []string{"app.users.id"}},
+	}
+
+	reqs, _, _, err := buildRequirements(domain.ModeProjectionOnly, relations, columns, outputs, nil)
+	if err != nil {
+		t.Fatalf("buildRequirements: %v", err)
+	}
+	assertRequirement(t, reqs, "app.users", "read_table")
+	assertRequirement(t, reqs, "app.users.id", "read_column")
+}
+
 // --- helpers ---
 
 func assertRequirement(t *testing.T, reqs []domain.Requirement, object, privilege string) {

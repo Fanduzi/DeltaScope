@@ -89,6 +89,8 @@ const (
 	ReasonSchemaUnavailable ReasonCode = "schema_unavailable"
 	// ReasonAmbiguousReference indicates a reference could not be uniquely resolved.
 	ReasonAmbiguousReference ReasonCode = "ambiguous_reference"
+	// ReasonFunctionEffect indicates a function call with unknown side effects.
+	ReasonFunctionEffect ReasonCode = "unknown_function_effect"
 )
 
 // WarningCode is a bounded machine identifier for warnings.

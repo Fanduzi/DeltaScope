@@ -165,3 +165,23 @@ func TestAnalyzeQueryAccessDefaultModeIsStrict(t *testing.T) {
 		t.Fatalf("expected default mode to be strict, got %q", result.Mode)
 	}
 }
+
+func TestAnalyzeQueryAccessMalformedSQLErrorDoesNotDiscloseSQL(t *testing.T) {
+	malformedSQL := "SELECT * FROM users WHERE password = 'secret123' AND id = 1"
+	_, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL:     malformedSQL,
+		Dialect: "unsupported_dialect",
+	})
+	if err == nil {
+		t.Fatal("expected error for unsupported dialect")
+	}
+
+	errStr := err.Error()
+	if containsSQLText(errStr, malformedSQL) {
+		t.Errorf("error message should not contain SQL text, got: %s", errStr)
+	}
+}
+
+func containsSQLText(errMsg, sql string) bool {
+	return len(errMsg) > 0 && len(sql) > 0 && (errMsg == sql || len(errMsg) >= len(sql) && errMsg[:len(sql)] == sql)
+}

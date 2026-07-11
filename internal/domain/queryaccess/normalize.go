@@ -64,7 +64,7 @@ func ValidateAdmission(rc ReadClassification, adm Admission) error {
 	return nil
 }
 
-// SortRelations sorts relation references by schema+name for deterministic output.
+// SortRelations sorts relation references by schema+name+alias+kind for deterministic output.
 func SortRelations(refs []RelationReference) []RelationReference {
 	if len(refs) == 0 {
 		return refs
@@ -74,13 +74,18 @@ func SortRelations(refs []RelationReference) []RelationReference {
 		if sorted[i].Schema != sorted[j].Schema {
 			return sorted[i].Schema < sorted[j].Schema
 		}
-		return sorted[i].Name < sorted[j].Name
+		if sorted[i].Name != sorted[j].Name {
+			return sorted[i].Name < sorted[j].Name
+		}
+		if sorted[i].Alias != sorted[j].Alias {
+			return sorted[i].Alias < sorted[j].Alias
+		}
+		return sorted[i].Kind < sorted[j].Kind
 	})
 	return sorted
 }
 
-// SortColumns sorts column references by schema+table+column for deterministic output.
-// Usage order within each column is preserved.
+// SortColumns sorts column references by schema+table+column+usages for deterministic output.
 func SortColumns(refs []ColumnReference) []ColumnReference {
 	if len(refs) == 0 {
 		return refs
@@ -93,9 +98,26 @@ func SortColumns(refs []ColumnReference) []ColumnReference {
 		if sorted[i].Table != sorted[j].Table {
 			return sorted[i].Table < sorted[j].Table
 		}
-		return sorted[i].Column < sorted[j].Column
+		if sorted[i].Column != sorted[j].Column {
+			return sorted[i].Column < sorted[j].Column
+		}
+		return usageKey(sorted[i].Usages) < usageKey(sorted[j].Usages)
 	})
 	return sorted
+}
+
+func usageKey(usages []UsageContext) string {
+	if len(usages) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	for i, u := range usages {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(string(u))
+	}
+	return b.String()
 }
 
 // SortRequirements sorts requirements by object+privilege for deterministic output.
@@ -175,4 +197,55 @@ func FormatColumnKey(schema, table, column string) string {
 	b.WriteByte('.')
 	b.WriteString(column)
 	return b.String()
+}
+
+// SortOutputs sorts output columns by name for deterministic output.
+func SortOutputs(outputs []OutputColumn) []OutputColumn {
+	if len(outputs) == 0 {
+		return outputs
+	}
+	sorted := append([]OutputColumn(nil), outputs...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Name < sorted[j].Name
+	})
+	return sorted
+}
+
+// SortUnresolved sorts unresolved references by reference+reason for deterministic output.
+func SortUnresolved(unresolved []Unresolved) []Unresolved {
+	if len(unresolved) == 0 {
+		return unresolved
+	}
+	sorted := append([]Unresolved(nil), unresolved...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].Reference != sorted[j].Reference {
+			return sorted[i].Reference < sorted[j].Reference
+		}
+		return sorted[i].Reason < sorted[j].Reason
+	})
+	return sorted
+}
+
+// SortReasonCodes sorts reason codes for deterministic output.
+func SortReasonCodes(codes []ReasonCode) []ReasonCode {
+	if len(codes) == 0 {
+		return codes
+	}
+	sorted := append([]ReasonCode(nil), codes...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i] < sorted[j]
+	})
+	return sorted
+}
+
+// SortWarningCodes sorts warning codes for deterministic output.
+func SortWarningCodes(codes []WarningCode) []WarningCode {
+	if len(codes) == 0 {
+		return codes
+	}
+	sorted := append([]WarningCode(nil), codes...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i] < sorted[j]
+	})
+	return sorted
 }

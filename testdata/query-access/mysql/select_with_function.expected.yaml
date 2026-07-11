@@ -17,4 +17,4 @@ expect:
       privilege: read_table
   unresolved: []
   warnings: []
-  reason_codes: [function_call]
+  reason_codes: [function_call, unknown_function_effect]

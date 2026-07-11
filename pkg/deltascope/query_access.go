@@ -3,6 +3,10 @@
 // output: stable query access analysis results for embedding DeltaScope in tools and agents
 // pos: public query access API above the internal application service
 // note: if this file changes, update this header and module README.md.
+//
+// Defense in Depth: Query access analysis is one layer in a defense-in-depth authorization strategy.
+// It supplements, but does not replace, database authorization, grant evaluation, row-level security,
+// and audit logging. Always pair this analysis with proper authentication and authorization checks.
 package deltascope
 
 import (
@@ -164,6 +168,9 @@ func AnalyzeQueryAccess(ctx context.Context, req QueryAccessRequest) (*QueryAcce
 		SchemaResolver: resolver,
 	})
 	if err != nil {
+		if errors.Is(err, appqa.ErrExtractionFailed) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("query access analysis: %w", err)
 	}
 

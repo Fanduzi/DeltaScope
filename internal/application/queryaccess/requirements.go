@@ -55,19 +55,30 @@ func buildRequirements(
 			})
 		}
 	case domain.ModeProjectionOnly:
-		// Projection-only: require only output-contributing columns
+		// Projection-only: require output sources directly from outputs lineage
 		var warnings []domain.WarningCode
-		hasNonOutput := false
+		seen := make(map[string]bool)
 
+		// Generate requirements from output sources directly
+		for _, out := range outputs {
+			for _, src := range out.Sources {
+				if !seen[src] {
+					seen[src] = true
+					reqs = append(reqs, domain.Requirement{
+						Object:    src,
+						Privilege: "read_column",
+					})
+				}
+			}
+		}
+
+		// Check if any referenced columns are non-output
+		hasNonOutput := false
 		for _, col := range columns {
 			key := domain.FormatColumnKey(col.Schema, col.Table, col.Column)
-			if outputKeys[key] {
-				reqs = append(reqs, domain.Requirement{
-					Object:    key,
-					Privilege: "read_column",
-				})
-			} else {
+			if !outputKeys[key] {
 				hasNonOutput = true
+				break
 			}
 		}
 

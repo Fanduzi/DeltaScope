@@ -124,9 +124,12 @@ MCP surface integration for query access analysis is deferred. The current MCP s
 
 ## Defense in Depth
 
-Query access analysis is one layer in a defense-in-depth authorization strategy. It determines what objects a query touches but does not evaluate whether the caller has permission to access those objects. Pair it with:
+**Warning**: Query access analysis supplements, but does not replace, database authorization. It is one layer in a defense-in-depth strategy and must be paired with:
 
 - **Authentication**: Verify caller identity before analysis.
+- **Database authorization**: Enforce database-level grants and permissions independently.
 - **Grant evaluation**: Check the produced requirements against the caller's granted permissions.
 - **Row-level security**: Apply row filters independently of column-level analysis.
 - **Audit logging**: Record analysis results and authorization decisions for compliance.
+
+Do not rely solely on static analysis for security-critical authorization decisions.
