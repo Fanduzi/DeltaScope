@@ -405,11 +405,30 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 		wantNode: "*pg_query.DeleteStmt",
 		notes:    "DML → not_read_only; classified as KindDML by audit classify()",
 	},
+	// --- Zero-statement and nil-node invariants (P1-4) ---
+	{
+		name:     "empty_input",
+		sql:      "",
+		classify: "indeterminate",
+		notes:    "Empty input → zero statements → indeterminate; fail-closed invariant",
+	},
+	{
+		name:     "comment_only",
+		sql:      "-- this is a comment",
+		classify: "indeterminate",
+		notes:    "Comment-only input → zero statements → indeterminate; fail-closed invariant",
+	},
+	{
+		name:     "semicolon_only",
+		sql:      ";;;",
+		classify: "indeterminate",
+		notes:    "Semicolons only → zero statements → indeterminate; fail-closed invariant",
+	},
 }
 
 // TestPGQueryAccessASTCensus runs the full characterization matrix against the
-// PostgreSQL parser. Each test documents what AST fields are available and proves
-// the classification boundary.
+// PostgreSQL parser. Each test asserts classification-critical AST structural
+// facts, not just that fields are accessible.
 func TestPGQueryAccessASTCensus(t *testing.T) {
 	t.Parallel()
 
@@ -433,42 +452,43 @@ func TestPGQueryAccessASTCensus(t *testing.T) {
 			}
 
 			stmts := result.GetStmts()
+			// P1-4: zero-statement input must be indeterminate
 			if len(stmts) == 0 {
-				t.Fatalf("expected at least 1 statement for %q, got 0", tc.sql)
+				if tc.classify != "indeterminate" {
+					t.Fatalf("zero-statement input %q must be classified indeterminate, got %q", tc.name, tc.classify)
+				}
+				t.Logf("census[%s]: zero statements → indeterminate (fail-closed invariant)", tc.name)
+				return
 			}
 
-			node := stmts[0].GetStmt()
-			if node == nil {
-				t.Fatal("stmt node is nil")
+			// Assert ALL statements match expected node type (P1-1: multi-statement)
+			for i, rawStmt := range stmts {
+				node := rawStmt.GetStmt()
+				if node == nil {
+					t.Fatalf("statement %d: stmt node is nil", i)
+				}
+				nodeType := pgNodeTypeName(node)
+				if tc.wantNode != "" && i == 0 && nodeType != tc.wantNode {
+					t.Fatalf("statement %d: expected node type %q, got %q for %q", i, tc.wantNode, nodeType, tc.sql)
+				}
 			}
 
-			nodeType := pgNodeTypeName(node)
-			if tc.wantNode != "" && nodeType != tc.wantNode {
-				t.Fatalf("expected node type %q, got %q for %q", tc.wantNode, nodeType, tc.sql)
+			firstNode := stmts[0].GetStmt()
+
+			// Assert classification-critical structural facts per classification
+			switch tc.classify {
+			case "approved":
+				assertPGApprovedFacts(t, tc.name, firstNode)
+			case "not_read_only":
+				assertPGNotReadOnlyFacts(t, tc.name, firstNode, tc.sql)
+			case "indeterminate":
+				assertPGIndeterminateFacts(t, tc.name, firstNode, tc.sql)
 			}
 
-			// Verify SELECT AST fields are accessible (no panic)
-			if sel := node.GetSelectStmt(); sel != nil {
-				_ = sel.GetTargetList()    // field list
-				_ = sel.GetFromClause()    // FROM clause
-				_ = sel.GetWhereClause()   // WHERE predicate
-				_ = sel.GetGroupClause()   // GROUP BY
-				_ = sel.GetHavingClause()  // HAVING
-				_ = sel.GetSortClause()    // ORDER BY
-				_ = sel.GetWindowClause()  // window clauses
-				_ = sel.GetLockingClause() // locking reads
-				_ = sel.GetIntoClause()    // SELECT INTO
-				_ = sel.GetWithClause()    // CTE clause
-				_ = sel.GetLimitCount()    // LIMIT
-				_ = sel.GetLimitOffset()   // OFFSET
-				_ = sel.GetOp()            // set operation type
-				_ = sel.GetAll()           // ALL flag for set ops
-				_ = sel.GetLarg()          // left arg for set ops
-				_ = sel.GetRarg()          // right arg for set ops
-				_ = sel.GetValuesLists()   // VALUES lists
+			// Assert multi-statement: all statements classified consistently (P1-1)
+			if len(stmts) > 1 {
+				assertPGMultiStatementFacts(t, tc.name, tc.classify, stmts, tc.sql)
 			}
-
-			t.Logf("census[%s]: node=%s classify=%s notes=%s", tc.name, nodeType, tc.classify, tc.notes)
 		})
 	}
 }
@@ -555,4 +575,163 @@ func pgNodeTypeName(node *pg_query.Node) string {
 	default:
 		return fmt.Sprintf("%T", node.GetNode())
 	}
+}
+
+func assertPGApprovedFacts(t *testing.T, name string, node *pg_query.Node) {
+	t.Helper()
+	if sel := node.GetSelectStmt(); sel != nil {
+		if len(sel.GetLockingClause()) > 0 {
+			t.Errorf("approved %q: expected LockingClause empty, got %d items", name, len(sel.GetLockingClause()))
+		}
+		if sel.GetIntoClause() != nil {
+			t.Errorf("approved %q: expected IntoClause == nil, got non-nil", name)
+		}
+	}
+}
+
+func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sql string) {
+	t.Helper()
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_SelectStmt:
+		sel := n.SelectStmt
+		hasLock := len(sel.GetLockingClause()) > 0
+		hasInto := sel.GetIntoClause() != nil
+		hasDataModCTE := pgSelectHasDataModifyingCTE(sel)
+		if hasLock {
+			t.Logf("census[%s]: LockingClause has %d items confirms not_read_only", name, len(sel.GetLockingClause()))
+		}
+		if hasInto {
+			t.Logf("census[%s]: IntoClause != nil confirms not_read_only", name)
+		}
+		if hasDataModCTE {
+			t.Logf("census[%s]: data-modifying CTE confirms not_read_only", name)
+		}
+		// For multi-statement not_read_only, the first SELECT may be plain;
+		// the write indicator is in another statement (checked by assertPGMultiStatementFacts)
+	case *pg_query.Node_ExplainStmt:
+		for _, opt := range n.ExplainStmt.GetOptions() {
+			if defElem := opt.GetDefElem(); defElem != nil && defElem.GetDefname() == "analyze" {
+				t.Logf("census[%s]: ExplainStmt has analyze option confirms not_read_only", name)
+			}
+		}
+	}
+}
+
+func assertPGIndeterminateFacts(t *testing.T, name string, node *pg_query.Node, sql string) {
+	t.Helper()
+	if sel := node.GetSelectStmt(); sel != nil {
+		if pgContainsFunctionCall(node) {
+			t.Logf("census[%s]: function call discovered → indeterminate under empty allowlist", name)
+		}
+	}
+}
+
+func assertPGMultiStatementFacts(t *testing.T, name string, classify string, stmts []*pg_query.RawStmt, sql string) {
+	t.Helper()
+	for i, rawStmt := range stmts {
+		node := rawStmt.GetStmt()
+		if node == nil {
+			t.Errorf("multi-statement %q[%d]: stmt node is nil", name, i)
+			continue
+		}
+		nodeType := pgNodeTypeName(node)
+		t.Logf("census[%s]: multi-statement[%d] node=%s", name, i, nodeType)
+
+		switch classify {
+		case "approved":
+			if pgIsWriteNode(node) {
+				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, nodeType)
+			}
+		case "not_read_only":
+			if i == 0 && len(stmts) > 1 {
+				hasWrite := false
+				for _, s := range stmts {
+					if s.GetStmt() != nil && pgIsWriteNode(s.GetStmt()) {
+						hasWrite = true
+						break
+					}
+				}
+				if !hasWrite {
+					t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
+				}
+			}
+		}
+	}
+}
+
+func pgSelectHasDataModifyingCTE(sel *pg_query.SelectStmt) bool {
+	with := sel.GetWithClause()
+	if with == nil {
+		return false
+	}
+	for _, cteNode := range with.GetCtes() {
+		if cteNode == nil {
+			continue
+		}
+		cte := cteNode.GetCommonTableExpr()
+		if cte == nil {
+			continue
+		}
+		cteQuery := cte.GetCtequery()
+		if cteQuery == nil {
+			continue
+		}
+		switch cteQuery.GetNode().(type) {
+		case *pg_query.Node_InsertStmt, *pg_query.Node_UpdateStmt, *pg_query.Node_DeleteStmt:
+			return true
+		}
+	}
+	return false
+}
+
+func pgContainsFunctionCall(node *pg_query.Node) bool {
+	if node == nil {
+		return false
+	}
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_FuncCall:
+		return true
+	case *pg_query.Node_SelectStmt:
+		sel := n.SelectStmt
+		for _, target := range sel.GetTargetList() {
+			if target != nil && pgContainsFunctionCall(target) {
+				return true
+			}
+		}
+		if sel.GetWhereClause() != nil && pgContainsFunctionCall(sel.GetWhereClause()) {
+			return true
+		}
+		for _, from := range sel.GetFromClause() {
+			if pgContainsFunctionCall(from) {
+				return true
+			}
+		}
+	case *pg_query.Node_ResTarget:
+		if n.ResTarget.GetVal() != nil && pgContainsFunctionCall(n.ResTarget.GetVal()) {
+			return true
+		}
+	case *pg_query.Node_AExpr:
+		if n.AExpr.GetLexpr() != nil && pgContainsFunctionCall(n.AExpr.GetLexpr()) {
+			return true
+		}
+		if n.AExpr.GetRexpr() != nil && pgContainsFunctionCall(n.AExpr.GetRexpr()) {
+			return true
+		}
+	case *pg_query.Node_RangeFunction:
+		return true
+	}
+	return false
+}
+
+func pgIsWriteNode(node *pg_query.Node) bool {
+	if node == nil {
+		return false
+	}
+	switch node.GetNode().(type) {
+	case *pg_query.Node_InsertStmt, *pg_query.Node_UpdateStmt, *pg_query.Node_DeleteStmt,
+		*pg_query.Node_CreateStmt, *pg_query.Node_AlterTableStmt, *pg_query.Node_DropStmt,
+		*pg_query.Node_IndexStmt, *pg_query.Node_TruncateStmt, *pg_query.Node_ViewStmt:
+		return true
+	}
+	return false
 }

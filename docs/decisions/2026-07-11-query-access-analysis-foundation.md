@@ -116,10 +116,41 @@ recognized write, lock, session mutation, file-output, or unknown-effect path.
 - unresolved dynamic SQL;
 - user-defined or unknown functions whose effect cannot be proven safe;
 - query constructs whose relation or side-effect semantics cannot be derived
-  conservatively from the parser AST and available metadata.
+  conservatively from the parser AST and available metadata;
+- zero-statement input (empty string, comment-only);
+- nil or unknown parser nodes;
+- statement-count mismatch between parser output and expected input;
+- unrecognized root or nested AST nodes.
+
+**Extraction support vs. read classification.** The parser can structurally
+identify query elements (which relations, which columns, which functions) even
+when read classification is indeterminate. For example, under the empty
+function allowlist, a query containing `COUNT(*)` or `ROW_NUMBER()` is
+indeterminate for read classification because the function's side-effect
+profile is unknown. But the parser can still extract structural evidence: the
+query reads from a specific relation, uses specific columns, and applies an
+aggregate or window function. "AST shape supported for extraction" does not
+imply "read classification approved." The classification matrix uses
+"approved" only for queries whose read classification can be determined as
+read-only.
 
 Unknown does not mean harmless. Strict admission treats `not_read_only` and
 `indeterminate` as non-executable.
+
+**PostgreSQL operator, cast, and view effects.** In PostgreSQL, operators,
+casts/coercions, and opaque view definitions can invoke user-defined code. A
+syntactically ordinary predicate like `custom_column = value` is not
+demonstrably effect-free without resolved type/operator identity. The `=`
+operator could be a user-defined function with side effects. A cast like
+`column::custom_type` could invoke a user-defined cast function. A view's
+definition could contain security-definer functions or data-modifying CTEs.
+
+For V1, queries containing operator expressions, cast expressions, or
+view-dependent references are classified as indeterminate when the operator,
+cast, or view cannot be proven effect-free. The empty function allowlist is
+not sufficient — operators and casts can also have side effects in PostgreSQL.
+A future version may resolve operator and cast identities against the
+catalog to distinguish built-in pure operations from user-defined ones.
 
 ### Relation and column model
 
@@ -201,6 +232,31 @@ The foundation uses fail-closed resolution rules:
 - `SELECT *` and `relation.*` require metadata expansion before authorization;
 - ambiguous unqualified columns are never assigned to a relation by guesswork;
 - deterministic ordering and deduplication are part of the machine contract.
+
+### Name resolution context
+
+Relation name resolution cannot be performed without an execution environment.
+PostgreSQL uses ordered `search_path`, temporary-schema precedence,
+quoted-identifier folding, and exact object identity. MySQL uses
+`lower_case_table_names` and database-qualification semantics.
+
+For V1, the analyzer requires either:
+
+- **fully qualified relations** (`schema.table`), which are unambiguous without
+  environment context, OR
+- **an immutable resolution context** provided by the caller that matches the
+  execution environment exactly: ordered search path, temp-object policy,
+  identifier folding semantics, and canonical object identity.
+
+The caller must execute queries under the same locked context used for
+resolution. If the caller's execution environment changes after resolution
+(e.g., `search_path` is modified), the resolution result is no longer valid.
+
+A proposed `SchemaResolver.ResolveRelation(dialect, schema, name)` must accept
+this context. It cannot model PostgreSQL ordered `search_path`,
+temporary-schema precedence, quoted-identifier folding, or exact object
+identity without it. The resolver is a future contract; V1 tests use fully
+qualified relations only.
 
 ### View boundary
 
@@ -367,6 +423,9 @@ Task 1 characterization tests confirm the following.
 | VALUES | approved | approved | Table value constructor |
 | DDL statements | not_read_only | not_read_only | KindDDL |
 | DML statements | not_read_only | not_read_only | KindDML |
+| Empty input | indeterminate | indeterminate | Zero statements; fail-closed |
+| Comment-only | indeterminate | indeterminate | Zero statements; fail-closed |
+| Semicolons only | indeterminate | indeterminate | Parse error; fail-closed |
 
 ### Audit Regression Evidence
 
@@ -392,12 +451,18 @@ Task 1 characterization tests confirm the following.
 |---|---|---|
 | Add `query` to `spec.Kind` | **REJECTED** | Would change audit contract; risk of activating DML rules on SELECT statements |
 | Extend audit parsed statements | **REJECTED** | Couples query access to audit pipeline; violates separation of concerns |
-| Query-access-owned parser dispatch | **ACCEPTED** | Reuse parser adapters' raw `Parse()` entrypoints only; own the extraction in a new application boundary |
+| Query-access-owned parser dispatch | **ACCEPTED** | Query-specific infrastructure extractor; own the extraction in a new application boundary |
 
-The accepted approach reuses `tidbparser.New().Parse()` and `pgparser.New().Parse()`
-for raw parsing, but query-access extraction is owned by the new query-access
-application layer, not by the audit extractor. This preserves the audit contract
-completely while enabling independent query-access development.
+The accepted approach uses a query-specific infrastructure interface. The
+application layer calls a new query-specific infrastructure interface that
+returns parser-neutral query facts (not dialect AST types). The infrastructure
+adapter calls `pg_query.Parse()` directly for PostgreSQL (not through the audit
+`Parser`, which returns `[]ExtractedStatement` with audit-specific private
+`pgExtractor` and `RawSQL`, not raw AST nodes). For TiDB, the infrastructure
+adapter calls the TiDB parser directly. The application layer never sees
+dialect AST types — it receives only parser-neutral query facts. This
+preserves the audit contract completely while enabling independent
+query-access development.
 
 ## Consequences
 
