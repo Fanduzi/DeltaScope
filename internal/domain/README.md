@@ -14,7 +14,7 @@ Core domain boundary for audit concepts, statement models, policy, rules, and re
 
 ## Dependencies
 - Upstream: `internal/application`
-- Downstream: `internal/domain/spec`, `internal/domain/rule`, `internal/domain/rule/ddl`, `internal/domain/rule/dml`, `internal/domain/policy`, `internal/domain/report`
+- Downstream: `internal/domain/spec`, `internal/domain/rule`, `internal/domain/rule/ddl`, `internal/domain/rule/dml`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/queryaccess`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
