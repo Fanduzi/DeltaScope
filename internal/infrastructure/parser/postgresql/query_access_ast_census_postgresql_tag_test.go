@@ -27,8 +27,10 @@ type pgQueryAccessTestCase struct {
 	sql        string
 	wantErr    bool   // true if parse should fail
 	classify   string // approved | not_read_only | indeterminate
-	wantNode   string // expected AST node type name (empty = don't check)
-	notes      string // human-readable evidence note
+	wantNode      string // expected AST node type name (empty = don't check)
+	wantZeroStmts     bool   // true if input should produce zero parsed statements
+	expectFuncIndicator bool // true if indeterminate case expects a function call indicator
+	notes             string // human-readable evidence note
 }
 
 // PGQueryAccessCensus is the characterization matrix for PostgreSQL SELECT-related
@@ -61,23 +63,23 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	{
 		name:     "inner_join",
 		sql:      "SELECT u.id, o.total FROM users u INNER JOIN orders o ON u.id = o.user_id",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "FromClause contains JoinExpr with jointype=JOIN_INNER, quals != nil",
+		notes:    "V1 policy: ON clause = operator → indeterminate under operator-effect policy",
 	},
 	{
 		name:     "left_join",
 		sql:      "SELECT u.id, o.total FROM users u LEFT JOIN orders o ON u.id = o.user_id",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "JoinExpr.jointype=JOIN_LEFT; quals != nil",
+		notes:    "V1 policy: ON clause = operator → indeterminate under operator-effect policy",
 	},
 	{
 		name:     "right_join",
 		sql:      "SELECT u.id, o.total FROM users u RIGHT JOIN orders o ON u.id = o.user_id",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "JoinExpr.jointype=JOIN_RIGHT; quals != nil",
+		notes:    "V1 policy: ON clause = operator → indeterminate under operator-effect policy",
 	},
 	{
 		name:     "cross_join",
@@ -89,9 +91,9 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	{
 		name:     "full_outer_join",
 		sql:      "SELECT * FROM users FULL OUTER JOIN orders ON users.id = orders.user_id",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "JoinExpr.jointype=JOIN_FULL; quals != nil",
+		notes:    "V1 policy: ON clause = operator → indeterminate under operator-effect policy",
 	},
 	{
 		name:     "using_join",
@@ -111,46 +113,48 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	{
 		name:     "lateral_join",
 		sql:      "SELECT * FROM users u, LATERAL (SELECT * FROM orders WHERE user_id = u.id) o",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "FromClause contains RangeSubselect with lateral=true; correlated reference",
+		notes:    "V1 policy: correlated = operator in LATERAL subquery → indeterminate under operator-effect policy",
 	},
 	// --- WHERE predicates ---
 	{
 		name:     "where_literal_equality",
 		sql:      "SELECT id FROM users WHERE id = 1",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "WhereClause != nil; AExpr with kind=SIMPLE_OP",
+		notes:    "V1 policy: WHERE = operator → indeterminate under operator-effect policy",
 	},
 	{
 		name:     "where_comparison",
 		sql:      "SELECT id FROM users WHERE salary > 100000",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "WhereClause != nil; AExpr with kind=SIMPLE_OP",
+		notes:    "V1 policy: WHERE > operator → indeterminate under operator-effect policy",
 	},
 	{
 		name:     "where_exists_subquery",
 		sql:      "SELECT id FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id)",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "WhereClause contains SubLink with EXISTS_SUBLINK type",
+		notes:    "V1 policy: inner = operator → indeterminate under operator-effect policy",
 	},
 	// --- GROUP BY, HAVING, ORDER BY ---
 	{
-		name:     "group_by",
-		sql:      "SELECT dept, COUNT(*) FROM employees GROUP BY dept",
-		classify: "approved",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "GroupClause != nil; contains column ref nodes",
+		name:                "group_by",
+		sql:                 "SELECT dept, COUNT(*) FROM employees GROUP BY dept",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: COUNT(*) function → indeterminate under empty allowlist",
 	},
 	{
-		name:     "having",
-		sql:      "SELECT dept, COUNT(*) c FROM employees GROUP BY dept HAVING COUNT(*) > 5",
-		classify: "approved",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "HavingClause != nil; references aggregated expression",
+		name:                "having",
+		sql:                 "SELECT dept, COUNT(*) c FROM employees GROUP BY dept HAVING COUNT(*) > 5",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: COUNT(*) function and > operator → indeterminate under empty allowlist and operator-effect policy",
 	},
 	{
 		name:     "order_by",
@@ -161,26 +165,29 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	},
 	// --- Window functions ---
 	{
-		name:     "window_function",
-		sql:      "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM employees",
-		classify: "approved",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "TargetList contains WindowFunc; WindowDef with partitionClause and orderClause",
+		name:                "window_function",
+		sql:                 "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM employees",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: ROW_NUMBER() window function → indeterminate under empty allowlist",
 	},
 	// --- Subqueries ---
 	{
-		name:     "scalar_subquery",
-		sql:      "SELECT (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) FROM users",
-		classify: "approved",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "TargetList contains SubLink with EXPR_SUBLINK; correlated reference",
+		name:                "scalar_subquery",
+		sql:                 "SELECT (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) FROM users",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: COUNT(*) in subquery and = operator → indeterminate under empty allowlist and operator-effect policy",
 	},
 	{
-		name:     "correlated_subquery_in_where",
-		sql:      "SELECT id FROM users WHERE salary > (SELECT AVG(salary) FROM employees WHERE employees.dept = users.dept)",
-		classify: "approved",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "WhereClause contains SubLink with EXPR_SUBLINK; correlated predicate",
+		name:                "correlated_subquery_in_where",
+		sql:                 "SELECT id FROM users WHERE salary > (SELECT AVG(salary) FROM employees WHERE employees.dept = users.dept)",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: AVG() function in subquery and >, = operators → indeterminate under empty allowlist and operator-effect policy",
 	},
 	{
 		name:     "derived_table",
@@ -200,9 +207,9 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	{
 		name:     "recursive_cte",
 		sql:      "WITH RECURSIVE cte AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM cte WHERE n < 10) SELECT * FROM cte",
-		classify: "approved",
+		classify: "indeterminate",
 		wantNode: "*pg_query.SelectStmt",
-		notes:    "WithClause.recursive=true; CTE body contains UNION ALL",
+		notes:    "V1 policy: + and < operators in CTE body → indeterminate under operator-effect policy",
 	},
 	// --- Data-modifying CTE (PostgreSQL-specific) ---
 	{
@@ -295,33 +302,37 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	},
 	// --- Set-returning functions in FROM ---
 	{
-		name:     "generate_series",
-		sql:      "SELECT * FROM generate_series(1, 10)",
-		classify: "indeterminate",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "V1 policy: empty known-pure allowlist; set-returning function → indeterminate",
+		name:                "generate_series",
+		sql:                 "SELECT * FROM generate_series(1, 10)",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: empty known-pure allowlist; set-returning function → indeterminate",
 	},
 	// --- Functions ---
 	{
-		name:     "builtin_now",
-		sql:      "SELECT NOW()",
-		classify: "indeterminate",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "V1 policy: empty known-pure allowlist; all function-bearing expressions → indeterminate",
+		name:                "builtin_now",
+		sql:                 "SELECT NOW()",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: empty known-pure allowlist; all function-bearing expressions → indeterminate",
 	},
 	{
-		name:     "builtin_concat",
-		sql:      "SELECT CONCAT(a, b) FROM t",
-		classify: "indeterminate",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "V1 policy: function call → indeterminate",
+		name:                "builtin_concat",
+		sql:                 "SELECT CONCAT(a, b) FROM t",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: function call → indeterminate",
 	},
 	{
-		name:     "unknown_function",
-		sql:      "SELECT unknown_func(id) FROM users",
-		classify: "indeterminate",
-		wantNode: "*pg_query.SelectStmt",
-		notes:    "V1 policy: unknown function → indeterminate",
+		name:                "unknown_function",
+		sql:                 "SELECT unknown_func(id) FROM users",
+		classify:            "indeterminate",
+		wantNode:            "*pg_query.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: unknown function → indeterminate",
 	},
 	// --- Multi-statements ---
 	{
@@ -407,22 +418,25 @@ var PGQueryAccessCensus = []pgQueryAccessTestCase{
 	},
 	// --- Zero-statement and nil-node invariants (P1-4) ---
 	{
-		name:     "empty_input",
-		sql:      "",
-		classify: "indeterminate",
-		notes:    "Empty input → zero statements → indeterminate; fail-closed invariant",
+		name:          "empty_input",
+		sql:           "",
+		classify:      "indeterminate",
+		wantZeroStmts: true,
+		notes:         "Empty input → zero statements → indeterminate; fail-closed invariant",
 	},
 	{
-		name:     "comment_only",
-		sql:      "-- this is a comment",
-		classify: "indeterminate",
-		notes:    "Comment-only input → zero statements → indeterminate; fail-closed invariant",
+		name:          "comment_only",
+		sql:           "-- this is a comment",
+		classify:      "indeterminate",
+		wantZeroStmts: true,
+		notes:         "Comment-only input → zero statements → indeterminate; fail-closed invariant",
 	},
 	{
-		name:     "semicolon_only",
-		sql:      ";;;",
-		classify: "indeterminate",
-		notes:    "Semicolons only → zero statements → indeterminate; fail-closed invariant",
+		name:          "semicolon_only",
+		sql:           ";;;",
+		classify:      "indeterminate",
+		wantZeroStmts: true,
+		notes:         "Semicolons only → zero statements → indeterminate; fail-closed invariant",
 	},
 }
 
@@ -452,8 +466,11 @@ func TestPGQueryAccessASTCensus(t *testing.T) {
 			}
 
 			stmts := result.GetStmts()
-			// P1-4: zero-statement input must be indeterminate
-			if len(stmts) == 0 {
+			// P1-4: zero-statement invariant (explicit expectation or detected)
+			if tc.wantZeroStmts || len(stmts) == 0 {
+				if len(stmts) != 0 {
+					t.Fatalf("wantZeroStmts=true for %q but got %d statements", tc.name, len(stmts))
+				}
 				if tc.classify != "indeterminate" {
 					t.Fatalf("zero-statement input %q must be classified indeterminate, got %q", tc.name, tc.classify)
 				}
@@ -480,9 +497,9 @@ func TestPGQueryAccessASTCensus(t *testing.T) {
 			case "approved":
 				assertPGApprovedFacts(t, tc.name, firstNode)
 			case "not_read_only":
-				assertPGNotReadOnlyFacts(t, tc.name, firstNode, tc.sql)
+				assertPGNotReadOnlyFacts(t, tc.name, firstNode, tc.sql, len(stmts))
 			case "indeterminate":
-				assertPGIndeterminateFacts(t, tc.name, firstNode, tc.sql)
+				assertPGIndeterminateFacts(t, tc.name, firstNode, tc.sql, tc.expectFuncIndicator)
 			}
 
 			// Assert multi-statement: all statements classified consistently (P1-1)
@@ -589,7 +606,7 @@ func assertPGApprovedFacts(t *testing.T, name string, node *pg_query.Node) {
 	}
 }
 
-func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sql string) {
+func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sql string, stmtCount int) {
 	t.Helper()
 	switch n := node.GetNode().(type) {
 	case *pg_query.Node_SelectStmt:
@@ -606,22 +623,30 @@ func assertPGNotReadOnlyFacts(t *testing.T, name string, node *pg_query.Node, sq
 		if hasDataModCTE {
 			t.Logf("census[%s]: data-modifying CTE confirms not_read_only", name)
 		}
-		// For multi-statement not_read_only, the first SELECT may be plain;
-		// the write indicator is in another statement (checked by assertPGMultiStatementFacts)
+		if stmtCount == 1 && !hasLock && !hasInto && !hasDataModCTE {
+			t.Errorf("not_read_only %q: single-statement SELECT has no LockingClause, IntoClause, or data-modifying CTE", name)
+		}
 	case *pg_query.Node_ExplainStmt:
+		hasAnalyze := false
 		for _, opt := range n.ExplainStmt.GetOptions() {
 			if defElem := opt.GetDefElem(); defElem != nil && defElem.GetDefname() == "analyze" {
+				hasAnalyze = true
 				t.Logf("census[%s]: ExplainStmt has analyze option confirms not_read_only", name)
 			}
+		}
+		if !hasAnalyze {
+			t.Errorf("not_read_only %q: ExplainStmt expected analyze option, none found", name)
 		}
 	}
 }
 
-func assertPGIndeterminateFacts(t *testing.T, name string, node *pg_query.Node, sql string) {
+func assertPGIndeterminateFacts(t *testing.T, name string, node *pg_query.Node, sql string, expectFunc bool) {
 	t.Helper()
 	if sel := node.GetSelectStmt(); sel != nil {
 		if pgContainsFunctionCall(node) {
 			t.Logf("census[%s]: function call discovered → indeterminate under empty allowlist", name)
+		} else if expectFunc {
+			t.Errorf("indeterminate %q: expected function call indicator, none found", name)
 		}
 	}
 }
@@ -634,27 +659,28 @@ func assertPGMultiStatementFacts(t *testing.T, name string, classify string, stm
 			t.Errorf("multi-statement %q[%d]: stmt node is nil", name, i)
 			continue
 		}
-		nodeType := pgNodeTypeName(node)
-		t.Logf("census[%s]: multi-statement[%d] node=%s", name, i, nodeType)
+		t.Logf("census[%s]: multi-statement[%d] node=%s", name, i, pgNodeTypeName(node))
+	}
 
-		switch classify {
-		case "approved":
-			if pgIsWriteNode(node) {
-				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, nodeType)
+	switch classify {
+	case "approved":
+		for i, rawStmt := range stmts {
+			node := rawStmt.GetStmt()
+			if node != nil && pgIsWriteNode(node) {
+				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, pgNodeTypeName(node))
 			}
-		case "not_read_only":
-			if i == 0 && len(stmts) > 1 {
-				hasWrite := false
-				for _, s := range stmts {
-					if s.GetStmt() != nil && pgIsWriteNode(s.GetStmt()) {
-						hasWrite = true
-						break
-					}
-				}
-				if !hasWrite {
-					t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
-				}
+		}
+	case "not_read_only":
+		hasWrite := false
+		for _, rawStmt := range stmts {
+			node := rawStmt.GetStmt()
+			if node != nil && pgIsWriteNode(node) {
+				hasWrite = true
+				break
 			}
+		}
+		if !hasWrite {
+			t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
 		}
 	}
 }
@@ -719,6 +745,10 @@ func pgContainsFunctionCall(node *pg_query.Node) bool {
 		}
 	case *pg_query.Node_RangeFunction:
 		return true
+	case *pg_query.Node_SubLink:
+		if n.SubLink.GetSubselect() != nil {
+			return pgContainsFunctionCall(n.SubLink.GetSubselect())
+		}
 	}
 	return false
 }

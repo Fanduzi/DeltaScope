@@ -385,21 +385,22 @@ Task 1 characterization tests confirm the following.
 | Simple SELECT | approved | approved | FROM, Fields, Where accessible |
 | Aliases | approved | approved | TableSource/RangeVar with alias |
 | Schema-qualified | approved | approved | TableName.Schema/RangeVar.Schemaname |
-| INNER/LEFT/RIGHT/CROSS JOIN | approved | approved | Join/JoinExpr with type and quals |
-| FULL OUTER JOIN | indeterminate | approved | TiDB parser rejects; PG accepts |
+| INNER/LEFT/RIGHT JOIN | approved | indeterminate | TiDB: safe operators; PG: ON clause = operator; V1: operator-effect policy |
+| CROSS JOIN | approved | approved | No ON condition |
+| FULL OUTER JOIN | indeterminate | indeterminate | TiDB parser rejects; PG: ON clause = operator; V1: operator-effect policy |
 | USING/NATURAL JOIN | approved | approved | Join.UsingClause/JoinExpr.isNatural |
-| LATERAL join | N/A | approved | PG-specific; RangeSubselect.lateral=true |
-| WHERE predicates | approved | approved | BinaryOperationExpr/AExpr |
-| WHERE EXISTS subquery | approved | approved | SubqueryExpr/SubLink(EXISTS) |
-| GROUP BY | approved | approved | GroupBy/GroupClause |
-| HAVING | approved | approved | Having/HavingClause |
+| LATERAL join | N/A | indeterminate | PG-specific; correlated = operator; V1: operator-effect policy |
+| WHERE predicates | approved | indeterminate | TiDB: safe operators; PG: AExpr with =, >, etc.; V1: operator-effect policy |
+| WHERE EXISTS subquery | approved | indeterminate | TiDB: safe; PG: inner = operator; V1: operator-effect policy |
+| GROUP BY | indeterminate | indeterminate | COUNT(*) function; V1: empty allowlist |
+| HAVING | indeterminate | indeterminate | COUNT(*) function; V1: empty allowlist |
 | ORDER BY | approved | approved | OrderBy/SortClause |
-| Window functions | approved | approved | WindowFunc/WindowDef |
-| Scalar subquery | approved | approved | SubqueryExpr/SubLink(EXPR) |
-| Correlated subquery | approved | approved | Inner ref to outer column |
+| Window functions | indeterminate | indeterminate | ROW_NUMBER() function; V1: empty allowlist |
+| Scalar subquery | indeterminate | indeterminate | COUNT(*) in subquery; V1: empty allowlist |
+| Correlated subquery | indeterminate | indeterminate | AVG() in subquery; V1: empty allowlist |
 | Derived table | approved | approved | SubqueryExpr/RangeSubselect |
 | Simple CTE | approved | approved | With/WithClause |
-| Recursive CTE | approved | approved | With.IsRecursive/WithClause.recursive |
+| Recursive CTE | approved | indeterminate | TiDB: safe; PG: + and < operators in CTE body; V1: operator-effect policy |
 | Data-modifying CTE | N/A | not_read_only | PG-specific; CTE body is DELETE |
 | UNION/INTERSECT/EXCEPT | approved | approved | SetOprStmt/SelectStmt.op |
 | SELECT * | approved | approved | Wildcard; needs metadata expansion |
@@ -425,7 +426,7 @@ Task 1 characterization tests confirm the following.
 | DML statements | not_read_only | not_read_only | KindDML |
 | Empty input | indeterminate | indeterminate | Zero statements; fail-closed |
 | Comment-only | indeterminate | indeterminate | Zero statements; fail-closed |
-| Semicolons only | indeterminate | indeterminate | Parse error; fail-closed |
+| Semicolons only | indeterminate | indeterminate | Zero statements; fail-closed |
 
 ### Audit Regression Evidence
 

@@ -26,8 +26,10 @@ type queryAccessTestCase struct {
 	sql        string
 	wantErr    bool   // true if parse should fail
 	classify   string // approved | not_read_only | indeterminate
-	wantNode   string // expected AST node type name (empty = don't check)
-	notes      string // human-readable evidence note
+	wantNode      string // expected AST node type name (empty = don't check)
+	wantZeroStmts     bool   // true if input should produce zero parsed statements
+	expectFuncIndicator bool // true if indeterminate case expects a function call indicator
+	notes             string // human-readable evidence note
 }
 
 // TiDBQueryAccessCensus is the characterization matrix for TiDB SELECT-related
@@ -130,18 +132,20 @@ var TiDBQueryAccessCensus = []queryAccessTestCase{
 	},
 	// --- GROUP BY, HAVING, ORDER BY ---
 	{
-		name:     "group_by",
-		sql:      "SELECT dept, COUNT(*) FROM employees GROUP BY dept",
-		classify: "approved",
-		wantNode: "*ast.SelectStmt",
-		notes:    "GroupBy != nil; GroupBy.Items contains column refs",
+		name:                "group_by",
+		sql:                 "SELECT dept, COUNT(*) FROM employees GROUP BY dept",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: COUNT(*) function → indeterminate under empty allowlist",
 	},
 	{
-		name:     "having",
-		sql:      "SELECT dept, COUNT(*) c FROM employees GROUP BY dept HAVING c > 5",
-		classify: "approved",
-		wantNode: "*ast.SelectStmt",
-		notes:    "Having != nil; references aggregated alias",
+		name:                "having",
+		sql:                 "SELECT dept, COUNT(*) c FROM employees GROUP BY dept HAVING c > 5",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: COUNT(*) function → indeterminate under empty allowlist",
 	},
 	{
 		name:     "order_by",
@@ -152,26 +156,29 @@ var TiDBQueryAccessCensus = []queryAccessTestCase{
 	},
 	// --- Window functions ---
 	{
-		name:     "window_function",
-		sql:      "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM employees",
-		classify: "approved",
-		wantNode: "*ast.SelectStmt",
-		notes:    "Fields contain WindowFuncExpr; PartitionBy and OrderBy in window spec",
+		name:                "window_function",
+		sql:                 "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM employees",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: ROW_NUMBER() window function → indeterminate under empty allowlist",
 	},
 	// --- Subqueries ---
 	{
-		name:     "scalar_subquery",
-		sql:      "SELECT (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) FROM users",
-		classify: "approved",
-		wantNode: "*ast.SelectStmt",
-		notes:    "Fields contain SubqueryExpr; correlated reference to outer users.id",
+		name:                "scalar_subquery",
+		sql:                 "SELECT (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) FROM users",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: COUNT(*) in subquery → indeterminate under empty allowlist",
 	},
 	{
-		name:     "correlated_subquery_in_where",
-		sql:      "SELECT id FROM users WHERE salary > (SELECT AVG(salary) FROM employees WHERE employees.dept = users.dept)",
-		classify: "approved",
-		wantNode: "*ast.SelectStmt",
-		notes:    "Where contains SubqueryExpr with correlated predicate",
+		name:                "correlated_subquery_in_where",
+		sql:                 "SELECT id FROM users WHERE salary > (SELECT AVG(salary) FROM employees WHERE employees.dept = users.dept)",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: AVG() function in subquery → indeterminate under empty allowlist",
 	},
 	{
 		name:     "derived_table",
@@ -285,25 +292,28 @@ var TiDBQueryAccessCensus = []queryAccessTestCase{
 	},
 	// --- Functions ---
 	{
-		name:     "builtin_now",
-		sql:      "SELECT NOW()",
-		classify: "indeterminate",
-		wantNode: "*ast.SelectStmt",
-		notes:    "V1 policy: empty known-pure allowlist; all function-bearing expressions → indeterminate",
+		name:                "builtin_now",
+		sql:                 "SELECT NOW()",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: empty known-pure allowlist; all function-bearing expressions → indeterminate",
 	},
 	{
-		name:     "builtin_concat",
-		sql:      "SELECT CONCAT(a, b) FROM t",
-		classify: "indeterminate",
-		wantNode: "*ast.SelectStmt",
-		notes:    "V1 policy: function call → indeterminate",
+		name:                "builtin_concat",
+		sql:                 "SELECT CONCAT(a, b) FROM t",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: function call → indeterminate",
 	},
 	{
-		name:     "unknown_function",
-		sql:      "SELECT unknown_func(id) FROM users",
-		classify: "indeterminate",
-		wantNode: "*ast.SelectStmt",
-		notes:    "V1 policy: unknown function → indeterminate",
+		name:                "unknown_function",
+		sql:                 "SELECT unknown_func(id) FROM users",
+		classify:            "indeterminate",
+		wantNode:            "*ast.SelectStmt",
+		expectFuncIndicator: true,
+		notes:               "V1 policy: unknown function → indeterminate",
 	},
 	// --- Multi-statements ---
 	{
@@ -382,22 +392,25 @@ var TiDBQueryAccessCensus = []queryAccessTestCase{
 	},
 	// --- Zero-statement and nil-node invariants (P1-4) ---
 	{
-		name:     "empty_input",
-		sql:      "",
-		classify: "indeterminate",
-		notes:    "Empty input → zero statements → indeterminate; fail-closed invariant",
+		name:          "empty_input",
+		sql:           "",
+		classify:      "indeterminate",
+		wantZeroStmts: true,
+		notes:         "Empty input → zero statements → indeterminate; fail-closed invariant",
 	},
 	{
-		name:     "comment_only",
-		sql:      "-- this is a comment",
-		classify: "indeterminate",
-		notes:    "Comment-only input → zero statements → indeterminate; fail-closed invariant",
+		name:          "comment_only",
+		sql:           "-- this is a comment",
+		classify:      "indeterminate",
+		wantZeroStmts: true,
+		notes:         "Comment-only input → zero statements → indeterminate; fail-closed invariant",
 	},
 	{
-		name:     "semicolon_only",
-		sql:      ";;;",
-		classify: "indeterminate",
-		notes:    "Semicolons only → zero statements → indeterminate; fail-closed invariant",
+		name:          "semicolon_only",
+		sql:           ";;;",
+		classify:      "indeterminate",
+		wantZeroStmts: true,
+		notes:         "Semicolons only → zero statements → indeterminate; fail-closed invariant",
 	},
 }
 
@@ -427,8 +440,11 @@ func TestQueryAccessASTCensus(t *testing.T) {
 				t.Fatalf("unexpected parse error for %q: %v", tc.sql, err)
 			}
 
-			// P1-4: zero-statement input must be indeterminate
-			if len(result.Statements) == 0 {
+			// P1-4: zero-statement invariant (explicit expectation or detected)
+			if tc.wantZeroStmts || len(result.Statements) == 0 {
+				if len(result.Statements) != 0 {
+					t.Fatalf("wantZeroStmts=true for %q but got %d statements", tc.name, len(result.Statements))
+				}
 				if tc.classify != "indeterminate" {
 					t.Fatalf("zero-statement input %q must be classified indeterminate, got %q", tc.name, tc.classify)
 				}
@@ -451,9 +467,9 @@ func TestQueryAccessASTCensus(t *testing.T) {
 			case "approved":
 				assertApprovedFacts(t, tc.name, firstStmt)
 			case "not_read_only":
-				assertNotReadOnlyFacts(t, tc.name, firstStmt, tc.sql)
+				assertNotReadOnlyFacts(t, tc.name, firstStmt, tc.sql, len(result.Statements))
 			case "indeterminate":
-				assertIndeterminateFacts(t, tc.name, firstStmt, tc.sql)
+				assertIndeterminateFacts(t, tc.name, firstStmt, tc.sql, tc.expectFuncIndicator)
 			}
 
 			// Assert multi-statement: all statements classified consistently (P1-1)
@@ -478,7 +494,7 @@ func assertApprovedFacts(t *testing.T, name string, stmt ast.StmtNode) {
 }
 
 // assertNotReadOnlyFacts verifies that not_read_only queries have decisive write indicators.
-func assertNotReadOnlyFacts(t *testing.T, name string, stmt ast.StmtNode, sql string) {
+func assertNotReadOnlyFacts(t *testing.T, name string, stmt ast.StmtNode, sql string, stmtCount int) {
 	t.Helper()
 	switch s := stmt.(type) {
 	case *ast.SelectStmt:
@@ -490,22 +506,26 @@ func assertNotReadOnlyFacts(t *testing.T, name string, stmt ast.StmtNode, sql st
 		if hasInto {
 			t.Logf("census[%s]: SelectIntoOpt != nil confirms not_read_only", name)
 		}
-		// For multi-statement not_read_only, the first SELECT may be plain;
-		// the write indicator is in another statement (checked by assertMultiStatementFacts)
+		if stmtCount == 1 && !hasLock && !hasInto {
+			t.Errorf("not_read_only %q: single-statement SELECT has no LockInfo and no SelectIntoOpt", name)
+		}
 	case *ast.ExplainStmt:
 		if s.Analyze {
 			t.Logf("census[%s]: ExplainStmt.Analyze=true confirms not_read_only", name)
+		} else {
+			t.Errorf("not_read_only %q: ExplainStmt expected Analyze=true, got false", name)
 		}
 	}
 }
 
 // assertIndeterminateFacts verifies function-bearing nodes or parse-error classification.
-func assertIndeterminateFacts(t *testing.T, name string, stmt ast.StmtNode, sql string) {
+func assertIndeterminateFacts(t *testing.T, name string, stmt ast.StmtNode, sql string, expectFunc bool) {
 	t.Helper()
-	// For function-bearing queries, assert that a function node was discovered (P1-1)
 	if sel, ok := stmt.(*ast.SelectStmt); ok {
 		if containsFunctionCall(sel) {
 			t.Logf("census[%s]: FuncCallExpr discovered → indeterminate under empty allowlist", name)
+		} else if expectFunc {
+			t.Errorf("indeterminate %q: expected function call indicator, none found", name)
 		}
 	}
 }
@@ -514,29 +534,26 @@ func assertIndeterminateFacts(t *testing.T, name string, stmt ast.StmtNode, sql 
 func assertMultiStatementFacts(t *testing.T, name string, classify string, stmts []ast.StmtNode, sql string) {
 	t.Helper()
 	for i, stmt := range stmts {
-		nodeType := nodeTypeName(stmt)
-		t.Logf("census[%s]: multi-statement[%d] node=%s", name, i, nodeType)
+		t.Logf("census[%s]: multi-statement[%d] node=%s", name, i, nodeTypeName(stmt))
+	}
 
-		switch classify {
-		case "approved":
-			// All statements must be read-only
+	switch classify {
+	case "approved":
+		for i, stmt := range stmts {
 			if isWriteNode(stmt) {
-				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, nodeType)
+				t.Errorf("multi-statement %q[%d]: expected all read-only, got write node %s", name, i, nodeTypeName(stmt))
 			}
-		case "not_read_only":
-			// At least one statement must be a write node
-			if i == 0 && len(stmts) > 1 {
-				hasWrite := false
-				for _, s := range stmts {
-					if isWriteNode(s) {
-						hasWrite = true
-						break
-					}
-				}
-				if !hasWrite {
-					t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
-				}
+		}
+	case "not_read_only":
+		hasWrite := false
+		for _, s := range stmts {
+			if isWriteNode(s) {
+				hasWrite = true
+				break
 			}
+		}
+		if !hasWrite {
+			t.Errorf("multi-statement %q: classified not_read_only but no write node found", name)
 		}
 	}
 }
@@ -560,7 +577,7 @@ func (v *funcCallVisitor) Enter(in ast.Node) (ast.Node, bool) {
 		return in, true
 	}
 	switch in.(type) {
-	case *ast.FuncCallExpr, *ast.WindowFuncExpr:
+	case *ast.FuncCallExpr, *ast.WindowFuncExpr, *ast.AggregateFuncExpr:
 		*v.found = true
 		return in, true
 	}
