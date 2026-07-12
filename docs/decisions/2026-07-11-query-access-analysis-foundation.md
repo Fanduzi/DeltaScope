@@ -2,13 +2,14 @@
 
 Date: 2026-07-11
 Status: Accepted
-Related milestone/version: Unassigned; versioning follows implementation evidence
+Related milestone/version: v0.380.0
 Related commits:
 - Task 1: query-access capability census and this decision record
 - Task 2: parser-neutral query facts and read classification
 - Task 3: relation, column-use, and output-lineage extraction
 - Task 5: metadata-backed resolution and lineage completion
-- Planned: Go SDK, HTTP, and diagnostic CLI surfaces
+- Landed: Go SDK, HTTP, and diagnostic CLI surfaces
+- Landed: v0.380.0 release surfaces
 Related tests:
 - `internal/infrastructure/parser/tidb/query_access_ast_census_test.go`
 - `internal/infrastructure/parser/postgresql/query_access_ast_census_postgresql_tag_test.go`
@@ -17,9 +18,10 @@ Related tests:
 - `internal/application/queryaccess/resolve_test.go`
 - `internal/application/queryaccess/service_test.go`
 - `internal/infrastructure/metadata/mysql/query_access_resolver_test.go`
-- Planned: SDK/HTTP/CLI parity and no-leak tests
+- Landed: SDK/HTTP/CLI parity and no-leak tests; `testdata/query-access/` corpus (44 cases)
 Related docs:
-- Planned: public query-access reference and integration recipe
+- Landed: `docs/reference/query-access-analysis.md`, `docs/reference/query-access-analysis_zh.md`, `docs/recipe/query-platform-access-analysis_zh.md`
+- Landed: `docs/releases/release-notes-v0.380.0.md` and `.zh-CN.md`
 
 ## Context
 
@@ -679,14 +681,24 @@ produces only b sources in ordinal order).
   - Task 2: parser-neutral query facts and read classification
   - Task 3: relation, column-use, and output-lineage extraction
   - Task 5: metadata-backed resolution and lineage completion
+  - Release surfaces: v0.380.0 version pins, release notes EN/ZH, CHANGELOG, roadmap, landing, consistency facts
 - Tests:
   - `internal/application/queryaccess/resolve_test.go`
   - `internal/application/queryaccess/service_test.go`
   - `internal/infrastructure/metadata/mysql/query_access_resolver_test.go`
-  - Planned: `testdata/query-access/` fixtures and cross-surface contract tests
+  - Landed: `testdata/query-access/` fixtures (44 cases / 88 files) and cross-surface contract tests
 - Docs:
-  - Planned: query-access reference and query-platform integration recipe
+  - Landed: query-access reference and query-platform integration recipe
+  - Landed: v0.380.0 release notes EN/ZH
 - External references:
   - MySQL `SELECT ... INTO`: https://dev.mysql.com/doc/refman/8.0/en/select-into.html
   - PostgreSQL `SELECT`: https://www.postgresql.org/docs/current/sql-select.html
   - PostgreSQL privileges: https://www.postgresql.org/docs/current/ddl-priv.html
+
+### Release-Surface Evidence (v0.380.0)
+
+- Version assigned: `v0.380.0` (minor after `v0.370.0`; new public SDK/CLI/HTTP capability plus security admission contract).
+- Surfaces updated: `pkg/deltascope/version.go`, `packages/deltascope-mcp/package.json`, install pins, GitHub Actions example pin, release notes EN/ZH, CHANGELOG, roadmap, landing, `scripts/verify_release_consistency.py` facts block.
+- Consistency facts verified live: rule catalog 371 (blocker 72 / warning 142 / notice 157); SQL corpus 582/582 100.0% 247 YAML; PG ALTER config 53; DDL coverage 400/61/54/285/18; query-access corpus 44 cases (22+22), 88 files. No audit rule-catalog change.
+- Public contract restated in release notes: classification/admission, strict vs projection-only, table/view permission objects with CTE/derived physical lineage, fail-closed, PostgreSQL conservative boundary, MCP tool deferral, no runtime auth/policy/rewrite, no `severity`, no raw SQL/credentials leak.
+- Status remains Accepted. Tag/push/publish deferred to a later readiness audit.

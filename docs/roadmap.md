@@ -4,7 +4,33 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.370.0 TiDB RETURNING Dialect Boundary
+## Latest Completed Milestone: v0.380.0 Query Access Analysis Foundation
+
+**Goal:** ship Query Access Analysis as a separate public capability that classifies SQL for read-only eligibility, derives admission, and emits structured table/column permission requirements with physical lineage. Complements audit; does not replace database authorization. Does not add a `severity` field.
+
+### Completed Scope
+
+- Read classification: `read_only`, `not_read_only`, `indeterminate`.
+- Admission: `admissible`, `rejected`, `indeterminate` (fail-closed for indeterminate).
+- Modes: `strict` (default; all resolved source columns across projection, filter, join, grouping, having, ordering, window) and `projection_only` (output columns only, with `projection_only_inference_risk` warning).
+- Permission objects: base table and view only; CTE/derived require no direct permission and resolve to physical sources.
+- Fail-closed for incomplete metadata, ambiguity, unexpandable wildcards, and unknown function/operator effects; PostgreSQL keeps a conservative non-admissible boundary for uncertain expressions.
+- Surfaces: SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, HTTP `POST /v1/query-access/analyze`. MCP tools unchanged and do not include query-access.
+- Query-access corpus: 44 cases (22 MySQL/TiDB path + 22 PostgreSQL), 88 fixture files.
+- Audit rule catalog unchanged at 371 rules. SQL corpus unchanged at 582/582, 100.0%, 247 YAML files.
+- `level` remains the audit priority field; no `severity` field is introduced.
+- Decision records: `docs/decisions/2026-07-11-query-access-analysis-foundation.md`, `docs/decisions/2026-07-11-cte-derived-table-lineage-resolution.md`.
+
+### Non-Goals
+
+- Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
+- Not row-level security evaluation or column masking.
+- Not an MCP query-access tool.
+- Not a full SQL grammar coverage claim.
+- Not a change to existing audit behavior.
+- Not a `severity` field.
+
+## Previous Milestone: v0.370.0 TiDB RETURNING Dialect Boundary
 
 **Goal:** upgrade the TiDB parser and draw a clean dialect boundary for DML `RETURNING`. TiDB dialect accepts parser-recognized `RETURNING`; MySQL Server dialect does not support DML `RETURNING`, so a parsed `RETURNING` on the MySQL dialect emits a dedicated global notice instead of a silent successful audit. `RETURNING` is no longer treated as a PostgreSQL-only syntax token. Does not add a `severity` field.
 

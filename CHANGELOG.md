@@ -6,6 +6,25 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.380.0] - 2026-07-12
+
+### Added
+
+- Query Access Analysis foundation as a separate public capability (not an audit finding path): read classification `read_only` / `not_read_only` / `indeterminate`, admission `admissible` / `rejected` / `indeterminate`, table/view permission objects with CTE/derived lineage to physical sources, `strict` (default) and `projection_only` modes, fail-closed unresolved/metadata/unknown-effect handling, and a conservative PostgreSQL boundary for non-admissible uncertain expressions.
+- Public surfaces: SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, HTTP `POST /v1/query-access/analyze`. MCP tools remain `audit_sql`, `describe_rule`, `list_rules`, `get_capabilities` only (no query-access MCP tool).
+- Query-access corpus: 44 cases (22 MySQL/TiDB path + 22 PostgreSQL), 88 fixture files.
+- Decision records: `docs/decisions/2026-07-11-query-access-analysis-foundation.md`, `docs/decisions/2026-07-11-cte-derived-table-lineage-resolution.md`.
+- `level` remains the public audit priority field (no `severity` field is introduced). Query access results do not use `severity` and do not carry raw SQL, literals, credentials, connection strings, or parser fragments.
+
+### Non-Goals
+
+- Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
+- Not row-level security evaluation or column masking.
+- Not an MCP query-access tool.
+- Not a full SQL grammar coverage claim.
+- Not a `severity` field.
+- Not a change to existing audit behavior or the registered rule catalog.
+
 ## [v0.370.0] - 2026-06-23
 
 ### Added

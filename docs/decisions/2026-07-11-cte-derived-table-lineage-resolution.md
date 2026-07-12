@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Date: 2026-07-11
+- Related milestone/version: v0.380.0
 
 ## Context
 
@@ -44,3 +45,10 @@ CTE scopes inherit previously defined CTEs' lineage from the parent scope, enabl
 
 - PostgreSQL derived table lineage (not explicitly tested in corpus; CTE lineage implemented).
 - Wildcard expansion through CTE/derived lineage.
+
+## Release-Surface Evidence (v0.380.0)
+
+- Version assigned: `v0.380.0` with the Query Access Analysis Foundation release.
+- Public contract restated in release notes: CTE/derived tables are not permission objects; lineage resolves to physical table/view sources for requirements and outputs.
+- No production behavior change in this release-surface commit; only version pins, docs, and decision-record version assignment.
+- Tag/push/publish deferred to a later readiness audit.
