@@ -752,7 +752,7 @@ func TestService_Analyze_GlobalWildcardDeterministicOrder(t *testing.T) {
 		},
 	})
 
-	var firstOrder []string
+	expected := []string{"app.b.id", "app.a.id", "app.a.name"}
 	for i := 0; i < 10; i++ {
 		result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 			SQL:            "SELECT * FROM b JOIN a ON b.id = a.id",
@@ -766,46 +766,115 @@ func TestService_Analyze_GlobalWildcardDeterministicOrder(t *testing.T) {
 		}
 
 		dr := result.DomainResult
+		if len(dr.Outputs) == 0 {
+			t.Fatalf("run %d: no outputs", i)
+		}
+		if len(dr.Outputs[0].Sources) != len(expected) {
+			t.Fatalf("run %d: sources count: got %d, want %d", i, len(dr.Outputs[0].Sources), len(expected))
+		}
+		for j, want := range expected {
+			if dr.Outputs[0].Sources[j] != want {
+				t.Errorf("run %d: sources[%d]: got %q, want %q", i, j, dr.Outputs[0].Sources[j], want)
+			}
+		}
+	}
+}
 
-		hasBID := false
-		hasAID := false
-		hasAName := false
-		var currentOrder []string
-		for _, col := range dr.ReferencedColumns {
-			key := col.Table + "." + col.Column
-			currentOrder = append(currentOrder, key)
-			if col.Table == "b" && col.Column == "id" {
-				hasBID = true
-			}
-			if col.Table == "a" && col.Column == "id" {
-				hasAID = true
-			}
-			if col.Table == "a" && col.Column == "name" {
-				hasAName = true
-			}
-		}
-		if !hasBID {
-			t.Errorf("run %d: b.id not found", i)
-		}
-		if !hasAID {
-			t.Errorf("run %d: a.id not found", i)
-		}
-		if !hasAName {
-			t.Errorf("run %d: a.name not found", i)
+func TestService_Analyze_GlobalWildcardReversedJoinOrder(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.b": {
+			Schema: "app", Name: "b", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+		"app.a": {
+			Schema: "app", Name: "a", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}, {Name: "name", Ordinal: 2}},
+		},
+	})
+
+	expected := []string{"app.a.id", "app.a.name", "app.b.id"}
+	for i := 0; i < 10; i++ {
+		result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+			SQL:            "SELECT * FROM a JOIN b ON a.id = b.id",
+			Dialect:        "mysql",
+			Mode:           "strict",
+			DefaultSchema:  "app",
+			SchemaResolver: resolver,
+		})
+		if err != nil {
+			t.Fatalf("run %d: analyze: %v", i, err)
 		}
 
-		if i == 0 {
-			firstOrder = currentOrder
-		} else {
-			if len(currentOrder) != len(firstOrder) {
-				t.Errorf("run %d: column count changed: got %d, want %d", i, len(currentOrder), len(firstOrder))
+		dr := result.DomainResult
+		if len(dr.Outputs) == 0 {
+			t.Fatalf("run %d: no outputs", i)
+		}
+		if len(dr.Outputs[0].Sources) != len(expected) {
+			t.Fatalf("run %d: sources count: got %d, want %d", i, len(dr.Outputs[0].Sources), len(expected))
+		}
+		for j, want := range expected {
+			if dr.Outputs[0].Sources[j] != want {
+				t.Errorf("run %d: sources[%d]: got %q, want %q", i, j, dr.Outputs[0].Sources[j], want)
 			}
-			for j := 0; j < len(currentOrder) && j < len(firstOrder); j++ {
-				if currentOrder[j] != firstOrder[j] {
-					t.Errorf("run %d: column[%d] order changed: got %s, want %s", i, j, currentOrder[j], firstOrder[j])
-					break
+		}
+	}
+}
+
+func TestService_Analyze_TableQualifiedWildcardOrder(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.b": {
+			Schema: "app", Name: "b", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}, {Name: "val", Ordinal: 2}},
+		},
+		"app.a": {
+			Schema: "app", Name: "a", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}, {Name: "name", Ordinal: 2}},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT b.* FROM b JOIN a ON b.id = a.id",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if len(dr.Outputs) == 0 {
+		t.Fatal("no outputs")
+	}
+
+	expected := []string{"app.b.id", "app.b.val"}
+	if len(dr.Outputs[0].Sources) != len(expected) {
+		t.Fatalf("sources count: got %d, want %d", len(dr.Outputs[0].Sources), len(expected))
+	}
+	for j, want := range expected {
+		if dr.Outputs[0].Sources[j] != want {
+			t.Errorf("sources[%d]: got %q, want %q", j, dr.Outputs[0].Sources[j], want)
+		}
+	}
+
+	hasAColProjection := false
+	for _, col := range dr.ReferencedColumns {
+		if col.Table == "a" {
+			for _, u := range col.Usages {
+				if u == domain.UsageProjection {
+					hasAColProjection = true
 				}
 			}
 		}
+	}
+	if hasAColProjection {
+		t.Error("table-qualified b.* should not include projection columns from a")
 	}
 }

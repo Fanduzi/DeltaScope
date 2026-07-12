@@ -666,7 +666,11 @@ order (b columns first, then a columns), each relation's columns in
 ordinal position order. Output is deterministic across runs.
 
 Tests: `TestService_Analyze_GlobalWildcardDeterministicOrder` (10-run
-consistency check).
+consistency check on `outputs[0].sources`),
+`TestService_Analyze_GlobalWildcardReversedJoinOrder` (reversed FROM/JOIN
+order produces reversed source order),
+`TestService_Analyze_TableQualifiedWildcardOrder` (table-qualified `b.*`
+produces only b sources in ordinal order).
 
 ## Links
 
