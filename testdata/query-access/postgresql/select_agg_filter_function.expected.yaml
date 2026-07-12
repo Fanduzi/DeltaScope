@@ -1,0 +1,19 @@
+name: select_agg_filter_function
+dialect: postgresql
+mode: strict
+expect:
+  # Aggregate FILTER and count() are unproven function/operator effects only.
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns: []
+  outputs: []
+  requirements:
+    - object: users
+      privilege: read_table
+  unresolved: []
+  warnings: []
+  reason_codes: [unproven_function_effect, unproven_operator_effect]

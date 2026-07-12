@@ -33,6 +33,18 @@ func TestExtractQueryAccess_UnprovenEffectReasonCodes(t *testing.T) {
 		{name: "cast_function_form", sql: "SELECT CAST(id AS text) FROM users", want: []string{"unproven_cast_effect"}},
 		{name: "function_and_operator", sql: "SELECT COUNT(*) FROM users WHERE id = 1", want: []string{"unproven_function_effect", "unproven_operator_effect"}},
 		{name: "structural_bool_only", sql: "SELECT id FROM users WHERE active AND inactive", want: nil},
+		// Complete-traversal coverage (previously missed SELECT fields).
+		{name: "limit_function", sql: "SELECT id FROM users LIMIT length('a')", want: []string{"unproven_function_effect"}},
+		{name: "offset_function", sql: "SELECT id FROM users OFFSET length('a')", want: []string{"unproven_function_effect"}},
+		{name: "values_function", sql: "VALUES (length('a'))", want: []string{"unproven_function_effect"}},
+		{name: "values_operator", sql: "VALUES (1 + 2)", want: []string{"unproven_operator_effect"}},
+		{name: "agg_filter_function", sql: "SELECT count(*) FILTER (WHERE length(name) > 0) FROM users", want: []string{"unproven_function_effect", "unproven_operator_effect"}},
+		{name: "window_partition_function", sql: "SELECT row_number() OVER (PARTITION BY length(name) ORDER BY id) FROM users", want: []string{"unproven_function_effect"}},
+		{name: "window_order_function", sql: "SELECT row_number() OVER (ORDER BY length(name)) FROM users", want: []string{"unproven_function_effect"}},
+		{name: "window_frame_function", sql: "SELECT sum(id) OVER (ORDER BY id ROWS BETWEEN length('a') PRECEDING AND CURRENT ROW) FROM users", want: []string{"unproven_function_effect"}},
+		{name: "named_window_clause", sql: "SELECT rank() OVER w FROM users WINDOW w AS (PARTITION BY length(name))", want: []string{"unproven_function_effect"}},
+		{name: "distinct_on_function", sql: "SELECT DISTINCT ON (length(name)) id FROM users", want: []string{"unproven_function_effect"}},
+		{name: "order_by_function", sql: "SELECT id FROM users ORDER BY length(name)", want: []string{"unproven_function_effect"}},
 	}
 
 	for _, tc := range cases {
@@ -98,5 +110,40 @@ func TestExtractQueryAccess_UnprovenReasons_DeterministicOrder(t *testing.T) {
 		if !wantSet[c] {
 			t.Errorf("unexpected reason %q in %v", c, first)
 		}
+	}
+}
+
+// TestExtractQueryAccess_CompleteTraversalClassifiesIndeterminate locks that
+// LIMIT/VALUES/window/FILTER effects are not classified as read_only (would risk
+// admission promotion when a relation SchemaResolver is present).
+func TestExtractQueryAccess_CompleteTraversalClassifiesIndeterminate(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+	cases := []string{
+		"SELECT id FROM users LIMIT length('a')",
+		"VALUES (length('a'))",
+		"SELECT count(*) FILTER (WHERE length(name) > 0) FROM users",
+		"SELECT row_number() OVER (PARTITION BY length(name)) FROM users",
+	}
+	for _, sql := range cases {
+		sql := sql
+		t.Run(sql, func(t *testing.T) {
+			t.Parallel()
+			facts, err := e.ExtractQueryAccess(context.Background(), sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if facts.ReadClassification != "indeterminate" {
+				t.Errorf("classification: got %q, want indeterminate (complete effect traversal)", facts.ReadClassification)
+			}
+			if len(facts.ReasonCodes) == 0 {
+				t.Errorf("expected unproven_* reason codes for %q, got none", sql)
+			}
+			for _, rc := range facts.ReasonCodes {
+				if !strings.HasPrefix(rc, "unproven_") {
+					t.Errorf("expected unproven_* reason only (not proven/admissible), got %q", rc)
+				}
+			}
+		})
 	}
 }

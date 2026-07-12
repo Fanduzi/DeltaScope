@@ -34,6 +34,11 @@ func TestUnprovenEffectReasons_OperatorFunctionCastBounded(t *testing.T) {
 		{name: "function_aggregate_count_col", sql: "SELECT COUNT(id) FROM users", want: []domain.ReasonCode{domain.ReasonUnprovenFunctionEffect}},
 		{name: "cast", sql: "SELECT id::text FROM users", want: []domain.ReasonCode{domain.ReasonUnprovenCastEffect}},
 		{name: "cast_form", sql: "SELECT CAST(id AS text) FROM users", want: []domain.ReasonCode{domain.ReasonUnprovenCastEffect}},
+		// Complete traversal: previously missed executable expression positions.
+		{name: "limit_function", sql: "SELECT id FROM users LIMIT length('a')", want: []domain.ReasonCode{domain.ReasonUnprovenFunctionEffect}},
+		{name: "values_function", sql: "VALUES (length('a'))", want: []domain.ReasonCode{domain.ReasonUnprovenFunctionEffect}},
+		{name: "agg_filter", sql: "SELECT count(*) FILTER (WHERE length(name) > 0) FROM users", want: []domain.ReasonCode{domain.ReasonUnprovenFunctionEffect}},
+		{name: "window_partition", sql: "SELECT row_number() OVER (PARTITION BY length(name)) FROM users", want: []domain.ReasonCode{domain.ReasonUnprovenFunctionEffect}},
 	}
 
 	for _, tc := range cases {
@@ -284,6 +289,38 @@ func TestUnprovenEffectReasons_RequestCannotInjectReasons(t *testing.T) {
 	dr2 := analyzePG(t, "SELECT id FROM users WHERE active AND inactive", effectIdentityUsersResolver())
 	if hasReason(dr2.ReasonCodes, "trusted_by_caller") {
 		t.Error("Analyze must not accept injected trusted_by_caller reason")
+	}
+}
+
+// TestUnprovenEffectReasons_CompleteTraversalNeverAdmissible ensures LIMIT/VALUES
+// window/FILTER unproven effects stay indeterminate even with a relation resolver.
+// These remain unproven_* markers only — not proven-admissible.
+func TestUnprovenEffectReasons_CompleteTraversalNeverAdmissible(t *testing.T) {
+	t.Parallel()
+
+	cases := []string{
+		"SELECT id FROM users LIMIT length('a')",
+		"VALUES (length('a'))",
+		"SELECT count(*) FILTER (WHERE length(name) > 0) FROM users",
+		"SELECT row_number() OVER (PARTITION BY length(name) ORDER BY id) FROM users",
+	}
+	for _, sql := range cases {
+		sql := sql
+		t.Run(sql, func(t *testing.T) {
+			t.Parallel()
+			for _, resolver := range []SchemaResolver{nil, effectIdentityUsersResolver()} {
+				dr := analyzePG(t, sql, resolver)
+				assertIndeterminateClassAndAdmission(t, dr, sql)
+				if !hasReason(dr.ReasonCodes, domain.ReasonUnprovenFunctionEffect) &&
+					!hasReason(dr.ReasonCodes, domain.ReasonUnprovenOperatorEffect) {
+					t.Errorf("expected unproven_* reason for complete-traversal case; got %v", dr.ReasonCodes)
+				}
+				if dr.Admission == domain.Admissible {
+					t.Error("unproven window/filter/limit/values effect must not be admissible")
+				}
+			}
+			assertNoLeakOrSeverity(t, analyzePG(t, sql, nil), nil, "length", "password", "severity")
+		})
 	}
 }
 

@@ -141,6 +141,10 @@ func (f effectReasonFlags) toReasonCodes() []string {
 
 // collectEffectReasonFlags records unproven operator / function / cast presence
 // without storing names, OIDs, or SQL fragments.
+//
+// This is the single auditable effect traversal for raw parse trees. It is the
+// source of truth for both reason codes and SELECT classification effect checks.
+// Prefer extending this walker over adding ad-hoc field checks elsewhere.
 func collectEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags) {
 	if node == nil || flags == nil {
 		return
@@ -152,9 +156,16 @@ func collectEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags) {
 		if n.ExplainStmt.GetQuery() != nil {
 			collectEffectReasonFlags(n.ExplainStmt.GetQuery(), flags)
 		}
+	default:
+		// Non-SELECT top-level statements either write (not_read_only) or stay
+		// indeterminate by statement kind; walk any nested expressions when present.
+		collectNodeEffectReasonFlags(node, flags)
 	}
 }
 
+// collectSelectEffectReasonFlags visits every expression-bearing field of a
+// SelectStmt in one place (set ops, CTEs, DISTINCT ON, target, FROM, WHERE,
+// GROUP/HAVING, WINDOW, VALUES, ORDER BY, LIMIT/OFFSET).
 func collectSelectEffectReasonFlags(sel *pg_query.SelectStmt, flags *effectReasonFlags) {
 	if sel == nil || flags == nil {
 		return
@@ -177,23 +188,62 @@ func collectSelectEffectReasonFlags(sel *pg_query.SelectStmt, flags *effectReaso
 			}
 		}
 	}
+	for _, distinct := range sel.GetDistinctClause() {
+		collectNodeEffectReasonFlags(distinct, flags)
+	}
 	for _, target := range sel.GetTargetList() {
 		collectNodeEffectReasonFlags(target, flags)
-	}
-	if sel.GetWhereClause() != nil {
-		collectNodeEffectReasonFlags(sel.GetWhereClause(), flags)
 	}
 	for _, from := range sel.GetFromClause() {
 		collectNodeEffectReasonFlags(from, flags)
 	}
-	if sel.GetHavingClause() != nil {
-		collectNodeEffectReasonFlags(sel.GetHavingClause(), flags)
+	if sel.GetWhereClause() != nil {
+		collectNodeEffectReasonFlags(sel.GetWhereClause(), flags)
 	}
 	for _, group := range sel.GetGroupClause() {
 		collectNodeEffectReasonFlags(group, flags)
 	}
+	if sel.GetHavingClause() != nil {
+		collectNodeEffectReasonFlags(sel.GetHavingClause(), flags)
+	}
+	for _, window := range sel.GetWindowClause() {
+		collectNodeEffectReasonFlags(window, flags)
+	}
+	for _, values := range sel.GetValuesLists() {
+		collectNodeEffectReasonFlags(values, flags)
+	}
 	for _, sort := range sel.GetSortClause() {
 		collectNodeEffectReasonFlags(sort, flags)
+	}
+	if sel.GetLimitOffset() != nil {
+		collectNodeEffectReasonFlags(sel.GetLimitOffset(), flags)
+	}
+	if sel.GetLimitCount() != nil {
+		collectNodeEffectReasonFlags(sel.GetLimitCount(), flags)
+	}
+}
+
+func selectHasUnprovenEffect(sel *pg_query.SelectStmt) bool {
+	var flags effectReasonFlags
+	collectSelectEffectReasonFlags(sel, &flags)
+	return flags.operator || flags.function || flags.cast
+}
+
+func collectWindowDefEffectReasonFlags(win *pg_query.WindowDef, flags *effectReasonFlags) {
+	if win == nil || flags == nil {
+		return
+	}
+	for _, part := range win.GetPartitionClause() {
+		collectNodeEffectReasonFlags(part, flags)
+	}
+	for _, order := range win.GetOrderClause() {
+		collectNodeEffectReasonFlags(order, flags)
+	}
+	if win.GetStartOffset() != nil {
+		collectNodeEffectReasonFlags(win.GetStartOffset(), flags)
+	}
+	if win.GetEndOffset() != nil {
+		collectNodeEffectReasonFlags(win.GetEndOffset(), flags)
 	}
 }
 
@@ -220,16 +270,49 @@ func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags)
 			collectNodeEffectReasonFlags(n.TypeCast.GetArg(), flags)
 		}
 	case *pg_query.Node_FuncCall:
+		// Function and aggregate calls (including FILTER / OVER) are unproven until
+		// identity resolution + manifest trust. Mark function and walk all executable
+		// sub-expressions: args, ORDER BY inside aggregate, FILTER, and window def.
 		flags.function = true
 		for _, arg := range n.FuncCall.GetArgs() {
 			collectNodeEffectReasonFlags(arg, flags)
 		}
+		for _, order := range n.FuncCall.GetAggOrder() {
+			collectNodeEffectReasonFlags(order, flags)
+		}
+		if n.FuncCall.GetAggFilter() != nil {
+			collectNodeEffectReasonFlags(n.FuncCall.GetAggFilter(), flags)
+		}
 		if n.FuncCall.GetOver() != nil {
-			// Window function still counts as function; walk partition/order if needed later.
-			_ = n.FuncCall.GetOver()
+			collectWindowDefEffectReasonFlags(n.FuncCall.GetOver(), flags)
 		}
 	case *pg_query.Node_RangeFunction:
+		// FROM function / ROWS FROM (...): presence is an unproven function effect;
+		// also walk nested call expressions for nested operator/cast effects.
 		flags.function = true
+		for _, fn := range n.RangeFunction.GetFunctions() {
+			collectNodeEffectReasonFlags(fn, flags)
+		}
+	case *pg_query.Node_RangeTableFunc:
+		// XMLTABLE-style table functions are unproven effects.
+		flags.function = true
+		collectNodeEffectReasonFlags(n.RangeTableFunc.GetDocexpr(), flags)
+		collectNodeEffectReasonFlags(n.RangeTableFunc.GetRowexpr(), flags)
+		for _, ns := range n.RangeTableFunc.GetNamespaces() {
+			collectNodeEffectReasonFlags(ns, flags)
+		}
+		for _, col := range n.RangeTableFunc.GetColumns() {
+			collectNodeEffectReasonFlags(col, flags)
+		}
+	case *pg_query.Node_RangeTableSample:
+		collectNodeEffectReasonFlags(n.RangeTableSample.GetRelation(), flags)
+		for _, method := range n.RangeTableSample.GetMethod() {
+			collectNodeEffectReasonFlags(method, flags)
+		}
+		for _, arg := range n.RangeTableSample.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+		collectNodeEffectReasonFlags(n.RangeTableSample.GetRepeatable(), flags)
 	case *pg_query.Node_ResTarget:
 		if n.ResTarget.GetVal() != nil {
 			collectNodeEffectReasonFlags(n.ResTarget.GetVal(), flags)
@@ -250,6 +333,10 @@ func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags)
 	case *pg_query.Node_NullTest:
 		if n.NullTest.GetArg() != nil {
 			collectNodeEffectReasonFlags(n.NullTest.GetArg(), flags)
+		}
+	case *pg_query.Node_BooleanTest:
+		if n.BooleanTest.GetArg() != nil {
+			collectNodeEffectReasonFlags(n.BooleanTest.GetArg(), flags)
 		}
 	case *pg_query.Node_CoalesceExpr:
 		for _, arg := range n.CoalesceExpr.GetArgs() {
@@ -273,6 +360,10 @@ func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags)
 		for _, elem := range n.ArrayExpr.GetElements() {
 			collectNodeEffectReasonFlags(elem, flags)
 		}
+	case *pg_query.Node_AArrayExpr:
+		for _, elem := range n.AArrayExpr.GetElements() {
+			collectNodeEffectReasonFlags(elem, flags)
+		}
 	case *pg_query.Node_RowExpr:
 		for _, arg := range n.RowExpr.GetArgs() {
 			collectNodeEffectReasonFlags(arg, flags)
@@ -284,6 +375,27 @@ func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags)
 	case *pg_query.Node_AIndirection:
 		if n.AIndirection.GetArg() != nil {
 			collectNodeEffectReasonFlags(n.AIndirection.GetArg(), flags)
+		}
+		for _, ind := range n.AIndirection.GetIndirection() {
+			collectNodeEffectReasonFlags(ind, flags)
+		}
+	case *pg_query.Node_CollateClause:
+		if n.CollateClause.GetArg() != nil {
+			collectNodeEffectReasonFlags(n.CollateClause.GetArg(), flags)
+		}
+	case *pg_query.Node_GroupingFunc:
+		// GROUPING() is a function-like expression; treat as unproven function effect.
+		flags.function = true
+		for _, arg := range n.GroupingFunc.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+	case *pg_query.Node_XmlExpr:
+		flags.function = true
+		for _, arg := range n.XmlExpr.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+		for _, arg := range n.XmlExpr.GetNamedArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
 		}
 	case *pg_query.Node_JoinExpr:
 		join := n.JoinExpr
@@ -300,9 +412,17 @@ func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags)
 		if n.SortBy.GetNode() != nil {
 			collectNodeEffectReasonFlags(n.SortBy.GetNode(), flags)
 		}
+	case *pg_query.Node_WindowDef:
+		collectWindowDefEffectReasonFlags(n.WindowDef, flags)
+	case *pg_query.Node_List:
+		for _, item := range n.List.GetItems() {
+			collectNodeEffectReasonFlags(item, flags)
+		}
 	case *pg_query.Node_ColumnRef, *pg_query.Node_AConst, *pg_query.Node_RangeVar,
-		*pg_query.Node_SqlvalueFunction:
-		// Non-effect leaves.
+		*pg_query.Node_SqlvalueFunction, *pg_query.Node_ParamRef, *pg_query.Node_AStar,
+		*pg_query.Node_String_, *pg_query.Node_Integer, *pg_query.Node_Float,
+		*pg_query.Node_Boolean, *pg_query.Node_BitString:
+		// Non-effect leaves / structural tokens.
 		return
 	}
 }
@@ -339,10 +459,9 @@ func classifyStatement(node *pg_query.Node) string {
 		if selectHasWildcard(sel) {
 			return "indeterminate"
 		}
-		if pgSelectHasOperatorExpr(sel) {
-			return "indeterminate"
-		}
-		if pgSelectHasFunctionCall(sel) {
+		// Single effect traversal: operator / function / cast anywhere in the SELECT
+		// (including LIMIT/OFFSET, VALUES, window, aggregate FILTER, DISTINCT ON).
+		if selectHasUnprovenEffect(sel) {
 			return "indeterminate"
 		}
 		return "read_only"
@@ -367,10 +486,7 @@ func classifyStatement(node *pg_query.Node) string {
 			if selectHasWildcard(s.SelectStmt) {
 				return "indeterminate"
 			}
-			if pgSelectHasOperatorExpr(s.SelectStmt) {
-				return "indeterminate"
-			}
-			if pgSelectHasFunctionCall(s.SelectStmt) {
+			if selectHasUnprovenEffect(s.SelectStmt) {
 				return "indeterminate"
 			}
 			return "read_only"
@@ -384,234 +500,6 @@ func classifyStatement(node *pg_query.Node) string {
 	default:
 		return "indeterminate"
 	}
-}
-
-func pgSelectHasOperatorExpr(sel *pg_query.SelectStmt) bool {
-	if sel == nil {
-		return false
-	}
-	for _, target := range sel.GetTargetList() {
-		if pgContainsOperatorExpr(target) {
-			return true
-		}
-	}
-	if sel.GetWhereClause() != nil && pgContainsOperatorExpr(sel.GetWhereClause()) {
-		return true
-	}
-	for _, from := range sel.GetFromClause() {
-		if pgContainsOperatorExpr(from) {
-			return true
-		}
-	}
-	return false
-}
-
-func pgSelectHasFunctionCall(sel *pg_query.SelectStmt) bool {
-	if sel == nil {
-		return false
-	}
-	for _, target := range sel.GetTargetList() {
-		if pgContainsFunctionCallInExpr(target) {
-			return true
-		}
-	}
-	if sel.GetWhereClause() != nil && pgContainsFunctionCallInExpr(sel.GetWhereClause()) {
-		return true
-	}
-	for _, from := range sel.GetFromClause() {
-		if pgContainsFunctionCallInExpr(from) {
-			return true
-		}
-	}
-	return false
-}
-
-func pgContainsOperatorExpr(node *pg_query.Node) bool {
-	if node == nil {
-		return false
-	}
-	switch n := node.GetNode().(type) {
-	case *pg_query.Node_AExpr:
-		return true
-	case *pg_query.Node_FuncCall:
-		return false
-	case *pg_query.Node_TypeCast:
-		return true
-	case *pg_query.Node_SubLink:
-		return false
-	case *pg_query.Node_ColumnRef:
-		return false
-	case *pg_query.Node_AConst:
-		return false
-	case *pg_query.Node_BoolExpr:
-		for _, arg := range n.BoolExpr.GetArgs() {
-			if pgContainsOperatorExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_NullTest:
-		return n.NullTest.GetArg() != nil && pgContainsOperatorExpr(n.NullTest.GetArg())
-	case *pg_query.Node_CoalesceExpr:
-		for _, arg := range n.CoalesceExpr.GetArgs() {
-			if pgContainsOperatorExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_CaseExpr:
-		caseExpr := n.CaseExpr
-		if caseExpr.GetDefresult() != nil && pgContainsOperatorExpr(caseExpr.GetDefresult()) {
-			return true
-		}
-		for _, arg := range caseExpr.GetArgs() {
-			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
-				if pgContainsOperatorExpr(caseWhen.GetExpr()) || pgContainsOperatorExpr(caseWhen.GetResult()) {
-					return true
-				}
-			}
-		}
-	case *pg_query.Node_ArrayExpr:
-		for _, elem := range n.ArrayExpr.GetElements() {
-			if pgContainsOperatorExpr(elem) {
-				return true
-			}
-		}
-	case *pg_query.Node_RowExpr:
-		for _, arg := range n.RowExpr.GetArgs() {
-			if pgContainsOperatorExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_MinMaxExpr:
-		for _, arg := range n.MinMaxExpr.GetArgs() {
-			if pgContainsOperatorExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_SqlvalueFunction:
-		return false
-	case *pg_query.Node_AIndirection:
-		return n.AIndirection.GetArg() != nil && pgContainsOperatorExpr(n.AIndirection.GetArg())
-	case *pg_query.Node_ResTarget:
-		return n.ResTarget.GetVal() != nil && pgContainsOperatorExpr(n.ResTarget.GetVal())
-	case *pg_query.Node_SelectStmt:
-		return pgSelectHasOperatorExpr(n.SelectStmt)
-	case *pg_query.Node_RangeVar:
-		return false
-	case *pg_query.Node_RangeFunction:
-		return false
-	case *pg_query.Node_RangeSubselect:
-		sub := n.RangeSubselect.GetSubquery()
-		if sub != nil {
-			return pgContainsOperatorExpr(sub)
-		}
-		return false
-	case *pg_query.Node_JoinExpr:
-		join := n.JoinExpr
-		if pgContainsOperatorExpr(join.GetLarg()) {
-			return true
-		}
-		if pgContainsOperatorExpr(join.GetRarg()) {
-			return true
-		}
-		if join.GetQuals() != nil && pgContainsOperatorExpr(join.GetQuals()) {
-			return true
-		}
-		for _, u := range join.GetUsingClause() {
-			if pgContainsOperatorExpr(u) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func pgContainsFunctionCallInExpr(node *pg_query.Node) bool {
-	if node == nil {
-		return false
-	}
-	switch n := node.GetNode().(type) {
-	case *pg_query.Node_FuncCall:
-		return true
-	case *pg_query.Node_SelectStmt:
-		return pgSelectHasFunctionCall(n.SelectStmt)
-	case *pg_query.Node_ResTarget:
-		return n.ResTarget.GetVal() != nil && pgContainsFunctionCallInExpr(n.ResTarget.GetVal())
-	case *pg_query.Node_AExpr:
-		if n.AExpr.GetLexpr() != nil && pgContainsFunctionCallInExpr(n.AExpr.GetLexpr()) {
-			return true
-		}
-		return n.AExpr.GetRexpr() != nil && pgContainsFunctionCallInExpr(n.AExpr.GetRexpr())
-	case *pg_query.Node_RangeFunction:
-		return true
-	case *pg_query.Node_SubLink:
-		return n.SubLink.GetSubselect() != nil && pgContainsFunctionCallInExpr(n.SubLink.GetSubselect())
-	case *pg_query.Node_ColumnRef:
-		return false
-	case *pg_query.Node_AConst:
-		return false
-	case *pg_query.Node_BoolExpr:
-		for _, arg := range n.BoolExpr.GetArgs() {
-			if pgContainsFunctionCallInExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_NullTest:
-		return n.NullTest.GetArg() != nil && pgContainsFunctionCallInExpr(n.NullTest.GetArg())
-	case *pg_query.Node_TypeCast:
-		return n.TypeCast.GetArg() != nil && pgContainsFunctionCallInExpr(n.TypeCast.GetArg())
-	case *pg_query.Node_CoalesceExpr:
-		for _, arg := range n.CoalesceExpr.GetArgs() {
-			if pgContainsFunctionCallInExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_CaseExpr:
-		caseExpr := n.CaseExpr
-		if caseExpr.GetDefresult() != nil && pgContainsFunctionCallInExpr(caseExpr.GetDefresult()) {
-			return true
-		}
-		for _, arg := range caseExpr.GetArgs() {
-			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
-				if pgContainsFunctionCallInExpr(caseWhen.GetExpr()) || pgContainsFunctionCallInExpr(caseWhen.GetResult()) {
-					return true
-				}
-			}
-		}
-	case *pg_query.Node_ArrayExpr:
-		for _, elem := range n.ArrayExpr.GetElements() {
-			if pgContainsFunctionCallInExpr(elem) {
-				return true
-			}
-		}
-	case *pg_query.Node_RowExpr:
-		for _, arg := range n.RowExpr.GetArgs() {
-			if pgContainsFunctionCallInExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_MinMaxExpr:
-		for _, arg := range n.MinMaxExpr.GetArgs() {
-			if pgContainsFunctionCallInExpr(arg) {
-				return true
-			}
-		}
-	case *pg_query.Node_SqlvalueFunction:
-		return false
-	case *pg_query.Node_AIndirection:
-		return n.AIndirection.GetArg() != nil && pgContainsFunctionCallInExpr(n.AIndirection.GetArg())
-	case *pg_query.Node_JoinExpr:
-		join := n.JoinExpr
-		if pgContainsFunctionCallInExpr(join.GetLarg()) {
-			return true
-		}
-		if pgContainsFunctionCallInExpr(join.GetRarg()) {
-			return true
-		}
-		if join.GetQuals() != nil && pgContainsFunctionCallInExpr(join.GetQuals()) {
-			return true
-		}
-	}
-	return false
 }
 
 func selectHasDataModifyingCTE(sel *pg_query.SelectStmt) bool {

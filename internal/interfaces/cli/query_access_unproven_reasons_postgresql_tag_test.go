@@ -23,6 +23,10 @@ func TestQueryAccessAnalyzePostgreSQLUnprovenReasons(t *testing.T) {
 		{name: "operator", sql: "SELECT id FROM users WHERE id = 1", want: "unproven_operator_effect"},
 		{name: "function", sql: "SELECT COUNT(*) FROM users", want: "unproven_function_effect"},
 		{name: "cast", sql: "SELECT id::text FROM users", want: "unproven_cast_effect"},
+		{name: "limit_function", sql: "SELECT id FROM users LIMIT length('a')", want: "unproven_function_effect"},
+		{name: "values_function", sql: "VALUES (length('a'))", want: "unproven_function_effect"},
+		{name: "window_partition", sql: "SELECT row_number() OVER (PARTITION BY length(name)) FROM users", want: "unproven_function_effect"},
+		{name: "agg_filter", sql: "SELECT count(*) FILTER (WHERE length(name) > 0) FROM users", want: "unproven_function_effect"},
 	}
 
 	for _, tc := range cases {

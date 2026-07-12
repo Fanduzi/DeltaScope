@@ -1,0 +1,26 @@
+name: select_limit_function
+dialect: postgresql
+mode: strict
+expect:
+  # LIMIT expression function is unproven effect (complete traversal), not admissible.
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection]
+  outputs:
+    - name: id
+      sources: [users.id]
+  requirements:
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [unproven_function_effect]

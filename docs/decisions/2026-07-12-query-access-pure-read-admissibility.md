@@ -580,6 +580,23 @@ promotion behavior).
   SDK/CLI/HTTP postgresql-tag passthrough
 - Corpus: `testdata/query-access/postgresql/*.expected.yaml` reason ids
 
+**T4 follow-up — complete effect traversal (pre-T5 gate):**
+
+The initial T4 walker only visited target/WHERE/FROM/HAVING/GROUP/ORDER and
+missed executable expression positions (LIMIT/OFFSET, VALUES, window
+partition/order/frame, aggregate FILTER, DISTINCT ON, etc.). Smoke repro:
+`SELECT id FROM users LIMIT length('a')` and `VALUES (length('a'))` returned
+`read_only` with empty reasons (admission stayed seeded indeterminate without a
+resolver, so not an immediate promotion bug, but it violated the explain-
+unproven-effect contract and would be unsafe if a later proof engine reused the
+partial walker).
+
+Fix: one auditable `collectSelectEffectReasonFlags` / `collectNodeEffectReasonFlags`
+traversal covering all SelectStmt expression fields and nested FuncCall
+(args/ORDER/FILTER/OVER), WindowDef, List/VALUES, RangeFunction, etc.
+Classification uses the same traversal (`selectHasUnprovenEffect`). Missed
+positions now emit `unproven_*` only — never proven/admissible.
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity
