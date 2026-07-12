@@ -81,9 +81,43 @@ func TestEffectCandidates_DoNotChangePublicResult(t *testing.T) {
 func TestEffectCandidates_RequestCannotInject(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeOf(QueryAccessRequest{})
-	for _, name := range []string{"EffectCandidates", "Trusted", "Trust", "Candidates"} {
+	for _, name := range []string{"EffectCandidates", "Trusted", "Trust", "Candidates", "EffectIdentityResolver"} {
 		if _, ok := rt.FieldByName(name); ok {
 			t.Errorf("QueryAccessRequest must not allow injection field %q", name)
+		}
+	}
+}
+
+// TestEffectCandidates_T6IdentityContractDoesNotChangeAdmission freezes T5 public
+// behavior after introducing the T6 facts-only identity resolver contract.
+func TestEffectCandidates_T6IdentityContractDoesNotChangeAdmission(t *testing.T) {
+	t.Parallel()
+	svc := &Service{}
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT id FROM users WHERE id = 1", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	assertIndeterminateClassAndAdmission(t, res.DomainResult, "comparison")
+	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnprovenOperatorEffect)
+	// Identity resolver is not invoked in T6: no identity_* reasons attached by Analyze.
+	for _, code := range res.DomainResult.ReasonCodes {
+		if strings.HasPrefix(string(code), "identity_") {
+			t.Errorf("T6 must not attach identity_* reasons via Analyze yet: %q", code)
+		}
+	}
+	data, err := json.Marshal(res.DomainResult)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	raw := string(data)
+	for _, bad := range []string{
+		"ObjectOID", "object_oid", "CanonicalSignature", "NamespaceOID",
+		"EffectIdentity", "identity_facts", "severity", "postgres://",
+	} {
+		if strings.Contains(raw, bad) {
+			t.Errorf("public domain JSON leaked %q", bad)
 		}
 	}
 }

@@ -274,6 +274,61 @@ func ReasonForIdentityFailure(f IdentityFailure) (ReasonCode, bool) {
 	}
 }
 
+// ValidIdentityStatus reports whether s is a known bounded identity status.
+// Free-text and empty strings return false.
+func ValidIdentityStatus(s IdentityStatus) bool {
+	switch s {
+	case IdentityStatusResolved,
+		IdentityStatusUnknown,
+		IdentityStatusAmbiguous,
+		IdentityStatusCoercionGap,
+		IdentityStatusLookupFailed,
+		IdentityStatusUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// IdentityStatusIsFailClosed reports whether the status forbids pure-read
+// promotion for that candidate. Only resolved is non-fail-closed; free-text
+// and empty statuses are treated as fail-closed.
+func IdentityStatusIsFailClosed(s IdentityStatus) bool {
+	return s != IdentityStatusResolved
+}
+
+// IdentityStatusToFailure maps a non-resolved bounded status to IdentityFailure.
+// Resolved and free-text statuses return false (callers must not invent failures
+// from success or inject error strings).
+func IdentityStatusToFailure(s IdentityStatus) (IdentityFailure, bool) {
+	switch s {
+	case IdentityStatusUnavailable:
+		return IdentityFailureUnavailable, true
+	case IdentityStatusUnknown:
+		return IdentityFailureUnknown, true
+	case IdentityStatusLookupFailed:
+		return IdentityFailureError, true
+	case IdentityStatusAmbiguous:
+		return IdentityFailureAmbiguous, true
+	case IdentityStatusCoercionGap:
+		return IdentityFailureCoercionGap, true
+	default:
+		return "", false
+	}
+}
+
+// ReasonForIdentityStatus maps a non-resolved bounded status to a reason code.
+// Resolved and free-text statuses return false so callers cannot inject
+// arbitrary strings as trusted reasons. Resolved never yields a reason code
+// from this helper (trust/promotion is a later policy step).
+func ReasonForIdentityStatus(s IdentityStatus) (ReasonCode, bool) {
+	f, ok := IdentityStatusToFailure(s)
+	if !ok {
+		return "", false
+	}
+	return ReasonForIdentityFailure(f)
+}
+
 // NormalizeReasonCodes deduplicates and sorts reason codes for stable public output.
 func NormalizeReasonCodes(codes []ReasonCode) []ReasonCode {
 	return SortReasonCodes(DeduplicateReasonCodes(codes))

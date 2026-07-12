@@ -10,6 +10,7 @@ package deltascope
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -95,10 +96,17 @@ func TestAnalyzeQueryAccess_PostgreSQLNoCandidateFieldsInJSON(t *testing.T) {
 	for _, bad := range []string{
 		"effect_candidates", "EffectCandidates", "NamePath", "name_path",
 		"TargetTypePath", "severity", "COUNT", "length", "password",
+		"ObjectOID", "object_oid", "NamespaceOID", "CanonicalSignature",
+		"EffectIdentityResolver", "identity_facts", "postgres://",
 	} {
 		if strings.Contains(raw, bad) {
 			t.Errorf("public JSON must not contain %q; got %s", bad, raw)
 		}
+	}
+	// T6: public SDK request still has no identity resolver injection field.
+	rt := reflect.TypeOf(QueryAccessRequest{})
+	if _, ok := rt.FieldByName("EffectIdentityResolver"); ok {
+		t.Error("public QueryAccessRequest must not gain EffectIdentityResolver in T6")
 	}
 	// Public contract: still indeterminate with unproven reasons only.
 	if result.Admission != QueryAccessIndeterminateAdmission {

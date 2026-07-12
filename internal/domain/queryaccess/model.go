@@ -138,6 +138,30 @@ const (
 	IdentityFailureCoercionGap IdentityFailure = "coercion_gap"
 )
 
+// IdentityStatus is the bounded per-candidate outcome of effect-identity resolution.
+// It extends IdentityFailure with a success value (resolved). Free-text strings
+// are never valid statuses; unknown strings map to fail-closed via helpers.
+//
+// Naming aligns with public identity_* reason codes where possible:
+// lookup_failed (status) ↔ IdentityFailureError ("error") ↔ identity_lookup_failed.
+type IdentityStatus string
+
+const (
+	// IdentityStatusResolved means a unique catalog identity was established.
+	// Facts may be present; this is NOT a trust claim.
+	IdentityStatusResolved IdentityStatus = "resolved"
+	// IdentityStatusUnknown means no matching catalog row / no unique identity.
+	IdentityStatusUnknown IdentityStatus = "unknown"
+	// IdentityStatusAmbiguous means multi-match non-unique identity.
+	IdentityStatusAmbiguous IdentityStatus = "ambiguous"
+	// IdentityStatusCoercionGap means required coercion is outside the bounded graph.
+	IdentityStatusCoercionGap IdentityStatus = "coercion_gap"
+	// IdentityStatusLookupFailed means transport/catalog error during lookup.
+	IdentityStatusLookupFailed IdentityStatus = "lookup_failed"
+	// IdentityStatusUnavailable means no identity resolver was configured or usable.
+	IdentityStatusUnavailable IdentityStatus = "unavailable"
+)
+
 // WarningCode is a bounded machine identifier for warnings.
 type WarningCode string
 

@@ -103,25 +103,22 @@ No push.
 
 ---
 
-## Task 6 — Resolver contract + type OIDs (facts only)
+## Task 6 — Resolver contract (facts only) — DONE
 
 ```text
-On branch query-access-pure-read-admissibility.
+DONE on branch query-access-pure-read-admissibility.
 
-Implement Task 6: extend SchemaResolver column metadata with type OIDs for
-PostgreSQL; add EffectIdentityResolver application contract and public SDK
-optional surface if needed; fake resolvers for tests.
+T6 delivered an internal, typed, fail-closed EffectIdentityResolver contract:
+- domain IdentityStatus (resolved + fail-closed statuses)
+- application batch request/result + EffectIdentityFacts (no Trusted)
+- ColumnSchema.TypeOID optional (not populated via catalog in T6)
+- helpers: ordinal validate/sort/complete, error→lookup_failed, fail-closed reasons
+- Analyze NOT wired; public SDK/CLI/HTTP schema unchanged
 
-CRITICAL: identity structs return FACTS only (OID, namespace, types, volatility,
-cast method). Do NOT include a caller-settable Trusted field. Document that
-trust is application/domain manifest policy keyed to the T2 ledger.
+T6 is FACTS-ONLY. T7 implements the PostgreSQL catalog adapter.
+T8 may discuss manifest proof + admission promotion + optional public injection.
 
-Do not implement live pg_operator queries yet (Task 7).
-Do not implement TrustPolicy promotion yet (Task 8).
-Do not change MCP tools. Do not change MySQL/TiDB behavior.
-
-Commit: feat: add query access effect identity resolver contract
-No push.
+Commit: feat: define query access identity resolver contract
 ```
 
 ---
@@ -131,11 +128,16 @@ No push.
 ```text
 On branch query-access-pure-read-admissibility.
 
+Precondition: T6 EffectIdentityResolver contract (facts-only batch API +
+IdentityStatus + EffectIdentityFacts). Implement the PostgreSQL catalog
+adapter only — do not invent a parallel trust API.
+
 Implement Task 7: PostgreSQL EffectIdentityResolver against pg_catalog
 (pg_operator / pg_proc / pg_cast) with exact type match for identities needed
 by the T2 closed candidate set. Return facts only: OID, namespace, volatility,
 castfunc/castmethod. Scrub secrets from errors. Unknown/multi-match → not a
-unique identity.
+unique identity. Map all failures to T6 bounded IdentityStatus values.
+Do not attach Trusted. Do not promote admission (T8).
 
 FORBIDDEN: "trust only pg_catalog + volatility i|s" or any equivalent Trusted
 assertion in this layer. Trust is Task 8 + T2 manifest.

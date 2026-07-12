@@ -29,11 +29,20 @@ type RelationSchema struct {
 type ColumnSchema struct {
 	Name    string
 	Ordinal int
+	// TypeOID is the catalog type OID when known (PostgreSQL atttypid).
+	// Zero means unknown / not provided. Facts only — never a trust signal.
+	// MySQL/TiDB resolvers may leave this zero. T6 does not implement catalog
+	// population; T7 may fill it when needed for identity resolution.
+	TypeOID uint32
 }
 
 // QueryAccessRequest is the input for query access analysis.
 // Callers cannot inject effect candidates or trust bits: there is no candidate
 // or Trusted field on the request.
+//
+// T6 note: EffectIdentityResolver is intentionally NOT a field here yet.
+// Public SDK/CLI/HTTP schemas stay unchanged until a complete end-to-end
+// catalog adapter path exists (see identity_resolver.go contract).
 type QueryAccessRequest struct {
 	SQL            string
 	Dialect        string

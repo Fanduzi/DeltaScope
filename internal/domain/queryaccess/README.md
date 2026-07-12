@@ -60,6 +60,13 @@ Transport-neutral domain types for query access analysis, including read classif
   - `IdentityFailureError`
   - `IdentityFailureAmbiguous`
   - `IdentityFailureCoercionGap`
+- `IdentityStatus` (per-candidate resolver outcome; includes `resolved`)
+  - `IdentityStatusResolved`
+  - `IdentityStatusUnknown`
+  - `IdentityStatusAmbiguous`
+  - `IdentityStatusCoercionGap`
+  - `IdentityStatusLookupFailed`
+  - `IdentityStatusUnavailable`
 - `WarningCode`
   - `WarningAmbiguousColumn`
   - `WarningMissingSchema`
@@ -82,6 +89,10 @@ Transport-neutral domain types for query access analysis, including read classif
 - `DeduplicateReasonCodes()`
 - `NormalizeReasonCodes()`
 - `ReasonForIdentityFailure()`
+- `ValidIdentityStatus()`
+- `IdentityStatusIsFailClosed()`
+- `IdentityStatusToFailure()`
+- `ReasonForIdentityStatus()`
 - `ValidateResult()`
 - `FormatRelationKey()`
 - `FormatColumnKey()`
@@ -95,6 +106,7 @@ Transport-neutral domain types for query access analysis, including read classif
 - `ValidateAdmission` rejects `admissible` + non-`read_only` combinations.
 - Unproven-effect reason codes (`unproven_*`, `identity_*`) are additive machine identifiers only; they never embed SQL, OIDs, object names, or driver errors.
 - `ReasonForIdentityFailure` maps only bounded `IdentityFailure` categories; free-text cannot be injected as a trusted reason.
+- `IdentityStatus` is the per-candidate resolver outcome enum (`resolved` + fail-closed statuses). `lookup_failed` maps to `IdentityFailureError` / `identity_lookup_failed`. Free-text statuses are invalid. `resolved` is not a trust claim.
 
 ## Dependencies
 - Upstream: `internal/application/queryaccess`

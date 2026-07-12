@@ -10,6 +10,7 @@ Related commits:
 - T4 reason codes commit: `feat: explain unproven query access effects`
 - T4 follow-up: `fix: complete query access effect reason traversal`
 - T5 candidates commit: `feat: extract query access effect candidates`
+- T6 resolver contract commit: `feat: define query access identity resolver contract`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -21,8 +22,10 @@ Related tests:
 - T4: parser unproven reason emission tests
 - T4: SDK/CLI/HTTP postgresql-tag passthrough + no-leak tests
 - T4: PG corpus expected fixtures record reason ids only
-- Planned (later): unit/integration tests for effect-identity catalog resolution + promotion
-- Planned (later): positive corpus under fake/real identity resolver + manifest
+- T6: `identity_resolver_test.go`, `identity_resolver_no_invoke_test.go`, domain status mapping tests
+- T6: PostgreSQL Analyze freeze (no identity_* from Analyze; public JSON no OIDs/facts)
+- Planned (T7): unit/integration tests for effect-identity catalog resolution
+- Planned (T8): positive corpus under fake/real identity resolver + manifest promotion
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
 Related docs:
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md` (T2 appendix)
@@ -633,6 +636,49 @@ roots; public admission is still not promoted).
 - Tests: parser candidate extraction; application public-output freeze;
   SDK/CLI/HTTP no-candidate-field checks
 - Package READMEs note internal-only/untrusted contract
+
+### T6 — Effect identity resolver contract (facts only; 2026-07-12)
+
+**Status remains:** `Proposed` (contract only; no catalog adapter, no trust
+policy, no admission promotion).
+
+**What T6 delivers:**
+
+1. **Domain `IdentityStatus`** (bounded per-candidate outcomes):
+   `resolved`, `unknown`, `ambiguous`, `coercion_gap`, `lookup_failed`,
+   `unavailable`. Free-text is invalid. Fail-closed for all non-`resolved`.
+   Mapping helpers: `IdentityStatusToFailure`, `ReasonForIdentityStatus`
+   (`lookup_failed` → `IdentityFailureError` → `identity_lookup_failed`).
+2. **Application `EffectIdentityResolver`** batch contract:
+   - Input: `EffectIdentityRequest` keyed by candidate ordinal (internal
+     `EffectCandidate` facts + optional operand type OID hints).
+   - Output: `EffectIdentityBatch` / `EffectIdentityItem` with bounded
+     `IdentityStatus` and optional `EffectIdentityFacts` (OIDs, namespace,
+     operand/result types, implementation OID, volatility, cast method,
+     internal `CanonicalSignature`).
+   - **No** `Trusted`, admission, reason free-text, driver error text, catalog
+     SQL, DSN, or candidate-name injection into domain Result / public JSON.
+3. **Batch semantics:** unique ordinals on request; deterministic ascending
+   ordinal order; partial failure fills missing ordinals as `unavailable`
+   (`CompleteEffectIdentityBatch`); free-text status rewritten to
+   `lookup_failed`; context cancellation is a batch-level error (not a
+   per-item status).
+4. **ColumnSchema.TypeOID** optional fact field (zero = unknown). T6 does not
+   populate it via catalog queries.
+5. **Public surface unchanged:** no `EffectIdentityResolver` on application or
+   public SDK `QueryAccessRequest`; CLI/HTTP JSON schemas unchanged;
+   `Service.Analyze` does not invoke the resolver; PostgreSQL remains
+   `indeterminate` + `unproven_*` only (no `identity_*` attached by Analyze).
+6. **Explicit non-claims:** no PostgreSQL `pg_catalog` identity SQL (T7); no
+   manifest trust judgment or admission promotion (T8); no public resolver
+   injection until a complete end-to-end path exists.
+
+**Artifacts:**
+
+- Domain: `IdentityStatus` + mapping helpers in `model.go` / `normalize.go`
+- Application: `identity_resolver.go` + contract tests; `ColumnSchema.TypeOID`
+- Docs: package READMEs; this T6 Evidence; implementation plan/OMO mark T6
+  facts-only / T7 adapter / T8 promotion
 
 ## Consequences
 

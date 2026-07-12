@@ -290,42 +290,41 @@ go test -tags postgresql ./internal/application/queryaccess/ -count=1
 
 ---
 
-## Task 6 — Extend relation metadata with type OIDs + EffectIdentityResolver API
+## Task 6 — Effect identity resolver contract (facts only) — DONE
 
 **Precondition:** T2 ledger; facts-only API; no Trusted field.
-**Goal:** types for operands + resolver interface that returns **facts only**.
+**Goal:** typed, fail-closed **facts-only** resolver contract for T7/T8.
+**Status:** done — contract only; **no** pg_catalog adapter, **no** manifest
+trust, **no** Analyze invocation / admission change, **no** public SDK field.
 
-**File scope:**
+**File scope (actual):**
 
-- `internal/application/queryaccess/contracts.go`
-- `internal/infrastructure/metadata/postgresql/query_access_resolver.go`
-- `internal/infrastructure/metadata/mysql/query_access_resolver.go` (columns
-  may stay without OID if MySQL phase-1 untouched; keep compile parity)
-- `pkg/deltascope/query_access.go` public optional resolver surface
-- README package docs if exports change
+- `internal/domain/queryaccess/model.go` + `normalize.go` (`IdentityStatus`)
+- `internal/application/queryaccess/identity_resolver.go` (+ tests)
+- `internal/application/queryaccess/contracts.go` (`ColumnSchema.TypeOID` only)
+- package READMEs + decision T6 Evidence
+- **Not** in T6: PostgreSQL catalog SQL, public `pkg/deltascope.QueryAccessRequest`
+  resolver field, `Service.Analyze` wiring
 
-**Work:**
+**Work delivered:**
 
-- Add `TypeOID`/`TypeName` to column schema where available (PG).
-- Define `EffectIdentityResolver` methods + identity structs **without** a
-  caller-settable `Trusted` field.
-- Fake resolvers for unit tests return facts only.
-- Document that trust policy lives in application/domain, not in the resolver.
+- Batch `EffectIdentityResolver.ResolveEffectIdentities` returning facts only.
+- Bounded statuses aligned with `IdentityFailure` style (`resolved` +
+  `unknown` / `ambiguous` / `coercion_gap` / `lookup_failed` / `unavailable`).
+- Ordinal uniqueness, deterministic sort, partial-failure completion, cancel
+  semantics, free-text → `lookup_failed` sanitization.
+- Optional `ColumnSchema.TypeOID` (unpopulated by catalog in T6).
+- Fake resolver in tests; public JSON / Analyze freeze tests.
 
-**GitNexus targets:** `SchemaResolver`, `QueryAccessRequest`,
-`QueryAccessResolver`, `AnalyzeQueryAccess`
+**T6 vs later:**
 
-**Gates:**
+| Task | Responsibility |
+|------|----------------|
+| **T6 (this)** | Facts-only contract + helpers + tests |
+| **T7** | PostgreSQL `pg_catalog` adapter implementing the contract |
+| **T8** | Manifest trust + proof engine; may discuss Analyze wiring / public injection |
 
-```bash
-go test ./internal/application/queryaccess/ -count=1
-go test -tags postgresql ./internal/infrastructure/metadata/postgresql/ -count=1
-go test ./pkg/deltascope/ -run QueryAccess -count=1
-```
-
-**Commit:** `feat: add query access effect identity resolver contract`
-**Stop if:** public API export set balloons — keep proof engine internal and
-only expose a minimal interface.
+**Commit:** `feat: define query access identity resolver contract`
 
 ---
 
@@ -515,10 +514,10 @@ T1 design (done)
   → T1b trust-policy docs fix (done)
   → T2 manifest research + version study (done, Proceed)
   → T3 characterize PG freeze + effect identity candidates (done)
-  → T4 reason codes                                   ← next
-  → T5 effect candidates (no trust)
-  → T6 resolver API + type OIDs (facts only)
-  → T7 catalog identity implementation (facts only)
+  → T4 reason codes (done)
+  → T5 effect candidates (no trust) (done)
+  → T6 resolver contract (facts only) (done)
+  → T7 catalog identity implementation (facts only)   ← next
   → T8 trust policy + proof engine (manifest = T2 ledger only)
   → T9 corpus
   → T10 docs accept

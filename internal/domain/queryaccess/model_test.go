@@ -406,6 +406,35 @@ func TestReasonForIdentityFailure_BoundedNoFreeText(t *testing.T) {
 	}
 }
 
+func TestIdentityStatus_BoundedAndFailClosed(t *testing.T) {
+	t.Parallel()
+	if !queryaccess.ValidIdentityStatus(queryaccess.IdentityStatusResolved) {
+		t.Fatal("resolved must be valid")
+	}
+	if queryaccess.IdentityStatusIsFailClosed(queryaccess.IdentityStatusResolved) {
+		t.Fatal("resolved is not fail-closed")
+	}
+	// Free text cannot be status or reason.
+	for _, bad := range []queryaccess.IdentityStatus{
+		"postgres://u:p@h/db",
+		"SELECT 1",
+		"error", // failure category uses "error"; status uses lookup_failed
+		"",
+		"trusted",
+	} {
+		if queryaccess.ValidIdentityStatus(bad) {
+			t.Errorf("invalid status accepted: %q", bad)
+		}
+		if code, ok := queryaccess.ReasonForIdentityStatus(bad); ok {
+			t.Errorf("free-text status %q mapped to %q", bad, code)
+		}
+	}
+	code, ok := queryaccess.ReasonForIdentityStatus(queryaccess.IdentityStatusLookupFailed)
+	if !ok || code != queryaccess.ReasonIdentityLookupFailed {
+		t.Fatalf("lookup_failed → %q ok=%v", code, ok)
+	}
+}
+
 func TestNormalizeReasonCodes_DeterministicOrderAndDedupe(t *testing.T) {
 	t.Parallel()
 	in := []queryaccess.ReasonCode{
