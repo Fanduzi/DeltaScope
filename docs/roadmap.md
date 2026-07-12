@@ -30,6 +30,64 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Not a change to existing audit behavior.
 - Not a `severity` field.
 
+## Deferred / Evidence Required (watchlist only)
+
+This section is a **deferred backlog / evidence watchlist**. It records intentional non-work so quality and boundary follow-ups are not forgotten.
+
+It is **not** a version plan, release commitment, or ordered milestone queue. Items below have **no** assigned version, date, or "next milestone" status. Nothing here is shipped, scheduled, or promised. Reopening any item requires the stated new evidence; absence of evidence keeps the published fail-closed / out-of-scope boundary.
+
+Published Query Access boundaries that these items must not rewrite by documentation alone:
+
+- Decision: [Query Access Analysis Foundation](decisions/2026-07-11-query-access-analysis-foundation.md) (v0.380.0)
+- Decision: [CTE and Derived Table Lineage Resolution](decisions/2026-07-11-cte-derived-table-lineage-resolution.md) (v0.380.0)
+- Shipped surfaces remain SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, and HTTP `POST /v1/query-access/analyze`. **MCP does not include a query-access tool.**
+- Query Access emits structured **requirements** for a caller-owned authorization step. It does **not** authenticate callers, evaluate grants, enforce row-level security, apply column masking, auto-grant privileges, or rewrite SQL. Static analysis is not a substitute for database authorization or runtime controls.
+
+### PostgreSQL common SELECT admissibility
+
+- **Status:** deferred watchlist only (not supported; not planned for release here).
+- **Why not now:** PostgreSQL keeps a conservative fail-closed boundary when operator, cast/coercion, or opaque construct effects cannot be proven safe. Broadening common-SELECT admissibility without catalog-proven, version-scoped effect identity would over-claim pure-read eligibility.
+- **Evidence that would reopen evaluation:** a catalog-proven, version-scoped, item-by-item audited effect-identity manifest that is maintainable and testable. Heuristic allowlists or "looks like a normal SELECT" shortcuts are not sufficient.
+- **Published boundary:** foundation decision — fail-closed admission; PostgreSQL uncertain expression effects remain non-admissible until proven.
+
+### CLI / HTTP live metadata resolver
+
+- **Status:** deferred watchlist only.
+- **Why not now:** the SDK already allows the caller to supply a schema/metadata resolver. Building a live metadata connection path into CLI and HTTP is product surface work that is only justified when a real query platform needs those transports to open metadata connections themselves.
+- **Evidence that would reopen evaluation:** a concrete integrating platform that must use CLI or HTTP (not the SDK) to resolve multi-relation query metadata, with a clear connection/credential model that does not weaken privacy or no-leak contracts.
+- **Published boundary:** foundation decision — resolution is metadata-backed when a resolver is provided; incomplete or missing metadata stays fail-closed. No claim that CLI/HTTP currently open database connections for query-access analysis.
+
+### Caller permission checker / grant evaluation
+
+- **Status:** deferred watchlist only.
+- **Why not now:** Query Access Analysis outputs **requirements** (`read_table` / `read_column` and related structure). It deliberately does not perform authorization. Embedding a grant evaluator without a real caller grant model would blur the boundary between analysis and authorization and risk misdescribing static output as an access decision.
+- **Evidence that would reopen evaluation:** a real calling platform with a documented grant model, principal identity handoff, and need for an optional caller-supplied checker that consumes analysis requirements without changing analysis results.
+- **Published boundary:** foundation decision — no authentication, no built-in grant store, no final user authorization decision in the analysis API; the platform owns the authorize step.
+
+### MCP query-access tool
+
+- **Status:** deferred watchlist only. **MCP does not support Query Access today.**
+- **Why not now:** MCP tools should follow demonstrated agent workflows, not interface symmetry with CLI/HTTP. Shipping a tool "because other surfaces have it" would expand the agent attack surface without a proven consumer.
+- **Evidence that would reopen evaluation:** a concrete agent workflow that needs query-access analysis over MCP, with the same application service contract as SDK/CLI/HTTP (no parallel implementation).
+- **Published boundary:** foundation decision — MCP surface for query-access deferred until a demonstrated consumer need; existing MCP audit tools are unchanged and do not provide query-access analysis.
+
+### View definition expansion, dynamic SQL, routine/UDF internal SQL, RLS / masking
+
+- **Status:** deferred watchlist only (default: continue not proving, not admitting).
+- **Why not now:** each area needs its own security model and real usage demand. Expanding through view definitions, analyzing dynamic SQL or routine/UDF bodies, or evaluating RLS/masking would change what "requirements" mean and is easy to over-claim if folded into the current static analysis result.
+- **Evidence that would reopen evaluation (per area):**
+  - **View definition expansion:** a required scenario where view-as-permission-object is insufficient and expansion is safe, bounded, and no-leak.
+  - **Dynamic SQL / routine or UDF internal SQL:** a required scenario plus a model that does not pretend unexpanded bodies are effect-free.
+  - **RLS / masking:** a caller that needs policy or mask evaluation as a separate concern, not as a reinterpretation of table/column requirements.
+- **Published boundary:** foundation decision — views are permission-bearing objects without automatic definition expansion; no RLS evaluation; no data masking or SQL rewriting; dynamic SQL inside stored programs out of scope; unknown function effects remain fail-closed. Static analysis must not be described as real authorization, RLS enforcement, masking, or automatic grant.
+
+### Homebrew trust workflow contract test
+
+- **Status:** deferred patch-sized release-engineering follow-up (not a product milestone).
+- **Why not now:** release workflows already trust the third-party cask tap during install verification (`brew trust --cask fanduzi/deltascope/deltascope` in `release.yml` / `release-recover.yml`). A small static contract test would lock that exact step so future workflow edits cannot drop it silently. That is CI hygiene, not Query Access product work.
+- **Evidence that would reopen evaluation:** any release-engineering pass that prioritizes regression locks for Homebrew install verification, or a near-miss/regression risk around the trust step.
+- **Published boundary:** operational only — pin the precise cask trust steps in `release.yml` and `release-recover.yml`; no SQL, audit, or query-access behavior change. Scope is patch-sized; do not promote this to a product milestone.
+
 ## Previous Milestone: v0.370.0 TiDB RETURNING Dialect Boundary
 
 **Goal:** upgrade the TiDB parser and draw a clean dialect boundary for DML `RETURNING`. TiDB dialect accepts parser-recognized `RETURNING`; MySQL Server dialect does not support DML `RETURNING`, so a parsed `RETURNING` on the MySQL dialect emits a dedicated global notice instead of a silent successful audit. `RETURNING` is no longer treated as a PostgreSQL-only syntax token. Does not add a `severity` field.
