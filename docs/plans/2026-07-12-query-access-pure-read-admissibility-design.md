@@ -10,10 +10,12 @@ Decision: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (P
 
 In fail-closed posture, enable **some** common read-only SELECT shapes to obtain
 `read_classification: read_only` and `admission: admissible` when every
-effect-bearing construct is proven to resolve to a **trusted builtin
-implementation identity** (primarily PostgreSQL).
+effect-bearing construct is proven to resolve to a **catalog identity listed in
+an application-maintained, version-scoped, per-item audited trusted-effect
+manifest** (primarily PostgreSQL).
 
 Not a goal: make arbitrary SELECT admissible.
+Not a goal: trust all `pg_catalog` STABLE/IMMUTABLE builtins by volatility class.
 
 ## 2. Current-state diagnosis
 
@@ -83,7 +85,8 @@ allowlist (reason codes may include function markers).
 
 **Conclusion:** parse-time facts can be extended to emit **structural effect
 candidates** (names + arg shapes). They **cannot** alone prove runtime
-identity. Catalog resolution is mandatory for promotion.
+identity. Catalog resolution is mandatory for identity facts. An audited
+manifest is mandatory for trust.
 
 ### 2.4 What SchemaResolver provides today
 
@@ -95,7 +98,24 @@ identity. Catalog resolution is mandatory for promotion.
 No operator/function/cast APIs. Extending relation metadata with type OIDs is
 necessary but **not sufficient**; a separate effect-identity API is required.
 
-## 3. Threat model (why names are not enough)
+### 2.5 P1 gap: volatility is not pure-read proof
+
+Prior draft language that trusted `pg_catalog` + `provolatile in ('i','s')`
+as a general predicate is **incorrect** for Query Access:
+
+| Claim | Reality |
+|-------|---------|
+| STABLE ⇒ no table reads | False. STABLE only promises no database **modification**. It may still read tables, GUCs, roles, etc. |
+| IMMUTABLE ⇒ no table reads | Not enforced. Catalog label is a claim; the engine does not force "no relation reads." |
+| Catalog builtin ⇒ safe for admission | False. Many catalog builtins read hidden context (`current_setting`, `pg_get_*`, …). |
+| Requirements still complete | False if an effect can read permission-bearing objects not present in extracted requirements. |
+
+Strict requirements promise coverage of all permission-bearing table/column
+reads. Therefore **only** effects whose unique data dependency is the already-
+extracted AST operands, with no hidden sources, may enter the trust set — and
+only via a **per-item** audit, not a volatility class.
+
+## 3. Threat model (why names and volatility are not enough)
 
 PostgreSQL allows:
 
@@ -105,21 +125,49 @@ PostgreSQL allows:
   name resolves to.
 - User-defined casts that invoke arbitrary functions.
 - Aggregates and functions with `SECURITY DEFINER` and arbitrary SQL.
+- Catalog functions labeled STABLE/IMMUTABLE that still read non-AST sources.
 
 Therefore:
 
 ```
-proof := resolved_oid ∈ trusted_pg_catalog_set
-         ∧ implementation_oid trusted
-         ∧ volatility allowed
-         ∧ resolution used locked context + typed operands
+identity_facts := resolve unique OID + namespace + arg types + volatility
+                  (from locked catalog context; fail closed on multi-match/error)
+
+trusted := identity_facts complete
+        ∧ identity ∈ application_trusted_effect_manifest
+        ∧ manifest_entry.version_range covers target PG
+        ∧ manifest_entry.audit_proves:
+             unique data deps = extracted AST operands only
+             ∧ no relation/config/role/file/network hidden reads
+             ∧ admitting does not drop permission-bearing requirements
 ```
 
 Anything less keeps `indeterminate`.
 
+**Forbidden shortcuts:**
+
+```
+// NEVER
+trusted := namespace == pg_catalog && volatility in (i, s)
+trusted := name in ("=", "count", ...)
+trusted := caller.Trusted  // resolver/caller claim
+```
+
 ## 4. Architecture
 
-### 4.1 New application contract (conceptual)
+### 4.1 Separation of concerns
+
+| Layer | Responsibility |
+|-------|----------------|
+| Parser / extractor | Structural **EffectCandidates** only (names, arg shapes). Never trust. |
+| EffectIdentityResolver | Catalog **facts**: OIDs, namespace, types, volatility, cast method. Never sets Trusted. |
+| Application/domain trust policy | Intersects resolved identity with the **audited manifest**. Sole authority for Trusted. |
+| Admission recompute | Promote only when all effects Trusted **and** existing unresolved/wildcard rules pass. |
+
+Resolver and callers **must not** claim `Trusted`. A fake resolver used in tests
+returns facts; tests apply the same policy path.
+
+### 4.2 New application contract (conceptual)
 
 Keep `SchemaResolver` for relations. Add an orthogonal capability:
 
@@ -135,25 +183,31 @@ EffectIdentityResolver (name TBD in implementation)
 in V1 of this design unless a later task explicitly wires metadata openers;
 SDK callers supply resolvers.
 
-Identity result (minimum fields, public or internal as needed):
+Identity result (minimum fields — **facts only**):
 
 ```text
 OperatorIdentity:
-  OperatorOID, Namespace (must be pg_catalog), OperatorName
+  OperatorOID, Namespace, OperatorName
   LeftTypeOID, RightTypeOID
   ImplementationFunctionOID, ImplementationNamespace
-  Volatility  // i | s | v
-  Trusted bool  // computed by policy, not caller claim
+  Volatility  // i | s | v  (fact, not trust)
 
 FunctionIdentity:
   FunctionOID, Namespace, FunctionName, ArgTypeOIDs[]
   Kind  // normal | aggregate | window | ...
-  Volatility
-  Trusted bool
+  Volatility  // fact, not trust
 
 CastIdentity:
-  SourceTypeOID, TargetTypeOID, CastFunctionOID?, Namespace?
-  Trusted bool
+  SourceTypeOID, TargetTypeOID
+  CastFunctionOID?   // null if binary / no function
+  CastMethod         // f | b | i  (function / binary / inout)
+  ImplementationNamespace?
+```
+
+**No `Trusted bool` on identity structs.** Trust is computed only by:
+
+```text
+TrustPolicy.IsTrusted(identity, manifest, versionContext) → bool
 ```
 
 Errors / unknown:
@@ -163,7 +217,61 @@ Errors / unknown:
 - Context cancel → fail request as today.
 - Do not place DSN, passwords, or SQL in error strings returned to public JSON.
 
-### 4.2 Extraction changes (parser → facts)
+### 4.3 Trusted-effect identity manifest (Phase 1)
+
+#### 4.3.1 Manifest requirements
+
+Phase 1 allows only an **application-maintained** manifest:
+
+- Finite list of effect identities (not open classes).
+- Explicit **PostgreSQL version range** per entry or for the whole set.
+- Each entry has a **semantic audit note** proving §3 trust predicates.
+- Stored in application/domain code or versioned data owned by the product —
+  not supplied as an untrusted caller allowlist of names.
+
+#### 4.3.2 Per-entry audit obligations
+
+For each allowed identity, document:
+
+1. Canonical identity key (OID and/or unique name+argtypes under `pg_catalog`
+   for the version range).
+2. Why the only data dependencies are extracted AST parameters.
+3. Why it does not read relations, GUCs, roles, files, network, or other
+   hidden sources relevant to permission-bearing data.
+4. Why requirements cannot miss a physical source column/table because of this
+   effect.
+5. Supported PostgreSQL major versions and upgrade/review process.
+
+#### 4.3.3 Phase 1 candidates (not automatic)
+
+These are **research candidates**, admissible only if each passes the audit
+and lands in the manifest with tests:
+
+- Basic comparison operators (`=`, `<>`, `<`, `>`, `<=`, `>=`) on a closed set
+  of type pairs (e.g. int/text/bool) with unique `pg_operator` + `oprcode`.
+- Structural `AND` / `OR` / `NOT` (`BoolExpr`) if treated as pure control
+  structure without separate catalog identity — document explicitly if
+  structural rather than catalog-bound.
+- `COUNT(*)` / `COUNT(col)` aggregate only with unique aggregate identity and
+  audit that it does not introduce hidden relation reads beyond the already-
+  extracted FROM/JOIN sources and argument column.
+
+If research cannot prove any candidate → leave it `indeterminate` and shrink
+the positive matrix.
+
+#### 4.3.4 Explicit exclusions (always indeterminate unless later decision)
+
+- Any non-manifest `pg_catalog` function/operator/cast, including stable and
+  immutable ones.
+- `current_setting`, `set_config`, and session/GUC readers/writers.
+- `pg_get_*` metadata helpers and similar catalog pretty-printers.
+- User-defined stable/immutable functions, operators, casts.
+- Function-backed casts.
+- Volatile catalog functions (default).
+- Anything requiring open-ended "all comparison ops" or "all immutable
+  builtins" class membership.
+
+### 4.4 Extraction changes (parser → facts)
 
 PostgreSQL extractor stops treating effects as pure booleans. It emits
 **EffectCandidates**:
@@ -183,11 +291,14 @@ Rules:
 - If a node shape is unsupported for candidate extraction → whole statement
   classification stays indeterminate with `unsupported_node` / new reason.
 - **Never** set `read_only` at parse time solely because names match a list.
+- **Never** treat volatility labels from the parser (there are none at parse
+  time) as trust.
 
 MySQL/TiDB: leave operator policy as-is for phase 1. Function path remains
 empty-allowlist indeterminate unless a later phase adds MySQL-safe proof.
+**Do not change MySQL/TiDB current behavior.**
 
-### 4.3 Decision order (pseudocode)
+### 4.5 Decision order (pseudocode)
 
 ```text
 function Analyze(req):
@@ -217,13 +328,21 @@ function Analyze(req):
 
   for c in candidates:
     id, err = resolveIdentity(req.EffectIdentityResolver, c, typeEnv)
-    if err != nil or id.Unknown or not id.Trusted:
+    // resolveIdentity returns FACTS only
+    if err != nil or id.Unknown:
       result.classification = indeterminate
       result.reason_codes += appropriate unproven / lookup_failed code
       result.admission = indeterminate
-      return finalize(result)   // fail closed on first unproven effect
+      return finalize(result)   // fail closed
 
-  // all effects proven trusted
+    if not TrustPolicy.IsTrusted(id, manifest, versionContext):
+      // includes: pg_catalog + stable/immutable but not in manifest
+      result.classification = indeterminate
+      result.reason_codes += unproven_* / not_in_trust_manifest
+      result.admission = indeterminate
+      return finalize(result)
+
+  // all effects proven trusted via manifest
   if still has unresolved permission-bearing refs / wildcards / ambiguity:
     result.classification = indeterminate  // or keep read_only only if policy says
     result.admission = indeterminate
@@ -242,7 +361,8 @@ function Analyze(req):
 
 **Critical fix vs today:** remove the unconditional
 `if dialect == "postgresql" { return Indeterminate }` lift ban, and replace it
-with proof-gated promotion. Do not lift on relation resolver alone.
+with **manifest-gated** promotion. Do not lift on relation resolver alone.
+Do not lift on catalog volatility alone.
 
 **Admission freeze fix:** seeded PostgreSQL `indeterminate` admission must not
 remain sticky when classification becomes `read_only` after proof, even if the
@@ -250,7 +370,7 @@ historical `!hasResolver && current==indeterminate` guard would freeze it.
 Preferred rule:
 
 ```text
-if classification == read_only and unresolved empty and effectsProven:
+if classification == read_only and unresolved empty and effectsProvenViaManifest:
   admission = admissible
 elif classification == not_read_only:
   admission = rejected
@@ -261,9 +381,9 @@ else:
 Relation-only resolver without effect proof must **not** produce PG
 `admissible` for effect-bearing SQL.
 
-### 4.4 Catalog resolution (PostgreSQL)
+### 4.6 Catalog resolution (PostgreSQL)
 
-#### 4.4.1 Resolution context
+#### 4.6.1 Resolution context
 
 Caller must lock an execution-equivalent context:
 
@@ -277,7 +397,7 @@ Caller must lock an execution-equivalent context:
 If the platform executes queries under a different path/types, proof is void
 (document as caller obligation; same as foundation relation resolution).
 
-#### 4.4.2 Minimal metadata queries (illustrative)
+#### 4.6.2 Minimal metadata queries (illustrative — facts only)
 
 Extend relation columns:
 
@@ -328,17 +448,29 @@ from pg_catalog.pg_cast c
 where c.castsource = $1 and c.casttarget = $2;
 ```
 
-Then resolve `castfunc` through `pg_proc` trust policy when present.
-
-Trust predicate:
+Then load `castfunc` through `pg_proc` **as facts** when present.
+Trust policy:
 
 ```text
-trusted := pro_nsp == 'pg_catalog'
-        && (provolatile in ('i','s'))   -- phase 1 default
-        && not rejected_by_kind(prokind)
+// Correct (phase 1)
+if castmethod indicates function-backed / castfunc != 0:
+  → not trusted (default; keep indeterminate)
+if binary cast with no function:
+  → trusted only if identity in manifest with audit proof
+else:
+  → indeterminate
+
+// For operator/function identities:
+trusted := unique_resolution
+        && identity ∈ trusted_effect_manifest
+        && version_in_range
+// NOT: pro_nsp == pg_catalog && provolatile in (i,s)
 ```
 
-### 4.5 Type inference (bounded)
+Resolver error, unknown OID, multi-match, incomplete type/coercion → fail closed
+(`indeterminate`).
+
+### 4.7 Type inference (bounded)
 
 Phase 1 type environment:
 
@@ -355,26 +487,28 @@ over-approximates (false admissible).
 
 ## 5. Support matrix (phase 1)
 
-### 5.1 Eligible for promotion (when proof succeeds)
+### 5.1 Eligible for promotion (when identity + manifest succeed)
 
 | Shape | Notes |
 |-------|--------|
 | `SELECT cols FROM t` | Already structural read_only; admission must not stick indeterminate once classification is read_only and no unresolved (with or without effects) |
-| `SELECT cols FROM t WHERE col <op> const` | `<op>` proven trusted comparison in `pg_catalog` |
-| `WHERE` with `AND`/`OR`/`NOT` combining proven comparisons | BoolExpr structural |
-| `INNER/LEFT/RIGHT JOIN ... ON` proven comparisons | Same operator proof |
+| `SELECT cols FROM t WHERE col <op> const` | `<op>` unique catalog identity **and** in comparison manifest |
+| `WHERE` with `AND`/`OR`/`NOT` combining proven comparisons | BoolExpr structural (documented) |
+| `INNER/LEFT/RIGHT JOIN ... ON` proven comparisons | Same operator proof + manifest |
 | Simple `USING` / `NATURAL` join without extra unproven exprs | As today for structure; still need relation metadata if wildcards |
-| `COUNT(*)` / `COUNT(col)` when function OID proven trusted aggregate | Aggregate `prokind` allowed |
-| Other frozen builtins only if OID-proven in tests (e.g. `length(text)`) | Explicit corpus, not open-ended |
+| `COUNT(*)` / `COUNT(col)` | Only if aggregate identity is in manifest with full audit; else indeterminate |
 
 ### 5.2 Remain indeterminate (explicit)
 
 | Shape | Reason |
 |-------|--------|
 | Any operator/function/cast without resolver | unproven |
+| Resolved `pg_catalog` + stable/immutable **not** in manifest | not trusted |
 | User-defined operator/function/cast | not trusted |
 | Name collision / multi-match / needs coercion | unproven |
-| Volatile catalog functions (default) | unproven |
+| `current_setting` / `pg_get_*` / hidden context readers | not trusted |
+| Function-backed cast | not trusted (phase 1 default) |
+| Volatile catalog functions | unproven / not trusted |
 | `SELECT *` without full expansion | schema_unavailable / unresolved |
 | Ambiguous unqualified columns | ambiguous_reference |
 | Resolver errors | identity_lookup_failed |
@@ -388,6 +522,7 @@ over-approximates (false admissible).
 
 - Keep existing admissible SELECT+WHERE without function calls.
 - Do not add name-only function allowlists "for parity".
+- Do not change current MySQL/TiDB behavior in this milestone.
 - Optional later: identity-backed function promotion with a MySQL-specific
   proof model (not phase 1).
 
@@ -422,47 +557,68 @@ Must not include:
 
 No `severity` field.
 
-## 8. Corpus matrix (required)
+## 8. Corpus / adversarial matrix (required)
 
-### 8.1 Safety positives (expect admissible when proof fixtures supplied)
+### 8.1 Safety positives (expect admissible when proof fixtures + manifest hit)
 
 1. PG `SELECT id, name FROM app.users`
-2. PG `SELECT id FROM app.users WHERE id = 1` with int equality proven
-3. PG `WHERE active AND id > 0` (bool + comparisons)
-4. PG simple `JOIN ... ON a.id = b.user_id` with types proven
-5. PG `SELECT count(*) FROM app.users` with count proven
+2. PG `SELECT id FROM app.users WHERE id = 1` with int equality identity in
+   manifest
+3. PG `WHERE active AND id > 0` (bool + comparisons in manifest)
+4. PG simple `JOIN ... ON a.id = b.user_id` with types proven and ops in
+   manifest
+5. PG `SELECT count(*) FROM app.users` **only if** `count` aggregate identity
+   is in manifest; otherwise expect indeterminate (positive is conditional)
 6. MySQL regression: existing admissible fixtures still pass
 
 ### 8.2 Adversarial / fail-closed (expect indeterminate or rejected)
 
 1. No resolver + `WHERE id = 1` → indeterminate
-2. Custom operator `=` in non-catalog schema preferred by path → indeterminate
-3. Custom function named `count` in user schema → indeterminate
-4. User-defined cast on column type → indeterminate
-5. Ambiguous column → indeterminate
-6. Wildcard without metadata → indeterminate
-7. Resolver error mid-lookup → indeterminate, no secret leak
-8. Unknown function `evil()` → indeterminate
-9. `SELECT ... FOR UPDATE` → rejected / not_read_only
-10. Data-modifying CTE → rejected / not_read_only
-11. Schema shadowing fixture: user `pg_catalog`-looking name that is not
+2. Resolver error (any) → indeterminate; no secret leak
+3. Unknown OID / no catalog row → indeterminate
+4. Multi-match / ambiguous resolution → indeterminate
+5. Incomplete type / coercion gap → indeterminate
+6. **`pg_catalog` + stable (or immutable) identity not in manifest** →
+   indeterminate
+7. **`current_setting(...)`** (or equivalent hidden GUC/context effect) →
+   indeterminate
+8. **`pg_get_*` metadata helpers** → indeterminate
+9. **User-defined stable function / operator / cast** → indeterminate
+10. **Function-backed cast** → indeterminate
+11. Custom operator `=` in non-catalog schema preferred by path → indeterminate
+12. Custom function named `count` in user schema → indeterminate
+13. Ambiguous column → indeterminate
+14. Wildcard without metadata → indeterminate
+15. Unknown function `evil()` → indeterminate
+16. `SELECT ... FOR UPDATE` → rejected / not_read_only
+17. Data-modifying CTE → rejected / not_read_only
+18. Schema shadowing fixture: user `pg_catalog`-looking name that is not
     true catalog OID trust → indeterminate
-12. Type mismatch requiring coercion not implemented → indeterminate
+19. **Only a single manifest-listed effect may promote** under full
+    relation/column metadata; mixing with any non-manifest effect → whole
+    statement indeterminate
+20. **Strict requirements must not omit any known physical source column**
+    when admission is admissible (completeness check fixtures)
 
 ### 8.3 No-leak fixtures
 
 - Malformed SQL errors contain no SQL text
 - Resolver error messages scrubbed in public mapping tests
+- Results/errors contain no credentials, connection strings, catalog query text
+- No `severity` field anywhere on the public query-access result
 
 ## 9. Alternatives considered
 
 | Alternative | Why rejected |
 |-------------|--------------|
 | Syntax allowlist for `=`, `count` | Unsafe under overload/shadowing |
+| Trust all `pg_catalog` + volatility `i\|s` | STABLE/IMMUTABLE ≠ no hidden reads; breaks requirements completeness |
 | Lift PG whenever SchemaResolver present | Relation metadata ≠ effect purity |
 | Always admissible for SELECT | Violates fail-closed foundation |
+| Caller-supplied Trusted bit | Callers must not self-assert trust |
 | MCP tool for access | No agent workflow; non-goal |
 | Full planner/type coercion | Out of scope; kill if required for phase 1 matrix |
+| Open-ended "all comparison ops" class | Not a per-item audited manifest |
 
 ## 10. Kill criteria (audit spike only)
 
@@ -474,12 +630,26 @@ Stop product implementation and leave research notes if:
    accepting user-schema shadowing.
 3. Catalog access forces privilege or leak patterns incompatible with no-leak
    contracts.
-4. Any proposed design collapses to name allowlists without OID binding.
+4. Any proposed design collapses to **name allowlists** without OID binding.
+5. Any proposed design collapses to a **generic volatility allowlist**
+   (`pg_catalog` + `i|s`) without per-item audited, version-scoped identities.
+6. A **bounded, version-scoped, maintainable** trusted-effect manifest cannot
+   be produced for the phase-1 candidates (maintenance forces open-ended class
+   trust, or semantic audit cannot prove no hidden reads / requirements
+   completeness).
 
 ## 11. Worth implementing?
 
-**Yes**, contingent on phase-1 matrix staying inside exact-type `pg_catalog`
-matches and fail-closed unknowns. The product already declared the query
-platform scenario; PostgreSQL is unusable for admission without this work.
-Identity-proof design satisfies the safety constraint that name allowlists
-violate.
+**Yes**, contingent on:
+
+1. Phase-1 matrix staying inside exact-type catalog matches,
+2. Fail-closed unknowns and non-manifest identities,
+3. A maintainable, version-scoped, per-item audited trusted-effect manifest.
+
+The product already declared the query platform scenario; PostgreSQL is
+unusable for admission without this work. Identity facts + manifest trust
+satisfies the safety constraint that name allowlists and volatility-class
+allowlists both violate.
+
+If kill criteria fire, keep an audit spike only — do not ship a weaker trust
+root.

@@ -13,18 +13,29 @@ Do not push/tag/release unless explicitly instructed later
 - View definition expansion
 - Dynamic SQL
 - Name-only trust roots
+- Generic volatility trust roots (`pg_catalog` + `i|s` as universal Trusted)
 - Version bump / release notes / npm / Homebrew (unless a later release task)
 - Audit rule engine changes
 - `severity` field
+- Changing MySQL/TiDB current admission behavior
 
 ## Global safety rules
 
-- No promote without OID-bound trusted identity.
-- Fail closed on missing resolver, unknown, multi-match, error, coercion gap.
-- No raw SQL / credentials / connection strings in public results or reason text.
+- Catalog identity resolution returns **facts only** (OID, namespace, types,
+  volatility). It does **not** assert Trusted.
+- Trust is decided only by application/domain policy against a
+  **version-scoped, per-item audited effect identity manifest**.
+- No promote without unique resolved identity **and** manifest membership.
+- Fail closed on: missing resolver, resolver error, unknown OID, multi-match,
+  coercion gap, non-manifest identity (including `pg_catalog` + stable/immutable
+  not in manifest), function-backed cast (phase 1 default).
+- No raw SQL / credentials / connection strings / catalog query text in public
+  results or reason text.
 - Do not regress MySQL admissible corpus cases.
 - Decision record stays `Proposed` until implementation evidence exists; flip to
   `Accepted` only in a dedicated docs task after gates pass.
+- **Never** implement "trust only `pg_catalog` + volatility `i|s`" or any
+  equivalent universal predicate.
 
 ## GitNexus (implementation tasks)
 
@@ -34,13 +45,14 @@ Before editing symbols in later tasks:
 - `gitnexus_detect_changes` before each commit.
 - Re-analyze after commits if required by repo hooks.
 
-Task 1 (this design) is docs-only: detect_changes only.
+Task 1 (design) and Task 1b (trust-policy doc fix) are docs-only:
+detect_changes only.
 
 ---
 
-## Task 1 — Design & plan (this commit)
+## Task 1 — Design & plan (done)
 
-**Status:** current
+**Status:** done (`docs: design query access pure read admissibility`)
 **Deliverables:**
 
 - `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Proposed)
@@ -48,25 +60,105 @@ Task 1 (this design) is docs-only: detect_changes only.
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-implementation.md`
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-omo-prompts.md`
 
-**File scope:** docs only
+**Note:** Initial design incorrectly treated `pg_catalog` + volatility `i|s`
+as a general trust predicate. Corrected in Task 1b before any production code.
+
+---
+
+## Task 1b — Trust-policy tightening (docs only; current)
+
+**Status:** current
+**Goal:** eliminate P1 unsafe trust model; redefine trust as manifest-gated.
+
+**Deliverables (update in place):**
+
+- decision + design + this plan + omo prompts
+- manifest-first task order; kill criteria for volatility/name allowlist collapse
+- adversarial matrix requiring non-manifest `pg_catalog` stable → indeterminate
+
+**File scope:** docs only (the four files above)
 **Gates:**
 
 ```bash
 make decision-record-gate
 git diff --check
-# sanity: no severity, no MCP-supported claims, no credential-leak promises
-# detect_changes: docs only
-git commit  # message: docs: design query access pure read admissibility
+# sanity: no residual "pg_catalog + volatility i|s ⇒ Trusted" wording
+# detect_changes: docs only; no execution flows
+git commit  # message: docs: tighten query access effect trust policy
 ```
 
-**Stop if:** design cannot define identity proof without name allowlists.
+**Stop if:** design cannot define identity proof without name or volatility
+class allowlists.
 
 ---
 
-## Task 2 — Characterization tests for current PG admission freeze
+## Task 2 — Manifest research + version compatibility study
+
+**Goal:** before any production trust or resolver wiring, produce a bounded,
+version-scoped, per-item audited **trusted-effect identity manifest design**
+and adversarial characterization of non-trust.
+
+**This task must complete (or hit kill criteria) before Tasks 5–8 implement
+promotion.** Prefer docs/research + characterization tests; production
+admission logic stays unchanged.
+
+**File scope (preferred):**
+
+- Research notes committed under `docs/plans/` or an appendix in the design
+  doc (e.g. phase-1 candidate inventory table)
+- Characterization tests only under
+  `internal/application/queryaccess/*_test.go` and/or
+  `internal/infrastructure/parser/postgresql/*_test.go` if needed to lock
+  current fail-closed behavior and document intended future matrix
+- **No** production trust policy code that promotes admission yet
+
+**Work:**
+
+1. Inventory phase-1 **candidates** (not automatic trust):
+   - closed set of comparison operator identities (name + left/right type OIDs)
+   - whether `BoolExpr` is structural-only
+   - `COUNT(*)` / `COUNT(col)` aggregate identity feasibility
+   - binary (no-function) casts only if audit can prove safety
+2. For each candidate, draft the audit proof:
+   - unique data deps = AST operands only
+   - no relation/config/role/file/network hidden reads
+   - requirements completeness preserved
+3. Explicitly list **must-remain-indeterminate** identities:
+   - non-manifest `pg_catalog` stable/immutable
+   - `current_setting`, `pg_get_*`
+   - user-defined stable ops/fns/casts
+   - function-backed casts
+4. Version range policy: which PostgreSQL majors the manifest claims; how OID
+   stability is verified across versions.
+5. **Kill review:** if the inventory collapses to name allowlists, volatility
+   class allowlists, or an unbounded/unmaintainable set → stop (audit spike).
+
+**GitNexus targets:** none required if docs/tests-only; if any production symbol
+is touched, impact first. Prefer zero production edits.
+
+**Gates:**
+
+```bash
+# if tests added:
+go test ./internal/application/queryaccess/ -count=1
+go test -tags postgresql ./internal/application/queryaccess/ -count=1
+make decision-record-gate   # if decision/design text updated
+git diff --check
+```
+
+**Commit:** `docs: research query access trusted effect manifest`
+(or `test:` if primarily characterization tests)
+
+**Stop if:** kill criteria 4–6 from design (name allowlist, volatility class
+allowlist, or unmaintainable manifest).
+
+---
+
+## Task 3 — Characterization tests for current PG admission freeze
 
 **Goal:** lock today's behavior so refactors cannot silently change MySQL or
-hide the PG hard-stop without intent.
+hide the PG hard-stop without intent. Extend adversarial expectations that
+future code must not promote on volatility alone.
 
 **File scope (tests only preferred):**
 
@@ -83,6 +175,10 @@ touched — prefer tests only).
   indeterminate without effect resolver.
 - Assert MySQL equivalent remains admissible (regression).
 - Assert `reclassifyAfterResolution` currently never lifts PG.
+- Assert (as documentation tests / table-driven intent) that non-manifest
+  `pg_catalog` stable paths, `current_setting`, `pg_get_*`, function-backed
+  cast, and user-defined stable effects must remain indeterminate when those
+  fixtures exist or as skipped-until-resolver placeholders.
 
 **Gates:**
 
@@ -96,11 +192,16 @@ git diff --check
 **Stop if:** characterization contradicts design assumptions — update design
 before coding.
 
+**Ordering note:** Task 2 and Task 3 may be adjacent; Task 2 (manifest research)
+must not be skipped. If Task 3 is easier first for freeze-locking, still complete
+Task 2 before any production identity trust implementation (Tasks 5+).
+
 ---
 
-## Task 3 — Domain reason codes + result validation for unproven effects
+## Task 4 — Domain reason codes + result validation for unproven effects
 
-**Goal:** additive bounded reason codes for unproven identity.
+**Goal:** additive bounded reason codes for unproven identity / non-manifest
+trust denial.
 
 **File scope:**
 
@@ -115,6 +216,8 @@ before coding.
 - `unproven_function_effect`
 - `unproven_cast_effect`
 - `identity_lookup_failed`
+- optional: `effect_not_in_trust_manifest` (if product wants distinction from
+  unproven; else map non-manifest to unproven_*)
 
 **GitNexus targets:** `ReasonCode`, `ValidateResult`
 
@@ -131,11 +234,11 @@ keep codes additive `omitempty`.
 
 ---
 
-## Task 4 — Extract PostgreSQL effect candidates (no trust yet)
+## Task 5 — Extract PostgreSQL effect candidates (no trust yet)
 
 **Goal:** replace boolean "has operator/function" with structured candidates
-while **keeping classification indeterminate** for those candidates until
-Task 6–7 prove identity.
+while **keeping classification indeterminate** for those candidates until later
+tasks prove identity **and** apply the manifest.
 
 **File scope:**
 
@@ -148,6 +251,7 @@ Task 6–7 prove identity.
 - Walk `A_Expr` / `FuncCall` / `TypeCast`; record `NamePath`, arg structure.
 - Still classify as indeterminate when any unproven candidate exists (default).
 - Do not introduce name allowlists.
+- Do not introduce volatility-based trust.
 
 **GitNexus targets:** `ExtractQueryAccess`, `classifyStatement`,
 `pgContainsOperatorExpr`, `AnalyzePostgreSQL`
@@ -164,9 +268,9 @@ go test -tags postgresql ./internal/application/queryaccess/ -count=1
 
 ---
 
-## Task 5 — Extend relation metadata with type OIDs + EffectIdentityResolver API
+## Task 6 — Extend relation metadata with type OIDs + EffectIdentityResolver API
 
-**Goal:** types for operands + resolver interface.
+**Goal:** types for operands + resolver interface that returns **facts only**.
 
 **File scope:**
 
@@ -180,8 +284,10 @@ go test -tags postgresql ./internal/application/queryaccess/ -count=1
 **Work:**
 
 - Add `TypeOID`/`TypeName` to column schema where available (PG).
-- Define `EffectIdentityResolver` methods + identity structs.
-- Fake resolvers for unit tests.
+- Define `EffectIdentityResolver` methods + identity structs **without** a
+  caller-settable `Trusted` field.
+- Fake resolvers for unit tests return facts only.
+- Document that trust policy lives in application/domain, not in the resolver.
 
 **GitNexus targets:** `SchemaResolver`, `QueryAccessRequest`,
 `QueryAccessResolver`, `AnalyzeQueryAccess`
@@ -200,9 +306,11 @@ only expose a minimal interface.
 
 ---
 
-## Task 6 — PostgreSQL catalog identity implementation (pg_operator/pg_proc/pg_cast)
+## Task 7 — PostgreSQL catalog identity implementation (facts only)
 
-**Goal:** real proof against `pg_catalog` with exact type match; trust policy.
+**Goal:** real identity resolution against `pg_catalog` with exact type match;
+return OIDs, namespace, volatility, cast method as **facts**. Do **not** apply
+"pg_catalog + i|s ⇒ trusted".
 
 **File scope:**
 
@@ -211,10 +319,11 @@ only expose a minimal interface.
 
 **Work:**
 
-- Implement ResolveOperator/Function/Cast as designed.
-- Trust only `pg_catalog` + volatility `i|s`.
-- Unknown/error → typed unknown/error for application mapping.
+- Implement ResolveOperator/Function/Cast as designed (facts).
+- Unique match required; zero rows / multi-match → unknown/error for application.
+- Function-backed cast facts must be distinguishable (castfunc / castmethod).
 - Scrub secrets from errors.
+- **Do not** set Trusted in this layer.
 
 **GitNexus targets:** new symbols under postgresqlmeta; impact on openers if any
 
@@ -231,26 +340,34 @@ go test -tags postgresql ./internal/infrastructure/metadata/postgresql/ -count=1
 
 ---
 
-## Task 7 — Application proof engine + admission recompute fix
+## Task 8 — Trust policy + application proof engine + admission recompute fix
 
-**Goal:** wire candidates + identity into classification/admission; remove PG
+**Goal:** load Task 2's audited manifest into application/domain trust policy;
+wire candidates + identity facts into classification/admission; remove PG
 hard-stop; fix sticky indeterminate admission when proof succeeds.
 
 **File scope:**
 
-- `internal/application/queryaccess/service.go`
+- `internal/application/queryaccess/service.go` (+ trust policy module)
+- optional `internal/domain/queryaccess/` for manifest types if domain-owned
 - related tests
 - extract adapters if needed
 
 **Work:**
 
-- Implement decision order from design §4.3.
+- Implement decision order from design §4.5.
+- `TrustPolicy.IsTrusted(identity, manifest, version)` — only path to Trusted.
+- Manifest entries only for Task 2 audited identities; everything else
+  indeterminate (including resolved `pg_catalog` + stable not in manifest).
 - Remove unconditional PG ban in `reclassifyAfterResolution`.
 - Ensure MySQL path unchanged when no effect resolver.
-- Map lookup failures to new reason codes; never `admissible`.
+- Map lookup failures and non-manifest denials to reason codes; never
+  `admissible`.
+- Reject function-backed casts by default (indeterminate).
+- **Do not** implement universal volatility allowlist.
 
 **GitNexus targets:** `Service.Analyze`, `recomputeAdmission`,
-`reclassifyAfterResolution`
+`reclassifyAfterResolution`, new trust-policy symbols
 
 **Gates:**
 
@@ -264,24 +381,34 @@ go test ./internal/interfaces/mcp/ -run 'TestNewServerExposesCoreTools' -count=1
 ```
 
 **Commit:** `feat: prove trusted effects for query access admission`
-**Stop if:** any test requires name-only trust to pass.
+**Stop if:** any test requires name-only or volatility-class trust to pass.
 
 ---
 
-## Task 8 — Corpus expansion (positives + adversarial)
+## Task 9 — Corpus expansion (positives + adversarial)
 
-**Goal:** encode support matrix in `testdata/query-access/`.
+**Goal:** encode support matrix and adversarial matrix in
+`testdata/query-access/`.
 
 **File scope:**
 
 - `testdata/query-access/postgresql/*` new cases
-- corpus runner may need optional fake identity resolver fixtures
+- corpus runner may need optional fake identity resolver fixtures + manifest
+  fixtures
 - `testdata/query-access/mysql/*` regression only
 
 **Work:**
 
-- Add all design §8 cases.
-- PG corpus runner (`-tags postgresql`) must exercise proof fixtures.
+- Add all design §8 cases, including:
+  - non-manifest `pg_catalog` + stable → indeterminate
+  - `current_setting` / `pg_get_*` → indeterminate
+  - user-defined stable → indeterminate
+  - function-backed cast → indeterminate
+  - single manifest effect promotes only with full relation/column metadata
+  - strict requirements completeness for known physical sources
+  - no-leak (no SQL, literals, credentials, connection strings, catalog query
+    text; no `severity`)
+- PG corpus runner (`-tags postgresql`) must exercise proof + manifest fixtures.
 - Ensure MCP still not claimed.
 
 **Gates:**
@@ -296,7 +423,7 @@ go test -tags postgresql ./internal/application/queryaccess/ -run Corpus -count=
 
 ---
 
-## Task 9 — Docs + decision Accepted + recipe correction
+## Task 10 — Docs + decision Accepted + recipe correction
 
 **Goal:** user-facing reference/recipe accuracy; accept decision.
 
@@ -310,8 +437,11 @@ go test -tags postgresql ./internal/application/queryaccess/ -run Corpus -count=
 **Work:**
 
 - Replace "PostgreSQL admission is always indeterminate".
+- Document: resolver returns facts; trust is manifest-gated; volatility alone
+  never promotes.
 - Document resolver obligations and fail-closed cases.
-- No severity; no MCP tool claim.
+- No severity; no MCP tool claim; no MySQL/TiDB behavior change claims beyond
+  regression preservation.
 
 **Gates:**
 
@@ -325,17 +455,21 @@ git diff --check
 
 ---
 
-## Task 10 — Optional hardening / kill review
+## Task 11 — Optional hardening / kill review
 
 **Goal:** final self-grill before any release discussion.
 
 **Checklist:**
 
 - [ ] No name-only trust path in production code
+- [ ] No universal `pg_catalog` + volatility `i|s` trust path
+- [ ] Manifest is bounded, version-scoped, per-item audited
 - [ ] MySQL regressions green
-- [ ] PG positives only with proof fixtures
-- [ ] Adversarial set green
-- [ ] No-leak tests green
+- [ ] PG positives only with proof + manifest fixtures
+- [ ] Adversarial set green (non-manifest catalog stable, current_setting,
+      pg_get_*, UDF stable, function-backed cast, resolver failures)
+- [ ] Requirements completeness fixtures green
+- [ ] No-leak tests green (no SQL/creds/conn/catalog text; no severity)
 - [ ] MCP tools still 4
 - [ ] Decision Accepted with evidence
 - [ ] Kill criteria not triggered
@@ -349,24 +483,30 @@ commits on the milestone branch.
 ## Suggested task graph
 
 ```text
-T1 design
-  → T2 characterize
-  → T3 reason codes
-  → T4 effect candidates
-  → T5 resolver API + type OIDs
-  → T6 catalog identity
-  → T7 proof engine
-  → T8 corpus
-  → T9 docs accept
-  → T10 review
+T1 design (done)
+  → T1b trust-policy docs fix (current)
+  → T2 manifest research + version study   ← BEFORE any production trust
+  → T3 characterize PG freeze + adversarial intent
+  → T4 reason codes
+  → T5 effect candidates (no trust)
+  → T6 resolver API + type OIDs (facts only)
+  → T7 catalog identity implementation (facts only)
+  → T8 trust policy + proof engine
+  → T9 corpus
+  → T10 docs accept
+  → T11 review
 ```
 
 No parallel tasks that edit `service.go` and extractors without integration.
+**Do not start T6–T8 production promotion until T2 manifest research passes
+or explicitly kills the milestone as audit-only.**
 
 ## Release note (later, not this plan)
 
 When product is ready for a versioned release (separate milestone close):
 
 - Call out public admission distribution change for PostgreSQL.
-- Emphasize proof requirements and non-goals.
+- Emphasize proof requirements, manifest trust, and non-goals.
+- Explicitly state that STABLE/IMMUTABLE catalog membership alone never
+  admits.
 - Do not invent version numbers in this plan.

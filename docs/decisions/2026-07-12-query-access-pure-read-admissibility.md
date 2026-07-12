@@ -4,10 +4,11 @@ Date: 2026-07-12
 Status: Proposed
 Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
 Related commits:
-- (none yet; design-only Task 1)
+- (none yet; design-only Task 1; trust-policy tightening in progress)
 Related tests:
 - Planned: extended `testdata/query-access/` corpus (PostgreSQL positive + adversarial)
 - Planned: unit/integration tests for effect-identity catalog resolution
+- Planned: adversarial characterization that `pg_catalog` + volatility alone never promotes
 Related docs:
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md`
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-implementation.md`
@@ -52,19 +53,36 @@ builtins depending on `search_path`, type resolution, and `pg_catalog`
 contents. Without proving the **actual resolved implementation identity**,
 classification and admission must remain `indeterminate`.
 
+**P1 safety gap (corrected):** treating `pg_catalog` + `provolatile in ('i','s')`
+as a general trust predicate is **unsafe**. PostgreSQL semantics:
+
+- `STABLE` guarantees the function does not modify the database; it does **not**
+  guarantee the function does not read other tables, configuration, role
+  context, or other hidden sources.
+- `IMMUTABLE` is a planner/catalog claim; PostgreSQL does not forcibly prevent
+  table reads from an incorrectly labeled immutable function.
+- Query Access strict requirements promise coverage of all permission-bearing
+  table/column reads. Any effect that can read a relation (or other hidden
+  source) without that object appearing in extracted requirements **must not**
+  be auto-admitted via volatility alone.
+
+Therefore catalog binding (OID, namespace, operand types, volatility) is a
+**necessary** fact set for identity resolution — never a sufficient condition
+for `Trusted`.
+
 ## Decision
 
 ### 1. Public admission distribution may change under proven identity
 
 When (and only when) every effect-bearing construct in the accepted read-only
-subset has a **catalog-proven trusted identity**, PostgreSQL analysis may
-return:
+subset has a **catalog-resolved identity that is listed in the application-
+maintained trusted-effect manifest**, PostgreSQL analysis may return:
 
 - `read_classification: read_only`
 - `admission: admissible` (subject to existing unresolved/wildcard/ambiguity
   rules and mode requirements)
 
-Unknown, unproven, ambiguous, or metadata-failed effects remain
+Unknown, unproven, ambiguous, metadata-failed, or non-manifest effects remain
 `indeterminate`. Write/lock/file/session mutation paths remain `not_read_only`
 → `rejected` as today.
 
@@ -77,24 +95,30 @@ PostgreSQL `indeterminate` as permanent will see some queries become
 
 Promotion from `indeterminate` → `read_only` for effect-bearing constructs
 requires a **Catalog / Effect Identity Resolver** (extension of today's
-relation-only `SchemaResolver`) that returns, at minimum:
+relation-only `SchemaResolver`) that returns **facts only**, at minimum:
 
-| Construct | Must prove |
-|-----------|------------|
-| Operator (`A_Expr`) | Resolved operator OID; owning namespace is trusted (`pg_catalog`); operand types used in resolution; underlying function OID (`oprcode`) is trusted and has allowed volatility class |
-| Function / aggregate (`FuncCall`) | Resolved function OID; owning namespace trusted; argument type list used in resolution; volatility class allowed; aggregate vs plain function distinguished |
-| Cast (`TypeCast`) | Resolved cast path (source type OID → target type OID); implementation function (if any) trusted; no user-defined cast hijack |
+| Construct | Must resolve (facts) |
+|-----------|----------------------|
+| Operator (`A_Expr`) | Resolved operator OID; owning namespace; operand types used in resolution; underlying function OID (`oprcode`); implementation namespace; volatility |
+| Function / aggregate (`FuncCall`) | Resolved function OID; owning namespace; argument type list used in resolution; volatility; aggregate vs plain function distinguished |
+| Cast (`TypeCast`) | Resolved cast path (source type OID → target type OID); implementation function OID if any; cast method |
 
-**Not sufficient alone:**
+The resolver **must not** claim `Trusted`. Trust is decided only by
+application/domain policy against a **version-scoped, per-item audited
+effect identity manifest**.
+
+**Not sufficient alone (never trust roots):**
 
 - operator spelling `=`
 - function name `count` / `COUNT`
 - schema label strings without OID binding
 - "looks like a builtin" heuristics
+- `pg_catalog` namespace alone
+- `STABLE` or `IMMUTABLE` volatility alone
+- `pg_catalog` + `provolatile in ('i','s')` as a universal predicate
 
-If type inference cannot produce a unique catalog match, or the match is
-outside the trust set, or the resolver errors / returns unknown →
-**do not promote**.
+If type inference cannot produce a unique catalog match, or the match is not
+in the manifest, or the resolver errors / returns unknown → **do not promote**.
 
 ### 3. Fail-closed defaults
 
@@ -109,25 +133,88 @@ outside the trust set, or the resolver errors / returns unknown →
   connection strings, credentials, SQL text, or driver internals in public
   results.
 - **Ambiguity / multi-match / requires non-trivial coercion:** indeterminate.
+- **Resolver returns `pg_catalog` + stable/immutable identity not in manifest:**
+  indeterminate (fail closed). Volatility and catalog membership are facts,
+  not trust.
 - **Wildcard not fully expanded / incomplete relation metadata:** indeterminate
   (unchanged).
 
-### 4. Trust policy (minimum)
+### 4. Trust policy (manifest-gated)
 
-A resolved implementation is **trusted** only if all hold:
+#### 4.1 Catalog facts are necessary, not sufficient
 
-1. Owning namespace is `pg_catalog` (OID-bound, not name-guessed after path
-   search alone).
-2. Object is not a user-installable shadow accepted via caller `search_path`
-   without explicit lock to a resolution context that matches execution.
-3. Volatility is in the allowed set for pure-read admissibility:
-   - **Immutable (`i`)** and **stable (`s`)** catalog functions are candidates.
-   - **Volatile (`v`)** catalog functions stay indeterminate unless a later
-     decision explicitly enumerates a frozen OID allowlist with rationale
-     (default: no).
-4. For operators: both the operator row and `oprcode` function must satisfy
-   the trust policy.
-5. User-defined operators/functions/casts in non-catalog schemas never trust.
+Runtime OID binding, unique identity resolution, namespace, operand/argument
+types, and volatility are **necessary preconditions** for evaluating an effect
+against the trust policy. They **do not** equal `Trusted`.
+
+#### 4.2 Phase 1 trusted-effect identity manifest
+
+Phase 1 may allow only effects listed in an **application-maintained**
+manifest that is:
+
+1. **Bounded** — finite, explicit identity entries (OID and/or unique
+   `(namespace, name, arg type OIDs)` for a documented PostgreSQL version
+   range); not an open-ended class.
+2. **Version-scoped** — each entry (or the whole manifest) states the
+   PostgreSQL major version range for which the audit holds.
+3. **Per-item semantically audited** — each allowed entry must document why
+   it is safe for Query Access admission, not merely that it is a builtin.
+
+For every allowed entry, the audit must prove all of:
+
+1. **Unique data dependency is extracted AST parameters** — the effect's
+   observable data inputs are only the already-extracted operands/arguments
+   from the statement AST (plus fixed type identity), not hidden sources.
+2. **No hidden reads** — the effect does not read relations, server
+   configuration, role/session authorization state, files, network, or other
+   non-AST sources in a way that could carry permission-bearing data.
+3. **Requirements completeness** — admitting the effect cannot cause strict
+   requirements to omit a known physical permission-bearing table/column that
+   the effect could access.
+
+#### 4.3 Explicit non-policies
+
+- **Must not** use syntax/name allowlists (`=`, `count`, schema names) as proof.
+- **Must not** generically allow all `STABLE` functions.
+- **Must not** generically allow all `IMMUTABLE` functions.
+- **Must not** generically allow all `pg_catalog` functions/operators/casts.
+
+#### 4.4 Candidates vs automatic trust
+
+`COUNT`, basic comparison operators, and logical operators are **candidates
+only** when each has:
+
+- an explicit identity manifest entry (or closed set of entries),
+- written semantic rationale meeting §4.2,
+- version support policy,
+- test matrix coverage (positive + adversarial).
+
+If any of those cannot be proven, keep `indeterminate`.
+
+#### 4.5 Always indeterminate (non-exhaustive)
+
+- `current_setting` and similar GUC/session readers
+- `pg_get_*` catalog pretty-printers / metadata helpers that read system state
+- any builtin that reads hidden context or metadata beyond AST operands
+- any `pg_catalog` stable/immutable function/operator **not** in the manifest
+- user-defined operators, functions, aggregates, casts
+- function-backed casts by default
+
+#### 4.6 Casts
+
+- **Function-backed casts** (`castfunc` present / `castmethod` function):
+  default **unsupported** → `indeterminate`.
+- Phase 1 may consider only **binary casts with no function call** after the
+  same per-item manifest audit proves they introduce no hidden reads and no
+  requirements gap.
+- All other casts remain `indeterminate`.
+
+#### 4.7 Operators and aggregates
+
+- For operators: both the operator row and `oprcode` function must resolve
+  uniquely and **both** pass manifest trust (or the operator identity maps to
+  a single audited implementation entry).
+- User-defined operators/functions/casts in non-catalog schemas never trust.
 
 Read-only classification remains independent of admission mode (`strict` /
 `projection_only`). **Read-only does not imply admissible** when requirements
@@ -151,34 +238,47 @@ through a weaker name-only path to invent PG parity. Optional later phases may
 add MySQL identity-backed function promotion only if a MySQL-safe proof model
 exists; it is not required for the first implementation cut.
 
+Do not change MySQL/TiDB current behavior in this milestone.
+
 ## Rationale
 
 - The foundation already defined the product scenario; the blocker is not MCP
   symmetry or a new flag, but **unproven effects**.
 - PostgreSQL's overload and `search_path` model make name allowlists unsafe.
+- PostgreSQL volatility classes are **not** a pure-read permission model:
+  STABLE/IMMUTABLE do not prove "no table or hidden-context reads."
+- Query Access strict requirements cover permission-bearing physical sources;
+  auto-trusting any stable/immutable catalog function would violate that
+  completeness promise.
 - `pg_query_go` parse trees expose operator/function **names and structure**,
-  not OIDs; catalog proof is mandatory for promotion.
-- Keeping fail-closed on missing proof preserves the foundation's security
-  posture while unlocking only demonstrably safe shapes.
+  not OIDs; catalog resolution is mandatory for identity facts, and a
+  **bounded audited manifest** is mandatory for trust.
+- Keeping fail-closed on missing proof and non-manifest identities preserves
+  the foundation's security posture while unlocking only demonstrably safe
+  shapes.
 
 ## Public Contract
 
 After this decision is **Accepted** and implemented, consumers may rely on:
 
 1. PostgreSQL queries that previously were always `indeterminate` may become
-   `read_only` + `admissible` when every effect is catalog-proven trusted and
-   all existing admission preconditions hold.
-2. Absence of proof never yields `admissible`.
-3. New bounded reason codes may appear for unproven effects; they are additive
+   `read_only` + `admissible` when every effect is catalog-resolved **and**
+   listed in the trusted-effect manifest, and all existing admission
+   preconditions hold.
+2. Absence of proof, or resolved identity outside the manifest, never yields
+   `admissible`.
+3. `pg_catalog` + stable/immutable without a manifest entry remains
+   `indeterminate`.
+4. New bounded reason codes may appear for unproven effects; they are additive
    machine identifiers, not free-text SQL.
-4. MySQL/TiDB admissible cases that exist today remain admissible unless a
+5. MySQL/TiDB admissible cases that exist today remain admissible unless a
    separate accepted decision says otherwise.
-5. MCP tool list remains without query-access.
-6. No `severity` field; no raw SQL / credential leakage in the public result.
+6. MCP tool list remains without query-access.
+7. No `severity` field; no raw SQL / credential leakage in the public result.
 
-Exact Go type names for the extended resolver remain implementation details
-until the implementation plan locks them; the **proof requirements** above are
-the contract principles.
+Exact Go type names for the extended resolver and manifest remain
+implementation details until the implementation plan locks them; the **proof
+and trust requirements** above are the contract principles.
 
 ## Deferred / Out Of Scope
 
@@ -191,7 +291,9 @@ the contract principles.
 - Generic "SQL purity theorem" for all expressions
 - Parser upgrade of unrelated DDL forms
 - Name-only allowlists as a production trust root
+- Generic volatility-based (`i|s`) allowlists as a production trust root
 - Changing audit rule evaluation or audit verdicts
+- Changing MySQL/TiDB admission behavior
 
 ## Verification Evidence
 
@@ -203,23 +305,31 @@ the contract principles.
 - `reclassifyAfterResolution` hard-stops PostgreSQL lifts.
 - Relation `SchemaResolver` queries `pg_class`/`pg_attribute` only; no
   `pg_operator` / `pg_proc` / `pg_cast`.
+- Trust model: catalog facts + audited manifest (not volatility class).
 
-Planned gates: corpus matrix (safe positives + adversarial negatives), unit
-tests for identity resolver, cross-surface SDK/CLI/HTTP parity, no-leak tests,
+Planned gates: corpus matrix (safe positives + adversarial negatives including
+non-manifest `pg_catalog` stable, `current_setting`, `pg_get_*`, function-
+backed cast), unit tests for identity resolver (facts only), trust policy
+manifest tests, cross-surface SDK/CLI/HTTP parity, no-leak tests,
 `make query-access-corpus-gates`, dialect-tagged PostgreSQL tests.
 
 ## Consequences
 
+- Implementation must research and publish a version-scoped effect identity
+  manifest **before** promoting any production admission paths.
+- Identity resolver returns facts; application/domain trust policy applies the
+  manifest. Callers must not supply a self-claimed `Trusted` bit.
 - Implementation must thread type facts from relation metadata into effect
   resolution.
 - Callers who want PostgreSQL `admissible` must supply a catalog-capable
   resolver (or an equivalent frozen snapshot) with a resolution context locked
   to execution.
 - Documentation (reference + recipe) must replace "PostgreSQL admission is
-  always indeterminate" with "unproven effects remain indeterminate; proven
-  trusted builtins may be admissible".
-- Future work that adds volatile builtins or non-`pg_catalog` trust requires a
-  new decision record.
+  always indeterminate" with "unproven or non-manifest effects remain
+  indeterminate; manifest-listed proven builtins may be admissible".
+- Future work that adds new manifest entries, volatile builtins, or
+  non-`pg_catalog` trust requires a new decision record (or an explicit
+  amendment to this one with re-audit evidence).
 
 ## Kill criteria (do not implement product code)
 
@@ -232,7 +342,13 @@ audit spike only:
    `search_path` shadowing of builtins.
 3. Required catalog access cannot be done without leaking connection secrets
    into public results or requiring unsafe privileges.
-4. The only workable approach reduces to name allowlists without OID binding.
+4. The only workable approach reduces to **name allowlists** without OID
+   binding.
+5. The only workable approach reduces to a **generic volatility allowlist**
+   (`pg_catalog` + `i|s`) without a per-item audited, version-scoped manifest.
+6. A **bounded, version-scoped, maintainable** trusted-effect manifest cannot
+   be defined for the phase-1 matrix (or maintenance cost forces open-ended
+   class trust).
 
 ## Links
 
