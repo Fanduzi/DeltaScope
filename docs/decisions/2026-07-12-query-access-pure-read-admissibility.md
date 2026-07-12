@@ -11,6 +11,7 @@ Related commits:
 - T4 follow-up: `fix: complete query access effect reason traversal`
 - T5 candidates commit: `feat: extract query access effect candidates`
 - T6 resolver contract commit: `feat: define query access identity resolver contract`
+- T6 P1 execution-context fix: `fix: bind effect identity resolution to execution context`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -24,6 +25,7 @@ Related tests:
 - T4: PG corpus expected fixtures record reason ids only
 - T6: `identity_resolver_test.go`, `identity_resolver_no_invoke_test.go`, domain status mapping tests
 - T6: PostgreSQL Analyze freeze (no identity_* from Analyze; public JSON no OIDs/facts)
+- T6 P1: `identity_resolver_context_test.go` (unbound unqualified, shadowing, overload, TOCTOU, no public context leak)
 - Planned (T7): unit/integration tests for effect-identity catalog resolution
 - Planned (T8): positive corpus under fake/real identity resolver + manifest promotion
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
@@ -679,6 +681,56 @@ policy, no admission promotion).
 - Application: `identity_resolver.go` + contract tests; `ColumnSchema.TypeOID`
 - Docs: package READMEs; this T6 Evidence; implementation plan/OMO mark T6
   facts-only / T7 adapter / T8 promotion
+
+### T6 P1 amendment — execution resolution context (2026-07-12)
+
+**Status remains:** `Proposed`. **Blocking for T7:** catalog adapter work must
+not start until this contract is present (now) and honored by the adapter.
+
+**Problem:** T2 forbids proving identity from function/operator spelling or
+`pg_catalog` name allowlists. Real PostgreSQL resolution for unqualified
+effects (`count(*)`, `id = 1`) depends on overload ranking, argument types,
+and `search_path` / session state. The initial T6 request carried only
+dialect + candidates + optional type OIDs — insufficient to prove the runtime
+identity. A T7 that queried `pg_catalog.count` / `pg_catalog.=` by name would
+regress into a forbidden allowlist. No product vuln yet (`Analyze` does not
+call the resolver), but the contract gap blocked safe T7.
+
+**What the amendment delivers:**
+
+1. **`EffectIdentityResolutionContext`** (internal-only on
+   `EffectIdentityRequest.Resolution`):
+   - `Bound`, opaque `SessionBinding`, `PathEpoch`
+   - ordered `NamespaceSearchOIDs` (expanded search_path as OIDs)
+   - optional `DatabaseOID` / `RoleOID` / `ServerVersionNum`
+   - **Never** on `domain.Result`, SDK/CLI/HTTP JSON, reason codes, or public
+     errors (no DSN, password, `search_path=` text, catalog SQL).
+2. **Phase-1 resolution policy (normative):**
+   - **Unqualified** operator/function/cast without a **usable** bound context
+     (`Bound` + non-empty `SessionBinding` + non-empty `NamespaceSearchOIDs`)
+     → **`unavailable`** (fail closed). Adapters **must not** guess
+     `pg_catalog.<name>` from spelling.
+   - **Explicit schema** qualification may resolve without search_path ranking;
+     unique type match still required. Explicit `pg_catalog.*` is structural
+     only — still not Trusted without T8 manifest.
+   - **Bound + usable context** allows unqualified lookup under that path;
+     multi-match → `ambiguous`; type gap → `coercion_gap` / `unknown`.
+   - **TOCTOU:** batch lookups share one `SessionBinding`+`PathEpoch`;
+     `GateIdentityBatchAgainstLiveContext` drops unqualified facts when the
+     live snapshot mismatches or errors.
+3. **Helpers:** `CandidateExplicitlyQualified` / `CandidateExplicitPgCatalog`,
+   `ResolutionContextUsableForUnqualified`, `ResolutionContextsCompatible`,
+   `ClassifyCandidateResolutionMode`, `GateIdentityBatchByResolutionContext`,
+   `GateIdentityBatchAgainstLiveContext`.
+4. **Tests:** unbound unqualified strips naive `pg_catalog` guesses; explicit
+   `pg_catalog` may keep facts unbound; search_path shadowing keeps actual
+   public OID facts (not force-builtin); overload statuses fail closed;
+   same-name custom operator has no `Trusted`; live epoch/session mismatch
+   fail-closes unqualified; context not on public surfaces.
+
+**T7 obligation:** implement catalog SQL only under this contract; call the
+gates (or equivalent); never resolve unqualified effects without a verified
+execution-bound context.
 
 ## Consequences
 

@@ -8,8 +8,9 @@ Application-level contracts for query access analysis, defining the schema resol
 |------|---------------|
 | doc.go | Declares the queryaccess application package boundary |
 | contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, and QueryAccessResult |
-| identity_resolver.go | EffectIdentityResolver facts-only contract, identity batch helpers, bounded volatility/cast enums |
+| identity_resolver.go | EffectIdentityResolver facts-only contract, resolution context, identity batch helpers, bounded volatility/cast enums |
 | identity_resolver_test.go | Contract tests: ordinal uniqueness, status enum, fail-closed mapping, cancellation, no Trusted field |
+| identity_resolver_context_test.go | Execution-context policy: unqualified unbound, shadowing, overload, TOCTOU, no public leak |
 | identity_resolver_no_invoke_test.go | Freezes Analyze: no identity resolver invocation or public leak in T6 |
 | extract_tidb.go | Bridges TiDB infrastructure query access facts to domain types with admission computation |
 | extract_tidb_test.go | Verifies TiDB extraction bridging: classification, admission, CTE permissions, mode normalization, and column usages |
@@ -35,8 +36,12 @@ Application-level contracts for query access analysis, defining the schema resol
 - `EffectCandidateKind`
 - `EffectIdentityResolver` (facts only; not wired into Analyze in T6)
 - `EffectIdentityRequest` / `EffectIdentityBatch` / `EffectIdentityItem` / `EffectIdentityFacts`
+- `EffectIdentityResolutionContext` / `EffectIdentityResolutionMode`
 - `EffectVolatility` / `EffectCastMethod`
 - `ValidateEffectIdentityRequest()` / `NormalizeEffectIdentityBatch()` / `CompleteEffectIdentityBatch()`
+- `CandidateExplicitlyQualified()` / `CandidateExplicitPgCatalog()` / `ClassifyCandidateResolutionMode()`
+- `ResolutionContextUsableForUnqualified()` / `ResolutionContextsCompatible()`
+- `GateIdentityBatchByResolutionContext()` / `GateIdentityBatchAgainstLiveContext()`
 - `BuildUnavailableBatch()` / `MapCatalogErrorToStatus()` / `FailClosedReasonCodes()` / `BatchIsFullyResolved()`
 - `Service`
 - `ExtractTiDBQueryAccess()`
@@ -56,6 +61,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - PostgreSQL unproven-effect reason codes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`) are presence-only machine identifiers emitted by the parser adapter; they explain indeterminate classification without embedding SQL, OIDs, or effect spellings.
 - PostgreSQL `EffectCandidates` on `QueryAccessResult` are **internal-only and untrusted** (future catalog identity resolver input). They are not placed on `domain.Result` and must not appear in SDK/CLI/HTTP JSON. `QueryAccessRequest` has no candidate/trust injection fields.
 - **T6 EffectIdentityResolver** is an internal facts-only batch contract: per-ordinal `IdentityStatus` + optional OIDs/volatility/cast method/canonical signature. No `Trusted`, admission, reason text, or free-text status. Batch semantics: unique ordinals, deterministic sort, partial failure via status (not omission), cancel as batch-level `context` error. T6 does **not** call the resolver from `Service.Analyze`, does **not** implement pg_catalog SQL, and does **not** promote admission. Public SDK/CLI/HTTP request schemas intentionally omit the resolver field until a complete end-to-end path exists.
+- **T6 P1 execution resolution context:** `EffectIdentityRequest.Resolution` carries an internal `EffectIdentityResolutionContext` (`Bound`, `SessionBinding`, `PathEpoch`, ordered `NamespaceSearchOIDs`, optional database/role/version). Unqualified operators/functions without a usable bound context are **unavailable** — adapters must not guess `pg_catalog.<name>` (T2 forbids name allowlists). Explicit schema qualification may resolve without search_path ranking; TOCTOU is fail-closed via live context compatibility. The context never appears on `domain.Result` or public JSON.
 - Identity-failure categories map only through `domain.ReasonForIdentityFailure` / `ReasonForIdentityStatus`; free-text errors cannot be injected as trusted reasons. Manifest trust policy and admission promotion remain T8.
 - Callers cannot supply `ReasonCodes` on `QueryAccessRequest`; transports passthrough the single application domain result.
 - `buildRequirements` generates access requirements based on mode: strict requires all resolved columns, projection-only requires only output-contributing columns and emits inference_risk warning.

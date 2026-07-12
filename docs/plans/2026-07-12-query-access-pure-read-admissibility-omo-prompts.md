@@ -115,10 +115,19 @@ T6 delivered an internal, typed, fail-closed EffectIdentityResolver contract:
 - helpers: ordinal validate/sort/complete, error→lookup_failed, fail-closed reasons
 - Analyze NOT wired; public SDK/CLI/HTTP schema unchanged
 
-T6 is FACTS-ONLY. T7 implements the PostgreSQL catalog adapter.
-T8 may discuss manifest proof + admission promotion + optional public injection.
+T6 P1 amendment (required before T7):
+- EffectIdentityResolutionContext (Bound, SessionBinding, PathEpoch,
+  NamespaceSearchOIDs, optional db/role/version)
+- unqualified without usable context → unavailable (no pg_catalog name guess)
+- GateIdentityBatchByResolutionContext + GateIdentityBatchAgainstLiveContext
+- tests: shadowing, overload, custom same-name, TOCTOU mismatch, no public leak
+
+T6 is FACTS-ONLY + execution-context-bound. T7 implements the PostgreSQL
+catalog adapter under this context. T8 may discuss manifest proof + admission
+promotion + optional public injection.
 
 Commit: feat: define query access identity resolver contract
+P1 fix: fix: bind effect identity resolution to execution context
 ```
 
 ---
@@ -128,15 +137,25 @@ Commit: feat: define query access identity resolver contract
 ```text
 On branch query-access-pure-read-admissibility.
 
+HARD PRECONDITION: T6 + T6 P1 (execution resolution context). Do NOT start
+until EffectIdentityResolutionContext and GateIdentityBatch* exist and tests
+for unbound-unqualified / shadowing / TOCTOU are green.
+
 Precondition: T6 EffectIdentityResolver contract (facts-only batch API +
-IdentityStatus + EffectIdentityFacts). Implement the PostgreSQL catalog
-adapter only — do not invent a parallel trust API.
+IdentityStatus + EffectIdentityFacts + Resolution context). Implement the
+PostgreSQL catalog adapter only — do not invent a parallel trust API.
 
 Implement Task 7: PostgreSQL EffectIdentityResolver against pg_catalog
 (pg_operator / pg_proc / pg_cast) with exact type match for identities needed
 by the T2 closed candidate set. Return facts only: OID, namespace, volatility,
 castfunc/castmethod. Scrub secrets from errors. Unknown/multi-match → not a
 unique identity. Map all failures to T6 bounded IdentityStatus values.
+
+CRITICAL for unqualified effects (count(*), id = 1):
+- Require usable EffectIdentityResolutionContext (Bound + SessionBinding +
+  NamespaceSearchOIDs). Without it → unavailable (never guess pg_catalog.=).
+- Resolve under the bound session / path; apply GateIdentityBatch* + TOCTOU.
+- Explicit pg_catalog.* may resolve without search_path ranking; still facts-only.
 Do not attach Trusted. Do not promote admission (T8).
 
 FORBIDDEN: "trust only pg_catalog + volatility i|s" or any equivalent Trusted

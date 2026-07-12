@@ -321,10 +321,18 @@ trust, **no** Analyze invocation / admission change, **no** public SDK field.
 | Task | Responsibility |
 |------|----------------|
 | **T6 (this)** | Facts-only contract + helpers + tests |
-| **T7** | PostgreSQL `pg_catalog` adapter implementing the contract |
+| **T6 P1** | Execution resolution context + fail-closed gates (required before T7) |
+| **T7** | PostgreSQL `pg_catalog` adapter implementing the contract **with context** |
 | **T8** | Manifest trust + proof engine; may discuss Analyze wiring / public injection |
 
+**T6 P1 (blocking for T7):** `EffectIdentityResolutionContext` on the internal
+request; unqualified effects without bound session/`NamespaceSearchOIDs` →
+`unavailable` (no `pg_catalog.<name>` guess); TOCTOU via
+`SessionBinding`+`PathEpoch` + live gate; context never on public Result/JSON.
+See decision record T6 P1 amendment.
+
 **Commit:** `feat: define query access identity resolver contract`
+**P1 fix commit:** `fix: bind effect identity resolution to execution context`
 
 ---
 
