@@ -3,6 +3,7 @@ package queryaccess_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
@@ -367,6 +368,341 @@ func TestService_Analyze_ProviderError(t *testing.T) {
 	if dr.Admission != domain.IndeterminateAdmission {
 		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
 	}
+}
+
+func TestService_Analyze_WildcardExpansionProducesPhysicalColumns(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.users": {
+			Schema: "app", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{
+				{Name: "id", Ordinal: 1},
+				{Name: "name", Ordinal: 2},
+				{Name: "email", Ordinal: 3},
+			},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT * FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	if len(dr.ReferencedColumns) != 3 {
+		t.Fatalf("ReferencedColumns: got %d, want 3", len(dr.ReferencedColumns))
+	}
+	colSet := make(map[string]bool)
+	for _, col := range dr.ReferencedColumns {
+		colSet[col.Column] = true
+	}
+	for _, want := range []string{"id", "name", "email"} {
+		if !colSet[want] {
+			t.Errorf("ReferencedColumns missing column %q", want)
+		}
+	}
+
+	if dr.ReadClassification != domain.ReadOnly {
+		t.Errorf("ReadClassification: got %q, want %q", dr.ReadClassification, domain.ReadOnly)
+	}
+
+	if dr.Admission != domain.Admissible {
+		t.Errorf("Admission: got %q, want %q", dr.Admission, domain.Admissible)
+	}
+
+	readColumnCount := 0
+	for _, req := range dr.Requirements {
+		if req.Privilege == "read_column" {
+			readColumnCount++
+		}
+	}
+	if readColumnCount != 3 {
+		t.Errorf("read_column requirements: got %d, want 3", readColumnCount)
+	}
+
+	for _, u := range dr.Unresolved {
+		if u.Reason == domain.ReasonSchemaUnavailable || u.Reason == appqa.ReasonUnresolvedWildcard {
+			t.Errorf("wildcard unresolved should be removed: %s %s", u.Reference, u.Reason)
+		}
+	}
+
+	if len(dr.Outputs) != 1 {
+		t.Fatalf("Outputs: got %d, want 1", len(dr.Outputs))
+	}
+	if len(dr.Outputs[0].Sources) == 0 {
+		t.Error("Output sources should not be empty after wildcard expansion")
+	}
+}
+
+func TestService_Analyze_PartialWildcardAB(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"schema_a.a": {
+			Schema: "schema_a", Name: "a", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT a.*, b.* FROM schema_a.a a JOIN schema_b.b b ON a.id = b.id",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	aExpanded := false
+	for _, col := range dr.ReferencedColumns {
+		if col.Schema == "schema_a" && col.Table == "a" && col.Column == "id" {
+			aExpanded = true
+		}
+	}
+	if !aExpanded {
+		t.Error("wildcard a.* should have been expanded to physical columns")
+	}
+
+	hasBUnresolved := false
+	for _, u := range dr.Unresolved {
+		if u.Reason == appqa.ReasonRelationNotFound || u.Reason == appqa.ReasonUnresolvedWildcard {
+			hasBUnresolved = true
+		}
+	}
+	if !hasBUnresolved {
+		t.Error("unresolved for b.* should persist when b relation not found")
+	}
+
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("Admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+}
+
+func TestService_Analyze_BothWildcardsSucceed(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"schema_a.a": {
+			Schema: "schema_a", Name: "a", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+		"schema_b.b": {
+			Schema: "schema_b", Name: "b", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}, {Name: "val", Ordinal: 2}},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT a.*, b.* FROM schema_a.a a JOIN schema_b.b b ON a.id = b.id",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	if len(dr.ReferencedColumns) < 3 {
+		t.Errorf("ReferencedColumns: got %d, want >= 3", len(dr.ReferencedColumns))
+	}
+
+	aHasID := false
+	bHasID := false
+	bHasVal := false
+	for _, col := range dr.ReferencedColumns {
+		if col.Schema == "schema_a" && col.Table == "a" && col.Column == "id" {
+			aHasID = true
+		}
+		if col.Schema == "schema_b" && col.Table == "b" && col.Column == "id" {
+			bHasID = true
+		}
+		if col.Schema == "schema_b" && col.Table == "b" && col.Column == "val" {
+			bHasVal = true
+		}
+	}
+	if !aHasID {
+		t.Error("a.id should be in ReferencedColumns")
+	}
+	if !bHasID {
+		t.Error("b.id should be in ReferencedColumns")
+	}
+	if !bHasVal {
+		t.Error("b.val should be in ReferencedColumns")
+	}
+
+	for _, u := range dr.Unresolved {
+		if u.Reason == domain.ReasonSchemaUnavailable || u.Reason == appqa.ReasonUnresolvedWildcard {
+			t.Errorf("wildcard unresolved should be removed: %s %s", u.Reference, u.Reason)
+		}
+	}
+
+	if dr.Admission != domain.Admissible {
+		t.Errorf("Admission: got %q, want %q", dr.Admission, domain.Admissible)
+	}
+}
+
+func TestService_Analyze_BothWildcardsFail(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT a.*, b.* FROM schema_a.a a JOIN schema_b.b b ON a.id = b.id",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	if len(dr.Unresolved) < 2 {
+		t.Errorf("Unresolved: got %d, want at least 2", len(dr.Unresolved))
+	}
+
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("Admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+}
+
+func TestService_Analyze_GlobalStarWithResolver(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.users": {
+			Schema: "app", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{
+				{Name: "id", Ordinal: 1},
+				{Name: "name", Ordinal: 2},
+			},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT * FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	if len(dr.ReferencedColumns) != 2 {
+		t.Errorf("ReferencedColumns: got %d, want 2", len(dr.ReferencedColumns))
+	}
+
+	if dr.ReadClassification != domain.ReadOnly {
+		t.Errorf("ReadClassification: got %q, want %q", dr.ReadClassification, domain.ReadOnly)
+	}
+
+	if dr.Admission != domain.Admissible {
+		t.Errorf("Admission: got %q, want %q", dr.Admission, domain.Admissible)
+	}
+}
+
+func TestService_Analyze_WildcardProjectionOnly(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.users": {
+			Schema: "app", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{
+				{Name: "id", Ordinal: 1},
+				{Name: "name", Ordinal: 2},
+			},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT * FROM users WHERE id = 1",
+		Dialect:        "mysql",
+		Mode:           "projection_only",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	if len(dr.ReferencedColumns) < 2 {
+		t.Errorf("ReferencedColumns: got %d, want >= 2", len(dr.ReferencedColumns))
+	}
+
+	if dr.Admission != domain.Admissible {
+		t.Errorf("Admission: got %q, want %q", dr.Admission, domain.Admissible)
+	}
+}
+
+func TestService_Analyze_WildcardNoLeak(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.users": {
+			Schema: "app", Name: "users", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+	})
+
+	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+		SQL:            "SELECT * FROM users",
+		Dialect:        "mysql",
+		Mode:           "strict",
+		DefaultSchema:  "app",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+
+	j := fmt.Sprintf("%+v", dr)
+	forbidden := []string{"SELECT", "password", "credential", "secret", "token"}
+	for _, f := range forbidden {
+		if contains(j, f) {
+			t.Errorf("result should not contain %q", f)
+		}
+	}
+}
+
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
 
 func TestService_Analyze_AmbiguousRelationNoSchema(t *testing.T) {

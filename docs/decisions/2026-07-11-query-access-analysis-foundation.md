@@ -596,6 +596,39 @@ EN/ZH reference docs updated: derived tables and CTEs do not require
 `read_table` directly; their permission requirements come from underlying
 physical tables and views.
 
+### Wildcard Metadata Resolution Fix (2026-07-12)
+
+The TiDB parser puts wildcards (`SELECT *`, `a.*`, `b.*`) into `Unresolved`
+with `Reason: schema_unavailable`, not into `ReferencedColumns`. The previous
+resolver only processed `ReferencedColumns`, so wildcards were never expanded
+into physical columns even when a SchemaResolver was available.
+
+**Root cause**: `resolveMetadata` only called `resolveColumns` on
+`ReferencedColumns`. Wildcard entries in `Unresolved` were not expanded.
+
+**Fix**: Added `expandUnresolvedWildcards` in `resolve.go` that scans
+`Unresolved` for wildcard entries and expands them using the resolver.
+Added `reclassifyAfterResolution` in `service.go` that re-evaluates
+`ReadClassification` after resolution when a resolver is provided and
+no reason codes or unresolved entries remain.
+
+**Filter fix**: Changed `filterResolvedUnresolved` from global condition
+(`resolverSucceeded || hasExpandedWildcard`) to per-wildcard reference
+matching. Only removes unresolved entries whose specific reference was
+successfully expanded.
+
+**Admission fix**: `recomputeAdmission` now recomputes based on classification
+and unresolved count. Preserves `IndeterminateAdmission` only in offline mode
+(no resolver).
+
+Tests: `TestService_Analyze_WildcardExpansionProducesPhysicalColumns`,
+`TestService_Analyze_PartialWildcardAB`,
+`TestService_Analyze_BothWildcardsSucceed`,
+`TestService_Analyze_BothWildcardsFail`,
+`TestService_Analyze_GlobalStarWithResolver`,
+`TestService_Analyze_WildcardProjectionOnly`,
+`TestService_Analyze_WildcardNoLeak`.
+
 ## Links
 
 - Commits:

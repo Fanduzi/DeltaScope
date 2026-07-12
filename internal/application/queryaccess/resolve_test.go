@@ -589,9 +589,6 @@ func TestResolveMetadata_WildcardRemovedWhenMetadataAvailable(t *testing.T) {
 		Relations: []domain.RelationReference{
 			{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true},
 		},
-		ReferencedColumns: []domain.ColumnReference{
-			{Table: "users", Column: "*", Usages: []domain.UsageContext{domain.UsageProjection}},
-		},
 		Unresolved: []domain.Unresolved{
 			{Reference: "*", Reason: domain.ReasonSchemaUnavailable},
 		},
@@ -599,7 +596,6 @@ func TestResolveMetadata_WildcardRemovedWhenMetadataAvailable(t *testing.T) {
 
 	resolved := appqa.ResolveMetadata(context.Background(), resolver, "mysql", "app", result)
 
-	// Wildcard should be expanded and unresolved entry removed
 	if len(resolved.Unresolved) != 0 {
 		t.Errorf("wildcard unresolved should be removed, got %d", len(resolved.Unresolved))
 	}

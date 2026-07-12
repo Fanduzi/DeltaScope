@@ -39,7 +39,9 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
 	}
 
-	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved)
+	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
+	extracted.DomainResult.ReadClassification = reclassifyAfterResolution(extracted.DomainResult.ReadClassification, extracted.DomainResult.ReasonCodes, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
+	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
 
 	// Build requirements based on mode
 	reqs, warnings, _, reqErr := buildRequirements(
@@ -90,12 +92,43 @@ func hasFunctionCallReasonCode(codes []domain.ReasonCode) bool {
 	return false
 }
 
-func recomputeAdmission(classification domain.ReadClassification, current domain.Admission, unresolved []domain.Unresolved) domain.Admission {
+func recomputeAdmission(classification domain.ReadClassification, current domain.Admission, unresolved []domain.Unresolved, hasResolver bool) domain.Admission {
 	if current == domain.Rejected {
 		return current
 	}
-	if len(unresolved) > 0 && current == domain.Admissible {
+	if !hasResolver && current == domain.IndeterminateAdmission {
+		return current
+	}
+	if len(unresolved) > 0 {
 		return domain.IndeterminateAdmission
 	}
-	return current
+	if classification == domain.NotReadOnly {
+		return domain.Rejected
+	}
+	if classification == domain.ReadOnly {
+		return domain.Admissible
+	}
+	return domain.IndeterminateAdmission
+}
+
+func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool) domain.ReadClassification {
+	if classification != domain.Indeterminate {
+		return classification
+	}
+
+	if !hasResolver {
+		return classification
+	}
+
+	if len(reasonCodes) > 0 {
+		return domain.Indeterminate
+	}
+
+	for _, u := range unresolved {
+		if u.Reason == domain.ReasonSchemaUnavailable || u.Reason == ReasonUnresolvedWildcard || u.Reason == domain.ReasonAmbiguousReference {
+			return domain.Indeterminate
+		}
+	}
+
+	return domain.ReadOnly
 }

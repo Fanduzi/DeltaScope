@@ -132,7 +132,16 @@ func resolveMetadata(ctx context.Context, resolver SchemaResolver, dialect, defa
 	result.ReferencedColumns = resolvedCols
 	newUnresolved = append(newUnresolved, colUnresolved...)
 	result.Outputs = resolveOutputs(state, result.Outputs)
-	result.Unresolved = filterResolvedUnresolved(result.Unresolved, expandedWildcards, len(state.schemaCache) > 0)
+
+	wcCols, wcExpanded, wcOutputs, wcUnresolved := expandUnresolvedWildcards(state, result.Unresolved, result.Outputs)
+	result.ReferencedColumns = append(result.ReferencedColumns, wcCols...)
+	for k, v := range wcExpanded {
+		expandedWildcards[k] = v
+	}
+	result.Outputs = wcOutputs
+	newUnresolved = append(newUnresolved, wcUnresolved...)
+
+	result.Unresolved = filterResolvedUnresolved(result.Unresolved, expandedWildcards)
 	result.Unresolved = append(result.Unresolved, newUnresolved...)
 	result.Unresolved = domain.SortUnresolved(result.Unresolved)
 
@@ -402,15 +411,13 @@ func resolveSourceKeys(state *resolutionState, sources []string) []string {
 }
 
 // filterResolvedUnresolved removes unresolved entries for wildcards that were successfully expanded.
-// A wildcard unresolved entry is removed if ANY wildcard was expanded OR if the resolver succeeded.
-func filterResolvedUnresolved(unresolved []domain.Unresolved, expandedWildcards map[string]bool, resolverSucceeded bool) []domain.Unresolved {
+func filterResolvedUnresolved(unresolved []domain.Unresolved, expandedWildcards map[string]bool) []domain.Unresolved {
 	if len(unresolved) == 0 {
 		return nil
 	}
-	hasExpandedWildcard := len(expandedWildcards) > 0 || resolverSucceeded
 	out := make([]domain.Unresolved, 0, len(unresolved))
 	for _, u := range unresolved {
-		if isWildcardReason(u.Reason) && hasExpandedWildcard {
+		if isWildcardReason(u.Reason) && expandedWildcards[u.Reference] {
 			continue
 		}
 		out = append(out, u)
@@ -419,6 +426,122 @@ func filterResolvedUnresolved(unresolved []domain.Unresolved, expandedWildcards 
 		return nil
 	}
 	return out
+}
+
+// expandUnresolvedWildcards scans Unresolved for wildcard entries (schema_unavailable reason)
+// and tries to expand them using the resolver. Returns expanded columns, which references
+// were expanded, updated outputs with sources, and new unresolved entries for failures.
+func expandUnresolvedWildcards(state *resolutionState, unresolved []domain.Unresolved, outputs []domain.OutputColumn) ([]domain.ColumnReference, map[string]bool, []domain.OutputColumn, []domain.Unresolved) {
+	var wildcardRefs []string
+	for _, u := range unresolved {
+		if u.Reason == domain.ReasonSchemaUnavailable {
+			wildcardRefs = append(wildcardRefs, u.Reference)
+		}
+	}
+	if len(wildcardRefs) == 0 {
+		return nil, nil, outputs, nil
+	}
+
+	var expandedCols []domain.ColumnReference
+	expandedWildcards := make(map[string]bool)
+	var newUnresolved []domain.Unresolved
+	outputLineage := make(map[string][]string)
+
+	for _, ref := range wildcardRefs {
+		cols, sources, ok := expandWildcardRef(state, ref)
+		if ok {
+			expandedCols = append(expandedCols, cols...)
+			expandedWildcards[ref] = true
+			outputLineage[ref] = sources
+		} else {
+			newUnresolved = append(newUnresolved, domain.Unresolved{
+				Reference: ref,
+				Reason:    ReasonUnresolvedWildcard,
+			})
+		}
+	}
+
+	updatedOutputs := make([]domain.OutputColumn, 0, len(outputs))
+	for _, out := range outputs {
+		o := out
+		if sources, ok := outputLineage[out.Name]; ok && len(o.Sources) == 0 {
+			o.Sources = sources
+		}
+		updatedOutputs = append(updatedOutputs, o)
+	}
+
+	return expandedCols, expandedWildcards, updatedOutputs, newUnresolved
+}
+
+// expandWildcardRef expands a single wildcard reference into physical columns.
+func expandWildcardRef(state *resolutionState, ref string) ([]domain.ColumnReference, []string, bool) {
+	if ref == "*" {
+		return expandGlobalWildcard(state)
+	}
+	return expandTableWildcard(state, ref)
+}
+
+// expandGlobalWildcard expands SELECT * across all relations in scope.
+func expandGlobalWildcard(state *resolutionState) ([]domain.ColumnReference, []string, bool) {
+	var expanded []domain.ColumnReference
+	var sources []string
+	anyExpanded := false
+
+	for _, refs := range state.nameMap {
+		for _, ref := range refs {
+			if ref.schema == "" && state.defaultSchema != "" {
+				ref.schema = state.defaultSchema
+			}
+			rs, ok := state.resolveSchema(ref.schema, ref.name)
+			if !ok {
+				continue
+			}
+			anyExpanded = true
+			for _, c := range rs.Columns {
+				expanded = append(expanded, domain.ColumnReference{
+					Schema: rs.Schema,
+					Table:  rs.Name,
+					Column: c.Name,
+					Usages: []domain.UsageContext{domain.UsageProjection},
+				})
+				sources = append(sources, domain.FormatColumnKey(rs.Schema, rs.Name, c.Name))
+			}
+		}
+	}
+	if !anyExpanded {
+		return nil, nil, false
+	}
+	return expanded, sources, true
+}
+
+// expandTableWildcard expands table.* wildcard.
+func expandTableWildcard(state *resolutionState, ref string) ([]domain.ColumnReference, []string, bool) {
+	tableName := strings.TrimSuffix(ref, ".*")
+	if tableName == ref {
+		return nil, nil, false
+	}
+
+	schema, name := state.resolveRelationRef(tableName)
+	if schema == "" && state.defaultSchema != "" {
+		schema = state.defaultSchema
+	}
+	rs, ok := state.resolveSchema(schema, name)
+	if !ok {
+		return nil, nil, false
+	}
+
+	expanded := make([]domain.ColumnReference, 0, len(rs.Columns))
+	sources := make([]string, 0, len(rs.Columns))
+	for _, c := range rs.Columns {
+		expanded = append(expanded, domain.ColumnReference{
+			Schema: rs.Schema,
+			Table:  rs.Name,
+			Column: c.Name,
+			Usages: []domain.UsageContext{domain.UsageProjection},
+		})
+		sources = append(sources, domain.FormatColumnKey(rs.Schema, rs.Name, c.Name))
+	}
+	return expanded, sources, true
 }
 
 func isWildcardReason(r domain.ReasonCode) bool {
