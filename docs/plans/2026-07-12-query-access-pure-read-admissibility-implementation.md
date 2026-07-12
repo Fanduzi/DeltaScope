@@ -65,97 +65,85 @@ as a general trust predicate. Corrected in Task 1b before any production code.
 
 ---
 
-## Task 1b — Trust-policy tightening (docs only; current)
+## Task 1b — Trust-policy tightening (docs only)
 
-**Status:** current
-**Goal:** eliminate P1 unsafe trust model; redefine trust as manifest-gated.
-
-**Deliverables (update in place):**
-
-- decision + design + this plan + omo prompts
-- manifest-first task order; kill criteria for volatility/name allowlist collapse
-- adversarial matrix requiring non-manifest `pg_catalog` stable → indeterminate
-
-**File scope:** docs only (the four files above)
-**Gates:**
-
-```bash
-make decision-record-gate
-git diff --check
-# sanity: no residual "pg_catalog + volatility i|s ⇒ Trusted" wording
-# detect_changes: docs only; no execution flows
-git commit  # message: docs: tighten query access effect trust policy
-```
-
-**Stop if:** design cannot define identity proof without name or volatility
-class allowlists.
+**Status:** done (`docs: tighten query access effect trust policy`)
 
 ---
 
 ## Task 2 — Manifest research + version compatibility study
 
-**Goal:** before any production trust or resolver wiring, produce a bounded,
-version-scoped, per-item audited **trusted-effect identity manifest design**
-and adversarial characterization of non-trust.
+**Status:** done (this commit) — **feasibility: Proceed**
+**Goal:** answer whether a bounded, version-scoped, per-item audited PostgreSQL
+effect identity manifest is maintainable — without implementing resolver/trust
+code.
 
-**This task must complete (or hit kill criteria) before Tasks 5–8 implement
-promotion.** Prefer docs/research + characterization tests; production
-admission logic stays unchanged.
+**Deliverables (docs only):**
 
-**File scope (preferred):**
+- Decision record T2 Evidence + **Proceed** conclusion
+- Design Appendix A: version matrix, identity tuples, candidate/rejected ledger,
+  privilege/no-leak, volatility-as-fact
+- This plan: later tasks gated on T2 ledger
+- OMO prompts: subsequent tasks must read and obey the ledger
 
-- Research notes committed under `docs/plans/` or an appendix in the design
-  doc (e.g. phase-1 candidate inventory table)
-- Characterization tests only under
-  `internal/application/queryaccess/*_test.go` and/or
-  `internal/infrastructure/parser/postgresql/*_test.go` if needed to lock
-  current fail-closed behavior and document intended future matrix
-- **No** production trust policy code that promotes admission yet
+**T2 conclusions (normative for later tasks):**
 
-**Work:**
+- **Proceed** with closed phase-1 set:
+  - structural `BoolExpr` AND/OR/NOT
+  - 54 same-type comparison operators on
+    `{bool,int2,int4,int8,float4,float8,numeric,text,oid}` ×
+    `{=,<>,<,>,<=,>=}`
+  - `count(*)` OID 2803 and `count(anyelement)` OID 2147
+- **PostgreSQL major claim for effect identity:** **14–17** (probed on 14/16/17);
+  CI primary **17**; **do not claim 12/13/15 without re-probe**; **18** out
+  until parser + re-probe
+- Casts: phase-1 **default omit** (binary cast row OIDs unstable; function-backed
+  casts rejected)
+- Volatility `i|s` is fact only; never Trusted
+- Rejected: `current_setting`, `pg_get_*`, UDF effects, non-manifest catalog
+  effects, function-backed casts, name allowlists
 
-1. Inventory phase-1 **candidates** (not automatic trust):
-   - closed set of comparison operator identities (name + left/right type OIDs)
-   - whether `BoolExpr` is structural-only
-   - `COUNT(*)` / `COUNT(col)` aggregate identity feasibility
-   - binary (no-function) casts only if audit can prove safety
-2. For each candidate, draft the audit proof:
-   - unique data deps = AST operands only
-   - no relation/config/role/file/network hidden reads
-   - requirements completeness preserved
-3. Explicitly list **must-remain-indeterminate** identities:
-   - non-manifest `pg_catalog` stable/immutable
-   - `current_setting`, `pg_get_*`
-   - user-defined stable ops/fns/casts
-   - function-backed casts
-4. Version range policy: which PostgreSQL majors the manifest claims; how OID
-   stability is verified across versions.
-5. **Kill review:** if the inventory collapses to name allowlists, volatility
-   class allowlists, or an unbounded/unmaintainable set → stop (audit spike).
-
-**GitNexus targets:** none required if docs/tests-only; if any production symbol
-is touched, impact first. Prefer zero production edits.
+**File scope:** docs only (four milestone files). Ephemeral `/tmp` probes not
+committed. **No** `internal/**`, `pkg/**`, `cmd/**`, Makefile, corpus, or
+version-surface edits.
 
 **Gates:**
 
 ```bash
-# if tests added:
-go test ./internal/application/queryaccess/ -count=1
-go test -tags postgresql ./internal/application/queryaccess/ -count=1
-make decision-record-gate   # if decision/design text updated
+make decision-record-gate
 git diff --check
+# sanity: no "pg_catalog + volatility ⇒ Trusted"; no name allowlist trust;
+#         no MCP-supported; no severity; no credential/SQL leak promises
+# detect_changes: docs only; no execution flows
+git commit  # message: docs: research query access effect identity manifest
 ```
 
-**Commit:** `docs: research query access trusted effect manifest`
-(or `test:` if primarily characterization tests)
+**Stop if (did not fire):** kill criteria 4–6. If later tasks violate the
+ledger, stop and re-open T2 rather than widen trust.
 
-**Stop if:** kill criteria 4–6 from design (name allowlist, volatility class
-allowlist, or unmaintainable manifest).
+---
+
+## Global implementation precondition (Tasks 3–11)
+
+All production trust/resolver/proof/corpus work **must**:
+
+1. Read design Appendix A + decision T2 Evidence first.
+2. Implement **only** the closed candidate ledger (or a strict subset).
+3. Fail closed outside the ledger and outside majors 14–17 (until re-probe).
+4. Never introduce name or volatility-class allowlists.
+5. Treat T2 **Proceed** as permission to continue research→implementation
+   sequencing — **not** as Accepted product behavior or a release green light.
+
+If implementation discovers the ledger is wrong, update docs and re-audit;
+do not silently expand Trusted.
 
 ---
 
 ## Task 3 — Characterization tests for current PG admission freeze
 
+**Status:** next
+**Precondition:** T2 Proceed ledger (Appendix A) is authoritative for intended
+future adversarial outcomes.
 **Goal:** lock today's behavior so refactors cannot silently change MySQL or
 hide the PG hard-stop without intent. Extend adversarial expectations that
 future code must not promote on volatility alone.
@@ -270,6 +258,7 @@ go test -tags postgresql ./internal/application/queryaccess/ -count=1
 
 ## Task 6 — Extend relation metadata with type OIDs + EffectIdentityResolver API
 
+**Precondition:** T2 ledger; facts-only API; no Trusted field.
 **Goal:** types for operands + resolver interface that returns **facts only**.
 
 **File scope:**
@@ -308,6 +297,8 @@ only expose a minimal interface.
 
 ## Task 7 — PostgreSQL catalog identity implementation (facts only)
 
+**Precondition:** T2 ledger. Resolve operators/functions needed for the closed
+candidate set with exact type match; do not build open-ended catalogs of trust.
 **Goal:** real identity resolution against `pg_catalog` with exact type match;
 return OIDs, namespace, volatility, cast method as **facts**. Do **not** apply
 "pg_catalog + i|s ⇒ trusted".
@@ -342,7 +333,10 @@ go test -tags postgresql ./internal/infrastructure/metadata/postgresql/ -count=1
 
 ## Task 8 — Trust policy + application proof engine + admission recompute fix
 
-**Goal:** load Task 2's audited manifest into application/domain trust policy;
+**Precondition:** T2 **Proceed** ledger is encoded as the only Trusted set
+(closed operators + count aggregates + structural bool; majors 14–17; casts
+omitted unless a later audited expansion).
+**Goal:** load T2 audited manifest into application/domain trust policy;
 wire candidates + identity facts into classification/admission; remove PG
 hard-stop; fix sticky indeterminate admission when proof succeeds.
 
@@ -484,22 +478,23 @@ commits on the milestone branch.
 
 ```text
 T1 design (done)
-  → T1b trust-policy docs fix (current)
-  → T2 manifest research + version study   ← BEFORE any production trust
-  → T3 characterize PG freeze + adversarial intent
+  → T1b trust-policy docs fix (done)
+  → T2 manifest research + version study (done, Proceed)
+  → T3 characterize PG freeze + adversarial intent   ← next
   → T4 reason codes
   → T5 effect candidates (no trust)
   → T6 resolver API + type OIDs (facts only)
   → T7 catalog identity implementation (facts only)
-  → T8 trust policy + proof engine
+  → T8 trust policy + proof engine (manifest = T2 ledger only)
   → T9 corpus
   → T10 docs accept
   → T11 review
 ```
 
 No parallel tasks that edit `service.go` and extractors without integration.
-**Do not start T6–T8 production promotion until T2 manifest research passes
-or explicitly kills the milestone as audit-only.**
+**T2 Proceed is a hard precondition for T6–T8 production promotion. The T2
+candidate/rejected ledger is the only allowed Trusted set unless a new
+decision expands it with re-probe evidence.**
 
 ## Release note (later, not this plan)
 

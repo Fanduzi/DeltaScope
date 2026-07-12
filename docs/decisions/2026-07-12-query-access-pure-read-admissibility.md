@@ -4,13 +4,15 @@ Date: 2026-07-12
 Status: Proposed
 Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
 Related commits:
-- (none yet; design-only Task 1; trust-policy tightening in progress)
+- Design + trust-policy docs on branch `query-access-pure-read-admissibility`
+- T2 research commit: `docs: research query access effect identity manifest` (this task)
 Related tests:
-- Planned: extended `testdata/query-access/` corpus (PostgreSQL positive + adversarial)
+- Planned (T3+): extended `testdata/query-access/` corpus (PostgreSQL positive + adversarial)
 - Planned: unit/integration tests for effect-identity catalog resolution
 - Planned: adversarial characterization that `pg_catalog` + volatility alone never promotes
+- T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
 Related docs:
-- `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md`
+- `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md` (T2 appendix)
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-implementation.md`
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-omo-prompts.md`
 - Supersedes boundaries only where noted in V1 foundation:
@@ -297,7 +299,7 @@ and trust requirements** above are the contract principles.
 
 ## Verification Evidence
 
-(To be filled when implementation lands. Design-time characterization:)
+### Design-time / foundation characterization
 
 - Current PG corpus: 22/22 `admission: indeterminate`.
 - Current code: `pgContainsOperatorExpr` returns true on any `A_Expr`/`TypeCast`;
@@ -307,11 +309,158 @@ and trust requirements** above are the contract principles.
   `pg_operator` / `pg_proc` / `pg_cast`.
 - Trust model: catalog facts + audited manifest (not volatility class).
 
-Planned gates: corpus matrix (safe positives + adversarial negatives including
-non-manifest `pg_catalog` stable, `current_setting`, `pg_get_*`, function-
-backed cast), unit tests for identity resolver (facts only), trust policy
-manifest tests, cross-surface SDK/CLI/HTTP parity, no-leak tests,
-`make query-access-corpus-gates`, dialect-tagged PostgreSQL tests.
+### T2 — Effect identity manifest feasibility (2026-07-12)
+
+**Conclusion: Proceed** (bounded, version-scoped, per-item audited manifest is
+maintainable for a minimal phase-1 set). Not Accepted for product behavior yet;
+no production implementation in T2.
+
+#### Research environment
+
+| Source | Finding |
+|--------|---------|
+| Repo Docker E2E | `docker/pg-e2e-compose.yaml` → `postgres:17` only |
+| Metadata product claim | CHANGELOG: live metadata against PostgreSQL **12+** |
+| Parser | `pg_query_go/v6` / libpg_query **17**; PostgreSQL **18** parser forms deferred |
+| CI/workflows | Release smoke uses dialect postgresql offline; live metadata e2e uses PG17 compose |
+| Ephemeral probes (not committed) | Docker `postgres:14`, `postgres:16`, `postgres:17` catalog queries under `/tmp` |
+| Official docs | OID assignment policy; function volatility categories (current docs) |
+
+**Evidence gaps (must not be guessed away):**
+
+- PostgreSQL **12, 13, 15** candidate OIDs were **not** probed in this session.
+- Phase-1 **product claim for effect-identity promotion** is therefore limited to
+  majors **with probe evidence**: **14, 16, 17** (and CI primary **17**).
+- Extending the claim to 12–13 or 15 requires the same identity-tuple probe, not
+  extrapolation alone.
+- PostgreSQL **18** remains out of phase-1 parse/promotion scope until parser
+  support lands.
+
+#### OID stability (probed subset)
+
+- Official: manually assigned catalog OIDs, once released, are not renumbered;
+  auto-assigned bootstrap OIDs (approx. 10000–16383) are **not** stable across
+  installations.
+- Ephemeral probe: for the closed candidate set (core scalar types; comparison
+  ops on those types; `count(*)` / `count(anyelement)`), operator OID,
+  implementation function OID, type OID, and aggregate OID were **identical**
+  across PostgreSQL **14.23**, **16.14**, and **17.10**.
+- Sample stable facts (all three majors): `int4` type OID 23; `=`(int4,int4)
+  operator OID 96 / impl `int4eq` 65; `=`(text,text) 98 / `texteq` 67;
+  `count(*)` 2803; `count(anyelement)` 2147; `pg_catalog` namespace OID 11.
+- `pg_cast` row OIDs observed for binary casts were in the **≥10000** range →
+  **must not** be primary manifest keys; key binary casts by
+  `(castsource, casttarget, castmethod)` (and `castfunc = 0`) instead.
+
+#### Catalog fields usable for runtime identity proof
+
+- **Operator:** `pg_operator.oid`, `oprnamespace`, `oprname`, `oprleft`,
+  `oprright`, `oprresult`, `oprcode` (+ join `pg_proc` for impl volatility/kind).
+- **Function:** `pg_proc.oid`, `pronamespace`, `proname`, `proargtypes`,
+  `prorettype`, `provolatile`, `prokind`.
+- **Aggregate:** `pg_aggregate.aggfnoid` (+ `pg_proc` signature), `aggkind`,
+  transition/final fn OIDs for audit notes (not name trust).
+- **Cast:** `castsource`, `casttarget`, `castfunc`, `castmethod` (`b`/`f`/`i`),
+  `castcontext`. Prefer type-pair + method over cast row OID.
+- **Namespace:** `pg_namespace.oid` / `nspname` (fact; trust still needs
+  manifest).
+
+#### Minimal identity tuples (manifest keys)
+
+- Operator: `(pg_major_range, operator_oid)` **and** verify at resolve time
+  `(oprnamespace, oprname, oprleft, oprright, oprcode)` match the entry; or
+  equivalently key by canonical signature
+  `(namespace_oid|name, oprname, left_type_oid, right_type_oid)` with unique
+  match + expected `oprcode`.
+- Function/aggregate: `(pg_major_range, function_oid)` **and** verify
+  `(pronamespace, proname, proargtypes, prokind)`.
+- Cast (if any): `(pg_major_range, castsource, casttarget, castmethod)` with
+  `castfunc = 0` for binary-only phase-1 candidates.
+- **Never** key trust by operator spelling, bare function name, or schema
+  string alone.
+
+#### Volatility (fact only)
+
+Per official Function Volatility Categories:
+
+- `STABLE`: cannot modify DB; same result for same args within a statement;
+  **may** `SELECT` from tables (snapshot-fixed).
+- `IMMUTABLE`: claim of no DB lookup / same forever; **not enforced** against
+  table reads; mislabeling is possible.
+- Therefore `provolatile` is recorded as a **fact**, never as Trusted.
+
+#### Phase-1 candidate ledger (audit sketch)
+
+Eligible for later manifest entries **only** after identity resolve + tests:
+
+1. **Structural `BoolExpr` (AND/OR/NOT)** — not a catalog effect; pure AST
+   control structure. Trust as structural when child effects are trusted or
+   absent. No OID.
+2. **Closed comparison operators** on same-type pairs for
+   `{bool,int2,int4,int8,float4,float8,numeric,text,oid}` ×
+   `{=,<>,<,>,<=,>=}` — 54 identities on PG17; all probed impls `provolatile=i`,
+   `prokind=f`, namespace `pg_catalog`. Data deps = left/right operands only;
+   no relation/GUC/role/file/network. Requirements completeness preserved
+   (operands already extracted as column/const).
+3. **`count(*)` (OID 2803)** and **`count(anyelement)` (OID 2147)** —
+   aggregate over already-extracted FROM/JOIN row sources / argument
+   expression; does not open hidden relations. Must still resolve unique
+   aggregate identity (not name `count`).
+
+**Deferred / not in minimal phase-1 promote set:**
+
+- **Binary casts:** few core pairs are `castmethod=b` (`int4`↔`oid`,
+  `text`/`varchar`/`bpchar` family). Cast row OIDs unstable. Common numeric
+  casts are **function-backed** → remain indeterminate. Phase 1 may omit casts
+  entirely (recommended default) or add type-pair binary entries later with
+  extra tests.
+- **varchar same-type operators:** not in the closed same-type op set used
+  here; typically require coercion to text → fail-closed without coercion
+  graph.
+- Cross-type comparisons requiring coercion → indeterminate.
+
+#### Rejected ledger (always indeterminate unless a later decision re-audits)
+
+- Any `pg_catalog` operator/function/cast **not** in the manifest
+- `current_setting` / `set_config` (session/GUC) — probed present, `STABLE`
+- `pg_get_*` metadata helpers — probed sample set; typically `STABLE`/`VOLATILE`
+- `pg_read_file`, `pg_ls_dir`, and other file/OS readers
+- User-defined operators/functions/aggregates/casts (any volatility)
+- Function-backed casts (`castmethod=f` / non-zero `castfunc`)
+- Volatile catalog functions
+- Name/schema/spelling allowlists; generic `i|s` volatility allowlists
+
+#### Privileges / context / no-leak
+
+- Identity resolution needs SELECT on `pg_catalog` catalogs (same class of
+  privilege as existing relation `SchemaResolver` pg_class/pg_attribute reads).
+- Caller must lock execution-equivalent **search_path / database / role**
+  context; prefer resolve only inside `pg_catalog` for trust evaluation.
+- Optional: frozen metadata snapshot of identity facts — still evaluated
+  against the application manifest.
+- Public result contract must not include DSN, credentials, catalog SQL text,
+  raw user SQL, literals, or `severity`. Design docs may record abstract
+  field names and non-sensitive OID statistics only.
+
+#### Feasibility vs kill criteria
+
+| Kill criterion | T2 assessment |
+|----------------|---------------|
+| Bounded type inference impossible for matrix | Phase-1 matrix uses **exact same-type** operands only; no full planner |
+| Unique identity requires accepting search_path shadowing | Resolve locked to `pg_catalog` + unique type match; multi-match → indeterminate |
+| Catalog access forces secret leak | Existing scrub patterns apply; no public catalog SQL |
+| Collapses to name allowlist | No — OID/signature + manifest |
+| Collapses to volatility class allowlist | No — per-item manifest; volatility is fact |
+| Unmaintainable open set | Closed 54-op + 2-count + structural bool; version range 14–17 probed |
+
+**Proceed conditions for later tasks:** implement only this closed set (or a
+subset); fail closed outside it; re-probe before expanding major range.
+
+Planned gates after implementation: corpus matrix (safe positives + adversarial
+negatives including non-manifest `pg_catalog` stable, `current_setting`,
+`pg_get_*`, function-backed cast), unit tests for identity resolver (facts
+only), trust policy manifest tests, cross-surface SDK/CLI/HTTP parity, no-leak
+tests, `make query-access-corpus-gates`, dialect-tagged PostgreSQL tests.
 
 ## Consequences
 

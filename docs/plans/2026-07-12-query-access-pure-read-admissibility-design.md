@@ -3,8 +3,9 @@
 Date: 2026-07-12
 Branch: `query-access-pure-read-admissibility`
 Base: `main` @ `4d839b6`
-Status: Design only (Task 1) — no production code
+Status: Design + T2 research complete — no production code
 Decision: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Proposed)
+T2 feasibility: **Proceed** (see Appendix A)
 
 ## 1. Goal
 
@@ -242,22 +243,28 @@ For each allowed identity, document:
    effect.
 5. Supported PostgreSQL major versions and upgrade/review process.
 
-#### 4.3.3 Phase 1 candidates (not automatic)
+#### 4.3.3 Phase 1 candidates (T2 ledger — still not automatic trust)
 
-These are **research candidates**, admissible only if each passes the audit
-and lands in the manifest with tests:
+T2 **Proceed** with this closed set. Entries become Trusted only after future
+resolve + manifest membership + tests (Tasks 6–9). Full ledger: Appendix A.
 
-- Basic comparison operators (`=`, `<>`, `<`, `>`, `<=`, `>=`) on a closed set
-  of type pairs (e.g. int/text/bool) with unique `pg_operator` + `oprcode`.
-- Structural `AND` / `OR` / `NOT` (`BoolExpr`) if treated as pure control
-  structure without separate catalog identity — document explicitly if
-  structural rather than catalog-bound.
-- `COUNT(*)` / `COUNT(col)` aggregate only with unique aggregate identity and
-  audit that it does not introduce hidden relation reads beyond the already-
-  extracted FROM/JOIN sources and argument column.
+- **Structural `BoolExpr` (AND/OR/NOT):** AST control structure, no catalog
+  identity. Allowed when every child effect is trusted or absent.
+- **Comparison operators (closed):** for each of
+  `{=,<>,<,>,<=,>=}` on same-type pairs of
+  `{bool,int2,int4,int8,float4,float8,numeric,text,oid}` → **54** operator
+  identities (PG17 probe). Each entry keys operator OID + `oprcode` (+ types).
+  All probed impls were `provolatile=i` (fact only).
+- **Aggregates:** `count(*)` OID **2803**; `count(anyelement)` OID **2147**
+  (arg type OID **2276**). Unique aggregate identity required; name `count` is
+  not proof.
 
-If research cannot prove any candidate → leave it `indeterminate` and shrink
-the positive matrix.
+**Recommended phase-1 default for casts: omit.** Binary casts among core types
+are few; cast row OIDs fall in auto-assigned ranges; most useful numeric casts
+are function-backed → indeterminate. See rejected ledger.
+
+If research cannot prove a candidate at implement time → leave `indeterminate`
+and shrink the positive matrix (do not widen trust).
 
 #### 4.3.4 Explicit exclusions (always indeterminate unless later decision)
 
@@ -265,11 +272,49 @@ the positive matrix.
   immutable ones.
 - `current_setting`, `set_config`, and session/GUC readers/writers.
 - `pg_get_*` metadata helpers and similar catalog pretty-printers.
+- File/network/OS readers (e.g. `pg_read_file`, `pg_ls_dir`).
 - User-defined stable/immutable functions, operators, casts.
 - Function-backed casts.
 - Volatile catalog functions (default).
+- Cross-type comparisons needing coercion; `varchar` same-type ops not in the
+  closed set (typically text coercion).
 - Anything requiring open-ended "all comparison ops" or "all immutable
   builtins" class membership.
+
+#### 4.3.5 Manifest schema (application-owned)
+
+```text
+TrustedEffectManifest:
+  schema_version: string
+  postgresql_major_min: int   // phase-1 claim: 14 (probed)
+  postgresql_major_max: int   // phase-1 claim: 17 (probed); CI primary 17
+  entries: []TrustedEffectEntry
+
+TrustedEffectEntry:
+  kind: operator | aggregate | structural_bool
+  // Primary key (prefer OID + verify signature at resolve):
+  identity:
+    operator_oid? | function_oid?
+    namespace_oid?               // expect pg_catalog = 11 on stock installs
+    name?                       // verification only, never sole trust root
+    arg_type_oids: []oid        // operator left/right or proargtypes
+    result_type_oid?
+    implementation_function_oid? // oprcode / aggregate fn
+  expected_facts:               // fail closed if catalog disagrees
+    provolatile?                // recorded fact; not a trust rule
+    prokind?
+    castmethod?                 // if cast entries ever added: require 'b'
+    castfunc_zero?              // if cast: require no function
+  audit:
+    unique_data_deps: "ast_operands" | "query_row_sources" | ...
+    no_hidden_reads: true
+    requirements_complete: true
+    notes: string
+    probed_majors: []int        // e.g. [14,16,17]
+```
+
+Resolver returns facts; `TrustPolicy.IsTrusted(facts, manifest, server_major)`
+returns true only on unique match + entry audit flags + major in range.
 
 ### 4.4 Extraction changes (parser → facts)
 
@@ -653,3 +698,118 @@ allowlists both violate.
 
 If kill criteria fire, keep an audit spike only — do not ship a weaker trust
 root.
+
+## Appendix A — T2 research: manifest feasibility (2026-07-12)
+
+### A.1 Decision
+
+**Proceed.** A bounded, version-scoped, per-item audited effect identity
+manifest is feasible for phase 1 without name or volatility-class allowlists.
+
+Not implemented in T2. Decision record remains `Proposed` until product gates
+land.
+
+### A.2 Repo version matrix
+
+| Surface | PostgreSQL major evidence |
+|---------|---------------------------|
+| Docker E2E compose | **17** only (`postgres:17`) |
+| Metadata-aware audit product claim | **12+** (CHANGELOG); not multi-version CI for query-access effects |
+| Parser (`pg_query_go` v6 / libpg_query) | **17** grammar; **18** parser support deferred |
+| T2 ephemeral probes | **14.23**, **16.14**, **17.10** (Docker official images) |
+| T2 **phase-1 effect-identity claim** | **14–17** (probed). CI primary remains **17**. |
+| **Not claimed without further probe** | 12, 13, 15 |
+| Out of phase-1 parse/promotion | 18+ until parser + re-probe |
+
+### A.3 Identity fields (runtime proof)
+
+| Catalog | Fields for proof |
+|---------|------------------|
+| `pg_operator` | `oid`, `oprnamespace`, `oprname`, `oprleft`, `oprright`, `oprresult`, `oprcode` |
+| `pg_proc` | `oid`, `pronamespace`, `proname`, `proargtypes`, `prorettype`, `provolatile`, `prokind` |
+| `pg_aggregate` | `aggfnoid`, `aggkind`, `aggtransfn`, `aggfinalfn` (audit context) |
+| `pg_cast` | `castsource`, `casttarget`, `castfunc`, `castmethod`, `castcontext` (not cast row OID as sole key) |
+| `pg_type` / `pg_namespace` | type OID + namespace OID facts |
+
+### A.4 OID stability
+
+- Official: released manually assigned OIDs are not renumbered; auto-assigned
+  bootstrap OIDs (~10000–16383) are installation-unstable.
+- Probe: candidate type/operator/impl/aggregate OIDs matched across 14/16/17
+  for the closed set (0 mismatches on identity keys).
+- Binary `pg_cast.oid` values observed ≥10000 → key by type pair + method.
+
+### A.5 Candidate ledger (minimal promote set)
+
+**Structural (no OID):**
+
+- `BoolExpr` AND / OR / NOT — pure AST; children must be trusted or absent.
+
+**Operators (54):** same-type pairs for types
+`bool(16), int2(21), int4(23), int8(20), float4(700), float8(701),
+numeric(1700), text(25), oid(26)` and names
+`=,<>,<,>,<=,>=`.
+
+Illustrative stable samples (14=16=17):
+
+- `=`(bool,bool) op **91** / `booleq` **60**
+- `=`(int4,int4) op **96** / `int4eq` **65**
+- `=`(int8,int8) op **410** / `int8eq` **467**
+- `=`(text,text) op **98** / `texteq` **67**
+- `=`(numeric,numeric) op **1752** / `numeric_eq` **1718**
+
+All 54 probed implementations: `prokind=f`, `provolatile=i`, namespace
+`pg_catalog`. Volatility recorded as fact only.
+
+**Semantic audit (operators):** unique data dependency is left/right AST
+operands; pure comparison C builtins; no table/GUC/role/file/network reads;
+cannot omit permission-bearing columns already required by operand extraction.
+
+**Aggregates:**
+
+- `count(*)` function OID **2803**, empty `proargtypes`, `prokind=a`,
+  `provolatile=i` (fact)
+- `count(anyelement)` function OID **2147**, arg type **2276**, same kind/vol
+
+**Semantic audit (count):** aggregates only over already-extracted query row
+sources / argument expression; does not open additional relations; name
+`count` alone is never sufficient (user-defined overload risk).
+
+### A.6 Rejected ledger
+
+| Class | Disposition |
+|-------|-------------|
+| Non-manifest `pg_catalog` op/fn/cast (incl. stable/immutable) | indeterminate |
+| `current_setting` / `set_config` | indeterminate (hidden GUC/session) |
+| `pg_get_*` helpers | indeterminate (catalog metadata) |
+| `pg_read_file` / `pg_ls_dir` / similar | indeterminate |
+| User-defined stable/immutable/volatile effects | indeterminate |
+| Function-backed casts (`castmethod=f`) | indeterminate |
+| Binary casts (phase-1 default omit) | indeterminate until type-pair entries + tests |
+| Coercion-required / multi-match / unknown OID | indeterminate |
+| Syntax/name/schema allowlist | forbidden |
+| `pg_catalog + i\|s` class allowlist | forbidden |
+
+### A.7 Privileges, context, no-leak
+
+- Catalog SELECT on `pg_catalog` (same privilege class as existing relation
+  resolver).
+- Lock search_path/database/role to execution; prefer `pg_catalog`-only resolve
+  for trust.
+- No DSN, credentials, catalog query text, raw SQL, or `severity` in public
+  results. Probes and design may store abstract OIDs and counts only.
+
+### A.8 Next characterization scope (T3+, not T2 code)
+
+- Freeze today’s PG indeterminate hard-stop (tests only).
+- Later: positives only for closed set under fake/real identity + manifest.
+- Adversarial: non-manifest catalog stable, `current_setting`, `pg_get_*`,
+  UDF stable, function-backed cast, no resolver, multi-match, coercion gap,
+  requirements completeness, no-leak.
+
+### A.9 Worth implementing after T2?
+
+Yes, contingent on implementing **only** the closed ledger, major range
+**14–17** (CI **17**), fail-closed elsewhere, and never inventing name or
+volatility-class trust roots. Expanding majors or entries requires re-probe +
+re-audit, not silent widening.
