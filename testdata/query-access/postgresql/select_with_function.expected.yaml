@@ -15,4 +15,4 @@ expect:
       privilege: read_table
   unresolved: []
   warnings: []
-  reason_codes: []
+  reason_codes: [unproven_function_effect]

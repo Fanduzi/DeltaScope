@@ -25,4 +25,4 @@ expect:
       privilege: read_column
   unresolved: []
   warnings: [projection_only_inference_risk]
-  reason_codes: []
+  reason_codes: [unproven_operator_effect]

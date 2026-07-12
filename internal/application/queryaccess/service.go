@@ -39,6 +39,13 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
 	}
 
+	// Effect-identity resolver is not implemented yet. When unproven effect
+	// presence codes are present on PostgreSQL, keep classification/admission
+	// fail-closed and do not promote. Identity failure categories (unknown,
+	// error, ambiguous, coercion_gap) are mapped only via Bounded helpers that
+	// reject free-text — see domain.ReasonForIdentityFailure.
+	extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
+
 	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
 	extracted.DomainResult.ReadClassification = reclassifyAfterResolution(extracted.DomainResult.ReadClassification, extracted.DomainResult.ReasonCodes, extracted.DomainResult.Unresolved, req.SchemaResolver != nil, req.Dialect)
 	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
@@ -62,7 +69,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	extracted.DomainResult.Requirements = domain.SortRequirements(extracted.DomainResult.Requirements)
 	// Outputs preserve SELECT declaration order — do NOT sort.
 	extracted.DomainResult.Unresolved = domain.SortUnresolved(extracted.DomainResult.Unresolved)
-	extracted.DomainResult.ReasonCodes = domain.SortReasonCodes(extracted.DomainResult.ReasonCodes)
+	extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
 	extracted.DomainResult.Warnings = domain.SortWarningCodes(extracted.DomainResult.Warnings)
 
 	if err := domain.ValidateResult(&extracted.DomainResult); err != nil {

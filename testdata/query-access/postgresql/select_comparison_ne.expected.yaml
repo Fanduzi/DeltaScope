@@ -23,4 +23,4 @@ expect:
       privilege: read_column
   unresolved: []
   warnings: []
-  reason_codes: []
+  reason_codes: [unproven_operator_effect]

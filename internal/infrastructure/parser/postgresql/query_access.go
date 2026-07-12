@@ -23,6 +23,9 @@ type QueryAccessFacts struct {
 	ColumnReferences   []ColumnRefFacts
 	Outputs            []OutputFacts
 	Unresolved         []UnresolvedFacts
+	// ReasonCodes are bounded machine identifiers for unproven effects.
+	// Never SQL text, operator/function/cast names, OIDs, or literals.
+	ReasonCodes []string
 }
 
 // RelationFacts describes a relation reference extracted from the AST.
@@ -76,6 +79,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	relations := make([]RelationFacts, 0)
 	columnRefs := make([]ColumnRefFacts, 0)
 	outputs := make([]OutputFacts, 0)
+	var reasonFlags effectReasonFlags
 
 	classifications := make([]string, 0, len(stmts))
 	for _, rawStmt := range stmts {
@@ -85,6 +89,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		}
 		node := rawStmt.GetStmt()
 		classifications = append(classifications, classifyStatement(node))
+		collectEffectReasonFlags(node, &reasonFlags)
 
 		if sel := node.GetSelectStmt(); sel != nil {
 			cteLineage, cteBodyRels := buildCTELineage(sel, defaultSchema)
@@ -99,6 +104,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	facts.Relations = deduplicateRelations(relations)
 	facts.ColumnReferences = columnRefs
 	facts.Outputs = outputs
+	facts.ReasonCodes = reasonFlags.toReasonCodes()
 
 	if hasUnresolvedWildcard(columnRefs) && defaultSchema == "" {
 		facts.Unresolved = append(facts.Unresolved, UnresolvedFacts{
@@ -108,6 +114,197 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	}
 
 	return facts, nil
+}
+
+// effectReasonFlags tracks which unproven effect kinds appear in the statement tree.
+// Codes are presence-only; they never capture operator/function/cast spellings.
+type effectReasonFlags struct {
+	operator bool
+	function bool
+	cast     bool
+}
+
+func (f effectReasonFlags) toReasonCodes() []string {
+	var codes []string
+	// Deterministic emission order (application will re-sort alphabetically).
+	if f.cast {
+		codes = append(codes, "unproven_cast_effect")
+	}
+	if f.function {
+		codes = append(codes, "unproven_function_effect")
+	}
+	if f.operator {
+		codes = append(codes, "unproven_operator_effect")
+	}
+	return codes
+}
+
+// collectEffectReasonFlags records unproven operator / function / cast presence
+// without storing names, OIDs, or SQL fragments.
+func collectEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags) {
+	if node == nil || flags == nil {
+		return
+	}
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_SelectStmt:
+		collectSelectEffectReasonFlags(n.SelectStmt, flags)
+	case *pg_query.Node_ExplainStmt:
+		if n.ExplainStmt.GetQuery() != nil {
+			collectEffectReasonFlags(n.ExplainStmt.GetQuery(), flags)
+		}
+	}
+}
+
+func collectSelectEffectReasonFlags(sel *pg_query.SelectStmt, flags *effectReasonFlags) {
+	if sel == nil || flags == nil {
+		return
+	}
+	// Set operations: walk both sides.
+	if sel.GetLarg() != nil {
+		collectSelectEffectReasonFlags(sel.GetLarg(), flags)
+	}
+	if sel.GetRarg() != nil {
+		collectSelectEffectReasonFlags(sel.GetRarg(), flags)
+	}
+	// CTE bodies contribute effects (same fail-closed posture as nested selects).
+	if with := sel.GetWithClause(); with != nil {
+		for _, cteNode := range with.GetCtes() {
+			if cteNode == nil {
+				continue
+			}
+			if cte := cteNode.GetCommonTableExpr(); cte != nil && cte.GetCtequery() != nil {
+				collectEffectReasonFlags(cte.GetCtequery(), flags)
+			}
+		}
+	}
+	for _, target := range sel.GetTargetList() {
+		collectNodeEffectReasonFlags(target, flags)
+	}
+	if sel.GetWhereClause() != nil {
+		collectNodeEffectReasonFlags(sel.GetWhereClause(), flags)
+	}
+	for _, from := range sel.GetFromClause() {
+		collectNodeEffectReasonFlags(from, flags)
+	}
+	if sel.GetHavingClause() != nil {
+		collectNodeEffectReasonFlags(sel.GetHavingClause(), flags)
+	}
+	for _, group := range sel.GetGroupClause() {
+		collectNodeEffectReasonFlags(group, flags)
+	}
+	for _, sort := range sel.GetSortClause() {
+		collectNodeEffectReasonFlags(sort, flags)
+	}
+}
+
+func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags) {
+	if node == nil || flags == nil {
+		return
+	}
+	// Early exit once all kinds are present.
+	if flags.operator && flags.function && flags.cast {
+		return
+	}
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_AExpr:
+		flags.operator = true
+		if n.AExpr.GetLexpr() != nil {
+			collectNodeEffectReasonFlags(n.AExpr.GetLexpr(), flags)
+		}
+		if n.AExpr.GetRexpr() != nil {
+			collectNodeEffectReasonFlags(n.AExpr.GetRexpr(), flags)
+		}
+	case *pg_query.Node_TypeCast:
+		flags.cast = true
+		if n.TypeCast.GetArg() != nil {
+			collectNodeEffectReasonFlags(n.TypeCast.GetArg(), flags)
+		}
+	case *pg_query.Node_FuncCall:
+		flags.function = true
+		for _, arg := range n.FuncCall.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+		if n.FuncCall.GetOver() != nil {
+			// Window function still counts as function; walk partition/order if needed later.
+			_ = n.FuncCall.GetOver()
+		}
+	case *pg_query.Node_RangeFunction:
+		flags.function = true
+	case *pg_query.Node_ResTarget:
+		if n.ResTarget.GetVal() != nil {
+			collectNodeEffectReasonFlags(n.ResTarget.GetVal(), flags)
+		}
+	case *pg_query.Node_SelectStmt:
+		collectSelectEffectReasonFlags(n.SelectStmt, flags)
+	case *pg_query.Node_SubLink:
+		if n.SubLink.GetSubselect() != nil {
+			collectNodeEffectReasonFlags(n.SubLink.GetSubselect(), flags)
+		}
+		if n.SubLink.GetTestexpr() != nil {
+			collectNodeEffectReasonFlags(n.SubLink.GetTestexpr(), flags)
+		}
+	case *pg_query.Node_BoolExpr:
+		for _, arg := range n.BoolExpr.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+	case *pg_query.Node_NullTest:
+		if n.NullTest.GetArg() != nil {
+			collectNodeEffectReasonFlags(n.NullTest.GetArg(), flags)
+		}
+	case *pg_query.Node_CoalesceExpr:
+		for _, arg := range n.CoalesceExpr.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+	case *pg_query.Node_CaseExpr:
+		caseExpr := n.CaseExpr
+		if caseExpr.GetArg() != nil {
+			collectNodeEffectReasonFlags(caseExpr.GetArg(), flags)
+		}
+		if caseExpr.GetDefresult() != nil {
+			collectNodeEffectReasonFlags(caseExpr.GetDefresult(), flags)
+		}
+		for _, arg := range caseExpr.GetArgs() {
+			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
+				collectNodeEffectReasonFlags(caseWhen.GetExpr(), flags)
+				collectNodeEffectReasonFlags(caseWhen.GetResult(), flags)
+			}
+		}
+	case *pg_query.Node_ArrayExpr:
+		for _, elem := range n.ArrayExpr.GetElements() {
+			collectNodeEffectReasonFlags(elem, flags)
+		}
+	case *pg_query.Node_RowExpr:
+		for _, arg := range n.RowExpr.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+	case *pg_query.Node_MinMaxExpr:
+		for _, arg := range n.MinMaxExpr.GetArgs() {
+			collectNodeEffectReasonFlags(arg, flags)
+		}
+	case *pg_query.Node_AIndirection:
+		if n.AIndirection.GetArg() != nil {
+			collectNodeEffectReasonFlags(n.AIndirection.GetArg(), flags)
+		}
+	case *pg_query.Node_JoinExpr:
+		join := n.JoinExpr
+		collectNodeEffectReasonFlags(join.GetLarg(), flags)
+		collectNodeEffectReasonFlags(join.GetRarg(), flags)
+		if join.GetQuals() != nil {
+			collectNodeEffectReasonFlags(join.GetQuals(), flags)
+		}
+	case *pg_query.Node_RangeSubselect:
+		if n.RangeSubselect.GetSubquery() != nil {
+			collectNodeEffectReasonFlags(n.RangeSubselect.GetSubquery(), flags)
+		}
+	case *pg_query.Node_SortBy:
+		if n.SortBy.GetNode() != nil {
+			collectNodeEffectReasonFlags(n.SortBy.GetNode(), flags)
+		}
+	case *pg_query.Node_ColumnRef, *pg_query.Node_AConst, *pg_query.Node_RangeVar,
+		*pg_query.Node_SqlvalueFunction:
+		// Non-effect leaves.
+		return
+	}
 }
 
 func foldClassifications(classifications []string) string {

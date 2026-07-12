@@ -18,6 +18,8 @@ Application-level contracts for query access analysis, defining the schema resol
 | requirements.go | Generates access requirements based on mode: strict requires all columns, projection-only requires only output-contributing columns with inference risk warning |
 | requirements_test.go | Verifies requirement generation: salary threshold, blacklist JOIN, GROUP/HAVING, ORDER BY, hashed output, subquery correlation, mode equality, stable warnings, invalid mode, unresolved references |
 | service_test.go | Verifies service integration: offline mode, metadata mode, mode normalization, classification preservation, wildcard expansion |
+| unproven_effect_reasons_postgresql_tag_test.go | Verifies bounded unproven-effect reason codes for PostgreSQL operator/function/cast presence, identity-failure mapping no-leak, mode freeze, and sort determinism |
+| unproven_effect_mysql_tidb_regression_test.go | Guards MySQL/TiDB operator-bearing admissible cases against unproven_* reason regression |
 
 ## Exports
 
@@ -41,6 +43,9 @@ Application-level contracts for query access analysis, defining the schema resol
 - `AnalyzePostgreSQL` follows the same admission computation pattern as TiDB.
 - CTE relations are marked with `PermissionRequired: false`; base tables and derived tables require permission.
 - `Service.Analyze` routes by dialect, applies optional metadata resolution, generates requirements based on mode, sorts output, and validates the result.
+- PostgreSQL unproven-effect reason codes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`) are presence-only machine identifiers emitted by the parser adapter; they explain indeterminate classification without embedding SQL, OIDs, or effect spellings.
+- Identity-failure categories map only through `domain.ReasonForIdentityFailure`; free-text errors cannot be injected as trusted reasons. Effect-identity resolver / admission promotion remain out of scope for this layer until later tasks.
+- Callers cannot supply `ReasonCodes` on `QueryAccessRequest`; transports passthrough the single application result.
 - `buildRequirements` generates access requirements based on mode: strict requires all resolved columns, projection-only requires only output-contributing columns and emits inference_risk warning.
 - Both modes require every permission-bearing relation (PermissionRequired: true).
 - Required unresolved references produce indeterminate requirements.

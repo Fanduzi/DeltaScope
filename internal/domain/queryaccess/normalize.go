@@ -237,6 +237,48 @@ func SortReasonCodes(codes []ReasonCode) []ReasonCode {
 	return sorted
 }
 
+// DeduplicateReasonCodes removes duplicate reason codes, preserving first-seen order.
+func DeduplicateReasonCodes(codes []ReasonCode) []ReasonCode {
+	if len(codes) == 0 {
+		return codes
+	}
+	seen := make(map[ReasonCode]struct{}, len(codes))
+	result := make([]ReasonCode, 0, len(codes))
+	for _, c := range codes {
+		if _, ok := seen[c]; ok {
+			continue
+		}
+		seen[c] = struct{}{}
+		result = append(result, c)
+	}
+	return result
+}
+
+// ReasonForIdentityFailure maps a bounded identity-failure category to a
+// stable reason code. Unknown categories return false so callers cannot inject
+// free-text or ad-hoc strings as trusted reasons.
+func ReasonForIdentityFailure(f IdentityFailure) (ReasonCode, bool) {
+	switch f {
+	case IdentityFailureUnavailable:
+		return ReasonIdentityResolverUnavailable, true
+	case IdentityFailureUnknown:
+		return ReasonIdentityUnknown, true
+	case IdentityFailureError:
+		return ReasonIdentityLookupFailed, true
+	case IdentityFailureAmbiguous:
+		return ReasonIdentityAmbiguous, true
+	case IdentityFailureCoercionGap:
+		return ReasonIdentityCoercionGap, true
+	default:
+		return "", false
+	}
+}
+
+// NormalizeReasonCodes deduplicates and sorts reason codes for stable public output.
+func NormalizeReasonCodes(codes []ReasonCode) []ReasonCode {
+	return SortReasonCodes(DeduplicateReasonCodes(codes))
+}
+
 // SortWarningCodes sorts warning codes for deterministic output.
 func SortWarningCodes(codes []WarningCode) []WarningCode {
 	if len(codes) == 0 {

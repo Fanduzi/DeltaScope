@@ -74,6 +74,8 @@ const (
 )
 
 // ReasonCode is a bounded machine identifier for why something is indeterminate or rejected.
+// Reason codes are stable machine identifiers only: never SQL text, object names,
+// function/operator/cast spellings, OIDs, literals, credentials, or driver errors.
 type ReasonCode string
 
 const (
@@ -90,7 +92,50 @@ const (
 	// ReasonAmbiguousReference indicates a reference could not be uniquely resolved.
 	ReasonAmbiguousReference ReasonCode = "ambiguous_reference"
 	// ReasonFunctionEffect indicates a function call with unknown side effects.
+	// Used by MySQL/TiDB empty-allowlist path (legacy name).
 	ReasonFunctionEffect ReasonCode = "unknown_function_effect"
+
+	// ReasonUnprovenOperatorEffect indicates an operator expression was present
+	// but its catalog identity was not proven trusted for pure-read admission.
+	ReasonUnprovenOperatorEffect ReasonCode = "unproven_operator_effect"
+	// ReasonUnprovenFunctionEffect indicates a function or aggregate call was
+	// present but its catalog identity was not proven trusted.
+	ReasonUnprovenFunctionEffect ReasonCode = "unproven_function_effect"
+	// ReasonUnprovenCastEffect indicates a cast expression was present but its
+	// cast path identity was not proven trusted.
+	ReasonUnprovenCastEffect ReasonCode = "unproven_cast_effect"
+
+	// ReasonIdentityResolverUnavailable indicates effect-identity resolution was
+	// required but no identity resolver was configured.
+	ReasonIdentityResolverUnavailable ReasonCode = "identity_resolver_unavailable"
+	// ReasonIdentityUnknown indicates the resolver returned an unknown / no-match identity.
+	ReasonIdentityUnknown ReasonCode = "identity_unknown"
+	// ReasonIdentityLookupFailed indicates the resolver failed with a transport or catalog error.
+	// Public results must never embed the underlying error text.
+	ReasonIdentityLookupFailed ReasonCode = "identity_lookup_failed"
+	// ReasonIdentityAmbiguous indicates multi-match identity resolution (non-unique).
+	ReasonIdentityAmbiguous ReasonCode = "identity_ambiguous"
+	// ReasonIdentityCoercionGap indicates type coercion required for unique identity
+	// is outside the supported bounded resolution graph.
+	ReasonIdentityCoercionGap ReasonCode = "identity_coercion_gap"
+)
+
+// IdentityFailure is a bounded category for effect-identity resolution outcomes.
+// Callers map transport/catalog errors to these categories before attaching a
+// reason code; free-text error strings must never become reason codes.
+type IdentityFailure string
+
+const (
+	// IdentityFailureUnavailable means no identity resolver was configured.
+	IdentityFailureUnavailable IdentityFailure = "unavailable"
+	// IdentityFailureUnknown means the resolver returned unknown / no rows.
+	IdentityFailureUnknown IdentityFailure = "unknown"
+	// IdentityFailureError means the resolver hit a transport or catalog error.
+	IdentityFailureError IdentityFailure = "error"
+	// IdentityFailureAmbiguous means multi-match non-unique identity.
+	IdentityFailureAmbiguous IdentityFailure = "ambiguous"
+	// IdentityFailureCoercionGap means required coercion is unsupported.
+	IdentityFailureCoercionGap IdentityFailure = "coercion_gap"
 )
 
 // WarningCode is a bounded machine identifier for warnings.

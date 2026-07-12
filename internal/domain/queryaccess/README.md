@@ -45,6 +45,21 @@ Transport-neutral domain types for query access analysis, including read classif
   - `ReasonMultiStatement`
   - `ReasonSchemaUnavailable`
   - `ReasonAmbiguousReference`
+  - `ReasonFunctionEffect`
+  - `ReasonUnprovenOperatorEffect`
+  - `ReasonUnprovenFunctionEffect`
+  - `ReasonUnprovenCastEffect`
+  - `ReasonIdentityResolverUnavailable`
+  - `ReasonIdentityUnknown`
+  - `ReasonIdentityLookupFailed`
+  - `ReasonIdentityAmbiguous`
+  - `ReasonIdentityCoercionGap`
+- `IdentityFailure`
+  - `IdentityFailureUnavailable`
+  - `IdentityFailureUnknown`
+  - `IdentityFailureError`
+  - `IdentityFailureAmbiguous`
+  - `IdentityFailureCoercionGap`
 - `WarningCode`
   - `WarningAmbiguousColumn`
   - `WarningMissingSchema`
@@ -64,6 +79,9 @@ Transport-neutral domain types for query access analysis, including read classif
 - `SortColumns()`
 - `SortRequirements()`
 - `DeduplicateUsages()`
+- `DeduplicateReasonCodes()`
+- `NormalizeReasonCodes()`
+- `ReasonForIdentityFailure()`
 - `ValidateResult()`
 - `FormatRelationKey()`
 - `FormatColumnKey()`
@@ -75,6 +93,8 @@ Transport-neutral domain types for query access analysis, including read classif
 - Sorting functions return new slices; they do not mutate input.
 - `FoldReadClassification` priority: `not_read_only` > `indeterminate` > `read_only`.
 - `ValidateAdmission` rejects `admissible` + non-`read_only` combinations.
+- Unproven-effect reason codes (`unproven_*`, `identity_*`) are additive machine identifiers only; they never embed SQL, OIDs, object names, or driver errors.
+- `ReasonForIdentityFailure` maps only bounded `IdentityFailure` categories; free-text cannot be injected as a trusted reason.
 
 ## Dependencies
 - Upstream: `internal/application/queryaccess`

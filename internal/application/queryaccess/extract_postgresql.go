@@ -75,5 +75,9 @@ func AnalyzePostgreSQL(ctx context.Context, req QueryAccessRequest) (QueryAccess
 		})
 	}
 
+	// Map parser presence-only unproven effect codes. Do not accept caller-supplied
+	// reason codes (request has no such field) and never embed SQL/effect text.
+	result.ReasonCodes = convertReasonCodes(facts.ReasonCodes)
+
 	return QueryAccessResult{DomainResult: result}, nil
 }

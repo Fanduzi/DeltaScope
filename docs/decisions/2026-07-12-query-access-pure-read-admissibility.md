@@ -7,11 +7,18 @@ Related commits:
 - Design + trust-policy docs on branch `query-access-pure-read-admissibility`
 - T2 research commit: `docs: research query access effect identity manifest`
 - T3 characterization commit: `test: characterize query access effect identity candidates`
+- T4 reason codes commit: `feat: explain unproven query access effects`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
 - T3: `internal/infrastructure/parser/postgresql/query_access_effect_identity_postgresql_tag_test.go`
 - T3: extended `testdata/query-access/postgresql/` corpus (structural / candidate / rejected)
+- T4: domain reason constant + identity-failure mapping + normalize order tests
+- T4: `internal/application/queryaccess/unproven_effect_reasons_postgresql_tag_test.go`
+- T4: `internal/application/queryaccess/unproven_effect_mysql_tidb_regression_test.go`
+- T4: parser unproven reason emission tests
+- T4: SDK/CLI/HTTP postgresql-tag passthrough + no-leak tests
+- T4: PG corpus expected fixtures record reason ids only
 - Planned (later): unit/integration tests for effect-identity catalog resolution + promotion
 - Planned (later): positive corpus under fake/real identity resolver + manifest
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
@@ -520,6 +527,58 @@ promotion behavior).
   `select_comparison_ge`, `select_count_star`, `select_count_column`,
   `select_current_setting`, `select_udf_like`, `select_type_cast`
   (plus existing `select_with_where` / function / join fixtures)
+
+### T4 — Bounded unproven-effect reason codes (2026-07-12)
+
+**Status remains:** `Proposed` (reason codes explain why PostgreSQL stays
+`indeterminate`; they do **not** accept product promotion behavior).
+
+**What T4 delivers:**
+
+1. **Additive domain reason codes** (machine identifiers only):
+   - `unproven_operator_effect`
+   - `unproven_function_effect` (functions and aggregates)
+   - `unproven_cast_effect`
+   - `identity_resolver_unavailable`
+   - `identity_unknown`
+   - `identity_lookup_failed`
+   - `identity_ambiguous`
+   - `identity_coercion_gap`
+2. **Assignment path (presence-only):** PostgreSQL extract walks `A_Expr` /
+   `FuncCall` / `TypeCast` and emits the corresponding `unproven_*` codes.
+   Codes never include operator spellings, function names, cast targets, OIDs,
+   SQL text, literals, credentials, or driver errors.
+3. **Identity failure mapping:** `ReasonForIdentityFailure` accepts only bounded
+   `IdentityFailure` categories; free-text / error strings cannot be injected
+   as trusted reasons. Underlying errors are discarded when attaching codes.
+4. **Determinism:** `NormalizeReasonCodes` deduplicates and sorts; same SQL
+   yields the same reason order across analyses.
+5. **Admission unchanged:** candidate and rejected effect-bearing PostgreSQL
+   queries remain `read_classification=indeterminate` and
+   `admission=indeterminate`. Mode (`strict` / `projection_only`) does not
+   change classification. MySQL/TiDB operator-bearing admissible cases do not
+   receive `unproven_*` / `identity_*` codes and do not regress.
+6. **Cross-surface:** SDK, CLI, and HTTP continue to passthrough the single
+   application result; no per-surface branching; no `severity`; no MCP tool.
+7. **Corpus:** PostgreSQL expected fixtures record reason ids only (no effect
+   text).
+
+**Explicit non-claims of T4:**
+
+- No effect identity resolver implementation
+- No trusted-effect manifest / trust policy evaluation
+- No proof engine
+- No PostgreSQL admission promotion (`reclassifyAfterResolution` still hard-stops PG)
+- No `effect_not_in_trust_manifest` code (optional; deferred until manifest wiring)
+
+**Artifacts:**
+
+- Domain: `model.go` / `normalize.go` (+ tests, package README)
+- Parser: `query_access.go` presence flags → reason codes
+- Application: `extract_postgresql.go` mapping; `service.go` normalize
+- Tests: application unproven-effect + MySQL/TiDB regression; parser reasons;
+  SDK/CLI/HTTP postgresql-tag passthrough
+- Corpus: `testdata/query-access/postgresql/*.expected.yaml` reason ids
 
 ## Consequences
 
