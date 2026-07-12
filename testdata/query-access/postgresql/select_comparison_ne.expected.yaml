@@ -1,0 +1,26 @@
+name: select_comparison_ne
+dialect: postgresql
+mode: strict
+expect:
+  # T2 candidate comparison; unproven → indeterminate (T3 freeze).
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection, filter]
+  outputs:
+    - name: id
+      sources: [users.id]
+  requirements:
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

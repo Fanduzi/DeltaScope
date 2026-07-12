@@ -55,33 +55,11 @@ production-adjacent work starts at Task 3 (characterization tests).
 
 ---
 
-## Task 3 — Characterize PG admission freeze
+## Task 3 — Characterize PG admission freeze — done
 
-```text
-On branch query-access-pure-read-admissibility in /Users/fan/GolangProjects/DeltaScope.
-
-Implement Task 3 from docs/plans/2026-07-12-query-access-pure-read-admissibility-implementation.md.
-
-FIRST read and obey:
-- docs/decisions/2026-07-12-query-access-pure-read-admissibility.md (T2 Evidence, Proceed)
-- docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md Appendix A
-Do not implement Trusted promotion. Do not widen the ledger.
-
-Add characterization tests only (prefer no production code) proving:
-1) PostgreSQL SELECT with WHERE equality is classification+admission indeterminate without effect identity resolver.
-2) MySQL equivalent remains admissible (regression).
-3) reclassifyAfterResolution currently does not lift PostgreSQL indeterminate.
-4) Document intended adversarial outcomes (as tests or table-driven fixtures):
-   non-manifest pg_catalog stable, current_setting, pg_get_*, function-backed cast,
-   user-defined stable → must remain indeterminate when those paths are exercised.
-
-Follow design diagnosis §2. T2 Proceed does NOT authorize T6–T8 until characterization lands.
-
-Gates: go test ./internal/application/queryaccess/ -count=1; go test -tags postgresql ./internal/application/queryaccess/ -count=1; git diff --check; gitnexus detect_changes.
-
-Commit: test: characterize query access pg admission freeze
-No co-authors. No push.
-```
+Characterization tests + query-access corpus + T3 Evidence docs are complete.
+Commit: `test: characterize query access effect identity candidates`.
+Decision remains `Proposed`. No production promotion. Next: Task 4 reason codes.
 
 ---
 

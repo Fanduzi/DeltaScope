@@ -5,11 +5,15 @@ Status: Proposed
 Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
 Related commits:
 - Design + trust-policy docs on branch `query-access-pure-read-admissibility`
-- T2 research commit: `docs: research query access effect identity manifest` (this task)
+- T2 research commit: `docs: research query access effect identity manifest`
+- T3 characterization commit: `test: characterize query access effect identity candidates`
 Related tests:
-- Planned (T3+): extended `testdata/query-access/` corpus (PostgreSQL positive + adversarial)
-- Planned: unit/integration tests for effect-identity catalog resolution
-- Planned: adversarial characterization that `pg_catalog` + volatility alone never promotes
+- T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
+- T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
+- T3: `internal/infrastructure/parser/postgresql/query_access_effect_identity_postgresql_tag_test.go`
+- T3: extended `testdata/query-access/postgresql/` corpus (structural / candidate / rejected)
+- Planned (later): unit/integration tests for effect-identity catalog resolution + promotion
+- Planned (later): positive corpus under fake/real identity resolver + manifest
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
 Related docs:
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md` (T2 appendix)
@@ -461,6 +465,61 @@ negatives including non-manifest `pg_catalog` stable, `current_setting`,
 `pg_get_*`, function-backed cast), unit tests for identity resolver (facts
 only), trust policy manifest tests, cross-surface SDK/CLI/HTTP parity, no-leak
 tests, `make query-access-corpus-gates`, dialect-tagged PostgreSQL tests.
+
+### T3 — Effect identity characterization (tests + corpus only)
+
+**Date:** 2026-07-12
+**Status remains:** `Proposed` (characterization does **not** accept product
+promotion behavior).
+
+**What T3 locks (evidence only; not supported candidate effects):**
+
+1. **Structural `BoolExpr` (AND/OR/NOT)** is pure AST control structure. Alone
+   (column refs only) it does **not** force `indeterminate` classification and
+   is **not** catalog identity proof. Wrapping a comparison candidate still
+   freezes both classification and admission as `indeterminate`.
+2. **T2 candidate comparison matrix** representative forms for
+   `=`, `<>`, `<`, `>`, `<=`, `>=` (int/text/bool samples, including
+   `OPERATOR(pg_catalog.=)`) remain `read_classification=indeterminate` and
+   `admission=indeterminate` with and without relation `SchemaResolver`.
+3. **`COUNT(*)` / `COUNT(column)`** remain indeterminate; only a future
+   manifest entry + identity resolver + proof engine may promote.
+4. **Type-resolution / coercion-looking comparisons** (int=`'x'`, float mix,
+   column-column) remain indeterminate — unique OID is not guessed.
+5. **Rejected ledger** remains fail-closed indeterminate:
+   `current_setting`, `set_config`, `pg_get_*`, `pg_read_file` / `pg_ls_dir`,
+   UDF-looking / non-`pg_catalog` schema-qualified functions, function-backed
+   cast / `TypeCast` / `CAST(...)`, non-manifest catalog-looking builtins
+   (`now`, `version`).
+6. **Unknown / coercion / multi-match shapes** (params, `IS NOT DISTINCT FROM`,
+   `||`) remain indeterminate.
+7. **No resolver, resolver error, incomplete metadata** keep effect-bearing
+   PostgreSQL queries indeterminate. Public results/errors must not include
+   SQL text, literals, credentials, connection strings, catalog query text, or
+   `severity`.
+8. **`reclassifyAfterResolution` never lifts PostgreSQL** out of
+   `indeterminate` (foundation hard-stop). MySQL safe-lift path is preserved.
+9. **MySQL/TiDB** operator-bearing SELECT (`WHERE` comparisons) remains
+   `read_only` + `admissible` (no cross-dialect regression).
+
+**Explicit non-claims of T3:**
+
+- Tests characterize current behavior only. They do **not** mean candidate
+  effects are supported, trusted, or admissible.
+- PostgreSQL promotion remains **forbidden** until later tasks complete:
+  effect-identity resolver (facts only), version-scoped audited manifest, and
+  proof engine / admission promotion wiring.
+- Rejected-ledger forms continue fail-closed even if catalog-stable/immutable.
+
+**Artifacts:**
+
+- Application: `effect_identity_characterization_postgresql_tag_test.go`,
+  `effect_identity_mysql_tidb_regression_test.go`
+- Parser AST: `query_access_effect_identity_postgresql_tag_test.go`
+- Corpus (representative): `select_structural_bool_and`, `select_comparison_ne`,
+  `select_comparison_ge`, `select_count_star`, `select_count_column`,
+  `select_current_setting`, `select_udf_like`, `select_type_cast`
+  (plus existing `select_with_where` / function / join fixtures)
 
 ## Consequences
 

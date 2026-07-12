@@ -141,48 +141,69 @@ do not silently expand Trusted.
 
 ## Task 3 — Characterization tests for current PG admission freeze
 
-**Status:** next
+**Status:** done (`test: characterize query access effect identity candidates`)
 **Precondition:** T2 Proceed ledger (Appendix A) is authoritative for intended
 future adversarial outcomes.
 **Goal:** lock today's behavior so refactors cannot silently change MySQL or
 hide the PG hard-stop without intent. Extend adversarial expectations that
 future code must not promote on volatility alone.
 
-**File scope (tests only preferred):**
+**File scope (tests + corpus + design evidence only):**
 
-- `internal/application/queryaccess/*_test.go`
-- optional parser tests under `internal/infrastructure/parser/postgresql/`
+- `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
+- `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
+- `internal/infrastructure/parser/postgresql/query_access_effect_identity_postgresql_tag_test.go`
+- `testdata/query-access/postgresql/*` (new fixtures)
+- Decision record T3 Evidence + this plan + design Appendix A.8
 
-**GitNexus targets:** `reclassifyAfterResolution`, `recomputeAdmission`,
-`AnalyzePostgreSQL`, `ExtractTiDBQueryAccess` (impact before edit if production
-touched — prefer tests only).
+**GitNexus targets:** new test functions only (no production symbol edits).
+`detect_changes` before commit. Impact not required for new tests; required if
+any existing helper/production symbol is edited.
 
-**Work:**
+**Work completed:**
 
-- Assert PG `WHERE id = 1` → classification indeterminate, admission
-  indeterminate without effect resolver.
-- Assert MySQL equivalent remains admissible (regression).
-- Assert `reclassifyAfterResolution` currently never lifts PG.
-- Assert (as documentation tests / table-driven intent) that non-manifest
-  `pg_catalog` stable paths, `current_setting`, `pg_get_*`, function-backed
-  cast, and user-defined stable effects must remain indeterminate when those
-  fixtures exist or as skipped-until-resolver placeholders.
+- Structural `AND`/`OR`/`NOT`: BoolExpr is structural, not catalog identity proof.
+- T2 candidate comparison matrix representatives (`=`,`<>`,`<`,`>`,`<=`,`>=`)
+  stay classification+admission `indeterminate` (with/without relation resolver).
+- `COUNT(*)` / `COUNT(column)` stay indeterminate.
+- Type-resolution / coercion-looking comparisons stay indeterminate.
+- Rejected ledger (`current_setting`, `set_config`, `pg_get_*`, file readers,
+  UDF-looking / non-`pg_catalog` schema effects, function-backed cast) stay
+  indeterminate.
+- Unknown/coercion/multi-match shapes, no resolver, resolver error, incomplete
+  metadata stay indeterminate; no-leak / no-severity assertions.
+- `reclassifyAfterResolution` never lifts PostgreSQL; MySQL operator-bearing
+  SELECT remains admissible (TiDB same path).
+
+**T3 Evidence notes (normative):**
+
+- Characterization ≠ support. Candidate ledger entries are **not** Trusted.
+- PostgreSQL promotion remains **forbidden** until manifest + identity resolver
+  + proof engine land in later tasks.
+- Rejected ledger continues fail-closed.
 
 **Gates:**
 
 ```bash
-go test ./internal/application/queryaccess/ -count=1
-go test -tags postgresql ./internal/application/queryaccess/ -count=1
+go test -tags postgresql ./internal/infrastructure/parser/postgresql/... -count=1
+go test -tags postgresql ./internal/application/queryaccess/... -count=1
+go test ./internal/application/queryaccess/... -count=1
+make query-access-corpus-gates
+go test ./... -count=1
+go test -tags postgresql ./... -count=1
+make decision-record-gate
 git diff --check
+go mod tidy && git diff --exit-code go.mod go.sum
+golangci-lint run ./...
 ```
 
-**Commit:** `test: characterize query access pg admission freeze`
+**Commit:** `test: characterize query access effect identity candidates`
 **Stop if:** characterization contradicts design assumptions — update design
 before coding.
 
-**Ordering note:** Task 2 and Task 3 may be adjacent; Task 2 (manifest research)
-must not be skipped. If Task 3 is easier first for freeze-locking, still complete
-Task 2 before any production identity trust implementation (Tasks 5+).
+**Ordering note:** Task 2 complete before T3. Production identity trust
+implementation remains Tasks 4+ (reason codes) and 5–8 (candidates → resolver →
+manifest → proof).
 
 ---
 
@@ -480,8 +501,8 @@ commits on the milestone branch.
 T1 design (done)
   → T1b trust-policy docs fix (done)
   → T2 manifest research + version study (done, Proceed)
-  → T3 characterize PG freeze + adversarial intent   ← next
-  → T4 reason codes
+  → T3 characterize PG freeze + effect identity candidates (done)
+  → T4 reason codes                                   ← next
   → T5 effect candidates (no trust)
   → T6 resolver API + type OIDs (facts only)
   → T7 catalog identity implementation (facts only)

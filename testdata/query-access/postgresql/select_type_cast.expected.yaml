@@ -1,0 +1,24 @@
+name: select_type_cast
+dialect: postgresql
+mode: strict
+expect:
+  # Casts omitted/function-backed by default in phase-1 → indeterminate.
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection]
+  outputs: []
+  requirements:
+    - object: users
+      privilege: read_table
+    - object: users.id
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

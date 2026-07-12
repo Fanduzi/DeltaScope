@@ -3,9 +3,10 @@
 Date: 2026-07-12
 Branch: `query-access-pure-read-admissibility`
 Base: `main` @ `4d839b6`
-Status: Design + T2 research complete — no production code
+Status: Design + T2 research + T3 characterization complete — no production promotion code
 Decision: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Proposed)
 T2 feasibility: **Proceed** (see Appendix A)
+T3: characterization tests lock candidate/rejected ledgers as still unpromoted
 
 ## 1. Goal
 
@@ -799,13 +800,26 @@ sources / argument expression; does not open additional relations; name
 - No DSN, credentials, catalog query text, raw SQL, or `severity` in public
   results. Probes and design may store abstract OIDs and counts only.
 
-### A.8 Next characterization scope (T3+, not T2 code)
+### A.8 Characterization scope (T3 evidence, not T2 code)
 
-- Freeze today’s PG indeterminate hard-stop (tests only).
-- Later: positives only for closed set under fake/real identity + manifest.
-- Adversarial: non-manifest catalog stable, `current_setting`, `pg_get_*`,
-  UDF stable, function-backed cast, no resolver, multi-match, coercion gap,
-  requirements completeness, no-leak.
+**T3 done (tests + corpus only — not product support):**
+
+- Freeze today’s PG effect hard-stop: candidate comparisons, `COUNT(*)` /
+  `COUNT(col)`, casts, rejected ledger, no/error/incomplete resolver → remain
+  `indeterminate` classification and admission.
+- Structural BoolExpr AND/OR/NOT documented as non-catalog identity (column-only
+  forms may classify `read_only`; wrapping candidates stays indeterminate).
+- MySQL/TiDB operator-bearing SELECT regression locked admissible.
+- No-leak / no-severity assertions on characterization paths.
+- Decision remains `Proposed`. Characterization does **not** authorize Trusted
+  promotion. PostgreSQL promotion stays forbidden until identity resolver +
+  audited manifest + proof engine complete.
+
+**Later (not T3):**
+
+- Positives only for closed set under fake/real identity + manifest.
+- Adversarial under real identity facts: non-manifest catalog stable still
+  indeterminate; requirements completeness under promotion.
 
 ### A.9 Worth implementing after T2?
 
