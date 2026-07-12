@@ -77,6 +77,15 @@ func TestQueryAccessAnalyzePostgreSQLUnprovenReasons(t *testing.T) {
 			if _, ok := result["severity"]; ok {
 				t.Error("result must not include severity")
 			}
+			if _, ok := result["effect_candidates"]; ok {
+				t.Error("CLI JSON must not include effect_candidates")
+			}
+			// Candidate-internal spellings must not appear as free-standing public fields.
+			for _, bad := range []string{"NamePath", "name_path", "TargetTypePath"} {
+				if strings.Contains(body, bad) {
+					t.Errorf("CLI output must not contain %q", bad)
+				}
+			}
 		})
 	}
 }

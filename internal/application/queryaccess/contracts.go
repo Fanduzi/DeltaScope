@@ -32,6 +32,8 @@ type ColumnSchema struct {
 }
 
 // QueryAccessRequest is the input for query access analysis.
+// Callers cannot inject effect candidates or trust bits: there is no candidate
+// or Trusted field on the request.
 type QueryAccessRequest struct {
 	SQL            string
 	Dialect        string
@@ -40,7 +42,34 @@ type QueryAccessRequest struct {
 	SchemaResolver SchemaResolver // optional
 }
 
+// EffectCandidateKind mirrors parser-internal candidate kinds (application copy).
+type EffectCandidateKind string
+
+const (
+	EffectCandidateOperator EffectCandidateKind = "operator"
+	EffectCandidateFunction EffectCandidateKind = "function"
+	EffectCandidateCast     EffectCandidateKind = "cast"
+)
+
+// EffectCandidate is an internal, untrusted effect fact for future catalog
+// identity resolution. It is NOT a trust root and is never serialized on
+// domain.Result or SDK/CLI/HTTP JSON.
+type EffectCandidate struct {
+	Kind           EffectCandidateKind
+	Ordinal        int
+	NamePath       []string
+	ExplicitSchema bool
+	Arity          int
+	OperandKinds   []string
+	IsAggregate    bool
+	HasWindow      bool
+	HasFilter      bool
+	TargetTypePath []string
+}
+
 // QueryAccessResult wraps the domain result for application-layer consumption.
+// EffectCandidates are internal-only (untrusted, non-public).
 type QueryAccessResult struct {
-	DomainResult domain.Result
+	DomainResult     domain.Result
+	EffectCandidates []EffectCandidate // internal only; never public transport fields
 }

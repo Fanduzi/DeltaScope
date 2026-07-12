@@ -8,7 +8,8 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
-| query_access.go | Extracts query access facts (read classification, relations, column references, output lineage) from PostgreSQL AST |
+| query_access.go | Extracts query access facts (read classification, relations, column references, output lineage, unproven effect reasons) from PostgreSQL AST |
+| query_access_effect_candidates.go | Defines internal EffectCandidate facts and helpers collected during the complete effect traversal |
 | query_access_stub.go | Returns ErrPostgreSQLNotAvailable for query access extraction when built without the `postgresql` tag |
 | parser_stub.go | Returns the PG-capable build guidance error when PostgreSQL support is not compiled in |
 
@@ -22,6 +23,9 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 - `QueryAccessExtractor`
 - `QueryAccessExtractor.ExtractQueryAccess(ctx, sql, dialect, defaultSchema)`
 - `QueryAccessFacts`
+- `EffectCandidate` (internal-only; untrusted; not a public Result field)
+- `EffectCandidateKind`
+- `OperandKindHint`
 - `RelationFacts`
 - `ColumnRefFacts`
 - `OutputFacts`
@@ -32,6 +36,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 - Downstream: `github.com/pganalyze/pg_query_go/v6`, `internal/domain/spec`, `internal/domain/queryaccess`
 
 ## Notes
+- Query Access `EffectCandidate` values are **internal-only and untrusted**: they are resolver inputs (kind, ordinal, name path, arity, operand kind hints, aggregate/window/filter/cast flags), not a trust root. They must not be copied into `domain.Result`, reason codes, or SDK/CLI/HTTP JSON. Public outputs continue to use only bounded `unproven_*` reason codes. Structural `AND/OR/NOT` is not a catalog candidate.
 - The extractor populates `CONSTR_NOTNULL` and `CONSTR_DEFAULT` constraints on `ALTER TABLE ADD COLUMN` into the normalized spec column fields, enabling rules that depend on these facts.
 - The extractor normalizes advanced PostgreSQL `CREATE INDEX` forms (partial, expression, INCLUDE, non-btree access methods) into coarse `spec.Index` facts. DeltaScope does not render or semantically analyze predicate SQL or expression SQL.
 - The extractor normalizes `ALTER TABLE SET SCHEMA` (dispatched via `AlterObjectSchemaStmt`), `OWNER TO`, named trigger enable/disable, trigger ALL/USER enable/disable, `REPLICA IDENTITY` (DEFAULT/FULL/NOTHING/USING INDEX), and partition attach/detach into `spec.Alter` actions. Trigger ALL/USER variants carry `Options["trigger_scope"]` instead of a trigger name. `REPLICA IDENTITY` variants carry `Options["identity"]` and optionally `Options["index"]`. DeltaScope does not perform live validation of trigger state or replica identity index validity.

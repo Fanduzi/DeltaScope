@@ -8,6 +8,8 @@ Related commits:
 - T2 research commit: `docs: research query access effect identity manifest`
 - T3 characterization commit: `test: characterize query access effect identity candidates`
 - T4 reason codes commit: `feat: explain unproven query access effects`
+- T4 follow-up: `fix: complete query access effect reason traversal`
+- T5 candidates commit: `feat: extract query access effect candidates`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -591,11 +593,46 @@ resolver, so not an immediate promotion bug, but it violated the explain-
 unproven-effect contract and would be unsafe if a later proof engine reused the
 partial walker).
 
-Fix: one auditable `collectSelectEffectReasonFlags` / `collectNodeEffectReasonFlags`
+Fix: one auditable `collectSelectEffects` / `collectNodeEffects`
 traversal covering all SelectStmt expression fields and nested FuncCall
 (args/ORDER/FILTER/OVER), WindowDef, List/VALUES, RangeFunction, etc.
 Classification uses the same traversal (`selectHasUnprovenEffect`). Missed
 positions now emit `unproven_*` only — never proven/admissible.
+
+### T5 — Effect candidate extraction (internal only; 2026-07-12)
+
+**Status remains:** `Proposed` (candidates are resolver **inputs**, not trust
+roots; public admission is still not promoted).
+
+**What T5 delivers:**
+
+1. **Internal `EffectCandidate` facts** on parser `QueryAccessFacts` and
+   application `QueryAccessResult` (not on `domain.Result`):
+   - `Kind`: operator | function | cast
+   - stable traversal `Ordinal` (0-based, contiguous, deterministic)
+   - `NamePath` / cast `TargetTypePath` (internal spelling only)
+   - `ExplicitSchema`, `Arity`, `OperandKinds` (column/const/param/star/expr/…)
+   - structural flags: `IsAggregate`, `HasWindow`, `HasFilter`
+2. **Collected by the same complete effect traversal** as T4 reasons
+   (LIMIT/OFFSET, VALUES, window, FILTER, DISTINCT ON, nested CTE/subquery).
+3. **Structural BoolExpr is not a catalog candidate** (children only).
+4. **Public behavior unchanged:**
+   - effect-bearing PostgreSQL still `indeterminate` + `indeterminate`
+   - public reasons remain bounded `unproven_*` only
+   - no candidate names/paths/OIDs/SQL/literals/`severity` on SDK/CLI/HTTP JSON
+   - `QueryAccessRequest` has no candidate/trust injection fields
+   - MySQL/TiDB behavior and extraction unchanged
+5. **Explicit non-claims:** no catalog identity resolver, no manifest trust
+   policy, no proof engine, no admission promotion.
+
+**Artifacts:**
+
+- Parser: `query_access_effect_candidates.go` + extraction wired in
+  `query_access.go`
+- Application: `EffectCandidate` on `QueryAccessResult` only; map from parser
+- Tests: parser candidate extraction; application public-output freeze;
+  SDK/CLI/HTTP no-candidate-field checks
+- Package READMEs note internal-only/untrusted contract
 
 ## Consequences
 

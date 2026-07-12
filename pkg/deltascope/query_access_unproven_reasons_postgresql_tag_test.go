@@ -76,6 +76,39 @@ func TestAnalyzeQueryAccess_PostgreSQLUnprovenReasons(t *testing.T) {
 	}
 }
 
+func TestAnalyzeQueryAccess_PostgreSQLNoCandidateFieldsInJSON(t *testing.T) {
+	t.Parallel()
+
+	result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT COUNT(*) FROM users WHERE id = 1 LIMIT length('a')",
+		Dialect: DialectPostgreSQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	raw := string(data)
+	for _, bad := range []string{
+		"effect_candidates", "EffectCandidates", "NamePath", "name_path",
+		"TargetTypePath", "severity", "COUNT", "length", "password",
+	} {
+		if strings.Contains(raw, bad) {
+			t.Errorf("public JSON must not contain %q; got %s", bad, raw)
+		}
+	}
+	// Public contract: still indeterminate with unproven reasons only.
+	if result.Admission != QueryAccessIndeterminateAdmission {
+		t.Errorf("admission: got %q", result.Admission)
+	}
+	if len(result.ReasonCodes) == 0 {
+		t.Error("expected unproven reason codes on public result")
+	}
+}
+
 func TestAnalyzeQueryAccess_PostgreSQLReasonOrderDeterministic(t *testing.T) {
 	t.Parallel()
 

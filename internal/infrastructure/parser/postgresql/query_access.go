@@ -26,6 +26,9 @@ type QueryAccessFacts struct {
 	// ReasonCodes are bounded machine identifiers for unproven effects.
 	// Never SQL text, operator/function/cast names, OIDs, or literals.
 	ReasonCodes []string
+	// EffectCandidates are internal, untrusted effect facts for future catalog
+	// identity resolution. They must not be copied into domain.Result or public JSON.
+	EffectCandidates []EffectCandidate
 }
 
 // RelationFacts describes a relation reference extracted from the AST.
@@ -79,7 +82,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	relations := make([]RelationFacts, 0)
 	columnRefs := make([]ColumnRefFacts, 0)
 	outputs := make([]OutputFacts, 0)
-	var reasonFlags effectReasonFlags
+	var collector effectCollector
 
 	classifications := make([]string, 0, len(stmts))
 	for _, rawStmt := range stmts {
@@ -89,7 +92,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		}
 		node := rawStmt.GetStmt()
 		classifications = append(classifications, classifyStatement(node))
-		collectEffectReasonFlags(node, &reasonFlags)
+		collectEffects(node, &collector)
 
 		if sel := node.GetSelectStmt(); sel != nil {
 			cteLineage, cteBodyRels := buildCTELineage(sel, defaultSchema)
@@ -104,7 +107,9 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	facts.Relations = deduplicateRelations(relations)
 	facts.ColumnReferences = columnRefs
 	facts.Outputs = outputs
-	facts.ReasonCodes = reasonFlags.toReasonCodes()
+	// Public reason codes remain presence-only machine ids (no candidate names).
+	facts.ReasonCodes = collector.reasonCodes()
+	facts.EffectCandidates = collector.candidates
 
 	if hasUnresolvedWildcard(columnRefs) && defaultSchema == "" {
 		facts.Unresolved = append(facts.Unresolved, UnresolvedFacts{
@@ -139,284 +144,295 @@ func (f effectReasonFlags) toReasonCodes() []string {
 	return codes
 }
 
-// collectEffectReasonFlags records unproven operator / function / cast presence
-// without storing names, OIDs, or SQL fragments.
+// collectEffects is the single auditable effect traversal for raw parse trees.
+// It records:
+//   - bounded public reason presence flags (unproven_*), and
+//   - internal EffectCandidate facts for future identity resolution.
 //
-// This is the single auditable effect traversal for raw parse trees. It is the
-// source of truth for both reason codes and SELECT classification effect checks.
 // Prefer extending this walker over adding ad-hoc field checks elsewhere.
-func collectEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags) {
-	if node == nil || flags == nil {
+// Structural BoolExpr (AND/OR/NOT) is not a catalog candidate; only children are walked.
+func collectEffects(node *pg_query.Node, c *effectCollector) {
+	if node == nil || c == nil {
 		return
 	}
 	switch n := node.GetNode().(type) {
 	case *pg_query.Node_SelectStmt:
-		collectSelectEffectReasonFlags(n.SelectStmt, flags)
+		collectSelectEffects(n.SelectStmt, c)
 	case *pg_query.Node_ExplainStmt:
 		if n.ExplainStmt.GetQuery() != nil {
-			collectEffectReasonFlags(n.ExplainStmt.GetQuery(), flags)
+			collectEffects(n.ExplainStmt.GetQuery(), c)
 		}
 	default:
 		// Non-SELECT top-level statements either write (not_read_only) or stay
 		// indeterminate by statement kind; walk any nested expressions when present.
-		collectNodeEffectReasonFlags(node, flags)
+		collectNodeEffects(node, c)
 	}
 }
 
-// collectSelectEffectReasonFlags visits every expression-bearing field of a
-// SelectStmt in one place (set ops, CTEs, DISTINCT ON, target, FROM, WHERE,
-// GROUP/HAVING, WINDOW, VALUES, ORDER BY, LIMIT/OFFSET).
-func collectSelectEffectReasonFlags(sel *pg_query.SelectStmt, flags *effectReasonFlags) {
-	if sel == nil || flags == nil {
+// collectSelectEffects visits every expression-bearing field of a SelectStmt
+// (set ops, CTEs, DISTINCT ON, target, FROM, WHERE, GROUP/HAVING, WINDOW,
+// VALUES, ORDER BY, LIMIT/OFFSET).
+func collectSelectEffects(sel *pg_query.SelectStmt, c *effectCollector) {
+	if sel == nil || c == nil {
 		return
 	}
-	// Set operations: walk both sides.
 	if sel.GetLarg() != nil {
-		collectSelectEffectReasonFlags(sel.GetLarg(), flags)
+		collectSelectEffects(sel.GetLarg(), c)
 	}
 	if sel.GetRarg() != nil {
-		collectSelectEffectReasonFlags(sel.GetRarg(), flags)
+		collectSelectEffects(sel.GetRarg(), c)
 	}
-	// CTE bodies contribute effects (same fail-closed posture as nested selects).
 	if with := sel.GetWithClause(); with != nil {
 		for _, cteNode := range with.GetCtes() {
 			if cteNode == nil {
 				continue
 			}
 			if cte := cteNode.GetCommonTableExpr(); cte != nil && cte.GetCtequery() != nil {
-				collectEffectReasonFlags(cte.GetCtequery(), flags)
+				collectEffects(cte.GetCtequery(), c)
 			}
 		}
 	}
 	for _, distinct := range sel.GetDistinctClause() {
-		collectNodeEffectReasonFlags(distinct, flags)
+		collectNodeEffects(distinct, c)
 	}
 	for _, target := range sel.GetTargetList() {
-		collectNodeEffectReasonFlags(target, flags)
+		collectNodeEffects(target, c)
 	}
 	for _, from := range sel.GetFromClause() {
-		collectNodeEffectReasonFlags(from, flags)
+		collectNodeEffects(from, c)
 	}
 	if sel.GetWhereClause() != nil {
-		collectNodeEffectReasonFlags(sel.GetWhereClause(), flags)
+		collectNodeEffects(sel.GetWhereClause(), c)
 	}
 	for _, group := range sel.GetGroupClause() {
-		collectNodeEffectReasonFlags(group, flags)
+		collectNodeEffects(group, c)
 	}
 	if sel.GetHavingClause() != nil {
-		collectNodeEffectReasonFlags(sel.GetHavingClause(), flags)
+		collectNodeEffects(sel.GetHavingClause(), c)
 	}
 	for _, window := range sel.GetWindowClause() {
-		collectNodeEffectReasonFlags(window, flags)
+		collectNodeEffects(window, c)
 	}
 	for _, values := range sel.GetValuesLists() {
-		collectNodeEffectReasonFlags(values, flags)
+		collectNodeEffects(values, c)
 	}
 	for _, sort := range sel.GetSortClause() {
-		collectNodeEffectReasonFlags(sort, flags)
+		collectNodeEffects(sort, c)
 	}
 	if sel.GetLimitOffset() != nil {
-		collectNodeEffectReasonFlags(sel.GetLimitOffset(), flags)
+		collectNodeEffects(sel.GetLimitOffset(), c)
 	}
 	if sel.GetLimitCount() != nil {
-		collectNodeEffectReasonFlags(sel.GetLimitCount(), flags)
+		collectNodeEffects(sel.GetLimitCount(), c)
 	}
 }
 
 func selectHasUnprovenEffect(sel *pg_query.SelectStmt) bool {
-	var flags effectReasonFlags
-	collectSelectEffectReasonFlags(sel, &flags)
-	return flags.operator || flags.function || flags.cast
+	var c effectCollector
+	collectSelectEffects(sel, &c)
+	return c.hasUnprovenEffect()
 }
 
-func collectWindowDefEffectReasonFlags(win *pg_query.WindowDef, flags *effectReasonFlags) {
-	if win == nil || flags == nil {
+func collectWindowDefEffects(win *pg_query.WindowDef, c *effectCollector) {
+	if win == nil || c == nil {
 		return
 	}
 	for _, part := range win.GetPartitionClause() {
-		collectNodeEffectReasonFlags(part, flags)
+		collectNodeEffects(part, c)
 	}
 	for _, order := range win.GetOrderClause() {
-		collectNodeEffectReasonFlags(order, flags)
+		collectNodeEffects(order, c)
 	}
 	if win.GetStartOffset() != nil {
-		collectNodeEffectReasonFlags(win.GetStartOffset(), flags)
+		collectNodeEffects(win.GetStartOffset(), c)
 	}
 	if win.GetEndOffset() != nil {
-		collectNodeEffectReasonFlags(win.GetEndOffset(), flags)
+		collectNodeEffects(win.GetEndOffset(), c)
 	}
 }
 
-func collectNodeEffectReasonFlags(node *pg_query.Node, flags *effectReasonFlags) {
-	if node == nil || flags == nil {
+func collectNodeEffects(node *pg_query.Node, c *effectCollector) {
+	if node == nil || c == nil {
 		return
 	}
-	// Early exit once all kinds are present.
-	if flags.operator && flags.function && flags.cast {
-		return
-	}
+	// No early-exit on flags: candidates must be complete for every effect node.
 	switch n := node.GetNode().(type) {
 	case *pg_query.Node_AExpr:
-		flags.operator = true
+		recordOperatorCandidate(c, n.AExpr)
 		if n.AExpr.GetLexpr() != nil {
-			collectNodeEffectReasonFlags(n.AExpr.GetLexpr(), flags)
+			collectNodeEffects(n.AExpr.GetLexpr(), c)
 		}
 		if n.AExpr.GetRexpr() != nil {
-			collectNodeEffectReasonFlags(n.AExpr.GetRexpr(), flags)
+			collectNodeEffects(n.AExpr.GetRexpr(), c)
 		}
 	case *pg_query.Node_TypeCast:
-		flags.cast = true
+		recordCastCandidate(c, n.TypeCast)
 		if n.TypeCast.GetArg() != nil {
-			collectNodeEffectReasonFlags(n.TypeCast.GetArg(), flags)
+			collectNodeEffects(n.TypeCast.GetArg(), c)
 		}
 	case *pg_query.Node_FuncCall:
-		// Function and aggregate calls (including FILTER / OVER) are unproven until
-		// identity resolution + manifest trust. Mark function and walk all executable
-		// sub-expressions: args, ORDER BY inside aggregate, FILTER, and window def.
-		flags.function = true
+		// Function/aggregate (FILTER/OVER) are candidates only — never trusted here.
+		recordFunctionCandidate(c, n.FuncCall)
 		for _, arg := range n.FuncCall.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+			collectNodeEffects(arg, c)
 		}
 		for _, order := range n.FuncCall.GetAggOrder() {
-			collectNodeEffectReasonFlags(order, flags)
+			collectNodeEffects(order, c)
 		}
 		if n.FuncCall.GetAggFilter() != nil {
-			collectNodeEffectReasonFlags(n.FuncCall.GetAggFilter(), flags)
+			collectNodeEffects(n.FuncCall.GetAggFilter(), c)
 		}
 		if n.FuncCall.GetOver() != nil {
-			collectWindowDefEffectReasonFlags(n.FuncCall.GetOver(), flags)
+			collectWindowDefEffects(n.FuncCall.GetOver(), c)
 		}
 	case *pg_query.Node_RangeFunction:
-		// FROM function / ROWS FROM (...): presence is an unproven function effect;
-		// also walk nested call expressions for nested operator/cast effects.
-		flags.function = true
+		// FROM function / ROWS FROM (...): walk nested call expressions as candidates.
 		for _, fn := range n.RangeFunction.GetFunctions() {
-			collectNodeEffectReasonFlags(fn, flags)
+			collectNodeEffects(fn, c)
+		}
+		// If nested walk found no function candidate (unexpected shape), still mark
+		// unproven function presence for fail-closed classification/reasons.
+		if !c.flags.function {
+			recordSyntheticFunctionCandidate(c, nil, 0, nil)
 		}
 	case *pg_query.Node_RangeTableFunc:
-		// XMLTABLE-style table functions are unproven effects.
-		flags.function = true
-		collectNodeEffectReasonFlags(n.RangeTableFunc.GetDocexpr(), flags)
-		collectNodeEffectReasonFlags(n.RangeTableFunc.GetRowexpr(), flags)
+		recordSyntheticFunctionCandidate(c, nil, 0, nil)
+		collectNodeEffects(n.RangeTableFunc.GetDocexpr(), c)
+		collectNodeEffects(n.RangeTableFunc.GetRowexpr(), c)
 		for _, ns := range n.RangeTableFunc.GetNamespaces() {
-			collectNodeEffectReasonFlags(ns, flags)
+			collectNodeEffects(ns, c)
 		}
 		for _, col := range n.RangeTableFunc.GetColumns() {
-			collectNodeEffectReasonFlags(col, flags)
+			collectNodeEffects(col, c)
 		}
 	case *pg_query.Node_RangeTableSample:
-		collectNodeEffectReasonFlags(n.RangeTableSample.GetRelation(), flags)
+		collectNodeEffects(n.RangeTableSample.GetRelation(), c)
 		for _, method := range n.RangeTableSample.GetMethod() {
-			collectNodeEffectReasonFlags(method, flags)
+			collectNodeEffects(method, c)
 		}
 		for _, arg := range n.RangeTableSample.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+			collectNodeEffects(arg, c)
 		}
-		collectNodeEffectReasonFlags(n.RangeTableSample.GetRepeatable(), flags)
+		collectNodeEffects(n.RangeTableSample.GetRepeatable(), c)
 	case *pg_query.Node_ResTarget:
 		if n.ResTarget.GetVal() != nil {
-			collectNodeEffectReasonFlags(n.ResTarget.GetVal(), flags)
+			collectNodeEffects(n.ResTarget.GetVal(), c)
 		}
 	case *pg_query.Node_SelectStmt:
-		collectSelectEffectReasonFlags(n.SelectStmt, flags)
+		collectSelectEffects(n.SelectStmt, c)
 	case *pg_query.Node_SubLink:
 		if n.SubLink.GetSubselect() != nil {
-			collectNodeEffectReasonFlags(n.SubLink.GetSubselect(), flags)
+			collectNodeEffects(n.SubLink.GetSubselect(), c)
 		}
 		if n.SubLink.GetTestexpr() != nil {
-			collectNodeEffectReasonFlags(n.SubLink.GetTestexpr(), flags)
+			collectNodeEffects(n.SubLink.GetTestexpr(), c)
 		}
 	case *pg_query.Node_BoolExpr:
+		// Structural AND/OR/NOT: not a catalog candidate; walk children only.
 		for _, arg := range n.BoolExpr.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+			collectNodeEffects(arg, c)
 		}
 	case *pg_query.Node_NullTest:
 		if n.NullTest.GetArg() != nil {
-			collectNodeEffectReasonFlags(n.NullTest.GetArg(), flags)
+			collectNodeEffects(n.NullTest.GetArg(), c)
 		}
 	case *pg_query.Node_BooleanTest:
 		if n.BooleanTest.GetArg() != nil {
-			collectNodeEffectReasonFlags(n.BooleanTest.GetArg(), flags)
+			collectNodeEffects(n.BooleanTest.GetArg(), c)
 		}
 	case *pg_query.Node_CoalesceExpr:
 		for _, arg := range n.CoalesceExpr.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+			collectNodeEffects(arg, c)
 		}
 	case *pg_query.Node_CaseExpr:
 		caseExpr := n.CaseExpr
 		if caseExpr.GetArg() != nil {
-			collectNodeEffectReasonFlags(caseExpr.GetArg(), flags)
+			collectNodeEffects(caseExpr.GetArg(), c)
 		}
 		if caseExpr.GetDefresult() != nil {
-			collectNodeEffectReasonFlags(caseExpr.GetDefresult(), flags)
+			collectNodeEffects(caseExpr.GetDefresult(), c)
 		}
 		for _, arg := range caseExpr.GetArgs() {
 			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
-				collectNodeEffectReasonFlags(caseWhen.GetExpr(), flags)
-				collectNodeEffectReasonFlags(caseWhen.GetResult(), flags)
+				collectNodeEffects(caseWhen.GetExpr(), c)
+				collectNodeEffects(caseWhen.GetResult(), c)
 			}
 		}
 	case *pg_query.Node_ArrayExpr:
 		for _, elem := range n.ArrayExpr.GetElements() {
-			collectNodeEffectReasonFlags(elem, flags)
+			collectNodeEffects(elem, c)
 		}
 	case *pg_query.Node_AArrayExpr:
 		for _, elem := range n.AArrayExpr.GetElements() {
-			collectNodeEffectReasonFlags(elem, flags)
+			collectNodeEffects(elem, c)
 		}
 	case *pg_query.Node_RowExpr:
 		for _, arg := range n.RowExpr.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+			collectNodeEffects(arg, c)
 		}
 	case *pg_query.Node_MinMaxExpr:
 		for _, arg := range n.MinMaxExpr.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+			collectNodeEffects(arg, c)
 		}
 	case *pg_query.Node_AIndirection:
 		if n.AIndirection.GetArg() != nil {
-			collectNodeEffectReasonFlags(n.AIndirection.GetArg(), flags)
+			collectNodeEffects(n.AIndirection.GetArg(), c)
 		}
 		for _, ind := range n.AIndirection.GetIndirection() {
-			collectNodeEffectReasonFlags(ind, flags)
+			collectNodeEffects(ind, c)
 		}
 	case *pg_query.Node_CollateClause:
 		if n.CollateClause.GetArg() != nil {
-			collectNodeEffectReasonFlags(n.CollateClause.GetArg(), flags)
+			collectNodeEffects(n.CollateClause.GetArg(), c)
 		}
 	case *pg_query.Node_GroupingFunc:
-		// GROUPING() is a function-like expression; treat as unproven function effect.
-		flags.function = true
-		for _, arg := range n.GroupingFunc.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+		// GROUPING() is function-like; candidate only (unproven).
+		args := n.GroupingFunc.GetArgs()
+		kinds := make([]OperandKindHint, 0, len(args))
+		for _, arg := range args {
+			kinds = append(kinds, operandKindHint(arg))
+		}
+		recordSyntheticFunctionCandidate(c, []string{"grouping"}, len(args), kinds)
+		for _, arg := range args {
+			collectNodeEffects(arg, c)
 		}
 	case *pg_query.Node_XmlExpr:
-		flags.function = true
-		for _, arg := range n.XmlExpr.GetArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+		args := n.XmlExpr.GetArgs()
+		named := n.XmlExpr.GetNamedArgs()
+		kinds := make([]OperandKindHint, 0, len(args)+len(named))
+		for _, arg := range args {
+			kinds = append(kinds, operandKindHint(arg))
 		}
-		for _, arg := range n.XmlExpr.GetNamedArgs() {
-			collectNodeEffectReasonFlags(arg, flags)
+		for _, arg := range named {
+			kinds = append(kinds, operandKindHint(arg))
+		}
+		recordSyntheticFunctionCandidate(c, nil, len(args)+len(named), kinds)
+		for _, arg := range args {
+			collectNodeEffects(arg, c)
+		}
+		for _, arg := range named {
+			collectNodeEffects(arg, c)
 		}
 	case *pg_query.Node_JoinExpr:
 		join := n.JoinExpr
-		collectNodeEffectReasonFlags(join.GetLarg(), flags)
-		collectNodeEffectReasonFlags(join.GetRarg(), flags)
+		collectNodeEffects(join.GetLarg(), c)
+		collectNodeEffects(join.GetRarg(), c)
 		if join.GetQuals() != nil {
-			collectNodeEffectReasonFlags(join.GetQuals(), flags)
+			collectNodeEffects(join.GetQuals(), c)
 		}
 	case *pg_query.Node_RangeSubselect:
 		if n.RangeSubselect.GetSubquery() != nil {
-			collectNodeEffectReasonFlags(n.RangeSubselect.GetSubquery(), flags)
+			collectNodeEffects(n.RangeSubselect.GetSubquery(), c)
 		}
 	case *pg_query.Node_SortBy:
 		if n.SortBy.GetNode() != nil {
-			collectNodeEffectReasonFlags(n.SortBy.GetNode(), flags)
+			collectNodeEffects(n.SortBy.GetNode(), c)
 		}
 	case *pg_query.Node_WindowDef:
-		collectWindowDefEffectReasonFlags(n.WindowDef, flags)
+		collectWindowDefEffects(n.WindowDef, c)
 	case *pg_query.Node_List:
 		for _, item := range n.List.GetItems() {
-			collectNodeEffectReasonFlags(item, flags)
+			collectNodeEffects(item, c)
 		}
 	case *pg_query.Node_ColumnRef, *pg_query.Node_AConst, *pg_query.Node_RangeVar,
 		*pg_query.Node_SqlvalueFunction, *pg_query.Node_ParamRef, *pg_query.Node_AStar,

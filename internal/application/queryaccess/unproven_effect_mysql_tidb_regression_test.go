@@ -96,6 +96,29 @@ func TestUnprovenEffectReasons_MySQLTiDBOperatorBearingNoRegression(t *testing.T
 	}
 }
 
+func TestEffectCandidates_MySQLTiDBEmpty(t *testing.T) {
+	t.Parallel()
+	svc := &Service{}
+	for _, dialect := range []string{"mysql", "tidb"} {
+		dialect := dialect
+		t.Run(dialect, func(t *testing.T) {
+			t.Parallel()
+			res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+				SQL: "SELECT id FROM users WHERE id = 1", Dialect: dialect, Mode: "strict",
+			})
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
+			}
+			if len(res.EffectCandidates) != 0 {
+				t.Errorf("%s must not extract PG effect candidates; got %+v", dialect, res.EffectCandidates)
+			}
+			if res.DomainResult.Admission != domain.Admissible {
+				t.Errorf("admission: got %q, want admissible", res.DomainResult.Admission)
+			}
+		})
+	}
+}
+
 func TestUnprovenEffectReasons_MySQLFunctionStillUnknownEffect(t *testing.T) {
 	t.Parallel()
 

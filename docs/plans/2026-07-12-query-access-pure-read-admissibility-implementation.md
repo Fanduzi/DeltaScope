@@ -275,6 +275,19 @@ go test -tags postgresql ./internal/application/queryaccess/ -count=1
 **Commit:** `feat: extract postgresql query access effect candidates`
 **Stop if:** `pg_query` cannot expose operator name tokens reliably.
 
+### T5 Evidence (completed)
+
+- Implemented internal `EffectCandidate` collection on the complete SelectStmt
+  effect traversal (same walk as unproven reasons).
+- Candidates include kind, ordinal, name path, explicit schema, arity, operand
+  kind hints, aggregate/window/filter flags, cast target type path.
+- **Not** a trust root: no Trusted bit; no catalog resolve; no admission lift.
+- Public surfaces still expose only domain `Result` (bounded `unproven_*`
+  reasons); candidates stay parser/application-internal.
+- Structural BoolExpr does not emit candidates.
+- MySQL/TiDB not modified.
+- Decision status remains **Proposed**.
+
 ---
 
 ## Task 6 — Extend relation metadata with type OIDs + EffectIdentityResolver API

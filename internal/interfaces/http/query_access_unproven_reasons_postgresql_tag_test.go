@@ -85,6 +85,14 @@ func TestHandlerQueryAccessPostgreSQLUnprovenReasons(t *testing.T) {
 			if _, ok := payload["sql"]; ok {
 				t.Error("sql field must not exist")
 			}
+			if _, ok := payload["effect_candidates"]; ok {
+				t.Error("HTTP JSON must not include effect_candidates")
+			}
+			for _, bad := range []string{"NamePath", "name_path", "TargetTypePath"} {
+				if strings.Contains(raw, bad) {
+					t.Errorf("HTTP body must not contain %q", bad)
+				}
+			}
 		})
 	}
 }

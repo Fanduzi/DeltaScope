@@ -28,6 +28,8 @@ Application-level contracts for query access analysis, defining the schema resol
 - `ColumnSchema`
 - `QueryAccessRequest`
 - `QueryAccessResult`
+- `EffectCandidate` (application-internal copy; untrusted; never public JSON)
+- `EffectCandidateKind`
 - `Service`
 - `ExtractTiDBQueryAccess()`
 - `AnalyzePostgreSQL()`
@@ -44,8 +46,9 @@ Application-level contracts for query access analysis, defining the schema resol
 - CTE relations are marked with `PermissionRequired: false`; base tables and derived tables require permission.
 - `Service.Analyze` routes by dialect, applies optional metadata resolution, generates requirements based on mode, sorts output, and validates the result.
 - PostgreSQL unproven-effect reason codes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`) are presence-only machine identifiers emitted by the parser adapter; they explain indeterminate classification without embedding SQL, OIDs, or effect spellings.
+- PostgreSQL `EffectCandidates` on `QueryAccessResult` are **internal-only and untrusted** (future catalog identity resolver input). They are not placed on `domain.Result` and must not appear in SDK/CLI/HTTP JSON. `QueryAccessRequest` has no candidate/trust injection fields.
 - Identity-failure categories map only through `domain.ReasonForIdentityFailure`; free-text errors cannot be injected as trusted reasons. Effect-identity resolver / admission promotion remain out of scope for this layer until later tasks.
-- Callers cannot supply `ReasonCodes` on `QueryAccessRequest`; transports passthrough the single application result.
+- Callers cannot supply `ReasonCodes` on `QueryAccessRequest`; transports passthrough the single application domain result.
 - `buildRequirements` generates access requirements based on mode: strict requires all resolved columns, projection-only requires only output-contributing columns and emits inference_risk warning.
 - Both modes require every permission-bearing relation (PermissionRequired: true).
 - Required unresolved references produce indeterminate requirements.
