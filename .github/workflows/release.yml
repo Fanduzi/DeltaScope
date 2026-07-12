@@ -299,6 +299,7 @@ jobs:
             brew untap fanduzi/deltascope
           fi
           brew tap fanduzi/deltascope
+          brew trust --cask fanduzi/deltascope/deltascope
           brew install --cask deltascope
           version_output="$(deltascope --version)"
           printf '%s\n' "${version_output}"
