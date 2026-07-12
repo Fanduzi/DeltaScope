@@ -239,7 +239,7 @@ func pgContainsOperatorExpr(node *pg_query.Node) bool {
 	case *pg_query.Node_FuncCall:
 		return false
 	case *pg_query.Node_TypeCast:
-		return n.TypeCast.GetArg() != nil && pgContainsOperatorExpr(n.TypeCast.GetArg())
+		return true
 	case *pg_query.Node_SubLink:
 		return false
 	case *pg_query.Node_ColumnRef:

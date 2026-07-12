@@ -629,6 +629,45 @@ Tests: `TestService_Analyze_WildcardExpansionProducesPhysicalColumns`,
 `TestService_Analyze_WildcardProjectionOnly`,
 `TestService_Analyze_WildcardNoLeak`.
 
+### PostgreSQL Indeterminate Safety Boundary (2026-07-12)
+
+PostgreSQL's indeterminate classifications are conservative safety boundaries
+(operator effects, function side effects, view definitions, casts) that must
+NOT be overridden by the resolver.
+
+**Root cause**: `reclassifyAfterResolution` promoted indeterminate to read_only
+when `hasResolver && len(reasonCodes) == 0 && !hasWildcardUnresolved`.
+PostgreSQL parser sets indeterminate directly without populating reason codes,
+so the condition was incorrectly satisfied.
+
+**Fix**: `reclassifyAfterResolution` now returns `domain.Indeterminate` for
+all PostgreSQL dialect cases. Only MySQL/TiDB wildcard-specific indeterminate
+can be promoted after resolution.
+
+**TypeCast fix**: `pgContainsOperatorExpr` now returns `true` for TypeCast
+nodes because user-defined casts can have side effects per the decision record.
+
+Tests: `TestAnalyzePostgreSQL_OperatorExprStaysIndeterminate`,
+`TestAnalyzePostgreSQL_FunctionCallStaysIndeterminate`,
+`TestAnalyzePostgreSQL_CastExprStaysIndeterminate`,
+`TestAnalyzePostgreSQL_MalformedSQLStaysIndeterminate`.
+
+### Global Wildcard Deterministic Order (2026-07-12)
+
+`expandGlobalWildcard` previously iterated over `state.nameMap` (Go map),
+producing non-deterministic column order for multi-relation `SELECT *`.
+
+**Fix**: Added `relationOrder []resolvedRef` to `resolutionState` that
+preserves SQL FROM/JOIN order. `expandGlobalWildcard` now iterates over
+`state.relationOrder` instead of `state.nameMap`.
+
+**Contract**: `SELECT * FROM b JOIN a` produces columns in SQL relation
+order (b columns first, then a columns), each relation's columns in
+ordinal position order. Output is deterministic across runs.
+
+Tests: `TestService_Analyze_GlobalWildcardDeterministicOrder` (10-run
+consistency check).
+
 ## Links
 
 - Commits:

@@ -736,3 +736,76 @@ func TestService_Analyze_AmbiguousRelationNoSchema(t *testing.T) {
 		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
 	}
 }
+
+func TestService_Analyze_GlobalWildcardDeterministicOrder(t *testing.T) {
+	t.Parallel()
+	svc := &appqa.Service{}
+
+	resolver := newFakeResolver(map[string]appqa.RelationSchema{
+		"app.b": {
+			Schema: "app", Name: "b", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}},
+		},
+		"app.a": {
+			Schema: "app", Name: "a", Kind: "table",
+			Columns: []appqa.ColumnSchema{{Name: "id", Ordinal: 1}, {Name: "name", Ordinal: 2}},
+		},
+	})
+
+	var firstOrder []string
+	for i := 0; i < 10; i++ {
+		result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
+			SQL:            "SELECT * FROM b JOIN a ON b.id = a.id",
+			Dialect:        "mysql",
+			Mode:           "strict",
+			DefaultSchema:  "app",
+			SchemaResolver: resolver,
+		})
+		if err != nil {
+			t.Fatalf("run %d: analyze: %v", i, err)
+		}
+
+		dr := result.DomainResult
+
+		hasBID := false
+		hasAID := false
+		hasAName := false
+		var currentOrder []string
+		for _, col := range dr.ReferencedColumns {
+			key := col.Table + "." + col.Column
+			currentOrder = append(currentOrder, key)
+			if col.Table == "b" && col.Column == "id" {
+				hasBID = true
+			}
+			if col.Table == "a" && col.Column == "id" {
+				hasAID = true
+			}
+			if col.Table == "a" && col.Column == "name" {
+				hasAName = true
+			}
+		}
+		if !hasBID {
+			t.Errorf("run %d: b.id not found", i)
+		}
+		if !hasAID {
+			t.Errorf("run %d: a.id not found", i)
+		}
+		if !hasAName {
+			t.Errorf("run %d: a.name not found", i)
+		}
+
+		if i == 0 {
+			firstOrder = currentOrder
+		} else {
+			if len(currentOrder) != len(firstOrder) {
+				t.Errorf("run %d: column count changed: got %d, want %d", i, len(currentOrder), len(firstOrder))
+			}
+			for j := 0; j < len(currentOrder) && j < len(firstOrder); j++ {
+				if currentOrder[j] != firstOrder[j] {
+					t.Errorf("run %d: column[%d] order changed: got %s, want %s", i, j, currentOrder[j], firstOrder[j])
+					break
+				}
+			}
+		}
+	}
+}

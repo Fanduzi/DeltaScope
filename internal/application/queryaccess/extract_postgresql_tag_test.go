@@ -155,7 +155,6 @@ func TestAnalyzePostgreSQL_DefaultSchema(t *testing.T) {
 
 func TestAnalyzePostgreSQL_AuditRegression(t *testing.T) {
 	t.Parallel()
-	// SELECT reaches audit as KindUnknown (unsupported boundary)
 	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
 		SQL:     "SELECT id FROM users",
 		Dialect: "postgresql",
@@ -165,5 +164,67 @@ func TestAnalyzePostgreSQL_AuditRegression(t *testing.T) {
 	}
 	if result.DomainResult.ReadClassification == "" {
 		t.Error("classification should not be empty")
+	}
+}
+
+func TestAnalyzePostgreSQL_OperatorExprStaysIndeterminate(t *testing.T) {
+	t.Parallel()
+	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT id FROM users WHERE id = 1",
+		Dialect: "postgresql",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification: got %q, want %q (operator expression)", result.DomainResult.ReadClassification, domain.Indeterminate)
+	}
+	if result.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", result.DomainResult.Admission, domain.IndeterminateAdmission)
+	}
+}
+
+func TestAnalyzePostgreSQL_FunctionCallStaysIndeterminate(t *testing.T) {
+	t.Parallel()
+	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT now() FROM users",
+		Dialect: "postgresql",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification: got %q, want %q (function call)", result.DomainResult.ReadClassification, domain.Indeterminate)
+	}
+}
+
+func TestAnalyzePostgreSQL_CastExprStaysIndeterminate(t *testing.T) {
+	t.Parallel()
+	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT id::text FROM users",
+		Dialect: "postgresql",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification: got %q, want %q (cast expression)", result.DomainResult.ReadClassification, domain.Indeterminate)
+	}
+}
+
+func TestAnalyzePostgreSQL_MalformedSQLStaysIndeterminate(t *testing.T) {
+	t.Parallel()
+	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT * FROM WHERE",
+		Dialect: "postgresql",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification: got %q, want %q (malformed SQL)", result.DomainResult.ReadClassification, domain.Indeterminate)
+	}
+	if result.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", result.DomainResult.Admission, domain.IndeterminateAdmission)
 	}
 }

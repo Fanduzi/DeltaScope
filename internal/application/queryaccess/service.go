@@ -40,7 +40,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	}
 
 	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
-	extracted.DomainResult.ReadClassification = reclassifyAfterResolution(extracted.DomainResult.ReadClassification, extracted.DomainResult.ReasonCodes, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
+	extracted.DomainResult.ReadClassification = reclassifyAfterResolution(extracted.DomainResult.ReadClassification, extracted.DomainResult.ReasonCodes, extracted.DomainResult.Unresolved, req.SchemaResolver != nil, req.Dialect)
 	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, req.SchemaResolver != nil)
 
 	// Build requirements based on mode
@@ -111,7 +111,7 @@ func recomputeAdmission(classification domain.ReadClassification, current domain
 	return domain.IndeterminateAdmission
 }
 
-func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool) domain.ReadClassification {
+func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool, dialect string) domain.ReadClassification {
 	if classification != domain.Indeterminate {
 		return classification
 	}
@@ -120,14 +120,23 @@ func reclassifyAfterResolution(classification domain.ReadClassification, reasonC
 		return classification
 	}
 
+	if dialect == "postgresql" {
+		return domain.Indeterminate
+	}
+
 	if len(reasonCodes) > 0 {
 		return domain.Indeterminate
 	}
 
+	hasWildcardUnresolved := false
 	for _, u := range unresolved {
-		if u.Reason == domain.ReasonSchemaUnavailable || u.Reason == ReasonUnresolvedWildcard || u.Reason == domain.ReasonAmbiguousReference {
-			return domain.Indeterminate
+		if u.Reason == domain.ReasonSchemaUnavailable || u.Reason == ReasonUnresolvedWildcard {
+			hasWildcardUnresolved = true
+			break
 		}
+	}
+	if hasWildcardUnresolved {
+		return domain.Indeterminate
 	}
 
 	return domain.ReadOnly

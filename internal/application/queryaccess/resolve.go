@@ -32,6 +32,7 @@ type resolutionState struct {
 	schemaCache   map[string]RelationSchema // key: canonical schema.name
 	aliasMap      map[string]resolvedRef    // key: alias → relation
 	nameMap       map[string][]resolvedRef  // key: relation name → matching relations
+	relationOrder []resolvedRef             // preserves SQL FROM/JOIN order for wildcard expansion
 }
 
 type resolvedRef struct {
@@ -48,6 +49,7 @@ func newResolutionState(ctx context.Context, resolver SchemaResolver, dialect, d
 		schemaCache:   make(map[string]RelationSchema),
 		aliasMap:      make(map[string]resolvedRef),
 		nameMap:       make(map[string][]resolvedRef),
+		relationOrder: make([]resolvedRef, 0, len(relations)),
 	}
 	for _, rel := range relations {
 		ref := resolvedRef{schema: rel.Schema, name: rel.Name}
@@ -55,6 +57,9 @@ func newResolutionState(ctx context.Context, resolver SchemaResolver, dialect, d
 			s.aliasMap[strings.ToLower(rel.Alias)] = ref
 		}
 		s.nameMap[strings.ToLower(rel.Name)] = append(s.nameMap[strings.ToLower(rel.Name)], ref)
+		if rel.Kind != domain.RelationCTE && rel.Kind != domain.RelationDerived {
+			s.relationOrder = append(s.relationOrder, ref)
+		}
 	}
 	return s
 }
@@ -486,26 +491,30 @@ func expandGlobalWildcard(state *resolutionState) ([]domain.ColumnReference, []s
 	var expanded []domain.ColumnReference
 	var sources []string
 	anyExpanded := false
+	seen := make(map[string]bool)
 
-	for _, refs := range state.nameMap {
-		for _, ref := range refs {
-			if ref.schema == "" && state.defaultSchema != "" {
-				ref.schema = state.defaultSchema
-			}
-			rs, ok := state.resolveSchema(ref.schema, ref.name)
-			if !ok {
-				continue
-			}
-			anyExpanded = true
-			for _, c := range rs.Columns {
-				expanded = append(expanded, domain.ColumnReference{
-					Schema: rs.Schema,
-					Table:  rs.Name,
-					Column: c.Name,
-					Usages: []domain.UsageContext{domain.UsageProjection},
-				})
-				sources = append(sources, domain.FormatColumnKey(rs.Schema, rs.Name, c.Name))
-			}
+	for _, ref := range state.relationOrder {
+		if ref.schema == "" && state.defaultSchema != "" {
+			ref.schema = state.defaultSchema
+		}
+		key := formatCacheKey(ref.schema, ref.name)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		rs, ok := state.resolveSchema(ref.schema, ref.name)
+		if !ok {
+			continue
+		}
+		anyExpanded = true
+		for _, c := range rs.Columns {
+			expanded = append(expanded, domain.ColumnReference{
+				Schema: rs.Schema,
+				Table:  rs.Name,
+				Column: c.Name,
+				Usages: []domain.UsageContext{domain.UsageProjection},
+			})
+			sources = append(sources, domain.FormatColumnKey(rs.Schema, rs.Name, c.Name))
 		}
 	}
 	if !anyExpanded {
