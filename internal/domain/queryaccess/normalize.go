@@ -161,17 +161,6 @@ func DeduplicateUsages(usages []UsageContext) []UsageContext {
 	return result
 }
 
-// forbiddenFields is the set of JSON field names that must never appear in a Result.
-var forbiddenFields = map[string]bool{
-	"sql":            true,
-	"raw_sql":        true,
-	"normalized_sql": true,
-	"severity":       true,
-	"literal":        true,
-	"password":       true,
-	"credential":     true,
-}
-
 // ValidateResult checks the result for forbidden fields and structural invariants.
 func ValidateResult(r *Result) error {
 	if r == nil {

@@ -131,7 +131,7 @@ func resolveMetadata(ctx context.Context, resolver SchemaResolver, dialect, defa
 
 	state := newResolutionState(ctx, resolver, dialect, defaultSchema, result.Relations)
 
-	var newUnresolved []domain.Unresolved
+	var newUnresolved []domain.Unresolved //nolint:prealloc // overwritten by resolveRelations return
 	result.Relations, newUnresolved = resolveRelations(state, result.Relations)
 	resolvedCols, expandedWildcards, colUnresolved := resolveColumns(state, result.ReferencedColumns)
 	result.ReferencedColumns = resolvedCols
@@ -208,7 +208,7 @@ func resolveColumns(state *resolutionState, columns []domain.ColumnReference) ([
 	for _, col := range columns {
 		if col.Column == "*" {
 			expanded, originalRef, wcUnresolved := expandStarColumn(state, col)
-			if len(expanded) > 0 && !(len(expanded) == 1 && expanded[0].Column == "*") {
+			if len(expanded) > 0 && (len(expanded) != 1 || expanded[0].Column != "*") {
 				expandedWildcards[originalRef] = true
 			}
 			out = append(out, expanded...)

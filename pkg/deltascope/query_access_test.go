@@ -198,5 +198,5 @@ func TestAnalyzeQueryAccessMalformedSQLErrorDoesNotDiscloseSQL(t *testing.T) {
 }
 
 func containsSQLText(errMsg, sql string) bool {
-	return len(errMsg) > 0 && len(sql) > 0 && (errMsg == sql || len(errMsg) >= len(sql) && errMsg[:len(sql)] == sql)
+	return errMsg != "" && sql != "" && (errMsg == sql || len(errMsg) >= len(sql) && errMsg[:len(sql)] == sql)
 }
