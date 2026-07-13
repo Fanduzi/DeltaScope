@@ -134,42 +134,34 @@ P1 fix: fix: bind effect identity resolution to execution context
 
 ---
 
-## Task 7 — pg_catalog identity implementation (facts only)
+## Task 7 — pg_catalog identity implementation (facts only) — DONE
+
+```text
+DONE on branch query-access-pure-read-admissibility.
+
+T7 delivered session-pinned EffectIdentityAdapter (PinnedSession + pg_catalog
+exact lookups + live→lookup→live gate). Facts only; not wired into Analyze;
+no Trusted / admission.
+
+T8 must implement version-scoped audited manifest proof and controlled
+promotion. Do not treat T7 resolved facts as trusted without T8 policy.
+
+Commit: feat: resolve query access effect identity facts
+```
+
+## Task 8 — Trust policy + proof engine (next)
 
 ```text
 On branch query-access-pure-read-admissibility.
 
-HARD PRECONDITION: T6 + T6 P1 (execution resolution context). Do NOT start
-until EffectIdentityResolutionContext and GateIdentityBatch* exist and tests
-for unbound-unqualified / shadowing / TOCTOU are green.
+Precondition: T7 facts-only session-pinned adapter + T2 closed ledger.
+Implement TrustPolicy keyed to the T2 version-scoped audited manifest; wire
+proof into classification/admission only when all effects are manifest-trusted
+under session-pinned facts. Remove the PostgreSQL hard-stop only under proof.
+Do not promote on volatility or bare pg_catalog membership alone.
+FORBIDDEN: Trusted from resolver/caller; name allowlists; generic i|s class trust.
 
-Precondition: T6 EffectIdentityResolver contract (facts-only batch API +
-IdentityStatus + EffectIdentityFacts + Resolution context). Implement the
-PostgreSQL catalog adapter only — do not invent a parallel trust API.
-
-Implement Task 7: PostgreSQL EffectIdentityResolver against pg_catalog
-(pg_operator / pg_proc / pg_cast) with exact type match for identities needed
-by the T2 closed candidate set. Return facts only: OID, namespace, volatility,
-castfunc/castmethod. Scrub secrets from errors. Unknown/multi-match → not a
-unique identity. Map all failures to T6 bounded IdentityStatus values.
-
-CRITICAL session binding (all candidates, not only unqualified):
-- Bound context MUST include non-zero SessionBinding, PathEpoch, DatabaseOID,
-  RoleOID, ServerVersionNum. Partial contexts are invalid / fail-closed.
-- Unqualified also needs NamespaceSearchOIDs (never guess pg_catalog.=).
-- Explicit schema may skip search_path ranking but MUST share session/db/role/server.
-- T7 on ONE controlled session: read live context → identity lookup → re-read
-  live → GateIdentityBatchAgainstLiveContext → only then T8.
-- Stamp DatabaseOID/ServerVersionNum on every resolved fact; mismatch → drop.
-Do not attach Trusted. Do not promote admission (T8).
-
-FORBIDDEN: "trust only pg_catalog + volatility i|s" or any equivalent Trusted
-assertion in this layer. Trust is Task 8 + T2 manifest.
-
-If unique identity requires a full coercion planner for the phase-1 matrix,
-STOP and report kill criterion instead of adding name or volatility allowlists.
-
-Commit: feat: resolve postgresql effect identities from pg_catalog
+Commit: feat: prove trusted query access effects via manifest
 No push.
 ```
 

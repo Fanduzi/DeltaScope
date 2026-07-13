@@ -1,0 +1,465 @@
+//go:build postgresql
+
+// Package postgresqlmeta tests the T7 facts-only effect identity adapter.
+// input: fake session-pinned catalog + synthetic candidates
+// output: bounded statuses, OID stamps, fail-closed gates; no public leak
+// pos: unit coverage without claiming PG17 integration
+// note: if this file changes, update this header and module README.md.
+package postgresqlmeta
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"reflect"
+	"strings"
+	"testing"
+
+	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
+	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
+)
+
+func TestNewEffectIdentityAdapter_RejectsUnpinned(t *testing.T) {
+	t.Parallel()
+	if _, err := NewEffectIdentityAdapter(nil); !errors.Is(err, ErrSessionNotPinned) {
+		t.Fatalf("nil session: %v", err)
+	}
+	if _, err := NewEffectIdentityAdapter(&PinnedSession{}); !errors.Is(err, ErrSessionNotPinned) {
+		t.Fatalf("nil conn: %v", err)
+	}
+	// No constructor from *sql.DB — type surface check.
+	rt := reflect.TypeOf(EffectIdentityAdapter{})
+	for i := 0; i < rt.NumField(); i++ {
+		if rt.Field(i).Type == reflect.TypeOf((*sql.DB)(nil)) {
+			t.Fatal("adapter must not hold *sql.DB pool")
+		}
+	}
+}
+
+func TestPinSession_NilDB(t *testing.T) {
+	t.Parallel()
+	if _, err := PinSession(context.Background(), nil); !errors.Is(err, ErrSessionNotPinned) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func completeLive() appqa.EffectIdentityResolutionContext {
+	return appqa.EffectIdentityResolutionContext{
+		Bound:               true,
+		SessionBinding:      "b1-d16384",
+		PathEpoch:           1,
+		NamespaceSearchOIDs: []uint32{2200, 11}, // public, pg_catalog
+		DatabaseOID:         16384,
+		RoleOID:             10,
+		ServerVersionNum:    170000,
+	}
+}
+
+func TestAdapter_ExactOperatorAndFunctionFacts(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"pg_catalog": 11, "public": 2200},
+		ops: map[opKey][]operatorRow{
+			{ns: 11, name: "=", left: 23, right: 23}: {{
+				OID: 96, NamespaceOID: 11, ImplementationOID: 65, ResultTypeOID: 16,
+				Volatility: "i", SchemaName: "pg_catalog", OperatorName: "=",
+			}},
+		},
+		fns: map[fnKey][]functionRow{
+			{ns: 11, name: "count", args: ""}: {{
+				OID: 2803, NamespaceOID: 11, ResultType: 20, Volatility: "i",
+				SchemaName: "pg_catalog", FuncName: "count", ArgTypeOIDs: nil,
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Dialect: "postgresql",
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"="}, Arity: 2, OperandKinds: []string{"column", "const"}},
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"count"}, Arity: 0, IsAggregate: true},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {23, 23}, 1: {}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(batch.Items) != 2 {
+		t.Fatalf("len=%d", len(batch.Items))
+	}
+	if batch.Items[0].Status != domain.IdentityStatusResolved || batch.Items[0].Facts == nil {
+		t.Fatalf("operator: %+v", batch.Items[0])
+	}
+	if batch.Items[0].Facts.ObjectOID != 96 || batch.Items[0].Facts.DatabaseOID != live.DatabaseOID {
+		t.Fatalf("operator facts: %+v", batch.Items[0].Facts)
+	}
+	if batch.Items[0].Facts.ServerVersionNum != live.ServerVersionNum {
+		t.Fatalf("version pin: %d", batch.Items[0].Facts.ServerVersionNum)
+	}
+	if batch.Items[1].Status != domain.IdentityStatusResolved || batch.Items[1].Facts.ObjectOID != 2803 {
+		t.Fatalf("count: %+v", batch.Items[1])
+	}
+	if fake.captureCount < 2 {
+		t.Fatalf("expected live capture before and after lookup, got %d", fake.captureCount)
+	}
+}
+
+func TestAdapter_UnqualifiedUsesPathOrder_CustomShadowsCatalog(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"public": 2200, "pg_catalog": 11},
+		fns: map[fnKey][]functionRow{
+			{ns: 2200, name: "count", args: ""}: {{
+				OID: 900001, NamespaceOID: 2200, ResultType: 20, Volatility: "v",
+				SchemaName: "public", FuncName: "count",
+			}},
+			{ns: 11, name: "count", args: ""}: {{
+				OID: 2803, NamespaceOID: 11, ResultType: 20, Volatility: "i",
+				SchemaName: "pg_catalog", FuncName: "count",
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	// Collect-all exact matches across path → ambiguous when both public and pg_catalog match.
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, Arity: 0},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Both namespaces have exact zero-arg count → ambiguous (must not pick pg_catalog by name).
+	if batch.Items[0].Status != domain.IdentityStatusAmbiguous {
+		t.Fatalf("expected ambiguous when path has custom+catalog, got %+v", batch.Items[0])
+	}
+
+	// Only public has the function → actual public OID facts.
+	fake.fns = map[fnKey][]functionRow{
+		{ns: 2200, name: "count", args: ""}: {{
+			OID: 900001, NamespaceOID: 2200, ResultType: 20, Volatility: "v",
+			SchemaName: "public", FuncName: "count",
+		}},
+	}
+	batch, err = a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, Arity: 0},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusResolved || batch.Items[0].Facts.ObjectOID != 900001 {
+		t.Fatalf("custom public count: %+v", batch.Items[0])
+	}
+	if batch.Items[0].Facts.NamespaceOID != 2200 {
+		t.Fatalf("must not replace with pg_catalog: %+v", batch.Items[0].Facts)
+	}
+}
+
+func TestAdapter_ExplicitPgCatalogAndPublicReturnFactsOnly(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"pg_catalog": 11, "public": 2200},
+		fns: map[fnKey][]functionRow{
+			{ns: 11, name: "length", args: "25"}: {{
+				OID: 1374, NamespaceOID: 11, ResultType: 23, Volatility: "i",
+				SchemaName: "pg_catalog", FuncName: "length", ArgTypeOIDs: []uint32{25},
+			}},
+			{ns: 2200, name: "my_udf", args: "23"}: {{
+				OID: 900002, NamespaceOID: 2200, ResultType: 23, Volatility: "v",
+				SchemaName: "public", FuncName: "my_udf", ArgTypeOIDs: []uint32{23},
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"pg_catalog", "length"}, ExplicitSchema: true, Arity: 1},
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"public", "my_udf"}, ExplicitSchema: true, Arity: 1},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {25}, 1: {23}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusResolved || batch.Items[0].Facts.ObjectOID != 1374 {
+		t.Fatalf("explicit pg_catalog: %+v", batch.Items[0])
+	}
+	if batch.Items[1].Status != domain.IdentityStatusResolved || batch.Items[1].Facts.NamespaceOID != 2200 {
+		t.Fatalf("explicit public facts: %+v", batch.Items[1])
+	}
+	// No Trusted field.
+	if _, ok := reflect.TypeOf(*batch.Items[0].Facts).FieldByName("Trusted"); ok {
+		t.Fatal("Trusted forbidden")
+	}
+}
+
+func TestAdapter_MissingTypesAndParamFailClosed(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{live: completeLive(), ns: map[string]uint32{"pg_catalog": 11}}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"="}, Arity: 2}, // no type OIDs
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"length"}, Arity: 1, OperandKinds: []string{"param"}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusCoercionGap {
+		t.Errorf("missing types: %s", batch.Items[0].Status)
+	}
+	if batch.Items[1].Status != domain.IdentityStatusCoercionGap {
+		t.Errorf("param: %s", batch.Items[1].Status)
+	}
+}
+
+func TestAdapter_MultiMatchAmbiguous(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"pg_catalog": 11},
+		ops: map[opKey][]operatorRow{
+			{ns: 11, name: "+", left: 23, right: 23}: {
+				{OID: 1, NamespaceOID: 11, SchemaName: "pg_catalog", OperatorName: "+"},
+				{OID: 2, NamespaceOID: 11, SchemaName: "pg_catalog", OperatorName: "+"},
+			},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"+"}, Arity: 2},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {23, 23}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusAmbiguous || batch.Items[0].Facts != nil {
+		t.Fatalf("got %+v", batch.Items[0])
+	}
+}
+
+func TestAdapter_CastExactAndUnknown(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live:  live,
+		types: map[string]uint32{"pg_catalog.text": 25},
+		casts: map[castKey][]castRow{
+			{src: 23, tgt: 25}: {{
+				OID: 1, SourceOID: 23, TargetOID: 25, CastFuncOID: 0, CastMethod: "b",
+				SourceSchema: "pg_catalog", SourceName: "int4", TargetSchema: "pg_catalog", TargetName: "text",
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateCast, Ordinal: 0, TargetTypePath: []string{"pg_catalog", "text"}, ExplicitSchema: true, Arity: 1, OperandKinds: []string{"column"}},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {23}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusResolved || batch.Items[0].Facts.CastMethod != appqa.EffectCastMethodBinary {
+		t.Fatalf("cast: %+v", batch.Items[0])
+	}
+
+	// No cast row.
+	fake.casts = nil
+	batch, err = a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateCast, Ordinal: 0, TargetTypePath: []string{"pg_catalog", "text"}, ExplicitSchema: true, Arity: 1},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {23}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusUnknown {
+		t.Fatalf("missing cast: %s", batch.Items[0].Status)
+	}
+}
+
+func TestAdapter_CatalogErrorMapsToLookupFailed_NoLeak(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live:    live,
+		ns:      map[string]uint32{"pg_catalog": 11},
+		opErr:   errors.New(`pq: password authentication failed DSN=postgres://u:s@h/db`),
+		ops:     map[opKey][]operatorRow{},
+		forceOp: true,
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"="}, Arity: 2},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {23, 23}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Fatalf("status=%s", batch.Items[0].Status)
+	}
+	// Status string must not contain secrets.
+	if strings.Contains(string(batch.Items[0].Status), "password") {
+		t.Fatal("status leaked error text")
+	}
+}
+
+func TestAdapter_LiveSessionMismatchStripsAll(t *testing.T) {
+	t.Parallel()
+	live1 := completeLive()
+	live2 := completeLive()
+	live2.RoleOID = 99 // role drift after lookup
+	fake := &fakeCatalog{
+		live:       live1,
+		liveSecond: &live2,
+		ns:         map[string]uint32{"pg_catalog": 11},
+		ops: map[opKey][]operatorRow{
+			{ns: 11, name: "=", left: 23, right: 23}: {{
+				OID: 96, NamespaceOID: 11, SchemaName: "pg_catalog", OperatorName: "=", Volatility: "i",
+			}},
+		},
+		fns: map[fnKey][]functionRow{
+			{ns: 11, name: "length", args: "25"}: {{
+				OID: 1374, NamespaceOID: 11, SchemaName: "pg_catalog", FuncName: "length", ArgTypeOIDs: []uint32{25}, Volatility: "i",
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"="}, Arity: 2},
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"pg_catalog", "length"}, ExplicitSchema: true, Arity: 1},
+		},
+		OperandTypeOIDs: map[int][]uint32{0: {23, 23}, 1: {25}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range batch.Items {
+		if it.Status != domain.IdentityStatusUnavailable || it.Facts != nil {
+			t.Errorf("role drift must strip all including explicit: %+v", it)
+		}
+	}
+}
+
+func TestAdapter_CaptureFailureUnavailable(t *testing.T) {
+	t.Parallel()
+	a := &EffectIdentityAdapter{catalog: &fakeCatalog{captureErr: errors.New("boom")}}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, Arity: 0},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if batch.Items[0].Status != domain.IdentityStatusUnavailable {
+		t.Fatalf("got %s", batch.Items[0].Status)
+	}
+}
+
+func TestAdapter_Cancellation(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	a := &EffectIdentityAdapter{catalog: &fakeCatalog{live: completeLive()}}
+	_, err := a.ResolveEffectIdentities(ctx, appqa.EffectIdentityRequest{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+// --- fake catalog ---
+
+type opKey struct {
+	ns          uint32
+	name        string
+	left, right uint32
+}
+
+type fnKey struct {
+	ns   uint32
+	name string
+	args string
+}
+
+type castKey struct {
+	src, tgt uint32
+}
+
+type fakeCatalog struct {
+	live         appqa.EffectIdentityResolutionContext
+	liveSecond   *appqa.EffectIdentityResolutionContext
+	captureErr   error
+	captureCount int
+	ns           map[string]uint32
+	types        map[string]uint32
+	ops          map[opKey][]operatorRow
+	fns          map[fnKey][]functionRow
+	casts        map[castKey][]castRow
+	opErr        error
+	forceOp      bool
+}
+
+func (f *fakeCatalog) CaptureLiveContext(ctx context.Context) (appqa.EffectIdentityResolutionContext, error) {
+	f.captureCount++
+	if f.captureErr != nil {
+		return appqa.EffectIdentityResolutionContext{}, f.captureErr
+	}
+	if f.captureCount >= 2 && f.liveSecond != nil {
+		return *f.liveSecond, nil
+	}
+	return f.live, nil
+}
+
+func (f *fakeCatalog) namespaceOIDByName(_ context.Context, name string) (uint32, error) {
+	if oid, ok := f.ns[name]; ok {
+		return oid, nil
+	}
+	return 0, sql.ErrNoRows
+}
+
+func (f *fakeCatalog) typeOIDByName(_ context.Context, schema, typname string, _ []uint32) (uint32, error) {
+	key := schema + "." + typname
+	if schema == "" {
+		key = typname
+	}
+	if oid, ok := f.types[key]; ok {
+		return oid, nil
+	}
+	return 0, sql.ErrNoRows
+}
+
+func (f *fakeCatalog) lookupOperators(_ context.Context, nsOID uint32, name string, left, right uint32) ([]operatorRow, error) {
+	if f.opErr != nil {
+		return nil, f.opErr
+	}
+	return append([]operatorRow(nil), f.ops[opKey{ns: nsOID, name: name, left: left, right: right}]...), nil
+}
+
+func (f *fakeCatalog) lookupFunctions(_ context.Context, nsOID uint32, name string, argOIDs []uint32) ([]functionRow, error) {
+	key := fnKey{ns: nsOID, name: name, args: oidVectorLiteral(argOIDs)}
+	return append([]functionRow(nil), f.fns[key]...), nil
+}
+
+func (f *fakeCatalog) lookupCasts(_ context.Context, sourceOID, targetOID uint32) ([]castRow, error) {
+	return append([]castRow(nil), f.casts[castKey{src: sourceOID, tgt: targetOID}]...), nil
+}

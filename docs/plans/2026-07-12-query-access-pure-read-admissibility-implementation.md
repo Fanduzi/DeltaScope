@@ -339,39 +339,32 @@ See decision record T6 P1 / P1b.
 
 ---
 
-## Task 7 — PostgreSQL catalog identity implementation (facts only)
+## Task 7 — PostgreSQL catalog identity implementation (facts only) — DONE
 
-**Precondition:** T2 ledger. Resolve operators/functions needed for the closed
-candidate set with exact type match; do not build open-ended catalogs of trust.
+**Precondition:** T2 ledger + T6/P1b session-complete contract.
 **Goal:** real identity resolution against `pg_catalog` with exact type match;
 return OIDs, namespace, volatility, cast method as **facts**. Do **not** apply
-"pg_catalog + i|s ⇒ trusted".
+"pg_catalog + i|s ⇒ trusted". **Do not** wire Analyze or promote admission.
+**Status:** done — session-pinned adapter only.
 
-**File scope:**
+**File scope (actual):**
 
-- `internal/infrastructure/metadata/postgresql/` new identity resolver file(s)
-- integration tests with sqlmock or existing test DB patterns
+- `effect_identity_session.go` — `PinnedSession` + live context capture
+- `effect_identity_resolver.go` — `EffectIdentityAdapter` (facts only)
+- unit tests (fake catalog) + optional PG17 integration (`-tags integration`)
 
-**Work:**
+**Work delivered:**
 
-- Implement ResolveOperator/Function/Cast as designed (facts).
-- Unique match required; zero rows / multi-match → unknown/error for application.
-- Function-backed cast facts must be distinguishable (castfunc / castmethod).
-- Scrub secrets from errors.
-- **Do not** set Trusted in this layer.
+- Session pin via `*sql.Conn` only; refuse pool-style multi-conn lookups.
+- live → exact operator/function/cast lookup → live → gate.
+- Exact type OID match; multi-match/ambiguous; missing types → coercion_gap;
+  transport → lookup_failed (no public error text).
+- Stamp DatabaseOID/ServerVersionNum; no Trusted; not called from Analyze.
 
-**GitNexus targets:** new symbols under postgresqlmeta; impact on openers if any
+**T8 owns:** version-scoped audited manifest + proof engine + controlled
+admission promotion (and any Analyze wiring / public injection).
 
-**Gates:**
-
-```bash
-go test -tags postgresql ./internal/infrastructure/metadata/postgresql/ -count=1
-# integration if available under existing patterns
-```
-
-**Commit:** `feat: resolve postgresql effect identities from pg_catalog`
-**Stop if:** unique matches require full coercion graph for the phase-1 matrix
-→ return to design / kill criteria.
+**Commit:** `feat: resolve query access effect identity facts`
 
 ---
 
@@ -528,8 +521,8 @@ T1 design (done)
   → T4 reason codes (done)
   → T5 effect candidates (no trust) (done)
   → T6 resolver contract (facts only) (done)
-  → T7 catalog identity implementation (facts only)   ← next
-  → T8 trust policy + proof engine (manifest = T2 ledger only)
+  → T7 catalog identity implementation (facts only) (done)
+  → T8 trust policy + proof engine (manifest = T2 ledger only)  ← next
   → T9 corpus
   → T10 docs accept
   → T11 review

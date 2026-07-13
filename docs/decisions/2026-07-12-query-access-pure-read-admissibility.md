@@ -13,6 +13,7 @@ Related commits:
 - T6 resolver contract commit: `feat: define query access identity resolver contract`
 - T6 P1 execution-context fix: `fix: bind effect identity resolution to execution context`
 - T6 P1b session completeness: `fix: require full identity resolution session binding`
+- T7 catalog adapter: `feat: resolve query access effect identity facts`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -27,7 +28,8 @@ Related tests:
 - T6: `identity_resolver_test.go`, `identity_resolver_no_invoke_test.go`, domain status mapping tests
 - T6: PostgreSQL Analyze freeze (no identity_* from Analyze; public JSON no OIDs/facts)
 - T6 P1: `identity_resolver_context_test.go` (unbound unqualified, shadowing, overload, TOCTOU, no public context leak)
-- Planned (T7): unit/integration tests for effect-identity catalog resolution
+- T7: `effect_identity_resolver_test.go` (fake pinned catalog); optional
+  `effect_identity_resolver_integration_test.go` (PG17 Docker)
 - Planned (T8): positive corpus under fake/real identity resolver + manifest promotion
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
 Related docs:
@@ -747,6 +749,47 @@ escape to T8.
 - Compatibility never treats zero as "not asserted".
 - Explicit schema cannot skip session/db/role/server checks.
 - Live role/db/version mismatch → strip all facts including explicit.
+
+### T7 — PostgreSQL catalog effect-identity adapter (facts only; 2026-07-13)
+
+**Status remains:** `Proposed` (catalog facts only; **no** Analyze wiring, **no**
+manifest trust, **no** admission promotion).
+
+**What T7 delivers:**
+
+1. **`PinnedSession`** wrapping a single `*sql.Conn` (not multi-connection
+   `*sql.DB` lookups). `PinSession` / `NewPinnedSessionFromConn` are the only
+   production entry points into the adapter.
+2. **`EffectIdentityAdapter`** implementing application
+   `EffectIdentityResolver`:
+   - capture live context (database OID, role OID, `server_version_num`,
+     backend binding, ordered `current_schemas(true)` namespace OIDs)
+   - exact catalog lookups for operator / function / cast
+   - re-capture live context
+   - `GateIdentityBatchAgainstLiveContext` (TOCTOU)
+3. **Exact-match policy:** requires operand/argument type OIDs from the
+   request; param/star/expr/unknown kinds → `coercion_gap`; multi-match →
+   `ambiguous`; zero match → `unknown`; transport errors → `lookup_failed`
+   without leaking driver text onto public Result.
+4. **No fact cache** across SessionBinding/DatabaseOID/RoleOID/
+   ServerVersionNum/PathEpoch. Resolved facts always
+   `StampFactsFromResolution`.
+5. **Public behavior unchanged:** adapter is **not** called from
+   `Service.Analyze`; PostgreSQL remains indeterminate + `unproven_*`;
+   SDK/CLI/HTTP schema unchanged; MySQL/TiDB untouched.
+6. **Runtime evidence:** unit tests with fake pinned catalog; optional PG17
+   Docker integration (`-tags postgresql,integration`) against
+   `docker/pg-e2e-compose.yaml` (`postgres:17`). T2 research range 14–17 is
+   **not** claimed as multi-version CI for this adapter.
+
+**Artifacts:**
+
+- `internal/infrastructure/metadata/postgresql/effect_identity_session.go`
+- `internal/infrastructure/metadata/postgresql/effect_identity_resolver.go`
+- unit + optional integration tests; package README
+
+**Explicit non-claims:** no TrustPolicy / manifest evaluation (T8); no
+admission lift; no public resolver injection.
 
 ## Consequences
 
