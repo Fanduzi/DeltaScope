@@ -60,6 +60,14 @@ const (
 	EffectCandidateCast     EffectCandidateKind = "cast"
 )
 
+// OperandColumnRef identifies a base-table column for operand type resolution.
+// Schema may be empty for unqualified references (resolved via search_path).
+type OperandColumnRef struct {
+	Schema string
+	Table  string
+	Column string
+}
+
 // EffectCandidate is an internal, untrusted effect fact for future catalog
 // identity resolution. It is NOT a trust root and is never serialized on
 // domain.Result or SDK/CLI/HTTP JSON.
@@ -74,11 +82,15 @@ type EffectCandidate struct {
 	HasWindow      bool
 	HasFilter      bool
 	TargetTypePath []string
+	// OperandColumnRefs maps operand position to base-table column reference.
+	// Indexed by operand position; nil entries indicate non-column operands.
+	// Only populated for column operands against base tables.
+	OperandColumnRefs []OperandColumnRef
 }
 
 // QueryAccessResult wraps the domain result for application-layer consumption.
 // EffectCandidates are internal-only (untrusted, non-public).
 type QueryAccessResult struct {
 	DomainResult     domain.Result
-	EffectCandidates []EffectCandidate // internal only; never public transport fields
+	EffectCandidates []EffectCandidate `json:"-"` // internal only; never public transport fields
 }

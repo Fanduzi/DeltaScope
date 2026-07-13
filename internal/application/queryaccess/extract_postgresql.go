@@ -97,17 +97,30 @@ func mapEffectCandidates(in []pgparser.EffectCandidate) []EffectCandidate {
 		for _, k := range c.OperandKinds {
 			kinds = append(kinds, string(k))
 		}
+		var colRefs []OperandColumnRef
+		if len(c.OperandColumnRefs) > 0 {
+			colRefs = make([]OperandColumnRef, 0, len(c.OperandColumnRefs))
+			for _, ref := range c.OperandColumnRefs {
+				colRefs = append(colRefs, OperandColumnRef{
+					Schema: ref.Schema,
+					Table:  ref.Table,
+					Column: ref.Column,
+				})
+			}
+		}
+
 		out = append(out, EffectCandidate{
-			Kind:           EffectCandidateKind(c.Kind),
-			Ordinal:        c.Ordinal,
-			NamePath:       append([]string(nil), c.NamePath...),
-			ExplicitSchema: c.ExplicitSchema,
-			Arity:          c.Arity,
-			OperandKinds:   kinds,
-			IsAggregate:    c.IsAggregate,
-			HasWindow:      c.HasWindow,
-			HasFilter:      c.HasFilter,
-			TargetTypePath: append([]string(nil), c.TargetTypePath...),
+			Kind:              EffectCandidateKind(c.Kind),
+			Ordinal:           c.Ordinal,
+			NamePath:          append([]string(nil), c.NamePath...),
+			ExplicitSchema:    c.ExplicitSchema,
+			Arity:             c.Arity,
+			OperandKinds:      kinds,
+			IsAggregate:       c.IsAggregate,
+			HasWindow:         c.HasWindow,
+			HasFilter:         c.HasFilter,
+			TargetTypePath:    append([]string(nil), c.TargetTypePath...),
+			OperandColumnRefs: colRefs,
 		})
 	}
 	return out

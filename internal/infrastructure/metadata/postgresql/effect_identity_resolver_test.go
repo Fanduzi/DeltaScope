@@ -427,6 +427,376 @@ func TestAdapter_UnboundRequestRejected(t *testing.T) {
 	}
 }
 
+func TestResolveColumnTypeOIDs_ValidColumns(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}:   23,
+			{schema: "public", table: "users", column: "name"}: 25,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+				{Schema: "public", Table: "users", Column: "name"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(result))
+	}
+	oids, ok := result[0]
+	if !ok {
+		t.Fatal("missing ordinal 0")
+	}
+	if len(oids) != 2 || oids[0] != 23 || oids[1] != 25 {
+		t.Fatalf("unexpected OIDs: %v", oids)
+	}
+}
+
+func TestResolveColumnTypeOIDs_MissingColumnReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}: 23,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+				{Schema: "public", Table: "users", Column: "missing_col"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty map, got %d entries", len(result))
+	}
+}
+
+func TestResolveColumnTypeOIDs_SkipsNonOperator(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}: 23,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateFunction,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+				{Schema: "public", Table: "users", Column: "id"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty map for non-operator, got %d entries", len(result))
+	}
+}
+
+func TestResolveColumnTypeOIDs_SkipsNonBinary(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}: 23,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   1,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty map for unary operator, got %d entries", len(result))
+	}
+}
+
+func TestResolveColumnTypeOIDs_SkipsNilOperandColumnRefs(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{live: completeLive()}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty map for nil refs, got %d entries", len(result))
+	}
+}
+
+func TestResolveColumnTypeOIDs_SkipsEmptySchema(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}: 23,
+		},
+		ns: map[string]uint32{"public": 2200, "pg_catalog": 11},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "", Table: "users", Column: "id"},
+				{Schema: "public", Table: "users", Column: "id"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 entry (resolved via search_path), got %d entries", len(result))
+	}
+	oids, ok := result[0]
+	if !ok || len(oids) != 2 || oids[0] != 23 || oids[1] != 23 {
+		t.Fatalf("unexpected OIDs: %v", result)
+	}
+}
+
+func TestResolveColumnTypeOIDs_UnqualifiedResolvesViaSearchPath(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}:   23,
+			{schema: "public", table: "users", column: "name"}: 25,
+		},
+		ns: map[string]uint32{"public": 2200, "pg_catalog": 11},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "", Table: "users", Column: "id"},
+				{Schema: "", Table: "users", Column: "name"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(result))
+	}
+	oids, ok := result[0]
+	if !ok || len(oids) != 2 || oids[0] != 23 || oids[1] != 25 {
+		t.Fatalf("unexpected OIDs: %v", result)
+	}
+}
+
+func TestResolveColumnTypeOIDs_UnqualifiedNotInSearchPath(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "custom", table: "users", column: "id"}:   20,
+			{schema: "custom", table: "users", column: "name"}: 1042,
+		},
+		ns: map[string]uint32{"public": 2200, "custom": 16385, "pg_catalog": 11},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "", Table: "users", Column: "id"},
+				{Schema: "", Table: "users", Column: "name"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty (custom not in search_path), got %v", result)
+	}
+}
+
+func TestResolveColumnTypeOIDs_UnqualifiedNotFoundReturnsEmpty(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{},
+		ns:   map[string]uint32{"public": 2200, "pg_catalog": 11},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "", Table: "nonexistent", Column: "id"},
+				{Schema: "", Table: "nonexistent", Column: "name"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty map for nonexistent table, got %d entries", len(result))
+	}
+}
+
+func TestResolveColumnTypeOIDs_ContextCancelled(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	a := &EffectIdentityAdapter{catalog: &fakeCatalog{live: completeLive()}}
+	_, err := a.ResolveColumnTypeOIDs(ctx, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestResolveColumnTypeOIDs_NilAdapter(t *testing.T) {
+	t.Parallel()
+	var a *EffectIdentityAdapter
+	_, err := a.ResolveColumnTypeOIDs(context.Background(), nil)
+	if !errors.Is(err, ErrSessionNotPinned) {
+		t.Fatalf("expected ErrSessionNotPinned, got %v", err)
+	}
+}
+
+func TestResolveColumnTypeOIDs_CatalogErrorSkips(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live:   completeLive(),
+		colErr: errors.New("connection lost"),
+		cols:   map[colKey]uint32{},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+				{Schema: "public", Table: "users", Column: "name"},
+			},
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected empty map on catalog error, got %d entries", len(result))
+	}
+}
+
+func TestResolveColumnTypeOIDs_MultipleCandidatesPartial(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "public", table: "users", column: "id"}:   23,
+			{schema: "public", table: "users", column: "name"}: 25,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	candidates := []appqa.EffectCandidate{
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 0,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+				{Schema: "public", Table: "users", Column: "name"},
+			},
+		},
+		{
+			Kind:    appqa.EffectCandidateOperator,
+			Ordinal: 1,
+			Arity:   2,
+			OperandColumnRefs: []appqa.OperandColumnRef{
+				{Schema: "public", Table: "users", Column: "id"},
+				{Schema: "public", Table: "missing", Column: "col"},
+			},
+		},
+		{
+			Kind:    appqa.EffectCandidateFunction,
+			Ordinal: 2,
+			Arity:   0,
+		},
+	}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), candidates)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(result))
+	}
+	oids, ok := result[0]
+	if !ok || len(oids) != 2 || oids[0] != 23 || oids[1] != 25 {
+		t.Fatalf("unexpected result: %v", result)
+	}
+}
+
 // --- fake catalog ---
 
 type opKey struct {
@@ -445,6 +815,10 @@ type castKey struct {
 	src, tgt uint32
 }
 
+type colKey struct {
+	schema, table, column string
+}
+
 type fakeCatalog struct {
 	live         appqa.EffectIdentityResolutionContext
 	liveSecond   *appqa.EffectIdentityResolutionContext
@@ -457,6 +831,8 @@ type fakeCatalog struct {
 	casts        map[castKey][]castRow
 	opErr        error
 	forceOp      bool
+	cols         map[colKey]uint32
+	colErr       error
 }
 
 func (f *fakeCatalog) CaptureLiveContext(ctx context.Context) (appqa.EffectIdentityResolutionContext, error) {
@@ -502,4 +878,33 @@ func (f *fakeCatalog) lookupFunctions(_ context.Context, nsOID uint32, name stri
 
 func (f *fakeCatalog) lookupCasts(_ context.Context, sourceOID, targetOID uint32) ([]castRow, error) {
 	return append([]castRow(nil), f.casts[castKey{src: sourceOID, tgt: targetOID}]...), nil
+}
+
+func (f *fakeCatalog) columnTypeOID(_ context.Context, schema, table, column string) (uint32, error) {
+	if f.colErr != nil {
+		return 0, f.colErr
+	}
+	oid, ok := f.cols[colKey{schema: schema, table: table, column: column}]
+	if !ok {
+		return 0, sql.ErrNoRows
+	}
+	return oid, nil
+}
+
+func (f *fakeCatalog) resolveColumnTypeOIDBySearchPath(_ context.Context, table, column string, searchPathOIDs []uint32) (uint32, error) {
+	if f.colErr != nil {
+		return 0, f.colErr
+	}
+	for _, nsOID := range searchPathOIDs {
+		for k, oid := range f.cols {
+			if k.table == table && k.column == column {
+				for name, nsO := range f.ns {
+					if nsO == nsOID && name == k.schema {
+						return oid, nil
+					}
+				}
+			}
+		}
+	}
+	return 0, sql.ErrNoRows
 }

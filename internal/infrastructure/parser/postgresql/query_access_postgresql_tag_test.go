@@ -362,8 +362,8 @@ func TestQueryAccessExtractor_DefaultSchema(t *testing.T) {
 	if len(facts.Relations) != 1 {
 		t.Fatalf("relations: got %d, want 1", len(facts.Relations))
 	}
-	if facts.Relations[0].Schema != "app" {
-		t.Errorf("relation schema: got %q, want %q", facts.Relations[0].Schema, "app")
+	if facts.Relations[0].Schema != "" {
+		t.Errorf("relation schema: got %q, want empty (unqualified uses search_path)", facts.Relations[0].Schema)
 	}
 }
 

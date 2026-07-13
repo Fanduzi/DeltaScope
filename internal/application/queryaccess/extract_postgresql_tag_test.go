@@ -148,8 +148,8 @@ func TestAnalyzePostgreSQL_DefaultSchema(t *testing.T) {
 	if len(result.DomainResult.Relations) != 1 {
 		t.Fatalf("relations: got %d, want 1", len(result.DomainResult.Relations))
 	}
-	if result.DomainResult.Relations[0].Schema != "app" {
-		t.Errorf("relation schema: got %q, want %q", result.DomainResult.Relations[0].Schema, "app")
+	if result.DomainResult.Relations[0].Schema != "" {
+		t.Errorf("relation schema: got %q, want empty (unqualified uses search_path)", result.DomainResult.Relations[0].Schema)
 	}
 }
 
@@ -226,5 +226,71 @@ func TestAnalyzePostgreSQL_MalformedSQLStaysIndeterminate(t *testing.T) {
 	}
 	if result.DomainResult.Admission != domain.IndeterminateAdmission {
 		t.Errorf("admission: got %q, want %q", result.DomainResult.Admission, domain.IndeterminateAdmission)
+	}
+}
+
+func TestAnalyzePostgreSQL_OperatorColumnRefsMapped(t *testing.T) {
+	t.Parallel()
+	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
+		SQL:           "SELECT u.id FROM users u JOIN orders o ON u.id = o.user_id",
+		Dialect:       "postgresql",
+		DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	if len(result.EffectCandidates) == 0 {
+		t.Fatal("expected operator candidate for u.id = o.user_id")
+	}
+	var opCand *EffectCandidate
+	for i := range result.EffectCandidates {
+		if result.EffectCandidates[i].Kind == EffectCandidateOperator {
+			opCand = &result.EffectCandidates[i]
+			break
+		}
+	}
+	if opCand == nil {
+		t.Fatal("expected operator candidate")
+	}
+	if len(opCand.OperandColumnRefs) != 2 {
+		t.Fatalf("expected 2 operand column refs, got %d: %+v", len(opCand.OperandColumnRefs), opCand.OperandColumnRefs)
+	}
+	ref0 := opCand.OperandColumnRefs[0]
+	if ref0.Schema != "" || ref0.Table != "users" || ref0.Column != "id" {
+		t.Errorf("left operand: got schema=%q table=%q column=%q, want users.id", ref0.Schema, ref0.Table, ref0.Column)
+	}
+	ref1 := opCand.OperandColumnRefs[1]
+	if ref1.Schema != "" || ref1.Table != "orders" || ref1.Column != "user_id" {
+		t.Errorf("right operand: got schema=%q table=%q column=%q, want orders.user_id", ref1.Schema, ref1.Table, ref1.Column)
+	}
+}
+
+func TestAnalyzePostgreSQL_LiteralOperandNoColumnRefs(t *testing.T) {
+	t.Parallel()
+	result, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT id FROM users WHERE id = 1",
+		Dialect: "postgresql",
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+	if len(result.EffectCandidates) == 0 {
+		t.Fatal("expected operator candidate for id = 1")
+	}
+	var opCand *EffectCandidate
+	for i := range result.EffectCandidates {
+		if result.EffectCandidates[i].Kind == EffectCandidateOperator {
+			opCand = &result.EffectCandidates[i]
+			break
+		}
+	}
+	if opCand == nil {
+		t.Fatal("expected operator candidate")
+	}
+	if len(opCand.OperandColumnRefs) != 1 {
+		t.Fatalf("expected 1 operand column ref (left column, right literal), got %d: %+v", len(opCand.OperandColumnRefs), opCand.OperandColumnRefs)
+	}
+	if opCand.OperandColumnRefs[0].Table != "users" || opCand.OperandColumnRefs[0].Column != "id" {
+		t.Errorf("left operand: got table=%q column=%q, want users.id", opCand.OperandColumnRefs[0].Table, opCand.OperandColumnRefs[0].Column)
 	}
 }

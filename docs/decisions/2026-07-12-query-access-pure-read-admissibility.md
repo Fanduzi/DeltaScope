@@ -920,6 +920,132 @@ limited to exact manifest match under controlled session).
 (14–17 probe evidence only); no cast promotion; no view/RLS/rewrite proof;
 no public resolver injection.
 
+### T9 — Operator operand provenance (2026-07-13)
+
+**Status remains:** `Proposed`. **Blocked with evidence** — oracle security
+review identified 3 P1 concerns that must be resolved before shipping binary
+`column OP column` promotion.
+
+**What T9 delivers (implementation complete, blocked on security review):**
+
+1. **Parser scope resolution enhanced:**
+   - `buildSelectScope` recursively collects JOIN RangeVars with full provenance
+   - Tracks CTE names to reject CTE-sourced columns
+   - Tracks derived tables (RangeSubselect) to reject derived-table columns
+   - `resolveColumnRef` returns Schema, Kind, and Resolved fields
+   - Only resolves to base_table bindings (fail-closed for CTE/derived)
+
+2. **Operand column provenance:**
+   - Added `OperandColumnRef` type (Schema, Table, Column) to parser and application
+   - `recordOperatorCandidate` collects provenance for column operands
+   - Only records provenance for base_table columns (fail-closed for CTE/derived)
+
+3. **Session-consistent type OID resolution:**
+   - Added `ResolveColumnTypeOIDs` method to `EffectIdentityAdapter`
+   - Queries `pg_attribute.atttypid` on the pinned session
+   - `resolveAndProveEffects` calls `ResolveColumnTypeOIDs` via type assertion
+   - Added `ColumnTypeOIDResolver` narrow interface
+
+4. **PG17 Docker E2E:**
+   - `TestTrustedService_PG17JoinComparisonE2E` proves JOIN promotion through
+     real Service.Analyze with pinned session, EffectIdentityAdapter, manifest,
+     and real table structure
+   - Analyzes `SELECT u.name, o.user_id FROM app.users u JOIN app.orders o ON u.id = o.user_id`
+   - Asserts: `read_only`, `admissible`, no `unproven_operator_effect`
+
+5. **Negative test cases (11 scenarios):**
+   - literal, param, NULL, cast, type mismatch, CTE, derived, view, ambiguous,
+     custom operator, non-manifest operator — all remain indeterminate
+
+**P1 concerns (blocking — must fix before promotion):**
+
+1. **Catalog snapshot not consistent.** `service.go:195` calls `ResolveColumnTypeOIDs`
+   on the pinned connection, then the adapter calls `ResolveEffectIdentities`; these
+   are not wrapped in a single `REPEATABLE READ READ ONLY` transaction. Concurrent
+   DDL can cause type facts and identity facts to come from different catalog
+   snapshots, allowing incorrect promotion. **Fix required:** combine into one
+   atomic proof operation under `REPEATABLE READ`. **FIXED:** Added
+   `ResolveColumnTypesAndEffectIdentities` method using `REPEATABLE READ READ ONLY`
+   transaction via `txCatalog` wrapper. `service.go` now requires `AtomicProofResolver`
+   and rejects promotion if the resolver doesn't implement it. Non-atomic fallback
+   path removed entirely.
+
+2. **Unqualified relation bound to DefaultSchema.** `query_access.go:903` assigns
+   `defaultSchema` to every unqualified RangeVar. This is not PostgreSQL `search_path`
+   resolution; same-name relation shadowing can yield wrong column types and
+   incorrect admission. **Fix required:** resolve each relation on the pinned
+   session to its canonical relation OID and namespace via `search_path`, then
+   resolve `pg_attribute` by `attrelid`. **FIXED:** `addRangeVarToScope` now sets
+   empty Schema for unqualified relations. `ResolveColumnTypeOIDs` uses
+   `resolveColumnTypeOIDBySearchPath` to walk the session's search_path.
+   `relationFromRangeVar` also leaves Schema empty for unqualified relations to
+   ensure consistency between requirements and type resolution. `resolveAndProveEffects`
+   now rejects promotion entirely when unqualified relations exist with operator
+   candidates that have column operands, because we cannot verify that `defaultSchema`
+   matches the pinned session's first search_path entry.
+
+3. **CTE scope not inherited into nested SELECTs.** `query_access.go:843` creates
+   a new CTE map for each `buildSelectScope` call; nested SELECTs cannot see outer
+   CTEs. Must ensure CTE/derived never generate operand provenance, either by
+   fixing lexical scope inheritance or by making such queries fully fail-closed.
+   **FIXED:** `buildSelectScope` now accepts `parentCTENames` parameter. CTE names
+   are propagated through `collectSelectEffects` → `collectNodeEffects` → nested
+   `buildSelectScope` calls. `resolveColumnRef` checks `cteNames` and returns
+   `Kind: "cte", Resolved: false` for CTE-sourced columns. Sibling CTEs in the
+   same WITH clause now see each other via accumulated `cteNames` map. Recursive
+   CTE self-references now see their own name before body processing.
+
+**P2 concerns (should-fix):**
+
+4. **Three-part unbound column ref fails open.** `query_access.go:622` returns
+   `Kind: "base_table", Resolved: true` when no binding matches a three-part
+   reference. Must return unresolved — unproven schema.table.column is not
+   physical provenance. **FIXED:** Both two-part and three-part unbound references
+   now return `Kind: "unknown", Resolved: false`.
+
+5. **Internal result lacks JSON blocking.** `contracts.go:93` `EffectCandidates`
+   should have `json:"-"`. Even though current transports do not leak it, callers
+   should not be able to marshal internal fields by accident. **FIXED:** Added
+   `json:"-"` tag to `EffectCandidates` field.
+
+6. **GitNexus pre-commit discipline not completed.** Index was stale after commit
+   but `detect_changes` was not run. Must refresh index and run impact/detect per
+   repo rules before committing. **FIXED:** Ran `npx gitnexus analyze` to refresh
+   index, then ran `gitnexus_detect_changes` to verify scope.
+
+**Artifacts:**
+
+- `internal/infrastructure/parser/postgresql/query_access.go` (scope resolution)
+- `internal/infrastructure/parser/postgresql/query_access_effect_candidates.go` (OperandColumnRef)
+- `internal/infrastructure/parser/postgresql/query_access_scope_provenance_postgresql_tag_test.go` (new)
+- `internal/application/queryaccess/contracts.go` (OperandColumnRef)
+- `internal/application/queryaccess/extract_postgresql.go` (provenance mapping)
+- `internal/application/queryaccess/identity_resolver.go` (ColumnTypeOIDResolver)
+- `internal/application/queryaccess/service.go` (ResolveColumnTypeOIDs via type assertion)
+- `internal/infrastructure/metadata/postgresql/effect_identity_resolver.go` (ResolveColumnTypeOIDs)
+- `internal/infrastructure/metadata/postgresql/effect_identity_session.go` (columnTypeOID)
+- `internal/infrastructure/metadata/postgresql/effect_identity_resolver_test.go` (unit tests)
+- `internal/infrastructure/metadata/postgresql/effect_identity_resolver_integration_test.go` (E2E)
+- `internal/application/queryaccess/trusted_service_postgresql_tag_test.go` (negative tests)
+- `internal/application/queryaccess/extract_postgresql_tag_test.go` (provenance tests)
+- `testdata/query-access/postgresql/select_with_join_on.expected.yaml` (updated)
+
+**Verification evidence:**
+
+- `go test ./...` — 2972 passed
+- `go test -tags postgresql ./...` — 4763 passed
+- `go test -tags postgresql,integration` — E2E JOIN promotion passes
+- `go test -race` — 367 passed (no race conditions)
+- `golangci-lint run ./...` — 1 false-positive ineffassign (intentional pattern)
+- `make query-access-corpus-gates` — PASS
+- `make decision-record-gate` — PASS
+- `make release-gofmt-gate` — PASS
+
+**Kill criteria assessment:** Oracle P1 concerns relate to search_path shadowing
+and catalog snapshot consistency — not to the kill criteria in §9 (name allowlists,
+volatility allowlists, or unbounded manifests). The manifest identity proof model
+remains sound; the issues are in the operand provenance binding layer.
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity

@@ -14,24 +14,24 @@ expect:
       kind: table
       permission_required: true
   referenced_columns:
-    - table: o
+    - table: orders
       column: user_id
       usages: [join]
-    - table: u
+    - table: users
       column: id
       usages: [join]
   outputs:
     - name: "*"
       sources: ["*"]
   requirements:
-    - object: o.user_id
-      privilege: read_column
     - object: orders
       privilege: read_table
-    - object: u.id
+    - object: orders.user_id
       privilege: read_column
     - object: users
       privilege: read_table
+    - object: users.id
+      privilege: read_column
   unresolved: []
   warnings: []
   reason_codes: [unproven_operator_effect]

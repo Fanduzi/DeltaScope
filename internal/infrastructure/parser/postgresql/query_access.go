@@ -92,7 +92,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		}
 		node := rawStmt.GetStmt()
 		classifications = append(classifications, classifyStatement(node))
-		collectEffects(node, &collector)
+		collectEffects(node, &collector, defaultSchema, nil)
 
 		if sel := node.GetSelectStmt(); sel != nil {
 			cteLineage, cteBodyRels := buildCTELineage(sel, defaultSchema)
@@ -151,242 +151,245 @@ func (f effectReasonFlags) toReasonCodes() []string {
 //
 // Prefer extending this walker over adding ad-hoc field checks elsewhere.
 // Structural BoolExpr (AND/OR/NOT) is not a catalog candidate; only children are walked.
-func collectEffects(node *pg_query.Node, c *effectCollector) {
+func collectEffects(node *pg_query.Node, c *effectCollector, defaultSchema string, cteNames map[string]bool) {
 	if node == nil || c == nil {
 		return
 	}
 	switch n := node.GetNode().(type) {
 	case *pg_query.Node_SelectStmt:
-		collectSelectEffects(n.SelectStmt, c)
+		collectSelectEffects(n.SelectStmt, c, defaultSchema, cteNames)
 	case *pg_query.Node_ExplainStmt:
 		if n.ExplainStmt.GetQuery() != nil {
-			collectEffects(n.ExplainStmt.GetQuery(), c)
+			collectEffects(n.ExplainStmt.GetQuery(), c, defaultSchema, cteNames)
 		}
 	default:
-		// Non-SELECT top-level statements either write (not_read_only) or stay
-		// indeterminate by statement kind; walk any nested expressions when present.
-		collectNodeEffects(node, c)
+		collectNodeEffects(node, c, nil, defaultSchema, cteNames)
 	}
 }
 
 // collectSelectEffects visits every expression-bearing field of a SelectStmt
 // (set ops, CTEs, DISTINCT ON, target, FROM, WHERE, GROUP/HAVING, WINDOW,
 // VALUES, ORDER BY, LIMIT/OFFSET).
-func collectSelectEffects(sel *pg_query.SelectStmt, c *effectCollector) {
+func collectSelectEffects(sel *pg_query.SelectStmt, c *effectCollector, defaultSchema string, parentCTENames map[string]bool) {
 	if sel == nil || c == nil {
 		return
 	}
 	if sel.GetLarg() != nil {
-		collectSelectEffects(sel.GetLarg(), c)
+		collectSelectEffects(sel.GetLarg(), c, defaultSchema, parentCTENames)
 	}
 	if sel.GetRarg() != nil {
-		collectSelectEffects(sel.GetRarg(), c)
+		collectSelectEffects(sel.GetRarg(), c, defaultSchema, parentCTENames)
 	}
 	if with := sel.GetWithClause(); with != nil {
+		// Accumulate CTE names as we iterate so sibling CTEs see each other.
+		// For recursive CTEs, the name must be in scope before the body.
+		accumulatedCTENames := make(map[string]bool)
+		for name := range parentCTENames {
+			accumulatedCTENames[name] = true
+		}
 		for _, cteNode := range with.GetCtes() {
 			if cteNode == nil {
 				continue
 			}
-			if cte := cteNode.GetCommonTableExpr(); cte != nil && cte.GetCtequery() != nil {
-				collectEffects(cte.GetCtequery(), c)
+			cte := cteNode.GetCommonTableExpr()
+			if cte == nil || cte.GetCtequery() == nil {
+				continue
 			}
+			cteName := strings.ToLower(cte.GetCtename())
+			accumulatedCTENames[cteName] = true
+			collectEffects(cte.GetCtequery(), c, defaultSchema, accumulatedCTENames)
 		}
 	}
+	scope := buildSelectScope(sel, defaultSchema, parentCTENames)
 	for _, distinct := range sel.GetDistinctClause() {
-		collectNodeEffects(distinct, c)
+		collectNodeEffects(distinct, c, scope, defaultSchema, scope.cteNames)
 	}
 	for _, target := range sel.GetTargetList() {
-		collectNodeEffects(target, c)
+		collectNodeEffects(target, c, scope, defaultSchema, scope.cteNames)
 	}
 	for _, from := range sel.GetFromClause() {
-		collectNodeEffects(from, c)
+		collectNodeEffects(from, c, scope, defaultSchema, scope.cteNames)
 	}
 	if sel.GetWhereClause() != nil {
-		collectNodeEffects(sel.GetWhereClause(), c)
+		collectNodeEffects(sel.GetWhereClause(), c, scope, defaultSchema, scope.cteNames)
 	}
 	for _, group := range sel.GetGroupClause() {
-		collectNodeEffects(group, c)
+		collectNodeEffects(group, c, scope, defaultSchema, scope.cteNames)
 	}
 	if sel.GetHavingClause() != nil {
-		collectNodeEffects(sel.GetHavingClause(), c)
+		collectNodeEffects(sel.GetHavingClause(), c, scope, defaultSchema, scope.cteNames)
 	}
 	for _, window := range sel.GetWindowClause() {
-		collectNodeEffects(window, c)
+		collectNodeEffects(window, c, scope, defaultSchema, scope.cteNames)
 	}
 	for _, values := range sel.GetValuesLists() {
-		collectNodeEffects(values, c)
+		collectNodeEffects(values, c, scope, defaultSchema, scope.cteNames)
 	}
 	for _, sort := range sel.GetSortClause() {
-		collectNodeEffects(sort, c)
+		collectNodeEffects(sort, c, scope, defaultSchema, scope.cteNames)
 	}
 	if sel.GetLimitOffset() != nil {
-		collectNodeEffects(sel.GetLimitOffset(), c)
+		collectNodeEffects(sel.GetLimitOffset(), c, scope, defaultSchema, scope.cteNames)
 	}
 	if sel.GetLimitCount() != nil {
-		collectNodeEffects(sel.GetLimitCount(), c)
+		collectNodeEffects(sel.GetLimitCount(), c, scope, defaultSchema, scope.cteNames)
 	}
 }
 
 func selectHasUnprovenEffect(sel *pg_query.SelectStmt) bool {
 	var c effectCollector
-	collectSelectEffects(sel, &c)
+	collectSelectEffects(sel, &c, "", nil)
 	return c.hasUnprovenEffect()
 }
 
-func collectWindowDefEffects(win *pg_query.WindowDef, c *effectCollector) {
+func collectWindowDefEffects(win *pg_query.WindowDef, c *effectCollector, scope *selectScope, defaultSchema string, cteNames map[string]bool) {
 	if win == nil || c == nil {
 		return
 	}
 	for _, part := range win.GetPartitionClause() {
-		collectNodeEffects(part, c)
+		collectNodeEffects(part, c, scope, defaultSchema, cteNames)
 	}
 	for _, order := range win.GetOrderClause() {
-		collectNodeEffects(order, c)
+		collectNodeEffects(order, c, scope, defaultSchema, cteNames)
 	}
 	if win.GetStartOffset() != nil {
-		collectNodeEffects(win.GetStartOffset(), c)
+		collectNodeEffects(win.GetStartOffset(), c, scope, defaultSchema, cteNames)
 	}
 	if win.GetEndOffset() != nil {
-		collectNodeEffects(win.GetEndOffset(), c)
+		collectNodeEffects(win.GetEndOffset(), c, scope, defaultSchema, cteNames)
 	}
 }
 
-func collectNodeEffects(node *pg_query.Node, c *effectCollector) {
+func collectNodeEffects(node *pg_query.Node, c *effectCollector, scope *selectScope, defaultSchema string, cteNames map[string]bool) {
 	if node == nil || c == nil {
 		return
 	}
 	// No early-exit on flags: candidates must be complete for every effect node.
 	switch n := node.GetNode().(type) {
 	case *pg_query.Node_AExpr:
-		recordOperatorCandidate(c, n.AExpr)
+		recordOperatorCandidate(c, n.AExpr, scope)
 		if n.AExpr.GetLexpr() != nil {
-			collectNodeEffects(n.AExpr.GetLexpr(), c)
+			collectNodeEffects(n.AExpr.GetLexpr(), c, scope, defaultSchema, cteNames)
 		}
 		if n.AExpr.GetRexpr() != nil {
-			collectNodeEffects(n.AExpr.GetRexpr(), c)
+			collectNodeEffects(n.AExpr.GetRexpr(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_TypeCast:
 		recordCastCandidate(c, n.TypeCast)
 		if n.TypeCast.GetArg() != nil {
-			collectNodeEffects(n.TypeCast.GetArg(), c)
+			collectNodeEffects(n.TypeCast.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_FuncCall:
-		// Function/aggregate (FILTER/OVER) are candidates only — never trusted here.
 		recordFunctionCandidate(c, n.FuncCall)
 		for _, arg := range n.FuncCall.GetArgs() {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 		for _, order := range n.FuncCall.GetAggOrder() {
-			collectNodeEffects(order, c)
+			collectNodeEffects(order, c, scope, defaultSchema, cteNames)
 		}
 		if n.FuncCall.GetAggFilter() != nil {
-			collectNodeEffects(n.FuncCall.GetAggFilter(), c)
+			collectNodeEffects(n.FuncCall.GetAggFilter(), c, scope, defaultSchema, cteNames)
 		}
 		if n.FuncCall.GetOver() != nil {
-			collectWindowDefEffects(n.FuncCall.GetOver(), c)
+			collectWindowDefEffects(n.FuncCall.GetOver(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_RangeFunction:
-		// FROM function / ROWS FROM (...): walk nested call expressions as candidates.
 		for _, fn := range n.RangeFunction.GetFunctions() {
-			collectNodeEffects(fn, c)
+			collectNodeEffects(fn, c, scope, defaultSchema, cteNames)
 		}
-		// If nested walk found no function candidate (unexpected shape), still mark
-		// unproven function presence for fail-closed classification/reasons.
 		if !c.flags.function {
 			recordSyntheticFunctionCandidate(c, nil, 0, nil)
 		}
 	case *pg_query.Node_RangeTableFunc:
 		recordSyntheticFunctionCandidate(c, nil, 0, nil)
-		collectNodeEffects(n.RangeTableFunc.GetDocexpr(), c)
-		collectNodeEffects(n.RangeTableFunc.GetRowexpr(), c)
+		collectNodeEffects(n.RangeTableFunc.GetDocexpr(), c, scope, defaultSchema, cteNames)
+		collectNodeEffects(n.RangeTableFunc.GetRowexpr(), c, scope, defaultSchema, cteNames)
 		for _, ns := range n.RangeTableFunc.GetNamespaces() {
-			collectNodeEffects(ns, c)
+			collectNodeEffects(ns, c, scope, defaultSchema, cteNames)
 		}
 		for _, col := range n.RangeTableFunc.GetColumns() {
-			collectNodeEffects(col, c)
+			collectNodeEffects(col, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_RangeTableSample:
-		collectNodeEffects(n.RangeTableSample.GetRelation(), c)
+		collectNodeEffects(n.RangeTableSample.GetRelation(), c, scope, defaultSchema, cteNames)
 		for _, method := range n.RangeTableSample.GetMethod() {
-			collectNodeEffects(method, c)
+			collectNodeEffects(method, c, scope, defaultSchema, cteNames)
 		}
 		for _, arg := range n.RangeTableSample.GetArgs() {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
-		collectNodeEffects(n.RangeTableSample.GetRepeatable(), c)
+		collectNodeEffects(n.RangeTableSample.GetRepeatable(), c, scope, defaultSchema, cteNames)
 	case *pg_query.Node_ResTarget:
 		if n.ResTarget.GetVal() != nil {
-			collectNodeEffects(n.ResTarget.GetVal(), c)
+			collectNodeEffects(n.ResTarget.GetVal(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_SelectStmt:
-		collectSelectEffects(n.SelectStmt, c)
+		collectSelectEffects(n.SelectStmt, c, defaultSchema, cteNames)
 	case *pg_query.Node_SubLink:
 		if n.SubLink.GetSubselect() != nil {
-			collectNodeEffects(n.SubLink.GetSubselect(), c)
+			collectNodeEffects(n.SubLink.GetSubselect(), c, scope, defaultSchema, cteNames)
 		}
 		if n.SubLink.GetTestexpr() != nil {
-			collectNodeEffects(n.SubLink.GetTestexpr(), c)
+			collectNodeEffects(n.SubLink.GetTestexpr(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_BoolExpr:
-		// Structural AND/OR/NOT: not a catalog candidate; walk children only.
 		for _, arg := range n.BoolExpr.GetArgs() {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_NullTest:
 		if n.NullTest.GetArg() != nil {
-			collectNodeEffects(n.NullTest.GetArg(), c)
+			collectNodeEffects(n.NullTest.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_BooleanTest:
 		if n.BooleanTest.GetArg() != nil {
-			collectNodeEffects(n.BooleanTest.GetArg(), c)
+			collectNodeEffects(n.BooleanTest.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_CoalesceExpr:
 		for _, arg := range n.CoalesceExpr.GetArgs() {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_CaseExpr:
 		caseExpr := n.CaseExpr
 		if caseExpr.GetArg() != nil {
-			collectNodeEffects(caseExpr.GetArg(), c)
+			collectNodeEffects(caseExpr.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 		if caseExpr.GetDefresult() != nil {
-			collectNodeEffects(caseExpr.GetDefresult(), c)
+			collectNodeEffects(caseExpr.GetDefresult(), c, scope, defaultSchema, cteNames)
 		}
 		for _, arg := range caseExpr.GetArgs() {
 			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
-				collectNodeEffects(caseWhen.GetExpr(), c)
-				collectNodeEffects(caseWhen.GetResult(), c)
+				collectNodeEffects(caseWhen.GetExpr(), c, scope, defaultSchema, cteNames)
+				collectNodeEffects(caseWhen.GetResult(), c, scope, defaultSchema, cteNames)
 			}
 		}
 	case *pg_query.Node_ArrayExpr:
 		for _, elem := range n.ArrayExpr.GetElements() {
-			collectNodeEffects(elem, c)
+			collectNodeEffects(elem, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_AArrayExpr:
 		for _, elem := range n.AArrayExpr.GetElements() {
-			collectNodeEffects(elem, c)
+			collectNodeEffects(elem, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_RowExpr:
 		for _, arg := range n.RowExpr.GetArgs() {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_MinMaxExpr:
 		for _, arg := range n.MinMaxExpr.GetArgs() {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_AIndirection:
 		if n.AIndirection.GetArg() != nil {
-			collectNodeEffects(n.AIndirection.GetArg(), c)
+			collectNodeEffects(n.AIndirection.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 		for _, ind := range n.AIndirection.GetIndirection() {
-			collectNodeEffects(ind, c)
+			collectNodeEffects(ind, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_CollateClause:
 		if n.CollateClause.GetArg() != nil {
-			collectNodeEffects(n.CollateClause.GetArg(), c)
+			collectNodeEffects(n.CollateClause.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_GroupingFunc:
-		// GROUPING() is function-like; candidate only (unproven).
 		args := n.GroupingFunc.GetArgs()
 		kinds := make([]OperandKindHint, 0, len(args))
 		for _, arg := range args {
@@ -394,7 +397,7 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector) {
 		}
 		recordSyntheticFunctionCandidate(c, []string{"grouping"}, len(args), kinds)
 		for _, arg := range args {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_XmlExpr:
 		args := n.XmlExpr.GetArgs()
@@ -408,37 +411,36 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector) {
 		}
 		recordSyntheticFunctionCandidate(c, nil, len(args)+len(named), kinds)
 		for _, arg := range args {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 		for _, arg := range named {
-			collectNodeEffects(arg, c)
+			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_JoinExpr:
 		join := n.JoinExpr
-		collectNodeEffects(join.GetLarg(), c)
-		collectNodeEffects(join.GetRarg(), c)
+		collectNodeEffects(join.GetLarg(), c, scope, defaultSchema, cteNames)
+		collectNodeEffects(join.GetRarg(), c, scope, defaultSchema, cteNames)
 		if join.GetQuals() != nil {
-			collectNodeEffects(join.GetQuals(), c)
+			collectNodeEffects(join.GetQuals(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_RangeSubselect:
 		if n.RangeSubselect.GetSubquery() != nil {
-			collectNodeEffects(n.RangeSubselect.GetSubquery(), c)
+			collectNodeEffects(n.RangeSubselect.GetSubquery(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_SortBy:
 		if n.SortBy.GetNode() != nil {
-			collectNodeEffects(n.SortBy.GetNode(), c)
+			collectNodeEffects(n.SortBy.GetNode(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_WindowDef:
-		collectWindowDefEffects(n.WindowDef, c)
+		collectWindowDefEffects(n.WindowDef, c, scope, defaultSchema, cteNames)
 	case *pg_query.Node_List:
 		for _, item := range n.List.GetItems() {
-			collectNodeEffects(item, c)
+			collectNodeEffects(item, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_ColumnRef, *pg_query.Node_AConst, *pg_query.Node_RangeVar,
 		*pg_query.Node_SqlvalueFunction, *pg_query.Node_ParamRef, *pg_query.Node_AStar,
 		*pg_query.Node_String_, *pg_query.Node_Integer, *pg_query.Node_Float,
 		*pg_query.Node_Boolean, *pg_query.Node_BitString:
-		// Non-effect leaves / structural tokens.
 		return
 	}
 }
@@ -586,11 +588,11 @@ func nodeContainsWildcard(node *pg_query.Node) bool {
 }
 
 // relationFromRangeVar extracts relation information from a RangeVar.
-func relationFromRangeVar(r *pg_query.RangeVar, defaultSchema string) RelationFacts {
+// For unqualified relations, Schema is left empty so the resolver can use
+// the session's search_path instead of defaultSchema. Qualified relations
+// keep their explicit schemaname.
+func relationFromRangeVar(r *pg_query.RangeVar, _ string) RelationFacts {
 	schema := strings.ToLower(r.GetSchemaname())
-	if schema == "" {
-		schema = defaultSchema
-	}
 	return RelationFacts{
 		Schema: schema,
 		Name:   r.GetRelname(),
@@ -617,18 +619,80 @@ func resolveColumnRef(ref *pg_query.ColumnRef, scope *selectScope) *ColumnRefRes
 	if colName == "" {
 		return nil
 	}
+
+	if len(fields) >= 3 {
+		schema := stringNodeValue(fields[0])
+		table := stringNodeValue(fields[1])
+		binding := lookupBinding(scope, schema, table, "")
+		if binding != nil {
+			return &ColumnRefResult{
+				Table: binding.Table, Column: colName, QualRef: schema + "." + table,
+				Schema: binding.Schema, Kind: binding.Kind, Resolved: binding.Kind == "base_table",
+			}
+		}
+		// Unbound three-part reference: fail-closed. Without a lexical binding
+		// we cannot prove this is a physical base table column.
+		return &ColumnRefResult{
+			Table: table, Column: colName, QualRef: schema + "." + table,
+			Schema: schema, Kind: "unknown", Resolved: false,
+		}
+	}
+
 	if len(fields) >= 2 {
 		qualifier := stringNodeValue(fields[0])
 		resolved := qualifier
 		if aliasTable, ok := scope.aliasToTable[qualifier]; ok {
 			resolved = aliasTable
 		}
-		return &ColumnRefResult{Table: resolved, Column: colName, QualRef: qualifier}
+		binding := lookupBinding(scope, "", resolved, qualifier)
+		result := &ColumnRefResult{Table: resolved, Column: colName, QualRef: qualifier}
+		if binding != nil {
+			result.Schema = binding.Schema
+			result.Kind = binding.Kind
+			result.Resolved = binding.Kind == "base_table"
+		} else if scope != nil && scope.cteNames[strings.ToLower(resolved)] {
+			result.Kind = "cte"
+			result.Resolved = false
+		} else {
+			// Unbound qualified reference: fail-closed.
+			result.Kind = "unknown"
+			result.Resolved = false
+		}
+		return result
 	}
+
 	if len(scope.tables) == 1 {
-		return &ColumnRefResult{Table: scope.tables[0], Column: colName, QualRef: ""}
+		result := &ColumnRefResult{Table: scope.tables[0], Column: colName, QualRef: ""}
+		if len(scope.bindings) > 0 {
+			b := scope.bindings[0]
+			result.Schema = b.Schema
+			result.Kind = b.Kind
+			result.Resolved = b.Kind == "base_table"
+		} else if scope.cteNames[strings.ToLower(scope.tables[0])] {
+			result.Kind = "cte"
+			result.Resolved = false
+		}
+		return result
 	}
 	return &ColumnRefResult{Table: "", Column: colName, QualRef: ""}
+}
+
+func lookupBinding(scope *selectScope, schema, table, alias string) *scopeBinding {
+	if scope == nil {
+		return nil
+	}
+	for i := range scope.bindings {
+		b := &scope.bindings[i]
+		if alias != "" && strings.EqualFold(b.Alias, alias) {
+			return b
+		}
+		if table != "" && strings.EqualFold(b.Table, table) {
+			if schema == "" || strings.EqualFold(b.Schema, schema) {
+				return b
+			}
+		}
+	}
+	return nil
 }
 
 // ColumnRefResult holds the resolved components of a column reference.
@@ -637,12 +701,25 @@ type ColumnRefResult struct {
 	Column     string
 	IsWildcard bool
 	QualRef    string
+	Schema     string
+	Kind       string // "base_table", "cte", "derived"
+	Resolved   bool
+}
+
+// scopeBinding records a single relation binding with full provenance.
+type scopeBinding struct {
+	Schema string
+	Table  string
+	Alias  string
+	Kind   string // "base_table", "cte", "derived"
 }
 
 // selectScope tracks the lexical scope for resolving column references.
 type selectScope struct {
 	aliasToTable map[string]string
 	tables       []string
+	bindings     []scopeBinding
+	cteNames     map[string]bool
 }
 
 type cteLineageMap map[string]map[string][]string
@@ -746,7 +823,7 @@ func collectNodeRelations(node *pg_query.Node, defaultSchema string) []RelationF
 }
 
 func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cteLineage cteLineageMap) []ColumnRefFacts {
-	scope := buildSelectScope(sel)
+	scope := buildSelectScope(sel, defaultSchema, nil)
 	refs := make([]ColumnRefFacts, 0)
 	seen := make(map[string]bool)
 
@@ -776,20 +853,90 @@ func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cte
 	return refs
 }
 
-func buildSelectScope(sel *pg_query.SelectStmt) *selectScope {
+func buildSelectScope(sel *pg_query.SelectStmt, defaultSchema string, parentCTENames map[string]bool) *selectScope {
 	scope := &selectScope{
 		aliasToTable: make(map[string]string),
+		cteNames:     make(map[string]bool),
 	}
-	for _, from := range sel.GetFromClause() {
-		if rv := from.GetRangeVar(); rv != nil {
-			scope.tables = append(scope.tables, rv.GetRelname())
-			alias := rv.GetAlias().GetAliasname()
-			if alias != "" {
-				scope.aliasToTable[alias] = rv.GetRelname()
+	// Initialize with parent CTE names (lexical scope inheritance).
+	for name := range parentCTENames {
+		scope.cteNames[name] = true
+	}
+	if with := sel.GetWithClause(); with != nil {
+		for _, cteNode := range with.GetCtes() {
+			if cteNode == nil {
+				continue
+			}
+			cte := cteNode.GetCommonTableExpr()
+			if cte != nil {
+				scope.cteNames[strings.ToLower(cte.GetCtename())] = true
 			}
 		}
 	}
+	for _, from := range sel.GetFromClause() {
+		collectScopeFromNode(from, defaultSchema, scope)
+	}
 	return scope
+}
+
+func collectScopeFromNode(node *pg_query.Node, defaultSchema string, scope *selectScope) {
+	if node == nil || scope == nil {
+		return
+	}
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_RangeVar:
+		addRangeVarToScope(n.RangeVar, scope)
+	case *pg_query.Node_JoinExpr:
+		collectScopeFromJoin(n.JoinExpr, defaultSchema, scope)
+	case *pg_query.Node_RangeSubselect:
+		alias := n.RangeSubselect.GetAlias().GetAliasname()
+		scope.bindings = append(scope.bindings, scopeBinding{
+			Alias: alias,
+			Kind:  "derived",
+		})
+		if alias != "" {
+			scope.aliasToTable[alias] = alias
+			scope.tables = append(scope.tables, alias)
+		}
+	}
+}
+
+func collectScopeFromJoin(join *pg_query.JoinExpr, defaultSchema string, scope *selectScope) {
+	if join == nil || scope == nil {
+		return
+	}
+	if join.GetLarg() != nil {
+		collectScopeFromNode(join.GetLarg(), defaultSchema, scope)
+	}
+	if join.GetRarg() != nil {
+		collectScopeFromNode(join.GetRarg(), defaultSchema, scope)
+	}
+}
+
+func addRangeVarToScope(rv *pg_query.RangeVar, scope *selectScope) {
+	if rv == nil || scope == nil {
+		return
+	}
+	// For unqualified relations, leave Schema empty so the resolver can
+	// use the session's search_path instead of defaultSchema. Qualified
+	// relations keep their explicit schemaname.
+	schema := strings.ToLower(rv.GetSchemaname())
+	table := rv.GetRelname()
+	alias := rv.GetAlias().GetAliasname()
+	scope.tables = append(scope.tables, table)
+	kind := "base_table"
+	if scope.cteNames[strings.ToLower(table)] {
+		kind = "cte"
+	}
+	if alias != "" {
+		scope.aliasToTable[alias] = table
+	}
+	scope.bindings = append(scope.bindings, scopeBinding{
+		Schema: schema,
+		Table:  table,
+		Alias:  alias,
+		Kind:   kind,
+	})
 }
 
 func buildCTELineage(sel *pg_query.SelectStmt, defaultSchema string) (cteLineageMap, []RelationFacts) {
@@ -1042,7 +1189,7 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 	case *pg_query.Node_SubLink:
 		if sub := n.SubLink.GetSubselect(); sub != nil {
 			if subSel := sub.GetSelectStmt(); subSel != nil {
-				subScope := buildSelectScope(subSel)
+				subScope := buildSelectScope(subSel, defaultSchema, scope.cteNames)
 				for _, target := range subSel.GetTargetList() {
 					collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen, cteLineage)
 				}
@@ -1062,7 +1209,7 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 			collectRefsFromNode(n.AIndirection.GetArg(), scope, defaultSchema, usage, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_SelectStmt:
-		subScope := buildSelectScope(n.SelectStmt)
+		subScope := buildSelectScope(n.SelectStmt, defaultSchema, scope.cteNames)
 		for _, target := range n.SelectStmt.GetTargetList() {
 			collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen, cteLineage)
 		}
@@ -1074,7 +1221,7 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 	case *pg_query.Node_RangeSubselect:
 		sub := n.RangeSubselect.GetSubquery()
 		if subSel := sub.GetSelectStmt(); subSel != nil {
-			subScope := buildSelectScope(subSel)
+			subScope := buildSelectScope(subSel, defaultSchema, scope.cteNames)
 			for _, target := range subSel.GetTargetList() {
 				collectRefsFromNode(target, subScope, defaultSchema, usage, refs, seen, cteLineage)
 			}
@@ -1099,9 +1246,9 @@ func collectJoinColumnRefs(join *pg_query.JoinExpr, scope *selectScope, defaultS
 	}
 }
 
-func collectOutputs(sel *pg_query.SelectStmt, _ string, cteLineage cteLineageMap) []OutputFacts {
+func collectOutputs(sel *pg_query.SelectStmt, defaultSchema string, cteLineage cteLineageMap) []OutputFacts {
 	outputs := make([]OutputFacts, 0)
-	scope := buildSelectScope(sel)
+	scope := buildSelectScope(sel, defaultSchema, nil)
 	for _, target := range sel.GetTargetList() {
 		resTarget := target.GetResTarget()
 		if resTarget == nil {

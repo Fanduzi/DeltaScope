@@ -103,6 +103,17 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		schemaResolver = s.trusted.schemaResolver
 	}
 
+	// When unqualified relations exist, we cannot verify that defaultSchema
+	// matches the pinned session's first search_path entry. The metadata
+	// resolver converts empty schema back to defaultSchema, while effect
+	// proof uses the pinned session's search_path. This creates a mismatch
+	// where requirements point to one schema but proof found another.
+	// Fail closed: reject promotion for any query with unqualified relations.
+	// This check must happen BEFORE resolveMetadata enriches relations with schemas.
+	if req.Dialect == "postgresql" && s != nil && s.trusted != nil && hasUnqualifiedRelation(extracted.DomainResult.Relations) {
+		return extracted, nil
+	}
+
 	if schemaResolver != nil {
 		extracted.DomainResult = resolveMetadata(ctx, schemaResolver, req.Dialect, req.DefaultSchema, extracted.DomainResult)
 	}
@@ -191,20 +202,22 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		Dialect:    req.Dialect,
 		Candidates: extracted.EffectCandidates,
 		Resolution: resolutionCtx,
-		// OperandTypeOIDs are populated from resolved column type OIDs.
-		OperandTypeOIDs: buildOperandTypeOIDs(extracted.EffectCandidates, extracted.DomainResult.ReferencedColumns, s.trusted.schemaResolver, req),
 	}
 
-	// Validate request structure.
-	if err := ValidateEffectIdentityRequest(identityReq); err != nil {
+	// Atomic proof resolver is required for promotion. Non-atomic paths
+	// allow column type and effect identity to come from different catalog
+	// snapshots, which is unsafe under concurrent DDL.
+	atomicResolver, ok := s.trusted.effectResolver.(AtomicProofResolver)
+	if !ok {
 		return &trustProofResult{
 			decision:    TrustDecisionHasUnknown,
 			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
 		}
 	}
 
-	batch, err := s.trusted.effectResolver.ResolveEffectIdentities(ctx, identityReq)
-	if err != nil {
+	_, batch, atomicErr := atomicResolver.ResolveColumnTypesAndEffectIdentities(
+		ctx, extracted.EffectCandidates, identityReq)
+	if atomicErr != nil {
 		return &trustProofResult{
 			decision:    TrustDecisionHasUnknown,
 			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
@@ -215,12 +228,9 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 	batch = CompleteEffectIdentityBatch(identityReq, batch)
 
 	// Apply trust policy.
-	// For Phase-1, we use the server version from the batch's resolved facts.
-	// The adapter stamps facts with the live session's server version.
 	serverVersionNum := extractServerVersionFromBatch(batch)
 	decision := s.trusted.trustPolicy.IsTrusted(batch, serverVersionNum)
 
-	// Collect reason codes for non-resolved items.
 	reasonCodes := FailClosedReasonCodes(batch)
 
 	return &trustProofResult{
@@ -228,42 +238,6 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		reasonCodes: reasonCodes,
 		batch:       batch,
 	}
-}
-
-// buildOperandTypeOIDs populates type OID hints from resolved column metadata.
-// For Phase-1, arity-0 functions (e.g. count(*)) need no type OIDs.
-// Operators require both operands to be columns with known TypeOIDs from
-// metadata; literals, params, and expressions are unknown and prevent proof.
-// When the map has no entry for a candidate ordinal, the T7 adapter treats
-// types as unknown (coercion_gap for operators, nil for arity-0 functions).
-func buildOperandTypeOIDs(candidates []EffectCandidate, _ []domain.ColumnReference, resolver SchemaResolver, _ QueryAccessRequest) map[int][]uint32 {
-	if resolver == nil || len(candidates) == 0 {
-		return nil
-	}
-	result := make(map[int][]uint32)
-	for _, cand := range candidates {
-		if cand.Arity == 0 {
-			// arity-0 functions (count(*)) need no type OIDs; signal with empty slice.
-			result[cand.Ordinal] = nil
-			continue
-		}
-		// For operators/functions with operands: only prove when ALL operands
-		// are columns with known TypeOIDs from metadata.
-		allColumns := true
-		for _, k := range cand.OperandKinds {
-			if k != "column" {
-				allColumns = false
-				break
-			}
-		}
-		if !allColumns {
-			// Mixed operand kinds (column + const, etc.) — skip.
-			continue
-		}
-		// TODO: map operand positions to specific columns for type OID lookup.
-		// Phase-1 defers operator type resolution; only count(*) is provable.
-	}
-	return result
 }
 
 // extractServerVersionFromBatch finds the server version from resolved facts.
@@ -369,4 +343,13 @@ func reclassifyAfterResolution(classification domain.ReadClassification, reasonC
 	}
 
 	return domain.ReadOnly
+}
+
+func hasUnqualifiedRelation(relations []domain.RelationReference) bool {
+	for _, rel := range relations {
+		if rel.Schema == "" && rel.Kind != domain.RelationCTE && rel.Kind != domain.RelationDerived {
+			return true
+		}
+	}
+	return false
 }

@@ -113,6 +113,103 @@ func TestTrustedService_PG17CountStarE2E(t *testing.T) {
 	}
 }
 
+// TestTrustedService_PG17JoinComparisonE2E proves JOIN column comparison promotion
+// through the real Service.Analyze path against PG17: pinned session →
+// EffectIdentityAdapter → ResolveColumnTypeOIDs → manifest proof → admission.
+//
+// Uses existing app.users (id int8) JOIN app.orders (user_id int8) so the
+// int8=int8 comparison operator (OID 20=20) is manifest-proven.
+func TestTrustedService_PG17JoinComparisonE2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PG17 trusted-service JOIN E2E in short mode")
+	}
+
+	db, cleanup, err := openIntegrationDB(t)
+	if err != nil {
+		t.Skipf("PG17 integration unavailable (Docker/compose not running): %v", err)
+	}
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 1) Pin a single session.
+	session, err := PinSession(ctx, db)
+	if err != nil {
+		t.Fatalf("PinSession: %v", err)
+	}
+	defer session.Close()
+
+	// 2) Build controlled resolver from pinned session.
+	adapter, err := NewEffectIdentityAdapter(session)
+	if err != nil {
+		t.Fatalf("adapter: %v", err)
+	}
+
+	// 3) Build schema resolver from the same DB.
+	schemaResolver := NewQueryAccessResolver(db)
+
+	// 4) Build trust policy with PG17 manifest.
+	policy, err := appqa.NewTrustPolicy(appqa.NewPG17Manifest())
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	// 5) Create trusted service with real controlled resolver.
+	svc, err := appqa.NewTrustedService(adapter, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	// 6) Analyze JOIN query — this exercises column comparison promotion.
+	res, err := svc.Analyze(ctx, appqa.QueryAccessRequest{
+		SQL:           "SELECT u.name, o.user_id FROM app.users u JOIN app.orders o ON u.id = o.user_id",
+		Dialect:       "postgresql",
+		Mode:          "strict",
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	t.Logf("classification=%s admission=%s reasons=%v relations=%+v",
+		res.DomainResult.ReadClassification, res.DomainResult.Admission,
+		res.DomainResult.ReasonCodes, res.DomainResult.Relations)
+
+	// 7) Assert promotion: read_only + admissible.
+	if res.DomainResult.ReadClassification != domain.ReadOnly {
+		t.Errorf("classification = %v, want read_only", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.Admissible {
+		t.Errorf("admission = %v, want admissible", res.DomainResult.Admission)
+	}
+
+	// 8) Verify no unproven_operator_effect reason remains after proof.
+	for _, code := range res.DomainResult.ReasonCodes {
+		if code == domain.ReasonUnprovenOperatorEffect {
+			t.Error("unproven_operator_effect should be removed after manifest proof")
+		}
+	}
+
+	// 9) Verify relations include both users and orders.
+	foundUsers := false
+	foundOrders := false
+	for _, rel := range res.DomainResult.Relations {
+		if rel.Name == "users" {
+			foundUsers = true
+		}
+		if rel.Name == "orders" {
+			foundOrders = true
+		}
+	}
+	if !foundUsers {
+		t.Errorf("expected users relation in result: %+v", res.DomainResult.Relations)
+	}
+	if !foundOrders {
+		t.Errorf("expected orders relation in result: %+v", res.DomainResult.Relations)
+	}
+}
+
 func TestEffectIdentityAdapter_PG17PinnedSessionIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping PG17 integration in short mode")

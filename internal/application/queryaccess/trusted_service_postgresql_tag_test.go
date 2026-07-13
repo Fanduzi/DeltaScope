@@ -70,7 +70,7 @@ func TestTrustedService_CountStarAdmissible(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT count(*) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -89,6 +89,55 @@ func TestTrustedService_CountStarAdmissible(t *testing.T) {
 	}
 	if resolver.ctxCalled == 0 {
 		t.Error("CaptureExecutionBoundContext was not called")
+	}
+}
+
+func TestTrustedService_UnqualifiedRelationRejected(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2803,
+						NamespaceOID:       11,
+						OperandTypeOIDs:    nil,
+						ResultTypeOID:      20,
+						Volatility:         EffectVolatilityImmutable,
+						CanonicalSignature: "pg_catalog.count()",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate (unqualified relation)", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate (unqualified relation)", res.DomainResult.Admission)
 	}
 }
 
@@ -117,7 +166,7 @@ func TestTrustedService_OperatorWithLiteralIndeterminate(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT id FROM users WHERE id = 1", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT id FROM public.users WHERE id = 1", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -147,7 +196,7 @@ func TestTrustedService_CaptureContextFails(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT count(*) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -180,7 +229,7 @@ func TestTrustedService_IncompleteContextBlocked(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT count(*) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -208,7 +257,7 @@ func TestTrustedService_ResolverErrorBlocked(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT count(*) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -251,7 +300,7 @@ func TestTrustedService_ManifestMissBlocked(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT count(*) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -310,7 +359,7 @@ func TestTrustedService_NoPublicLeak(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+		SQL: "SELECT count(*) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)
@@ -333,6 +382,193 @@ func TestTrustedService_NoPublicLeak(t *testing.T) {
 	}
 }
 
+func TestTrustedService_NegativeFailClosedScenarios(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	cases := []struct {
+		name  string
+		sql   string
+		batch EffectIdentityBatch
+	}{
+		{
+			name: "literal_unknown_type",
+			sql:  "SELECT id FROM public.users WHERE id = 1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "param_unknown_type",
+			sql:  "SELECT id FROM public.users WHERE id = $1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "null_unknown_type",
+			sql:  "SELECT id FROM public.users WHERE id = NULL",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "cast_indeterminate",
+			sql:  "SELECT id::text FROM public.users WHERE id = 1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "type_mismatch_int4_vs_text",
+			sql:  "SELECT id FROM public.users WHERE id = name",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "cte_column",
+			sql:  "WITH cte AS (SELECT id FROM public.users) SELECT id FROM cte WHERE id = 1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "derived_table_column",
+			sql:  "SELECT id FROM (SELECT id FROM public.users) sub WHERE id = 1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "view_column",
+			sql:  "SELECT id FROM public.users WHERE id = 1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusCoercionGap},
+				},
+			},
+		},
+		{
+			name: "ambiguous_column",
+			sql:  "SELECT id FROM public.users, orders WHERE id = id",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{Ordinal: 0, Status: domain.IdentityStatusAmbiguous},
+				},
+			},
+		},
+		{
+			name: "custom_operator_user_schema",
+			sql:  "SELECT id FROM public.users WHERE id OPERATOR(app.~=) 1",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{
+						Ordinal: 0,
+						Status:  domain.IdentityStatusResolved,
+						Facts: &EffectIdentityFacts{
+							Kind:               EffectCandidateOperator,
+							ObjectOID:          99999,
+							NamespaceOID:       2200,
+							OperandTypeOIDs:    []uint32{23, 23},
+							ResultTypeOID:      16,
+							CanonicalSignature: "app.~=(23,23)",
+							DatabaseOID:        1,
+							ServerVersionNum:   170000,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "non_manifest_pg_catalog_operator",
+			sql:  "SELECT id FROM public.users WHERE id + 1 > 0",
+			batch: EffectIdentityBatch{
+				Items: []EffectIdentityItem{
+					{
+						Ordinal: 0,
+						Status:  domain.IdentityStatusResolved,
+						Facts: &EffectIdentityFacts{
+							Kind:               EffectCandidateOperator,
+							ObjectOID:          177,
+							NamespaceOID:       11,
+							OperandTypeOIDs:    []uint32{23, 23},
+							ResultTypeOID:      23,
+							CanonicalSignature: "pg_catalog.+(23,23)",
+							DatabaseOID:        1,
+							ServerVersionNum:   170000,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resolver := &mockControlledResolver{
+				ctx:   testResolutionContext(),
+				batch: tc.batch,
+			}
+			svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+			if err != nil {
+				t.Fatalf("NewTrustedService: %v", err)
+			}
+
+			res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+				SQL: tc.sql, Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+			})
+			if err != nil {
+				t.Fatalf("Analyze: %v", err)
+			}
+
+			if res.DomainResult.ReadClassification != domain.Indeterminate {
+				t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+			}
+			if res.DomainResult.Admission != domain.IndeterminateAdmission {
+				t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+			}
+		})
+	}
+}
+
+func TestTrustedService_DefaultServiceIndeterminateForJoinQuery(t *testing.T) {
+	svc := NewService()
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL:           "SELECT u.name, o.user_id FROM public.users u JOIN orders o ON u.id = o.user_id",
+		Dialect:       "postgresql",
+		Mode:          "strict",
+		DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate (no trusted bundle)", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate (no trusted bundle)", res.DomainResult.Admission)
+	}
+}
+
 func TestTrustedService_MySQLUnchanged(t *testing.T) {
 	policy, err := NewTrustPolicy(PG17Manifest)
 	if err != nil {
@@ -346,7 +582,7 @@ func TestTrustedService_MySQLUnchanged(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT id FROM users WHERE id = 1", Dialect: "mysql", Mode: "strict", DefaultSchema: "app",
+		SQL: "SELECT id FROM public.users WHERE id = 1", Dialect: "mysql", Mode: "strict", DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("Analyze: %v", err)

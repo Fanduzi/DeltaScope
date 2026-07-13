@@ -127,6 +127,35 @@ type ControlledEffectIdentityResolver interface {
 	CaptureExecutionBoundContext(ctx context.Context) (EffectIdentityResolutionContext, error)
 }
 
+// ColumnTypeOIDResolver resolves column type OIDs for operand provenance
+// on a pinned session. This is a narrow capability interface satisfied by
+// the T7 EffectIdentityAdapter. The application uses a type assertion to
+// access this when the controlled resolver also supports column type lookup.
+//
+// Only binary operators with two fully-qualified column operands from base
+// tables are resolved. Missing or unresolvable columns are skipped (fail-closed
+// for the affected candidate; other candidates may still succeed).
+type ColumnTypeOIDResolver interface {
+	ResolveColumnTypeOIDs(ctx context.Context, candidates []EffectCandidate) (map[int][]uint32, error)
+}
+
+// AtomicProofResolver combines column type OID resolution and effect identity
+// resolution in a single atomic operation. This ensures both come from the
+// same catalog snapshot (REPEATABLE READ), preventing TOCTOU issues with
+// concurrent DDL.
+//
+// Only implementations that guarantee pinned-session, execution-bound
+// resolution satisfy this contract. The application uses a type assertion
+// to prefer this over separate ResolveColumnTypeOIDs + ResolveEffectIdentities
+// calls when available.
+type AtomicProofResolver interface {
+	ResolveColumnTypesAndEffectIdentities(
+		ctx context.Context,
+		candidates []EffectCandidate,
+		req EffectIdentityRequest,
+	) (map[int][]uint32, EffectIdentityBatch, error)
+}
+
 // EffectIdentityResolutionContext is an internal, execution-bound name-resolution
 // environment for effect identity lookup.
 //

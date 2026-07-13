@@ -38,6 +38,14 @@ const (
 	OperandKindUnknown  OperandKindHint = "unknown"
 )
 
+// OperandColumnRef records the provenance of a resolved column operand.
+// Only populated for base_table bindings; CTE/derived columns are omitted (fail-closed).
+type OperandColumnRef struct {
+	Schema string
+	Table  string
+	Column string
+}
+
 // EffectCandidate is an internal, untrusted effect fact for future catalog
 // identity resolution. It is NOT a trust root and must never appear on
 // domain.Result, reason codes, or SDK/CLI/HTTP JSON.
@@ -45,17 +53,17 @@ const (
 // NamePath / TargetTypePath are internal spelling facts for the resolver only;
 // public outputs must continue to use only bounded unproven_* reason codes.
 type EffectCandidate struct {
-	Kind           EffectCandidateKind
-	Ordinal        int // stable 0-based traversal order
-	NamePath       []string
-	ExplicitSchema bool
-	Arity          int
-	OperandKinds   []OperandKindHint
-	IsAggregate    bool
-	HasWindow      bool
-	HasFilter      bool
-	// TargetTypePath is set for casts only (type name segments; never type OID).
-	TargetTypePath []string
+	Kind              EffectCandidateKind
+	Ordinal           int // stable 0-based traversal order
+	NamePath          []string
+	ExplicitSchema    bool
+	Arity             int
+	OperandKinds      []OperandKindHint
+	OperandColumnRefs []OperandColumnRef
+	IsAggregate       bool
+	HasWindow         bool
+	HasFilter         bool
+	TargetTypePath    []string
 }
 
 // effectCollector is the single-pass accumulator for unproven effect presence
@@ -92,6 +100,9 @@ func (c *effectCollector) appendCandidate(cand EffectCandidate) {
 	}
 	if len(cand.OperandKinds) > 0 {
 		cand.OperandKinds = append([]OperandKindHint(nil), cand.OperandKinds...)
+	}
+	if len(cand.OperandColumnRefs) > 0 {
+		cand.OperandColumnRefs = append([]OperandColumnRef(nil), cand.OperandColumnRefs...)
 	}
 	if len(cand.TargetTypePath) > 0 {
 		cand.TargetTypePath = append([]string(nil), cand.TargetTypePath...)
@@ -166,28 +177,49 @@ func operandKindHint(node *pg_query.Node) OperandKindHint {
 	}
 }
 
-func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr) {
+func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *selectScope) {
 	if c == nil || expr == nil {
 		return
 	}
 	namePath := stringPathFromNodes(expr.GetName())
 	var kinds []OperandKindHint
+	var colRefs []OperandColumnRef
 	arity := 0
 	if expr.GetLexpr() != nil {
 		kinds = append(kinds, operandKindHint(expr.GetLexpr()))
 		arity++
+		if colRef := expr.GetLexpr().GetColumnRef(); colRef != nil && scope != nil {
+			resolved := resolveColumnRef(colRef, scope)
+			if resolved != nil && resolved.Resolved && resolved.Column != "*" {
+				colRefs = append(colRefs, OperandColumnRef{
+					Schema: resolved.Schema,
+					Table:  resolved.Table,
+					Column: resolved.Column,
+				})
+			}
+		}
 	}
 	if expr.GetRexpr() != nil {
-		// IN/BETWEEN may use List on the right; still one operand role for arity.
 		kinds = append(kinds, operandKindHint(expr.GetRexpr()))
 		arity++
+		if colRef := expr.GetRexpr().GetColumnRef(); colRef != nil && scope != nil {
+			resolved := resolveColumnRef(colRef, scope)
+			if resolved != nil && resolved.Resolved && resolved.Column != "*" {
+				colRefs = append(colRefs, OperandColumnRef{
+					Schema: resolved.Schema,
+					Table:  resolved.Table,
+					Column: resolved.Column,
+				})
+			}
+		}
 	}
 	c.appendCandidate(EffectCandidate{
-		Kind:           EffectCandidateOperator,
-		NamePath:       namePath,
-		ExplicitSchema: namePathExplicitSchema(namePath),
-		Arity:          arity,
-		OperandKinds:   kinds,
+		Kind:              EffectCandidateOperator,
+		NamePath:          namePath,
+		ExplicitSchema:    namePathExplicitSchema(namePath),
+		Arity:             arity,
+		OperandKinds:      kinds,
+		OperandColumnRefs: colRefs,
 	})
 }
 

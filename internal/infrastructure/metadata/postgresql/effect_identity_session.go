@@ -357,6 +357,67 @@ func (s *PinnedSession) lookupCasts(ctx context.Context, sourceOID, targetOID ui
 	return out, rows.Err()
 }
 
+// beginRepeatableReadTx starts a REPEATABLE READ READ ONLY transaction
+// on the pinned connection. All catalog queries in this transaction see
+// the same snapshot, preventing concurrent DDL from causing inconsistency.
+func (s *PinnedSession) beginRepeatableReadTx(ctx context.Context) (*sql.Tx, error) {
+	conn, err := s.requireConn()
+	if err != nil {
+		return nil, err
+	}
+	return conn.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelRepeatableRead,
+		ReadOnly:  true,
+	})
+}
+
+func (s *PinnedSession) columnTypeOID(ctx context.Context, schema, table, column string) (uint32, error) {
+	conn, err := s.requireConn()
+	if err != nil {
+		return 0, err
+	}
+	var oid uint32
+	err = conn.QueryRowContext(ctx, `
+		SELECT a.atttypid
+		FROM pg_catalog.pg_attribute a
+		JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+		JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+		WHERE n.nspname = $1 AND c.relname = $2 AND a.attname = $3
+		  AND a.attnum > 0 AND NOT a.attisdropped
+	`, schema, table, column).Scan(&oid)
+	if err != nil {
+		return 0, err
+	}
+	return oid, nil
+}
+
+func (s *PinnedSession) resolveColumnTypeOIDBySearchPath(ctx context.Context, table, column string, searchPathOIDs []uint32) (uint32, error) {
+	conn, err := s.requireConn()
+	if err != nil {
+		return 0, err
+	}
+	for _, nsOID := range searchPathOIDs {
+		var oid uint32
+		err = conn.QueryRowContext(ctx, `
+			SELECT a.atttypid
+			FROM pg_catalog.pg_attribute a
+			JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+			WHERE c.relnamespace = $1 AND c.relname = $2 AND a.attname = $3
+			  AND a.attnum > 0 AND NOT a.attisdropped
+		`, nsOID, table, column).Scan(&oid)
+		if err == sql.ErrNoRows {
+			continue
+		}
+		if err != nil {
+			return 0, err
+		}
+		if oid != 0 {
+			return oid, nil
+		}
+	}
+	return 0, sql.ErrNoRows
+}
+
 func oidVectorLiteral(oids []uint32) string {
 	if len(oids) == 0 {
 		return ""
