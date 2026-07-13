@@ -423,18 +423,20 @@ func TestEffectIdentity_ReclassifyAfterResolution_NeverLiftsPostgreSQL(t *testin
 		nil,
 		true, // hasResolver
 		"postgresql",
+		nil, // no proof
 	)
 	if got != domain.Indeterminate {
 		t.Errorf("reclassifyAfterResolution(postgresql): got %q, want %q", got, domain.Indeterminate)
 	}
 
-	// Even with empty unresolved and empty reason codes, PG must not lift.
+	// Even with empty unresolved and empty reason codes, PG must not lift without proof.
 	got = reclassifyAfterResolution(
 		domain.Indeterminate,
 		[]domain.ReasonCode{},
 		[]domain.Unresolved{},
 		true,
 		"postgresql",
+		nil, // no proof
 	)
 	if got != domain.Indeterminate {
 		t.Errorf("reclassifyAfterResolution empty unresolved: got %q, want %q", got, domain.Indeterminate)
@@ -447,6 +449,7 @@ func TestEffectIdentity_ReclassifyAfterResolution_NeverLiftsPostgreSQL(t *testin
 		nil,
 		true,
 		"mysql",
+		nil, // no proof (MySQL doesn't use it)
 	)
 	if mysqlLifted != domain.ReadOnly {
 		t.Errorf("reclassifyAfterResolution(mysql) safe lift: got %q, want %q", mysqlLifted, domain.ReadOnly)

@@ -46,6 +46,10 @@ Application-level contracts for query access analysis, defining the schema resol
 - `GateIdentityBatchByResolutionContext()` / `GateIdentityBatchAgainstLiveContext()`
 - `BuildUnavailableBatch()` / `MapCatalogErrorToStatus()` / `FailClosedReasonCodes()` / `BatchIsFullyResolved()`
 - `Service`
+- `NewService()` / `NewTrustedService()` (T8)
+- `TrustPolicy` / `TrustDecision` / `TrustedEffectManifest` / `TrustedEffectEntry` (T8)
+- `PG17Manifest` (T8)
+- `ComputeManifestHash()` / `ValidateManifest()` / `MarshalManifestJSON()` / `UnmarshalManifestJSON()` (T8)
 - `ExtractTiDBQueryAccess()`
 - `AnalyzePostgreSQL()`
 - `ResolveMetadata()` (testing)
@@ -65,6 +69,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - **T6 EffectIdentityResolver** is an internal facts-only batch contract: per-ordinal `IdentityStatus` + optional OIDs/volatility/cast method/canonical signature. No `Trusted`, admission, reason text, or free-text status. Batch semantics: unique ordinals, deterministic sort, partial failure via status (not omission), cancel as batch-level `context` error. T6 does **not** call the resolver from `Service.Analyze`, does **not** implement pg_catalog SQL, and does **not** promote admission. Public SDK/CLI/HTTP request schemas intentionally omit the resolver field until a complete end-to-end path exists.
 - **T6 P1 execution resolution context:** `EffectIdentityRequest.Resolution` is an internal `EffectIdentityResolutionContext`. Phase-1 promotion-ready binding requires **all** of: `Bound`, non-empty `SessionBinding`, non-zero `PathEpoch`, `DatabaseOID`, `RoleOID`, `ServerVersionNum`. Unqualified also needs non-empty `NamespaceSearchOIDs`. Explicit schema may skip search_path ranking but **not** session/database/role/server checks. Resolved facts must be stamped (`StampFactsFromResolution`) with matching database/server pins. Live gate: session mismatch strips **all** candidates (including explicit); path-only mismatch strips unqualified only. Context never appears on `domain.Result` or public JSON.
 - **T7 catalog adapter** lives in `internal/infrastructure/metadata/postgresql` (`PinnedSession` + `EffectIdentityAdapter`). It is **facts-only** and **not** invoked from `Service.Analyze` yet. Callers that use it must pin one session, run live→lookup→live+gate, and must not promote admission until T8 manifest proof.
+- **T8 manifest proof** enables PostgreSQL admission promotion when all effect candidates are exactly proven by an audited manifest. `NewTrustedService()` creates a service with manifest proof capability. `TrustPolicy` evaluates resolved facts against the versioned `PG17Manifest`. `TrustDecisionAllProven` is the sole path to `read_only + admissible` for PostgreSQL. The PG hard-stop in `reclassifyAfterResolution` is replaced with manifest-gated promotion. Without a trusted bundle, PostgreSQL remains fail-closed (indeterminate).
 - Identity-failure categories map only through `domain.ReasonForIdentityFailure` / `ReasonForIdentityStatus`; free-text errors cannot be injected as trusted reasons. Manifest trust policy and admission promotion remain T8.
 - Callers cannot supply `ReasonCodes` on `QueryAccessRequest`; transports passthrough the single application domain result.
 - `buildRequirements` generates access requirements based on mode: strict requires all resolved columns, projection-only requires only output-contributing columns and emits inference_risk warning.

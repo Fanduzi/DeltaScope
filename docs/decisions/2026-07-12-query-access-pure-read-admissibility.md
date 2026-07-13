@@ -14,6 +14,7 @@ Related commits:
 - T6 P1 execution-context fix: `fix: bind effect identity resolution to execution context`
 - T6 P1b session completeness: `fix: require full identity resolution session binding`
 - T7 catalog adapter: `feat: resolve query access effect identity facts`
+- T8 manifest proof: `feat: prove bounded query access effects`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -30,6 +31,8 @@ Related tests:
 - T6 P1: `identity_resolver_context_test.go` (unbound unqualified, shadowing, overload, TOCTOU, no public context leak)
 - T7: `effect_identity_resolver_test.go` (fake pinned catalog); optional
   `effect_identity_resolver_integration_test.go` (PG17 Docker)
+- T8: `trust_policy_test.go` (17 tests: all trust decisions, manifest validation, hash determinism, PG17 manifest validity)
+- T8: `trusted_service_test.go` (constructor validation, promotion logic, PG hard-stop removal verification)
 - Planned (T8): positive corpus under fake/real identity resolver + manifest promotion
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
 Related docs:
@@ -790,6 +793,98 @@ manifest trust, **no** admission promotion).
 
 **Explicit non-claims:** no TrustPolicy / manifest evaluation (T8); no
 admission lift; no public resolver injection.
+
+### T8 — Manifest proof engine and admission promotion (2026-07-13)
+
+**Status remains:** `Proposed` (manifest proof implemented; PG17 promotion
+limited to exact manifest match under controlled session).
+
+**What T8 delivers:**
+
+1. **`TrustPolicy`** — sole path to `Trusted` for PostgreSQL admission.
+   `IsTrusted(batch, serverVersionNum)` evaluates resolved facts against the
+   versioned manifest. Returns `TrustDecision` (all_proven | has_unproven |
+   has_unknown | empty).
+2. **`PG17Manifest`** — immutable, compile-time owned, versioned manifest
+   containing T2 ledger's audited minimum closed set:
+   - 54 comparison operators (9 types × 6 ops) with exact OIDs
+   - 2 aggregates: `count(*)` (OID 2803), `count("any")` (OID 2147)
+   - All entries: `provolatile=i`, `pg_catalog` namespace (OID 11)
+   - Schema version `1.0`, PostgreSQL major range 17–17
+   - Deterministic SHA-256 hash of entries
+3. **`NewTrustedService()`** — internal constructor that bundles
+   `EffectIdentityResolver`, `TrustPolicy`, and `SchemaResolver`. Not exposed
+   on public SDK/CLI/HTTP request schemas.
+4. **`reclassifyAfterResolution`** — PG hard-stop replaced with manifest-gated
+   promotion. Only `TrustDecisionAllProven` allows `read_only` classification.
+   Without proof or with any unproven/unknown, remains `indeterminate`.
+5. **Manifest proof flow:**
+   - Extract effect candidates (T5)
+   - Resolve identities via `EffectIdentityResolver` (T7)
+   - Apply `TrustPolicy.IsTrusted()` against `PG17Manifest`
+   - If all_proven: classification = `read_only`, admission = `admissible`
+   - Otherwise: fail-closed to `indeterminate`
+6. **Trust boundaries preserved:**
+   - Trust roots: exact catalog identity facts, complete session binding,
+     second live gate, versioned manifest exact match
+   - Forbidden: syntax/names/schema/provolatile/castmethod/OID ranges
+   - Resolver returns facts only; never Trusted/admission/free-text
+   - No public leak of resolver/session/OID/manifest/SQL/literals
+
+**Manifest entries (Phase-1):**
+
+| Kind | ObjectOID | NamespaceOID | CanonicalSignature | Audit Notes |
+|------|-----------|--------------|-------------------|-------------|
+| operator | 91 | 11 | `pg_catalog.=(16,16)` | bool = bool; impl booleq |
+| operator | 96 | 11 | `pg_catalog.=(23,23)` | int4 = int4; impl int4eq |
+| operator | 98 | 11 | `pg_catalog.=(25,25)` | text = text; impl texteq |
+| ... | ... | ... | ... | 54 total comparison operators |
+| function | 2803 | 11 | `pg_catalog.count()` | count(*) aggregate |
+| function | 2147 | 11 | `pg_catalog.count(2276)` | count(anyelement); arg=2276 |
+
+**Fail-closed conditions (remain indeterminate):**
+
+- No trusted bundle (default Service)
+- Resolver error, timeout, cancellation
+- Unresolved/ambiguous/coercion_gap/lookup_failed/unavailable items
+- Manifest miss (resolved but not in manifest)
+- Version mismatch (facts vs manifest range)
+- Context drift (session/db/role/version mismatch)
+- Missing type OIDs, parameters, NULL literals, coercion required
+- Multi-match, unknown function/operator/cast
+- Non-manifest pg_catalog stable/immutable functions
+- UDFs, current_setting, pg_get_*, file functions
+- Function-backed casts, binary casts (Phase-1 default)
+- Missing table/column, ambiguity, wildcard expansion failure
+
+**Public behavior:**
+
+- SDK/CLI/HTTP: identical application results for same input
+- No resolver/session/OID/candidate/manifest/DSN/SQL/literal in public JSON
+- MySQL/TiDB path unchanged (no proof parameter used)
+- `projection_only` preserves inference_risk behavior
+
+**Runtime evidence:**
+
+- `trust_policy_test.go`: 17 tests covering all trust decisions
+- `trusted_service_test.go`: constructor validation, promotion logic
+- All existing tests pass (217 in package, 2976 total)
+- `make query-access-corpus-gates`: PASS
+- `golangci-lint`: clean
+- `go vet` / `go vet -tags postgresql`: clean
+
+**Artifacts:**
+
+- `internal/application/queryaccess/trust_policy.go`
+- `internal/application/queryaccess/trust_manifest_pg17.go`
+- `internal/application/queryaccess/trust_policy_test.go`
+- `internal/application/queryaccess/trusted_service_test.go`
+- Modified: `internal/application/queryaccess/service.go`
+- Modified: `internal/application/queryaccess/README.md`
+
+**Explicit non-claims:** no execution capability token; no multi-version CI
+(14–17 probe evidence only); no cast promotion; no view/RLS/rewrite proof;
+no public resolver injection.
 
 ## Consequences
 
