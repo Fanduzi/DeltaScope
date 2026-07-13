@@ -325,11 +325,14 @@ trust, **no** Analyze invocation / admission change, **no** public SDK field.
 | **T7** | PostgreSQL `pg_catalog` adapter implementing the contract **with context** |
 | **T8** | Manifest trust + proof engine; may discuss Analyze wiring / public injection |
 
-**T6 P1 (blocking for T7):** `EffectIdentityResolutionContext` on the internal
-request; unqualified effects without bound session/`NamespaceSearchOIDs` →
-`unavailable` (no `pg_catalog.<name>` guess); TOCTOU via
-`SessionBinding`+`PathEpoch` + live gate; context never on public Result/JSON.
-See decision record T6 P1 amendment.
+**T6 P1 / P1b (blocking for T7):** `EffectIdentityResolutionContext` requires
+full session completeness for promotion-ready facts: Bound + SessionBinding +
+non-zero PathEpoch + DatabaseOID + RoleOID + ServerVersionNum. Unqualified
+also needs NamespaceSearchOIDs. Explicit schema skips search_path only, not
+session/db/role/server. Live session mismatch strips all candidates; path-only
+mismatch strips unqualified. Facts must stamp matching DatabaseOID/ServerVersionNum.
+T7: same controlled session for live read → lookup → live re-check → gate → T8.
+See decision record T6 P1 / P1b.
 
 **Commit:** `feat: define query access identity resolver contract`
 **P1 fix commit:** `fix: bind effect identity resolution to execution context`

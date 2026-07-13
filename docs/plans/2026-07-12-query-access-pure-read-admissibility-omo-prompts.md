@@ -115,12 +115,14 @@ T6 delivered an internal, typed, fail-closed EffectIdentityResolver contract:
 - helpers: ordinal validate/sort/complete, error→lookup_failed, fail-closed reasons
 - Analyze NOT wired; public SDK/CLI/HTTP schema unchanged
 
-T6 P1 amendment (required before T7):
-- EffectIdentityResolutionContext (Bound, SessionBinding, PathEpoch,
-  NamespaceSearchOIDs, optional db/role/version)
-- unqualified without usable context → unavailable (no pg_catalog name guess)
-- GateIdentityBatchByResolutionContext + GateIdentityBatchAgainstLiveContext
-- tests: shadowing, overload, custom same-name, TOCTOU mismatch, no public leak
+T6 P1 / P1b amendment (required before T7):
+- EffectIdentityResolutionContext MUST be session-complete for promotion:
+  Bound + SessionBinding + PathEpoch + DatabaseOID + RoleOID + ServerVersionNum
+  (all non-zero); NamespaceSearchOIDs required for unqualified
+- explicit schema skips search_path only — not db/role/server/session
+- live session mismatch strips ALL (incl. explicit); path-only strips unqualified
+- StampFactsFromResolution pins DatabaseOID/ServerVersionNum on facts
+- tests: zero fields, role/db/version mismatch, shadowing, TOCTOU, no public leak
 
 T6 is FACTS-ONLY + execution-context-bound. T7 implements the PostgreSQL
 catalog adapter under this context. T8 may discuss manifest proof + admission
@@ -151,11 +153,14 @@ by the T2 closed candidate set. Return facts only: OID, namespace, volatility,
 castfunc/castmethod. Scrub secrets from errors. Unknown/multi-match → not a
 unique identity. Map all failures to T6 bounded IdentityStatus values.
 
-CRITICAL for unqualified effects (count(*), id = 1):
-- Require usable EffectIdentityResolutionContext (Bound + SessionBinding +
-  NamespaceSearchOIDs). Without it → unavailable (never guess pg_catalog.=).
-- Resolve under the bound session / path; apply GateIdentityBatch* + TOCTOU.
-- Explicit pg_catalog.* may resolve without search_path ranking; still facts-only.
+CRITICAL session binding (all candidates, not only unqualified):
+- Bound context MUST include non-zero SessionBinding, PathEpoch, DatabaseOID,
+  RoleOID, ServerVersionNum. Partial contexts are invalid / fail-closed.
+- Unqualified also needs NamespaceSearchOIDs (never guess pg_catalog.=).
+- Explicit schema may skip search_path ranking but MUST share session/db/role/server.
+- T7 on ONE controlled session: read live context → identity lookup → re-read
+  live → GateIdentityBatchAgainstLiveContext → only then T8.
+- Stamp DatabaseOID/ServerVersionNum on every resolved fact; mismatch → drop.
 Do not attach Trusted. Do not promote admission (T8).
 
 FORBIDDEN: "trust only pg_catalog + volatility i|s" or any equivalent Trusted

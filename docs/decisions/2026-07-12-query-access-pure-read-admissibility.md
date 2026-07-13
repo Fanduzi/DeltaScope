@@ -12,6 +12,7 @@ Related commits:
 - T5 candidates commit: `feat: extract query access effect candidates`
 - T6 resolver contract commit: `feat: define query access identity resolver contract`
 - T6 P1 execution-context fix: `fix: bind effect identity resolution to execution context`
+- T6 P1b session completeness: `fix: require full identity resolution session binding`
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -700,37 +701,52 @@ call the resolver), but the contract gap blocked safe T7.
 
 1. **`EffectIdentityResolutionContext`** (internal-only on
    `EffectIdentityRequest.Resolution`):
-   - `Bound`, opaque `SessionBinding`, `PathEpoch`
-   - ordered `NamespaceSearchOIDs` (expanded search_path as OIDs)
-   - optional `DatabaseOID` / `RoleOID` / `ServerVersionNum`
+   - Phase-1 promotion-ready session complete requires **all non-zero**:
+     `Bound`, `SessionBinding`, `PathEpoch`, `DatabaseOID`, `RoleOID`,
+     `ServerVersionNum`
+   - ordered `NamespaceSearchOIDs` additionally required for **unqualified**
    - **Never** on `domain.Result`, SDK/CLI/HTTP JSON, reason codes, or public
      errors (no DSN, password, `search_path=` text, catalog SQL).
 2. **Phase-1 resolution policy (normative):**
-   - **Unqualified** operator/function/cast without a **usable** bound context
-     (`Bound` + non-empty `SessionBinding` + non-empty `NamespaceSearchOIDs`)
-     → **`unavailable`** (fail closed). Adapters **must not** guess
-     `pg_catalog.<name>` from spelling.
-   - **Explicit schema** qualification may resolve without search_path ranking;
-     unique type match still required. Explicit `pg_catalog.*` is structural
-     only — still not Trusted without T8 manifest.
-   - **Bound + usable context** allows unqualified lookup under that path;
-     multi-match → `ambiguous`; type gap → `coercion_gap` / `unknown`.
-   - **TOCTOU:** batch lookups share one `SessionBinding`+`PathEpoch`;
-     `GateIdentityBatchAgainstLiveContext` drops unqualified facts when the
-     live snapshot mismatches or errors.
-3. **Helpers:** `CandidateExplicitlyQualified` / `CandidateExplicitPgCatalog`,
-   `ResolutionContextUsableForUnqualified`, `ResolutionContextsCompatible`,
-   `ClassifyCandidateResolutionMode`, `GateIdentityBatchByResolutionContext`,
-   `GateIdentityBatchAgainstLiveContext`.
-4. **Tests:** unbound unqualified strips naive `pg_catalog` guesses; explicit
-   `pg_catalog` may keep facts unbound; search_path shadowing keeps actual
-   public OID facts (not force-builtin); overload statuses fail closed;
-   same-name custom operator has no `Trusted`; live epoch/session mismatch
-   fail-closes unqualified; context not on public surfaces.
+   - Incomplete session context → **all** candidates **`unavailable`**
+     (including explicit schema). OIDs are database-local; cross-db/major
+     facts must not reach T8.
+   - **Unqualified** also needs non-empty search path; otherwise unavailable
+     (no `pg_catalog.<name>` guess).
+   - **Explicit schema** skips search_path ranking only; still requires full
+     session/database/role/server/epoch binding.
+   - Resolved facts must carry matching `DatabaseOID` + `ServerVersionNum`
+     pins (`StampFactsFromResolution`).
+   - **TOCTOU:** live session mismatch (binding/epoch/db/role/version) strips
+     **all** candidates; search_path-only mismatch strips unqualified only.
+3. **Helpers:** `ResolutionContextSessionComplete`,
+   `ResolutionContextSessionCompatible`, `ResolutionContextSearchPathCompatible`,
+   `ResolutionContextsCompatible`, gates, stamp helper.
+4. **Tests:** zero-field contexts; role/database/server-version/epoch/session
+   live mismatch strips explicit too; path-only mismatch keeps explicit;
+   unpinned/wrong-db/version facts discarded; shadowing/overload/no public leak.
 
-**T7 obligation:** implement catalog SQL only under this contract; call the
-gates (or equivalent); never resolve unqualified effects without a verified
-execution-bound context.
+**T7 obligation:** on one controlled session — read live context → identity
+lookup → re-read live context → `GateIdentityBatchAgainstLiveContext` → only
+then hand facts to T8. Never resolve unqualified without complete binding.
+
+### T6 P1b — session/database/role/version completeness (2026-07-13)
+
+**Status remains:** `Proposed`. **Still blocking for T7.**
+
+Earlier P1 required Bound + SessionBinding + search path only, treated
+DatabaseOID/RoleOID as optional, and let explicit-schema facts survive live
+session mismatch. That was insufficient: the same opaque binding could drift
+role/database without a correct epoch update, and database-local OIDs could
+escape to T8.
+
+**Hardening:**
+
+- Bound contexts require non-zero PathEpoch, DatabaseOID, RoleOID,
+  ServerVersionNum (Validate rejects partial Bound).
+- Compatibility never treats zero as "not asserted".
+- Explicit schema cannot skip session/db/role/server checks.
+- Live role/db/version mismatch → strip all facts including explicit.
 
 ## Consequences
 

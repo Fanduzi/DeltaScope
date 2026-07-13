@@ -89,13 +89,19 @@ func ValidEffectCastMethod(m EffectCastMethod) bool {
 //   - unknown / ambiguous / coercion_gap / lookup_failed / unavailable are all
 //     fail-closed for pure-read promotion.
 //   - Execution resolution context (EffectIdentityRequest.Resolution) is required
-//     for unqualified operators/functions. Adapters MUST NOT guess
+//     for any Phase-1 promotion-ready identity. Adapters MUST NOT guess
 //     pg_catalog.<name> from spelling alone (T2 forbids name/schema allowlists).
-//     Prefer calling GateIdentityBatchByResolutionContext after lookup (or
-//     equivalent) so unqualified+unbound candidates become unavailable.
-//   - TOCTOU: all lookups for a batch must run under one SessionBinding+PathEpoch;
-//     if the live session diverges mid-batch, fail closed (lookup_failed /
-//     unavailable), never return a partial identity from a different path.
+//     Call GateIdentityBatchAgainstLiveContext (or Gate + live check) after
+//     lookup so incomplete/mismatched contexts discard facts.
+//   - Phase-1 bound context REQUIRES non-zero SessionBinding, PathEpoch,
+//     DatabaseOID, RoleOID, and ServerVersionNum. OIDs are database-local;
+//     cross-database or cross-major resolved facts must never feed T8 promotion.
+//   - Explicit schema skips search_path ranking only — it still requires the
+//     same session/database/role/server binding as unqualified resolution.
+//   - TOCTOU: T7 must read live context, run identity lookup, and re-check live
+//     context on the SAME controlled session before handing facts to T8.
+//     Session/db/role/version/epoch mismatch fails closed for ALL candidates;
+//     search_path-only mismatch fails closed for unqualified only.
 //
 // This interface is intentionally NOT attached to public SDK/CLI/HTTP request
 // schemas in T6. Wiring into Service.Analyze and public injection points is a
@@ -112,45 +118,53 @@ type EffectIdentityResolver interface {
 //
 // Phase-1 policy (normative, T2-aligned):
 //
-//  1. Unqualified operators/functions (CandidateExplicitlyQualified == false)
-//     may be resolved ONLY when the context is session-bound and usable
-//     (ResolutionContextUsableForUnqualified). Without that proof, they MUST
-//     fail-closed as IdentityStatusUnavailable. Adapters must not invent
-//     pg_catalog.count / pg_catalog.= from the candidate spelling.
-//  2. Explicitly schema-qualified candidates select a namespace without
-//     search_path ranking. Unique type match is still required; multi-match
-//     is ambiguous. Non-pg_catalog identities may yield facts but are not
-//     trusted for pure-read promotion (T8 / manifest).
-//  3. Prefer locking resolution to the same controlled session that will execute
-//     the statement. Bound=true is a caller attestation that SessionBinding and
-//     PathEpoch identify that session's search_path/namespace snapshot.
-//  4. TOCTOU: PathEpoch / SessionBinding must not be reused after search_path,
-//     role, or database change. Mid-flight mismatch ⇒ fail closed.
+//  1. A promotion-ready bound context (ResolutionContextSessionComplete) requires
+//     ALL of: Bound, non-empty SessionBinding, PathEpoch != 0, DatabaseOID != 0,
+//     RoleOID != 0, ServerVersionNum != 0. Zero fields are incomplete — never
+//     optional for Phase-1 promotion.
+//  2. Unqualified operators/functions also require non-empty NamespaceSearchOIDs
+//     (ResolutionContextUsableForUnqualified). Without that proof they MUST be
+//     IdentityStatusUnavailable. Adapters must not invent pg_catalog.* names.
+//  3. Explicitly schema-qualified candidates skip search_path ranking for the
+//     namespace segment, but still require ResolutionContextSessionComplete.
+//     They share the same database/server catalog as the session; OIDs are
+//     database-local. Multi-match remains ambiguous.
+//  4. Bound=true attests the caller controls the session used for both analysis
+//     resolution and execution. PathEpoch must bump on search_path, role,
+//     database, or server change.
+//  5. TOCTOU: re-read live context on the same session after lookup; any session
+//     field mismatch fails closed for every candidate (including explicit schema).
+//     Search_path order mismatch alone fails closed for unqualified only.
 type EffectIdentityResolutionContext struct {
 	// Bound is true only when this context is proven to match the intended
 	// execution environment. Never set Bound from untrusted public JSON.
+	// Bound=true requires SessionComplete fields (see ValidateEffectIdentityRequest).
 	Bound bool
 
 	// SessionBinding is an opaque internal id for the controlled session or
-	// frozen catalog snapshot. Empty when unbound. Never a DSN or password.
+	// frozen catalog snapshot. Required non-empty when Bound. Never a DSN or password.
 	SessionBinding string
 
-	// PathEpoch is a generation counter for the locked search_path / namespace
-	// snapshot. Live session epoch mismatch invalidates the context.
+	// PathEpoch is a non-zero generation counter for the locked session snapshot
+	// (search_path / role / database identity). Required when Bound. Live mismatch
+	// invalidates the context.
 	PathEpoch uint64
 
 	// NamespaceSearchOIDs is the ordered schema OID list used for unqualified
-	// resolution (PostgreSQL search_path after expansion). Required non-empty
-	// when Bound is used for unqualified candidates.
+	// resolution (PostgreSQL search_path after expansion). Required non-empty for
+	// unqualified resolution; may be empty only when every candidate is explicit
+	// schema (session fields still required).
 	NamespaceSearchOIDs []uint32
 
-	// DatabaseOID is the current database OID when known (0 = unknown).
+	// DatabaseOID is the current database OID. Required non-zero when Bound.
+	// Object OIDs are local to this database.
 	DatabaseOID uint32
 
-	// RoleOID is the session role OID used for name resolution when known (0 = unknown).
+	// RoleOID is the session role OID used for name resolution. Required non-zero when Bound.
 	RoleOID uint32
 
-	// ServerVersionNum is server_version_num when known (0 = unknown). Fact only.
+	// ServerVersionNum is PostgreSQL server_version_num. Required non-zero when Bound.
+	// Version-scoped manifests (T8) must not accept facts from a different major.
 	ServerVersionNum int
 }
 
@@ -224,6 +238,13 @@ type EffectIdentityFacts struct {
 	// CanonicalSignature is an internal, deterministic identity key for manifest
 	// membership checks. Not a public field; not a trust claim by itself.
 	CanonicalSignature string
+
+	// DatabaseOID pins ObjectOID locality (must match the resolution context).
+	// Zero is incomplete; gates discard such resolved facts.
+	DatabaseOID uint32
+	// ServerVersionNum pins the server major/minor used for catalog lookup.
+	// Zero is incomplete; gates discard such resolved facts.
+	ServerVersionNum int
 }
 
 // EffectIdentityItem is the resolution outcome for one candidate ordinal.
@@ -242,9 +263,10 @@ type EffectIdentityBatch struct {
 
 // ValidateEffectIdentityRequest checks ordinal uniqueness and structural bounds.
 // Empty candidate slices are valid (resolver returns an empty batch).
-// Resolution may be zero (unbound); that is valid and forces unqualified
-// candidates to unavailable via GateIdentityBatchByResolutionContext.
-// Bound=true with empty SessionBinding is invalid (cannot prove execution lock).
+// Resolution may be zero (unbound); that is valid and forces all candidates to
+// unavailable via GateIdentityBatchByResolutionContext (no promotion-ready facts).
+// Bound=true requires a fully complete session context (binding, epoch, database,
+// role, server version); partial Bound contexts are invalid, not "optional fields".
 func ValidateEffectIdentityRequest(req EffectIdentityRequest) error {
 	seen := make(map[int]struct{}, len(req.Candidates))
 	for _, c := range req.Candidates {
@@ -256,8 +278,8 @@ func ValidateEffectIdentityRequest(req EffectIdentityRequest) error {
 			return fmt.Errorf("%w: unknown candidate kind", ErrIdentityRequestInvalid)
 		}
 	}
-	if req.Resolution.Bound && req.Resolution.SessionBinding == "" {
-		return fmt.Errorf("%w: bound resolution context requires SessionBinding", ErrIdentityRequestInvalid)
+	if req.Resolution.Bound && !ResolutionContextSessionComplete(req.Resolution) {
+		return fmt.Errorf("%w: bound resolution context requires SessionBinding, PathEpoch, DatabaseOID, RoleOID, and ServerVersionNum", ErrIdentityRequestInvalid)
 	}
 	return nil
 }
@@ -312,32 +334,69 @@ func CandidateExplicitPgCatalog(c EffectCandidate) bool {
 	return CandidateExplicitSchemaName(c) == PgCatalogNamespaceName
 }
 
-// ResolutionContextUsableForUnqualified reports whether the context is safe to
-// use for unqualified operator/function resolution (bound + session + non-empty
-// namespace search path). Database/role OIDs are optional facts.
-func ResolutionContextUsableForUnqualified(rc EffectIdentityResolutionContext) bool {
+// ResolutionContextSessionComplete reports whether the context is fully bound
+// for Phase-1 promotion: Bound plus non-zero SessionBinding, PathEpoch,
+// DatabaseOID, RoleOID, and ServerVersionNum. Missing any field is incomplete
+// (not "optional"). Search_path may still be empty (explicit-schema-only batches).
+func ResolutionContextSessionComplete(rc EffectIdentityResolutionContext) bool {
 	if !rc.Bound {
 		return false
 	}
 	if rc.SessionBinding == "" {
 		return false
 	}
-	if len(rc.NamespaceSearchOIDs) == 0 {
+	if rc.PathEpoch == 0 {
+		return false
+	}
+	if rc.DatabaseOID == 0 {
+		return false
+	}
+	if rc.RoleOID == 0 {
+		return false
+	}
+	if rc.ServerVersionNum == 0 {
 		return false
 	}
 	return true
 }
 
-// ResolutionContextsCompatible reports whether two contexts refer to the same
-// locked session snapshot (binding + epoch + namespace OID order). Used to
-// detect TOCTOU / mid-flight search_path changes. Unbound pairs are not compatible.
-func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
-	if !ResolutionContextUsableForUnqualified(a) || !ResolutionContextUsableForUnqualified(b) {
+// ResolutionContextUsableForUnqualified reports whether the context may resolve
+// unqualified operators/functions: session-complete plus non-empty search path.
+func ResolutionContextUsableForUnqualified(rc EffectIdentityResolutionContext) bool {
+	if !ResolutionContextSessionComplete(rc) {
 		return false
 	}
-	if a.SessionBinding != b.SessionBinding || a.PathEpoch != b.PathEpoch {
+	return len(rc.NamespaceSearchOIDs) > 0
+}
+
+// ResolutionContextSessionCompatible reports whether two contexts share the same
+// session/database/role/server/epoch binding. Zeros never match (incomplete).
+// Search_path is intentionally not compared here — explicit schema may skip it.
+func ResolutionContextSessionCompatible(a, b EffectIdentityResolutionContext) bool {
+	if !ResolutionContextSessionComplete(a) || !ResolutionContextSessionComplete(b) {
 		return false
 	}
+	if a.SessionBinding != b.SessionBinding {
+		return false
+	}
+	if a.PathEpoch != b.PathEpoch {
+		return false
+	}
+	if a.DatabaseOID != b.DatabaseOID {
+		return false
+	}
+	if a.RoleOID != b.RoleOID {
+		return false
+	}
+	if a.ServerVersionNum != b.ServerVersionNum {
+		return false
+	}
+	return true
+}
+
+// ResolutionContextSearchPathCompatible reports equal ordered NamespaceSearchOIDs.
+// Empty paths are compatible with each other only when both are empty (explicit-only).
+func ResolutionContextSearchPathCompatible(a, b EffectIdentityResolutionContext) bool {
 	if len(a.NamespaceSearchOIDs) != len(b.NamespaceSearchOIDs) {
 		return false
 	}
@@ -346,11 +405,48 @@ func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
 			return false
 		}
 	}
-	// When both sides set database/role, they must match; zero means "not asserted".
-	if a.DatabaseOID != 0 && b.DatabaseOID != 0 && a.DatabaseOID != b.DatabaseOID {
+	return true
+}
+
+// ResolutionContextsCompatible reports full compatibility for unqualified
+// resolution: session binding + search_path order. Incomplete contexts never match.
+func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
+	if !ResolutionContextUsableForUnqualified(a) || !ResolutionContextUsableForUnqualified(b) {
 		return false
 	}
-	if a.RoleOID != 0 && b.RoleOID != 0 && a.RoleOID != b.RoleOID {
+	if !ResolutionContextSessionCompatible(a, b) {
+		return false
+	}
+	return ResolutionContextSearchPathCompatible(a, b)
+}
+
+// StampFactsFromResolution copies database/server locality pins from the
+// resolution context onto facts. Adapters should call this for every resolved
+// item before gating. Does not set Trusted or admission.
+func StampFactsFromResolution(facts *EffectIdentityFacts, rc EffectIdentityResolutionContext) {
+	if facts == nil {
+		return
+	}
+	facts.DatabaseOID = rc.DatabaseOID
+	facts.ServerVersionNum = rc.ServerVersionNum
+}
+
+// factsMatchResolution reports whether resolved facts are pinned to the request
+// database/server. Zero pins or mismatches are fail-closed.
+func factsMatchResolution(facts *EffectIdentityFacts, rc EffectIdentityResolutionContext) bool {
+	if facts == nil {
+		return false
+	}
+	if !ResolutionContextSessionComplete(rc) {
+		return false
+	}
+	if facts.DatabaseOID == 0 || facts.ServerVersionNum == 0 {
+		return false
+	}
+	if facts.DatabaseOID != rc.DatabaseOID {
+		return false
+	}
+	if facts.ServerVersionNum != rc.ServerVersionNum {
 		return false
 	}
 	return true
@@ -358,6 +454,9 @@ func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
 
 // ClassifyCandidateResolutionMode returns the bounded resolution mode for a
 // candidate under the given execution context.
+// Explicit schema still requires a session-complete context to keep resolved
+// facts (mode is still "explicit_schema" for path ranking, but gates enforce
+// session completeness separately).
 func ClassifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolutionContext) EffectIdentityResolutionMode {
 	if CandidateExplicitlyQualified(c) {
 		return ResolutionModeExplicitSchema
@@ -368,15 +467,17 @@ func ClassifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolut
 	return ResolutionModeUnqualifiedUnbound
 }
 
-// GateIdentityBatchByResolutionContext enforces Phase-1 resolution policy on a
-// batch: unqualified candidates without a usable execution context become
-// unavailable with nil facts (fail closed). Explicitly qualified items and
-// unqualified-bound items keep their adapter-provided status.
+// GateIdentityBatchByResolutionContext enforces Phase-1 resolution policy:
 //
-// Adapters that guessed pg_catalog for unqualified names without context must
-// still be gated here so name allowlist behavior cannot leak into promotion.
-// Output is completed against the request (missing ordinals → unavailable) and
-// normalized. The resolution context itself is never copied into items.
+//   - Without a session-complete context, ALL candidates become unavailable
+//     (including explicit schema): OIDs are database-local and cannot be proven.
+//   - Unqualified candidates also require a non-empty search path; otherwise
+//     unavailable (no pg_catalog name guess).
+//   - Resolved facts must carry DatabaseOID/ServerVersionNum matching the
+//     request context; otherwise facts are discarded as unavailable.
+//
+// Output is completed against the request and normalized. Context is never
+// copied into items or public Result fields.
 func GateIdentityBatchByResolutionContext(req EffectIdentityRequest, batch EffectIdentityBatch) EffectIdentityBatch {
 	byOrd := make(map[int]EffectIdentityItem, len(batch.Items))
 	for _, it := range batch.Items {
@@ -385,13 +486,11 @@ func GateIdentityBatchByResolutionContext(req EffectIdentityRequest, batch Effec
 		}
 		byOrd[it.Ordinal] = it
 	}
+	sessionOK := ResolutionContextSessionComplete(req.Resolution)
 	items := make([]EffectIdentityItem, 0, len(req.Candidates))
 	for _, c := range req.Candidates {
-		mode := ClassifyCandidateResolutionMode(c, req.Resolution)
 		it, ok := byOrd[c.Ordinal]
 		if !ok {
-			// Missing ordinal: unbound unqualified and everything else fail closed
-			// as unavailable until proven.
 			items = append(items, EffectIdentityItem{
 				Ordinal: c.Ordinal,
 				Status:  domain.IdentityStatusUnavailable,
@@ -399,55 +498,100 @@ func GateIdentityBatchByResolutionContext(req EffectIdentityRequest, batch Effec
 			continue
 		}
 		it.Ordinal = c.Ordinal
-		if mode == ResolutionModeUnqualifiedUnbound {
-			// Never accept a resolved/ambiguous guess without execution context.
+
+		if !sessionOK {
+			// Incomplete binding: cannot prove catalog locality for any candidate.
 			it.Status = domain.IdentityStatusUnavailable
 			it.Facts = nil
+			items = append(items, it)
+			continue
+		}
+
+		if !CandidateExplicitlyQualified(c) && !ResolutionContextUsableForUnqualified(req.Resolution) {
+			it.Status = domain.IdentityStatusUnavailable
+			it.Facts = nil
+			items = append(items, it)
+			continue
+		}
+
+		if it.Status == domain.IdentityStatusResolved {
+			if !factsMatchResolution(it.Facts, req.Resolution) {
+				it.Status = domain.IdentityStatusUnavailable
+				it.Facts = nil
+			}
 		}
 		items = append(items, it)
 	}
 	return NormalizeEffectIdentityBatch(items)
 }
 
-// LiveResolutionContext is an optional adapter callback that re-reads the
-// session's current resolution snapshot. When non-nil and incompatible with
-// req.Resolution, GateIdentityBatchAgainstLiveContext fails closed.
+// LiveResolutionContext is an adapter callback that re-reads the session's
+// current resolution snapshot on the same controlled connection used for lookup.
+// T7 must supply this (or equivalent) before T8 promotion.
 type LiveResolutionContext func() (EffectIdentityResolutionContext, error)
 
-// GateIdentityBatchAgainstLiveContext applies policy gating and, when live is
-// provided, TOCTOU protection: if the live snapshot is unreadable or
-// incompatible with the request binding, all unqualified-bound candidates
-// become unavailable (and any pre-resolved facts for them are dropped).
-// Explicit-schema candidates are left unchanged by the TOCTOU check (they do
-// not depend on search_path ranking), but still pass through the unbound gate.
+// GateIdentityBatchAgainstLiveContext applies policy gating and TOCTOU protection.
+//
+// When live is non-nil:
+//   - live error or incomplete live snapshot → all candidates unavailable
+//   - session/database/role/server/epoch mismatch → all candidates unavailable
+//     (explicit schema does NOT skip these checks)
+//   - search_path order mismatch only → unqualified unavailable; explicit schema
+//     may keep facts if session-compatible and facts still match request pins
+//
+// When live is nil, only GateIdentityBatchByResolutionContext runs (T7 must not
+// skip live re-check for promotion-ready paths).
 func GateIdentityBatchAgainstLiveContext(req EffectIdentityRequest, batch EffectIdentityBatch, live LiveResolutionContext) EffectIdentityBatch {
 	gated := GateIdentityBatchByResolutionContext(req, batch)
 	if live == nil {
 		return gated
 	}
-	// Only meaningful when the request claimed a bound path.
-	if !ResolutionContextUsableForUnqualified(req.Resolution) {
-		return gated
+	if !ResolutionContextSessionComplete(req.Resolution) {
+		return stripAllIdentityFacts(gated)
 	}
 	liveRC, err := live()
-	if err != nil || !ResolutionContextsCompatible(req.Resolution, liveRC) {
-		// TOCTOU / mismatch: strip resolved facts from unqualified candidates.
-		items := make([]EffectIdentityItem, 0, len(gated.Items))
-		candByOrd := make(map[int]EffectCandidate, len(req.Candidates))
-		for _, c := range req.Candidates {
-			candByOrd[c.Ordinal] = c
-		}
-		for _, it := range gated.Items {
-			c, ok := candByOrd[it.Ordinal]
-			if ok && !CandidateExplicitlyQualified(c) {
-				it.Status = domain.IdentityStatusUnavailable
-				it.Facts = nil
-			}
-			items = append(items, it)
-		}
-		return NormalizeEffectIdentityBatch(items)
+	if err != nil || !ResolutionContextSessionComplete(liveRC) {
+		return stripAllIdentityFacts(gated)
 	}
-	return gated
+	if !ResolutionContextSessionCompatible(req.Resolution, liveRC) {
+		// Role/database/server/epoch/session drift: strip everyone, including explicit.
+		return stripAllIdentityFacts(gated)
+	}
+	if ResolutionContextSearchPathCompatible(req.Resolution, liveRC) {
+		return gated
+	}
+	// Path-only drift: unqualified cannot be trusted; explicit schema may remain
+	// if facts still pin to the request database/server.
+	return stripUnqualifiedIdentityFacts(req, gated)
+}
+
+func stripAllIdentityFacts(batch EffectIdentityBatch) EffectIdentityBatch {
+	items := make([]EffectIdentityItem, 0, len(batch.Items))
+	for _, it := range batch.Items {
+		items = append(items, EffectIdentityItem{
+			Ordinal: it.Ordinal,
+			Status:  domain.IdentityStatusUnavailable,
+			Facts:   nil,
+		})
+	}
+	return NormalizeEffectIdentityBatch(items)
+}
+
+func stripUnqualifiedIdentityFacts(req EffectIdentityRequest, batch EffectIdentityBatch) EffectIdentityBatch {
+	candByOrd := make(map[int]EffectCandidate, len(req.Candidates))
+	for _, c := range req.Candidates {
+		candByOrd[c.Ordinal] = c
+	}
+	items := make([]EffectIdentityItem, 0, len(batch.Items))
+	for _, it := range batch.Items {
+		c, ok := candByOrd[it.Ordinal]
+		if ok && !CandidateExplicitlyQualified(c) {
+			it.Status = domain.IdentityStatusUnavailable
+			it.Facts = nil
+		}
+		items = append(items, it)
+	}
+	return NormalizeEffectIdentityBatch(items)
 }
 
 // BuildUnavailableBatch returns one unavailable item per candidate ordinal.
