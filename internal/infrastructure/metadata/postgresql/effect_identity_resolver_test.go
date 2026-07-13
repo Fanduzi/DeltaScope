@@ -82,6 +82,7 @@ func TestAdapter_ExactOperatorAndFunctionFacts(t *testing.T) {
 			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"count"}, Arity: 0, IsAggregate: true},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {23, 23}, 1: {}},
+		Resolution:      live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -129,6 +130,7 @@ func TestAdapter_UnqualifiedUsesPathOrder_CustomShadowsCatalog(t *testing.T) {
 		Candidates: []appqa.EffectCandidate{
 			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, Arity: 0},
 		},
+		Resolution: live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -149,6 +151,7 @@ func TestAdapter_UnqualifiedUsesPathOrder_CustomShadowsCatalog(t *testing.T) {
 		Candidates: []appqa.EffectCandidate{
 			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, Arity: 0},
 		},
+		Resolution: live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -185,6 +188,7 @@ func TestAdapter_ExplicitPgCatalogAndPublicReturnFactsOnly(t *testing.T) {
 			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"public", "my_udf"}, ExplicitSchema: true, Arity: 1},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {25}, 1: {23}},
+		Resolution:      live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -210,6 +214,7 @@ func TestAdapter_MissingTypesAndParamFailClosed(t *testing.T) {
 			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"="}, Arity: 2}, // no type OIDs
 			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"length"}, Arity: 1, OperandKinds: []string{"param"}},
 		},
+		Resolution: completeLive(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -241,6 +246,7 @@ func TestAdapter_MultiMatchAmbiguous(t *testing.T) {
 			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"+"}, Arity: 2},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {23, 23}},
+		Resolution:      live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -269,6 +275,7 @@ func TestAdapter_CastExactAndUnknown(t *testing.T) {
 			{Kind: appqa.EffectCandidateCast, Ordinal: 0, TargetTypePath: []string{"pg_catalog", "text"}, ExplicitSchema: true, Arity: 1, OperandKinds: []string{"column"}},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {23}},
+		Resolution:      live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -284,6 +291,7 @@ func TestAdapter_CastExactAndUnknown(t *testing.T) {
 			{Kind: appqa.EffectCandidateCast, Ordinal: 0, TargetTypePath: []string{"pg_catalog", "text"}, ExplicitSchema: true, Arity: 1},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {23}},
+		Resolution:      live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -309,6 +317,7 @@ func TestAdapter_CatalogErrorMapsToLookupFailed_NoLeak(t *testing.T) {
 			{Kind: appqa.EffectCandidateOperator, Ordinal: 0, NamePath: []string{"="}, Arity: 2},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {23, 23}},
+		Resolution:      live,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -349,6 +358,7 @@ func TestAdapter_LiveSessionMismatchStripsAll(t *testing.T) {
 			{Kind: appqa.EffectCandidateFunction, Ordinal: 1, NamePath: []string{"pg_catalog", "length"}, ExplicitSchema: true, Arity: 1},
 		},
 		OperandTypeOIDs: map[int][]uint32{0: {23, 23}, 1: {25}},
+		Resolution:      live1,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -384,6 +394,36 @@ func TestAdapter_Cancellation(t *testing.T) {
 	_, err := a.ResolveEffectIdentities(ctx, appqa.EffectIdentityRequest{})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestAdapter_UnboundRequestRejected(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"pg_catalog": 11},
+		fns: map[fnKey][]functionRow{
+			{ns: 11, name: "count", args: ""}: {{
+				OID: 2803, NamespaceOID: 11, ResultType: 20, Volatility: "i",
+				SchemaName: "pg_catalog", FuncName: "count",
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{
+			{Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, Arity: 0},
+		},
+		// No Resolution: unbound request.
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range batch.Items {
+		if it.Status != domain.IdentityStatusUnavailable || it.Facts != nil {
+			t.Errorf("unbound request must yield unavailable, got: %+v", it)
+		}
 	}
 }
 

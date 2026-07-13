@@ -55,7 +55,18 @@ func NewEffectIdentityAdapter(session *PinnedSession) (*EffectIdentityAdapter, e
 // (or NewPinnedSessionFromConn) so OID facts stay on one controlled backend.
 
 var _ appqa.EffectIdentityResolver = (*EffectIdentityAdapter)(nil)
+var _ appqa.ControlledEffectIdentityResolver = (*EffectIdentityAdapter)(nil)
 var _ effectIdentityCatalog = (*PinnedSession)(nil)
+
+// CaptureExecutionBoundContext implements appqa.ControlledEffectIdentityResolver.
+// Returns the pinned session's current live resolution context. The application
+// uses this to set explicit Resolution on the request, proving session binding.
+func (a *EffectIdentityAdapter) CaptureExecutionBoundContext(ctx context.Context) (appqa.EffectIdentityResolutionContext, error) {
+	if a == nil || a.catalog == nil {
+		return appqa.EffectIdentityResolutionContext{}, ErrSessionNotPinned
+	}
+	return a.catalog.CaptureLiveContext(ctx)
+}
 
 // ResolveEffectIdentities implements appqa.EffectIdentityResolver.
 func (a *EffectIdentityAdapter) ResolveEffectIdentities(ctx context.Context, req appqa.EffectIdentityRequest) (appqa.EffectIdentityBatch, error) {
@@ -81,6 +92,11 @@ func (a *EffectIdentityAdapter) ResolveEffectIdentities(ctx context.Context, req
 	// If caller supplied a session-complete resolution, it must match live session
 	// identity (binding/db/role/version/epoch). Search path may differ only if
 	// every candidate is explicit-schema; still require session compatibility.
+	//
+	// Unbound requests (no Resolution) are rejected: the application layer must
+	// capture execution-bound context explicitly via CaptureExecutionBoundContext
+	// before calling the adapter. This prevents direct callers from bypassing
+	// the context-binding path.
 	workReq := req
 	if appqa.ResolutionContextSessionComplete(req.Resolution) {
 		if !appqa.ResolutionContextSessionCompatible(req.Resolution, live1) {
@@ -88,12 +104,9 @@ func (a *EffectIdentityAdapter) ResolveEffectIdentities(ctx context.Context, req
 		}
 		// Prefer live path OIDs (authoritative for this session).
 		workReq.Resolution = live1
-	} else if req.Resolution.Bound {
-		// Partial Bound already rejected by Validate when Bound; defensive.
-		return unavailableAll(req), nil
 	} else {
-		// Unbound request: use live session as the resolution context.
-		workReq.Resolution = live1
+		// Incomplete or unbound Resolution: reject all candidates.
+		return unavailableAll(req), nil
 	}
 
 	// 2) Catalog lookups under the pinned session.
@@ -137,6 +150,11 @@ func (a *EffectIdentityAdapter) resolveOne(ctx context.Context, req appqa.Effect
 }
 
 func hasUnresolvedTypeKind(cand appqa.EffectCandidate) bool {
+	// Arity-0 functions (e.g. count(*)) need no type resolution regardless
+	// of OperandKinds (star is a structural hint, not a type-bearing operand).
+	if cand.Kind == appqa.EffectCandidateFunction && cand.Arity == 0 {
+		return false
+	}
 	for _, k := range cand.OperandKinds {
 		switch k {
 		case "param", "star", "subquery", "expr", "unknown":

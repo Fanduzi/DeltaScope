@@ -31,8 +31,18 @@ var pg17ManifestData = TrustedEffectManifest{
 }
 
 // NewPG17Manifest returns a deep copy of the PG17 manifest (immutable safe).
+// Entries and nested OperandTypeOIDs slices are copied so callers cannot
+// mutate the compile-time manifest backing store.
 func NewPG17Manifest() TrustedEffectManifest {
-	return pg17ManifestData
+	copied := pg17ManifestData
+	copied.Entries = make([]TrustedEffectEntry, len(pg17ManifestData.Entries))
+	for i, e := range pg17ManifestData.Entries {
+		copied.Entries[i] = e
+		if len(e.OperandTypeOIDs) > 0 {
+			copied.Entries[i].OperandTypeOIDs = append([]uint32(nil), e.OperandTypeOIDs...)
+		}
+	}
+	return copied
 }
 
 // PG17Manifest is deprecated: use NewPG17Manifest() for immutable copies.

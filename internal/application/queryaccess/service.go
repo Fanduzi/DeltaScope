@@ -30,8 +30,10 @@ type trustProofResult struct {
 // trustedBundle holds internal-only dependencies for PostgreSQL manifest proof.
 // It is never exposed on public SDK/CLI/HTTP request or result schemas.
 // When present, it enables effect identity resolution and manifest-gated promotion.
+// effectResolver must be a ControlledEffectIdentityResolver so the application
+// can capture and validate execution-bound context before resolution.
 type trustedBundle struct {
-	effectResolver EffectIdentityResolver
+	effectResolver ControlledEffectIdentityResolver
 	trustPolicy    *TrustPolicy
 	schemaResolver SchemaResolver
 }
@@ -65,9 +67,11 @@ func NewService() *Service {
 }
 
 // NewTrustedService creates a Service with PostgreSQL manifest proof capability.
-// All dependencies must be non-nil and session-pinned for PostgreSQL promotion.
-// The trust policy's manifest is validated on construction.
-func NewTrustedService(effectResolver EffectIdentityResolver, trustPolicy *TrustPolicy, schemaResolver SchemaResolver) (*Service, error) {
+// effectResolver must be a ControlledEffectIdentityResolver that can capture
+// execution-bound context (pinned session with TOCTOU protection).
+// All dependencies must be non-nil. The trust policy's manifest is validated
+// on construction.
+func NewTrustedService(effectResolver ControlledEffectIdentityResolver, trustPolicy *TrustPolicy, schemaResolver SchemaResolver) (*Service, error) {
 	bundle := &trustedBundle{
 		effectResolver: effectResolver,
 		trustPolicy:    trustPolicy,
@@ -164,17 +168,29 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 
 // resolveAndProveEffects resolves effect identities and applies manifest proof.
 // Returns nil if resolution fails or no candidates exist.
+//
+// The application captures execution-bound context from the controlled resolver
+// and sets it explicitly on the request. This prevents generic resolvers from
+// silently filling in unbound context that the application cannot verify.
 func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessRequest, extracted QueryAccessResult) *trustProofResult {
 	if s == nil || s.trusted == nil {
 		return nil
 	}
 
-	// Build resolution context from the trusted bundle's pinned session.
-	// For Phase-1, we require the caller to have provided a pre-captured context.
-	// The adapter will capture live context internally for TOCTOU protection.
+	// Capture explicit execution-bound context from the controlled resolver.
+	// This proves the facts are bound to the expected execution session.
+	resolutionCtx, err := s.trusted.effectResolver.CaptureExecutionBoundContext(ctx)
+	if err != nil || !ResolutionContextSessionComplete(resolutionCtx) {
+		return &trustProofResult{
+			decision:    TrustDecisionHasUnknown,
+			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
+		}
+	}
+
 	identityReq := EffectIdentityRequest{
 		Dialect:    req.Dialect,
 		Candidates: extracted.EffectCandidates,
+		Resolution: resolutionCtx,
 		// OperandTypeOIDs are populated from resolved column type OIDs.
 		OperandTypeOIDs: buildOperandTypeOIDs(extracted.EffectCandidates, extracted.DomainResult.ReferencedColumns, s.trusted.schemaResolver, req),
 	}
@@ -215,10 +231,39 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 }
 
 // buildOperandTypeOIDs populates type OID hints from resolved column metadata.
-// For Phase-1, we don't populate operand type OIDs from column metadata.
-// The adapter resolves types from the catalog directly.
-func buildOperandTypeOIDs(_ []EffectCandidate, _ []domain.ColumnReference, _ SchemaResolver, _ QueryAccessRequest) map[int][]uint32 {
-	return nil
+// For Phase-1, arity-0 functions (e.g. count(*)) need no type OIDs.
+// Operators require both operands to be columns with known TypeOIDs from
+// metadata; literals, params, and expressions are unknown and prevent proof.
+// When the map has no entry for a candidate ordinal, the T7 adapter treats
+// types as unknown (coercion_gap for operators, nil for arity-0 functions).
+func buildOperandTypeOIDs(candidates []EffectCandidate, _ []domain.ColumnReference, resolver SchemaResolver, _ QueryAccessRequest) map[int][]uint32 {
+	if resolver == nil || len(candidates) == 0 {
+		return nil
+	}
+	result := make(map[int][]uint32)
+	for _, cand := range candidates {
+		if cand.Arity == 0 {
+			// arity-0 functions (count(*)) need no type OIDs; signal with empty slice.
+			result[cand.Ordinal] = nil
+			continue
+		}
+		// For operators/functions with operands: only prove when ALL operands
+		// are columns with known TypeOIDs from metadata.
+		allColumns := true
+		for _, k := range cand.OperandKinds {
+			if k != "column" {
+				allColumns = false
+				break
+			}
+		}
+		if !allColumns {
+			// Mixed operand kinds (column + const, etc.) — skip.
+			continue
+		}
+		// TODO: map operand positions to specific columns for type OID lookup.
+		// Phase-1 defers operator type resolution; only count(*) is provable.
+	}
+	return result
 }
 
 // extractServerVersionFromBatch finds the server version from resolved facts.

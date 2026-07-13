@@ -813,8 +813,11 @@ limited to exact manifest match under controlled session).
    - Schema version `1.0`, PostgreSQL major range 17–17
    - Deterministic SHA-256 hash of entries
 3. **`NewTrustedService()`** — internal constructor that bundles
-   `EffectIdentityResolver`, `TrustPolicy`, and `SchemaResolver`. Not exposed
-   on public SDK/CLI/HTTP request schemas.
+   `ControlledEffectIdentityResolver`, `TrustPolicy`, and `SchemaResolver`. Not
+   exposed on public SDK/CLI/HTTP request schemas. The resolver must satisfy the
+   narrower `ControlledEffectIdentityResolver` contract (not generic
+   `EffectIdentityResolver`) so the application can capture and validate
+   execution-bound context before resolution.
 4. **`reclassifyAfterResolution`** — PG hard-stop replaced with manifest-gated
    promotion. Only `TrustDecisionAllProven` allows `read_only` classification.
    Without proof or with any unproven/unknown, remains `indeterminate`.
@@ -867,11 +870,36 @@ limited to exact manifest match under controlled session).
 **Runtime evidence:**
 
 - `trust_policy_test.go`: 17 tests covering all trust decisions
-- `trusted_service_test.go`: constructor validation, promotion logic
-- All existing tests pass (217 in package, 2976 total)
+- `trusted_service_test.go`: constructor validation, reclassify logic, deep copy
+- `trusted_service_postgresql_tag_test.go`: real `Service.Analyze` promotion:
+  - count(*) → read_only + admissible (controlled resolver + manifest match)
+  - id = 1 → indeterminate (operator with literal → coercion_gap)
+  - capture context fails → indeterminate
+  - incomplete context → indeterminate
+  - resolver error → indeterminate
+  - manifest miss → indeterminate
+  - no public JSON leak (OID/session/manifest/SQL/literal)
+  - MySQL path unchanged
+- All existing tests pass (398 postgresql-tagged, 213 non-tagged)
 - `make query-access-corpus-gates`: PASS
 - `golangci-lint`: clean
 - `go vet` / `go vet -tags postgresql`: clean
+
+**P1/P2 fixes (2026-07-13):**
+
+- **P1-1 (execution context binding):** `resolveAndProveEffects` now captures
+  explicit execution-bound context via `ControlledEffectIdentityResolver
+  .CaptureExecutionBoundContext()` before building the request. Generic
+  `EffectIdentityResolver` cannot trigger promotion — only controlled
+  implementations with pinned sessions satisfy the narrower contract.
+- **P1-2 (type OID resolution):** `buildOperandTypeOIDs` now returns a map
+  with arity-0 entries (count(*)) and defers operator type resolution.
+  `hasUnresolvedTypeKind` in the T7 adapter no longer blocks arity-0 functions
+  with star operand kind. `SELECT id FROM users WHERE id = 1` remains
+  indeterminate (literal type unknown → coercion_gap).
+- **P2-1 (deep copy):** `NewPG17Manifest()` now deep copies entries and nested
+  `OperandTypeOIDs` slices to prevent mutation of the compile-time backing store.
+- **P2-2 (Docker E2E):** attempted; see Docker evidence section below.
 
 **Artifacts:**
 
@@ -879,7 +907,13 @@ limited to exact manifest match under controlled session).
 - `internal/application/queryaccess/trust_manifest_pg17.go`
 - `internal/application/queryaccess/trust_policy_test.go`
 - `internal/application/queryaccess/trusted_service_test.go`
+- `internal/application/queryaccess/trusted_service_postgresql_tag_test.go`
+- Modified: `internal/application/queryaccess/identity_resolver.go`
+  (added `ControlledEffectIdentityResolver` interface)
 - Modified: `internal/application/queryaccess/service.go`
+  (explicit execution-bound context capture, buildOperandTypeOIDs)
+- Modified: `internal/infrastructure/metadata/postgresql/effect_identity_resolver.go`
+  (CaptureExecutionBoundContext, hasUnresolvedTypeKind arity-0 fix)
 - Modified: `internal/application/queryaccess/README.md`
 
 **Explicit non-claims:** no execution capability token; no multi-version CI

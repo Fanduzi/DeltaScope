@@ -110,6 +110,23 @@ type EffectIdentityResolver interface {
 	ResolveEffectIdentities(ctx context.Context, req EffectIdentityRequest) (EffectIdentityBatch, error)
 }
 
+// ControlledEffectIdentityResolver is the narrow contract for promotion-ready
+// identity resolution. Only implementations that guarantee pinned-session,
+// execution-bound resolution and TOCTOU gating satisfy this contract.
+//
+// Generic EffectIdentityResolver implementations MUST NOT satisfy this interface.
+// The application uses CaptureExecutionBoundContext to set explicit Resolution
+// on the request, proving session binding before the resolver runs.
+type ControlledEffectIdentityResolver interface {
+	EffectIdentityResolver
+	// CaptureExecutionBoundContext returns the current session's resolution
+	// context. Must return a session-complete context (all fields non-zero)
+	// or an error. The application uses this to set explicit Resolution on
+	// EffectIdentityRequest, proving the facts are bound to the expected
+	// execution session.
+	CaptureExecutionBoundContext(ctx context.Context) (EffectIdentityResolutionContext, error)
+}
+
 // EffectIdentityResolutionContext is an internal, execution-bound name-resolution
 // environment for effect identity lookup.
 //

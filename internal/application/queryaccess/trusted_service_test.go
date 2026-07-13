@@ -1,7 +1,7 @@
 // Package queryaccess tests the trusted service integration.
 // input: Service with trusted bundle, effect identity resolver, trust policy
 // output: verification of manifest-gated promotion logic
-// pos: T8 trusted service integration tests
+// pos: T8 trusted service integration tests (non-postgresql)
 // note: if this file changes, update this header and module README.md.
 package queryaccess
 
@@ -12,17 +12,28 @@ import (
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
 
-// mockEffectResolver is a test-only resolver that returns pre-configured results.
-type mockEffectResolver struct {
-	batch EffectIdentityBatch
-	err   error
+// mockControlledResolver implements ControlledEffectIdentityResolver for tests.
+type mockControlledResolver struct {
+	batch     EffectIdentityBatch
+	err       error
+	ctx       EffectIdentityResolutionContext
+	ctxErr    error
+	ctxCalled int
 }
 
-func (m *mockEffectResolver) ResolveEffectIdentities(ctx context.Context, req EffectIdentityRequest) (EffectIdentityBatch, error) {
+func (m *mockControlledResolver) ResolveEffectIdentities(ctx context.Context, req EffectIdentityRequest) (EffectIdentityBatch, error) {
 	if m.err != nil {
 		return EffectIdentityBatch{}, m.err
 	}
 	return m.batch, nil
+}
+
+func (m *mockControlledResolver) CaptureExecutionBoundContext(ctx context.Context) (EffectIdentityResolutionContext, error) {
+	m.ctxCalled++
+	if m.ctxErr != nil {
+		return EffectIdentityResolutionContext{}, m.ctxErr
+	}
+	return m.ctx, nil
 }
 
 // mockSchemaResolver is a test-only schema resolver.
@@ -39,6 +50,19 @@ func (m *mockSchemaResolver) ResolveRelation(ctx context.Context, dialect string
 	}, nil
 }
 
+// testResolutionContext returns a session-complete resolution context for tests.
+func testResolutionContext() EffectIdentityResolutionContext {
+	return EffectIdentityResolutionContext{
+		Bound:               true,
+		SessionBinding:      "test-session",
+		PathEpoch:           1,
+		NamespaceSearchOIDs: []uint32{11, 2200},
+		DatabaseOID:         1,
+		RoleOID:             10,
+		ServerVersionNum:    170000,
+	}
+}
+
 func TestNewTrustedService(t *testing.T) {
 	policy, err := NewTrustPolicy(PG17Manifest)
 	if err != nil {
@@ -47,14 +71,14 @@ func TestNewTrustedService(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		effectResolver EffectIdentityResolver
+		effectResolver ControlledEffectIdentityResolver
 		trustPolicy    *TrustPolicy
 		schemaResolver SchemaResolver
 		wantErr        bool
 	}{
 		{
 			name:           "valid bundle",
-			effectResolver: &mockEffectResolver{},
+			effectResolver: &mockControlledResolver{ctx: testResolutionContext()},
 			trustPolicy:    policy,
 			schemaResolver: &mockSchemaResolver{},
 			wantErr:        false,
@@ -68,14 +92,14 @@ func TestNewTrustedService(t *testing.T) {
 		},
 		{
 			name:           "nil trust policy",
-			effectResolver: &mockEffectResolver{},
+			effectResolver: &mockControlledResolver{ctx: testResolutionContext()},
 			trustPolicy:    nil,
 			schemaResolver: &mockSchemaResolver{},
 			wantErr:        true,
 		},
 		{
 			name:           "nil schema resolver",
-			effectResolver: &mockEffectResolver{},
+			effectResolver: &mockControlledResolver{ctx: testResolutionContext()},
 			trustPolicy:    policy,
 			schemaResolver: nil,
 			wantErr:        true,
@@ -106,238 +130,61 @@ func TestNewServiceBasic(t *testing.T) {
 	}
 }
 
-func TestTrustedServicePromotion(t *testing.T) {
-	// Build a trust policy with a test manifest.
-	testEntries := []TrustedEffectEntry{
-		{
-			Kind:               EffectCandidateOperator,
-			ObjectOID:          96,
-			NamespaceOID:       11,
-			OperandTypeOIDs:    []uint32{23, 23},
-			ResultTypeOID:      16,
-			ImplementationOID:  65,
-			Volatility:         EffectVolatilityImmutable,
-			CanonicalSignature: "pg_catalog.=(23,23)",
-			AuditNotes:         "int4 = int4",
-		},
-	}
-	testManifest := TrustedEffectManifest{
-		SchemaVersion:      "1.0",
-		PostgreSQLMajorMin: 17,
-		PostgreSQLMajorMax: 17,
-		Entries:            testEntries,
-		Hash:               ComputeManifestHash(testEntries),
-	}
-	policy, err := NewTrustPolicy(testManifest)
-	if err != nil {
-		t.Fatalf("NewTrustPolicy: %v", err)
-	}
-
-	tests := []struct {
-		name               string
-		resolver           EffectIdentityResolver
-		wantClassification domain.ReadClassification
-		wantAdmission      domain.Admission
-	}{
-		{
-			name: "all proven - promotes to read_only + admissible",
-			resolver: &mockEffectResolver{
-				batch: EffectIdentityBatch{
-					Items: []EffectIdentityItem{
-						{
-							Ordinal: 0,
-							Status:  domain.IdentityStatusResolved,
-							Facts: &EffectIdentityFacts{
-								Kind:               EffectCandidateOperator,
-								ObjectOID:          96,
-								NamespaceOID:       11,
-								OperandTypeOIDs:    []uint32{23, 23},
-								ResultTypeOID:      16,
-								ImplementationOID:  65,
-								Volatility:         EffectVolatilityImmutable,
-								CanonicalSignature: "pg_catalog.=(23,23)",
-								DatabaseOID:        1,
-								ServerVersionNum:   170000,
-							},
-						},
-					},
-				},
-			},
-			wantClassification: domain.ReadOnly,
-			wantAdmission:      domain.Admissible,
-		},
-		{
-			name: "has unknown - stays indeterminate",
-			resolver: &mockEffectResolver{
-				batch: EffectIdentityBatch{
-					Items: []EffectIdentityItem{
-						{
-							Ordinal: 0,
-							Status:  domain.IdentityStatusUnknown,
-							Facts:   nil,
-						},
-					},
-				},
-			},
-			wantClassification: domain.Indeterminate,
-			wantAdmission:      domain.IndeterminateAdmission,
-		},
-		{
-			name: "has unproven - stays indeterminate",
-			resolver: &mockEffectResolver{
-				batch: EffectIdentityBatch{
-					Items: []EffectIdentityItem{
-						{
-							Ordinal: 0,
-							Status:  domain.IdentityStatusResolved,
-							Facts: &EffectIdentityFacts{
-								Kind:               EffectCandidateOperator,
-								ObjectOID:          9999,
-								NamespaceOID:       11,
-								CanonicalSignature: "pg_catalog.=(9999,9999)",
-								ServerVersionNum:   170000,
-							},
-						},
-					},
-				},
-			},
-			wantClassification: domain.Indeterminate,
-			wantAdmission:      domain.IndeterminateAdmission,
-		},
-		{
-			name: "resolver error - stays indeterminate",
-			resolver: &mockEffectResolver{
-				err: context.Canceled,
-			},
-			wantClassification: domain.Indeterminate,
-			wantAdmission:      domain.IndeterminateAdmission,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			svc, err := NewTrustedService(tt.resolver, policy, &mockSchemaResolver{})
-			if err != nil {
-				t.Fatalf("NewTrustedService: %v", err)
-			}
-
-			// Simulate a PostgreSQL query with effect candidates.
-			req := QueryAccessRequest{
-				SQL:           "SELECT id FROM users WHERE id = 1",
-				Dialect:       "postgresql",
-				Mode:          "strict",
-				DefaultSchema: "public",
-			}
-
-			// We need to mock the extraction to return effect candidates.
-			// For this test, we'll directly test the reclassifyAfterResolution logic.
-			var proofDecision TrustDecision
-			if tt.resolver.(*mockEffectResolver).err != nil {
-				proofDecision = TrustDecisionHasUnknown
-			} else {
-				// Check if all items are resolved and in manifest.
-				allResolved := true
-				allInManifest := true
-				for _, item := range tt.resolver.(*mockEffectResolver).batch.Items {
-					if item.Status != domain.IdentityStatusResolved || item.Facts == nil {
-						allResolved = false
-						break
-					}
-					if item.Facts.CanonicalSignature != "pg_catalog.=(23,23)" {
-						allInManifest = false
-					}
-				}
-				if allResolved && allInManifest {
-					proofDecision = TrustDecisionAllProven
-				} else if !allResolved {
-					proofDecision = TrustDecisionHasUnknown
-				} else {
-					proofDecision = TrustDecisionHasUnproven
-				}
-			}
-			proof := &trustProofResult{
-				decision: proofDecision,
-			}
-
-			// Test reclassifyAfterResolution with the proof.
-			gotClass := reclassifyAfterResolution(
-				domain.Indeterminate,
-				nil,
-				nil,
-				true,
-				"postgresql",
-				proof,
-			)
-
-			if gotClass != tt.wantClassification {
-				t.Errorf("reclassifyAfterResolution() = %v, want %v", gotClass, tt.wantClassification)
-			}
-
-			// Verify the service was created correctly.
-			if svc.trusted == nil {
-				t.Error("trusted service has nil trusted bundle")
-			}
-			_ = req // suppress unused warning
-		})
-	}
-}
-
 func TestReclassifyAfterResolutionPGHardStopRemoved(t *testing.T) {
-	// Verify the PG hard-stop is removed: with nil proof, PostgreSQL stays indeterminate.
-	got := reclassifyAfterResolution(
-		domain.Indeterminate,
-		nil,
-		nil,
-		true,
-		"postgresql",
-		nil,
-	)
+	got := reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "postgresql", nil)
 	if got != domain.Indeterminate {
 		t.Errorf("nil proof: got %v, want indeterminate", got)
 	}
 
-	// With all_proven proof, PostgreSQL can promote.
-	proof := &trustProofResult{
-		decision: TrustDecisionAllProven,
-	}
-	got = reclassifyAfterResolution(
-		domain.Indeterminate,
-		nil,
-		nil,
-		true,
-		"postgresql",
-		proof,
-	)
+	proof := &trustProofResult{decision: TrustDecisionAllProven}
+	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "postgresql", proof)
 	if got != domain.ReadOnly {
-		t.Errorf("all_proven proof: got %v, want read_only", got)
+		t.Errorf("all_proven: got %v, want read_only", got)
 	}
 
-	// With has_unproven proof, PostgreSQL stays indeterminate.
-	proof = &trustProofResult{
-		decision: TrustDecisionHasUnproven,
-	}
-	got = reclassifyAfterResolution(
-		domain.Indeterminate,
-		nil,
-		nil,
-		true,
-		"postgresql",
-		proof,
-	)
+	proof = &trustProofResult{decision: TrustDecisionHasUnproven}
+	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "postgresql", proof)
 	if got != domain.Indeterminate {
-		t.Errorf("has_unproven proof: got %v, want indeterminate", got)
+		t.Errorf("has_unproven: got %v, want indeterminate", got)
 	}
 
-	// MySQL path unchanged (no proof parameter).
-	got = reclassifyAfterResolution(
-		domain.Indeterminate,
-		nil,
-		nil,
-		true,
-		"mysql",
-		nil,
-	)
+	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "mysql", nil)
 	if got != domain.ReadOnly {
-		t.Errorf("mysql without proof: got %v, want read_only", got)
+		t.Errorf("mysql: got %v, want read_only", got)
+	}
+}
+
+func TestNewPG17Manifest_DeepCopy(t *testing.T) {
+	m1 := NewPG17Manifest()
+	m2 := NewPG17Manifest()
+
+	// Find an operator entry with non-empty OperandTypeOIDs.
+	var opIdx int
+	for i, e := range m1.Entries {
+		if len(e.OperandTypeOIDs) > 0 {
+			opIdx = i
+			break
+		}
+	}
+
+	// Mutate m1's operator entry.
+	m1.Entries[opIdx].ObjectOID = 99999
+	m1.Entries[opIdx].OperandTypeOIDs[0] = 88888
+
+	// m2 should be unaffected.
+	if m2.Entries[opIdx].ObjectOID == 99999 {
+		t.Error("mutation of m1.Entries affected m2")
+	}
+	if m2.Entries[opIdx].OperandTypeOIDs[0] == 88888 {
+		t.Error("mutation of m1 OperandTypeOIDs affected m2")
+	}
+
+	// A third call should also be unaffected.
+	m3 := NewPG17Manifest()
+	if m3.Entries[opIdx].ObjectOID == 99999 {
+		t.Error("mutation of m1 affected m3")
+	}
+	if m3.Entries[opIdx].OperandTypeOIDs[0] == 88888 {
+		t.Error("mutation of m1 OperandTypeOIDs affected m3")
 	}
 }

@@ -35,15 +35,17 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 - `NewQueryAccessResolver(db *sql.DB)`
 - `QueryAccessResolver.ResolveRelation(ctx, dialect, schema, name)`
 - `PinnedSession` / `NewPinnedSessionFromConn` / `PinSession` / `ErrSessionNotPinned`
-- `EffectIdentityAdapter` / `NewEffectIdentityAdapter` (facts only; not wired into `Service.Analyze`)
+- `EffectIdentityAdapter` / `NewEffectIdentityAdapter` (facts only; implements `ControlledEffectIdentityResolver`)
 
 ## Effect identity (T7)
 
 - Requires a **single pinned session** (`*sql.Conn` via `PinnedSession`). Do not run identity lookups on a multi-connection `*sql.DB` pool.
-- Flow: capture live context → exact catalog lookup → re-capture live → `GateIdentityBatchAgainstLiveContext`.
+- Implements `ControlledEffectIdentityResolver`: `CaptureExecutionBoundContext` returns the pinned session's live resolution context so the application can set explicit Resolution on the request.
+- Flow: application captures context → sets on request → capture live context → exact catalog lookup → re-capture live → `GateIdentityBatchAgainstLiveContext`.
 - Returns catalog **facts** only (OIDs, volatility, cast method, stamped database/server). Never `Trusted`, admission, or free-text errors on public Result JSON.
 - Unqualified names walk ordered `NamespaceSearchOIDs`; never invent `pg_catalog.<name>` without path/context.
 - Explicit schema skips search_path ranking only; still requires full session/db/role/server binding via gates.
+- Arity-0 functions (e.g. count(*)) bypass `hasUnresolvedTypeKind` star check — no type OIDs needed.
 - T8 owns version-scoped manifest proof and admission promotion. Runtime integration is validated against the repo's **PostgreSQL 17** compose image; T2 research covered 14–17 for the closed manifest set, not as a multi-version CI claim for this adapter.
 
 ## Dependencies
