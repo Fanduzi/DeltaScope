@@ -1,8 +1,12 @@
 //go:build postgresql && integration
 
-// Package postgresqlmeta runs T7 adapter against a live PostgreSQL 17 session when available.
+// Package postgresqlmeta runs T7 adapter and trusted-service E2E against a live
+// PostgreSQL 17 session when available.
 // input: DELTASCOPE_PG_* env or docker compose defaults (localhost:5500)
-// output: real catalog facts for = / count(*) under a pinned session
+// output: real catalog facts for = / count(*) under a pinned session;
+//
+//	real Service.Analyze promotion for count(*) via NewTrustedService
+//
 // pos: integration evidence only; skipped when Docker/PG unavailable (not claimed via mocks)
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
@@ -19,6 +23,95 @@ import (
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
+
+// TestTrustedService_PG17CountStarE2E proves count(*) promotion through the
+// real Service.Analyze path: PinnedSession → EffectIdentityAdapter →
+// CaptureExecutionBoundContext → manifest proof → admission.
+//
+// This is the only test that verifies the full trust chain against a live PG17.
+func TestTrustedService_PG17CountStarE2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PG17 trusted-service E2E in short mode")
+	}
+
+	db, cleanup, err := openIntegrationDB(t)
+	if err != nil {
+		t.Skipf("PG17 integration unavailable (Docker/compose not running): %v", err)
+	}
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// 1) Pin a single session.
+	session, err := PinSession(ctx, db)
+	if err != nil {
+		t.Fatalf("PinSession: %v", err)
+	}
+	defer session.Close()
+
+	// 2) Build controlled resolver from pinned session.
+	adapter, err := NewEffectIdentityAdapter(session)
+	if err != nil {
+		t.Fatalf("adapter: %v", err)
+	}
+
+	// 3) Build schema resolver from the same DB.
+	schemaResolver := NewQueryAccessResolver(db)
+
+	// 4) Build trust policy with PG17 manifest.
+	policy, err := appqa.NewTrustPolicy(appqa.NewPG17Manifest())
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	// 5) Create trusted service with real controlled resolver.
+	svc, err := appqa.NewTrustedService(adapter, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	// 6) Analyze count(*) — this is the real end-to-end promotion path.
+	res, err := svc.Analyze(ctx, appqa.QueryAccessRequest{
+		SQL:           "SELECT count(*) FROM app.users",
+		Dialect:       "postgresql",
+		Mode:          "strict",
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	t.Logf("classification=%s admission=%s reasons=%v",
+		res.DomainResult.ReadClassification, res.DomainResult.Admission, res.DomainResult.ReasonCodes)
+
+	// 7) Assert promotion.
+	if res.DomainResult.ReadClassification != domain.ReadOnly {
+		t.Errorf("classification = %v, want read_only", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.Admissible {
+		t.Errorf("admission = %v, want admissible", res.DomainResult.Admission)
+	}
+
+	// 8) Verify no unproven reasons remain after proof.
+	for _, code := range res.DomainResult.ReasonCodes {
+		if code == domain.ReasonUnprovenFunctionEffect {
+			t.Error("unproven_function_effect should be removed after proof")
+		}
+	}
+
+	// 9) Verify relations extracted correctly.
+	foundUsers := false
+	for _, rel := range res.DomainResult.Relations {
+		if rel.Name == "users" {
+			foundUsers = true
+			break
+		}
+	}
+	if !foundUsers {
+		t.Errorf("expected users relation in result: %+v", res.DomainResult.Relations)
+	}
+}
 
 func TestEffectIdentityAdapter_PG17PinnedSessionIntegration(t *testing.T) {
 	if testing.Short() {
@@ -74,6 +167,7 @@ func TestEffectIdentityAdapter_PG17PinnedSessionIntegration(t *testing.T) {
 			1: {},
 			2: {},
 		},
+		Resolution: live,
 	})
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
