@@ -1116,6 +1116,80 @@ and catalog snapshot consistency — not to the kill criteria in §9 (name allow
 volatility allowlists, or unbounded manifests). The manifest identity proof model
 remains sound; the issues are in the operand provenance binding layer.
 
+### T11 — Security Hardening (2026-07-14)
+
+**Status remains:** `Proposed`. **Implemented** — fixes three security gaps found
+during independent Oracle/Momus review.
+
+**What T11 delivers:**
+
+1. **SQLValueFunction treated as unproven effect (S4):** PostgreSQL
+   `SQLValueFunction` expressions (`current_user`, `session_user`,
+   `current_database`, `current_role`, `current_schema`, `current_date`,
+   `current_timestamp`, `localtime`, `localtimestamp`, `user`) are now recorded
+   as synthetic function candidates and emit `unproven_function_effect` reason
+   codes. Previously they were silently ignored like literals.
+
+2. **EXPLAIN relation extraction fix (Oracle P1):** `ExtractQueryAccess` now
+   extracts relations/columns/outputs from the inner query of regular `EXPLAIN`
+   statements. `EXPLAIN ANALYZE` (which executes the query) still returns no
+   relations (classified as `not_read_only`). This prevents EXPLAIN from bypassing
+   the unqualified-relation barrier.
+
+3. **Default service unqualified barrier (S1):** The unqualified-relation barrier
+   now runs when there's a `SchemaResolver` (not just when there's a trusted
+   bundle). This prevents `NewService()` with a resolver from resolving unqualified
+   relations to `DefaultSchema` and producing physical requirements.
+
+**Oracle findings addressed:**
+
+| Finding | Severity | Fix |
+|---------|----------|-----|
+| No-trusted PG can become admissible with resolver | Critical | Barrier now runs when SchemaResolver present |
+| EXPLAIN bypasses relation extraction | Critical | Extract inner query relations for regular EXPLAIN |
+| SQLValueFunctions silently treated like literals | High | Record as unproven function effects |
+| Search-path drift accepted for unqualified | Medium | Already handled by GateIdentityBatchAgainstLiveContext |
+| Relation metadata not bound to same session | Medium | Documented as limitation (deferred) |
+
+**Momus findings addressed:**
+
+| Finding | Fix |
+|---------|-----|
+| T11.1-T11.2 barrier only for trusted | Fixed: barrier runs when SchemaResolver present |
+| S7 gate location clarification | Documented: gate is inside adapter, not application |
+| T11.6 invalid window syntax | Fixed: replaced with valid PARTITION BY syntax |
+
+**New test coverage:**
+
+- `TestExtractQueryAccess_UnprovenEffectReasonCodes/sqlvalue_*` (13 cases)
+- `TestDefaultService_UnqualifiedRelation_FailClosed` (S1 proof)
+- `TestAnalyzeQueryAccess_UnqualifiedPostgreSQL_FailClosed` (SDK S1 proof)
+- `TestEffectIdentity_StructuralBoolExpr_NotCatalogIdentityProof` (updated for barrier)
+
+**Verification evidence:**
+
+- `go test ./internal/domain/queryaccess/...` — 87 passed
+- `go test ./internal/application/queryaccess/...` — 213 passed
+- `go test -tags postgresql ./internal/application/queryaccess/...` — 425 passed
+- `go test ./internal/infrastructure/parser/postgresql/...` — 1 passed
+- `go test -tags postgresql ./internal/infrastructure/parser/postgresql/...` — 623 passed
+- `go test ./pkg/deltascope/...` — 67 passed
+- `go test -tags postgresql ./pkg/deltascope/...` — 373 passed
+- `gofmt` — clean
+- `go build ./...` — exit 0
+- `go build -tags postgresql ./...` — exit 0
+- `go vet ./...` — exit 0
+- `go vet -tags postgresql ./...` — exit 0
+- GitNexus detect_changes — 8 files changed, all within expected scope
+
+**Public delivery boundary (unchanged):**
+
+- No public trusted SDK/CLI/HTTP promotion path added
+- Default SDK, CLI, and HTTP remain fail-closed
+- Future public promotion API requires: explicit caller-owned pinned-session,
+  execution-ownership contract, separate design review, separate approval
+- MCP remains without query-access tool
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity

@@ -149,14 +149,14 @@ func TestEffectIdentity_StructuralBoolExpr_NotCatalogIdentityProof(t *testing.T)
 		t.Run("with_resolver/"+tc.name, func(t *testing.T) {
 			t.Parallel()
 			dr := analyzePG(t, tc.sql, effectIdentityUsersResolver())
-			if dr.ReadClassification != domain.ReadOnly {
-				t.Errorf("classification: got %q, want %q", dr.ReadClassification, domain.ReadOnly)
+			// Unqualified relations fail closed even with a resolver (S1 barrier).
+			if dr.ReadClassification != domain.Indeterminate {
+				t.Errorf("classification: got %q, want %q (unqualified barrier)",
+					dr.ReadClassification, domain.Indeterminate)
 			}
-			// Non-effect read_only may become admissible when relation metadata resolves.
-			// This is NOT candidate operator/function promotion.
-			if dr.Admission != domain.Admissible {
-				t.Errorf("admission: got %q, want %q for structural non-effect SELECT",
-					dr.Admission, domain.Admissible)
+			if dr.Admission != domain.IndeterminateAdmission {
+				t.Errorf("admission: got %q, want %q (unqualified barrier)",
+					dr.Admission, domain.IndeterminateAdmission)
 			}
 			assertNoLeakOrSeverity(t, dr, nil, "password", "credential", "postgres://", "severity")
 		})

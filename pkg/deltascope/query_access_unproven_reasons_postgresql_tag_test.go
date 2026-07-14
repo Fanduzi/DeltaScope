@@ -10,6 +10,7 @@ package deltascope
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -142,4 +143,76 @@ func TestAnalyzeQueryAccess_PostgreSQLReasonOrderDeterministic(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestAnalyzeQueryAccess_UnqualifiedPostgreSQL_FailClosed verifies that
+// unqualified PostgreSQL base relations fail closed when using the public
+// SDK with a SchemaResolver (S1 proof — T11.2).
+func TestAnalyzeQueryAccess_UnqualifiedPostgreSQL_FailClosed(t *testing.T) {
+	t.Parallel()
+	resolver := &mockPublicSchemaResolver{
+		schemas: map[string]QueryAccessRelationSchema{
+			"public.users": {
+				Schema: "public", Name: "users", Kind: "table",
+				Columns: []QueryAccessColumnSchema{{Name: "id", Ordinal: 1}},
+			},
+		},
+	}
+	result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL:            "SELECT id FROM users",
+		Dialect:        DialectPostgreSQL,
+		Mode:           QueryAccessModeStrict,
+		DefaultSchema:  "public",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	if result.ReadClassification != QueryAccessIndeterminate {
+		t.Errorf("classification: got %q, want %q", result.ReadClassification, QueryAccessIndeterminate)
+	}
+	if result.Admission != QueryAccessIndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", result.Admission, QueryAccessIndeterminateAdmission)
+	}
+
+	hasReason := false
+	for _, rc := range result.ReasonCodes {
+		if rc == "unqualified_relation_blocked" {
+			hasReason = true
+			break
+		}
+	}
+	if !hasReason {
+		t.Errorf("expected unqualified_relation_blocked in reasons: %v", result.ReasonCodes)
+	}
+
+	for _, req := range result.Requirements {
+		if req.Privilege == "read_table" || req.Privilege == "read_column" {
+			t.Errorf("unexpected physical requirement: %+v", req)
+		}
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	raw := string(data)
+	for _, bad := range []string{"severity", "password", "postgres://", "ObjectOID", "SessionBinding"} {
+		if strings.Contains(raw, bad) {
+			t.Errorf("JSON leaked %q: %s", bad, raw)
+		}
+	}
+}
+
+type mockPublicSchemaResolver struct {
+	schemas map[string]QueryAccessRelationSchema
+}
+
+func (m *mockPublicSchemaResolver) ResolveRelation(_ context.Context, _, schema, name string) (QueryAccessRelationSchema, error) {
+	key := schema + "." + name
+	if s, ok := m.schemas[key]; ok {
+		return s, nil
+	}
+	return QueryAccessRelationSchema{}, fmt.Errorf("not found: %s", key)
 }

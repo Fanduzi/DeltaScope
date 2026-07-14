@@ -94,7 +94,17 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		classifications = append(classifications, classifyStatement(node))
 		collectEffects(node, &collector, defaultSchema, nil)
 
-		if sel := node.GetSelectStmt(); sel != nil {
+		// Extract relations/columns/outputs from SELECT or EXPLAIN inner query.
+		// Skip EXPLAIN ANALYZE (classified as not_read_only because it executes).
+		sel := node.GetSelectStmt()
+		if sel == nil {
+			if explain := node.GetExplainStmt(); explain != nil && !explainHasAnalyze(explain) {
+				if inner := explain.GetQuery(); inner != nil {
+					sel = inner.GetSelectStmt()
+				}
+			}
+		}
+		if sel != nil {
 			cteLineage, cteBodyRels := buildCTELineage(sel, defaultSchema)
 			relations = append(relations, collectRelations(sel, defaultSchema)...)
 			relations = append(relations, cteBodyRels...)
@@ -437,8 +447,13 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector, scope *selectSc
 		for _, item := range n.List.GetItems() {
 			collectNodeEffects(item, c, scope, defaultSchema, cteNames)
 		}
+	case *pg_query.Node_SqlvalueFunction:
+		// SQLValueFunction (current_user, session_user, current_database, etc.)
+		// reads session/context state — not a pure function of AST operands.
+		// Must be treated as an unproven effect for Query Access admission.
+		recordSQLValueFunctionCandidate(c, n.SqlvalueFunction)
 	case *pg_query.Node_ColumnRef, *pg_query.Node_AConst, *pg_query.Node_RangeVar,
-		*pg_query.Node_SqlvalueFunction, *pg_query.Node_ParamRef, *pg_query.Node_AStar,
+		*pg_query.Node_ParamRef, *pg_query.Node_AStar,
 		*pg_query.Node_String_, *pg_query.Node_Integer, *pg_query.Node_Float,
 		*pg_query.Node_Boolean, *pg_query.Node_BitString:
 		return
@@ -518,6 +533,18 @@ func classifyStatement(node *pg_query.Node) string {
 	default:
 		return "indeterminate"
 	}
+}
+
+func explainHasAnalyze(explain *pg_query.ExplainStmt) bool {
+	if explain == nil {
+		return false
+	}
+	for _, opt := range explain.GetOptions() {
+		if defElem := opt.GetDefElem(); defElem != nil && defElem.GetDefname() == "analyze" {
+			return true
+		}
+	}
+	return false
 }
 
 func selectHasDataModifyingCTE(sel *pg_query.SelectStmt) bool {

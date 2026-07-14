@@ -1075,3 +1075,59 @@ func assertNoReadColumnRequirements(t *testing.T, reqs []domain.Requirement) {
 		}
 	}
 }
+
+// TestDefaultService_UnqualifiedRelation_FailClosed verifies that unqualified
+// PostgreSQL base relations fail closed when using the default NewService()
+// with a SchemaResolver (S1 proof — T11.1).
+func TestDefaultService_UnqualifiedRelation_FailClosed(t *testing.T) {
+	t.Parallel()
+	svc := NewService()
+	resolver := &mockSchemaResolver{}
+
+	result, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL:            "SELECT id FROM users",
+		Dialect:        "postgresql",
+		Mode:           "strict",
+		DefaultSchema:  "public",
+		SchemaResolver: resolver,
+	})
+	if err != nil {
+		t.Fatalf("analyze: %v", err)
+	}
+
+	dr := result.DomainResult
+	if dr.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification: got %q, want %q", dr.ReadClassification, domain.Indeterminate)
+	}
+	if dr.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission: got %q, want %q", dr.Admission, domain.IndeterminateAdmission)
+	}
+
+	hasReason := false
+	for _, rc := range dr.ReasonCodes {
+		if rc == domain.ReasonUnqualifiedRelationBlocked {
+			hasReason = true
+			break
+		}
+	}
+	if !hasReason {
+		t.Errorf("expected ReasonUnqualifiedRelationBlocked in reasons: %v", dr.ReasonCodes)
+	}
+
+	for _, req := range dr.Requirements {
+		if req.Privilege == "read_table" || req.Privilege == "read_column" {
+			t.Errorf("unexpected physical requirement: %+v", req)
+		}
+	}
+
+	hasUnqualifiedReq := false
+	for _, req := range dr.Requirements {
+		if req.Object == "unqualified_relation" && req.Privilege == "indeterminate" {
+			hasUnqualifiedReq = true
+			break
+		}
+	}
+	if !hasUnqualifiedReq {
+		t.Error("expected unqualified_relation indeterminate requirement")
+	}
+}

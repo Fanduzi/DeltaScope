@@ -878,3 +878,5 @@ func TestService_Analyze_TableQualifiedWildcardOrder(t *testing.T) {
 		t.Error("table-qualified b.* should not include projection columns from a")
 	}
 }
+
+

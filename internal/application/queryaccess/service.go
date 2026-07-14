@@ -108,7 +108,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		schemaResolver = s.trusted.schemaResolver
 	}
 
-	hasUnqualified := req.Dialect == "postgresql" && s != nil && s.trusted != nil && hasUnqualifiedRelation(extracted.DomainResult.Relations)
+	hasUnqualified := req.Dialect == "postgresql" && (s != nil && s.trusted != nil || schemaResolver != nil) && hasUnqualifiedRelation(extracted.DomainResult.Relations)
 
 	if hasUnqualified {
 		unboundNames := make(map[string]struct{})

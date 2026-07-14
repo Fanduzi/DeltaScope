@@ -282,3 +282,57 @@ func recordSyntheticFunctionCandidate(c *effectCollector, namePath []string, ari
 		OperandKinds:   kinds,
 	})
 }
+
+func recordSQLValueFunctionCandidate(c *effectCollector, svf *pg_query.SQLValueFunction) {
+	if c == nil || svf == nil {
+		return
+	}
+	name := sqlValueFunctionName(svf.GetOp())
+	if name == "" {
+		return
+	}
+	c.appendCandidate(EffectCandidate{
+		Kind:           EffectCandidateFunction,
+		NamePath:       []string{name},
+		ExplicitSchema: false,
+		Arity:          0,
+		OperandKinds:   nil,
+	})
+}
+
+func sqlValueFunctionName(op pg_query.SQLValueFunctionOp) string {
+	switch op {
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_DATE:
+		return "current_date"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_TIME:
+		return "current_time"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_TIME_N:
+		return "current_time"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_TIMESTAMP:
+		return "current_timestamp"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_TIMESTAMP_N:
+		return "current_timestamp"
+	case pg_query.SQLValueFunctionOp_SVFOP_LOCALTIME:
+		return "localtime"
+	case pg_query.SQLValueFunctionOp_SVFOP_LOCALTIME_N:
+		return "localtime"
+	case pg_query.SQLValueFunctionOp_SVFOP_LOCALTIMESTAMP:
+		return "localtimestamp"
+	case pg_query.SQLValueFunctionOp_SVFOP_LOCALTIMESTAMP_N:
+		return "localtimestamp"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_ROLE:
+		return "current_role"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_USER:
+		return "current_user"
+	case pg_query.SQLValueFunctionOp_SVFOP_USER:
+		return "user"
+	case pg_query.SQLValueFunctionOp_SVFOP_SESSION_USER:
+		return "session_user"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_CATALOG:
+		return "current_catalog"
+	case pg_query.SQLValueFunctionOp_SVFOP_CURRENT_SCHEMA:
+		return "current_schema"
+	default:
+		return ""
+	}
+}

@@ -45,6 +45,22 @@ func TestExtractQueryAccess_UnprovenEffectReasonCodes(t *testing.T) {
 		{name: "named_window_clause", sql: "SELECT rank() OVER w FROM users WINDOW w AS (PARTITION BY length(name))", want: []string{"unproven_function_effect"}},
 		{name: "distinct_on_function", sql: "SELECT DISTINCT ON (length(name)) id FROM users", want: []string{"unproven_function_effect"}},
 		{name: "order_by_function", sql: "SELECT id FROM users ORDER BY length(name)", want: []string{"unproven_function_effect"}},
+		// SQLValueFunction: session/context-dependent — must be unproven effects (S4).
+		{name: "sqlvalue_current_user", sql: "SELECT current_user", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_session_user", sql: "SELECT session_user", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_current_role", sql: "SELECT current_role", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_current_schema", sql: "SELECT current_schema", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_current_catalog", sql: "SELECT current_catalog", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_current_database", sql: "SELECT current_database()", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_user", sql: "SELECT user", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_current_date", sql: "SELECT current_date", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_current_timestamp", sql: "SELECT current_timestamp", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_localtime", sql: "SELECT localtime", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_localtimestamp", sql: "SELECT localtimestamp", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_in_predicate", sql: "SELECT id FROM public.users WHERE current_user = 'admin'", want: []string{"unproven_function_effect", "unproven_operator_effect"}},
+		{name: "sqlvalue_in_subquery", sql: "SELECT * FROM (SELECT session_user) t", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_in_cte", sql: "WITH t AS (SELECT current_user) SELECT * FROM t", want: []string{"unproven_function_effect"}},
+		{name: "sqlvalue_in_window", sql: "SELECT row_number() OVER (PARTITION BY current_user) FROM public.users", want: []string{"unproven_function_effect"}},
 	}
 
 	for _, tc := range cases {
