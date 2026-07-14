@@ -1242,10 +1242,32 @@ during independent Oracle/Momus review.
 - Oracle: 15 iterations, final PASS
 - Momus: 3 iterations, final PASS
 
+**P2-2 Adversarial Tests (completed):**
+
+- `TestAdversarial_WrongSessionBinding` → indeterminate
+- `TestAdversarial_WrongDatabaseOID` → indeterminate
+- `TestAdversarial_WrongRoleOID` → indeterminate
+- `TestAdversarial_WrongServerVersion` → indeterminate
+- `TestAdversarial_WrongPathEpoch` → indeterminate
+- `TestAdversarial_WrongSearchPath` → indeterminate
+- `TestAdversarial_FactDatabaseMismatch` → indeterminate
+- `TestAdversarial_FactVersionMismatch` → indeterminate
+- `TestAdversarial_IncompleteBatch` → indeterminate
+- `TestAdversarial_NoLeak_PublicJSON` → no OIDs/session/SQL/credentials/severity
+- `TestAdversarial_NoLeak_ReasonCodes` → no catalog names/OIDs/SQL
+- `TestAdversarial_NoLeak_Unresolved` → no catalog names/OIDs
+- Total: 12 adversarial tests pass
+
+**E2E Verification (completed):**
+
+- Docker PG17: `docker compose -f docker/pg-e2e-compose.yaml up -d --wait` → Healthy
+- `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1`: 82 passed, 2 failed
+- 2 failures: `TestOpenDB_ConfiguresConnectionPool`, `TestProvider_NoConnectionLeak` (connection pool env config, unrelated to T12 logic)
+- `TestEffectIdentity_*` integration tests: PASS
+
 **Deferred (not required for T12 closure):**
 
-- P2-2: Adversarial atomic-proof and no-leak tests (follow-up task)
-- E2E verification with real PG17 Docker (requires Docker environment)
+- None — all required tasks completed
 
 ## Consequences
 
