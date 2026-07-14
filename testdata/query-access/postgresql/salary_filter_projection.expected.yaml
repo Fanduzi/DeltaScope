@@ -19,10 +19,10 @@ expect:
     - name: id
       sources: [users.id]
   requirements:
-    - object: users
-      privilege: read_table
-    - object: users.id
-      privilege: read_column
-  unresolved: []
-  warnings: [projection_only_inference_risk]
-  reason_codes: [unproven_operator_effect]
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
+  warnings: []
+  reason_codes: [unproven_operator_effect, unqualified_relation_blocked]

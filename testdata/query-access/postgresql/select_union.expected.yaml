@@ -2,7 +2,6 @@ name: select_union
 dialect: postgresql
 mode: strict
 expect:
-  read_classification: read_only
   admission: indeterminate
   relations:
     - name: orders
@@ -11,13 +10,20 @@ expect:
     - name: users
       kind: table
       permission_required: true
-  referenced_columns: []
+  referenced_columns:
+    - table: orders
+      column: id
+      usages: [projection]
+    - table: users
+      column: id
+      usages: [projection]
   outputs: []
   requirements:
-    - object: orders
-      privilege: read_table
-    - object: users
-      privilege: read_table
-  unresolved: []
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
   warnings: []
-  reason_codes: []
+  reason_codes:
+    - unqualified_relation_blocked

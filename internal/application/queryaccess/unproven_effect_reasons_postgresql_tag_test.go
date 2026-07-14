@@ -253,6 +253,7 @@ func TestUnprovenEffectReasons_SortDeterminism(t *testing.T) {
 		domain.ReasonUnprovenCastEffect,
 		domain.ReasonUnprovenFunctionEffect,
 		domain.ReasonUnprovenOperatorEffect,
+		domain.ReasonUnqualifiedRelationBlocked,
 	}
 	if !reflect.DeepEqual(first, want) {
 		t.Fatalf("sorted reasons: got %v, want %v", first, want)

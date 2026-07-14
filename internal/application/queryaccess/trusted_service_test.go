@@ -36,11 +36,11 @@ func (m *mockControlledResolver) CaptureExecutionBoundContext(ctx context.Contex
 	return m.ctx, nil
 }
 
-func (m *mockControlledResolver) ResolveColumnTypesAndEffectIdentities(ctx context.Context, candidates []EffectCandidate, req EffectIdentityRequest) (map[int][]uint32, EffectIdentityBatch, error) {
+func (m *mockControlledResolver) ResolveColumnTypesAndEffectIdentities(ctx context.Context, candidates []EffectCandidate, req EffectIdentityRequest) (map[int][]uint32, EffectIdentityBatch, EffectIdentityResolutionContext, error) {
 	if m.err != nil {
-		return nil, EffectIdentityBatch{}, m.err
+		return nil, EffectIdentityBatch{}, EffectIdentityResolutionContext{}, m.err
 	}
-	return nil, m.batch, nil
+	return nil, m.batch, m.ctx, nil
 }
 
 // mockSchemaResolver is a test-only schema resolver.

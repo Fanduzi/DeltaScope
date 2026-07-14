@@ -664,3 +664,199 @@ func TestAdversarial_NoLeak_Unresolved(t *testing.T) {
 
 // errTestSchemaFail is a test error for schema resolver failures.
 var errTestSchemaFail = fmt.Errorf("test schema resolver failure")
+
+// TestAdversarial_WrongCandidateOrdinal verifies that wrong candidate ordinal causes indeterminate.
+func TestAdversarial_WrongCandidateOrdinal(t *testing.T) {
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 999, // Wrong ordinal (not in request)
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2803,
+						NamespaceOID:       11,
+						CanonicalSignature: "pg_catalog.count()",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	result, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: "postgresql",
+		Mode:    "strict",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("expected indeterminate, got %v", result.DomainResult.ReadClassification)
+	}
+}
+
+// TestAdversarial_DuplicateCandidateOrdinal verifies that duplicate candidate ordinal causes indeterminate.
+func TestAdversarial_DuplicateCandidateOrdinal(t *testing.T) {
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2803,
+						NamespaceOID:       11,
+						CanonicalSignature: "pg_catalog.count()",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+				{
+					Ordinal: 0, // Duplicate ordinal
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2147,
+						NamespaceOID:       11,
+						CanonicalSignature: "pg_catalog.count(2276)",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	result, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: "postgresql",
+		Mode:    "strict",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("expected indeterminate, got %v", result.DomainResult.ReadClassification)
+	}
+}
+
+// TestAdversarial_ForeignFactTuple verifies that foreign fact tuple causes indeterminate.
+func TestAdversarial_ForeignFactTuple(t *testing.T) {
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          9999, // Wrong OID (not in manifest)
+						NamespaceOID:       11,
+						CanonicalSignature: "pg_catalog.count()",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	result, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: "postgresql",
+		Mode:    "strict",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("expected indeterminate, got %v", result.DomainResult.ReadClassification)
+	}
+}
+
+// TestAdversarial_WrongCanonicalSignature verifies that wrong canonical signature causes indeterminate.
+func TestAdversarial_WrongCanonicalSignature(t *testing.T) {
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2803,
+						NamespaceOID:       11,
+						CanonicalSignature: "pg_catalog.wrong_function()", // Wrong signature
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	result, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: "postgresql",
+		Mode:    "strict",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if result.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("expected indeterminate, got %v", result.DomainResult.ReadClassification)
+	}
+}

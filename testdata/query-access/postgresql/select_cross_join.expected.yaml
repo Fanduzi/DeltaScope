@@ -16,10 +16,10 @@ expect:
     - name: "*"
       sources: ["*"]
   requirements:
-    - object: orders
-      privilege: read_table
-    - object: users
-      privilege: read_table
-  unresolved: []
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
   warnings: []
-  reason_codes: []
+  reason_codes: [unqualified_relation_blocked]

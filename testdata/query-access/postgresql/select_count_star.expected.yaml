@@ -2,7 +2,6 @@ name: select_count_star
 dialect: postgresql
 mode: strict
 expect:
-  # T2 count(*) candidate OID 2803; unproven without manifest+proof → indeterminate.
   read_classification: indeterminate
   admission: indeterminate
   relations:
@@ -12,8 +11,10 @@ expect:
   referenced_columns: []
   outputs: []
   requirements:
-    - object: users
-      privilege: read_table
-  unresolved: []
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
   warnings: []
-  reason_codes: [unproven_function_effect]
+  reason_codes: [unproven_function_effect, unqualified_relation_blocked]
