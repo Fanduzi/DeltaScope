@@ -57,6 +57,15 @@ func (m *mockSchemaResolver) ResolveRelation(ctx context.Context, dialect string
 	}, nil
 }
 
+// mockFailingSchemaResolver always returns an error.
+type mockFailingSchemaResolver struct {
+	err error
+}
+
+func (m *mockFailingSchemaResolver) ResolveRelation(ctx context.Context, dialect string, schema, name string) (RelationSchema, error) {
+	return RelationSchema{}, m.err
+}
+
 // testResolutionContext returns a session-complete resolution context for tests.
 func testResolutionContext() EffectIdentityResolutionContext {
 	return EffectIdentityResolutionContext{

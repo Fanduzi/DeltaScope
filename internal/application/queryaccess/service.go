@@ -103,16 +103,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		schemaResolver = s.trusted.schemaResolver
 	}
 
-	// When unqualified relations exist, we cannot verify that defaultSchema
-	// matches the pinned session's first search_path entry. The metadata
-	// resolver converts empty schema back to defaultSchema, while effect
-	// proof uses the pinned session's search_path. This creates a mismatch
-	// where requirements point to one schema but proof found another.
-	// Fail closed: reject promotion for any query with unqualified relations.
-	// This check must happen BEFORE resolveMetadata enriches relations with schemas.
-	if req.Dialect == "postgresql" && s != nil && s.trusted != nil && hasUnqualifiedRelation(extracted.DomainResult.Relations) {
-		return extracted, nil
-	}
+	hasUnqualified := s != nil && s.trusted != nil && hasUnqualifiedRelation(extracted.DomainResult.Relations)
 
 	if schemaResolver != nil {
 		extracted.DomainResult = resolveMetadata(ctx, schemaResolver, req.Dialect, req.DefaultSchema, extracted.DomainResult)
@@ -122,13 +113,13 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
 	}
 
-	// PostgreSQL effect identity resolution and manifest proof.
-	// When trusted bundle is present and dialect is PostgreSQL, resolve effect
-	// identities and apply manifest-gated promotion.
 	var proofResult *trustProofResult
-	if req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
+	if hasUnqualified {
+		extracted.DomainResult.ReadClassification = domain.Indeterminate
+		extracted.DomainResult.Admission = domain.IndeterminateAdmission
+		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
+	} else if req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
 		proofResult = s.resolveAndProveEffects(ctx, req, extracted)
-		// When proof succeeds, remove unproven effect reason codes.
 		if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
 			extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
 		}

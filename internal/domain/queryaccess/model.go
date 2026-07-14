@@ -118,6 +118,11 @@ const (
 	// ReasonIdentityCoercionGap indicates type coercion required for unique identity
 	// is outside the supported bounded resolution graph.
 	ReasonIdentityCoercionGap ReasonCode = "identity_coercion_gap"
+
+	// ReasonUnqualifiedRelationBlocked indicates that an unqualified relation
+	// was present in a PostgreSQL query with a trusted bundle, which blocks
+	// promotion to admissible due to search_path ambiguity.
+	ReasonUnqualifiedRelationBlocked ReasonCode = "unqualified_relation_blocked"
 )
 
 // IdentityFailure is a bounded category for effect-identity resolution outcomes.

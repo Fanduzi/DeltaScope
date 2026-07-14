@@ -920,6 +920,55 @@ limited to exact manifest match under controlled session).
 (14–17 probe evidence only); no cast promotion; no view/RLS/rewrite proof;
 no public resolver injection.
 
+### T10 — Pipeline Closure for Unqualified Relations (2026-07-14)
+
+**Status remains:** `Proposed`. **Implemented** — fixes the early return in `Service.Analyze` for unqualified PostgreSQL relations, ensuring every result passes through the full normalization, requirements, and validation pipeline.
+
+**What T10 delivers:**
+
+1. **Removed early return in `Service.Analyze`:** Previously, `service.go:113` returned the raw extraction result immediately when unqualified relations were found, bypassing 7 critical pipeline steps (metadata resolution, requirement building, sorting, and validation).
+
+2. **Fail-closed promotion barrier:** When `hasUnqualifiedRelation` is true:
+   - `ReadClassification` is forced to `Indeterminate`.
+   - `Admission` is forced to `IndeterminateAdmission`.
+   - `ReasonUnqualifiedRelationBlocked` is appended to reason codes.
+   - Effect identity resolution (`resolveAndProveEffects`) is skipped entirely.
+
+3. **Pipeline completion:** The result now passes through `resolveMetadata` (mapping `users` → `public.users` via `DefaultSchema`), `buildRequirements`, sorting, and `domain.ValidateResult`.
+
+4. **New domain reason code:** `ReasonUnqualifiedRelationBlocked` (`unqualified_relation_blocked`) explains the barrier without leaking session details.
+
+5. **Test coverage:**
+   - `TestTrustedService_UnqualifiedRelationFullPipeline`: Verifies requirements are built, admission is indeterminate, and resolver is bypassed.
+   - `TestTrustedService_UnqualifiedRelationStructuralQuery`: Verifies structural queries (no effects) are also blocked.
+   - `TestTrustedService_UnqualifiedRelationResolverError`: Verifies the barrier holds even if the resolver fails.
+   - `TestTrustedService_UnqualifiedRelationNoPublicLeak`: Verifies no OIDs/session info leak.
+
+**Oracle/Momus Review Findings (addressed):**
+
+- **P1 (Oracle):** Structural queries (no effect candidates) could bypass the barrier if `ReadClassification` was already `read_only`. **Fixed:** The barrier forces `Indeterminate` regardless of initial classification.
+- **P1 (Momus):** Missing test for resolver failure/cancellation during the new flow. **Fixed:** `TestTrustedService_UnqualifiedRelationResolverError`.
+- **P1 (Momus):** Docker E2E must wait for PostgreSQL readiness. **Noted:** `docker compose up -d --wait` used.
+- **P2 (Momus):** `ReasonUnqualifiedRelationBlocked` belongs in `domain/queryaccess/model.go`. **Fixed.**
+
+**Cross-surface consistency:**
+
+- CLI, HTTP, and SDK continue to use the same application result.
+- No public injection of trusted resolver on public surfaces.
+- MySQL/TiDB behavior unchanged.
+
+**Verification evidence:**
+
+- `go test ./internal/application/queryaccess/... -count=1`: 213 passed
+- `go test -tags postgresql ./internal/application/queryaccess/... -count=1`: 418 passed
+- `make query-access-corpus-gates`: PASS
+- `go test ./... -count=1`: 2972 passed
+- `go test -tags postgresql ./... -count=1`: 4768 passed
+- `golangci-lint run ./...`: clean
+- `make decision-record-gate`: PASS
+- `make release-gofmt-gate`: PASS
+- Docker E2E: `TestTrustedService_PG17JoinComparisonE2E` passed (2 pool tests failed due to env config, not logic)
+
 ### T9 — Operator operand provenance (2026-07-13)
 
 **Status remains:** `Proposed`. **Blocked with evidence** — oracle security

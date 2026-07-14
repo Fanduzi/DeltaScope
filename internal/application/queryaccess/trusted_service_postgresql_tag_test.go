@@ -10,6 +10,7 @@ package queryaccess
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -545,6 +546,211 @@ func TestTrustedService_NegativeFailClosedScenarios(t *testing.T) {
 				t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
 			}
 		})
+	}
+}
+
+func TestTrustedService_UnqualifiedRelationFullPipeline(t *testing.T) {
+	countEntries := []TrustedEffectEntry{
+		{
+			Kind:               EffectCandidateFunction,
+			ObjectOID:          2803,
+			NamespaceOID:       11,
+			OperandTypeOIDs:    nil,
+			ResultTypeOID:      20,
+			Volatility:         EffectVolatilityImmutable,
+			CanonicalSignature: "pg_catalog.count()",
+			AuditNotes:         "count(*)",
+		},
+	}
+	countManifest := TrustedEffectManifest{
+		SchemaVersion:      "1.0",
+		PostgreSQLMajorMin: 17,
+		PostgreSQLMajorMax: 17,
+		Entries:            countEntries,
+		Hash:               ComputeManifestHash(countEntries),
+	}
+	policy, err := NewTrustPolicy(countManifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2803,
+						NamespaceOID:       11,
+						OperandTypeOIDs:    nil,
+						ResultTypeOID:      20,
+						Volatility:         EffectVolatilityImmutable,
+						CanonicalSignature: "pg_catalog.count()",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	// 1. Verify Indeterminate (forced by unqualified relation)
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+	}
+
+	// 2. Verify specific reason code
+	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
+
+	// 3. Verify Pipeline Completion (Requirements exist)
+	if len(res.DomainResult.Requirements) == 0 {
+		t.Error("expected requirements to be populated via DefaultSchema mapping")
+	}
+
+	// 4. Verify Resolver was NOT called (bypassed by barrier)
+	if resolver.ctxCalled > 0 {
+		t.Error("CaptureExecutionBoundContext should not be called for unqualified relations")
+	}
+}
+
+func TestTrustedService_UnqualifiedRelationStructuralQuery(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT id FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+	}
+	if len(res.DomainResult.Requirements) == 0 {
+		t.Error("expected requirements to be populated")
+	}
+}
+
+func TestTrustedService_UnqualifiedRelationResolverError(t *testing.T) {
+	errResolver := &mockFailingSchemaResolver{err: fmt.Errorf("connection refused")}
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, errResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT id FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+}
+
+func TestTrustedService_UnqualifiedRelationNoPublicLeak(t *testing.T) {
+	countEntries := []TrustedEffectEntry{
+		{
+			Kind:               EffectCandidateFunction,
+			ObjectOID:          2803,
+			NamespaceOID:       11,
+			CanonicalSignature: "pg_catalog.count()",
+			Volatility:         EffectVolatilityImmutable,
+		},
+	}
+	countManifest := TrustedEffectManifest{
+		SchemaVersion:      "1.0",
+		PostgreSQLMajorMin: 17,
+		PostgreSQLMajorMax: 17,
+		Entries:            countEntries,
+		Hash:               ComputeManifestHash(countEntries),
+	}
+	policy, err := NewTrustPolicy(countManifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{
+			Items: []EffectIdentityItem{
+				{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          2803,
+						NamespaceOID:       11,
+						CanonicalSignature: "pg_catalog.count()",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				},
+			},
+		},
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT count(*) FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	data, err := json.Marshal(res.DomainResult)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	raw := string(data)
+	for _, bad := range []string{
+		"ObjectOID", "object_oid", "CanonicalSignature", "NamespaceOID",
+		"EffectIdentity", "identity_facts", "severity", "postgres://",
+		"password", "SessionBinding", "DatabaseOID", "ServerVersionNum",
+		"candidate", "manifest",
+	} {
+		if strings.Contains(raw, bad) {
+			t.Errorf("public domain JSON leaked %q in: %s", bad, raw)
+		}
 	}
 }
 
