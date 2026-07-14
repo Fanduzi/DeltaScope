@@ -1190,84 +1190,124 @@ during independent Oracle/Momus review.
   execution-ownership contract, separate design review, separate approval
 - MCP remains without query-access tool
 
-### T12 — Complete Safety Remediation (2026-07-14)
+### T12 — Adversarial Tests and Documentation (2026-07-14)
 
-**Status remains:** `Proposed`. **Implemented** — closes all verified P1/P2 safety findings.
+**Status remains:** `Proposed`. **Implemented** — adds adversarial tests and documentation only. Does NOT modify production code. Production safety defects remain for T13.
 
 **What T12 delivers:**
 
-1. **P1-1: Unconditional unqualified relation barrier:**
-   - Removed trusted bundle/schema resolver requirement from `service.go:111`
-   - PostgreSQL unqualified relations now always fail closed, even without resolver
+1. **Adversarial test coverage:**
+   - `TestAdversarial_WrongSessionBinding` → indeterminate
+   - `TestAdversarial_WrongDatabaseOID` → indeterminate
+   - `TestAdversarial_WrongRoleOID` → indeterminate
+   - `TestAdversarial_WrongServerVersion` → indeterminate
+   - `TestAdversarial_WrongPathEpoch` → indeterminate
+   - `TestAdversarial_WrongSearchPath` → indeterminate
+   - `TestAdversarial_FactDatabaseMismatch` → indeterminate
+   - `TestAdversarial_FactVersionMismatch` → indeterminate
+   - `TestAdversarial_IncompleteBatch` → indeterminate
+   - `TestAdversarial_NoLeak_PublicJSON` → no OIDs/session/SQL/credentials/severity
+   - `TestAdversarial_NoLeak_ReasonCodes` → no catalog names/OIDs/SQL
+   - `TestAdversarial_NoLeak_Unresolved` → no catalog names/OIDs
 
-2. **P1-2: Atomic resolver contract strengthening:**
-   - `AtomicProofResolver` now returns post-lookup execution-bound context
-   - Application validates context via `GateIdentityBatchAgainstLiveContext`
-   - TOCTOU protection for unqualified candidates requires full `ResolutionContextsCompatible`
+2. **Documentation updates:**
+   - Decision record evidence sections
+   - Test characterization documentation
 
-3. **P1-3: Complete parser fail-closed traversal:**
-   - `collectRelations` now traverses set-operation branches, CTE bodies, scalar subqueries, join quals, LIMIT/OFFSET
-   - `collectColumnReferences` now traverses set-operation branches, CTE bodies
-   - `selectHasWildcard` now traverses all expression-bearing clauses recursively
-   - `selectHasDataModifyingCTE` now traverses set-operation branches, CTE bodies, derived subqueries, join quals
-   - Added synthetic unproven candidate for unhandled AST nodes (fail-closed)
-   - Added explicit handlers for AIndices, RangeTableSample, XmlSerialize
-   - Fixed RangeFunction synthetic candidate suppression using local candidate count
-   - Added complete expression walkers: CaseExpr, CoalesceExpr, TypeCast, AIndirection, AIndices, ArrayExpr, AArrayExpr, RowExpr, MinMaxExpr, JoinExpr, NullTest, BooleanTest, CollateClause, SortBy, WindowDef
+**Explicit non-claims of T12:**
 
-4. **P1-4: Schema provenance survival:**
-   - Added `Schema` field to `ColumnRefFacts`
-   - Preserved schema in `resolveColumnRef` for three-part references
-   - Preserved schema in `AnalyzePostgreSQL` domain conversion
-   - Honor explicit schema in `resolveQualifiedColumn` for direct lookup
-   - Never overwrite explicit schema with `DefaultSchema` in `resolveSourceKeys`
-   - Fixed unbound marking to only mark columns whose table is unbound
+- T12 does NOT modify production code
+- T12 does NOT fix the conditional unqualified-relation barrier
+- T12 does NOT fix the atomic resolver contract
+- T12 does NOT fix PostgreSQL traversal gaps
+- T12 does NOT fix schema provenance issues
+- Production safety defects identified in T13 plan remain
 
-5. **P2-1: Formatting:** `make release-gofmt-gate` passes
+**File scope (tests + docs only):**
+
+- `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md`
+- `internal/application/queryaccess/adversarial_postgresql_tag_test.go`
+- `internal/application/queryaccess/service_test.go`
+- `internal/application/queryaccess/trusted_service_postgresql_tag_test.go`
 
 **Verification evidence:**
 
-- `go test ./... -count=1`: 2972 passed
-- `go test -tags postgresql ./... -count=1`: 4768 passed
-- `go test -race ./internal/domain/queryaccess/... ./internal/application/queryaccess/... ./pkg/deltascope/... -count=1`: 367 passed
+- `git diff --name-only 24c606b..a7c3cbb` confirms only docs and test files changed
+- All adversarial tests pass
+- No production code modified
+
+### T13 — Production Safety Remediation (2026-07-14)
+
+**Status remains:** `Proposed`. **Implemented** — implements consolidated proof-gateway with invariant-driven validation.
+
+**What T13 delivers:**
+
+1. **Consolidated proof-gateway function:**
+   - `resolveAndProveEffects` is the sole promotion path for PostgreSQL
+   - All context validation in one place via `ValidateResolutionContextForPromotion`
+   - All fact pinning validation in one place via `ValidateFactPinning`
+   - All ordinal validation in one place via `ValidateBatchOrdinals`
+   - Gateway flow enforces INV-1 through INV-14 invariants
+
+2. **Invariant enforcement:**
+   - INV-1: Single proof gateway (`resolveAndProveEffects`)
+   - INV-2: Gateway receives initial/final context, candidates, identity batch
+   - INV-3: Context compatibility fail-closed (`ValidateResolutionContextForPromotion`)
+   - INV-4: Database OID pin (`ValidateFactPinning`)
+   - INV-5: Server version pin (`ValidateFactPinning`)
+   - INV-6: Ordinal fail-closed (`ValidateBatchOrdinals`)
+   - INV-7: Search-path drift fail-closed (`ValidateResolutionContextForPromotion`)
+   - INV-8: Unqualified relation barrier (unconditional)
+   - INV-9: Unknown AST fail-closed (parser emits unproven_* reasons)
+   - INV-10: Static analysis limitation (documented)
+   - INV-11: TrustPolicy gate (IsTrusted called only after validation)
+   - INV-12: Malicious resolver protection (fact pinning + ordinal validation)
+   - INV-13: No public trusted API (NewTrustedService internal-only)
+   - INV-14: No leaks (json:"-" on EffectCandidates, bounded reason codes)
+
+3. **Strengthened AtomicProofResolver contract:**
+   - Documented INV-12 malicious resolver protection
+   - Facts must be stamped with DatabaseOID and ServerVersionNum
+   - Application validates fact pinning before IsTrusted
+   - Application validates batch ordinals before completion
+
+4. **Complete parser fail-closed traversal:**
+   - Set-operation branches, CTE bodies, nested/scalar subqueries handled
+   - JOIN USING emits unsupported_traversal reason
+   - Three-part references preserve schema
+   - Output lineage correctly parsed
+
+5. **Schema provenance preservation:**
+   - Schema flows end-to-end from parser to domain
+   - Qualified references honor explicit schema
+   - Unqualified references remain empty schema
+
+6. **SQL value functions and EXPLAIN fail-closed:**
+   - SQLValueFunction emits unproven_function_effect
+   - EXPLAIN ANALYZE is not_read_only
+   - Regular EXPLAIN extracts inner query relations
+
+7. **Comprehensive adversarial test coverage:**
+   - 16 adversarial tests covering INV-3 through INV-12
+   - Wrong session binding, database OID, role OID, server version, path epoch, search path
+   - Fact database mismatch, version mismatch
+   - Wrong candidate ordinal, duplicate ordinal, foreign fact tuple, wrong canonical signature
+   - Incomplete batch, no-leak assertions
+
+**Verification evidence:**
+
+- `go test ./internal/application/queryaccess/... -count=1`: 213 passed
+- `go test -tags postgresql ./internal/application/queryaccess/... -count=1`: 437 passed
+- `go test -tags postgresql ./internal/application/queryaccess/... -run TestAdversarial -count=1`: 16 passed
+- `go test -tags postgresql ./internal/infrastructure/parser/postgresql/... -count=1`: 629 passed
 - `make query-access-corpus-gates`: PASS
-- `make pg-unit-test-gates`: PASS
-- `make release-gofmt-gate`: PASS
-- `make decision-record-gate`: PASS
-- `go build ./...` and `go build -tags postgresql ./...`: exit 0
-- `go vet ./...` and `go vet -tags postgresql ./...`: exit 0
+- `gofmt -w` on modified Go files: clean
+- `go build ./...`: exit 0
+- `go build -tags postgresql ./...`: exit 0
+- `go vet ./...`: exit 0
+- `go vet -tags postgresql ./...`: exit 0
 
-**Oracle/Momus Review:**
-
-- Oracle: 15 iterations, final PASS
-- Momus: 3 iterations, final PASS
-
-**P2-2 Adversarial Tests (completed):**
-
-- `TestAdversarial_WrongSessionBinding` → indeterminate
-- `TestAdversarial_WrongDatabaseOID` → indeterminate
-- `TestAdversarial_WrongRoleOID` → indeterminate
-- `TestAdversarial_WrongServerVersion` → indeterminate
-- `TestAdversarial_WrongPathEpoch` → indeterminate
-- `TestAdversarial_WrongSearchPath` → indeterminate
-- `TestAdversarial_FactDatabaseMismatch` → indeterminate
-- `TestAdversarial_FactVersionMismatch` → indeterminate
-- `TestAdversarial_IncompleteBatch` → indeterminate
-- `TestAdversarial_NoLeak_PublicJSON` → no OIDs/session/SQL/credentials/severity
-- `TestAdversarial_NoLeak_ReasonCodes` → no catalog names/OIDs/SQL
-- `TestAdversarial_NoLeak_Unresolved` → no catalog names/OIDs
-- Total: 12 adversarial tests pass
-
-**E2E Verification (completed):**
-
-- Docker PG17: `docker compose -f docker/pg-e2e-compose.yaml up -d --wait` → Healthy
-- `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1`: 82 passed, 2 failed
-- 2 failures: `TestOpenDB_ConfiguresConnectionPool`, `TestProvider_NoConnectionLeak` (connection pool env config, unrelated to T12 logic)
-- `TestEffectIdentity_*` integration tests: PASS
-
-**Deferred (not required for T12 closure):**
-
-- None — all required tasks completed
+**Static-analysis limitation:** Static analysis produces requirements only. It is not grant evaluation, authorization, or a guarantee that a later execution uses the same database snapshot.
 
 ## Consequences
 
