@@ -873,7 +873,7 @@ func TestTrustedService_UnqualifiedJoin(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT u.name, o.user_id FROM users u JOIN orders o ON u.id = o.user_id",
+		SQL:     "SELECT u.name, o.user_id FROM users u JOIN orders o ON u.id = o.user_id",
 		Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {
@@ -948,7 +948,7 @@ func TestTrustedService_MixedQualifiedUnqualified(t *testing.T) {
 	}
 
 	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
-		SQL: "SELECT p.id, u.name FROM public.users p JOIN users u ON p.id = u.id",
+		SQL:     "SELECT p.id, u.name FROM public.users p JOIN users u ON p.id = u.id",
 		Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
 	})
 	if err != nil {

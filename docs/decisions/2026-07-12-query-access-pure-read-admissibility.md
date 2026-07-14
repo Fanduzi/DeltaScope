@@ -1190,6 +1190,63 @@ during independent Oracle/Momus review.
   execution-ownership contract, separate design review, separate approval
 - MCP remains without query-access tool
 
+### T12 — Complete Safety Remediation (2026-07-14)
+
+**Status remains:** `Proposed`. **Implemented** — closes all verified P1/P2 safety findings.
+
+**What T12 delivers:**
+
+1. **P1-1: Unconditional unqualified relation barrier:**
+   - Removed trusted bundle/schema resolver requirement from `service.go:111`
+   - PostgreSQL unqualified relations now always fail closed, even without resolver
+
+2. **P1-2: Atomic resolver contract strengthening:**
+   - `AtomicProofResolver` now returns post-lookup execution-bound context
+   - Application validates context via `GateIdentityBatchAgainstLiveContext`
+   - TOCTOU protection for unqualified candidates requires full `ResolutionContextsCompatible`
+
+3. **P1-3: Complete parser fail-closed traversal:**
+   - `collectRelations` now traverses set-operation branches, CTE bodies, scalar subqueries, join quals, LIMIT/OFFSET
+   - `collectColumnReferences` now traverses set-operation branches, CTE bodies
+   - `selectHasWildcard` now traverses all expression-bearing clauses recursively
+   - `selectHasDataModifyingCTE` now traverses set-operation branches, CTE bodies, derived subqueries, join quals
+   - Added synthetic unproven candidate for unhandled AST nodes (fail-closed)
+   - Added explicit handlers for AIndices, RangeTableSample, XmlSerialize
+   - Fixed RangeFunction synthetic candidate suppression using local candidate count
+   - Added complete expression walkers: CaseExpr, CoalesceExpr, TypeCast, AIndirection, AIndices, ArrayExpr, AArrayExpr, RowExpr, MinMaxExpr, JoinExpr, NullTest, BooleanTest, CollateClause, SortBy, WindowDef
+
+4. **P1-4: Schema provenance survival:**
+   - Added `Schema` field to `ColumnRefFacts`
+   - Preserved schema in `resolveColumnRef` for three-part references
+   - Preserved schema in `AnalyzePostgreSQL` domain conversion
+   - Honor explicit schema in `resolveQualifiedColumn` for direct lookup
+   - Never overwrite explicit schema with `DefaultSchema` in `resolveSourceKeys`
+   - Fixed unbound marking to only mark columns whose table is unbound
+
+5. **P2-1: Formatting:** `make release-gofmt-gate` passes
+
+**Verification evidence:**
+
+- `go test ./... -count=1`: 2972 passed
+- `go test -tags postgresql ./... -count=1`: 4768 passed
+- `go test -race ./internal/domain/queryaccess/... ./internal/application/queryaccess/... ./pkg/deltascope/... -count=1`: 367 passed
+- `make query-access-corpus-gates`: PASS
+- `make pg-unit-test-gates`: PASS
+- `make release-gofmt-gate`: PASS
+- `make decision-record-gate`: PASS
+- `go build ./...` and `go build -tags postgresql ./...`: exit 0
+- `go vet ./...` and `go vet -tags postgresql ./...`: exit 0
+
+**Oracle/Momus Review:**
+
+- Oracle: 15 iterations, final PASS
+- Momus: 3 iterations, final PASS
+
+**Deferred (not required for T12 closure):**
+
+- P2-2: Adversarial atomic-proof and no-leak tests (follow-up task)
+- E2E verification with real PG17 Docker (requires Docker environment)
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity
