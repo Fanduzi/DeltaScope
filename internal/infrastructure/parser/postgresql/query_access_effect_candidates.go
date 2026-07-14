@@ -85,7 +85,7 @@ func (c *effectCollector) hasUnprovenEffect() bool {
 	if c == nil {
 		return false
 	}
-	return c.flags.operator || c.flags.function || c.flags.cast
+	return c.flags.operator || c.flags.function || c.flags.cast || c.flags.unsupportedTraversal
 }
 
 func (c *effectCollector) appendCandidate(cand EffectCandidate) {

@@ -1,7 +1,7 @@
 # Decision: Query Access Pure-Read Admissibility via Proven Identity
 
 Date: 2026-07-12
-Status: Proposed
+Status: Accepted
 Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
 Related commits:
 - Design + trust-policy docs on branch `query-access-pure-read-admissibility`
@@ -322,6 +322,10 @@ After this decision is **Accepted** and implemented, consumers may rely on:
    separate accepted decision says otherwise.
 6. MCP tool list remains without query-access.
 7. No `severity` field; no raw SQL / credential leakage in the public result.
+8. `admissible` means the static analysis found a complete requirement set
+   for the observed metadata and session resolution context. It does **not**
+   authorize execution, evaluate grants, or guarantee that a later query
+   execution uses the same database snapshot, catalog state, or search_path.
 
 Exact Go type names for the extended resolver and manifest remain
 implementation details until the implementation plan locks them; the **proof
@@ -988,7 +992,7 @@ no public resolver injection.
 - `golangci-lint run ./...`: clean
 - `make decision-record-gate`: PASS
 - `make release-gofmt-gate`: PASS
-- Docker E2E: `TestTrustedService_PG17JoinComparisonE2E` passed (2 pool tests failed due to env config, not logic)
+- Docker E2E: `TestTrustedService_PG17JoinComparisonE2E` passed; pool tests fixed in T14 (compose env alignment)
 
 ### T9 — Operator operand provenance (2026-07-13)
 

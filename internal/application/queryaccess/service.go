@@ -132,6 +132,28 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult = resolveMetadata(ctx, schemaResolver, req.Dialect, req.DefaultSchema, extracted.DomainResult)
 	}
 
+	// View barrier: queries involving views cannot be promoted to admissible
+	// because view definitions are not expanded. Hidden reads may exist that
+	// requirements cannot cover. This barrier runs for all service types
+	// (default and trusted) after metadata resolution detects views.
+	hasView := false
+	for _, rel := range extracted.DomainResult.Relations {
+		if rel.Kind == domain.RelationView {
+			hasView = true
+			break
+		}
+	}
+
+	if hasView {
+		if extracted.DomainResult.ReadClassification == domain.NotReadOnly {
+			extracted.DomainResult.Admission = domain.Rejected
+		} else {
+			extracted.DomainResult.ReadClassification = domain.Indeterminate
+			extracted.DomainResult.Admission = domain.IndeterminateAdmission
+		}
+		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonViewExpansionRequired)
+	}
+
 	if hasUnqualified {
 		for i := range extracted.DomainResult.ReferencedColumns {
 			col := &extracted.DomainResult.ReferencedColumns[i]
@@ -139,16 +161,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 				col.Unbound = true
 			}
 		}
-	}
-
-	if hasFunctionCallReasonCode(extracted.DomainResult.ReasonCodes) {
-		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
-	}
-
-	var proofResult *trustProofResult
-	if hasUnqualified {
-		// Barrier blocks promotion of read-only analysis, but must not
-		// overwrite detected writes (not_read_only/rejected).
+		// Unqualified barrier: force indeterminate (unless already not_read_only).
 		if extracted.DomainResult.ReadClassification == domain.NotReadOnly {
 			extracted.DomainResult.Admission = domain.Rejected
 		} else {
@@ -156,7 +169,14 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 			extracted.DomainResult.Admission = domain.IndeterminateAdmission
 		}
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
-	} else if req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
+	}
+
+	if hasFunctionCallReasonCode(extracted.DomainResult.ReasonCodes) {
+		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
+	}
+
+	var proofResult *trustProofResult
+	if !hasUnqualified && !hasView && req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
 		proofResult = s.resolveAndProveEffects(ctx, req, extracted)
 		if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
 			extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)

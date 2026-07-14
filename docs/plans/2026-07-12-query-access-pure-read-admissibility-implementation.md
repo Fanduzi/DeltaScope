@@ -526,12 +526,45 @@ T1 design (done)
   → T9 corpus
   → T10 docs accept
   → T11 review
+  → T12 adversarial tests (done)
+  → T13 production safety remediation (done)
+  → T14 PG17 integration test configuration (done)
 ```
 
 No parallel tasks that edit `service.go` and extractors without integration.
 **T2 Proceed is a hard precondition for T6–T8 production promotion. The T2
 candidate/rejected ledger is the only allowed Trusted set unless a new
 decision expands it with re-probe evidence.**
+
+---
+
+## Task 14 — PG17 Integration Test Configuration
+
+**Status:** done
+**Goal:** Fix PG17 integration tests that hardcoded port/user values conflicting
+with `docker/pg-e2e-compose.yaml`. Add regression test preventing future drift.
+
+**File scope:**
+
+- `internal/infrastructure/metadata/postgresql/open_integration_test.go`
+
+**Work:**
+
+- Add `envOr`/`envOrInt` helper functions (matching pattern in `effect_identity_resolver_integration_test.go`)
+- Update `TestOpenDB_ConfiguresConnectionPool` to use compose defaults (port 5500, user `root`)
+- Update `TestProvider_NoConnectionLeak` to use compose defaults
+- Add `TestComposeConfigMatchesIntegrationDefaults` regression test
+
+**Gates:**
+
+```bash
+docker compose -f docker/pg-e2e-compose.yaml up -d --wait
+go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1 -v
+```
+
+**Commit:** `fix: align PG17 integration tests with compose environment`
+
+---
 
 ## Release note (later, not this plan)
 

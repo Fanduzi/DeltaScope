@@ -124,9 +124,16 @@ const (
 	// promotion to admissible due to search_path ambiguity.
 	ReasonUnqualifiedRelationBlocked ReasonCode = "unqualified_relation_blocked"
 
+	// ReasonViewExpansionRequired indicates that a query involves a view
+	// whose definition must be expanded to determine base-table requirements.
+	// Without view expansion, the query cannot be promoted to admissible
+	// because hidden reads may exist that requirements cannot cover.
+	ReasonViewExpansionRequired ReasonCode = "view_expansion_required"
+
 	// ReasonUnsupportedTraversal indicates that a SQL clause could not be fully
-	// traversed without metadata-derived expansion. Currently emitted for
-	// JOIN USING clauses where column names require catalog resolution.
+	// traversed. Emitted for JOIN USING clauses where column names require
+	// catalog resolution, and for unhandled AST node types that may contain
+	// hidden expression subnodes with operators/functions/casts.
 	ReasonUnsupportedTraversal ReasonCode = "unsupported_traversal"
 )
 

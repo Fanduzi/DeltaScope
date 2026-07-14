@@ -138,14 +138,18 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 // effectReasonFlags tracks which unproven effect kinds appear in the statement tree.
 // Codes are presence-only; they never capture operator/function/cast spellings.
 type effectReasonFlags struct {
-	operator bool
-	function bool
-	cast     bool
+	operator             bool
+	function             bool
+	cast                 bool
+	unsupportedTraversal bool
 }
 
 func (f effectReasonFlags) toReasonCodes() []string {
 	var codes []string
 	// Deterministic emission order (application will re-sort alphabetically).
+	if f.unsupportedTraversal {
+		codes = append(codes, "unsupported_traversal")
+	}
 	if f.cast {
 		codes = append(codes, "unproven_cast_effect")
 	}
@@ -461,6 +465,18 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector, scope *selectSc
 		*pg_query.Node_String_, *pg_query.Node_Integer, *pg_query.Node_Float,
 		*pg_query.Node_Boolean, *pg_query.Node_BitString:
 		return
+	case *pg_query.Node_InsertStmt, *pg_query.Node_UpdateStmt, *pg_query.Node_DeleteStmt,
+		*pg_query.Node_CreateStmt, *pg_query.Node_AlterTableStmt, *pg_query.Node_DropStmt,
+		*pg_query.Node_IndexStmt, *pg_query.Node_TruncateStmt, *pg_query.Node_ViewStmt:
+		// Statement-level nodes that cannot appear in expression contexts.
+		// They are classified separately by classifyStatement.
+		return
+	default:
+		// Fail-closed: any node type not explicitly handled above may contain
+		// expression subnodes with operators/functions/casts. Emitting
+		// unsupported_traversal prevents promotion to admissible. Do NOT
+		// recurse — we don't know the node's structure.
+		c.flags.unsupportedTraversal = true
 	}
 }
 
