@@ -66,6 +66,16 @@ func (m *mockFailingSchemaResolver) ResolveRelation(ctx context.Context, dialect
 	return RelationSchema{}, m.err
 }
 
+type countingSchemaResolver struct {
+	inner SchemaResolver
+	calls int
+}
+
+func (c *countingSchemaResolver) ResolveRelation(ctx context.Context, dialect string, schema, name string) (RelationSchema, error) {
+	c.calls++
+	return c.inner.ResolveRelation(ctx, dialect, schema, name)
+}
+
 // testResolutionContext returns a session-complete resolution context for tests.
 func testResolutionContext() EffectIdentityResolutionContext {
 	return EffectIdentityResolutionContext{

@@ -80,6 +80,8 @@ Application-level contracts for query access analysis, defining the schema resol
 - Views are detected from metadata and marked as `RelationView` kind without definition expansion.
 - Unqualified columns resolve only when exactly ONE source relation has the column.
 - Wildcards expand in deterministic ordinal order when metadata is available.
+- **Unbound relation safety (PostgreSQL):** When `Service.Analyze` detects unqualified base relations in PostgreSQL with a trusted bundle, it marks those relations as `Unbound` and adds a bounded `unqualified_relation` indeterminate requirement. Unbound relations are excluded from the resolution state (`nameMap`, `aliasMap`, `relationOrder`) so the resolver never calls `DefaultSchema` on them. `resolveQualifiedColumn`, `expandTableStar`, and `expandTableWildcard` skip resolution when the relation is unbound and has no qualified entry in `nameMap`. `buildRequirements` skips columns with empty Schema when unbound relation names exist, preventing unresolved references from producing physical `read_column` requirements. `resolveSourceKeys` and `sourceIsUnbound` treat schema-qualified references (3-part keys with non-empty schema) as non-unbound, preserving requirements for qualified relations that share a table name with an unbound relation.
+- The PostgreSQL parser resolves aliases to table names, so `SELECT p.id FROM public.users p JOIN users u` produces both columns with `Table: "users"`. The unbound check uses `resolveRelationRef` → `nameMap` to distinguish: if `nameMap` has a qualified entry, resolution proceeds; if not (all entries unbound), resolution is skipped.
 
 ## Dependencies
 - Upstream: `internal/interfaces/*`

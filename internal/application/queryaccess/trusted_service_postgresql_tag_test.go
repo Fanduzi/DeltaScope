@@ -597,7 +597,8 @@ func TestTrustedService_UnqualifiedRelationFullPipeline(t *testing.T) {
 		},
 	}
 
-	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	schemaResolver := &countingSchemaResolver{inner: &mockSchemaResolver{}}
+	svc, err := NewTrustedService(resolver, policy, schemaResolver)
 	if err != nil {
 		t.Fatalf("NewTrustedService: %v", err)
 	}
@@ -609,25 +610,40 @@ func TestTrustedService_UnqualifiedRelationFullPipeline(t *testing.T) {
 		t.Fatalf("Analyze: %v", err)
 	}
 
-	// 1. Verify Indeterminate (forced by unqualified relation)
 	if res.DomainResult.ReadClassification != domain.Indeterminate {
 		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
 	}
 	if res.DomainResult.Admission != domain.IndeterminateAdmission {
 		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
 	}
-
-	// 2. Verify specific reason code
 	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
 
-	// 3. Verify Pipeline Completion (Requirements exist)
 	if len(res.DomainResult.Requirements) == 0 {
-		t.Error("expected requirements to be populated via DefaultSchema mapping")
+		t.Error("expected requirements to be populated via the unified pipeline")
+	}
+	for _, req := range res.DomainResult.Requirements {
+		if req.Privilege == "read_table" || req.Privilege == "read_column" {
+			t.Errorf("unexpected physical requirement from unbound relation: %+v", req)
+		}
+	}
+	assertRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+
+	for _, rel := range res.DomainResult.Relations {
+		if rel.Schema == "public" {
+			t.Errorf("unbound relation was resolved to schema %q: %+v", rel.Schema, rel)
+		}
+	}
+	for _, col := range res.DomainResult.ReferencedColumns {
+		if col.Schema == "public" {
+			t.Errorf("unbound column was resolved to schema %q: %+v", col.Schema, col)
+		}
 	}
 
-	// 4. Verify Resolver was NOT called (bypassed by barrier)
 	if resolver.ctxCalled > 0 {
 		t.Error("CaptureExecutionBoundContext should not be called for unqualified relations")
+	}
+	if schemaResolver.calls > 0 {
+		t.Errorf("schema resolver should not be called for unbound relations, got %d calls", schemaResolver.calls)
 	}
 }
 
@@ -636,7 +652,8 @@ func TestTrustedService_UnqualifiedRelationStructuralQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewTrustPolicy: %v", err)
 	}
-	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, &mockSchemaResolver{})
+	schemaResolver := &countingSchemaResolver{inner: &mockSchemaResolver{}}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, schemaResolver)
 	if err != nil {
 		t.Fatalf("NewTrustedService: %v", err)
 	}
@@ -654,8 +671,15 @@ func TestTrustedService_UnqualifiedRelationStructuralQuery(t *testing.T) {
 	if res.DomainResult.Admission != domain.IndeterminateAdmission {
 		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
 	}
-	if len(res.DomainResult.Requirements) == 0 {
-		t.Error("expected requirements to be populated")
+	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
+	assertRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users", "read_table")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "users", "read_table")
+	assertNoRequirement(t, res.DomainResult.Requirements, "users.id", "read_column")
+	assertNoReadColumnRequirements(t, res.DomainResult.Requirements)
+	if schemaResolver.calls > 0 {
+		t.Errorf("schema resolver should not be called for unbound relations, got %d calls", schemaResolver.calls)
 	}
 }
 
@@ -799,5 +823,255 @@ func TestTrustedService_MySQLUnchanged(t *testing.T) {
 	}
 	if res.DomainResult.Admission != domain.Admissible {
 		t.Errorf("mysql admission = %v, want admissible", res.DomainResult.Admission)
+	}
+}
+
+func TestTrustedService_UnqualifiedWildcard(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	schemaResolver := &countingSchemaResolver{inner: &mockSchemaResolver{}}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT * FROM users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+	}
+	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
+	assertRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users", "read_table")
+	assertNoRequirement(t, res.DomainResult.Requirements, "*", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users.id", "read_column")
+	assertNoReadColumnRequirements(t, res.DomainResult.Requirements)
+	if schemaResolver.calls > 0 {
+		t.Errorf("schema resolver should not be called for unbound relations, got %d calls", schemaResolver.calls)
+	}
+}
+
+func TestTrustedService_UnqualifiedJoin(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	schemaResolver := &countingSchemaResolver{inner: &mockSchemaResolver{}}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT u.name, o.user_id FROM users u JOIN orders o ON u.id = o.user_id",
+		Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+	}
+	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
+	assertRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users", "read_table")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.orders", "read_table")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.orders.user_id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users.name", "read_column")
+	assertNoReadColumnRequirements(t, res.DomainResult.Requirements)
+	if schemaResolver.calls > 0 {
+		t.Errorf("schema resolver should not be called for unbound relations, got %d calls", schemaResolver.calls)
+	}
+	assertColumnUnbound(t, res.DomainResult.ReferencedColumns, "users", "name")
+	assertColumnUnbound(t, res.DomainResult.ReferencedColumns, "orders", "user_id")
+}
+
+func TestTrustedService_UnqualifiedProjectionOnly(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	schemaResolver := &countingSchemaResolver{inner: &mockSchemaResolver{}}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT id FROM users", Dialect: "postgresql", Mode: "projection_only", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+	}
+	assertRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "*", "read_column")
+	assertNoReadColumnRequirements(t, res.DomainResult.Requirements)
+	if schemaResolver.calls > 0 {
+		t.Errorf("schema resolver should not be called for unbound relations, got %d calls", schemaResolver.calls)
+	}
+	assertColumnUnbound(t, res.DomainResult.ReferencedColumns, "users", "id")
+}
+
+func TestTrustedService_MixedQualifiedUnqualified(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	schemaResolver := &countingSchemaResolver{inner: &mockSchemaResolver{}}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT p.id, u.name FROM public.users p JOIN users u ON p.id = u.id",
+		Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.Indeterminate {
+		t.Errorf("classification = %v, want indeterminate", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Errorf("admission = %v, want indeterminate", res.DomainResult.Admission)
+	}
+	assertReasonsContain(t, res.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
+	assertRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	assertRequirement(t, res.DomainResult.Requirements, "public.users", "read_table")
+	assertRequirement(t, res.DomainResult.Requirements, "public.users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "public.users.name", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "users", "read_table")
+	assertNoRequirement(t, res.DomainResult.Requirements, "users.name", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "users.id", "read_column")
+	if schemaResolver.calls != 1 {
+		t.Errorf("schema resolver should be called exactly once for the qualified relation, got %d calls", schemaResolver.calls)
+	}
+	assertColumnNotUnbound(t, res.DomainResult.ReferencedColumns, "users", "id")
+}
+
+func TestTrustedService_MySQLUnqualifiedUnchanged(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT id FROM users", Dialect: "mysql", Mode: "strict", DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.ReadOnly {
+		t.Errorf("mysql classification = %v, want read_only", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.Admissible {
+		t.Errorf("mysql admission = %v, want admissible", res.DomainResult.Admission)
+	}
+	assertRequirement(t, res.DomainResult.Requirements, "app.users", "read_table")
+	assertRequirement(t, res.DomainResult.Requirements, "app.users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	for _, rel := range res.DomainResult.Relations {
+		if rel.Unbound {
+			t.Errorf("mysql relation should not be marked unbound: %+v", rel)
+		}
+	}
+}
+
+func TestTrustedService_TiDBUnqualifiedUnchanged(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	svc, err := NewTrustedService(&mockControlledResolver{ctx: testResolutionContext()}, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT id FROM users", Dialect: "tidb", Mode: "strict", DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+
+	if res.DomainResult.ReadClassification != domain.ReadOnly {
+		t.Errorf("tidb classification = %v, want read_only", res.DomainResult.ReadClassification)
+	}
+	if res.DomainResult.Admission != domain.Admissible {
+		t.Errorf("tidb admission = %v, want admissible", res.DomainResult.Admission)
+	}
+	assertRequirement(t, res.DomainResult.Requirements, "app.users", "read_table")
+	assertRequirement(t, res.DomainResult.Requirements, "app.users.id", "read_column")
+	assertNoRequirement(t, res.DomainResult.Requirements, "unqualified_relation", "indeterminate")
+	for _, rel := range res.DomainResult.Relations {
+		if rel.Unbound {
+			t.Errorf("tidb relation should not be marked unbound: %+v", rel)
+		}
+	}
+}
+
+func assertColumnUnbound(t *testing.T, cols []domain.ColumnReference, table, column string) {
+	t.Helper()
+	for _, c := range cols {
+		if strings.EqualFold(c.Table, table) && strings.EqualFold(c.Column, column) {
+			if !c.Unbound {
+				t.Errorf("expected column %s.%s to be unbound, got unbound=false", table, column)
+			}
+			return
+		}
+	}
+	t.Errorf("column %s.%s not found in referenced columns", table, column)
+}
+
+func assertColumnNotUnbound(t *testing.T, cols []domain.ColumnReference, table, column string) {
+	t.Helper()
+	for _, c := range cols {
+		if strings.EqualFold(c.Table, table) && strings.EqualFold(c.Column, column) {
+			if c.Unbound {
+				t.Errorf("expected column %s.%s to NOT be unbound, got unbound=true", table, column)
+			}
+			return
+		}
+	}
+	t.Errorf("column %s.%s not found in referenced columns", table, column)
+}
+
+func assertNoReadColumnRequirements(t *testing.T, reqs []domain.Requirement) {
+	t.Helper()
+	for _, r := range reqs {
+		if r.Privilege == "read_column" {
+			t.Errorf("unexpected read_column requirement: %v", r)
+		}
 	}
 }

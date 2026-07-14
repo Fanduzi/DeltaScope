@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
@@ -18,6 +19,10 @@ var ErrExtractionFailed = errors.New("query access extraction failed")
 
 // ErrTrustedBundleInvalid indicates the trusted bundle failed validation.
 var ErrTrustedBundleInvalid = errors.New("invalid trusted bundle")
+
+// unqualifiedRelationReference is a bounded, non-leaking machine identifier for the
+// indeterminate requirement produced by unqualified PostgreSQL base relations.
+const unqualifiedRelationReference = "unqualified_relation"
 
 // trustProofResult holds the outcome of effect identity resolution and manifest proof.
 // Internal only — never exposed on public JSON.
@@ -103,10 +108,34 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		schemaResolver = s.trusted.schemaResolver
 	}
 
-	hasUnqualified := s != nil && s.trusted != nil && hasUnqualifiedRelation(extracted.DomainResult.Relations)
+	hasUnqualified := req.Dialect == "postgresql" && s != nil && s.trusted != nil && hasUnqualifiedRelation(extracted.DomainResult.Relations)
+
+	if hasUnqualified {
+		unboundNames := make(map[string]struct{})
+		for i := range extracted.DomainResult.Relations {
+			rel := &extracted.DomainResult.Relations[i]
+			if rel.Schema == "" && rel.Kind != domain.RelationCTE && rel.Kind != domain.RelationDerived {
+				rel.Unbound = true
+				unboundNames[strings.ToLower(rel.Name)] = struct{}{}
+			}
+		}
+		extracted.DomainResult.Unresolved = append(extracted.DomainResult.Unresolved, domain.Unresolved{
+			Reference: unqualifiedRelationReference,
+			Reason:    domain.ReasonUnqualifiedRelationBlocked,
+		})
+	}
 
 	if schemaResolver != nil {
 		extracted.DomainResult = resolveMetadata(ctx, schemaResolver, req.Dialect, req.DefaultSchema, extracted.DomainResult)
+	}
+
+	if hasUnqualified {
+		for i := range extracted.DomainResult.ReferencedColumns {
+			col := &extracted.DomainResult.ReferencedColumns[i]
+			if col.Schema == "" {
+				col.Unbound = true
+			}
+		}
 	}
 
 	if hasFunctionCallReasonCode(extracted.DomainResult.ReasonCodes) {

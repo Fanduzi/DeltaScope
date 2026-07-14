@@ -41,6 +41,38 @@
 
 strict 和 projection_only 模式都要求对每个基表和视图具有 `read_table` 权限。CTE 和派生表本身不需要权限；它们的权限要求来自它们引用的底层物理表和视图。
 
+## 未绑定关系和列（PostgreSQL）
+
+在 PostgreSQL 上，未限定模式的基表关系（没有 schema 限定符的关系）是**执行未绑定的**：分析器无法确定该关系在运行时解析到哪个 schema，因为 `search_path` 是会话控制的。为防止错误的权限证明，这些关系及其列在结果中标记为 `unbound: true`。
+
+### 未绑定的含义
+
+- 标记为 `unbound: true` 的关系**永远不会**产生 `read_table` 权限要求。
+- 标记为 `unbound: true` 的列**永远不会**产生 `read_column` 权限要求。
+- `unresolved` 中会出现 `unqualified_relation` 条目，原因为 `unqualified_relation_blocked`。
+- 分类变为 `indeterminate`，准入变为 `indeterminate`。
+
+**授权层不得基于未绑定关系或列授予访问权限。** `unbound` 字段表示该权限要求不是查询在运行时实际读取内容的可靠证明。
+
+### 何时设置未绑定标记
+
+| 场景 | 关系 | 列 |
+|---|---|---|
+| `SELECT id FROM users`（未限定，无解析器） | `users` → `unbound: true` | `users.id` → `unbound: true`（schema 为空，存在未绑定关系） |
+| `SELECT users.id FROM users`（限定名称，未绑定关系） | `users` → `unbound: true` | `users.id` → `unbound: true` |
+| `SELECT p.id, u.name FROM public.users p JOIN users u`（混合） | `public.users` → 非未绑定；`users` → `unbound: true` | `users.id`（通过限定条目解析，已赋值 schema）→ 非未绑定；`users.name`（schema 为空）→ `unbound: true` |
+| `SELECT id FROM public.users`（限定） | `public.users` → 非未绑定 | `public.users.id` → 非未绑定 |
+| MySQL/TiDB（任意） | 永不未绑定 | 永不未绑定 |
+
+### 分析器如何处理混合查询
+
+当查询包含对同一表名的限定和未限定引用时（例如 `public.users p JOIN users u`），PostgreSQL 解析器将别名解析为裸表名。`p.id` 和 `u.name` 都产生 `table: "users"`。分析器使用解析状态来区分：
+
+- 如果解析映射中存在限定条目，列通过它解析（获得 schema 赋值）。
+- 如果只有未绑定条目，则跳过解析，列保持无 schema 状态。
+
+解析失败的列（在 schema 中找不到列）产生 `reason: column_not_found` 的 `unresolved` 条目，也被标记为 `unbound: true`。
+
 ## 失败关闭行为
 
 当分析无法确定读取分类或所需权限时，结果为 `indeterminate`。授权层应默认将 `indeterminate` 视为拒绝。特定的失败关闭场景：

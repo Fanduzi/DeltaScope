@@ -117,14 +117,16 @@ type QueryAccessRelationReference struct {
 	Alias              string `json:"alias,omitempty"`
 	Kind               string `json:"kind"`
 	PermissionRequired bool   `json:"permission_required"`
+	Unbound            bool   `json:"unbound,omitempty"`
 }
 
 // QueryAccessColumnReference represents a source column reference.
 type QueryAccessColumnReference struct {
-	Schema string   `json:"schema,omitempty"`
-	Table  string   `json:"table"`
-	Column string   `json:"column"`
-	Usages []string `json:"usages"`
+	Schema  string   `json:"schema,omitempty"`
+	Table   string   `json:"table"`
+	Column  string   `json:"column"`
+	Usages  []string `json:"usages"`
+	Unbound bool     `json:"unbound,omitempty"`
 }
 
 // QueryAccessOutputColumn represents a final output column.
@@ -231,6 +233,7 @@ func fromDomainQAResult(result domainqa.Result) QueryAccessResult {
 				Alias:              r.Alias,
 				Kind:               string(r.Kind),
 				PermissionRequired: r.PermissionRequired,
+				Unbound:            r.Unbound,
 			}
 		}
 	}
@@ -242,10 +245,11 @@ func fromDomainQAResult(result domainqa.Result) QueryAccessResult {
 				usages[j] = string(u)
 			}
 			public.ReferencedColumns[i] = QueryAccessColumnReference{
-				Schema: c.Schema,
-				Table:  c.Table,
-				Column: c.Column,
-				Usages: usages,
+				Schema:  c.Schema,
+				Table:   c.Table,
+				Column:  c.Column,
+				Usages:  usages,
+				Unbound: c.Unbound,
 			}
 		}
 	}

@@ -73,7 +73,9 @@ Transport-neutral domain types for query access analysis, including read classif
   - `WarningDeprecatedSyntax`
   - `WarningInferenceRisk`
 - `RelationReference`
+  - `Unbound` field: marks relations that must not produce physical requirements or be resolved against DefaultSchema
 - `ColumnReference`
+  - `Unbound` field: inherited marker for columns referencing unbound relations
 - `OutputColumn`
 - `Requirement`
 - `Unresolved`

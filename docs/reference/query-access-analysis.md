@@ -41,6 +41,38 @@ Projection-only mode emits a `projection_only_inference_risk` warning when non-p
 
 Both strict and projection-only modes require `read_table` permission for every base table and view. CTEs and derived tables do not require permission directly; their permission requirements come from the underlying physical tables and views they reference.
 
+## Unbound Relations and Columns (PostgreSQL)
+
+On PostgreSQL, unqualified base relations (those without a schema qualifier) are **execution-unbound**: the analyzer cannot determine which schema the relation resolves to at runtime because `search_path` is session-controlled. To prevent false permission proofs, these relations and their columns are marked as `unbound: true` in the result.
+
+### What Unbound Means
+
+- A relation with `unbound: true` will **never** produce `read_table` requirements.
+- A column with `unbound: true` will **never** produce `read_column` requirements.
+- An `unqualified_relation` entry appears in `unresolved` with `reason: unqualified_relation_blocked`.
+- Classification becomes `indeterminate` and admission becomes `indeterminate`.
+
+**Authorization layers must not grant access based on unbound relations or columns.** The `unbound` field is a signal that the permission requirement is not a reliable proof of what the query actually reads at runtime.
+
+### When Unbound Is Set
+
+| Scenario | Relations | Columns |
+|---|---|---|
+| `SELECT id FROM users` (unqualified, no resolver) | `users` → `unbound: true` | `users.id` → `unbound: true` (schema empty, unbound relations present) |
+| `SELECT users.id FROM users` (qualified name, unbound relation) | `users` → `unbound: true` | `users.id` → `unbound: true` |
+| `SELECT p.id, u.name FROM public.users p JOIN users u` (mixed) | `public.users` → not unbound; `users` → `unbound: true` | `users.id` (resolved via qualified entry, schema assigned) → not unbound; `users.name` (schema empty) → `unbound: true` |
+| `SELECT id FROM public.users` (qualified) | `public.users` → not unbound | `public.users.id` → not unbound |
+| MySQL/TiDB (any) | Never unbound | Never unbound |
+
+### How the Analyzer Resolves Mixed Queries
+
+When a query contains both qualified and unqualified references to the same table name (e.g., `public.users p JOIN users u`), the PostgreSQL parser resolves aliases to bare table names. Both `p.id` and `u.name` produce `table: "users"`. The analyzer uses the resolution state to distinguish:
+
+- If a qualified entry exists in the resolution map, the column resolves through it (gets schema assigned).
+- If only unbound entries exist, resolution is skipped and the column remains schema-less.
+
+Columns that fail to resolve (column not found in the schema) produce an `unresolved` entry with `reason: column_not_found` and are also marked `unbound: true`.
+
 ## Fail-Closed Behavior
 
 When analysis cannot determine the read classification or required permissions, the result is `indeterminate`. The authorization layer should treat `indeterminate` as denied by default. Specific fail-closed scenarios:

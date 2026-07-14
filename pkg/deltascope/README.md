@@ -54,6 +54,10 @@ Stable public package surface for library consumers.
   Describes whether SQL is eligible for authorization: `admissible`, `rejected`, or `indeterminate`
 - `QueryAccessSchemaResolver`
   Optional interface for resolving relation metadata during analysis
+- `QueryAccessRelationReference`
+  Relation reference with `Unbound` field marking relations that must not produce physical requirements
+- `QueryAccessColumnReference`
+  Column reference with `Unbound` field indicating the column could not be resolved to a qualified schema.table.column
 
 ## Notes
 

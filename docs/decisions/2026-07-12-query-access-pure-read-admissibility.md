@@ -96,6 +96,27 @@ Therefore catalog binding (OID, namespace, operand types, volatility) is a
 **necessary** fact set for identity resolution — never a sufficient condition
 for `Trusted`.
 
+**P2 safety gap (unqualified base relations):** when a PostgreSQL query
+contains unqualified base relations (e.g., `SELECT id FROM users` without a
+schema qualifier), the resolver must not fill in `DefaultSchema` to produce
+physical table/column requirements. PostgreSQL `search_path` is
+session-controlled and runtime-dependent; the offline analyzer cannot know
+which schema `users` resolves to at execution time. Forging
+`public.users.id` requirements from an unqualified `users` reference would
+give callers a false permission proof that might resolve to a different
+schema at runtime.
+
+Fix: unqualified PostgreSQL base relations in the trusted path are marked
+`Unbound` and excluded from the resolution state (`nameMap`, `aliasMap`,
+`relationOrder`). Resolution, wildcard expansion, and requirement generation
+skip unbound references. A bounded `unqualified_relation` indeterminate
+requirement is added instead. When a query mixes qualified and unqualified
+references to the same table name (e.g., `public.users p JOIN users u`), the
+parser resolves aliases to table names, so both columns produce `Table: "users"`.
+The resolver uses `nameMap` to distinguish: if a qualified entry exists,
+resolution proceeds through it; if only unbound entries exist, resolution is
+skipped entirely.
+
 ## Decision
 
 ### 1. Public admission distribution may change under proven identity

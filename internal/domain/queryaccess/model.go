@@ -188,14 +188,16 @@ type RelationReference struct {
 	Alias              string       `json:"alias,omitempty"`
 	Kind               RelationKind `json:"kind"`
 	PermissionRequired bool         `json:"permission_required"`
+	Unbound            bool         `json:"unbound,omitempty"`
 }
 
 // ColumnReference represents a source column reference with usage contexts.
 type ColumnReference struct {
-	Schema string         `json:"schema,omitempty"`
-	Table  string         `json:"table"`
-	Column string         `json:"column"`
-	Usages []UsageContext `json:"usages"`
+	Schema  string         `json:"schema,omitempty"`
+	Table   string         `json:"table"`
+	Column  string         `json:"column"`
+	Usages  []UsageContext `json:"usages"`
+	Unbound bool           `json:"unbound,omitempty"`
 }
 
 // OutputColumn represents a final output column with source lineage.
