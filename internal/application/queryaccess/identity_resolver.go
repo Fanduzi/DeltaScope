@@ -148,12 +148,25 @@ type ColumnTypeOIDResolver interface {
 // resolution satisfy this contract. The application uses a type assertion
 // to prefer this over separate ResolveColumnTypeOIDs + ResolveEffectIdentities
 // calls when available.
+//
+// The returned EffectIdentityResolutionContext is captured INSIDE the atomic
+// operation (same pinned session/transaction) and represents the final
+// execution-bound state after all lookups. The application compares this
+// with the initial captured context to detect TOCTOU drift.
+//
+// INV-12 (Malicious Resolver Protection): A malicious implementation cannot
+// promote by returning matching initial/final contexts with facts from another
+// database, another version, or another candidate set because:
+// - Facts must be stamped with DatabaseOID and ServerVersionNum from the resolution context
+// - The application validates fact pinning against the final context before IsTrusted
+// - The application validates batch ordinals before completion
+// - IsTrusted verifies pins match the request version (nonzero + version range)
 type AtomicProofResolver interface {
 	ResolveColumnTypesAndEffectIdentities(
 		ctx context.Context,
 		candidates []EffectCandidate,
 		req EffectIdentityRequest,
-	) (map[int][]uint32, EffectIdentityBatch, error)
+	) (map[int][]uint32, EffectIdentityBatch, EffectIdentityResolutionContext, error)
 }
 
 // EffectIdentityResolutionContext is an internal, execution-bound name-resolution
@@ -466,6 +479,39 @@ func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
 	return ResolutionContextSearchPathCompatible(a, b)
 }
 
+// ValidateResolutionContextForPromotion validates initial and final execution
+// contexts for the proof gateway. Encapsulates INV-3 and INV-7 checks.
+//
+// Returns nil if validation passes, or a bounded error if:
+// - Initial context is not session-complete
+// - Final context is not session-complete
+// - Initial/final contexts are not session-compatible
+// - Unqualified candidates exist and search-path is not compatible
+func ValidateResolutionContextForPromotion(
+	initialCtx, finalCtx EffectIdentityResolutionContext,
+	candidates []EffectCandidate,
+) error {
+	// INV-3: Initial context must be session-complete.
+	if !ResolutionContextSessionComplete(initialCtx) {
+		return fmt.Errorf("%w: initial context incomplete", ErrIdentityRequestInvalid)
+	}
+	// Final context must be session-complete.
+	if !ResolutionContextSessionComplete(finalCtx) {
+		return fmt.Errorf("%w: final context incomplete", ErrIdentityRequestInvalid)
+	}
+	// INV-3: Initial/final contexts must be session-compatible.
+	if !ResolutionContextSessionCompatible(initialCtx, finalCtx) {
+		return fmt.Errorf("%w: context session mismatch", ErrIdentityRequestInvalid)
+	}
+	// INV-7: If unqualified candidates exist, search-path must be compatible.
+	if hasUnqualifiedEffectCandidates(candidates) {
+		if !ResolutionContextSearchPathCompatible(initialCtx, finalCtx) {
+			return fmt.Errorf("%w: search-path drift with unqualified candidates", ErrIdentityRequestInvalid)
+		}
+	}
+	return nil
+}
+
 // StampFactsFromResolution copies database/server locality pins from the
 // resolution context onto facts. Adapters should call this for every resolved
 // item before gating. Does not set Trusted or admission.
@@ -496,6 +542,15 @@ func factsMatchResolution(facts *EffectIdentityFacts, rc EffectIdentityResolutio
 		return false
 	}
 	return true
+}
+
+// ValidateFactPinning validates that resolved facts are pinned to the final
+// execution context. Encapsulates INV-4 and INV-5 checks.
+//
+// Returns true if facts are valid (pinned to final context), false otherwise.
+// Invalid facts should be converted to unavailable before IsTrusted.
+func ValidateFactPinning(facts *EffectIdentityFacts, finalCtx EffectIdentityResolutionContext) bool {
+	return factsMatchResolution(facts, finalCtx)
 }
 
 // ClassifyCandidateResolutionMode returns the bounded resolution mode for a
@@ -761,6 +816,39 @@ func CompleteEffectIdentityBatch(req EffectIdentityRequest, batch EffectIdentity
 		})
 	}
 	return NormalizeEffectIdentityBatch(items)
+}
+
+// ValidateBatchOrdinals validates raw batch ordinals before completion/normalization.
+// Encapsulates INV-6 checks.
+//
+// Returns nil if validation passes, or a bounded error if:
+// - Batch has duplicate ordinals
+// - Batch has ordinals not in the request
+// - Request has ordinals not in the batch (missing)
+func ValidateBatchOrdinals(batch EffectIdentityBatch, candidates []EffectCandidate) error {
+	// Build set of request ordinals.
+	reqOrds := make(map[int]struct{}, len(candidates))
+	for _, c := range candidates {
+		reqOrds[c.Ordinal] = struct{}{}
+	}
+	// Check for duplicates and out-of-range ordinals.
+	seen := make(map[int]struct{}, len(batch.Items))
+	for _, it := range batch.Items {
+		if _, exists := seen[it.Ordinal]; exists {
+			return fmt.Errorf("%w: duplicate ordinal %d", ErrDuplicateIdentityOrdinal, it.Ordinal)
+		}
+		seen[it.Ordinal] = struct{}{}
+		if _, inRequest := reqOrds[it.Ordinal]; !inRequest {
+			return fmt.Errorf("%w: out-of-range ordinal %d", ErrIdentityRequestInvalid, it.Ordinal)
+		}
+	}
+	// Check for missing ordinals.
+	for _, c := range candidates {
+		if _, exists := seen[c.Ordinal]; !exists {
+			return fmt.Errorf("%w: missing ordinal %d", ErrIdentityBatchIncomplete, c.Ordinal)
+		}
+	}
+	return nil
 }
 
 // BatchIsFullyResolved reports whether every item is resolved with facts.

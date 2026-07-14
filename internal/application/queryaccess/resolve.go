@@ -324,7 +324,10 @@ func expandTableStar(state *resolutionState, col domain.ColumnReference) ([]doma
 // resolveQualifiedColumn resolves a table.column reference to schema.table.column.
 func resolveQualifiedColumn(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, []domain.Unresolved) {
 	schema, name := state.resolveRelationRef(col.Table)
-	if schema == "" && state.isUnbound(col.Table) {
+	if state.isUnbound(col.Table) {
+		return []domain.ColumnReference{col}, nil
+	}
+	if schema == "" {
 		return []domain.ColumnReference{col}, nil
 	}
 	rs, ok := state.resolveSchema(schema, name)

@@ -108,7 +108,10 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		schemaResolver = s.trusted.schemaResolver
 	}
 
-	hasUnqualified := req.Dialect == "postgresql" && (s != nil && s.trusted != nil || schemaResolver != nil) && hasUnqualifiedRelation(extracted.DomainResult.Relations)
+	// Barrier is unconditional for PostgreSQL when unqualified physical base
+	// relations exist. This prevents unsafe DefaultSchema binding regardless
+	// of whether a trusted bundle or schema resolver is present.
+	hasUnqualified := req.Dialect == "postgresql" && hasUnqualifiedRelation(extracted.DomainResult.Relations)
 
 	if hasUnqualified {
 		unboundNames := make(map[string]struct{})
@@ -144,8 +147,14 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 
 	var proofResult *trustProofResult
 	if hasUnqualified {
-		extracted.DomainResult.ReadClassification = domain.Indeterminate
-		extracted.DomainResult.Admission = domain.IndeterminateAdmission
+		// Barrier blocks promotion of read-only analysis, but must not
+		// overwrite detected writes (not_read_only/rejected).
+		if extracted.DomainResult.ReadClassification == domain.NotReadOnly {
+			extracted.DomainResult.Admission = domain.Rejected
+		} else {
+			extracted.DomainResult.ReadClassification = domain.Indeterminate
+			extracted.DomainResult.Admission = domain.IndeterminateAdmission
+		}
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonUnqualifiedRelationBlocked)
 	} else if req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
 		proofResult = s.resolveAndProveEffects(ctx, req, extracted)
@@ -235,12 +244,38 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		}
 	}
 
-	_, batch, atomicErr := atomicResolver.ResolveColumnTypesAndEffectIdentities(
+	_, batch, finalCtx, atomicErr := atomicResolver.ResolveColumnTypesAndEffectIdentities(
 		ctx, extracted.EffectCandidates, identityReq)
 	if atomicErr != nil {
 		return &trustProofResult{
 			decision:    TrustDecisionHasUnknown,
 			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
+		}
+	}
+
+	// INV-3, INV-7: Validate initial/final context compatibility.
+	if err := ValidateResolutionContextForPromotion(resolutionCtx, finalCtx, extracted.EffectCandidates); err != nil {
+		return &trustProofResult{
+			decision:    TrustDecisionHasUnknown,
+			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
+		}
+	}
+
+	// INV-6: Validate raw batch ordinals BEFORE completion/normalization.
+	if err := ValidateBatchOrdinals(batch, extracted.EffectCandidates); err != nil {
+		return &trustProofResult{
+			decision:    TrustDecisionHasUnknown,
+			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
+		}
+	}
+
+	// INV-4, INV-5: Validate every resolved fact against final context.
+	for i := range batch.Items {
+		if batch.Items[i].Status == domain.IdentityStatusResolved && batch.Items[i].Facts != nil {
+			if !ValidateFactPinning(batch.Items[i].Facts, finalCtx) {
+				batch.Items[i].Status = domain.IdentityStatusUnavailable
+				batch.Items[i].Facts = nil
+			}
 		}
 	}
 
@@ -368,6 +403,15 @@ func reclassifyAfterResolution(classification domain.ReadClassification, reasonC
 func hasUnqualifiedRelation(relations []domain.RelationReference) bool {
 	for _, rel := range relations {
 		if rel.Schema == "" && rel.Kind != domain.RelationCTE && rel.Kind != domain.RelationDerived {
+			return true
+		}
+	}
+	return false
+}
+
+func hasUnqualifiedEffectCandidates(candidates []EffectCandidate) bool {
+	for _, c := range candidates {
+		if !CandidateExplicitlyQualified(c) {
 			return true
 		}
 	}

@@ -689,27 +689,30 @@ func (t *txCatalog) resolveColumnTypeOIDBySearchPath(ctx context.Context, table,
 // and effect identity resolution in a single atomic REPEATABLE READ transaction.
 // This ensures both type facts and identity facts come from the same catalog
 // snapshot, preventing TOCTOU issues with concurrent DDL.
+//
+// Returns the final execution-bound context captured INSIDE the atomic
+// transaction for TOCTOU validation by the application.
 func (a *EffectIdentityAdapter) ResolveColumnTypesAndEffectIdentities(
 	ctx context.Context,
 	candidates []appqa.EffectCandidate,
 	req appqa.EffectIdentityRequest,
-) (map[int][]uint32, appqa.EffectIdentityBatch, error) {
+) (map[int][]uint32, appqa.EffectIdentityBatch, appqa.EffectIdentityResolutionContext, error) {
 	if a == nil || a.catalog == nil {
-		return nil, appqa.EffectIdentityBatch{}, ErrSessionNotPinned
+		return nil, appqa.EffectIdentityBatch{}, appqa.EffectIdentityResolutionContext{}, ErrSessionNotPinned
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, appqa.EffectIdentityBatch{}, err
+		return nil, appqa.EffectIdentityBatch{}, appqa.EffectIdentityResolutionContext{}, err
 	}
 
 	// Access the pinned session to start a REPEATABLE READ transaction.
 	pinned, ok := a.catalog.(*PinnedSession)
 	if !ok {
-		return nil, appqa.EffectIdentityBatch{}, errors.New("atomic proof requires PinnedSession")
+		return nil, appqa.EffectIdentityBatch{}, appqa.EffectIdentityResolutionContext{}, errors.New("atomic proof requires PinnedSession")
 	}
 
 	tx, err := pinned.beginRepeatableReadTx(ctx)
 	if err != nil {
-		return nil, appqa.EffectIdentityBatch{}, err
+		return nil, appqa.EffectIdentityBatch{}, appqa.EffectIdentityResolutionContext{}, err
 	}
 	defer tx.Rollback() //nolint:errcheck // rollback is best-effort
 
@@ -718,21 +721,21 @@ func (a *EffectIdentityAdapter) ResolveColumnTypesAndEffectIdentities(
 	// 1) Live context before lookup (under tx snapshot).
 	live1, err := txCat.CaptureLiveContext(ctx)
 	if err != nil {
-		return nil, appqa.BuildUnavailableBatch(candidates), nil
+		return nil, appqa.BuildUnavailableBatch(candidates), appqa.EffectIdentityResolutionContext{}, nil
 	}
 	if !appqa.ResolutionContextSessionComplete(live1) {
-		return nil, appqa.BuildUnavailableBatch(candidates), nil
+		return nil, appqa.BuildUnavailableBatch(candidates), appqa.EffectIdentityResolutionContext{}, nil
 	}
 
 	// Validate caller-supplied resolution matches live session.
 	workReq := req
 	if appqa.ResolutionContextSessionComplete(req.Resolution) {
 		if !appqa.ResolutionContextSessionCompatible(req.Resolution, live1) {
-			return nil, appqa.BuildUnavailableBatch(candidates), nil
+			return nil, appqa.BuildUnavailableBatch(candidates), appqa.EffectIdentityResolutionContext{}, nil
 		}
 		workReq.Resolution = live1
 	} else {
-		return nil, appqa.BuildUnavailableBatch(candidates), nil
+		return nil, appqa.BuildUnavailableBatch(candidates), appqa.EffectIdentityResolutionContext{}, nil
 	}
 
 	// 2) Resolve column type OIDs for binary column operators under the same tx.
@@ -775,6 +778,7 @@ func (a *EffectIdentityAdapter) ResolveColumnTypesAndEffectIdentities(
 	batch := appqa.NormalizeEffectIdentityBatch(items)
 
 	// 4) Live context after lookup + gate (TOCTOU) under same tx.
+	// This is the final context captured INSIDE the atomic operation.
 	live2, liveErr := txCat.CaptureLiveContext(ctx)
 	batch = appqa.GateIdentityBatchAgainstLiveContext(workReq, batch, func() (appqa.EffectIdentityResolutionContext, error) {
 		return live2, liveErr
@@ -782,10 +786,17 @@ func (a *EffectIdentityAdapter) ResolveColumnTypesAndEffectIdentities(
 
 	// 5) Commit the REPEATABLE READ transaction.
 	if err := tx.Commit(); err != nil {
-		return nil, appqa.BuildUnavailableBatch(candidates), nil
+		return nil, appqa.BuildUnavailableBatch(candidates), appqa.EffectIdentityResolutionContext{}, nil
 	}
 
-	return typeOIDs, batch, nil
+	// Return live2 as the final execution-bound context for TOCTOU validation.
+	// If live2 capture failed, return empty context (will fail validation).
+	finalCtx := live2
+	if liveErr != nil {
+		finalCtx = appqa.EffectIdentityResolutionContext{}
+	}
+
+	return typeOIDs, batch, finalCtx, nil
 }
 
 // resolveOneWithCatalog resolves a single candidate using the provided catalog.

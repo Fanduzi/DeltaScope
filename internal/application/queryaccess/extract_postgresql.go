@@ -53,6 +53,7 @@ func AnalyzePostgreSQL(ctx context.Context, req QueryAccessRequest) (QueryAccess
 			usages = append(usages, domain.UsageContext(u))
 		}
 		result.ReferencedColumns = append(result.ReferencedColumns, domain.ColumnReference{
+			Schema: c.Schema,
 			Table:  c.Table,
 			Column: c.Column,
 			Usages: usages,

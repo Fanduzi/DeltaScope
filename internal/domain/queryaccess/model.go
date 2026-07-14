@@ -123,6 +123,11 @@ const (
 	// was present in a PostgreSQL query with a trusted bundle, which blocks
 	// promotion to admissible due to search_path ambiguity.
 	ReasonUnqualifiedRelationBlocked ReasonCode = "unqualified_relation_blocked"
+
+	// ReasonUnsupportedTraversal indicates that a SQL clause could not be fully
+	// traversed without metadata-derived expansion. Currently emitted for
+	// JOIN USING clauses where column names require catalog resolution.
+	ReasonUnsupportedTraversal ReasonCode = "unsupported_traversal"
 )
 
 // IdentityFailure is a bounded category for effect-identity resolution outcomes.

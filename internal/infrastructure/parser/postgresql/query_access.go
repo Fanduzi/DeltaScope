@@ -41,6 +41,7 @@ type RelationFacts struct {
 
 // ColumnRefFacts describes a column reference with usage contexts.
 type ColumnRefFacts struct {
+	Schema  string
 	Table   string
 	Column  string
 	Usages  []string
@@ -83,6 +84,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	columnRefs := make([]ColumnRefFacts, 0)
 	outputs := make([]OutputFacts, 0)
 	var collector effectCollector
+	var extraReasons []string
 
 	classifications := make([]string, 0, len(stmts))
 	for _, rawStmt := range stmts {
@@ -108,7 +110,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 			cteLineage, cteBodyRels := buildCTELineage(sel, defaultSchema)
 			relations = append(relations, collectRelations(sel, defaultSchema)...)
 			relations = append(relations, cteBodyRels...)
-			columnRefs = append(columnRefs, collectColumnReferences(sel, defaultSchema, cteLineage)...)
+			columnRefs = append(columnRefs, collectColumnReferences(sel, defaultSchema, cteLineage, &extraReasons)...)
 			outputs = append(outputs, collectOutputs(sel, defaultSchema, cteLineage)...)
 		}
 	}
@@ -118,7 +120,9 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	facts.ColumnReferences = columnRefs
 	facts.Outputs = outputs
 	// Public reason codes remain presence-only machine ids (no candidate names).
-	facts.ReasonCodes = collector.reasonCodes()
+	reasonCodes := collector.reasonCodes()
+	reasonCodes = append(reasonCodes, extraReasons...)
+	facts.ReasonCodes = reasonCodes
 	facts.EffectCandidates = collector.candidates
 
 	if hasUnresolvedWildcard(columnRefs) && defaultSchema == "" {
@@ -710,8 +714,11 @@ func lookupBinding(scope *selectScope, schema, table, alias string) *scopeBindin
 	}
 	for i := range scope.bindings {
 		b := &scope.bindings[i]
-		if alias != "" && strings.EqualFold(b.Alias, alias) {
-			return b
+		if alias != "" {
+			if strings.EqualFold(b.Alias, alias) {
+				return b
+			}
+			continue
 		}
 		if table != "" && strings.EqualFold(b.Table, table) {
 			if schema == "" || strings.EqualFold(b.Schema, schema) {
@@ -787,6 +794,28 @@ func collectRelations(sel *pg_query.SelectStmt, defaultSchema string) []Relation
 		}
 	}
 	walkFromClause(sel.GetFromClause(), defaultSchema, &relations)
+	// Walk expression-bearing clauses for scalar subqueries (SubLink).
+	for _, target := range sel.GetTargetList() {
+		collectSubLinkRelations(target, defaultSchema, &relations)
+	}
+	if sel.GetWhereClause() != nil {
+		collectSubLinkRelations(sel.GetWhereClause(), defaultSchema, &relations)
+	}
+	for _, group := range sel.GetGroupClause() {
+		collectSubLinkRelations(group, defaultSchema, &relations)
+	}
+	if sel.GetHavingClause() != nil {
+		collectSubLinkRelations(sel.GetHavingClause(), defaultSchema, &relations)
+	}
+	for _, sort := range sel.GetSortClause() {
+		collectSubLinkRelations(sort, defaultSchema, &relations)
+	}
+	if sel.GetLimitOffset() != nil {
+		collectSubLinkRelations(sel.GetLimitOffset(), defaultSchema, &relations)
+	}
+	if sel.GetLimitCount() != nil {
+		collectSubLinkRelations(sel.GetLimitCount(), defaultSchema, &relations)
+	}
 	// Mark FROM-clause references to CTEs as kind "cte" instead of "table"
 	for i := range relations {
 		if relations[i].Kind == "table" && cteNames[strings.ToLower(relations[i].Name)] {
@@ -795,6 +824,83 @@ func collectRelations(sel *pg_query.SelectStmt, defaultSchema string) []Relation
 	}
 	relations = append(relations, cteBodyRelations...)
 	return relations
+}
+
+// collectSubLinkRelations walks an expression node tree looking for SubLink
+// (scalar subquery) nodes and recurses into their subselects to discover
+// referenced relations that would otherwise be missed.
+func collectSubLinkRelations(node *pg_query.Node, defaultSchema string, relations *[]RelationFacts) {
+	if node == nil {
+		return
+	}
+	switch n := node.GetNode().(type) {
+	case *pg_query.Node_SubLink:
+		if sub := n.SubLink.GetSubselect(); sub != nil {
+			if subSel := sub.GetSelectStmt(); subSel != nil {
+				*relations = append(*relations, collectRelations(subSel, defaultSchema)...)
+			}
+		}
+		if n.SubLink.GetTestexpr() != nil {
+			collectSubLinkRelations(n.SubLink.GetTestexpr(), defaultSchema, relations)
+		}
+	case *pg_query.Node_ResTarget:
+		if n.ResTarget.GetVal() != nil {
+			collectSubLinkRelations(n.ResTarget.GetVal(), defaultSchema, relations)
+		}
+	case *pg_query.Node_AExpr:
+		if n.AExpr.GetLexpr() != nil {
+			collectSubLinkRelations(n.AExpr.GetLexpr(), defaultSchema, relations)
+		}
+		if n.AExpr.GetRexpr() != nil {
+			collectSubLinkRelations(n.AExpr.GetRexpr(), defaultSchema, relations)
+		}
+	case *pg_query.Node_BoolExpr:
+		for _, arg := range n.BoolExpr.GetArgs() {
+			collectSubLinkRelations(arg, defaultSchema, relations)
+		}
+	case *pg_query.Node_FuncCall:
+		for _, arg := range n.FuncCall.GetArgs() {
+			collectSubLinkRelations(arg, defaultSchema, relations)
+		}
+	case *pg_query.Node_TypeCast:
+		if n.TypeCast.GetArg() != nil {
+			collectSubLinkRelations(n.TypeCast.GetArg(), defaultSchema, relations)
+		}
+	case *pg_query.Node_CaseExpr:
+		caseExpr := n.CaseExpr
+		if caseExpr.GetArg() != nil {
+			collectSubLinkRelations(caseExpr.GetArg(), defaultSchema, relations)
+		}
+		if caseExpr.GetDefresult() != nil {
+			collectSubLinkRelations(caseExpr.GetDefresult(), defaultSchema, relations)
+		}
+		for _, arg := range caseExpr.GetArgs() {
+			if caseWhen := arg.GetCaseWhen(); caseWhen != nil {
+				collectSubLinkRelations(caseWhen.GetExpr(), defaultSchema, relations)
+				collectSubLinkRelations(caseWhen.GetResult(), defaultSchema, relations)
+			}
+		}
+	case *pg_query.Node_CoalesceExpr:
+		for _, arg := range n.CoalesceExpr.GetArgs() {
+			collectSubLinkRelations(arg, defaultSchema, relations)
+		}
+	case *pg_query.Node_MinMaxExpr:
+		for _, arg := range n.MinMaxExpr.GetArgs() {
+			collectSubLinkRelations(arg, defaultSchema, relations)
+		}
+	case *pg_query.Node_NullTest:
+		if n.NullTest.GetArg() != nil {
+			collectSubLinkRelations(n.NullTest.GetArg(), defaultSchema, relations)
+		}
+	case *pg_query.Node_SortBy:
+		if n.SortBy.GetNode() != nil {
+			collectSubLinkRelations(n.SortBy.GetNode(), defaultSchema, relations)
+		}
+	case *pg_query.Node_List:
+		for _, item := range n.List.GetItems() {
+			collectSubLinkRelations(item, defaultSchema, relations)
+		}
+	}
 }
 
 func walkFromClause(fromClause []*pg_query.Node, defaultSchema string, relations *[]RelationFacts) {
@@ -849,7 +955,17 @@ func collectNodeRelations(node *pg_query.Node, defaultSchema string) []RelationF
 	return nil
 }
 
-func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cteLineage cteLineageMap) []ColumnRefFacts {
+func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cteLineage cteLineageMap, extraReasons *[]string) []ColumnRefFacts {
+	if sel.GetOp() != pg_query.SetOperation_SETOP_NONE {
+		refs := make([]ColumnRefFacts, 0)
+		if larg := sel.GetLarg(); larg != nil {
+			refs = append(refs, collectColumnReferences(larg, defaultSchema, cteLineage, extraReasons)...)
+		}
+		if rarg := sel.GetRarg(); rarg != nil {
+			refs = append(refs, collectColumnReferences(rarg, defaultSchema, cteLineage, extraReasons)...)
+		}
+		return refs
+	}
 	scope := buildSelectScope(sel, defaultSchema, nil)
 	refs := make([]ColumnRefFacts, 0)
 	seen := make(map[string]bool)
@@ -862,7 +978,7 @@ func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cte
 	}
 	for _, from := range sel.GetFromClause() {
 		if join := from.GetJoinExpr(); join != nil {
-			collectJoinColumnRefs(join, scope, defaultSchema, &refs, seen, cteLineage)
+			collectJoinColumnRefs(join, scope, defaultSchema, &refs, seen, cteLineage, extraReasons)
 		}
 	}
 	for _, group := range sel.GetGroupClause() {
@@ -1143,6 +1259,7 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 				}
 				seen[key] = true
 				*refs = append(*refs, ColumnRefFacts{
+					Schema:  resolved.Schema,
 					Table:   physTable,
 					Column:  resolved.Column,
 					Usages:  []string{usage},
@@ -1158,6 +1275,7 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 		}
 		seen[key] = true
 		*refs = append(*refs, ColumnRefFacts{
+			Schema:  resolved.Schema,
 			Table:   resTable,
 			Column:  resolved.Column,
 			Usages:  []string{usage},
@@ -1264,12 +1382,12 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 	}
 }
 
-func collectJoinColumnRefs(join *pg_query.JoinExpr, scope *selectScope, defaultSchema string, refs *[]ColumnRefFacts, seen map[string]bool, cteLineage cteLineageMap) {
+func collectJoinColumnRefs(join *pg_query.JoinExpr, scope *selectScope, defaultSchema string, refs *[]ColumnRefFacts, seen map[string]bool, cteLineage cteLineageMap, extraReasons *[]string) {
 	if join.GetQuals() != nil {
 		collectRefsFromNode(join.GetQuals(), scope, defaultSchema, "join", refs, seen, cteLineage)
 	}
-	for _, u := range join.GetUsingClause() {
-		collectRefsFromNode(u, scope, defaultSchema, "join", refs, seen, cteLineage)
+	if len(join.GetUsingClause()) > 0 && extraReasons != nil {
+		*extraReasons = append(*extraReasons, "unsupported_traversal")
 	}
 }
 
@@ -1292,8 +1410,12 @@ func collectOutputs(sel *pg_query.SelectStmt, defaultSchema string, cteLineage c
 			}
 			last := fields[len(fields)-1]
 			if _, isStar := last.GetNode().(*pg_query.Node_AStar); isStar {
+				schema := ""
 				table := ""
-				if len(fields) >= 2 {
+				if len(fields) >= 3 {
+					schema = stringNodeValue(fields[0])
+					table = stringNodeValue(fields[1])
+				} else if len(fields) >= 2 {
 					table = stringNodeValue(fields[0])
 				}
 				alias := resTarget.GetName()
@@ -1307,7 +1429,7 @@ func collectOutputs(sel *pg_query.SelectStmt, defaultSchema string, cteLineage c
 				}
 				source := "*"
 				if table != "" {
-					source = table + ".*"
+					source = formatSourceKey(schema, table, "*")
 				}
 				outputs = append(outputs, OutputFacts{Name: name, Sources: []string{source}})
 				continue
@@ -1316,12 +1438,19 @@ func collectOutputs(sel *pg_query.SelectStmt, defaultSchema string, cteLineage c
 			if colName == "" {
 				continue
 			}
+			schema := ""
 			table := ""
-			if len(fields) >= 2 {
+			if len(fields) >= 3 {
+				schema = stringNodeValue(fields[0])
+				table = stringNodeValue(fields[1])
+			} else if len(fields) >= 2 {
 				table = stringNodeValue(fields[0])
 			}
 			if table == "" && len(scope.tables) == 1 {
 				table = scope.tables[0]
+				if len(scope.bindings) > 0 {
+					schema = scope.bindings[0].Schema
+				}
 			}
 			alias := resTarget.GetName()
 			name := alias
@@ -1338,7 +1467,7 @@ func collectOutputs(sel *pg_query.SelectStmt, defaultSchema string, cteLineage c
 			}
 			source := colName
 			if table != "" {
-				source = table + "." + colName
+				source = formatSourceKey(schema, table, colName)
 			}
 			outputs = append(outputs, OutputFacts{Name: name, Sources: []string{source}})
 		}
