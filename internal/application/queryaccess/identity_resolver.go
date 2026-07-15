@@ -154,13 +154,12 @@ type ColumnTypeOIDResolver interface {
 // execution-bound state after all lookups. The application compares this
 // with the initial captured context to detect TOCTOU drift.
 //
-// INV-12 (Malicious Resolver Protection): A malicious implementation cannot
-// promote by returning matching initial/final contexts with facts from another
-// database, another version, or another candidate set because:
-// - Facts must be stamped with DatabaseOID and ServerVersionNum from the resolution context
-// - The application validates fact pinning against the final context before IsTrusted
-// - The application validates batch ordinals before completion
-// - IsTrusted verifies pins match the request version (nonzero + version range)
+// INV-12 (Defense-in-Depth): These checks protect against malformed, cross-wired,
+// buggy, or contract-violating trusted-adapter output. They do NOT protect against
+// a compromised in-process dependency: a malicious resolver that controls
+// CaptureExecutionBoundContext, atomic resolution, facts, and type output can
+// fabricate a mutually consistent proof. NewTrustedService accepts an in-process
+// dependency that is necessarily trusted by construction.
 type AtomicProofResolver interface {
 	ResolveColumnTypesAndEffectIdentities(
 		ctx context.Context,
@@ -297,6 +296,23 @@ type EffectIdentityFacts struct {
 	// CanonicalSignature is an internal, deterministic identity key for manifest
 	// membership checks. Not a public field; not a trust claim by itself.
 	CanonicalSignature string
+
+	// Structured identity fields for candidate-to-fact binding validation.
+	// These fields are populated by the catalog adapter and used by
+	// ValidateCandidateFactBinding to prevent fact swaps between candidates.
+	// They must never be copied into domain.Result, SDK/CLI/HTTP JSON, or reason codes.
+
+	// ResolvedSchemaName is the resolved schema name (e.g., "pg_catalog").
+	// Empty for unqualified resolution.
+	ResolvedSchemaName string
+	// ResolvedObjectName is the resolved object name (e.g., "=", "count").
+	ResolvedObjectName string
+	// CastSourceTypeName is the cast source type name (e.g., "int4").
+	// Only populated for cast identities.
+	CastSourceTypeName string
+	// CastTargetTypeName is the cast target type name (e.g., "text").
+	// Only populated for cast identities.
+	CastTargetTypeName string
 
 	// DatabaseOID pins ObjectOID locality (must match the resolution context).
 	// Zero is incomplete; gates discard such resolved facts.
@@ -900,6 +916,36 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 	if facts.ObjectOID == 0 {
 		return false
 	}
+
+	// Validate structured identity fields (defense-in-depth against fact swaps).
+	// These checks prevent a resolver from returning manifest-valid facts for the
+	// wrong candidate with matching kind+arity.
+	if facts.ResolvedObjectName != "" {
+		candName := candidateCanonicalName(c)
+		if candName != "" && facts.ResolvedObjectName != candName {
+			return false
+		}
+	}
+
+	// Validate explicit-schema intent matches.
+	if c.ExplicitSchema && facts.ResolvedSchemaName != "" {
+		candSchema := CandidateExplicitSchemaName(c)
+		if candSchema != "" && facts.ResolvedSchemaName != candSchema {
+			return false
+		}
+	}
+
+	// Validate cast target type identity.
+	if c.Kind == EffectCandidateCast && facts.CastTargetTypeName != "" {
+		if len(c.TargetTypePath) > 0 {
+			candTarget := c.TargetTypePath[len(c.TargetTypePath)-1]
+			if candTarget != "" && facts.CastTargetTypeName != candTarget {
+				return false
+			}
+		}
+	}
+
+	// Validate arity/operand count.
 	switch c.Kind {
 	case EffectCandidateOperator:
 		n := len(facts.OperandTypeOIDs)
@@ -916,6 +962,24 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 		}
 	}
 	return true
+}
+
+// candidateCanonicalName returns the canonical name for a candidate.
+// For operators/functions: the last element of NamePath.
+// For casts: the target type name.
+func candidateCanonicalName(c EffectCandidate) string {
+	switch c.Kind {
+	case EffectCandidateCast:
+		if len(c.TargetTypePath) > 0 {
+			return c.TargetTypePath[len(c.TargetTypePath)-1]
+		}
+		return ""
+	default:
+		if len(c.NamePath) > 0 {
+			return c.NamePath[len(c.NamePath)-1]
+		}
+		return ""
+	}
 }
 
 // BatchIsFullyResolved reports whether every item is resolved with facts.

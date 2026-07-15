@@ -275,6 +275,8 @@ func (a *EffectIdentityAdapter) resolveOperator(ctx context.Context, req appqa.E
 			ImplementationOID:  r.ImplementationOID,
 			Volatility:         appqa.EffectVolatility(r.Volatility),
 			CanonicalSignature: fmt.Sprintf("%s.%s(%s)", r.SchemaName, r.OperatorName, joinOIDs(typeOIDs)),
+			ResolvedSchemaName: r.SchemaName,
+			ResolvedObjectName: r.OperatorName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved
@@ -332,6 +334,8 @@ func (a *EffectIdentityAdapter) resolveFunction(ctx context.Context, req appqa.E
 			ResultTypeOID:      r.ResultType,
 			Volatility:         appqa.EffectVolatility(r.Volatility),
 			CanonicalSignature: fmt.Sprintf("%s.%s(%s)", r.SchemaName, r.FuncName, joinOIDs(r.ArgTypeOIDs)),
+			ResolvedSchemaName: r.SchemaName,
+			ResolvedObjectName: r.FuncName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved
@@ -386,6 +390,8 @@ func (a *EffectIdentityAdapter) resolveCast(ctx context.Context, req appqa.Effec
 			CastMethod:         method,
 			CastFunctionOID:    r.CastFuncOID,
 			CanonicalSignature: fmt.Sprintf("cast(%s.%s->%s.%s)", r.SourceSchema, r.SourceName, r.TargetSchema, r.TargetName),
+			CastSourceTypeName: r.SourceName,
+			CastTargetTypeName: r.TargetName,
 		}
 		// Cast rows are not namespaced like operators; leave NamespaceOID 0 or set target ns.
 		appqa.StampFactsFromResolution(facts, req.Resolution)
@@ -888,6 +894,8 @@ func resolveOperatorWithCatalog(ctx context.Context, cat effectIdentityCatalog, 
 			ImplementationOID:  r.ImplementationOID,
 			Volatility:         appqa.EffectVolatility(r.Volatility),
 			CanonicalSignature: fmt.Sprintf("%s.%s(%s)", r.SchemaName, r.OperatorName, joinOIDs(tOIDs)),
+			ResolvedSchemaName: r.SchemaName,
+			ResolvedObjectName: r.OperatorName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved
@@ -944,6 +952,8 @@ func resolveFunctionWithCatalog(ctx context.Context, cat effectIdentityCatalog, 
 			ResultTypeOID:      r.ResultType,
 			Volatility:         appqa.EffectVolatility(r.Volatility),
 			CanonicalSignature: fmt.Sprintf("%s.%s(%s)", r.SchemaName, r.FuncName, joinOIDs(r.ArgTypeOIDs)),
+			ResolvedSchemaName: r.SchemaName,
+			ResolvedObjectName: r.FuncName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved
@@ -996,6 +1006,8 @@ func resolveCastWithCatalog(ctx context.Context, cat effectIdentityCatalog, req 
 			CastMethod:         method,
 			CastFunctionOID:    r.CastFuncOID,
 			CanonicalSignature: fmt.Sprintf("cast(%s.%s->%s.%s)", r.SourceSchema, r.SourceName, r.TargetSchema, r.TargetName),
+			CastSourceTypeName: r.SourceName,
+			CastTargetTypeName: r.TargetName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved
