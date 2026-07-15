@@ -22,36 +22,31 @@ var (
 	errConnectionNotAlive = errors.New("postgresql session: connection is not alive")
 )
 
-// PostgreSQLQueryAccessSession is an opaque wrapper around a caller-owned
-// *sql.Conn for trusted PostgreSQL query access analysis.
-//
-// The session does not own or close the caller's connection. The caller
-// retains full lifecycle control. Analysis on an already-closed connection
-// returns a bounded error.
-//
-// The wrapper exposes no OIDs, manifest entries, catalog SQL, credentials,
-// session binding, or Trusted flag. It has no JSON-marshalable fields.
-type PostgreSQLQueryAccessSession struct {
-	conn *sql.Conn
-}
-
 // NewPostgreSQLQueryAccessSessionFromConn creates an opaque session from a
 // caller-owned *sql.Conn. The connection must be non-nil and alive.
+//
+// The ctx parameter controls the liveness check timeout. If ctx is nil,
+// the connection is validated without a timeout. If ctx is canceled or
+// exceeds its deadline, the liveness check fails with a bounded error.
 //
 // The session does not take ownership of the connection. The caller must
 // close it after analysis. A *sql.DB constructor is intentionally not
 // provided: DeltaScope cannot return a pool-allocated connection for
 // subsequent execution without a separate execution-affinity design.
 //
-// Returns a bounded error if the connection is nil or closed. Error text
-// never contains driver internals, DSN, username, password, SQL, or
-// catalog query text.
-func NewPostgreSQLQueryAccessSessionFromConn(conn *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
+// Returns a bounded error if the connection is nil, closed, or the context
+// is canceled. Error text never contains driver internals, DSN, username,
+// password, SQL, or catalog query text.
+func NewPostgreSQLQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
 	if conn == nil {
 		return nil, errNilConnection
 	}
+	// Use background if nil to avoid panic; caller should pass real ctx.
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	// Verify the connection is alive with a minimal probe.
-	if err := conn.PingContext(context.Background()); err != nil {
+	if err := conn.PingContext(ctx); err != nil {
 		return nil, errConnectionNotAlive
 	}
 	return &PostgreSQLQueryAccessSession{conn: conn}, nil

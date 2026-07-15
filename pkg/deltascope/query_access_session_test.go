@@ -6,6 +6,7 @@
 package deltascope
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"strings"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestNewSessionFromConn_NilConn(t *testing.T) {
-	session, err := NewPostgreSQLQueryAccessSessionFromConn(nil)
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for nil connection")
 	}

@@ -43,7 +43,7 @@ Use a separate SDK function rather than putting a session-shaped field on
 `QueryAccessRequest`:
 
 ```go
-func NewPostgreSQLQueryAccessSessionFromConn(conn *sql.Conn) (*PostgreSQLQueryAccessSession, error)
+func NewPostgreSQLQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*PostgreSQLQueryAccessSession, error)
 
 func AnalyzePostgreSQLQueryAccessWithSession(
     ctx context.Context,

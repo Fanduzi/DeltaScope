@@ -8,18 +8,11 @@
 package deltascope
 
 import (
+	"context"
 	"database/sql"
-	"errors"
 )
 
-// ErrPostgreSQLSessionNotAvailable indicates PostgreSQL session support was not compiled in.
-var ErrPostgreSQLSessionNotAvailable = errors.New("postgresql session support requires build tag: go build -tags postgresql")
-
-// PostgreSQLQueryAccessSession is an opaque wrapper for a caller-owned PostgreSQL connection.
-// It is not available without the postgresql build tag.
-type PostgreSQLQueryAccessSession struct{}
-
 // NewPostgreSQLQueryAccessSessionFromConn returns ErrPostgreSQLSessionNotAvailable when built without the postgresql tag.
-func NewPostgreSQLQueryAccessSessionFromConn(_ *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
+func NewPostgreSQLQueryAccessSessionFromConn(_ context.Context, _ *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
 	return nil, ErrPostgreSQLSessionNotAvailable
 }

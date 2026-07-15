@@ -1403,7 +1403,10 @@ resolver, and PathEpoch documentation correction.
    the implementation at `effect_identity_session.go:135`.
 2. **Opaque `PostgreSQLQueryAccessSession` wrapper:** Public type with no
    exported fields, no JSON-marshalable surface, no close method. Constructor
-   validates the caller's `*sql.Conn` is non-nil and usable.
+   accepts `context.Context` for liveness check cancellation/deadline.
+   Validates the caller's `*sql.Conn` is non-nil and alive.
+   `ErrPostgreSQLSessionNotAvailable` is exported from both tagged and
+   untagged builds for consistent consumer experience.
 3. **`*sql.Conn`-backed metadata resolver:** `QueryAccessConnResolver` wraps
    the caller's `*sql.Conn` directly; no `*sql.DB` field, no pool fallback.
 4. **Private assembly helper:** `newTrustedServiceFromSession` in
@@ -1411,7 +1414,14 @@ resolver, and PathEpoch documentation correction.
    policy into `NewTrustedService`. Lives in the SDK layer to avoid import
    cycles.
 5. **Build-tag strategy:** PostgreSQL-specific implementations use
-   `//go:build postgresql`; untagged stubs return `ErrPostgreSQLNotAvailable`.
+   `//go:build postgresql`; shared types/errors in untagged common file;
+   untagged stub returns `ErrPostgreSQLSessionNotAvailable`.
+6. **Same-connection evidence:** Integration test verifies `session.conn`
+   is the same `*sql.Conn` pointer as input, executes `svc.Analyze` through
+   the trusted service, and confirms stable backend PID before/after.
+   Structural assembly audit confirms `newTrustedServiceFromSession` passes
+   the same `session.conn` to both `NewPinnedSessionFromConn` and
+   `NewQueryAccessConnResolver`.
 
 **Explicit non-claims:**
 
@@ -1420,14 +1430,17 @@ resolver, and PathEpoch documentation correction.
 - No default SDK/CLI/HTTP/MCP behavior change
 - Snapshot consistency (REPEATABLE READ across metadata + identity) is a
   pre-existing architectural limitation, not introduced by this task
+- Same-connection proof is structural pointer equality + stable PID, not
+  per-query PID instrumentation
 
 **Verification evidence:**
 
-- `go test ./pkg/deltascope/... -count=1`: PASS
-- `go test -tags postgresql ./pkg/deltascope/... -count=1`: PASS
-- `go test ./internal/infrastructure/metadata/postgresql/... -count=1`: PASS
-- `go test -tags postgresql ./internal/infrastructure/metadata/postgresql/... -count=1`: PASS
-- `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1`: PASS (Docker PG17)
+- `go test ./pkg/deltascope/... -count=1`: 75 passed
+- `go test -tags postgresql ./pkg/deltascope/... -count=1`: 382 passed
+- `go test -tags 'postgresql && integration' ./pkg/deltascope/... -count=1`: 386 passed (Docker PG17)
+- `go test ./internal/infrastructure/metadata/postgresql/... -count=1`: 51 passed
+- `go test -tags postgresql ./internal/infrastructure/metadata/postgresql/... -count=1`: 79 passed
+- `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1`: 90 passed
 - `make decision-record-gate`: PASS
 - `git diff --check`: clean
 

@@ -62,8 +62,8 @@ Stable public package surface for library consumers.
   Column reference with `Unbound` field indicating the column could not be resolved to a qualified schema.table.column
 - `PostgreSQLQueryAccessSession`
   Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only)
-- `NewPostgreSQLQueryAccessSessionFromConn(conn)`
-  Creates an opaque session from a caller-owned `*sql.Conn`; the session does not close the connection (postgresql build tag only)
+- `NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)`
+  Creates an opaque session from a caller-owned `*sql.Conn` with context for liveness check; the session does not close the connection (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
 
 ## Notes
 
