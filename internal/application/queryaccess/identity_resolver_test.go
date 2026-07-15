@@ -384,8 +384,11 @@ func TestValidateFactOperandTypeBinding_NilTypeMap(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
-	if result.Items[0].Status != domain.IdentityStatusResolved {
-		t.Errorf("nil type map should skip: got %v, want resolved", result.Items[0].Status)
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("nil type map should fail closed: got %v, want lookup_failed", result.Items[0].Status)
+	}
+	if result.Items[0].Facts != nil {
+		t.Errorf("nil type map should clear facts")
 	}
 }
 
@@ -411,8 +414,11 @@ func TestValidateFactOperandTypeBinding_EmptyTypeMap(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
-	if result.Items[0].Status != domain.IdentityStatusResolved {
-		t.Errorf("empty type map should skip: got %v, want resolved", result.Items[0].Status)
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("empty type map should fail closed: got %v, want lookup_failed", result.Items[0].Status)
+	}
+	if result.Items[0].Facts != nil {
+		t.Errorf("empty type map should clear facts")
 	}
 }
 
@@ -498,8 +504,122 @@ func TestValidateFactOperandTypeBinding_MissingOrdinal(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("missing ordinal should fail closed: got %v, want lookup_failed", result.Items[0].Status)
+	}
+	if result.Items[0].Facts != nil {
+		t.Errorf("missing ordinal should clear facts")
+	}
+}
+
+func TestValidateFactOperandTypeBinding_WrongLengthMap(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{23, 23},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{0: {23}} // one element
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("wrong-length map should fail: got %v, want lookup_failed", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_ZeroOID(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{23, 23},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{0: {0, 23}} // zero OID
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("zero OID should fail: got %v, want lookup_failed", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_WrongLengthFact(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{23}, // one element
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{0: {23, 23}}
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("wrong-length fact should fail: got %v, want lookup_failed", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_CountStar(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateFunction,
+					ObjectOID:       2803,
+					OperandTypeOIDs: []uint32{},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateFunction, Arity: 0},
+	}
+	result := ValidateFactOperandTypeBinding(batch, nil, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
 	if result.Items[0].Status != domain.IdentityStatusResolved {
-		t.Errorf("missing ordinal should skip: got %v, want resolved", result.Items[0].Status)
+		t.Errorf("count(*) should be untouched: got %v, want resolved", result.Items[0].Status)
 	}
 }
 

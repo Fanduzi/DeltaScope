@@ -1265,7 +1265,7 @@ during independent Oracle/Momus review.
    - INV-9: Unknown AST fail-closed (parser emits unproven_* reasons)
    - INV-10: Static analysis limitation (documented)
    - INV-11: TrustPolicy gate (IsTrusted called only after validation)
-   - INV-12: Defense-in-depth against contract-violating adapter output (fact pinning + ordinal validation + operand-type binding)
+   - INV-12: Defense-in-depth against contract-violating adapter output (fact pinning + ordinal validation + operand-type binding for binary operators)
    - INV-13: No public trusted API (NewTrustedService internal-only)
    - INV-14: No leaks (json:"-" on EffectCandidates, bounded reason codes)
 
@@ -1274,7 +1274,8 @@ during independent Oracle/Momus review.
    - Facts must be stamped with DatabaseOID and ServerVersionNum
    - Application validates fact pinning before IsTrusted
    - Application validates batch ordinals before completion
-   - Application validates operand-type binding (type-map cross-check for binary operators)
+   - Application validates operand-type binding (type-map cross-check for binary operators; nil/empty/missing map fails closed)
+   - Removed dead cast-name fields (CastSourceTypeName, CastTargetTypeName): Phase 1 does not trust casts
 
 4. **Complete parser fail-closed traversal:**
    - Set-operation branches, CTE bodies, nested/scalar subqueries handled

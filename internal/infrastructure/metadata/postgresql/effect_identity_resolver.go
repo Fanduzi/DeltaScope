@@ -390,8 +390,6 @@ func (a *EffectIdentityAdapter) resolveCast(ctx context.Context, req appqa.Effec
 			CastMethod:         method,
 			CastFunctionOID:    r.CastFuncOID,
 			CanonicalSignature: fmt.Sprintf("cast(%s.%s->%s.%s)", r.SourceSchema, r.SourceName, r.TargetSchema, r.TargetName),
-			CastSourceTypeName: r.SourceName,
-			CastTargetTypeName: r.TargetName,
 		}
 		// Cast rows are not namespaced like operators; leave NamespaceOID 0 or set target ns.
 		appqa.StampFactsFromResolution(facts, req.Resolution)
@@ -1006,8 +1004,6 @@ func resolveCastWithCatalog(ctx context.Context, cat effectIdentityCatalog, req 
 			CastMethod:         method,
 			CastFunctionOID:    r.CastFuncOID,
 			CanonicalSignature: fmt.Sprintf("cast(%s.%s->%s.%s)", r.SourceSchema, r.SourceName, r.TargetSchema, r.TargetName),
-			CastSourceTypeName: r.SourceName,
-			CastTargetTypeName: r.TargetName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved
