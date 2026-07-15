@@ -41,9 +41,8 @@ func NewPostgreSQLQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn
 	if conn == nil {
 		return nil, errNilConnection
 	}
-	// Use background if nil to avoid panic; caller should pass real ctx.
 	if ctx == nil {
-		ctx = context.Background()
+		return nil, errNilConnection
 	}
 	// Verify the connection is alive with a minimal probe.
 	if err := conn.PingContext(ctx); err != nil {

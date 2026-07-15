@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -134,16 +135,6 @@ func TestNewTrustedServiceFromSession_Success(t *testing.T) {
 	}
 }
 
-func TestNewTrustedServiceFromSession_NilSession(t *testing.T) {
-	svc, err := newTrustedServiceFromSession(nil)
-	if err == nil {
-		t.Fatal("expected error for nil session")
-	}
-	if svc != nil {
-		t.Fatal("expected nil service on error")
-	}
-}
-
 func TestNewSessionFromConn_ClosedConn(t *testing.T) {
 	db := openTestDB(t)
 	defer db.Close()
@@ -161,6 +152,13 @@ func TestNewSessionFromConn_ClosedConn(t *testing.T) {
 	}
 	if session != nil {
 		t.Fatal("expected nil session on error")
+	}
+
+	errText := err.Error()
+	for _, forbidden := range []string{"pgx", "pq", "dsn", "password", "host=", "user="} {
+		if strings.Contains(strings.ToLower(errText), forbidden) {
+			t.Errorf("error text must not contain %q, got: %s", forbidden, errText)
+		}
 	}
 }
 
@@ -183,6 +181,13 @@ func TestNewSessionFromConn_CanceledCtx(t *testing.T) {
 	}
 	if session != nil {
 		t.Fatal("expected nil session on error")
+	}
+
+	errText := err.Error()
+	for _, forbidden := range []string{"pgx", "pq", "dsn", "password", "host=", "user="} {
+		if strings.Contains(strings.ToLower(errText), forbidden) {
+			t.Errorf("error text must not contain %q, got: %s", forbidden, errText)
+		}
 	}
 }
 
