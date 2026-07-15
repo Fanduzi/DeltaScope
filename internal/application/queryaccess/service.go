@@ -299,6 +299,9 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		}
 	}
 
+	// Validate candidate-to-fact binding: facts must match the expected candidate shape.
+	batch = ValidateCandidateFactBinding(batch, extracted.EffectCandidates)
+
 	// Complete batch to ensure one item per candidate ordinal.
 	batch = CompleteEffectIdentityBatch(identityReq, batch)
 

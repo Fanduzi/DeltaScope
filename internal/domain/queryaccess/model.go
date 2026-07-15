@@ -59,7 +59,7 @@ type UsageContext string
 const (
 	// UsageProjection indicates the column appears in the SELECT list.
 	UsageProjection UsageContext = "projection"
-	// UsageFilter indicates the column appears in a WHERE clause.
+	// UsageFilter indicates the column appears in a WHERE clause or aggregate FILTER clause.
 	UsageFilter UsageContext = "filter"
 	// UsageJoin indicates the column appears in a JOIN condition.
 	UsageJoin UsageContext = "join"
@@ -69,8 +69,12 @@ const (
 	UsageHaving UsageContext = "having"
 	// UsageOrdering indicates the column appears in an ORDER BY clause.
 	UsageOrdering UsageContext = "ordering"
-	// UsageWindow indicates the column appears in a window function.
+	// UsageWindow indicates the column appears in a window PARTITION BY or frame bound.
 	UsageWindow UsageContext = "window"
+	// UsageDistinctOn indicates the column appears in a DISTINCT ON clause.
+	UsageDistinctOn UsageContext = "distinct_on"
+	// UsageLimit indicates the column appears in a LIMIT or OFFSET expression.
+	UsageLimit UsageContext = "limit"
 )
 
 // ReasonCode is a bounded machine identifier for why something is indeterminate or rejected.

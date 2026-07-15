@@ -1,0 +1,1 @@
+SELECT count(*) FROM public.users TABLESAMPLE BERNOULLI(10)

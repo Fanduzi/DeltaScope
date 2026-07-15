@@ -260,6 +260,26 @@ func selectHasUnprovenEffect(sel *pg_query.SelectStmt) bool {
 	return c.hasUnprovenEffect()
 }
 
+func collectWindowRefs(win *pg_query.WindowDef, scope *selectScope, defaultSchema string, refs *[]ColumnRefFacts, seen map[string]bool, cteLineage cteLineageMap) {
+	if win == nil {
+		return
+	}
+	for _, part := range win.GetPartitionClause() {
+		collectRefsFromNode(part, scope, defaultSchema, "window", refs, seen, cteLineage)
+	}
+	for _, order := range win.GetOrderClause() {
+		if sortBy := order.GetSortBy(); sortBy != nil {
+			collectRefsFromNode(sortBy.GetNode(), scope, defaultSchema, "ordering", refs, seen, cteLineage)
+		}
+	}
+	if win.GetStartOffset() != nil {
+		collectRefsFromNode(win.GetStartOffset(), scope, defaultSchema, "window", refs, seen, cteLineage)
+	}
+	if win.GetEndOffset() != nil {
+		collectRefsFromNode(win.GetEndOffset(), scope, defaultSchema, "window", refs, seen, cteLineage)
+	}
+}
+
 func collectWindowDefEffects(win *pg_query.WindowDef, c *effectCollector, scope *selectScope, defaultSchema string, cteNames map[string]bool) {
 	if win == nil || c == nil {
 		return
@@ -329,14 +349,8 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector, scope *selectSc
 			collectNodeEffects(col, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_RangeTableSample:
-		collectNodeEffects(n.RangeTableSample.GetRelation(), c, scope, defaultSchema, cteNames)
-		for _, method := range n.RangeTableSample.GetMethod() {
-			collectNodeEffects(method, c, scope, defaultSchema, cteNames)
-		}
-		for _, arg := range n.RangeTableSample.GetArgs() {
-			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
-		}
-		collectNodeEffects(n.RangeTableSample.GetRepeatable(), c, scope, defaultSchema, cteNames)
+		c.flags.unsupportedTraversal = true
+		return
 	case *pg_query.Node_ResTarget:
 		if n.ResTarget.GetVal() != nil {
 			collectNodeEffects(n.ResTarget.GetVal(), c, scope, defaultSchema, cteNames)
@@ -936,6 +950,10 @@ func walkFromClause(fromClause []*pg_query.Node, defaultSchema string, relations
 			// Set-returning functions don't add table relations.
 		case *pg_query.Node_JoinExpr:
 			*relations = append(*relations, collectJoinRelations(n.JoinExpr, defaultSchema)...)
+		case *pg_query.Node_RangeTableSample:
+			if rel := n.RangeTableSample.GetRelation(); rel != nil {
+				*relations = append(*relations, collectNodeRelations(rel, defaultSchema)...)
+			}
 		}
 	}
 }
@@ -967,6 +985,10 @@ func collectNodeRelations(node *pg_query.Node, defaultSchema string) []RelationF
 		return relations
 	case *pg_query.Node_JoinExpr:
 		return collectJoinRelations(n.JoinExpr, defaultSchema)
+	case *pg_query.Node_RangeTableSample:
+		if rel := n.RangeTableSample.GetRelation(); rel != nil {
+			return collectNodeRelations(rel, defaultSchema)
+		}
 	}
 	return nil
 }
@@ -986,6 +1008,9 @@ func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cte
 	refs := make([]ColumnRefFacts, 0)
 	seen := make(map[string]bool)
 
+	for _, distinct := range sel.GetDistinctClause() {
+		collectRefsFromNode(distinct, scope, defaultSchema, "distinct_on", &refs, seen, cteLineage)
+	}
 	for _, target := range sel.GetTargetList() {
 		collectRefsFromNode(target, scope, defaultSchema, "projection", &refs, seen, cteLineage)
 	}
@@ -1007,6 +1032,12 @@ func collectColumnReferences(sel *pg_query.SelectStmt, defaultSchema string, cte
 		if sortBy := sort.GetSortBy(); sortBy != nil {
 			collectRefsFromNode(sortBy.GetNode(), scope, defaultSchema, "ordering", &refs, seen, cteLineage)
 		}
+	}
+	if sel.GetLimitOffset() != nil {
+		collectRefsFromNode(sel.GetLimitOffset(), scope, defaultSchema, "limit", &refs, seen, cteLineage)
+	}
+	if sel.GetLimitCount() != nil {
+		collectRefsFromNode(sel.GetLimitCount(), scope, defaultSchema, "limit", &refs, seen, cteLineage)
 	}
 
 	return refs
@@ -1346,6 +1377,17 @@ func collectRefsFromNode(node *pg_query.Node, scope *selectScope, defaultSchema 
 	case *pg_query.Node_FuncCall:
 		for _, arg := range n.FuncCall.GetArgs() {
 			collectRefsFromNode(arg, scope, defaultSchema, usage, refs, seen, cteLineage)
+		}
+		if n.FuncCall.GetAggFilter() != nil {
+			collectRefsFromNode(n.FuncCall.GetAggFilter(), scope, defaultSchema, "filter", refs, seen, cteLineage)
+		}
+		for _, order := range n.FuncCall.GetAggOrder() {
+			if sortBy := order.GetSortBy(); sortBy != nil {
+				collectRefsFromNode(sortBy.GetNode(), scope, defaultSchema, "ordering", refs, seen, cteLineage)
+			}
+		}
+		if n.FuncCall.GetOver() != nil {
+			collectWindowRefs(n.FuncCall.GetOver(), scope, defaultSchema, refs, seen, cteLineage)
 		}
 	case *pg_query.Node_SubLink:
 		if sub := n.SubLink.GetSubselect(); sub != nil {

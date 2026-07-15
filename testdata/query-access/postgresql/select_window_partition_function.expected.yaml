@@ -8,7 +8,13 @@ expect:
     - name: users
       kind: table
       permission_required: true
-  referenced_columns: []
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [ordering]
+    - table: users
+      column: name
+      usages: [window]
   outputs: []
   requirements:
     - object: unqualified_relation

@@ -851,6 +851,73 @@ func ValidateBatchOrdinals(batch EffectIdentityBatch, candidates []EffectCandida
 	return nil
 }
 
+// ValidateCandidateFactBinding validates that resolved facts correspond to the
+// correct candidate shape. This prevents a resolver from returning manifest-valid
+// facts for the wrong same-kind candidate.
+//
+// Validates:
+//   - Fact kind matches candidate kind
+//   - ObjectOID is nonzero
+//   - For operators: OperandTypeOIDs has 1 or 2 entries (unary/binary)
+//   - For functions: OperandTypeOIDs length matches candidate arity
+//   - For casts: OperandTypeOIDs has exactly 1 entry
+//
+// On mismatch: converts item status to lookup_failed and removes facts.
+func ValidateCandidateFactBinding(batch EffectIdentityBatch, candidates []EffectCandidate) EffectIdentityBatch {
+	candByOrd := make(map[int]EffectCandidate, len(candidates))
+	for _, c := range candidates {
+		candByOrd[c.Ordinal] = c
+	}
+	items := make([]EffectIdentityItem, 0, len(batch.Items))
+	for _, it := range batch.Items {
+		if it.Status != domain.IdentityStatusResolved || it.Facts == nil {
+			items = append(items, it)
+			continue
+		}
+		c, ok := candByOrd[it.Ordinal]
+		if !ok {
+			it.Status = domain.IdentityStatusLookupFailed
+			it.Facts = nil
+			items = append(items, it)
+			continue
+		}
+		if !factMatchesCandidate(it.Facts, c) {
+			it.Status = domain.IdentityStatusLookupFailed
+			it.Facts = nil
+		}
+		items = append(items, it)
+	}
+	return NormalizeEffectIdentityBatch(items)
+}
+
+func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
+	if facts == nil {
+		return false
+	}
+	if string(facts.Kind) != string(c.Kind) {
+		return false
+	}
+	if facts.ObjectOID == 0 {
+		return false
+	}
+	switch c.Kind {
+	case EffectCandidateOperator:
+		n := len(facts.OperandTypeOIDs)
+		if n < 1 || n > 2 {
+			return false
+		}
+	case EffectCandidateFunction:
+		if len(facts.OperandTypeOIDs) != c.Arity {
+			return false
+		}
+	case EffectCandidateCast:
+		if len(facts.OperandTypeOIDs) != 1 {
+			return false
+		}
+	}
+	return true
+}
+
 // BatchIsFullyResolved reports whether every item is resolved with facts.
 // Does not imply trust or admission; T8 policy must still gate promotion.
 func BatchIsFullyResolved(batch EffectIdentityBatch) bool {

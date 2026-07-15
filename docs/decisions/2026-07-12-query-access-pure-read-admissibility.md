@@ -1313,6 +1313,57 @@ during independent Oracle/Momus review.
 
 **Static-analysis limitation:** Static analysis produces requirements only. It is not grant evaluation, authorization, or a guarantee that a later execution uses the same database snapshot.
 
+### T14 — Strict-Requirements Completeness and TABLESAMPLE Fail-Close (2026-07-15)
+
+**Status remains:** `Proposed`.
+
+**What T14 delivers:**
+
+1. **Extended column reference collection:**
+   - `collectColumnReferences` now walks DISTINCT ON, window partition/order/frame, aggregate FILTER, and LIMIT/OFFSET expressions
+   - New `collectWindowRefs` helper walks WindowDef partition, order, and frame bounds
+   - New domain usage contexts: `UsageDistinctOn = "distinct_on"`, `UsageLimit = "limit"`
+   - `UsageFilter` comment clarified to cover both WHERE and aggregate FILTER
+
+2. **TABLESAMPLE fail-close:**
+   - `collectNodeEffects` sets `unsupportedTraversal` flag immediately for `Node_RangeTableSample` without walking children
+   - `walkFromClause` unwraps TABLESAMPLE underlying relation for relation reporting
+   - Reuses existing `unsupported_traversal` reason code (no new public contract surface)
+
+3. **Candidate-to-fact binding validation:**
+   - `ValidateCandidateFactBinding` validates resolved facts match expected candidate shape
+   - Checks: kind match, nonzero ObjectOID, operator arity 1-2, function arity match, cast arity 1
+   - On mismatch: converts to `lookup_failed` and removes facts before manifest proof
+   - Wired in `resolveAndProveEffects` after fact pinning validation
+
+4. **Corpus fixtures:**
+   - Revised: `select_agg_filter_function` (now includes `users.name` with `filter` usage)
+   - Revised: `select_window_partition_function` (now includes `users.id` with `ordering` and `users.name` with `window`)
+   - New: `select_distinct_on_column` (DISTINCT ON column reference)
+   - New: `select_limit_subquery` (LIMIT subquery column reference)
+   - New: `select_tablesample` (TABLESAMPLE fail-close)
+
+**Public contract changes:**
+
+- New usage context values `distinct_on` and `limit` in `referenced_columns[].usages`
+- `UsageFilter` documentation clarified (behavior unchanged)
+- Consumers must tolerate unknown usage strings
+
+**Verification evidence:**
+
+- `go test ./internal/domain/queryaccess/... -count=1`: 87 passed
+- `go test ./internal/application/queryaccess/... -count=1`: 213 passed
+- `go test -tags postgresql ./internal/application/queryaccess/... -count=1`: 444 passed
+- `go test ./internal/infrastructure/parser/postgresql/... -count=1`: 1 passed
+- `go test -tags postgresql ./internal/infrastructure/parser/postgresql/... -count=1`: 629 passed
+- `make query-access-corpus-gates`: PASS (38 corpus cases)
+- `make pg-unit-test-gates`: PASS
+- `golangci-lint run ./...`: clean
+- `go vet ./...` / `go vet -tags postgresql ./...`: clean
+- `go test -race ./...`: clean
+- `npm test --prefix packages/deltascope-mcp`: 15 passed
+- GitNexus detect_changes: 10 changed symbols, 5 affected processes, medium risk
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity

@@ -8,7 +8,10 @@ expect:
     - name: users
       kind: table
       permission_required: true
-  referenced_columns: []
+  referenced_columns:
+    - table: users
+      column: name
+      usages: [filter]
   outputs: []
   requirements:
     - object: unqualified_relation
