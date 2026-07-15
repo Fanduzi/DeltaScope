@@ -18,6 +18,10 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | effect_identity_resolver.go | Facts-only `EffectIdentityResolver` adapter (operator/function/cast exact catalog lookup + TOCTOU gate) |
 | effect_identity_resolver_test.go | Unit tests with fake pinned catalog (no live PG claim) |
 | effect_identity_resolver_integration_test.go | Optional PG17 Docker integration (`-tags postgresql,integration`) |
+| query_access_conn_resolver.go | `*sql.Conn`-backed SchemaResolver for same-connection metadata resolution |
+| query_access_conn_resolver_stub.go | Empty QueryAccessConnResolver struct for non-postgresql builds |
+| query_access_conn_resolver_test.go | Unit tests for conn-backed resolver |
+| query_access_conn_resolver_integration_test.go | PG17 Docker integration: same-backend-PID proof |
 
 ## Exports
 
@@ -36,6 +40,7 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 - `QueryAccessResolver.ResolveRelation(ctx, dialect, schema, name)`
 - `PinnedSession` / `NewPinnedSessionFromConn` / `PinSession` / `ErrSessionNotPinned`
 - `EffectIdentityAdapter` / `NewEffectIdentityAdapter` (facts only; implements `ControlledEffectIdentityResolver`)
+- `QueryAccessConnResolver` / `NewQueryAccessConnResolver` (conn-backed SchemaResolver; no `*sql.DB` field)
 
 ## Effect identity (T7)
 

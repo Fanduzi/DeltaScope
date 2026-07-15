@@ -188,8 +188,9 @@ type AtomicProofResolver interface {
 //     They share the same database/server catalog as the session; OIDs are
 //     database-local. Multi-match remains ambiguous.
 //  4. Bound=true attests the caller controls the session used for both analysis
-//     resolution and execution. PathEpoch must bump on search_path, role,
-//     database, or server change.
+//     resolution and execution. PathEpoch is a stable non-zero compatibility
+//     marker; session/database/role/version are compared field-wise, and
+//     search_path is compared separately via NamespaceSearchOIDs.
 //  5. TOCTOU: re-read live context on the same session after lookup; any session
 //     field mismatch fails closed for every candidate (including explicit schema).
 //     Search_path order mismatch alone fails closed for unqualified only.
@@ -203,9 +204,10 @@ type EffectIdentityResolutionContext struct {
 	// frozen catalog snapshot. Required non-empty when Bound. Never a DSN or password.
 	SessionBinding string
 
-	// PathEpoch is a non-zero generation counter for the locked session snapshot
-	// (search_path / role / database identity). Required when Bound. Live mismatch
-	// invalidates the context.
+	// PathEpoch is a stable non-zero compatibility marker for the captured
+	// session snapshot. Required when Bound. Session/database/role/version
+	// are compared field-wise; search_path is compared separately via
+	// NamespaceSearchOIDs. Not a mutation counter.
 	PathEpoch uint64
 
 	// NamespaceSearchOIDs is the ordered schema OID list used for unqualified

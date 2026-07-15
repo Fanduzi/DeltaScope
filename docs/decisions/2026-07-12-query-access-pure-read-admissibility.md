@@ -1390,6 +1390,47 @@ the caller owns the connection after analysis, and proves metadata, type, and
 identity lookups use the same backend connection. The public-boundary wording
 must be updated in the same acceptance commit.
 
+### T15 — Trusted SDK Session Foundation (2026-07-15)
+
+**Status remains:** `Proposed`. **Implemented** — adds the foundation layer for
+the trusted SDK path: opaque session wrapper, `*sql.Conn`-backed metadata
+resolver, and PathEpoch documentation correction.
+
+**What T15 delivers:**
+
+1. **PathEpoch documentation corrected:** Comments in `identity_resolver.go`
+   now describe PathEpoch as a stable non-zero compatibility marker, matching
+   the implementation at `effect_identity_session.go:135`.
+2. **Opaque `PostgreSQLQueryAccessSession` wrapper:** Public type with no
+   exported fields, no JSON-marshalable surface, no close method. Constructor
+   validates the caller's `*sql.Conn` is non-nil and usable.
+3. **`*sql.Conn`-backed metadata resolver:** `QueryAccessConnResolver` wraps
+   the caller's `*sql.Conn` directly; no `*sql.DB` field, no pool fallback.
+4. **Private assembly helper:** `newTrustedServiceFromSession` in
+   `pkg/deltascope` wires the conn resolver, identity adapter, and trust
+   policy into `NewTrustedService`. Lives in the SDK layer to avoid import
+   cycles.
+5. **Build-tag strategy:** PostgreSQL-specific implementations use
+   `//go:build postgresql`; untagged stubs return `ErrPostgreSQLNotAvailable`.
+
+**Explicit non-claims:**
+
+- No public `AnalyzePostgreSQLQueryAccessWithSession` (Task 4)
+- No public E2E (Task 5)
+- No default SDK/CLI/HTTP/MCP behavior change
+- Snapshot consistency (REPEATABLE READ across metadata + identity) is a
+  pre-existing architectural limitation, not introduced by this task
+
+**Verification evidence:**
+
+- `go test ./pkg/deltascope/... -count=1`: PASS
+- `go test -tags postgresql ./pkg/deltascope/... -count=1`: PASS
+- `go test ./internal/infrastructure/metadata/postgresql/... -count=1`: PASS
+- `go test -tags postgresql ./internal/infrastructure/metadata/postgresql/... -count=1`: PASS
+- `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1`: PASS (Docker PG17)
+- `make decision-record-gate`: PASS
+- `git diff --check`: clean
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity

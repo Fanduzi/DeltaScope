@@ -9,6 +9,8 @@ Stable public package surface for library consumers.
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
+| query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access (postgresql build tag) |
+| query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
 | version.go | Publishes the default semantic version and canonical ASCII logo |
 | audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement input, PostgreSQL request routing, and metadata-aware request plumbing |
 | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
@@ -58,6 +60,10 @@ Stable public package surface for library consumers.
   Relation reference with `Unbound` field marking relations that must not produce physical requirements
 - `QueryAccessColumnReference`
   Column reference with `Unbound` field indicating the column could not be resolved to a qualified schema.table.column
+- `PostgreSQLQueryAccessSession`
+  Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only)
+- `NewPostgreSQLQueryAccessSessionFromConn(conn)`
+  Creates an opaque session from a caller-owned `*sql.Conn`; the session does not close the connection (postgresql build tag only)
 
 ## Notes
 
