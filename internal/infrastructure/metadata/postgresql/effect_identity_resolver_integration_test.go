@@ -15,8 +15,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -316,21 +314,4 @@ func openIntegrationDB(t *testing.T) (*sql.DB, func(), error) {
 		return nil, nil, fmt.Errorf("ping %s:%d: %w", host, port, err)
 	}
 	return db, func() { _ = db.Close() }, nil
-}
-
-func envOr(k, def string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
-	}
-	return def
-}
-
-func envOrInt(k string, def int) int {
-	if v := os.Getenv(k); v != "" {
-		n, err := strconv.Atoi(v)
-		if err == nil {
-			return n
-		}
-	}
-	return def
 }
