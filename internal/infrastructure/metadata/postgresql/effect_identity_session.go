@@ -123,7 +123,7 @@ func (s *PinnedSession) CaptureLiveContext(ctx context.Context) (appqa.EffectIde
 
 	pathOIDs, err := s.captureSearchPathOIDs(ctx, conn)
 	if err != nil {
-		return appqa.EffectIdentityResolutionContext{}, err
+		return appqa.EffectIdentityResolutionContext{}, errSessionCapture
 	}
 
 	// Opaque binding: backend + database (never host/user/password).

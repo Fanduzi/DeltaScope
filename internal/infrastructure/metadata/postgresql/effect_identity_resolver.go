@@ -481,7 +481,7 @@ func (t *txCatalog) CaptureLiveContext(ctx context.Context) (appqa.EffectIdentit
 
 	pathOIDs, err := captureSearchPathOIDsTx(ctx, t.tx)
 	if err != nil {
-		return appqa.EffectIdentityResolutionContext{}, err
+		return appqa.EffectIdentityResolutionContext{}, errSessionCapture
 	}
 
 	binding := "b" + strconv.FormatInt(backendPID, 10) + "-d" + strconv.FormatUint(uint64(databaseOID), 10)

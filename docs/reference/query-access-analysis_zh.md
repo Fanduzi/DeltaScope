@@ -98,8 +98,8 @@ strict 和 projection_only 模式都要求对每个基表和视图具有 `read_t
 | CTE 权限要求 | `false` | `false` |
 | WHERE 子句列用途 | `projection` + `filter` | `projection`（WHERE 列仅在 SELECT 中引用时才获得 `filter`） |
 | 歧义列处理 | `indeterminate` 且有 `ambiguous_reference` 未解析项 | `read_only` 且有未限定列引用 |
-| `reason_codes` 填充 | 是（`write_operation`、`function_call`、`parse_failure` 等） | 否（空） |
-| `unresolved` 填充 | 是（通配符、歧义引用） | 否（大多数情况为空） |
+| `reason_codes` 填充 | 是（`write_operation`、`function_call`、`parse_failure` 等） | 是（`unproven_operator_effect`、`unproven_function_effect`、`unproven_cast_effect`、`unqualified_relation_blocked`、`identity_*` 码） |
+| `unresolved` 填充 | 是（通配符、歧义引用） | 是（`unqualified_relation` 条目，用于未限定模式的基表关系） |
 
 ## 结果结构
 
@@ -171,6 +171,45 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
 ## MCP 延迟
 
 查询访问分析的 MCP 表面集成已延迟。当前 MCP 服务器仅暴露 `audit_sql`、`describe_rule`、`list_rules` 和 `get_capabilities`。
+
+## 可信 PostgreSQL SDK 路径
+
+可信 PostgreSQL SDK 路径支持 PostgreSQL 查询的 manifest 门控准入提升。此路径仅在使用 `postgresql` 构建标签构建时可用。
+
+### 会话构建
+
+```go
+session, err := deltascope.NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+```
+
+- 接受调用者拥有的 `*sql.Conn`（非 `*sql.DB`）
+- 通过 `PingContext` 验证连接活性
+- 不获取连接的所有权；调用者必须关闭它
+- 在非 postgresql 构建中返回 `ErrPostgreSQLSessionNotAvailable`
+
+### 可信分析
+
+```go
+result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)
+```
+
+- 拒绝 nil 上下文、nil 会话、非 PostgreSQL 方言或非 nil `SchemaResolver`
+- 从会话的单个 `*sql.Conn` 创建所有元数据、类型和效果标识解析器
+- 当每个效果都已目录解析并列在 PG17 manifest 中时，可能返回 `read_only + admissible`
+- 在非 postgresql 构建中返回 `ErrPostgreSQLSessionNotAvailable`
+
+### 准入语义
+
+`admissible` 仅表示静态分析获得了完整的已知要求，并针对提供的连接目录上下文证明了有界效果 manifest。它**不**：
+
+- 授权执行
+- 评估授权或许可
+- 保证后续执行快照使用相同的数据库状态
+- 考虑行级安全、屏蔽或 SQL 重写
+
+### 默认路径
+
+默认的 `AnalyzeQueryAccess` 函数（无会话）对 PostgreSQL 保持失败关闭。CLI、HTTP 和 MCP 表面继续使用默认路径，不会获得可信提升。
 
 ## 纵深防御
 

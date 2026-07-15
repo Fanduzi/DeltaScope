@@ -98,8 +98,8 @@ Without metadata, wildcards (`SELECT *`) remain unresolved and the classificatio
 | CTE permission required | `false` | `false` |
 | WHERE clause column usages | `projection` + `filter` | `projection` (WHERE columns get `filter` only if referenced in SELECT) |
 | Ambiguous column handling | `indeterminate` with `ambiguous_reference` unresolved | `read_only` with unqualified column reference |
-| `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, etc.) | No (empty) |
-| `unresolved` populated | Yes (wildcards, ambiguous references) | No (empty for most cases) |
+| `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, etc.) | Yes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`, `unqualified_relation_blocked`, `identity_*` codes) |
+| `unresolved` populated | Yes (wildcards, ambiguous references) | Yes (`unqualified_relation` entries for unqualified base relations) |
 
 ## Result Structure
 
@@ -171,6 +171,45 @@ The endpoint returns the same JSON structure as the SDK. Invalid mode returns `4
 ## MCP Deferral
 
 MCP surface integration for query access analysis is deferred. The current MCP server exposes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities` only.
+
+## Trusted PostgreSQL SDK Path
+
+The trusted PostgreSQL SDK path enables manifest-gated admission promotion for PostgreSQL queries. This path is available only when built with the `postgresql` build tag.
+
+### Session Construction
+
+```go
+session, err := deltascope.NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+```
+
+- Accepts a caller-owned `*sql.Conn` (not `*sql.DB`)
+- Validates connection liveness via `PingContext`
+- Does not take ownership of the connection; caller must close it
+- Returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds
+
+### Trusted Analysis
+
+```go
+result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)
+```
+
+- Rejects nil context, nil session, non-PostgreSQL dialect, or non-nil `SchemaResolver`
+- Creates all metadata, type, and effect-identity resolvers from the session's single `*sql.Conn`
+- May return `read_only + admissible` when every effect is catalog-resolved and listed in the PG17 manifest
+- Returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds
+
+### Admission Semantics
+
+`admissible` means only that static analysis obtained complete known requirements and proved the bounded effect manifest against the supplied connection's catalog context. It does **not**:
+
+- Authorize execution
+- Evaluate grants or permissions
+- Guarantee a later execution snapshot uses the same database state
+- Account for row-level security, masking, or SQL rewrite
+
+### Default Path
+
+The default `AnalyzeQueryAccess` function (no session) remains fail-closed for PostgreSQL. CLI, HTTP, and MCP surfaces continue to use the default path and do not gain trusted promotion.
 
 ## Defense in Depth
 

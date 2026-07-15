@@ -256,11 +256,15 @@ func TestTrustedSDK_ComparisonAdmissible(t *testing.T) {
 		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
 	}
 
-	t.Logf("classification=%s admission=%s reasons=%v",
-		result.ReadClassification, result.Admission, result.ReasonCodes)
+	// The comparison operator on same-type columns should be manifest-proven.
+	if result.ReadClassification != QueryAccessReadOnly {
+		t.Errorf("expected read_only, got %s", result.ReadClassification)
+	}
+	if result.Admission != QueryAccessAdmissible {
+		t.Errorf("expected admissible, got %s (reasons: %v)", result.Admission, result.ReasonCodes)
+	}
 
-	// This may be admissible or indeterminate depending on manifest coverage.
-	// The key invariant is: no leak, and the result is valid.
+	// Verify no leak in success JSON.
 	assertNoLeak(t, result)
 }
 
