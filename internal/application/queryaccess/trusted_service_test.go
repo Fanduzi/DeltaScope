@@ -19,6 +19,7 @@ type mockControlledResolver struct {
 	ctx       EffectIdentityResolutionContext
 	ctxErr    error
 	ctxCalled int
+	typeMap   map[int][]uint32 // per-ordinal operand type OIDs from atomic resolver
 }
 
 func (m *mockControlledResolver) ResolveEffectIdentities(ctx context.Context, req EffectIdentityRequest) (EffectIdentityBatch, error) {
@@ -40,7 +41,7 @@ func (m *mockControlledResolver) ResolveColumnTypesAndEffectIdentities(ctx conte
 	if m.err != nil {
 		return nil, EffectIdentityBatch{}, EffectIdentityResolutionContext{}, m.err
 	}
-	return nil, m.batch, m.ctx, nil
+	return m.typeMap, m.batch, m.ctx, nil
 }
 
 // mockSchemaResolver is a test-only schema resolver.

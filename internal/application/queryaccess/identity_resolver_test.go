@@ -361,3 +361,200 @@ func (f *fakeEffectIdentityResolver) ResolveEffectIdentities(ctx context.Context
 }
 
 var _ EffectIdentityResolver = (*fakeEffectIdentityResolver)(nil)
+
+func TestValidateFactOperandTypeBinding_NilTypeMap(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{25, 25},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	result := ValidateFactOperandTypeBinding(batch, nil, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Errorf("nil type map should skip: got %v, want resolved", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_EmptyTypeMap(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{25, 25},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	result := ValidateFactOperandTypeBinding(batch, map[int][]uint32{}, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Errorf("empty type map should skip: got %v, want resolved", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_Match(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{23, 23},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{0: {23, 23}}
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Errorf("matching types should pass: got %v, want resolved", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_Mismatch(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       98,
+					OperandTypeOIDs: []uint32{25, 25}, // text types
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{0: {23, 23}} // int4 types
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("mismatched types should fail: got %v, want lookup_failed", result.Items[0].Status)
+	}
+	if result.Items[0].Facts != nil {
+		t.Errorf("mismatched types should clear facts")
+	}
+}
+
+func TestValidateFactOperandTypeBinding_MissingOrdinal(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{23, 23},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{999: {23, 23}} // wrong ordinal
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Errorf("missing ordinal should skip: got %v, want resolved", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_SkipNonOperator(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateFunction,
+					ObjectOID:       2803,
+					OperandTypeOIDs: []uint32{2276},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateFunction, Arity: 0},
+	}
+	typeMap := map[int][]uint32{0: {999}} // wrong types
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Errorf("non-operator should skip: got %v, want resolved", result.Items[0].Status)
+	}
+}
+
+func TestValidateFactOperandTypeBinding_SkipUnaryOperator(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       518,
+					OperandTypeOIDs: []uint32{23},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 1}, // unary
+	}
+	typeMap := map[int][]uint32{0: {999}} // wrong types
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Errorf("unary operator should skip: got %v, want resolved", result.Items[0].Status)
+	}
+}

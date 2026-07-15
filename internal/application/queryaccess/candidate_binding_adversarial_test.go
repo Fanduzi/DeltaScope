@@ -24,22 +24,24 @@ func (m *mockTwoColumnSchemaResolver) ResolveRelation(ctx context.Context, diale
 	}, nil
 }
 
-// TestAdversarial_CandidateFactBinding_Swap proves that a malicious resolver
-// can swap facts between same-kind, same-arity candidates.
+// TestAdversarial_CandidateFactBinding_Swap proves that the proof gateway
+// detects same-name overload swaps via operand-type-map cross-check.
 //
 // Scenario:
 // - Candidate 0: =(int4,const) operator (ordinal 0, expects pg_catalog.=(23,23))
 // - Candidate 1: =(text,const) operator (ordinal 1, expects pg_catalog.=(25,25))
 // - Resolver returns =(text,text) fact at ordinal 0 (WRONG!)
-//
-// Expected: Should fail (identity mismatch)
-// Actual on 374fb95: Passs (structural match only) ← DEFECT
+// - Type map says ordinal 0 has int4 types (conflicts with text fact)
 func TestAdversarial_CandidateFactBinding_Swap(t *testing.T) {
 	// Resolver returns facts SWAPPED:
 	// - Ordinal 0 gets =(text,text) fact (WRONG - should be =(int4,int4))
 	// - Ordinal 1 gets =(int4,int4) fact (WRONG - should be =(text,text))
 	resolver := &mockControlledResolver{
 		ctx: testResolutionContext(),
+		typeMap: map[int][]uint32{
+			0: {23, 23}, // int4 types for ordinal 0
+			1: {25, 25}, // text types for ordinal 1
+		},
 		batch: EffectIdentityBatch{
 			Items: []EffectIdentityItem{
 				{

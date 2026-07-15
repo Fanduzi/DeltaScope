@@ -264,7 +264,7 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		}
 	}
 
-	_, batch, finalCtx, atomicErr := atomicResolver.ResolveColumnTypesAndEffectIdentities(
+	resolvedTypeOIDs, batch, finalCtx, atomicErr := atomicResolver.ResolveColumnTypesAndEffectIdentities(
 		ctx, extracted.EffectCandidates, identityReq)
 	if atomicErr != nil {
 		return &trustProofResult{
@@ -301,6 +301,10 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 
 	// Validate candidate-to-fact binding: facts must match the expected candidate shape.
 	batch = ValidateCandidateFactBinding(batch, extracted.EffectCandidates)
+
+	// Validate operand-type binding: cross-check atomic resolver's type map against
+	// returned fact OperandTypeOIDs. Detects same-name overload swaps.
+	batch = ValidateFactOperandTypeBinding(batch, resolvedTypeOIDs, extracted.EffectCandidates)
 
 	// Complete batch to ensure one item per candidate ordinal.
 	batch = CompleteEffectIdentityBatch(identityReq, batch)

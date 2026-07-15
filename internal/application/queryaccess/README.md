@@ -40,6 +40,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - `EffectIdentityResolutionContext` / `EffectIdentityResolutionMode`
 - `EffectVolatility` / `EffectCastMethod`
 - `ValidateEffectIdentityRequest()` / `NormalizeEffectIdentityBatch()` / `CompleteEffectIdentityBatch()`
+- `ValidateCandidateFactBinding()` / `ValidateFactOperandTypeBinding()`
 - `CandidateExplicitlyQualified()` / `CandidateExplicitPgCatalog()` / `ClassifyCandidateResolutionMode()`
 - `ResolutionContextSessionComplete()` / `ResolutionContextUsableForUnqualified()`
 - `ResolutionContextSessionCompatible()` / `ResolutionContextSearchPathCompatible()` / `ResolutionContextsCompatible()`

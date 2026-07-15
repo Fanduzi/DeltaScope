@@ -1265,15 +1265,16 @@ during independent Oracle/Momus review.
    - INV-9: Unknown AST fail-closed (parser emits unproven_* reasons)
    - INV-10: Static analysis limitation (documented)
    - INV-11: TrustPolicy gate (IsTrusted called only after validation)
-   - INV-12: Malicious resolver protection (fact pinning + ordinal validation)
+   - INV-12: Defense-in-depth against contract-violating adapter output (fact pinning + ordinal validation + operand-type binding)
    - INV-13: No public trusted API (NewTrustedService internal-only)
    - INV-14: No leaks (json:"-" on EffectCandidates, bounded reason codes)
 
 3. **Strengthened AtomicProofResolver contract:**
-   - Documented INV-12 malicious resolver protection
+   - Documented INV-12 defense-in-depth against contract-violating adapter output
    - Facts must be stamped with DatabaseOID and ServerVersionNum
    - Application validates fact pinning before IsTrusted
    - Application validates batch ordinals before completion
+   - Application validates operand-type binding (type-map cross-check for binary operators)
 
 4. **Complete parser fail-closed traversal:**
    - Set-operation branches, CTE bodies, nested/scalar subqueries handled

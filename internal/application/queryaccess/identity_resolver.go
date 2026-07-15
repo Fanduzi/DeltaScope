@@ -967,6 +967,69 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 // candidateCanonicalName returns the canonical name for a candidate.
 // For operators/functions: the last element of NamePath.
 // For casts: the target type name.
+// ValidateFactOperandTypeBinding cross-checks the atomic resolver's per-ordinal
+// operand-type map against returned fact OperandTypeOIDs. This detects same-name
+// overload swaps where the resolver returns manifest-valid facts for the wrong
+// same-name operator (e.g., =(text,text) fact for an int4 candidate).
+//
+// Scope (per Oracle review): only binary operators with two resolved base-column
+// operands, which is the current atomic adapter output. Functions, casts, and
+// arity-zero candidates are skipped because catalog declaration types may differ
+// from call-site types.
+//
+// INV-12 (Defense-in-Depth): This check protects against contract-violating
+// adapter output that returns inconsistent type-map and fact data. It does NOT
+// protect against a hostile in-process resolver that can forge both.
+//
+// Behavior:
+//   - resolvedTypeOIDs nil/empty → return batch unchanged (no independent source)
+//   - For each resolved binary-operator item with a type-map entry:
+//   - facts.OperandTypeOIDs must exactly equal the type-map entry (ordered)
+//   - Mismatch → status = lookup_failed, facts = nil
+//   - No type-map entry → skip (outside adapter scope)
+//   - Functions, casts, arity-zero → skip (no cross-check)
+func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs map[int][]uint32, candidates []EffectCandidate) EffectIdentityBatch {
+	if len(resolvedTypeOIDs) == 0 {
+		return batch
+	}
+
+	candByOrd := make(map[int]EffectCandidate, len(candidates))
+	for _, c := range candidates {
+		candByOrd[c.Ordinal] = c
+	}
+
+	items := make([]EffectIdentityItem, 0, len(batch.Items))
+	for _, it := range batch.Items {
+		if it.Status != domain.IdentityStatusResolved || it.Facts == nil {
+			items = append(items, it)
+			continue
+		}
+		c, ok := candByOrd[it.Ordinal]
+		if !ok {
+			items = append(items, it)
+			continue
+		}
+		// Only cross-check binary operators (current atomic adapter scope).
+		if c.Kind != EffectCandidateOperator || c.Arity != 2 {
+			items = append(items, it)
+			continue
+		}
+		expected, hasEntry := resolvedTypeOIDs[it.Ordinal]
+		if !hasEntry {
+			// No independent type source for this ordinal — skip.
+			items = append(items, it)
+			continue
+		}
+		if !uint32SliceEqual(it.Facts.OperandTypeOIDs, expected) {
+			// Type-map/fact mismatch: contract-violating cross-wiring.
+			it.Status = domain.IdentityStatusLookupFailed
+			it.Facts = nil
+		}
+		items = append(items, it)
+	}
+	return NormalizeEffectIdentityBatch(items)
+}
+
 func candidateCanonicalName(c EffectCandidate) string {
 	switch c.Kind {
 	case EffectCandidateCast:
