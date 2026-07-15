@@ -64,6 +64,8 @@ Stable public package surface for library consumers.
   Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only)
 - `NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)`
   Creates an opaque session from a caller-owned `*sql.Conn` with context for liveness check; the session does not close the connection (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
+- `AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)`
+  Performs trusted PostgreSQL query access analysis using a caller-owned connection session; may return `read_only + admissible` when all effects are manifest-proven (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
 
 ## Notes
 

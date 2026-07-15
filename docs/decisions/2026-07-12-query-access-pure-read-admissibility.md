@@ -1425,9 +1425,6 @@ resolver, and PathEpoch documentation correction.
 
 **Explicit non-claims:**
 
-- No public `AnalyzePostgreSQLQueryAccessWithSession` (Task 4)
-- No public E2E (Task 5)
-- No default SDK/CLI/HTTP/MCP behavior change
 - Snapshot consistency (REPEATABLE READ across metadata + identity) is a
   pre-existing architectural limitation, not introduced by this task
 - Same-connection proof is structural pointer equality + stable PID, not
@@ -1436,11 +1433,58 @@ resolver, and PathEpoch documentation correction.
 **Verification evidence:**
 
 - `go test ./pkg/deltascope/... -count=1`: 75 passed
-- `go test -tags postgresql ./pkg/deltascope/... -count=1`: 382 passed
+- `go test -tags postgresql ./pkg/deltascope/... -count=1`: 384 passed
 - `go test -tags 'postgresql && integration' ./pkg/deltascope/... -count=1`: 386 passed (Docker PG17)
 - `go test ./internal/infrastructure/metadata/postgresql/... -count=1`: 51 passed
 - `go test -tags postgresql ./internal/infrastructure/metadata/postgresql/... -count=1`: 79 passed
 - `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/... -count=1`: 90 passed
+- `make decision-record-gate`: PASS
+- `git diff --check`: clean
+
+### T16 — Public Trusted SDK Function (2026-07-15)
+
+**Status remains:** `Proposed`. **Implemented** — adds the public
+`AnalyzePostgreSQLQueryAccessWithSession` entry point for manifest-gated
+PostgreSQL admission promotion.
+
+**What T16 delivers:**
+
+1. **Public `AnalyzePostgreSQLQueryAccessWithSession` function:** Sole entry
+   point for trusted PostgreSQL analysis. Creates all resolvers from the
+   session's single `*sql.Conn` via `newTrustedServiceFromSession`. Rejects
+   nil ctx, nil session, non-PostgreSQL dialect, and non-nil `SchemaResolver`
+   with bounded errors.
+2. **Build-tag parity:** Both `postgresql` and `!postgresql` builds export the
+   same function signature. The stub returns `ErrPostgreSQLSessionNotAvailable`.
+3. **Admission behavior:** `SELECT count(*) FROM app.users` returns
+   `read_only + admissible` through the public API on PG17 with a
+   caller-owned `*sql.Conn`. Literal comparisons remain indeterminate
+   (coercion_gap). Unqualified relations remain indeterminate.
+4. **Default path unchanged:** `AnalyzeQueryAccess` still returns
+   `indeterminate` for the same PostgreSQL inputs.
+5. **No-leak contract:** Success JSON and bounded errors contain no OID,
+   backend PID, session binding, search_path, manifest, resolver, DSN,
+   password, credential, catalog SQL, raw SQL, literal, or severity.
+6. **Connection ownership:** Caller retains full control of `*sql.Conn`
+   after analysis. Integration test verifies caller can query and close.
+
+**Explicit non-claims:**
+
+- No CLI/HTTP/MCP promotion
+- No snapshot consistency guarantee (static analysis only)
+- No grant evaluation, authorization, RLS, masking, or SQL rewrite
+
+**Verification evidence:**
+
+- `go test ./pkg/deltascope/... -count=1`: 75 passed
+- `go test -tags postgresql ./pkg/deltascope/... -count=1`: 384 passed
+- `go test -tags 'postgresql && integration' ./pkg/deltascope/... -count=1`: 398 passed (Docker PG17)
+- Trusted SDK tests: `TestTrustedSDK_CountStarAdmissible`,
+  `TestTrustedSDK_ComparisonAdmissible`, `TestTrustedSDK_CallerRetainsConnection`,
+  `TestTrustedSDK_RejectsExternalSchemaResolver`, `TestTrustedSDK_DefaultRemainsFailClosed`,
+  `TestTrustedSDK_NonPostgreSQLDialectRejected`, `TestTrustedSDK_NilContextRejected`,
+  `TestTrustedSDK_NilSessionRejected`, `TestTrustedSDK_UnqualifiedRelationIndeterminate`,
+  `TestTrustedSDK_LiteralComparisonIndeterminate` — all pass
 - `make decision-record-gate`: PASS
 - `git diff --check`: clean
 

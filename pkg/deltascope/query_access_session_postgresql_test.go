@@ -42,6 +42,30 @@ func TestNewTrustedServiceFromSession_NilSession(t *testing.T) {
 	}
 }
 
+func TestTrustedSDK_StubRejectsNilSession(t *testing.T) {
+	_, err := AnalyzePostgreSQLQueryAccessWithSession(t.Context(), nil, QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: DialectPostgreSQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err == nil {
+		t.Fatal("expected error for nil session")
+	}
+}
+
+func TestTrustedSDK_StubRejectsWrongDialect(t *testing.T) {
+	// Without a real DB, we can't create a valid session, but we can verify
+	// that non-PostgreSQL dialect is rejected before session validation.
+	_, err := AnalyzePostgreSQLQueryAccessWithSession(t.Context(), &PostgreSQLQueryAccessSession{}, QueryAccessRequest{
+		SQL:     "SELECT id FROM users",
+		Dialect: DialectMySQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err == nil {
+		t.Fatal("expected error for non-PostgreSQL dialect")
+	}
+}
+
 func TestSession_PostgreSQLComparisonFailClosed(t *testing.T) {
 	// Schema-qualified comparison also remains indeterminate in default path.
 	result, err := AnalyzeQueryAccess(t.Context(), QueryAccessRequest{

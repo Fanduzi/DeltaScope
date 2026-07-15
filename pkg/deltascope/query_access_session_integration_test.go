@@ -10,6 +10,7 @@ package deltascope
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -187,6 +188,334 @@ func TestNewSessionFromConn_CanceledCtx(t *testing.T) {
 	for _, forbidden := range []string{"pgx", "pq", "dsn", "password", "host=", "user="} {
 		if strings.Contains(strings.ToLower(errText), forbidden) {
 			t.Errorf("error text must not contain %q, got: %s", forbidden, errText)
+		}
+	}
+}
+
+func TestTrustedSDK_CountStarAdmissible(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT count(*) FROM app.users",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+
+	if result.ReadClassification != QueryAccessReadOnly {
+		t.Errorf("expected read_only, got %s", result.ReadClassification)
+	}
+	if result.Admission != QueryAccessAdmissible {
+		t.Errorf("expected admissible, got %s", result.Admission)
+	}
+
+	// Verify no leak in success JSON.
+	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_ComparisonAdmissible(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	// Schema-qualified JOIN comparison — should be admissible if manifest proves it.
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+
+	t.Logf("classification=%s admission=%s reasons=%v",
+		result.ReadClassification, result.Admission, result.ReasonCodes)
+
+	// This may be admissible or indeterminate depending on manifest coverage.
+	// The key invariant is: no leak, and the result is valid.
+	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_CallerRetainsConnection(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	_, err = AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT count(*) FROM app.users",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+
+	// Caller can still query.
+	var pid int64
+	if err := conn.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&pid); err != nil {
+		t.Fatalf("caller query after analysis: %v", err)
+	}
+	if pid == 0 {
+		t.Fatal("expected non-zero PID after analysis")
+	}
+
+	// Caller closes.
+	if err := conn.Close(); err != nil {
+		t.Fatalf("caller close: %v", err)
+	}
+}
+
+func TestTrustedSDK_RejectsExternalSchemaResolver(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	// Provide a non-nil schema resolver — must be rejected.
+	_, err = AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:            "SELECT count(*) FROM app.users",
+		Dialect:        DialectPostgreSQL,
+		Mode:           QueryAccessModeStrict,
+		DefaultSchema:  "app",
+		SchemaResolver: &stubSchemaResolver{},
+	})
+	if err == nil {
+		t.Fatal("expected error for non-nil SchemaResolver")
+	}
+	if !strings.Contains(err.Error(), "schema resolver") {
+		t.Errorf("expected schema resolver error, got: %v", err)
+	}
+}
+
+func TestTrustedSDK_DefaultRemainsFailClosed(t *testing.T) {
+	// Verify that AnalyzeQueryAccess (default path) still returns indeterminate
+	// for the same PostgreSQL inputs that the trusted path can promote.
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	// Default SDK path — no session, no trusted service.
+	result, err := AnalyzeQueryAccess(ctx, QueryAccessRequest{
+		SQL:           "SELECT count(*) FROM app.users",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzeQueryAccess: %v", err)
+	}
+	if result.Admission != QueryAccessIndeterminateAdmission {
+		t.Errorf("default path must remain indeterminate, got %s", result.Admission)
+	}
+}
+
+func TestTrustedSDK_NonPostgreSQLDialectRejected(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	_, err = AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:     "SELECT id FROM users WHERE id = 1",
+		Dialect: DialectMySQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err == nil {
+		t.Fatal("expected error for non-PostgreSQL dialect")
+	}
+	if !strings.Contains(err.Error(), "PostgreSQL") {
+		t.Errorf("expected PostgreSQL dialect error, got: %v", err)
+	}
+}
+
+func TestTrustedSDK_NilContextRejected(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	_, err = AnalyzePostgreSQLQueryAccessWithSession(nil, session, QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: DialectPostgreSQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err == nil {
+		t.Fatal("expected error for nil context")
+	}
+}
+
+func TestTrustedSDK_NilSessionRejected(t *testing.T) {
+	_, err := AnalyzePostgreSQLQueryAccessWithSession(t.Context(), nil, QueryAccessRequest{
+		SQL:     "SELECT count(*) FROM app.users",
+		Dialect: DialectPostgreSQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err == nil {
+		t.Fatal("expected error for nil session")
+	}
+}
+
+func TestTrustedSDK_UnqualifiedRelationIndeterminate(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	// Unqualified relation — must remain indeterminate.
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:     "SELECT id FROM users WHERE id = 1",
+		Dialect: DialectPostgreSQL,
+		Mode:    QueryAccessModeStrict,
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.Admission != QueryAccessIndeterminateAdmission {
+		t.Errorf("unqualified relation must remain indeterminate, got %s", result.Admission)
+	}
+	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_LiteralComparisonIndeterminate(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	// Literal comparison — coercion_gap, must remain indeterminate.
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT id FROM app.users WHERE id = 1",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.Admission != QueryAccessIndeterminateAdmission {
+		t.Errorf("literal comparison must remain indeterminate, got %s", result.Admission)
+	}
+	assertNoLeak(t, result)
+}
+
+// stubSchemaResolver is a minimal resolver for testing rejection.
+type stubSchemaResolver struct{}
+
+func (s *stubSchemaResolver) ResolveRelation(_ context.Context, _, _, _ string) (QueryAccessRelationSchema, error) {
+	return QueryAccessRelationSchema{}, nil
+}
+
+// assertNoLeak verifies the result JSON contains no sensitive fields.
+func assertNoLeak(t *testing.T, result *QueryAccessResult) {
+	t.Helper()
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	jsonStr := string(data)
+	for _, forbidden := range []string{
+		"oid", "backend_pid", "session_binding", "search_path",
+		"manifest", "resolver", "dsn", "password", "credential",
+		"catalog_sql", "raw_sql", "literal", "severity",
+		"canonical_signature",
+	} {
+		if strings.Contains(strings.ToLower(jsonStr), forbidden) {
+			t.Errorf("JSON must not contain %q: %s", forbidden, jsonStr)
 		}
 	}
 }

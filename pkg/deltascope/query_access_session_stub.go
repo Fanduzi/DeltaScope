@@ -16,3 +16,8 @@ import (
 func NewPostgreSQLQueryAccessSessionFromConn(_ context.Context, _ *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
 	return nil, ErrPostgreSQLSessionNotAvailable
 }
+
+// AnalyzePostgreSQLQueryAccessWithSession returns ErrPostgreSQLSessionNotAvailable when built without the postgresql tag.
+func AnalyzePostgreSQLQueryAccessWithSession(_ context.Context, _ *PostgreSQLQueryAccessSession, _ QueryAccessRequest) (*QueryAccessResult, error) {
+	return nil, ErrPostgreSQLSessionNotAvailable
+}
