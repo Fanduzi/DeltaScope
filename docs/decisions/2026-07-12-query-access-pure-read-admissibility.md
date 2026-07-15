@@ -1407,6 +1407,8 @@ audit spike only:
 
 - Design: `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md`
 - Implementation plan: `docs/plans/2026-07-12-query-access-pure-read-admissibility-implementation.md`
+- Trusted SDK integration design: `docs/plans/2026-07-15-query-access-trusted-sdk-integration-design.md`
+- Trusted SDK integration plan: `docs/plans/2026-07-15-query-access-trusted-sdk-integration-implementation.md`
 - OMO prompts: `docs/plans/2026-07-12-query-access-pure-read-admissibility-omo-prompts.md`
 - Prior foundation: `docs/decisions/2026-07-11-query-access-analysis-foundation.md`
 - CTE/lineage: `docs/decisions/2026-07-11-cte-derived-table-lineage-resolution.md`
