@@ -1366,6 +1366,30 @@ during independent Oracle/Momus review.
 - `npm test --prefix packages/deltascope-mcp`: 15 passed
 - GitNexus detect_changes: 10 changed symbols, 5 affected processes, medium risk
 
+### Follow-on Trusted SDK Integration Design (2026-07-15)
+
+The current implementation has no public trusted promotion entry point:
+default SDK, CLI, HTTP, and MCP flows remain fail-closed. The internal proof
+gateway is therefore implementation evidence, not a delivered public admission
+capability.
+
+The follow-on SDK-only design requires a caller-owned `*sql.Conn` and creates
+relation metadata, type, and effect-identity facts from that same connection.
+It rejects a caller-provided schema resolver on the trusted path to prevent
+mixing session-bound and external metadata. The result remains static analysis:
+it neither authorizes nor guarantees later execution affinity.
+
+`PathEpoch` is currently a stable non-zero compatibility marker for one capture
+pair. Database, role, server version, and session binding are compared
+field-wise; ordered search-path OIDs are compared separately. It is not a
+mutation counter in the current implementation.
+
+Before this record can become `Accepted`, implementation must add a non-skippable
+PG17 public-SDK E2E gate that calls only the public wrapper/function, verifies
+the caller owns the connection after analysis, and proves metadata, type, and
+identity lookups use the same backend connection. The public-boundary wording
+must be updated in the same acceptance commit.
+
 ## Consequences
 
 - Implementation must research and publish a version-scoped effect identity

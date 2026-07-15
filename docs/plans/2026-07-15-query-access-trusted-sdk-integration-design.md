@@ -63,6 +63,11 @@ The function rejects a non-PostgreSQL dialect or nil session with bounded SDK
 errors. Catalog failures and non-provable SQL remain normal analysis results
 with `admission: indeterminate`; they do not expose driver text.
 
+The trusted SDK function rejects a non-nil `req.SchemaResolver`. It must create
+both metadata and identity resolvers from its opaque session; accepting an
+external resolver would make the result look session-bound while obtaining
+relation facts elsewhere.
+
 ## Execution Ownership Contract
 
 `admissible` means only that static analysis obtained complete known
@@ -82,6 +87,10 @@ DeltaScope cannot enforce same-connection execution after it returns. This is
 intentional: accepting a pool, DSN, or generic resolver would create a false
 execution-locality claim.
 
+The wrapper never closes the caller's connection. Analysis on an already-closed
+connection returns a bounded error or fail-closed result, and a successful
+analysis must leave the caller's connection usable and closable by the caller.
+
 ## Internal Wiring
 
 The SDK adapter creates, from the same opaque session:
@@ -98,6 +107,11 @@ mismatches, and non-manifest identities all remain fail-closed.
 
 No public caller can inject identity facts, a trust policy, a resolver, OIDs,
 or a `Bound` context.
+
+The metadata resolver is as session-bound as the type and identity resolvers:
+all catalog reads use the same caller-owned `*sql.Conn`. It must not retain or
+fall back to `*sql.DB`; a same-connection property is part of promotion proof,
+not an implementation preference.
 
 ## Admission Matrix
 
@@ -126,7 +140,8 @@ Stop and keep the decision `Proposed` if any condition is false:
 
 - caller ownership cannot be preserved without a misleading execution claim;
 - trusted service needs public resolver/facts/OID injection;
-- PG17 Docker E2E cannot prove the public SDK function uses one connection; or
+- PG17 Docker E2E cannot prove the public SDK function, relation metadata, type
+  facts, and identity facts use one connection; or
 - the new path makes a default SDK/CLI/HTTP result more permissive.
 
 ## Deferred Follow-ups
