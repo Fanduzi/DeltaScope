@@ -1274,7 +1274,7 @@ during independent Oracle/Momus review.
    - Facts must be stamped with DatabaseOID and ServerVersionNum
    - Application validates fact pinning before IsTrusted
    - Application validates batch ordinals before completion
-   - Application validates operand-type binding (type-map cross-check for binary operators; nil/empty/missing map fails closed)
+   - Application validates operand-type binding (type-map cross-check for binary operators; nil/empty/missing/unexpected map fails closed)
    - Removed dead cast-name fields (CastSourceTypeName, CastTargetTypeName): Phase 1 does not trust casts
 
 4. **Complete parser fail-closed traversal:**

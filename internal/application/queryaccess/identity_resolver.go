@@ -965,12 +965,22 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 // Behavior:
 //   - For each resolved binary-operator item:
 //   - Map entry must exist, have exactly two nonzero OIDs, and equal facts.OperandTypeOIDs
-//   - Absent entry, wrong length, zero OID, or mismatch → lookup_failed
+//   - Absent or unexpected entry, wrong length, zero OID, or mismatch → lookup_failed
 //   - Functions, casts, arity-zero → untouched (no cross-check)
 func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs map[int][]uint32, candidates []EffectCandidate) EffectIdentityBatch {
 	candByOrd := make(map[int]EffectCandidate, len(candidates))
 	for _, c := range candidates {
 		candByOrd[c.Ordinal] = c
+	}
+
+	// The atomic adapter only produces type facts for binary operators. An
+	// extra ordinal is contract-violating output, so no resolved item may be
+	// used for promotion from that batch.
+	for ordinal := range resolvedTypeOIDs {
+		candidate, ok := candByOrd[ordinal]
+		if !ok || candidate.Kind != EffectCandidateOperator || candidate.Arity != 2 {
+			return invalidateResolvedIdentityFacts(batch)
+		}
 	}
 
 	items := make([]EffectIdentityItem, 0, len(batch.Items))
@@ -1006,6 +1016,18 @@ func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs 
 			it.Facts = nil
 		}
 		items = append(items, it)
+	}
+	return NormalizeEffectIdentityBatch(items)
+}
+
+func invalidateResolvedIdentityFacts(batch EffectIdentityBatch) EffectIdentityBatch {
+	items := make([]EffectIdentityItem, len(batch.Items))
+	copy(items, batch.Items)
+	for i := range items {
+		if items[i].Status == domain.IdentityStatusResolved {
+			items[i].Status = domain.IdentityStatusLookupFailed
+			items[i].Facts = nil
+		}
 	}
 	return NormalizeEffectIdentityBatch(items)
 }

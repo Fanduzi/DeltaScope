@@ -512,6 +512,40 @@ func TestValidateFactOperandTypeBinding_MissingOrdinal(t *testing.T) {
 	}
 }
 
+func TestValidateFactOperandTypeBinding_UnexpectedOrdinal(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{
+			{
+				Ordinal: 0,
+				Status:  domain.IdentityStatusResolved,
+				Facts: &EffectIdentityFacts{
+					Kind:            EffectCandidateOperator,
+					ObjectOID:       96,
+					OperandTypeOIDs: []uint32{23, 23},
+				},
+			},
+		},
+	}
+	candidates := []EffectCandidate{
+		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
+	}
+	typeMap := map[int][]uint32{
+		0:   {23, 23},
+		999: {23, 23},
+	}
+	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	if len(result.Items) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result.Items))
+	}
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("unexpected ordinal should fail closed: got %v, want lookup_failed", result.Items[0].Status)
+	}
+	if result.Items[0].Facts != nil {
+		t.Error("unexpected ordinal should clear facts")
+	}
+}
+
 func TestValidateFactOperandTypeBinding_WrongLengthMap(t *testing.T) {
 	t.Parallel()
 	batch := EffectIdentityBatch{
@@ -623,7 +657,7 @@ func TestValidateFactOperandTypeBinding_CountStar(t *testing.T) {
 	}
 }
 
-func TestValidateFactOperandTypeBinding_SkipNonOperator(t *testing.T) {
+func TestValidateFactOperandTypeBinding_UnexpectedNonOperatorOrdinal(t *testing.T) {
 	t.Parallel()
 	batch := EffectIdentityBatch{
 		Items: []EffectIdentityItem{
@@ -646,12 +680,12 @@ func TestValidateFactOperandTypeBinding_SkipNonOperator(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
-	if result.Items[0].Status != domain.IdentityStatusResolved {
-		t.Errorf("non-operator should skip: got %v, want resolved", result.Items[0].Status)
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("non-operator type-map entry should fail closed: got %v, want lookup_failed", result.Items[0].Status)
 	}
 }
 
-func TestValidateFactOperandTypeBinding_SkipUnaryOperator(t *testing.T) {
+func TestValidateFactOperandTypeBinding_UnexpectedUnaryOperatorOrdinal(t *testing.T) {
 	t.Parallel()
 	batch := EffectIdentityBatch{
 		Items: []EffectIdentityItem{
@@ -674,7 +708,7 @@ func TestValidateFactOperandTypeBinding_SkipUnaryOperator(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
-	if result.Items[0].Status != domain.IdentityStatusResolved {
-		t.Errorf("unary operator should skip: got %v, want resolved", result.Items[0].Status)
+	if result.Items[0].Status != domain.IdentityStatusLookupFailed {
+		t.Errorf("unary operator type-map entry should fail closed: got %v, want lookup_failed", result.Items[0].Status)
 	}
 }
