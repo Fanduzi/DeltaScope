@@ -1,7 +1,7 @@
 # Decision: Query Access Pure-Read Admissibility via Proven Identity
 
 Date: 2026-07-12
-Status: Accepted
+Status: Proposed
 Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
 Related commits:
 - Design + trust-policy docs on branch `query-access-pure-read-admissibility`
@@ -992,7 +992,7 @@ no public resolver injection.
 - `golangci-lint run ./...`: clean
 - `make decision-record-gate`: PASS
 - `make release-gofmt-gate`: PASS
-- Docker E2E: `TestTrustedService_PG17JoinComparisonE2E` passed; pool tests fixed in T14 (compose env alignment)
+- Docker E2E: PG17 compose-backed integration had not yet been executed at the time of the prior acceptance claim. Status returned to `Proposed` pending real E2E evidence.
 
 ### T9 — Operator operand provenance (2026-07-13)
 
