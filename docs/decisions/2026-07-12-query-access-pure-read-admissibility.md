@@ -2,7 +2,7 @@
 
 Date: 2026-07-12
 Status: Accepted
-Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
+Related milestone/version: v0.390.0
 Related commits:
 - Design + trust-policy docs on branch `query-access-pure-read-admissibility`
 - T2 research commit: `docs: research query access effect identity manifest`
@@ -1562,6 +1562,14 @@ healthy; tests not skipped)**
 - `make query-access-corpus-gates`, `make pg-unit-test-gates`
 - `make decision-record-gate`, `make release-gofmt-gate`
 - `git diff --check`; `go mod tidy` clean for `go.mod`/`go.sum`
+
+### Release-Surface Evidence (v0.390.0)
+
+- Version assigned: `v0.390.0` (minor after `v0.380.0`; opt-in public Trusted PostgreSQL SDK capability plus same-connection pure-read contract).
+- Release notes: `docs/releases/release-notes-v0.390.0.md`, `docs/releases/release-notes-v0.390.0.zh-CN.md`.
+- Active version pins: `pkg/deltascope/version.go` (`DefaultVersion`), `packages/deltascope-mcp/package.json`, root README EN/ZH install pins, `pkg/deltascope/README.md`, `docs/examples/github-actions.yml`, CHANGELOG, roadmap latest milestone, landing current release, `scripts/verify_release_consistency.py` `RELEASE_FACTS["v0.390.0"]`.
+- Public contract restated on release surfaces only: opt-in caller-owned `*sql.Conn` path; PG17 manifest-gated; verified `count(*)` and schema-qualified base-column comparison/JOIN; default SDK/CLI/HTTP fail-closed; HTTP errors bounded; no MCP query-access tool; no `severity` field; no sensitive query payload leak; not authorization/grants/RLS/masking/rewrite/runtime execution guarantee.
+- Foundation/CTE decision records remain Related milestone/version **v0.380.0** (not reassigned).
 
 ## Consequences
 

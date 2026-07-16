@@ -6,6 +6,29 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.390.0] - 2026-07-16
+
+### Added
+
+- Opt-in Trusted PostgreSQL Query Access SDK path (postgresql build tag; non-postgresql stub returns `ErrPostgreSQLSessionNotAvailable` with the same symbols): `NewPostgreSQLQueryAccessSessionFromConn` and `AnalyzePostgreSQLQueryAccessWithSession` over a caller-owned `*sql.Conn` that DeltaScope does not close.
+- PG17 manifest-gated pure-read admissibility for a narrow proven subset after same-connection metadata, type, and identity proof. Public E2E-verified shapes include `count(*)` and schema-qualified base-column comparison/JOIN.
+- Default SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, and HTTP `POST /v1/query-access/analyze` remain fail-closed for effect-bearing PostgreSQL queries when no trusted session is used. MCP tools remain `audit_sql`, `describe_rule`, `list_rules`, `get_capabilities` only (no query-access MCP tool).
+- HTTP Query Access error responses are bounded and do not echo raw wrapped internal errors.
+- `level` remains the public audit priority field (no `severity` field is introduced). Query access results do not use `severity` and do not carry raw SQL, literals, credentials, connection strings, or parser fragments.
+- Decision record: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Accepted; Related milestone/version: v0.390.0).
+
+### Non-Goals
+
+- Not full PostgreSQL common SELECT support on the default path.
+- Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
+- Not row-level security evaluation or column masking.
+- Not a runtime execution-snapshot guarantee after static analysis.
+- Not CLI/HTTP trusted-session promotion.
+- Not an MCP query-access tool.
+- Not a MySQL/TiDB trusted identity promotion change.
+- Not a change to existing audit behavior or the registered rule catalog.
+- Not a `severity` field.
+
 ## [v0.380.0] - 2026-07-12
 
 ### Added

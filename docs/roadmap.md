@@ -4,29 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.380.0 Query Access Analysis Foundation
+## Latest Completed Milestone: v0.390.0 Trusted PostgreSQL Query Access SDK
 
-**Goal:** ship Query Access Analysis as a separate public capability that classifies SQL for read-only eligibility, derives admission, and emits structured table/column permission requirements with physical lineage. Complements audit; does not replace database authorization. Does not add a `severity` field.
+**Goal:** ship an opt-in Trusted PostgreSQL Query Access SDK path for callers that already own a live `*sql.Conn`, with PG17 manifest-gated pure-read admissibility for a narrow proven subset. Complements the v0.380.0 foundation; does not claim full PostgreSQL common SELECT support. Does not add a `severity` field.
 
 ### Completed Scope
 
-- Read classification: `read_only`, `not_read_only`, `indeterminate`.
-- Admission: `admissible`, `rejected`, `indeterminate` (fail-closed for indeterminate).
-- Modes: `strict` (default; all resolved source columns across projection, filter, join, grouping, having, ordering, window) and `projection_only` (output columns only, with `projection_only_inference_risk` warning).
-- Permission objects: base table and view only; CTE/derived require no direct permission and resolve to physical sources.
-- Fail-closed for incomplete metadata, ambiguity, unexpandable wildcards, and unknown function/operator effects; PostgreSQL keeps a conservative non-admissible boundary for uncertain expressions.
-- Surfaces: SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, HTTP `POST /v1/query-access/analyze`. MCP tools unchanged and do not include query-access.
-- Query-access corpus: 44 cases (22 MySQL/TiDB path + 22 PostgreSQL), 88 fixture files.
+- Public SDK (postgresql build tag; non-postgresql stub returns `ErrPostgreSQLSessionNotAvailable` with the same symbols): `NewPostgreSQLQueryAccessSessionFromConn`, `AnalyzePostgreSQLQueryAccessWithSession`.
+- Caller-owned `*sql.Conn` contract: session does not close the connection; same-connection metadata/type/identity proof.
+- PG17 closed effect-identity manifest; public E2E-verified shapes include `count(*)` and schema-qualified base-column comparison/JOIN.
+- Default SDK, CLI, and HTTP remain fail-closed for effect-bearing PostgreSQL queries without a trusted session.
+- HTTP Query Access errors are bounded (no raw wrapped-error echo).
+- MCP tools unchanged and still do not include query-access.
 - Audit rule catalog unchanged at 371 rules. SQL corpus unchanged at 582/582, 100.0%, 247 YAML files.
 - `level` remains the audit priority field; no `severity` field is introduced.
-- Decision records: `docs/decisions/2026-07-11-query-access-analysis-foundation.md`, `docs/decisions/2026-07-11-cte-derived-table-lineage-resolution.md`.
+- Decision record: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Accepted; Related milestone/version: v0.390.0).
 
 ### Non-Goals
 
+- Not full PostgreSQL common SELECT admissibility on the default path.
 - Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
 - Not row-level security evaluation or column masking.
+- Not a runtime execution-snapshot guarantee after static analysis.
+- Not CLI/HTTP trusted-session promotion.
 - Not an MCP query-access tool.
-- Not a full SQL grammar coverage claim.
+- Not a MySQL/TiDB trusted identity promotion change.
 - Not a change to existing audit behavior.
 - Not a `severity` field.
 
@@ -90,6 +92,28 @@ Published Query Access boundaries that these items must not rewrite by documenta
 - **Why not now:** release workflows already trust the third-party cask tap during install verification (`brew trust --cask fanduzi/deltascope/deltascope` in `release.yml` / `release-recover.yml`). A small static contract test would lock that exact step so future workflow edits cannot drop it silently. That is CI hygiene, not Query Access product work.
 - **Evidence that would reopen evaluation:** any release-engineering pass that prioritizes regression locks for Homebrew install verification, or a near-miss/regression risk around the trust step.
 - **Published boundary:** operational only — pin the precise cask trust steps in `release.yml` and `release-recover.yml`; no SQL, audit, or query-access behavior change. Scope is patch-sized; do not promote this to a product milestone.
+
+## Previous Milestone: v0.380.0 Query Access Analysis Foundation
+
+**Goal:** ship Query Access Analysis as a separate public capability that classifies SQL for read-only eligibility, derives admission, and emits structured table/column permission requirements with physical lineage. Complements audit; does not replace database authorization. Does not add a `severity` field.
+
+### Completed Scope
+
+- Read classification: `read_only`, `not_read_only`, `indeterminate`.
+- Admission: `admissible`, `rejected`, `indeterminate` (fail-closed for indeterminate).
+- Modes: `strict` (default) and `projection_only` (with `projection_only_inference_risk` warning).
+- Permission objects: base table and view only; CTE/derived resolve to physical sources.
+- Surfaces: SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, HTTP `POST /v1/query-access/analyze`. MCP tools unchanged and do not include query-access.
+- Query-access corpus: 44 cases (22 MySQL/TiDB path + 22 PostgreSQL), 88 fixture files.
+- Decision records: `docs/decisions/2026-07-11-query-access-analysis-foundation.md`, `docs/decisions/2026-07-11-cte-derived-table-lineage-resolution.md`.
+
+### Non-Goals
+
+- Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
+- Not row-level security evaluation or column masking.
+- Not an MCP query-access tool.
+- Not a full SQL grammar coverage claim.
+- Not a `severity` field.
 
 ## Previous Milestone: v0.370.0 TiDB RETURNING Dialect Boundary
 
