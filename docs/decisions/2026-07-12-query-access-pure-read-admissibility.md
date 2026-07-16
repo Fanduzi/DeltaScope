@@ -1,7 +1,7 @@
 # Decision: Query Access Pure-Read Admissibility via Proven Identity
 
 Date: 2026-07-12
-Status: Proposed
+Status: Accepted
 Related milestone/version: (unassigned; branch `query-access-pure-read-admissibility`)
 Related commits:
 - Design + trust-policy docs on branch `query-access-pure-read-admissibility`
@@ -15,6 +15,9 @@ Related commits:
 - T6 P1b session completeness: `fix: require full identity resolution session binding`
 - T7 catalog adapter: `feat: resolve query access effect identity facts`
 - T8 manifest proof: `feat: prove bounded query access effects`
+- Public trusted SDK: `4308f31` `feat: expose trusted PostgreSQL query access SDK`
+- Error-surface remediation: `53ce188` `fix: bound query access error surfaces`
+- Acceptance closeout (this record): docs-only status update after re-verified PG17 evidence
 Related tests:
 - T3: `internal/application/queryaccess/effect_identity_characterization_postgresql_tag_test.go`
 - T3: `internal/application/queryaccess/effect_identity_mysql_tidb_regression_test.go`
@@ -33,7 +36,16 @@ Related tests:
   `effect_identity_resolver_integration_test.go` (PG17 Docker)
 - T8: `trust_policy_test.go` (17 tests: all trust decisions, manifest validation, hash determinism, PG17 manifest validity)
 - T8: `trusted_service_test.go` (constructor validation, promotion logic, PG hard-stop removal verification)
-- Planned (T8): positive corpus under fake/real identity resolver + manifest promotion
+- Public trusted SDK (PG17 Docker, `-tags 'postgresql && integration'`):
+  `pkg/deltascope/query_access_session_integration_test.go`
+  (`TestTrustedSDK_CountStarAdmissible`, `TestTrustedSDK_ComparisonAdmissible`,
+  `TestTrustedSDK_CallerRetainsConnection`, `TestTrustedSDK_DefaultRemainsFailClosed`,
+  fail-closed unqualified/literal cases, no-leak assertions)
+- Same-connection metadata proof:
+  `internal/infrastructure/metadata/postgresql/query_access_conn_resolver_integration_test.go`
+  (`TestSameConnectionPID_Proof`, `TestConnResolver_NoDBField`)
+- HTTP bounded errors: `internal/interfaces/http/query_access_test.go`
+  (`TestHandlerQueryAccessErrorMessageBounded*`)
 - T2: no production/test code; ephemeral catalog probes only under `/tmp` (not committed)
 Related docs:
 - `docs/plans/2026-07-12-query-access-pure-read-admissibility-design.md` (T2 appendix)
@@ -306,12 +318,13 @@ Do not change MySQL/TiDB current behavior in this milestone.
 
 ## Public Contract
 
-After this decision is **Accepted** and implemented, consumers may rely on:
+This decision is **Accepted**. Consumers may rely on:
 
 1. PostgreSQL queries that previously were always `indeterminate` may become
-   `read_only` + `admissible` when every effect is catalog-resolved **and**
-   listed in the trusted-effect manifest, and all existing admission
-   preconditions hold.
+   `read_only` + `admissible` **only** via the public trusted SDK entry point
+   `AnalyzePostgreSQLQueryAccessWithSession` when every effect is catalog-resolved
+   **and** listed in the PG17 trusted-effect manifest, and all existing admission
+   preconditions hold (including complete physical requirements).
 2. Absence of proof, or resolved identity outside the manifest, never yields
    `admissible`.
 3. `pg_catalog` + stable/immutable without a manifest entry remains
@@ -319,17 +332,23 @@ After this decision is **Accepted** and implemented, consumers may rely on:
 4. New bounded reason codes may appear for unproven effects; they are additive
    machine identifiers, not free-text SQL.
 5. MySQL/TiDB admissible cases that exist today remain admissible unless a
-   separate accepted decision says otherwise.
+   separate accepted decision says otherwise. This decision does **not** change
+   MySQL/TiDB behavior.
 6. MCP tool list remains without query-access.
-7. No `severity` field; no raw SQL / credential leakage in the public result.
+7. No `severity` field; no raw SQL / credential / DSN / driver / catalog-SQL /
+   OID / PID / manifest / session/search_path / literal leakage in public results
+   or bounded error paths (including HTTP query-access error responses).
 8. `admissible` means the static analysis found a complete requirement set
    for the observed metadata and session resolution context. It does **not**
    authorize execution, evaluate grants, or guarantee that a later query
    execution uses the same database snapshot, catalog state, or search_path.
-
-Exact Go type names for the extended resolver and manifest remain
-implementation details until the implementation plan locks them; the **proof
-and trust requirements** above are the contract principles.
+9. Default `AnalyzeQueryAccess`, CLI, and HTTP continue the fail-closed default
+   path (no automatic promotion). Trusted promotion requires an explicit
+   caller-owned `*sql.Conn` session and the public trusted function above.
+10. Relation metadata, column-type, and effect-identity facts for the trusted
+    path are assembled from that same caller-owned `*sql.Conn` (no `*sql.DB`
+    pool fallback). The caller retains ownership and may use/close the connection
+    after analysis; DeltaScope does not close it.
 
 ## Deferred / Out Of Scope
 
@@ -992,7 +1011,9 @@ no public resolver injection.
 - `golangci-lint run ./...`: clean
 - `make decision-record-gate`: PASS
 - `make release-gofmt-gate`: PASS
-- Docker E2E: PG17 compose-backed integration had not yet been executed at the time of the prior acceptance claim. Status returned to `Proposed` pending real E2E evidence.
+- Docker E2E (historical T10 note): earlier acceptance claims lacked public-SDK
+  PG17 evidence and correctly remained `Proposed`. Real public-SDK E2E evidence
+  is recorded under **Acceptance closeout (2026-07-16)**.
 
 ### T9 — Operator operand provenance (2026-07-13)
 
@@ -1186,13 +1207,12 @@ during independent Oracle/Momus review.
 - `go vet -tags postgresql ./...` — exit 0
 - GitNexus detect_changes — 8 files changed, all within expected scope
 
-**Public delivery boundary (unchanged):**
+**Public delivery boundary (T11-era; later delivered in T15/T16):**
 
-- No public trusted SDK/CLI/HTTP promotion path added
-- Default SDK, CLI, and HTTP remain fail-closed
-- Future public promotion API requires: explicit caller-owned pinned-session,
-  execution-ownership contract, separate design review, separate approval
-- MCP remains without query-access tool
+- At T11: no public trusted SDK/CLI/HTTP promotion path yet; default surfaces
+  remained fail-closed; MCP had no query-access tool.
+- Later delivered: public trusted SDK session API only (see T15/T16 + acceptance
+  closeout). CLI/HTTP trusted promotion and MCP query-access remain non-goals.
 
 ### T12 — Adversarial Tests and Documentation (2026-07-14)
 
@@ -1266,7 +1286,9 @@ during independent Oracle/Momus review.
    - INV-10: Static analysis limitation (documented)
    - INV-11: TrustPolicy gate (IsTrusted called only after validation)
    - INV-12: Defense-in-depth against contract-violating adapter output (fact pinning + ordinal validation + operand-type binding for binary operators)
-   - INV-13: No public trusted API (NewTrustedService internal-only)
+   - INV-13 (T13-era): `NewTrustedService` remains internal-only; public trusted
+     promotion was later added only as `AnalyzePostgreSQLQueryAccessWithSession`
+     (see T16 + acceptance closeout). CLI/HTTP/MCP still have no trusted promotion.
    - INV-14: No leaks (json:"-" on EffectCandidates, bounded reason codes)
 
 3. **Strengthened AtomicProofResolver contract:**
@@ -1366,35 +1388,28 @@ during independent Oracle/Momus review.
 - `npm test --prefix packages/deltascope-mcp`: 15 passed
 - GitNexus detect_changes: 10 changed symbols, 5 affected processes, medium risk
 
-### Follow-on Trusted SDK Integration Design (2026-07-15)
+### Follow-on Trusted SDK Integration Design (2026-07-15; delivered)
 
-The current implementation has no public trusted promotion entry point:
-default SDK, CLI, HTTP, and MCP flows remain fail-closed. The internal proof
-gateway is therefore implementation evidence, not a delivered public admission
-capability.
+Delivered boundary (see T15/T16 + acceptance closeout):
 
-The follow-on SDK-only design requires a caller-owned `*sql.Conn` and creates
-relation metadata, type, and effect-identity facts from that same connection.
-It rejects a caller-provided schema resolver on the trusted path to prevent
-mixing session-bound and external metadata. The result remains static analysis:
-it neither authorizes nor guarantees later execution affinity.
-
-`PathEpoch` is currently a stable non-zero compatibility marker for one capture
-pair. Database, role, server version, and session binding are compared
-field-wise; ordered search-path OIDs are compared separately. It is not a
-mutation counter in the current implementation.
-
-Before this record can become `Accepted`, implementation must add a non-skippable
-PG17 public-SDK E2E gate that calls only the public wrapper/function, verifies
-the caller owns the connection after analysis, and proves metadata, type, and
-identity lookups use the same backend connection. The public-boundary wording
-must be updated in the same acceptance commit.
+- Public trusted promotion exists only as
+  `AnalyzePostgreSQLQueryAccessWithSession` + opaque
+  `PostgreSQLQueryAccessSession` over a caller-owned `*sql.Conn`.
+- Default SDK, CLI, and HTTP remain fail-closed; MCP still has no query-access
+  tool.
+- Relation metadata, type OIDs, and effect-identity facts are created from that
+  same connection; a caller-provided `SchemaResolver` is rejected on the trusted
+  path.
+- Results remain static analysis: not authorization and not a later-execution
+  snapshot guarantee.
+- `PathEpoch` remains a stable non-zero compatibility marker for one capture
+  pair (not a mutation counter).
 
 ### T15 — Trusted SDK Session Foundation (2026-07-15)
 
-**Status remains:** `Proposed`. **Implemented** — adds the foundation layer for
-the trusted SDK path: opaque session wrapper, `*sql.Conn`-backed metadata
-resolver, and PathEpoch documentation correction.
+**Status at delivery:** implemented foundation (record later Accepted at closeout).
+Adds the foundation layer for the trusted SDK path: opaque session wrapper,
+`*sql.Conn`-backed metadata resolver, and PathEpoch documentation correction.
 
 **What T15 delivers:**
 
@@ -1443,9 +1458,9 @@ resolver, and PathEpoch documentation correction.
 
 ### T16 — Public Trusted SDK Function (2026-07-15)
 
-**Status remains:** `Proposed`. **Implemented** — adds the public
-`AnalyzePostgreSQLQueryAccessWithSession` entry point for manifest-gated
-PostgreSQL admission promotion.
+**Status at delivery:** implemented public entry point (record later Accepted at
+closeout). Adds the public `AnalyzePostgreSQLQueryAccessWithSession` entry point
+for manifest-gated PostgreSQL admission promotion.
 
 **What T16 delivers:**
 
@@ -1488,20 +1503,80 @@ PostgreSQL admission promotion.
 - `make decision-record-gate`: PASS
 - `git diff --check`: clean
 
+### Acceptance closeout (2026-07-16)
+
+**Status:** `Accepted` after re-running real gates against HEAD `53ce188` on
+branch `query-access-pure-read-admissibility`. Docs-only closeout; no production
+code change in the acceptance commit.
+
+**Delivered public boundary**
+
+- Sole public trusted promotion API:
+  `AnalyzePostgreSQLQueryAccessWithSession` over
+  `NewPostgreSQLQueryAccessSessionFromConn` (postgresql build tag; non-postgresql
+  stub returns `ErrPostgreSQLSessionNotAvailable` with the same symbol surface).
+- Caller-owned same-connection contract: session, relation metadata
+  (`QueryAccessConnResolver`), and effect-identity adapter
+  (`NewPinnedSessionFromConn` + `EffectIdentityAdapter`) all bind the same
+  `*sql.Conn`; no `*sql.DB` field/fallback (`TestConnResolver_NoDBField`,
+  `TestSameConnectionPID_Proof`).
+- Default `AnalyzeQueryAccess`, CLI, and HTTP remain fail-closed; MCP still has
+  no query-access tool.
+- HTTP query-access errors use bounded messages (`mapQueryAccessErrorMessage`);
+  trusted SDK success/error paths keep no-leak assertions (no driver/DSN/
+  credential/catalog SQL/OID/PID/manifest/session/search_path/raw SQL/literal/
+  severity).
+
+**PG17 public E2E evidence (Docker `docker/pg-e2e-compose.yaml`, `postgres:17`,
+healthy; tests not skipped)**
+
+| Surface | Input | Observed |
+|---------|-------|----------|
+| Public trusted SDK | `SELECT count(*) FROM app.users` | `read_only` + `admissible`; requirement `app.users` `read_table` |
+| Public trusted SDK | `SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id` | `read_only` + `admissible`; physical requirements `app.users`/`app.orders` tables + `app.users.id`/`app.orders.user_id` columns |
+| Caller ownership | same conn after analysis | caller can `SELECT pg_backend_pid()` and `Close`; DeltaScope does not close |
+| Default SDK | same count SQL via `AnalyzeQueryAccess` | `indeterminate` + `indeterminate` |
+| Fail-closed retained | unqualified relation; literal comparison | remain `indeterminate` |
+
+**Remediation included in Accepted baseline (`53ce188`)**
+
+- Session-capture / trusted-path error bounding and HTTP error non-echo of raw
+  wrapped errors.
+- Reference docs updated for the trusted SDK boundary (not a support-scope
+  expansion beyond the closed PG17 manifest).
+
+**Still deferred / non-goals (unchanged)**
+
+- MCP query-access tool; CLI/HTTP trusted promotion; MySQL/TiDB identity promotion
+- Grant/RLS/authz/masking/rewrite; view expansion; dynamic SQL; full planner
+  coercion; cast promotion; multi-major CI claim beyond PG17 product E2E
+- Expanding the trusted-effect manifest without a new audited decision
+- Treating static requirements as authorization or execution-snapshot affinity
+
+**Gates re-run for acceptance (all PASS, no skip/fail)**
+
+- `go test -tags 'postgresql && integration' ./pkg/deltascope/...`
+- `go test -tags postgresql,integration ./internal/infrastructure/metadata/postgresql/...`
+- `go test ./internal/interfaces/http/...`
+- `go test ./...` and `go test -tags postgresql ./...`
+- `make query-access-corpus-gates`, `make pg-unit-test-gates`
+- `make decision-record-gate`, `make release-gofmt-gate`
+- `git diff --check`; `go mod tidy` clean for `go.mod`/`go.sum`
+
 ## Consequences
 
-- Implementation must research and publish a version-scoped effect identity
-  manifest **before** promoting any production admission paths.
+- A version-scoped effect identity manifest (PG17 closed set) is required and
+  present for trusted promotion; expanding it needs re-audit evidence.
 - Identity resolver returns facts; application/domain trust policy applies the
   manifest. Callers must not supply a self-claimed `Trusted` bit.
-- Implementation must thread type facts from relation metadata into effect
-  resolution.
-- Callers who want PostgreSQL `admissible` must supply a catalog-capable
-  resolver (or an equivalent frozen snapshot) with a resolution context locked
-  to execution.
-- Documentation (reference + recipe) must replace "PostgreSQL admission is
-  always indeterminate" with "unproven or non-manifest effects remain
-  indeterminate; manifest-listed proven builtins may be admissible".
+- Type facts are threaded from session-bound relation metadata into effect
+  resolution on the trusted path.
+- Callers who want PostgreSQL `admissible` must use the public trusted session
+  API with a live caller-owned `*sql.Conn` (not the default SDK/CLI/HTTP path).
+- Documentation must distinguish default fail-closed PostgreSQL admission from
+  the opt-in trusted SDK path: unproven or non-manifest effects remain
+  indeterminate; only manifest-listed proven builtins may be admissible under
+  session proof.
 - Future work that adds new manifest entries, volatile builtins, or
   non-`pg_catalog` trust requires a new decision record (or an explicit
   amendment to this one with re-audit evidence).
