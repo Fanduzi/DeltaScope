@@ -237,6 +237,14 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		return nil
 	}
 
+	phase1Eligible, phase1Reason := ValidatePhase1PureEffectCandidates(extracted.EffectCandidates)
+	if !phase1Eligible {
+		return &trustProofResult{
+			decision:    TrustDecisionHasUnproven,
+			reasonCodes: []domain.ReasonCode{phase1Reason},
+		}
+	}
+
 	// Capture explicit execution-bound context from the controlled resolver.
 	// This proves the facts are bound to the expected execution session.
 	resolutionCtx, err := s.trusted.effectResolver.CaptureExecutionBoundContext(ctx)

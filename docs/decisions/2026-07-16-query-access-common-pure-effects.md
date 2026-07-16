@@ -157,6 +157,18 @@ The feasibility gate separates proof-provider evidence from production
 promotion. The tests below record the evidence without changing the manifest or
 admission code.
 
+The Phase-1 proof gateway now also validates candidate shape before identity
+resolution. Only count-star, direct single-column function arguments, and
+frame-free ranking windows may proceed; filters, distinct arguments, nested or
+non-column operands, frames, and casts remain fail-closed. Ineligible
+candidates force `has_unproven`, while `removeUnprovenEffectReasons` remains
+reachable only after `all_proven`.
+
+Coverage: `internal/application/queryaccess/pure_effect_proof_gateway_postgresql_tag_test.go`
+and the existing candidate-binding adversarial suite verify eligible shapes,
+ineligible shapes, partial batches, swapped facts, and candidate no-leak
+behavior.
+
 ### PostgreSQL 17 — GO for the existing session-bound proof path
 
 The PG17 integration test queries `pg_catalog.pg_proc` in the same Docker

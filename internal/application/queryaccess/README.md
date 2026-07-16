@@ -9,6 +9,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | doc.go | Declares the queryaccess application package boundary |
 | contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, and QueryAccessResult |
 | identity_resolver.go | EffectIdentityResolver facts-only contract, resolution context, identity batch helpers, bounded volatility/cast enums |
+| phase1_effect_eligibility.go | Fail-closed Phase-1 pure-effect candidate eligibility before identity promotion |
 | identity_resolver_test.go | Contract tests: ordinal uniqueness, status enum, fail-closed mapping, cancellation, no Trusted field |
 | identity_resolver_context_test.go | Execution-context policy: unqualified unbound, shadowing, overload, TOCTOU, no public leak |
 | identity_resolver_no_invoke_test.go | Freezes Analyze: no identity resolver invocation or public leak in T6 |
@@ -40,6 +41,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - `EffectIdentityResolutionContext` / `EffectIdentityResolutionMode`
 - `EffectVolatility` / `EffectCastMethod`
 - `ValidateEffectIdentityRequest()` / `NormalizeEffectIdentityBatch()` / `CompleteEffectIdentityBatch()`
+- `ValidatePhase1PureEffectCandidates()`
 - `ValidateCandidateFactBinding()` / `ValidateFactOperandTypeBinding()`
 - `CandidateExplicitlyQualified()` / `CandidateExplicitPgCatalog()` / `ClassifyCandidateResolutionMode()`
 - `ResolutionContextSessionComplete()` / `ResolutionContextUsableForUnqualified()`
