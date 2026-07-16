@@ -11,10 +11,10 @@ expect:
   referenced_columns:
     - table: employees
       column: dept
-      usages: [projection]
+      usages: [window]
     - table: employees
       column: id
-      usages: [projection]
+      usages: [ordering]
   outputs:
     - name: ""
       sources: [employees.dept, employees.id]

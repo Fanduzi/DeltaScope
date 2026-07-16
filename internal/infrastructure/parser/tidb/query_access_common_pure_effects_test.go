@@ -51,7 +51,7 @@ func TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages(t *testing.T) {
 		want map[string]string
 	}{
 		{name: "grouping", sql: "SELECT dept, COUNT(*) FROM employees GROUP BY dept", want: map[string]string{"dept": string(domain.UsageGrouping)}},
-		{name: "window", sql: "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY id) FROM employees", want: map[string]string{"dept": string(domain.UsageProjection), "id": string(domain.UsageProjection)}},
+		{name: "window", sql: "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY id) FROM employees", want: map[string]string{"dept": string(domain.UsageWindow), "id": string(domain.UsageOrdering)}},
 	}
 	for _, tc := range cases {
 		tc := tc

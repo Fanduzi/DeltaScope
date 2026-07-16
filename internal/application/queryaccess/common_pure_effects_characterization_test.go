@@ -122,8 +122,8 @@ func TestCommonPureEffects_MySQLTiDB_WindowsIndeterminate(t *testing.T) {
 					fmt.Sprintf("SELECT %s() OVER (PARTITION BY dept ORDER BY id) FROM employees", function), "strict")
 				assertCommonFunctionIndeterminate(t, result)
 				assertCommonRequirement(t, result, "employees", "read_table")
-				assertCommonColumn(t, result, "employees", "dept", domain.UsageProjection)
-				assertCommonColumn(t, result, "employees", "id", domain.UsageProjection)
+				assertCommonColumn(t, result, "employees", "dept", domain.UsageWindow)
+				assertCommonColumn(t, result, "employees", "id", domain.UsageOrdering)
 				assertCommonRequirement(t, result, "employees.dept", "read_column")
 				assertCommonRequirement(t, result, "employees.id", "read_column")
 			}

@@ -171,6 +171,7 @@ func analyzeSelect(sel *ast.SelectStmt, scope *scopeStack) statementFacts {
 		f.relations = append(f.relations, fromFacts.relations...)
 		f.columns = append(f.columns, fromFacts.columns...)
 		f.unresolved = append(f.unresolved, fromFacts.unresolved...)
+		f.reasons = append(f.reasons, fromFacts.reasons...)
 	}
 
 	if sel.Fields != nil {
@@ -211,6 +212,9 @@ func analyzeSelect(sel *ast.SelectStmt, scope *scopeStack) statementFacts {
 			}
 
 			fieldCols, fieldSources := collectColumnRefsFromExpr(field.Expr, "projection", scope, &f.unresolved)
+			if windowExpr, ok := field.Expr.(*ast.WindowFuncExpr); ok {
+				fieldCols, fieldSources = collectWindowFuncColumnRefs(windowExpr, scope, &f.unresolved)
+			}
 			f.columns = append(f.columns, fieldCols...)
 			if outputName == "" {
 				outputName = exprDisplayName(field.Expr)
@@ -233,6 +237,9 @@ func analyzeSelect(sel *ast.SelectStmt, scope *scopeStack) statementFacts {
 	if sel.GroupBy != nil {
 		for _, item := range sel.GroupBy.Items {
 			if item != nil {
+				if nodeHasFunctionCall(item.Expr) {
+					f.reasons = append(f.reasons, "function_call")
+				}
 				gbUnres := make([]UnresolvedFact, 0)
 				f.columns = append(f.columns, collectColumnRefsWithSubqueries(item.Expr, "grouping", scope, nil, &gbUnres)...)
 				f.unresolved = append(f.unresolved, gbUnres...)
@@ -252,11 +259,18 @@ func analyzeSelect(sel *ast.SelectStmt, scope *scopeStack) statementFacts {
 	if sel.OrderBy != nil {
 		for _, item := range sel.OrderBy.Items {
 			if item != nil {
+				if nodeHasFunctionCall(item.Expr) {
+					f.reasons = append(f.reasons, "function_call")
+				}
 				obUnres := make([]UnresolvedFact, 0)
 				f.columns = append(f.columns, collectColumnRefsWithSubqueries(item.Expr, "ordering", scope, nil, &obUnres)...)
 				f.unresolved = append(f.unresolved, obUnres...)
 			}
 		}
+	}
+
+	if sel.Limit != nil && nodeHasFunctionCall(sel.Limit) {
+		f.reasons = append(f.reasons, "function_call")
 	}
 
 	for i := range sel.WindowSpecs {
@@ -348,6 +362,7 @@ type joinFacts struct {
 	relations  []RelationFact
 	columns    []ColumnFact
 	unresolved []UnresolvedFact
+	reasons    []string
 }
 
 func processTableRefs(join *ast.Join, scope *scopeStack) joinFacts {
@@ -355,6 +370,7 @@ func processTableRefs(join *ast.Join, scope *scopeStack) joinFacts {
 		relations:  make([]RelationFact, 0),
 		columns:    make([]ColumnFact, 0),
 		unresolved: make([]UnresolvedFact, 0),
+		reasons:    make([]string, 0),
 	}
 	if join == nil {
 		return f
@@ -364,18 +380,23 @@ func processTableRefs(join *ast.Join, scope *scopeStack) joinFacts {
 	f.relations = append(f.relations, leftFacts.relations...)
 	f.columns = append(f.columns, leftFacts.columns...)
 	f.unresolved = append(f.unresolved, leftFacts.unresolved...)
+	f.reasons = append(f.reasons, leftFacts.reasons...)
 
 	if join.Right != nil {
 		rightFacts := processResultSetNode(join.Right, scope)
 		f.relations = append(f.relations, rightFacts.relations...)
 		f.columns = append(f.columns, rightFacts.columns...)
 		f.unresolved = append(f.unresolved, rightFacts.unresolved...)
+		f.reasons = append(f.reasons, rightFacts.reasons...)
 	}
 
 	if join.On != nil {
 		onUnres := make([]UnresolvedFact, 0)
 		f.columns = append(f.columns, collectColumnRefsWithSubqueries(join.On.Expr, "join", scope, nil, &onUnres)...)
 		f.unresolved = append(f.unresolved, onUnres...)
+		if nodeHasFunctionCall(join.On.Expr) {
+			f.reasons = append(f.reasons, "function_call")
+		}
 	}
 
 	if join.Using != nil {
@@ -402,6 +423,7 @@ func processResultSetNode(node ast.ResultSetNode, scope *scopeStack) joinFacts {
 		f.relations = append(f.relations, joinF.relations...)
 		f.columns = append(f.columns, joinF.columns...)
 		f.unresolved = append(f.unresolved, joinF.unresolved...)
+		f.reasons = append(f.reasons, joinF.reasons...)
 		return f
 
 	case *ast.TableSource:
@@ -432,6 +454,10 @@ func processResultSetNode(node ast.ResultSetNode, scope *scopeStack) joinFacts {
 				f.relations = append(f.relations, subFacts.relations...)
 				f.columns = append(f.columns, subFacts.columns...)
 				f.unresolved = append(f.unresolved, subFacts.unresolved...)
+				f.reasons = append(f.reasons, subFacts.reasons...)
+				if subFacts.classification == "not_read_only" {
+					f.reasons = append(f.reasons, "write_operation")
+				}
 
 				derivedLineage := make(lineageEntry)
 				for _, out := range subFacts.outputs {
@@ -454,6 +480,10 @@ func processResultSetNode(node ast.ResultSetNode, scope *scopeStack) joinFacts {
 			f.relations = append(f.relations, subFacts.relations...)
 			f.columns = append(f.columns, subFacts.columns...)
 			f.unresolved = append(f.unresolved, subFacts.unresolved...)
+			f.reasons = append(f.reasons, subFacts.reasons...)
+			if subFacts.classification == "not_read_only" {
+				f.reasons = append(f.reasons, "write_operation")
+			}
 
 			derivedLineage := make(lineageEntry)
 			for _, out := range subFacts.outputs {
@@ -466,6 +496,40 @@ func processResultSetNode(node ast.ResultSetNode, scope *scopeStack) joinFacts {
 	}
 
 	return f
+}
+
+func collectWindowFuncColumnRefs(window *ast.WindowFuncExpr, scope *scopeStack, unresolved *[]UnresolvedFact) ([]ColumnFact, []string) {
+	if window == nil {
+		return nil, nil
+	}
+	columns := make([]ColumnFact, 0)
+	sources := make([]string, 0)
+	for _, arg := range window.Args {
+		argColumns, argSources := collectColumnRefsFromExpr(arg, "projection", scope, unresolved)
+		columns = append(columns, argColumns...)
+		sources = append(sources, argSources...)
+	}
+	if window.Spec.PartitionBy != nil {
+		for _, item := range window.Spec.PartitionBy.Items {
+			if item == nil {
+				continue
+			}
+			partColumns, partSources := collectColumnRefsFromExpr(item.Expr, "window", scope, unresolved)
+			columns = append(columns, partColumns...)
+			sources = append(sources, partSources...)
+		}
+	}
+	if window.Spec.OrderBy != nil {
+		for _, item := range window.Spec.OrderBy.Items {
+			if item == nil {
+				continue
+			}
+			orderColumns, orderSources := collectColumnRefsFromExpr(item.Expr, "ordering", scope, unresolved)
+			columns = append(columns, orderColumns...)
+			sources = append(sources, orderSources...)
+		}
+	}
+	return columns, sources
 }
 
 func collectColumnRefsWithSubqueries(expr ast.ExprNode, usage string, scope *scopeStack, extraRels *[]RelationFact, extraUnres *[]UnresolvedFact) []ColumnFact {
