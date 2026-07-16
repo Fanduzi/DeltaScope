@@ -1,0 +1,1 @@
+SELECT RANK() OVER (PARTITION BY dept ORDER BY id) FROM employees;

@@ -1,0 +1,1 @@
+SELECT ROW_NUMBER() OVER (PARTITION BY name ORDER BY id) FROM employees;
