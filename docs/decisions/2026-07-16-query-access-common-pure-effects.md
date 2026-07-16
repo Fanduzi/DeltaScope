@@ -1,15 +1,19 @@
 # Decision: Query Access Common Pure-Effect Admissibility
 
 Date: 2026-07-16
-Status: Proposed
-Related milestone/version: Unassigned
+Status: Accepted
+Related milestone/version: Unassigned (no release/tag in this milestone)
 Related commits:
 - Planning baseline: `v0.390.0` (`d72eeb4`)
+- Milestone branch: `query-access-common-pure-effects`
 Related tests:
-- Current TiDB AST characterization and Query Access corpus
-- PostgreSQL trusted-SDK PG17 integration suite
+- Characterization and dependency completeness suites
 - `internal/infrastructure/metadata/postgresql/pure_effect_feasibility_integration_test.go`
 - `internal/infrastructure/metadata/mysql/pure_effect_feasibility_test.go`
+- `internal/infrastructure/metadata/mysql/pure_effect_defer_test.go`
+- `internal/application/queryaccess/pure_effect_proof_gateway_postgresql_tag_test.go`
+- `pkg/deltascope/query_access_session_integration_test.go` (trusted SDK PG17 E2E)
+- Corpus: `make query-access-corpus-gates`
 Related docs:
 - `docs/plans/2026-07-16-query-access-common-pure-effects-spec.md`
 - `docs/plans/2026-07-16-query-access-common-pure-effects-design.md`
@@ -215,10 +219,9 @@ The common `app.users`/`app.orders` type rows are also present and immutable:
 | `max(text)` | 2129 | 25 | 25 (`text`) |
 | `max(numeric)` | 2130 | 1700 | 1700 (`numeric`) |
 
-This is a feasibility GO only. A later implementation task must still audit
-semantic effects, dependency completeness, and manifest entries. Exact OID,
-namespace, arity, argument/result types, and session binding remain required;
-name or volatility alone is not proof.
+Implementation completed these identities into the PG17 trusted manifest and
+the public trusted SDK path. Exact OID, namespace, arity, argument/result types,
+and session binding remain required; name or volatility alone is not proof.
 
 ### MySQL 8.0 and TiDB — DEFER under the kill criterion
 
@@ -251,12 +254,51 @@ a separately designed caller-session proof, a name or determinism allowlist is
 not admissible evidence. No CLI/HTTP database connection path is added, and no
 MCP Query Access tool is added.
 
+### Task 9 final audit (Accepted)
+
+Independent review of the six security questions:
+
+1. Spelling/UDF/overload/schema/volatility/coercion cannot bypass proof: trust
+   requires session-bound catalog OID + versioned manifest match; Phase 1
+   eligibility is only a pre-filter and still requires identity proof.
+2. Strict requirements include aggregate args, GROUP BY, HAVING, and window
+   partition/order sources after the TiDB completeness repair and existing PG
+   traversal.
+3. One candidate cannot clear another reason: `removeUnprovenEffectReasons` runs
+   only on `TrustDecisionAllProven` for the full batch.
+4. Resolver/session/catalog failures and cross-connection facts cannot promote:
+   incomplete context, atomic snapshot mismatch, and non-pinned sessions fail
+   closed.
+5. Default PostgreSQL/CLI/HTTP remain fail-closed; MCP has no Query Access tool.
+6. Public JSON/errors do not expose candidates, OIDs, SQL, DSN, credentials, or
+   `severity`.
+
+Gate evidence run on the milestone branch:
+
+- `go test ./... -count=1`
+- `go test -tags postgresql ./... -count=1`
+- `go test -race ./internal/domain/queryaccess/... ./internal/application/queryaccess/... ./pkg/deltascope/... -count=1`
+- `go test -tags 'postgresql && integration' ./pkg/deltascope/... ./internal/infrastructure/metadata/postgresql/... -count=1`
+- `go build ./...` and `go build -tags postgresql ./...`
+- `go vet ./...` and `go vet -tags postgresql ./...`
+- `golangci-lint run ./...` (clean after Phase 1 frame eligibility fix)
+- `make query-access-corpus-gates`
+- `make pg-unit-test-gates`
+- `make decision-record-gate`
+- `make release-gofmt-gate`
+- `npm test --prefix packages/deltascope-mcp`
+- `git diff --check`; `go mod tidy` clean for `go.mod`/`go.sum`
+
+Remaining P1/P2: none for the delivered PostgreSQL trusted subset and explicit
+MySQL/TiDB deferral.
+
 ## Consequences
 
 The milestone favors a small useful set of reporting queries over a broad but
-unverifiable function allowlist. It may stop one dialect without blocking a
-separately proven dialect. This decision remains `Proposed` until proof,
-corpus, public-surface, and audit evidence exists in Task 9.
+unverifiable function allowlist. PostgreSQL ships a trusted-session Phase 1
+subset; MySQL and TiDB remain deferred without blocking that subset. This
+decision is `Accepted` for the delivered evidence only and does not assign a
+release version.
 
 ## Links
 

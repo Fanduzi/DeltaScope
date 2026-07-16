@@ -30,7 +30,7 @@ func TestValidatePhase1PureEffectCandidates(t *testing.T) {
 		{name: "sum incomplete refs", input: EffectCandidate{Kind: EffectCandidateFunction, Arity: 1, OperandKinds: []string{"column"}}, reason: domain.ReasonUnprovenFunctionEffect},
 		{name: "windowed aggregate", input: EffectCandidate{Kind: EffectCandidateFunction, Arity: 1, OperandKinds: []string{"column"}, OperandColumnRefs: []OperandColumnRef{{Column: "amount"}}, HasWindow: true}, reason: domain.ReasonUnprovenFunctionEffect},
 		{name: "row number", input: EffectCandidate{Kind: EffectCandidateFunction, NamePath: []string{"row_number"}, Arity: 0, HasWindow: true}, ok: true},
-		{name: "row number frame", input: EffectCandidate{Kind: EffectCandidateFunction, NamePath: []string{"row_number"}, Arity: 0, HasWindow: true, HasFrame: true}, ok: true},
+		{name: "row number frame", input: EffectCandidate{Kind: EffectCandidateFunction, NamePath: []string{"row_number"}, Arity: 0, HasWindow: true, HasFrame: true}, reason: domain.ReasonUnprovenFunctionEffect},
 		{name: "cast", input: EffectCandidate{Kind: EffectCandidateCast, Arity: 1, OperandKinds: []string{"column"}}, reason: domain.ReasonUnprovenCastEffect},
 		{name: "operator", input: EffectCandidate{Kind: EffectCandidateOperator, Arity: 2}, ok: true},
 	}

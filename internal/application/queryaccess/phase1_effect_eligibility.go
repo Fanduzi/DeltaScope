@@ -36,7 +36,7 @@ func phase1FunctionEligible(candidate EffectCandidate) bool {
 		candidate.HasAggOrder || candidate.HasWithinGroup {
 		return false
 	}
-	if candidate.HasFrame && !(candidate.HasWindow && candidate.Arity == 0 && isWindowRankingFunction(candidate)) {
+	if candidate.HasFrame {
 		return false
 	}
 
@@ -63,7 +63,7 @@ func isCountStar(candidate EffectCandidate) bool {
 
 func isWindowRankingFunction(candidate EffectCandidate) bool {
 	switch strings.ToLower(candidateCanonicalName(candidate)) {
-	case "row_number", "rank", "dense_rank", "percent_rank", "cume_dist":
+	case "row_number", "rank", "dense_rank":
 		return true
 	default:
 		return false
