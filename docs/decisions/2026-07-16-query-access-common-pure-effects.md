@@ -239,12 +239,24 @@ Both dialects keep `unknown_function_effect`; neither receives promotion in
 Phase 1. A future provider would require a separately designed, audited
 identity model and caller-session surface.
 
+### Task 7/8 disposition
+
+PostgreSQL is the only dialect promoted for the Phase 1 subset, and only through
+the trusted SDK session path. The default SDK, CLI, and HTTP paths remain
+`indeterminate` for function-bearing PostgreSQL SQL. MySQL and TiDB are
+explicitly deferred: their aggregate and window functions remain
+`indeterminate` with `unknown_function_effect` on every current surface. The
+kill criterion is unchanged—without offline OID-equivalent identity binding or
+a separately designed caller-session proof, a name or determinism allowlist is
+not admissible evidence. No CLI/HTTP database connection path is added, and no
+MCP Query Access tool is added.
+
 ## Consequences
 
 The milestone favors a small useful set of reporting queries over a broad but
 unverifiable function allowlist. It may stop one dialect without blocking a
 separately proven dialect. This decision remains `Proposed` until proof,
-corpus, public-surface, and audit evidence exists.
+corpus, public-surface, and audit evidence exists in Task 9.
 
 ## Links
 
