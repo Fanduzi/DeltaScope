@@ -8,6 +8,8 @@ Related commits:
 Related tests:
 - Current TiDB AST characterization and Query Access corpus
 - PostgreSQL trusted-SDK PG17 integration suite
+- `internal/infrastructure/metadata/postgresql/pure_effect_feasibility_integration_test.go`
+- `internal/infrastructure/metadata/mysql/pure_effect_feasibility_test.go`
 Related docs:
 - `docs/plans/2026-07-16-query-access-common-pure-effects-spec.md`
 - `docs/plans/2026-07-16-query-access-common-pure-effects-design.md`
@@ -86,6 +88,10 @@ If a dialect cannot provide bounded identity proof, it keeps the current
 `unknown_function_effect` behavior. The milestone may ship a proven subset for
 another dialect, but must state that distinction in the public contract.
 
+For this research gate, PostgreSQL proceeds to the existing session-bound
+catalog proof path. MySQL and TiDB remain deferred for Phase 1; no shared-parser
+assumption promotes either dialect.
+
 ## Rationale
 
 Common aggregates and ranking windows are high-value reporting constructs, but
@@ -147,18 +153,79 @@ shared parser implementation.
 
 ## Verification Evidence
 
-At proposal time, evidence is limited to the existing V1 boundary:
+The feasibility gate separates proof-provider evidence from production
+promotion. The tests below record the evidence without changing the manifest or
+admission code.
 
-- TiDB AST characterization proves aggregate/window nodes currently trigger
-  the empty-function-allowlist `indeterminate` path.
-- Existing parser extraction already records grouping, having, and window
-  partition/order dependencies, but Phase 1 completeness has not yet been
-  independently established for every candidate and expression holder.
-- v0.390.0 PostgreSQL trusted SDK integration proves only its current PG17
-  manifest subset. It is not evidence for new aggregates or windows.
+### PostgreSQL 17 — GO for the existing session-bound proof path
 
-No dialect has new promotion evidence under this proposal. The required proof,
-corpus, cross-surface, and audit evidence above is the acceptance threshold.
+The PG17 integration test queries `pg_catalog.pg_proc` in the same Docker
+environment used by the trusted SDK integration suite. The `pg_catalog`
+namespace is OID 11 and all listed immutable rows have `provolatile = 'i'`.
+
+Window identities:
+
+| Candidate | OID | Signature | `prokind` | Arity | Volatility |
+| --- | ---: | --- | --- | ---: | --- |
+| `row_number` | 3100 | `pg_catalog.row_number()` | `w` | 0 | `i` |
+| `rank` | 3101 | `pg_catalog.rank()` | `w` | 0 | `i` |
+| `dense_rank` | 3102 | `pg_catalog.dense_rank()` | `w` | 0 | `i` |
+
+Ordered-set negatives with the same spellings are distinct aggregate
+identities and must not be accepted as window identities:
+
+| Candidate | OID | Signature | `prokind` |
+| --- | ---: | --- | --- |
+| `rank` | 3986 | `VARIADIC "any" ORDER BY VARIADIC "any"` | `a` |
+| `dense_rank` | 3992 | `VARIADIC "any" ORDER BY VARIADIC "any"` | `a` |
+
+Existing count identities remain present:
+
+| Candidate | OID | Argument OID | Result OID | `prokind` |
+| --- | ---: | ---: | ---: | --- |
+| `count(*)` | 2803 | — | 20 (`int8`) | `a` |
+| `count(anyelement)` | 2147 | 2276 | 20 (`int8`) | `a` |
+
+The common `app.users`/`app.orders` type rows are also present and immutable:
+
+| Aggregate | OID | Argument OID | Result OID |
+| --- | ---: | ---: | ---: |
+| `sum(bigint)` | 2107 | 20 | 1700 (`numeric`) |
+| `sum(integer)` | 2108 | 23 | 20 (`int8`) |
+| `sum(numeric)` | 2114 | 1700 | 1700 (`numeric`) |
+| `avg(bigint)` | 2100 | 20 | 1700 (`numeric`) |
+| `avg(integer)` | 2101 | 23 | 1700 (`numeric`) |
+| `avg(numeric)` | 2103 | 1700 | 1700 (`numeric`) |
+| `min(bigint)` | 2131 | 20 | 20 (`int8`) |
+| `min(text)` | 2145 | 25 | 25 (`text`) |
+| `min(numeric)` | 2146 | 1700 | 1700 (`numeric`) |
+| `max(bigint)` | 2115 | 20 | 20 (`int8`) |
+| `max(text)` | 2129 | 25 | 25 (`text`) |
+| `max(numeric)` | 2130 | 1700 | 1700 (`numeric`) |
+
+This is a feasibility GO only. A later implementation task must still audit
+semantic effects, dependency completeness, and manifest entries. Exact OID,
+namespace, arity, argument/result types, and session binding remain required;
+name or volatility alone is not proof.
+
+### MySQL 8.0 and TiDB — DEFER under the kill criterion
+
+The MySQL 8.0.45 probe established that stored functions can be declared
+`DETERMINISTIC`, but determinism is not a trust root. A builtin-like
+`CREATE FUNCTION count(...)` attempt failed with syntax error, while a
+user-defined `my_sum` function was accepted. `information_schema.ROUTINES`
+exposes stored functions by schema and `mysql.func` can hold loadable UDFs, but
+there is no offline OID-equivalent identity binding for builtins. Therefore any
+static `SUM`/`COUNT` promotion would be a name/determinism allowlist and hits
+the kill criterion.
+
+TiDB is a separate proof domain despite parser-adjacent sharing with MySQL. No
+version-scoped, shadowing-safe offline builtin identity was established. The
+same name-only allowlist kill criterion applies.
+
+Both dialects keep `unknown_function_effect`; neither receives promotion in
+Phase 1. A future provider would require a separately designed, audited
+identity model and caller-session surface.
 
 ## Consequences
 

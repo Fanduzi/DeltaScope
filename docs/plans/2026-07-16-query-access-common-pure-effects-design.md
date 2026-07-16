@@ -95,6 +95,13 @@ connection and its database/role/version/session/search-path context.
 No default PostgreSQL service receives a resolver or manifest. Only
 `AnalyzePostgreSQLQueryAccessWithSession` invokes the trusted path.
 
+Feasibility gate result: **GO** for the existing caller-owned, session-bound
+catalog proof provider. The PG17 research test records exact `pg_proc` OIDs for
+the three Phase 1 window candidates, rejects the ordered-set `rank` and
+`dense_rank` identities with the same spellings, and confirms common
+`sum`/`avg`/`min`/`max` rows alongside the existing `count` OIDs. This does not
+expand the production manifest or promote any new query shape.
+
 ### MySQL and TiDB
 
 Do not reuse PostgreSQL OIDs or its session contract by analogy. First define
@@ -112,6 +119,14 @@ The provider design is conditional on research:
 The policy can share candidate classes and test matrices with PostgreSQL, but
 identity facts, versions, resolver implementation, and public availability
 remain dialect-specific.
+
+Feasibility gate result: **DEFER Phase 1** for both dialects. MySQL's live
+probe showed that `DETERMINISTIC` stored functions and schema/UDF metadata do
+not establish builtin identity; no offline OID-equivalent binding was found.
+TiDB has no established version-scoped, shadowing-safe offline identity either.
+Because a static name/determinism allowlist is the kill criterion, both retain
+`unknown_function_effect`. No MySQL/TiDB promotion code is part of this
+milestone.
 
 ## Admission and Reasons
 
