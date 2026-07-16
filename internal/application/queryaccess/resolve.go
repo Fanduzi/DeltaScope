@@ -33,6 +33,7 @@ type resolutionState struct {
 	aliasMap      map[string]resolvedRef    // key: alias → relation
 	nameMap       map[string][]resolvedRef  // key: relation name → matching relations
 	relationOrder []resolvedRef             // preserves SQL FROM/JOIN order for wildcard expansion
+	unboundMap    map[string]bool           // key: alias or name → unbound relation
 }
 
 type resolvedRef struct {
@@ -50,8 +51,16 @@ func newResolutionState(ctx context.Context, resolver SchemaResolver, dialect, d
 		aliasMap:      make(map[string]resolvedRef),
 		nameMap:       make(map[string][]resolvedRef),
 		relationOrder: make([]resolvedRef, 0, len(relations)),
+		unboundMap:    make(map[string]bool),
 	}
 	for _, rel := range relations {
+		if rel.Unbound {
+			if rel.Alias != "" {
+				s.unboundMap[strings.ToLower(rel.Alias)] = true
+			}
+			s.unboundMap[strings.ToLower(rel.Name)] = true
+			continue
+		}
 		ref := resolvedRef{schema: rel.Schema, name: rel.Name}
 		if rel.Alias != "" {
 			s.aliasMap[strings.ToLower(rel.Alias)] = ref
@@ -153,12 +162,20 @@ func resolveMetadata(ctx context.Context, resolver SchemaResolver, dialect, defa
 	return result
 }
 
+// isUnbound reports whether a table reference belongs to a relation marked unbound.
+func (s *resolutionState) isUnbound(tableRef string) bool {
+	if tableRef == "" {
+		return false
+	}
+	return s.unboundMap[strings.ToLower(tableRef)]
+}
+
 // resolveRelations enriches relation references with metadata: resolves schemas, detects views.
 func resolveRelations(state *resolutionState, relations []domain.RelationReference) ([]domain.RelationReference, []domain.Unresolved) {
 	out := make([]domain.RelationReference, 0, len(relations))
 	var unresolved []domain.Unresolved
 	for _, rel := range relations {
-		if rel.Kind == domain.RelationCTE || rel.Kind == domain.RelationDerived {
+		if rel.Unbound || rel.Kind == domain.RelationCTE || rel.Kind == domain.RelationDerived {
 			out = append(out, rel)
 			continue
 		}
@@ -206,6 +223,10 @@ func resolveColumns(state *resolutionState, columns []domain.ColumnReference) ([
 	expandedWildcards := make(map[string]bool)
 	var unresolved []domain.Unresolved
 	for _, col := range columns {
+		if col.Unbound {
+			out = append(out, col)
+			continue
+		}
 		if col.Column == "*" {
 			expanded, originalRef, wcUnresolved := expandStarColumn(state, col)
 			if len(expanded) > 0 && (len(expanded) != 1 || expanded[0].Column != "*") {
@@ -277,6 +298,9 @@ func expandTableStar(state *resolutionState, col domain.ColumnReference) ([]doma
 	if schema != "" && schema != col.Table {
 		originalRef = domain.FormatRelationKey(schema, name) + ".*"
 	}
+	if schema == "" && state.isUnbound(col.Table) {
+		return []domain.ColumnReference{col}, originalRef, nil
+	}
 	rs, ok := state.resolveSchema(schema, name)
 	if !ok {
 		return []domain.ColumnReference{col}, originalRef, []domain.Unresolved{{
@@ -300,6 +324,12 @@ func expandTableStar(state *resolutionState, col domain.ColumnReference) ([]doma
 // resolveQualifiedColumn resolves a table.column reference to schema.table.column.
 func resolveQualifiedColumn(state *resolutionState, col domain.ColumnReference) ([]domain.ColumnReference, []domain.Unresolved) {
 	schema, name := state.resolveRelationRef(col.Table)
+	if state.isUnbound(col.Table) {
+		return []domain.ColumnReference{col}, nil
+	}
+	if schema == "" {
+		return []domain.ColumnReference{col}, nil
+	}
 	rs, ok := state.resolveSchema(schema, name)
 	if !ok {
 		return []domain.ColumnReference{col}, []domain.Unresolved{{
@@ -389,6 +419,22 @@ func resolveSourceKeys(state *resolutionState, sources []string) []string {
 	out := make([]string, 0, len(sources))
 	for _, src := range sources {
 		parts := strings.SplitN(src, ".", 3)
+		var tablePart string
+		var hasSchema bool
+		switch len(parts) {
+		case 3:
+			schema, table, _ := parts[0], parts[1], parts[2]
+			tablePart = table
+			hasSchema = schema != ""
+		case 2:
+			tablePart, _ = parts[0], parts[1]
+		default:
+			out = append(out, src)
+			continue
+		}
+		if !hasSchema && state.isUnbound(tablePart) {
+			continue
+		}
 		switch len(parts) {
 		case 3:
 			schema, table, col := parts[0], parts[1], parts[2]
@@ -408,8 +454,6 @@ func resolveSourceKeys(state *resolutionState, sources []string) []string {
 			} else {
 				out = append(out, domain.FormatColumnKey(state.defaultSchema, table, col))
 			}
-		default:
-			out = append(out, src)
 		}
 	}
 	return out
@@ -453,6 +497,9 @@ func expandUnresolvedWildcards(state *resolutionState, unresolved []domain.Unres
 	outputLineage := make(map[string][]string)
 
 	for _, ref := range wildcardRefs {
+		if state.isUnboundWildcardRef(ref) {
+			continue
+		}
 		cols, sources, ok := expandWildcardRef(state, ref)
 		if ok {
 			expandedCols = append(expandedCols, cols...)
@@ -476,6 +523,18 @@ func expandUnresolvedWildcards(state *resolutionState, unresolved []domain.Unres
 	}
 
 	return expandedCols, expandedWildcards, updatedOutputs, newUnresolved
+}
+
+func (s *resolutionState) isUnboundWildcardRef(ref string) bool {
+	if ref == "*" {
+		return false
+	}
+	parts := strings.SplitN(ref, ".", 2)
+	if len(parts) == 2 && parts[1] == "*" && parts[0] != "" {
+		// Schema-qualified wildcard like "public.users.*" — not unbound.
+		return false
+	}
+	return s.isUnbound(parts[0])
 }
 
 // expandWildcardRef expands a single wildcard reference into physical columns.
@@ -531,6 +590,9 @@ func expandTableWildcard(state *resolutionState, ref string) ([]domain.ColumnRef
 	}
 
 	schema, name := state.resolveRelationRef(tableName)
+	if schema == "" && state.isUnbound(tableName) {
+		return nil, nil, false
+	}
 	if schema == "" && state.defaultSchema != "" {
 		schema = state.defaultSchema
 	}

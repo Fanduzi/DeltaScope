@@ -3,7 +3,7 @@ dialect: postgresql
 mode: strict
 expect:
   read_classification: not_read_only
-  admission: indeterminate
+  admission: rejected
   relations:
     - name: users
       kind: table
@@ -16,10 +16,10 @@ expect:
     - name: id
       sources: [users.id]
   requirements:
-    - object: users
-      privilege: read_table
-    - object: users.id
-      privilege: read_column
-  unresolved: []
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
   warnings: []
-  reason_codes: []
+  reason_codes: [unqualified_relation_blocked]

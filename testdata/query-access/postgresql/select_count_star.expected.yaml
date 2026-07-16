@@ -1,0 +1,20 @@
+name: select_count_star
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns: []
+  outputs: []
+  requirements:
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
+  warnings: []
+  reason_codes: [unproven_function_effect, unqualified_relation_blocked]

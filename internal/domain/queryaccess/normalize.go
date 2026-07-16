@@ -237,6 +237,103 @@ func SortReasonCodes(codes []ReasonCode) []ReasonCode {
 	return sorted
 }
 
+// DeduplicateReasonCodes removes duplicate reason codes, preserving first-seen order.
+func DeduplicateReasonCodes(codes []ReasonCode) []ReasonCode {
+	if len(codes) == 0 {
+		return codes
+	}
+	seen := make(map[ReasonCode]struct{}, len(codes))
+	result := make([]ReasonCode, 0, len(codes))
+	for _, c := range codes {
+		if _, ok := seen[c]; ok {
+			continue
+		}
+		seen[c] = struct{}{}
+		result = append(result, c)
+	}
+	return result
+}
+
+// ReasonForIdentityFailure maps a bounded identity-failure category to a
+// stable reason code. Unknown categories return false so callers cannot inject
+// free-text or ad-hoc strings as trusted reasons.
+func ReasonForIdentityFailure(f IdentityFailure) (ReasonCode, bool) {
+	switch f {
+	case IdentityFailureUnavailable:
+		return ReasonIdentityResolverUnavailable, true
+	case IdentityFailureUnknown:
+		return ReasonIdentityUnknown, true
+	case IdentityFailureError:
+		return ReasonIdentityLookupFailed, true
+	case IdentityFailureAmbiguous:
+		return ReasonIdentityAmbiguous, true
+	case IdentityFailureCoercionGap:
+		return ReasonIdentityCoercionGap, true
+	default:
+		return "", false
+	}
+}
+
+// ValidIdentityStatus reports whether s is a known bounded identity status.
+// Free-text and empty strings return false.
+func ValidIdentityStatus(s IdentityStatus) bool {
+	switch s {
+	case IdentityStatusResolved,
+		IdentityStatusUnknown,
+		IdentityStatusAmbiguous,
+		IdentityStatusCoercionGap,
+		IdentityStatusLookupFailed,
+		IdentityStatusUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// IdentityStatusIsFailClosed reports whether the status forbids pure-read
+// promotion for that candidate. Only resolved is non-fail-closed; free-text
+// and empty statuses are treated as fail-closed.
+func IdentityStatusIsFailClosed(s IdentityStatus) bool {
+	return s != IdentityStatusResolved
+}
+
+// IdentityStatusToFailure maps a non-resolved bounded status to IdentityFailure.
+// Resolved and free-text statuses return false (callers must not invent failures
+// from success or inject error strings).
+func IdentityStatusToFailure(s IdentityStatus) (IdentityFailure, bool) {
+	switch s {
+	case IdentityStatusUnavailable:
+		return IdentityFailureUnavailable, true
+	case IdentityStatusUnknown:
+		return IdentityFailureUnknown, true
+	case IdentityStatusLookupFailed:
+		return IdentityFailureError, true
+	case IdentityStatusAmbiguous:
+		return IdentityFailureAmbiguous, true
+	case IdentityStatusCoercionGap:
+		return IdentityFailureCoercionGap, true
+	default:
+		return "", false
+	}
+}
+
+// ReasonForIdentityStatus maps a non-resolved bounded status to a reason code.
+// Resolved and free-text statuses return false so callers cannot inject
+// arbitrary strings as trusted reasons. Resolved never yields a reason code
+// from this helper (trust/promotion is a later policy step).
+func ReasonForIdentityStatus(s IdentityStatus) (ReasonCode, bool) {
+	f, ok := IdentityStatusToFailure(s)
+	if !ok {
+		return "", false
+	}
+	return ReasonForIdentityFailure(f)
+}
+
+// NormalizeReasonCodes deduplicates and sorts reason codes for stable public output.
+func NormalizeReasonCodes(codes []ReasonCode) []ReasonCode {
+	return SortReasonCodes(DeduplicateReasonCodes(codes))
+}
+
 // SortWarningCodes sorts warning codes for deterministic output.
 func SortWarningCodes(codes []WarningCode) []WarningCode {
 	if len(codes) == 0 {

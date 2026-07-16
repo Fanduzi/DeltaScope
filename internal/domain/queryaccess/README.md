@@ -45,13 +45,37 @@ Transport-neutral domain types for query access analysis, including read classif
   - `ReasonMultiStatement`
   - `ReasonSchemaUnavailable`
   - `ReasonAmbiguousReference`
+  - `ReasonFunctionEffect`
+  - `ReasonUnprovenOperatorEffect`
+  - `ReasonUnprovenFunctionEffect`
+  - `ReasonUnprovenCastEffect`
+  - `ReasonIdentityResolverUnavailable`
+  - `ReasonIdentityUnknown`
+  - `ReasonIdentityLookupFailed`
+  - `ReasonIdentityAmbiguous`
+  - `ReasonIdentityCoercionGap`
+- `IdentityFailure`
+  - `IdentityFailureUnavailable`
+  - `IdentityFailureUnknown`
+  - `IdentityFailureError`
+  - `IdentityFailureAmbiguous`
+  - `IdentityFailureCoercionGap`
+- `IdentityStatus` (per-candidate resolver outcome; includes `resolved`)
+  - `IdentityStatusResolved`
+  - `IdentityStatusUnknown`
+  - `IdentityStatusAmbiguous`
+  - `IdentityStatusCoercionGap`
+  - `IdentityStatusLookupFailed`
+  - `IdentityStatusUnavailable`
 - `WarningCode`
   - `WarningAmbiguousColumn`
   - `WarningMissingSchema`
   - `WarningDeprecatedSyntax`
   - `WarningInferenceRisk`
 - `RelationReference`
+  - `Unbound` field: marks relations that must not produce physical requirements or be resolved against DefaultSchema
 - `ColumnReference`
+  - `Unbound` field: inherited marker for columns referencing unbound relations
 - `OutputColumn`
 - `Requirement`
 - `Unresolved`
@@ -64,6 +88,13 @@ Transport-neutral domain types for query access analysis, including read classif
 - `SortColumns()`
 - `SortRequirements()`
 - `DeduplicateUsages()`
+- `DeduplicateReasonCodes()`
+- `NormalizeReasonCodes()`
+- `ReasonForIdentityFailure()`
+- `ValidIdentityStatus()`
+- `IdentityStatusIsFailClosed()`
+- `IdentityStatusToFailure()`
+- `ReasonForIdentityStatus()`
 - `ValidateResult()`
 - `FormatRelationKey()`
 - `FormatColumnKey()`
@@ -75,6 +106,9 @@ Transport-neutral domain types for query access analysis, including read classif
 - Sorting functions return new slices; they do not mutate input.
 - `FoldReadClassification` priority: `not_read_only` > `indeterminate` > `read_only`.
 - `ValidateAdmission` rejects `admissible` + non-`read_only` combinations.
+- Unproven-effect reason codes (`unproven_*`, `identity_*`) are additive machine identifiers only; they never embed SQL, OIDs, object names, or driver errors.
+- `ReasonForIdentityFailure` maps only bounded `IdentityFailure` categories; free-text cannot be injected as a trusted reason.
+- `IdentityStatus` is the per-candidate resolver outcome enum (`resolved` + fail-closed statuses). `lookup_failed` maps to `IdentityFailureError` / `identity_lookup_failed`. Free-text statuses are invalid. `resolved` is not a trust claim.
 
 ## Dependencies
 - Upstream: `internal/application/queryaccess`

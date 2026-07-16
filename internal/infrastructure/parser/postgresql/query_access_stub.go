@@ -34,6 +34,7 @@ type RelationFacts struct {
 
 // ColumnRefFacts describes a column reference with usage contexts.
 type ColumnRefFacts struct {
+	Schema  string
 	Table   string
 	Column  string
 	Usages  []string

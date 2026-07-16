@@ -59,7 +59,7 @@ type UsageContext string
 const (
 	// UsageProjection indicates the column appears in the SELECT list.
 	UsageProjection UsageContext = "projection"
-	// UsageFilter indicates the column appears in a WHERE clause.
+	// UsageFilter indicates the column appears in a WHERE clause or aggregate FILTER clause.
 	UsageFilter UsageContext = "filter"
 	// UsageJoin indicates the column appears in a JOIN condition.
 	UsageJoin UsageContext = "join"
@@ -69,11 +69,17 @@ const (
 	UsageHaving UsageContext = "having"
 	// UsageOrdering indicates the column appears in an ORDER BY clause.
 	UsageOrdering UsageContext = "ordering"
-	// UsageWindow indicates the column appears in a window function.
+	// UsageWindow indicates the column appears in a window PARTITION BY or frame bound.
 	UsageWindow UsageContext = "window"
+	// UsageDistinctOn indicates the column appears in a DISTINCT ON clause.
+	UsageDistinctOn UsageContext = "distinct_on"
+	// UsageLimit indicates the column appears in a LIMIT or OFFSET expression.
+	UsageLimit UsageContext = "limit"
 )
 
 // ReasonCode is a bounded machine identifier for why something is indeterminate or rejected.
+// Reason codes are stable machine identifiers only: never SQL text, object names,
+// function/operator/cast spellings, OIDs, literals, credentials, or driver errors.
 type ReasonCode string
 
 const (
@@ -90,7 +96,91 @@ const (
 	// ReasonAmbiguousReference indicates a reference could not be uniquely resolved.
 	ReasonAmbiguousReference ReasonCode = "ambiguous_reference"
 	// ReasonFunctionEffect indicates a function call with unknown side effects.
+	// Used by MySQL/TiDB empty-allowlist path (legacy name).
 	ReasonFunctionEffect ReasonCode = "unknown_function_effect"
+
+	// ReasonUnprovenOperatorEffect indicates an operator expression was present
+	// but its catalog identity was not proven trusted for pure-read admission.
+	ReasonUnprovenOperatorEffect ReasonCode = "unproven_operator_effect"
+	// ReasonUnprovenFunctionEffect indicates a function or aggregate call was
+	// present but its catalog identity was not proven trusted.
+	ReasonUnprovenFunctionEffect ReasonCode = "unproven_function_effect"
+	// ReasonUnprovenCastEffect indicates a cast expression was present but its
+	// cast path identity was not proven trusted.
+	ReasonUnprovenCastEffect ReasonCode = "unproven_cast_effect"
+
+	// ReasonIdentityResolverUnavailable indicates effect-identity resolution was
+	// required but no identity resolver was configured.
+	ReasonIdentityResolverUnavailable ReasonCode = "identity_resolver_unavailable"
+	// ReasonIdentityUnknown indicates the resolver returned an unknown / no-match identity.
+	ReasonIdentityUnknown ReasonCode = "identity_unknown"
+	// ReasonIdentityLookupFailed indicates the resolver failed with a transport or catalog error.
+	// Public results must never embed the underlying error text.
+	ReasonIdentityLookupFailed ReasonCode = "identity_lookup_failed"
+	// ReasonIdentityAmbiguous indicates multi-match identity resolution (non-unique).
+	ReasonIdentityAmbiguous ReasonCode = "identity_ambiguous"
+	// ReasonIdentityCoercionGap indicates type coercion required for unique identity
+	// is outside the supported bounded resolution graph.
+	ReasonIdentityCoercionGap ReasonCode = "identity_coercion_gap"
+
+	// ReasonUnqualifiedRelationBlocked indicates that an unqualified relation
+	// was present in a PostgreSQL query with a trusted bundle, which blocks
+	// promotion to admissible due to search_path ambiguity.
+	ReasonUnqualifiedRelationBlocked ReasonCode = "unqualified_relation_blocked"
+
+	// ReasonViewExpansionRequired indicates that a query involves a view
+	// whose definition must be expanded to determine base-table requirements.
+	// Without view expansion, the query cannot be promoted to admissible
+	// because hidden reads may exist that requirements cannot cover.
+	ReasonViewExpansionRequired ReasonCode = "view_expansion_required"
+
+	// ReasonUnsupportedTraversal indicates that a SQL clause could not be fully
+	// traversed. Emitted for JOIN USING clauses where column names require
+	// catalog resolution, and for unhandled AST node types that may contain
+	// hidden expression subnodes with operators/functions/casts.
+	ReasonUnsupportedTraversal ReasonCode = "unsupported_traversal"
+)
+
+// IdentityFailure is a bounded category for effect-identity resolution outcomes.
+// Callers map transport/catalog errors to these categories before attaching a
+// reason code; free-text error strings must never become reason codes.
+type IdentityFailure string
+
+const (
+	// IdentityFailureUnavailable means no identity resolver was configured.
+	IdentityFailureUnavailable IdentityFailure = "unavailable"
+	// IdentityFailureUnknown means the resolver returned unknown / no rows.
+	IdentityFailureUnknown IdentityFailure = "unknown"
+	// IdentityFailureError means the resolver hit a transport or catalog error.
+	IdentityFailureError IdentityFailure = "error"
+	// IdentityFailureAmbiguous means multi-match non-unique identity.
+	IdentityFailureAmbiguous IdentityFailure = "ambiguous"
+	// IdentityFailureCoercionGap means required coercion is unsupported.
+	IdentityFailureCoercionGap IdentityFailure = "coercion_gap"
+)
+
+// IdentityStatus is the bounded per-candidate outcome of effect-identity resolution.
+// It extends IdentityFailure with a success value (resolved). Free-text strings
+// are never valid statuses; unknown strings map to fail-closed via helpers.
+//
+// Naming aligns with public identity_* reason codes where possible:
+// lookup_failed (status) ↔ IdentityFailureError ("error") ↔ identity_lookup_failed.
+type IdentityStatus string
+
+const (
+	// IdentityStatusResolved means a unique catalog identity was established.
+	// Facts may be present; this is NOT a trust claim.
+	IdentityStatusResolved IdentityStatus = "resolved"
+	// IdentityStatusUnknown means no matching catalog row / no unique identity.
+	IdentityStatusUnknown IdentityStatus = "unknown"
+	// IdentityStatusAmbiguous means multi-match non-unique identity.
+	IdentityStatusAmbiguous IdentityStatus = "ambiguous"
+	// IdentityStatusCoercionGap means required coercion is outside the bounded graph.
+	IdentityStatusCoercionGap IdentityStatus = "coercion_gap"
+	// IdentityStatusLookupFailed means transport/catalog error during lookup.
+	IdentityStatusLookupFailed IdentityStatus = "lookup_failed"
+	// IdentityStatusUnavailable means no identity resolver was configured or usable.
+	IdentityStatusUnavailable IdentityStatus = "unavailable"
 )
 
 // WarningCode is a bounded machine identifier for warnings.
@@ -114,14 +204,16 @@ type RelationReference struct {
 	Alias              string       `json:"alias,omitempty"`
 	Kind               RelationKind `json:"kind"`
 	PermissionRequired bool         `json:"permission_required"`
+	Unbound            bool         `json:"unbound,omitempty"`
 }
 
 // ColumnReference represents a source column reference with usage contexts.
 type ColumnReference struct {
-	Schema string         `json:"schema,omitempty"`
-	Table  string         `json:"table"`
-	Column string         `json:"column"`
-	Usages []UsageContext `json:"usages"`
+	Schema  string         `json:"schema,omitempty"`
+	Table   string         `json:"table"`
+	Column  string         `json:"column"`
+	Usages  []UsageContext `json:"usages"`
+	Unbound bool           `json:"unbound,omitempty"`
 }
 
 // OutputColumn represents a final output column with source lineage.

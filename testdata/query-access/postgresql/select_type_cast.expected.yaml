@@ -1,0 +1,23 @@
+name: select_type_cast
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: id
+      usages: [projection]
+  outputs: []
+  requirements:
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
+  warnings: []
+  reason_codes: [unproven_cast_effect, unqualified_relation_blocked]

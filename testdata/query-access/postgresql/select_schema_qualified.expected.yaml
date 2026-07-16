@@ -10,16 +10,17 @@ expect:
       kind: table
       permission_required: true
   referenced_columns:
-    - table: users
+    - schema: app
+      table: users
       column: id
       usages: [projection]
   outputs:
     - name: id
-      sources: [users.id]
+      sources: [app.users.id]
   requirements:
     - object: app.users
       privilege: read_table
-    - object: users.id
+    - object: app.users.id
       privilege: read_column
   unresolved: []
   warnings: []

@@ -9,8 +9,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -193,6 +195,87 @@ func TestHandlerQueryAccessNoAuditFieldLeakage(t *testing.T) {
 		if _, ok := payload[field]; ok {
 			t.Errorf("forbidden field %q found in query access HTTP response", field)
 		}
+	}
+}
+
+func TestHandlerQueryAccessErrorMessageBounded(t *testing.T) {
+	previous := analyzeQueryAccess
+	analyzeQueryAccess = func(_ context.Context, _ deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		return nil, fmt.Errorf("pin session: connection refused: postgres://user:s3cretPass@db.internal:5432/app?sslmode=disable")
+	}
+	t.Cleanup(func() { analyzeQueryAccess = previous })
+
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","dialect":"postgresql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	body := rec.Body.String()
+	for _, forbidden := range []string{"s3cretPass", "postgres://", "db.internal", "5432", "sslmode", "pgx", "password"} {
+		if strings.Contains(strings.ToLower(body), strings.ToLower(forbidden)) {
+			t.Errorf("HTTP error message must not contain %q, got: %s", forbidden, body)
+		}
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	errObj, ok := payload["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error object, got %#v", payload["error"])
+	}
+	if errObj["message"] != "analysis failed" {
+		t.Errorf("expected bounded message 'analysis failed', got %q", errObj["message"])
+	}
+	if errObj["code"] != "bad_request" {
+		t.Errorf("expected bad_request code, got %q", errObj["code"])
+	}
+}
+
+func TestHandlerQueryAccessErrorMessageBoundedContextCanceled(t *testing.T) {
+	previous := analyzeQueryAccess
+	analyzeQueryAccess = func(_ context.Context, _ deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		return nil, context.Canceled
+	}
+	t.Cleanup(func() { analyzeQueryAccess = previous })
+
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusRequestTimeout {
+		t.Fatalf("expected 408, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	errObj, ok := payload["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error object, got %#v", payload["error"])
+	}
+	if errObj["message"] != "request canceled" {
+		t.Errorf("expected bounded message 'request canceled', got %q", errObj["message"])
+	}
+	if errObj["code"] != "request_canceled" {
+		t.Errorf("expected request_canceled code, got %q", errObj["code"])
 	}
 }
 

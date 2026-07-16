@@ -7,6 +7,7 @@ package queryaccess
 
 import (
 	"fmt"
+	"strings"
 
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
@@ -27,11 +28,12 @@ func buildRequirements(
 		return nil, nil, nil, fmt.Errorf("build requirements: %w", err)
 	}
 
+	unboundNames := buildUnboundNames(relations)
 	var reqs []domain.Requirement
 
 	// 1. Both modes: require every permission-bearing relation
 	for _, rel := range relations {
-		if !rel.PermissionRequired {
+		if rel.Unbound || !rel.PermissionRequired {
 			continue
 		}
 		key := domain.FormatRelationKey(rel.Schema, rel.Name)
@@ -42,12 +44,18 @@ func buildRequirements(
 	}
 
 	// 2. Column requirements depend on mode
-	outputKeys := buildOutputSourceKeys(outputs)
+	outputKeys := buildOutputSourceKeys(outputs, unboundNames)
 
 	switch mode {
 	case domain.ModeStrict:
 		// Strict: require every resolved source column
 		for _, col := range columns {
+			if col.Unbound {
+				continue
+			}
+			if col.Schema == "" && len(unboundNames) > 0 {
+				continue
+			}
 			key := domain.FormatColumnKey(col.Schema, col.Table, col.Column)
 			reqs = append(reqs, domain.Requirement{
 				Object:    key,
@@ -62,6 +70,9 @@ func buildRequirements(
 		// Generate requirements from output sources directly
 		for _, out := range outputs {
 			for _, src := range out.Sources {
+				if sourceIsUnbound(src, unboundNames) {
+					continue
+				}
 				if !seen[src] {
 					seen[src] = true
 					reqs = append(reqs, domain.Requirement{
@@ -75,6 +86,9 @@ func buildRequirements(
 		// Check if any referenced columns are non-output
 		hasNonOutput := false
 		for _, col := range columns {
+			if col.Unbound {
+				continue
+			}
 			key := domain.FormatColumnKey(col.Schema, col.Table, col.Column)
 			if !outputKeys[key] {
 				hasNonOutput = true
@@ -99,11 +113,47 @@ func buildRequirements(
 	return domain.SortRequirements(reqs), nil, nil, nil
 }
 
-// buildOutputSourceKeys builds a set of canonical column keys from output sources.
-func buildOutputSourceKeys(outputs []domain.OutputColumn) map[string]bool {
+func buildUnboundNames(relations []domain.RelationReference) map[string]bool {
+	names := make(map[string]bool)
+	for _, rel := range relations {
+		if !rel.Unbound {
+			continue
+		}
+		names[strings.ToLower(rel.Name)] = true
+		if rel.Alias != "" {
+			names[strings.ToLower(rel.Alias)] = true
+		}
+	}
+	return names
+}
+
+func sourceIsUnbound(src string, unboundNames map[string]bool) bool {
+	parts := strings.SplitN(src, ".", 3)
+	var tablePart string
+	var hasSchema bool
+	switch len(parts) {
+	case 3:
+		schema, table, _ := parts[0], parts[1], parts[2]
+		tablePart = table
+		hasSchema = schema != ""
+	case 2:
+		tablePart, _ = parts[0], parts[1]
+	default:
+		return false
+	}
+	if hasSchema {
+		return false
+	}
+	return unboundNames[strings.ToLower(tablePart)]
+}
+
+func buildOutputSourceKeys(outputs []domain.OutputColumn, unboundNames map[string]bool) map[string]bool {
 	keys := make(map[string]bool)
 	for _, out := range outputs {
 		for _, src := range out.Sources {
+			if sourceIsUnbound(src, unboundNames) {
+				continue
+			}
 			keys[src] = true
 		}
 	}

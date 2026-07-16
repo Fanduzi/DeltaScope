@@ -362,8 +362,8 @@ func TestQueryAccessExtractor_DefaultSchema(t *testing.T) {
 	if len(facts.Relations) != 1 {
 		t.Fatalf("relations: got %d, want 1", len(facts.Relations))
 	}
-	if facts.Relations[0].Schema != "app" {
-		t.Errorf("relation schema: got %q, want %q", facts.Relations[0].Schema, "app")
+	if facts.Relations[0].Schema != "" {
+		t.Errorf("relation schema: got %q, want empty (unqualified uses search_path)", facts.Relations[0].Schema)
 	}
 }
 
@@ -405,6 +405,139 @@ func TestQueryAccessExtractor_ContextCancelled(t *testing.T) {
 	_, err := extractor.ExtractQueryAccess(ctx, "SELECT id FROM users", "postgresql", "")
 	if err == nil {
 		t.Errorf("expected error for cancelled context")
+	}
+}
+
+func TestQueryAccessExtractor_ScalarSubqueryRelations(t *testing.T) {
+	t.Parallel()
+	extractor := &QueryAccessExtractor{}
+	facts, err := extractor.ExtractQueryAccess(context.Background(),
+		"SELECT id, (SELECT max(amount) FROM orders WHERE user_id = users.id) FROM users", "postgresql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	relNames := make(map[string]bool)
+	for _, r := range facts.Relations {
+		relNames[r.Name] = true
+	}
+	if !relNames["users"] {
+		t.Errorf("users relation not found")
+	}
+	if !relNames["orders"] {
+		t.Errorf("orders relation not found in scalar subquery")
+	}
+}
+
+func TestQueryAccessExtractor_UnionColumnReferences(t *testing.T) {
+	t.Parallel()
+	extractor := &QueryAccessExtractor{}
+	facts, err := extractor.ExtractQueryAccess(context.Background(),
+		"SELECT id FROM users UNION ALL SELECT id FROM admins", "postgresql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	foundUsersID := false
+	foundAdminsID := false
+	for _, col := range facts.ColumnReferences {
+		if col.Column == "id" && col.Table == "users" {
+			foundUsersID = true
+		}
+		if col.Column == "id" && col.Table == "admins" {
+			foundAdminsID = true
+		}
+	}
+	if !foundUsersID {
+		t.Errorf("users.id column reference not found in UNION")
+	}
+	if !foundAdminsID {
+		t.Errorf("admins.id column reference not found in UNION")
+	}
+}
+
+func TestQueryAccessExtractor_JoinUsingReasonCode(t *testing.T) {
+	t.Parallel()
+	extractor := &QueryAccessExtractor{}
+	facts, err := extractor.ExtractQueryAccess(context.Background(),
+		"SELECT * FROM users JOIN orders USING (user_id)", "postgresql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	found := false
+	for _, code := range facts.ReasonCodes {
+		if code == "unsupported_traversal" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected unsupported_traversal reason code for JOIN USING, got reason codes: %v", facts.ReasonCodes)
+	}
+}
+
+func TestQueryAccessExtractor_ThreePartColumnRefSchema(t *testing.T) {
+	t.Parallel()
+	extractor := &QueryAccessExtractor{}
+	facts, err := extractor.ExtractQueryAccess(context.Background(),
+		"SELECT public.users.id FROM public.users", "postgresql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(facts.Relations) != 1 {
+		t.Fatalf("relations: got %d, want 1", len(facts.Relations))
+	}
+	if facts.Relations[0].Schema != "public" {
+		t.Errorf("relation schema: got %q, want %q", facts.Relations[0].Schema, "public")
+	}
+	found := false
+	for _, col := range facts.ColumnReferences {
+		if col.Column == "id" && col.Table == "users" {
+			found = true
+			if col.Schema != "public" {
+				t.Errorf("column schema: got %q, want %q", col.Schema, "public")
+			}
+		}
+	}
+	if !found {
+		t.Errorf("users.id column reference not found")
+	}
+}
+
+func TestQueryAccessExtractor_ThreePartOutputLineage(t *testing.T) {
+	t.Parallel()
+	extractor := &QueryAccessExtractor{}
+	facts, err := extractor.ExtractQueryAccess(context.Background(),
+		"SELECT public.users.id FROM public.users", "postgresql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(facts.Outputs) != 1 {
+		t.Fatalf("outputs: got %d, want 1", len(facts.Outputs))
+	}
+	if len(facts.Outputs[0].Sources) != 1 {
+		t.Fatalf("output[0].Sources: got %d, want 1", len(facts.Outputs[0].Sources))
+	}
+	want := "public.users.id"
+	if facts.Outputs[0].Sources[0] != want {
+		t.Errorf("output[0].Sources[0]: got %q, want %q", facts.Outputs[0].Sources[0], want)
+	}
+}
+
+func TestQueryAccessExtractor_ThreePartOutputLineageWildcard(t *testing.T) {
+	t.Parallel()
+	extractor := &QueryAccessExtractor{}
+	facts, err := extractor.ExtractQueryAccess(context.Background(),
+		"SELECT public.users.* FROM public.users", "postgresql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(facts.Outputs) != 1 {
+		t.Fatalf("outputs: got %d, want 1", len(facts.Outputs))
+	}
+	if len(facts.Outputs[0].Sources) != 1 {
+		t.Fatalf("output[0].Sources: got %d, want 1", len(facts.Outputs[0].Sources))
+	}
+	want := "public.users.*"
+	if facts.Outputs[0].Sources[0] != want {
+		t.Errorf("output[0].Sources[0]: got %q, want %q", facts.Outputs[0].Sources[0], want)
 	}
 }
 

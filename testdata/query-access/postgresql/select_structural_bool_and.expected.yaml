@@ -1,0 +1,31 @@
+name: select_structural_bool_and
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: users
+      column: active
+      usages: [filter]
+    - table: users
+      column: id
+      usages: [projection]
+    - table: users
+      column: inactive
+      usages: [filter]
+  outputs:
+    - name: id
+      sources: [users.id]
+  requirements:
+    - object: unqualified_relation
+      privilege: indeterminate
+  unresolved:
+    - reference: unqualified_relation
+      reason: unqualified_relation_blocked
+  warnings: []
+  reason_codes: [unqualified_relation_blocked]

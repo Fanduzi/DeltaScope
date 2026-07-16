@@ -41,6 +41,38 @@ Projection-only mode emits a `projection_only_inference_risk` warning when non-p
 
 Both strict and projection-only modes require `read_table` permission for every base table and view. CTEs and derived tables do not require permission directly; their permission requirements come from the underlying physical tables and views they reference.
 
+## Unbound Relations and Columns (PostgreSQL)
+
+On PostgreSQL, unqualified base relations (those without a schema qualifier) are **execution-unbound**: the analyzer cannot determine which schema the relation resolves to at runtime because `search_path` is session-controlled. To prevent false permission proofs, these relations and their columns are marked as `unbound: true` in the result.
+
+### What Unbound Means
+
+- A relation with `unbound: true` will **never** produce `read_table` requirements.
+- A column with `unbound: true` will **never** produce `read_column` requirements.
+- An `unqualified_relation` entry appears in `unresolved` with `reason: unqualified_relation_blocked`.
+- Classification becomes `indeterminate` and admission becomes `indeterminate`.
+
+**Authorization layers must not grant access based on unbound relations or columns.** The `unbound` field is a signal that the permission requirement is not a reliable proof of what the query actually reads at runtime.
+
+### When Unbound Is Set
+
+| Scenario | Relations | Columns |
+|---|---|---|
+| `SELECT id FROM users` (unqualified, no resolver) | `users` → `unbound: true` | `users.id` → `unbound: true` (schema empty, unbound relations present) |
+| `SELECT users.id FROM users` (qualified name, unbound relation) | `users` → `unbound: true` | `users.id` → `unbound: true` |
+| `SELECT p.id, u.name FROM public.users p JOIN users u` (mixed) | `public.users` → not unbound; `users` → `unbound: true` | `users.id` (resolved via qualified entry, schema assigned) → not unbound; `users.name` (schema empty) → `unbound: true` |
+| `SELECT id FROM public.users` (qualified) | `public.users` → not unbound | `public.users.id` → not unbound |
+| MySQL/TiDB (any) | Never unbound | Never unbound |
+
+### How the Analyzer Resolves Mixed Queries
+
+When a query contains both qualified and unqualified references to the same table name (e.g., `public.users p JOIN users u`), the PostgreSQL parser resolves aliases to bare table names. Both `p.id` and `u.name` produce `table: "users"`. The analyzer uses the resolution state to distinguish:
+
+- If a qualified entry exists in the resolution map, the column resolves through it (gets schema assigned).
+- If only unbound entries exist, resolution is skipped and the column remains schema-less.
+
+Columns that fail to resolve (column not found in the schema) produce an `unresolved` entry with `reason: column_not_found` and are also marked `unbound: true`.
+
 ## Fail-Closed Behavior
 
 When analysis cannot determine the read classification or required permissions, the result is `indeterminate`. The authorization layer should treat `indeterminate` as denied by default. Specific fail-closed scenarios:
@@ -66,8 +98,8 @@ Without metadata, wildcards (`SELECT *`) remain unresolved and the classificatio
 | CTE permission required | `false` | `false` |
 | WHERE clause column usages | `projection` + `filter` | `projection` (WHERE columns get `filter` only if referenced in SELECT) |
 | Ambiguous column handling | `indeterminate` with `ambiguous_reference` unresolved | `read_only` with unqualified column reference |
-| `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, etc.) | No (empty) |
-| `unresolved` populated | Yes (wildcards, ambiguous references) | No (empty for most cases) |
+| `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, etc.) | Yes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`, `unqualified_relation_blocked`, `identity_*` codes) |
+| `unresolved` populated | Yes (wildcards, ambiguous references) | Yes (`unqualified_relation` entries for unqualified base relations) |
 
 ## Result Structure
 
@@ -139,6 +171,45 @@ The endpoint returns the same JSON structure as the SDK. Invalid mode returns `4
 ## MCP Deferral
 
 MCP surface integration for query access analysis is deferred. The current MCP server exposes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities` only.
+
+## Trusted PostgreSQL SDK Path
+
+The trusted PostgreSQL SDK path enables manifest-gated admission promotion for PostgreSQL queries. This path is available only when built with the `postgresql` build tag.
+
+### Session Construction
+
+```go
+session, err := deltascope.NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+```
+
+- Accepts a caller-owned `*sql.Conn` (not `*sql.DB`)
+- Validates connection liveness via `PingContext`
+- Does not take ownership of the connection; caller must close it
+- Returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds
+
+### Trusted Analysis
+
+```go
+result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)
+```
+
+- Rejects nil context, nil session, non-PostgreSQL dialect, or non-nil `SchemaResolver`
+- Creates all metadata, type, and effect-identity resolvers from the session's single `*sql.Conn`
+- May return `read_only + admissible` when every effect is catalog-resolved and listed in the PG17 manifest
+- Returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds
+
+### Admission Semantics
+
+`admissible` means only that static analysis obtained complete known requirements and proved the bounded effect manifest against the supplied connection's catalog context. It does **not**:
+
+- Authorize execution
+- Evaluate grants or permissions
+- Guarantee a later execution snapshot uses the same database state
+- Account for row-level security, masking, or SQL rewrite
+
+### Default Path
+
+The default `AnalyzeQueryAccess` function (no session) remains fail-closed for PostgreSQL. CLI, HTTP, and MCP surfaces continue to use the default path and do not gain trusted promotion.
 
 ## Defense in Depth
 

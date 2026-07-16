@@ -74,7 +74,7 @@ func handleQueryAccess(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		status, code := mapQueryAccessError(err)
-		writeError(w, status, code, err.Error())
+		writeError(w, status, code, mapQueryAccessErrorMessage(err))
 		return
 	}
 
@@ -91,5 +91,20 @@ func mapQueryAccessError(err error) (int, string) {
 		return http.StatusBadRequest, "bad_request"
 	default:
 		return http.StatusBadRequest, "bad_request"
+	}
+}
+
+// mapQueryAccessErrorMessage returns a bounded error message safe for HTTP clients.
+// It never exposes raw driver text, DSN, credentials, SQL, or catalog details.
+func mapQueryAccessErrorMessage(err error) string {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return "request timed out"
+	case errors.Is(err, context.Canceled):
+		return "request canceled"
+	case strings.Contains(err.Error(), "unsupported dialect"):
+		return "unsupported dialect"
+	default:
+		return "analysis failed"
 	}
 }

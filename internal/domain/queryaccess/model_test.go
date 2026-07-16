@@ -339,16 +339,130 @@ func TestUsageContextConstants(t *testing.T) {
 func TestReasonCodeConstants(t *testing.T) {
 	t.Parallel()
 	expected := map[queryaccess.ReasonCode]string{
-		queryaccess.ReasonParseFailure:       "parse_failure",
-		queryaccess.ReasonUnsupportedDialect: "unsupported_dialect",
-		queryaccess.ReasonWriteOperation:     "write_operation",
-		queryaccess.ReasonMultiStatement:     "multi_statement",
-		queryaccess.ReasonSchemaUnavailable:  "schema_unavailable",
-		queryaccess.ReasonAmbiguousReference: "ambiguous_reference",
+		queryaccess.ReasonParseFailure:                "parse_failure",
+		queryaccess.ReasonUnsupportedDialect:          "unsupported_dialect",
+		queryaccess.ReasonWriteOperation:              "write_operation",
+		queryaccess.ReasonMultiStatement:              "multi_statement",
+		queryaccess.ReasonSchemaUnavailable:           "schema_unavailable",
+		queryaccess.ReasonAmbiguousReference:          "ambiguous_reference",
+		queryaccess.ReasonFunctionEffect:              "unknown_function_effect",
+		queryaccess.ReasonUnprovenOperatorEffect:      "unproven_operator_effect",
+		queryaccess.ReasonUnprovenFunctionEffect:      "unproven_function_effect",
+		queryaccess.ReasonUnprovenCastEffect:          "unproven_cast_effect",
+		queryaccess.ReasonIdentityResolverUnavailable: "identity_resolver_unavailable",
+		queryaccess.ReasonIdentityUnknown:             "identity_unknown",
+		queryaccess.ReasonIdentityLookupFailed:        "identity_lookup_failed",
+		queryaccess.ReasonIdentityAmbiguous:           "identity_ambiguous",
+		queryaccess.ReasonIdentityCoercionGap:         "identity_coercion_gap",
 	}
 	for rc, want := range expected {
 		if string(rc) != want {
 			t.Errorf("%T(%q): got %q, want %q", rc, rc, string(rc), want)
+		}
+		// Machine identifiers only: no spaces, SQL fragments, or punctuation beyond underscore.
+		if strings.ContainsAny(string(rc), " \t\n'\"();=<>") {
+			t.Errorf("reason code %q must be a stable machine identifier without SQL-like characters", rc)
+		}
+	}
+}
+
+func TestReasonForIdentityFailure_BoundedNoFreeText(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		fail queryaccess.IdentityFailure
+		want queryaccess.ReasonCode
+	}{
+		{queryaccess.IdentityFailureUnavailable, queryaccess.ReasonIdentityResolverUnavailable},
+		{queryaccess.IdentityFailureUnknown, queryaccess.ReasonIdentityUnknown},
+		{queryaccess.IdentityFailureError, queryaccess.ReasonIdentityLookupFailed},
+		{queryaccess.IdentityFailureAmbiguous, queryaccess.ReasonIdentityAmbiguous},
+		{queryaccess.IdentityFailureCoercionGap, queryaccess.ReasonIdentityCoercionGap},
+	}
+	for _, tc := range cases {
+		got, ok := queryaccess.ReasonForIdentityFailure(tc.fail)
+		if !ok {
+			t.Fatalf("expected ok for %q", tc.fail)
+		}
+		if got != tc.want {
+			t.Errorf("ReasonForIdentityFailure(%q)=%q, want %q", tc.fail, got, tc.want)
+		}
+		// Never embed error-looking free text.
+		if strings.Contains(string(got), "password") || strings.Contains(string(got), "SELECT") {
+			t.Errorf("reason must not look like free text: %q", got)
+		}
+	}
+
+	// Free-text / error injection must be rejected (not trusted).
+	for _, bad := range []queryaccess.IdentityFailure{
+		"postgres://user:s3cret@db/app",
+		"connection refused: SELECT oid FROM pg_operator",
+		"unproven_operator_effect", // not a valid IdentityFailure category
+		"",
+		"custom_trusted",
+	} {
+		if code, ok := queryaccess.ReasonForIdentityFailure(bad); ok {
+			t.Errorf("free-text failure %q must not map to reason %q", bad, code)
+		}
+	}
+}
+
+func TestIdentityStatus_BoundedAndFailClosed(t *testing.T) {
+	t.Parallel()
+	if !queryaccess.ValidIdentityStatus(queryaccess.IdentityStatusResolved) {
+		t.Fatal("resolved must be valid")
+	}
+	if queryaccess.IdentityStatusIsFailClosed(queryaccess.IdentityStatusResolved) {
+		t.Fatal("resolved is not fail-closed")
+	}
+	// Free text cannot be status or reason.
+	for _, bad := range []queryaccess.IdentityStatus{
+		"postgres://u:p@h/db",
+		"SELECT 1",
+		"error", // failure category uses "error"; status uses lookup_failed
+		"",
+		"trusted",
+	} {
+		if queryaccess.ValidIdentityStatus(bad) {
+			t.Errorf("invalid status accepted: %q", bad)
+		}
+		if code, ok := queryaccess.ReasonForIdentityStatus(bad); ok {
+			t.Errorf("free-text status %q mapped to %q", bad, code)
+		}
+	}
+	code, ok := queryaccess.ReasonForIdentityStatus(queryaccess.IdentityStatusLookupFailed)
+	if !ok || code != queryaccess.ReasonIdentityLookupFailed {
+		t.Fatalf("lookup_failed → %q ok=%v", code, ok)
+	}
+}
+
+func TestNormalizeReasonCodes_DeterministicOrderAndDedupe(t *testing.T) {
+	t.Parallel()
+	in := []queryaccess.ReasonCode{
+		queryaccess.ReasonUnprovenFunctionEffect,
+		queryaccess.ReasonUnprovenOperatorEffect,
+		queryaccess.ReasonUnprovenFunctionEffect,
+		queryaccess.ReasonUnprovenCastEffect,
+		queryaccess.ReasonUnprovenOperatorEffect,
+	}
+	got := queryaccess.NormalizeReasonCodes(in)
+	want := []queryaccess.ReasonCode{
+		queryaccess.ReasonUnprovenCastEffect,
+		queryaccess.ReasonUnprovenFunctionEffect,
+		queryaccess.ReasonUnprovenOperatorEffect,
+	}
+	if len(got) != len(want) {
+		t.Fatalf("len: got %d want %d (%v)", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("index %d: got %q want %q (full %v)", i, got[i], want[i], got)
+		}
+	}
+	// Same input twice → identical order.
+	got2 := queryaccess.NormalizeReasonCodes(append([]queryaccess.ReasonCode(nil), in...))
+	for i := range got {
+		if got[i] != got2[i] {
+			t.Errorf("non-deterministic order: %v vs %v", got, got2)
 		}
 	}
 }
