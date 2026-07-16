@@ -211,6 +211,25 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 
 The default `AnalyzeQueryAccess` function (no session) remains fail-closed for PostgreSQL. CLI, HTTP, and MCP surfaces continue to use the default path and do not gain trusted promotion.
 
+### Phase 1 Pure-Effect Matrix
+
+The following matrix is the exact Phase 1 contract. “Characterized” means the
+shape is observed by tests only; it is not a supported or admissible function
+allowlist.
+
+| Dialect | Surface | Phase 1 aggregates/windows |
+|---|---|---|
+| PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
+| PostgreSQL | Trusted SDK session only | `admissible` for proven `count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` with complete requirements |
+| MySQL | all | `indeterminate` with `unknown_function_effect` (deferred) |
+| TiDB | all | `indeterminate` with `unknown_function_effect` (deferred) |
+
+The trusted PostgreSQL subset requires exact catalog identity, session and
+database context, complete strict-mode dependencies, and a PG17 manifest proof.
+`DISTINCT`, `FILTER`, nested arguments, casts, frames, named windows, and
+incomplete metadata remain `indeterminate`. MySQL/TiDB are not promoted by
+syntax or function names.
+
 ## Defense in Depth
 
 **Warning**: Query access analysis supplements, but does not replace, database authorization. It is one layer in a defense-in-depth strategy and must be paired with:

@@ -161,8 +161,22 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 
 - 空模式默认为 `strict`。
 - 没有元数据时，通配符产生 `indeterminate` 分类。
-- PostgreSQL 准入始终为 `indeterminate`。
+- 默认 SDK/CLI/HTTP 的 PostgreSQL 函数 SQL 仍为 `indeterminate`。
+- 只有可信 PostgreSQL SDK 会话在要求完整且证明通过时，才能准入 Phase 1 的 `COUNT`、`SUM`、`AVG`、`MIN`、`MAX`、`ROW_NUMBER`、`RANK` 和 `DENSE_RANK`。
+- MySQL 和 TiDB 的聚合/窗口 SQL 仍为 `indeterminate`，原因是 `unknown_function_effect`；这两个方言已延迟。
 - 在授权层中将 `indeterminate` 视为拒绝。
+
+### Phase 1 表面矩阵
+
+| 方言 | 表面 | Phase 1 聚合/窗口 |
+|---|---|---|
+| PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
+| PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，count/sum/avg/min/max/row_number/rank/dense_rank 为 `admissible` |
+| MySQL | 全部 | `indeterminate`，原因是 `unknown_function_effect`（已延迟） |
+| TiDB | 全部 | `indeterminate`，原因是 `unknown_function_effect`（已延迟） |
+
+不要把仅表征的函数形状称为受支持。可信路径仅限 SDK，不新增 CLI/HTTP
+数据库连接，也不新增 MCP 工具。
 
 ## 此功能不做的事情
 

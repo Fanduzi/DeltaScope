@@ -211,6 +211,23 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 
 默认的 `AnalyzeQueryAccess` 函数（无会话）对 PostgreSQL 保持失败关闭。CLI、HTTP 和 MCP 表面继续使用默认路径，不会获得可信提升。
 
+### Phase 1 纯效果矩阵
+
+以下是 Phase 1 的精确契约。“仅表征”表示测试观察到了该形状；它不是
+受支持或可准入的函数白名单。
+
+| 方言 | 表面 | Phase 1 聚合/窗口 |
+|---|---|---|
+| PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
+| PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
+| MySQL | 全部 | `indeterminate`，原因是 `unknown_function_effect`（已延迟） |
+| TiDB | 全部 | `indeterminate`，原因是 `unknown_function_effect`（已延迟） |
+
+可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的
+strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、
+cast、窗口 frame、命名窗口和不完整元数据仍为 `indeterminate`。MySQL/TiDB
+不会因语法或函数名称而获得提升。
+
 ## 纵深防御
 
 查询访问分析是纵深防御授权策略中的一层。它确定查询触及哪些对象，但不评估调用者是否有权限访问这些对象。将其与以下措施配合使用：

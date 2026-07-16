@@ -161,8 +161,22 @@ The `projection_only_inference_risk` warning indicates that `salary` is used in 
 
 - Empty mode defaults to `strict`.
 - Without metadata, wildcards produce `indeterminate` classification.
-- PostgreSQL admission is always `indeterminate`.
+- Default SDK/CLI/HTTP PostgreSQL function SQL remains `indeterminate`.
+- Only a trusted PostgreSQL SDK session can admit proven Phase 1 `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `ROW_NUMBER`, `RANK`, and `DENSE_RANK` with complete requirements.
+- MySQL and TiDB aggregate/window SQL remains `indeterminate` with `unknown_function_effect`; these dialects are deferred.
 - Treat `indeterminate` as denied in your authorization layer.
+
+### Phase 1 Surface Matrix
+
+| Dialect | Surface | Phase 1 aggregates/windows |
+|---|---|---|
+| PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
+| PostgreSQL | Trusted SDK session only | `admissible` for proven count/sum/avg/min/max/row_number/rank/dense_rank with complete requirements |
+| MySQL | all | `indeterminate` with `unknown_function_effect` (deferred) |
+| TiDB | all | `indeterminate` with `unknown_function_effect` (deferred) |
+
+Do not call characterized-only function shapes supported. The trusted path is
+SDK-only and does not add CLI/HTTP database connections or an MCP tool.
 
 ## What This Does NOT Do
 
