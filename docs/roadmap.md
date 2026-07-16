@@ -40,15 +40,18 @@ Published Query Access boundaries that these items must not rewrite by documenta
 
 - Decision: [Query Access Analysis Foundation](decisions/2026-07-11-query-access-analysis-foundation.md) (v0.380.0)
 - Decision: [CTE and Derived Table Lineage Resolution](decisions/2026-07-11-cte-derived-table-lineage-resolution.md) (v0.380.0)
+- Decision: [PostgreSQL Pure-Read Admissibility](decisions/2026-07-12-query-access-pure-read-admissibility.md) (accepted opt-in SDK boundary)
 - Shipped surfaces remain SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, and HTTP `POST /v1/query-access/analyze`. **MCP does not include a query-access tool.**
+- An opt-in PostgreSQL SDK path is also available through a caller-owned `*sql.Conn`: `NewPostgreSQLQueryAccessSessionFromConn` and `AnalyzePostgreSQLQueryAccessWithSession`. It is manifest-gated and does not change the default SDK, CLI, or HTTP fail-closed behavior.
 - Query Access emits structured **requirements** for a caller-owned authorization step. It does **not** authenticate callers, evaluate grants, enforce row-level security, apply column masking, auto-grant privileges, or rewrite SQL. Static analysis is not a substitute for database authorization or runtime controls.
 
 ### PostgreSQL common SELECT admissibility
 
-- **Status:** deferred watchlist only (not supported; not planned for release here).
-- **Why not now:** PostgreSQL keeps a conservative fail-closed boundary when operator, cast/coercion, or opaque construct effects cannot be proven safe. Broadening common-SELECT admissibility without catalog-proven, version-scoped effect identity would over-claim pure-read eligibility.
-- **Evidence that would reopen evaluation:** a catalog-proven, version-scoped, item-by-item audited effect-identity manifest that is maintainable and testable. Heuristic allowlists or "looks like a normal SELECT" shortcuts are not sufficient.
-- **Published boundary:** foundation decision — fail-closed admission; PostgreSQL uncertain expression effects remain non-admissible until proven.
+- **Status:** narrow opt-in SDK support is delivered; broad common-SELECT admissibility remains a deferred watchlist item.
+- **Delivered boundary:** the caller-owned-session SDK can admit a bounded PG17 manifest-proven subset, including `count(*)` and schema-qualified base-column comparisons, only after same-connection metadata/type/identity proof. It is static requirements analysis, not authorization or a guarantee for a later execution snapshot.
+- **Why broader support remains deferred:** PostgreSQL keeps a conservative fail-closed boundary when operator, cast/coercion, relation qualification, or opaque construct effects cannot be proven safe. The default SDK, CLI, and HTTP paths do not use the opt-in trusted session and remain fail-closed for these effect-bearing queries.
+- **Evidence that would reopen broader evaluation:** a catalog-proven, version-scoped, item-by-item audited effect-identity manifest and proof model for each additional shape. Heuristic allowlists or "looks like a normal SELECT" shortcuts are not sufficient.
+- **Published boundary:** uncertain effects, unqualified relations, views, casts, literals/parameters, unresolved metadata, and non-manifest identities remain non-admissible. MCP still has no query-access tool.
 
 ### CLI / HTTP live metadata resolver
 
