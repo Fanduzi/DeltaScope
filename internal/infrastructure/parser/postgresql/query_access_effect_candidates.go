@@ -63,6 +63,10 @@ type EffectCandidate struct {
 	IsAggregate       bool
 	HasWindow         bool
 	HasFilter         bool
+	HasDistinct       bool `json:"-"`
+	HasAggOrder       bool `json:"-"`
+	HasWithinGroup    bool `json:"-"`
+	HasFrame          bool `json:"-"`
 	TargetTypePath    []string
 }
 
@@ -177,6 +181,25 @@ func operandKindHint(node *pg_query.Node) OperandKindHint {
 	}
 }
 
+func operandColumnRef(node *pg_query.Node, scope *selectScope) (OperandColumnRef, bool) {
+	if node == nil || scope == nil {
+		return OperandColumnRef{}, false
+	}
+	colRef := node.GetColumnRef()
+	if colRef == nil {
+		return OperandColumnRef{}, false
+	}
+	resolved := resolveColumnRef(colRef, scope)
+	if resolved == nil || !resolved.Resolved || resolved.Column == "*" {
+		return OperandColumnRef{}, false
+	}
+	return OperandColumnRef{
+		Schema: resolved.Schema,
+		Table:  resolved.Table,
+		Column: resolved.Column,
+	}, true
+}
+
 func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *selectScope) {
 	if c == nil || expr == nil {
 		return
@@ -188,29 +211,15 @@ func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *s
 	if expr.GetLexpr() != nil {
 		kinds = append(kinds, operandKindHint(expr.GetLexpr()))
 		arity++
-		if colRef := expr.GetLexpr().GetColumnRef(); colRef != nil && scope != nil {
-			resolved := resolveColumnRef(colRef, scope)
-			if resolved != nil && resolved.Resolved && resolved.Column != "*" {
-				colRefs = append(colRefs, OperandColumnRef{
-					Schema: resolved.Schema,
-					Table:  resolved.Table,
-					Column: resolved.Column,
-				})
-			}
+		if ref, ok := operandColumnRef(expr.GetLexpr(), scope); ok {
+			colRefs = append(colRefs, ref)
 		}
 	}
 	if expr.GetRexpr() != nil {
 		kinds = append(kinds, operandKindHint(expr.GetRexpr()))
 		arity++
-		if colRef := expr.GetRexpr().GetColumnRef(); colRef != nil && scope != nil {
-			resolved := resolveColumnRef(colRef, scope)
-			if resolved != nil && resolved.Resolved && resolved.Column != "*" {
-				colRefs = append(colRefs, OperandColumnRef{
-					Schema: resolved.Schema,
-					Table:  resolved.Table,
-					Column: resolved.Column,
-				})
-			}
+		if ref, ok := operandColumnRef(expr.GetRexpr(), scope); ok {
+			colRefs = append(colRefs, ref)
 		}
 	}
 	c.appendCandidate(EffectCandidate{
@@ -223,7 +232,7 @@ func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *s
 	})
 }
 
-func recordFunctionCandidate(c *effectCollector, fc *pg_query.FuncCall) {
+func recordFunctionCandidate(c *effectCollector, fc *pg_query.FuncCall, scope *selectScope) {
 	if c == nil || fc == nil {
 		return
 	}
@@ -240,17 +249,31 @@ func recordFunctionCandidate(c *effectCollector, fc *pg_query.FuncCall) {
 	for _, arg := range args {
 		kinds = append(kinds, operandKindHint(arg))
 	}
+	var colRefs []OperandColumnRef
+	for _, arg := range args {
+		if ref, ok := operandColumnRef(arg, scope); ok {
+			colRefs = append(colRefs, ref)
+		}
+	}
+	// pg_query exposes aggregate syntax bits, not catalog prokind; plain SUM/AVG
+	// therefore remain non-aggregate until catalog identity resolution can decide.
 	isAgg := fc.GetAggStar() || fc.GetAggDistinct() || fc.GetAggWithinGroup() ||
 		fc.GetAggFilter() != nil || len(fc.GetAggOrder()) > 0
+	window := fc.GetOver()
 	c.appendCandidate(EffectCandidate{
-		Kind:           EffectCandidateFunction,
-		NamePath:       namePath,
-		ExplicitSchema: namePathExplicitSchema(namePath),
-		Arity:          arity,
-		OperandKinds:   kinds,
-		IsAggregate:    isAgg,
-		HasWindow:      fc.GetOver() != nil,
-		HasFilter:      fc.GetAggFilter() != nil,
+		Kind:              EffectCandidateFunction,
+		NamePath:          namePath,
+		ExplicitSchema:    namePathExplicitSchema(namePath),
+		Arity:             arity,
+		OperandKinds:      kinds,
+		OperandColumnRefs: colRefs,
+		IsAggregate:       isAgg,
+		HasWindow:         window != nil,
+		HasFilter:         fc.GetAggFilter() != nil,
+		HasDistinct:       fc.GetAggDistinct(),
+		HasAggOrder:       len(fc.GetAggOrder()) > 0,
+		HasWithinGroup:    fc.GetAggWithinGroup(),
+		HasFrame:          window != nil && window.GetFrameOptions() != 0,
 	})
 }
 

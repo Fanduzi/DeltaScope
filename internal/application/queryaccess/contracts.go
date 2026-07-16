@@ -81,6 +81,10 @@ type EffectCandidate struct {
 	IsAggregate    bool
 	HasWindow      bool
 	HasFilter      bool
+	HasDistinct    bool `json:"-"`
+	HasAggOrder    bool `json:"-"`
+	HasWithinGroup bool `json:"-"`
+	HasFrame       bool `json:"-"`
 	TargetTypePath []string
 	// OperandColumnRefs maps operand position to base-table column reference.
 	// Indexed by operand position; nil entries indicate non-column operands.

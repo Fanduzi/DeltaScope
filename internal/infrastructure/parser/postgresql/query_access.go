@@ -318,7 +318,7 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector, scope *selectSc
 			collectNodeEffects(n.TypeCast.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_FuncCall:
-		recordFunctionCandidate(c, n.FuncCall)
+		recordFunctionCandidate(c, n.FuncCall, scope)
 		for _, arg := range n.FuncCall.GetArgs() {
 			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}

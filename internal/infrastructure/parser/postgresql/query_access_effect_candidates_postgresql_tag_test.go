@@ -107,6 +107,222 @@ func TestExtractQueryAccess_EffectCandidates_CoreKinds(t *testing.T) {
 	}
 }
 
+func TestExtractQueryAccess_EffectCandidates_AggregateOperandsAndExclusions(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	tests := []struct {
+		name       string
+		sql        string
+		wantName   string
+		wantArity  int
+		wantKinds  []OperandKindHint
+		wantColumn string
+		check      func(*testing.T, EffectCandidate)
+	}{
+		{
+			name:      "count star",
+			sql:       "SELECT count(*) FROM public.users",
+			wantName:  "count",
+			wantArity: 0,
+			wantKinds: []OperandKindHint{OperandKindStar},
+		},
+		{
+			name:       "sum direct column",
+			sql:        "SELECT sum(amount) FROM public.orders",
+			wantName:   "sum",
+			wantArity:  1,
+			wantKinds:  []OperandKindHint{OperandKindColumn},
+			wantColumn: "amount",
+		},
+		{
+			name:       "nested expression",
+			sql:        "SELECT sum(amount + 1) FROM public.orders",
+			wantName:   "sum",
+			wantArity:  1,
+			wantKinds:  []OperandKindHint{OperandKindExpr},
+			wantColumn: "",
+		},
+		{
+			name:      "filter",
+			sql:       "SELECT count(*) FILTER (WHERE true) FROM public.users",
+			wantName:  "count",
+			wantArity: 0,
+			wantKinds: []OperandKindHint{OperandKindStar},
+			check: func(t *testing.T, c EffectCandidate) {
+				t.Helper()
+				if !c.HasFilter {
+					t.Fatal("expected HasFilter")
+				}
+			},
+		},
+		{
+			name:       "distinct",
+			sql:        "SELECT count(DISTINCT id) FROM public.users",
+			wantName:   "count",
+			wantArity:  1,
+			wantKinds:  []OperandKindHint{OperandKindColumn},
+			wantColumn: "id",
+			check: func(t *testing.T, c EffectCandidate) {
+				t.Helper()
+				if !c.HasDistinct {
+					t.Fatal("expected HasDistinct")
+				}
+			},
+		},
+		{
+			name:       "aggregate order",
+			sql:        "SELECT count(id ORDER BY id) FROM public.users",
+			wantName:   "count",
+			wantArity:  1,
+			wantKinds:  []OperandKindHint{OperandKindColumn},
+			wantColumn: "id",
+			check: func(t *testing.T, c EffectCandidate) {
+				t.Helper()
+				if !c.HasAggOrder {
+					t.Fatal("expected HasAggOrder")
+				}
+			},
+		},
+		{
+			name:      "within group",
+			sql:       "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY amount) FROM public.orders",
+			wantName:  "percentile_cont",
+			wantArity: 1,
+			wantKinds: []OperandKindHint{OperandKindConst},
+			check: func(t *testing.T, c EffectCandidate) {
+				t.Helper()
+				if !c.HasWithinGroup || !c.HasAggOrder {
+					t.Fatalf("within group flags: %+v", c)
+				}
+			},
+		},
+		{
+			name:       "window frame",
+			sql:        "SELECT sum(amount) OVER (ORDER BY id ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM public.orders",
+			wantName:   "sum",
+			wantArity:  1,
+			wantKinds:  []OperandKindHint{OperandKindColumn},
+			wantColumn: "amount",
+			check: func(t *testing.T, c EffectCandidate) {
+				t.Helper()
+				if !c.HasWindow || !c.HasFrame {
+					t.Fatalf("window frame flags: %+v", c)
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			facts, err := e.ExtractQueryAccess(context.Background(), tc.sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			var got *EffectCandidate
+			for i := range facts.EffectCandidates {
+				candidate := &facts.EffectCandidates[i]
+				if candidate.Kind == EffectCandidateFunction && len(candidate.NamePath) > 0 && strings.EqualFold(candidate.NamePath[len(candidate.NamePath)-1], tc.wantName) {
+					got = candidate
+					break
+				}
+			}
+			if got == nil {
+				t.Fatalf("missing %s candidate: %+v", tc.wantName, facts.EffectCandidates)
+			}
+			if got.Arity != tc.wantArity {
+				t.Fatalf("arity: got %d, want %d", got.Arity, tc.wantArity)
+			}
+			if !stringSlicesEqual(toStrings(got.OperandKinds), toStrings(tc.wantKinds)) {
+				t.Fatalf("operand kinds: got %v, want %v", got.OperandKinds, tc.wantKinds)
+			}
+			if tc.wantColumn != "" {
+				if len(got.OperandColumnRefs) != 1 || got.OperandColumnRefs[0].Column != tc.wantColumn {
+					t.Fatalf("operand column refs: got %+v, want column %q", got.OperandColumnRefs, tc.wantColumn)
+				}
+			} else if len(got.OperandColumnRefs) != 0 {
+				t.Fatalf("nested expression must not claim direct column provenance: %+v", got.OperandColumnRefs)
+			}
+			if tc.check != nil {
+				tc.check(t, *got)
+			}
+		})
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_AggregateOrdinalAndWindows(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	tests := []struct {
+		name  string
+		sql   string
+		want  []string
+		check func(*testing.T, []EffectCandidate)
+	}{
+		{
+			name: "ordered aggregates",
+			sql:  "SELECT avg(amount), min(amount), max(amount) FROM public.orders",
+			want: []string{"avg", "min", "max"},
+		},
+		{
+			name: "row number window",
+			sql:  "SELECT row_number() OVER (PARTITION BY dept ORDER BY id) FROM public.employees",
+			want: []string{"row_number"},
+			check: func(t *testing.T, candidates []EffectCandidate) {
+				t.Helper()
+				if candidates[0].Arity != 0 || !candidates[0].HasWindow {
+					t.Fatalf("window candidate: %+v", candidates[0])
+				}
+			},
+		},
+		{
+			name: "ranking windows",
+			sql:  "SELECT rank() OVER (ORDER BY id), dense_rank() OVER (ORDER BY id) FROM public.employees",
+			want: []string{"rank", "dense_rank"},
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			facts, err := e.ExtractQueryAccess(context.Background(), tc.sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			var functions []EffectCandidate
+			for _, candidate := range facts.EffectCandidates {
+				if candidate.Kind == EffectCandidateFunction {
+					functions = append(functions, candidate)
+				}
+			}
+			if len(functions) != len(tc.want) {
+				t.Fatalf("function candidates: got %+v, want %v", functions, tc.want)
+			}
+			for i, want := range tc.want {
+				if got := functions[i].NamePath[len(functions[i].NamePath)-1]; !strings.EqualFold(got, want) {
+					t.Fatalf("candidate %d name: got %q, want %q", i, got, want)
+				}
+				if functions[i].Ordinal != i {
+					t.Fatalf("candidate %d ordinal: got %d", i, functions[i].Ordinal)
+				}
+			}
+			if tc.check != nil {
+				tc.check(t, functions)
+			}
+		})
+	}
+}
+
+func toStrings[K ~string](values []K) []string {
+	out := make([]string, len(values))
+	for i, value := range values {
+		out[i] = string(value)
+	}
+	return out
+}
+
 func TestExtractQueryAccess_EffectCandidates_StableOrderAndOrdinal(t *testing.T) {
 	t.Parallel()
 	e := &QueryAccessExtractor{}
