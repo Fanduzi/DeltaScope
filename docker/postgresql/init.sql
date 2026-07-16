@@ -17,11 +17,12 @@ INSERT INTO app.users (name) VALUES ('delta'), ('scope');
 CREATE TABLE app.orders (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL,
+  amount NUMERIC NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
-INSERT INTO app.orders (user_id) VALUES (1), (2);
+INSERT INTO app.orders (user_id, amount) VALUES (1, 10.50), (2, 20.75);
 
 CREATE TABLE app.accounts (
   id BIGSERIAL PRIMARY KEY,

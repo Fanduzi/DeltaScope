@@ -389,6 +389,57 @@ func TestTrustPolicyIsTrusted(t *testing.T) {
 	}
 }
 
+func TestPG17Manifest_PureAggregateAndWindowEntries(t *testing.T) {
+	manifest := NewPG17Manifest()
+	if err := ValidateManifest(manifest); err != nil {
+		t.Fatalf("ValidateManifest: %v", err)
+	}
+	if got, want := len(manifest.Entries), 96; got != want {
+		t.Fatalf("manifest entry count: got %d, want %d", got, want)
+	}
+	want := map[uint32]struct {
+		signature string
+		args      []uint32
+		result    uint32
+	}{
+		2100: {"pg_catalog.avg(20)", []uint32{20}, 1700},
+		2107: {"pg_catalog.sum(20)", []uint32{20}, 1700},
+		2115: {"pg_catalog.max(20)", []uint32{20}, 20},
+		2131: {"pg_catalog.min(20)", []uint32{20}, 20},
+		2244: {"pg_catalog.max(1042)", []uint32{1042}, 1042},
+		2245: {"pg_catalog.min(1042)", []uint32{1042}, 1042},
+		3100: {"pg_catalog.row_number()", nil, 20},
+		3101: {"pg_catalog.rank()", nil, 20},
+		3102: {"pg_catalog.dense_rank()", nil, 20},
+	}
+	seen := make(map[uint32]TrustedEffectEntry, len(manifest.Entries))
+	for _, entry := range manifest.Entries {
+		seen[entry.ObjectOID] = entry
+	}
+	for oid, expected := range want {
+		entry, ok := seen[oid]
+		if !ok {
+			t.Fatalf("missing manifest OID %d", oid)
+		}
+		if entry.CanonicalSignature != expected.signature || entry.ResultTypeOID != expected.result {
+			t.Fatalf("OID %d: got %+v", oid, entry)
+		}
+		if len(entry.OperandTypeOIDs) != len(expected.args) {
+			t.Fatalf("OID %d operand types: got %v, want %v", oid, entry.OperandTypeOIDs, expected.args)
+		}
+		for i := range expected.args {
+			if entry.OperandTypeOIDs[i] != expected.args[i] {
+				t.Fatalf("OID %d operand type: got %v, want %v", oid, entry.OperandTypeOIDs, expected.args)
+			}
+		}
+	}
+	for _, oid := range []uint32{3986, 3992} {
+		if _, ok := seen[oid]; ok {
+			t.Fatalf("ordered-set negative OID %d must not be trusted", oid)
+		}
+	}
+}
+
 func TestTrustPolicyNilPolicy(t *testing.T) {
 	var policy *TrustPolicy
 	batch := EffectIdentityBatch{
@@ -632,9 +683,9 @@ func TestPG17ManifestValid(t *testing.T) {
 		t.Errorf("PG17Manifest invalid: %v", err)
 	}
 
-	// Verify entry count: 54 operators + 2 aggregates = 56.
-	if len(PG17Manifest.Entries) != 56 {
-		t.Errorf("PG17Manifest has %d entries, want 56", len(PG17Manifest.Entries))
+	// Verify entry count: 54 operators + 42 functions = 96.
+	if len(PG17Manifest.Entries) != 96 {
+		t.Errorf("PG17Manifest has %d entries, want 96", len(PG17Manifest.Entries))
 	}
 
 	// Verify hash is set.

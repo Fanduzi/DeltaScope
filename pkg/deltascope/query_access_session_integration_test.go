@@ -229,6 +229,90 @@ func TestTrustedSDK_CountStarAdmissible(t *testing.T) {
 	assertNoLeak(t, result)
 }
 
+func TestTrustedSDK_RowNumberAdmissible(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT row_number() OVER (PARTITION BY user_id ORDER BY amount) FROM app.orders",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+		t.Fatalf("row_number must be trusted read-only: classification=%s admission=%s reasons=%v", result.ReadClassification, result.Admission, result.ReasonCodes)
+	}
+	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_RankDenseRankAdmissible(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT rank() OVER (ORDER BY amount), dense_rank() OVER (ORDER BY amount) FROM app.orders",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+		t.Fatalf("rank functions must be trusted read-only: classification=%s admission=%s reasons=%v", result.ReadClassification, result.Admission, result.ReasonCodes)
+	}
+	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_SumAvgMinMaxAdmissible(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT count(amount), sum(amount), avg(amount), min(amount), max(amount) FROM app.orders",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+		t.Fatalf("typed aggregates must be trusted read-only: classification=%s admission=%s reasons=%v", result.ReadClassification, result.Admission, result.ReasonCodes)
+	}
+	assertNoLeak(t, result)
+}
+
 func TestTrustedSDK_ComparisonAdmissible(t *testing.T) {
 	db := openTestDB(t)
 	defer db.Close()
@@ -355,7 +439,7 @@ func TestTrustedSDK_DefaultRemainsFailClosed(t *testing.T) {
 
 	// Default SDK path — no session, no trusted service.
 	result, err := AnalyzeQueryAccess(ctx, QueryAccessRequest{
-		SQL:           "SELECT count(*) FROM app.users",
+		SQL:           "SELECT sum(amount) FROM app.orders",
 		Dialect:       DialectPostgreSQL,
 		Mode:          QueryAccessModeStrict,
 		DefaultSchema: "app",
@@ -365,6 +449,39 @@ func TestTrustedSDK_DefaultRemainsFailClosed(t *testing.T) {
 	}
 	if result.Admission != QueryAccessIndeterminateAdmission {
 		t.Errorf("default path must remain indeterminate, got %s", result.Admission)
+	}
+}
+
+func TestTrustedSDK_FilterDistinctRemainIndeterminate(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+	for _, sqlText := range []string{
+		"SELECT sum(amount) FILTER (WHERE amount > 0) FROM app.orders",
+		"SELECT sum(DISTINCT amount) FROM app.orders",
+	} {
+		result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           sqlText,
+			Dialect:       DialectPostgreSQL,
+			Mode:          QueryAccessModeStrict,
+			DefaultSchema: "app",
+		})
+		if err != nil {
+			t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession(%q): %v", sqlText, err)
+		}
+		if result.Admission != QueryAccessIndeterminateAdmission || result.ReadClassification != QueryAccessIndeterminate {
+			t.Errorf("FILTER/DISTINCT must remain indeterminate for %q: classification=%s admission=%s", sqlText, result.ReadClassification, result.Admission)
+		}
+		assertNoLeak(t, result)
 	}
 }
 

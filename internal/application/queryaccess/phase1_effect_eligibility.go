@@ -33,7 +33,10 @@ func ValidatePhase1PureEffectCandidates(candidates []EffectCandidate) (bool, dom
 
 func phase1FunctionEligible(candidate EffectCandidate) bool {
 	if candidate.Arity < 0 || candidate.HasFilter || candidate.HasDistinct ||
-		candidate.HasAggOrder || candidate.HasWithinGroup || candidate.HasFrame {
+		candidate.HasAggOrder || candidate.HasWithinGroup {
+		return false
+	}
+	if candidate.HasFrame && !(candidate.HasWindow && candidate.Arity == 0 && isWindowRankingFunction(candidate)) {
 		return false
 	}
 

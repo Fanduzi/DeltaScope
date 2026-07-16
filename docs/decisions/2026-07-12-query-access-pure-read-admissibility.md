@@ -1563,6 +1563,35 @@ healthy; tests not skipped)**
 - `make decision-record-gate`, `make release-gofmt-gate`
 - `git diff --check`; `go mod tidy` clean for `go.mod`/`go.sum`
 
+### Task 6 — PG17 pure aggregate/window manifest expansion (2026-07-16)
+
+**Status:** Accepted as an amendment to this decision. The trusted PG17 manifest
+expands from 56 to 96 entries: 54 comparison operators plus 42 function
+identities (count variants, typed sum/avg/min/max, and row_number/rank/
+dense_rank windows). Ordered-set rank OIDs 3986 and 3992 remain excluded.
+
+**Decision and boundary:**
+
+- Trusted SDK sessions may promote direct-column `count`, `sum`, `avg`, `min`,
+  and `max`, plus ranking windows with direct partition/order columns, only
+  after exact session-bound catalog identity and type resolution.
+- `count(column)` uses a unique exact catalog fallback to `anyelement` OID
+  2276. The fallback is catalog-bound and still requires the manifest's OID,
+  result type, volatility, namespace, and session checks; it is not a function
+  name allowlist.
+- FILTER, DISTINCT, nested expressions, casts, ordered-set ranking, and other
+  unsupported shapes remain indeterminate.
+- `AnalyzeQueryAccess`, CLI, and HTTP remain fail-closed because they do not
+  receive the trusted session bundle. No MySQL/TiDB promotion is added.
+
+**Verification evidence:**
+
+- `CGO_ENABLED=1 go test -tags postgresql ./internal/application/queryaccess ./internal/infrastructure/metadata/postgresql -count=1`: PASS
+- `CGO_ENABLED=1 go test -tags 'postgresql && integration' ./pkg/deltascope ./internal/infrastructure/metadata/postgresql -count=1 -v -run 'TestTrustedSDK|TestPureEffect|TestTrustedService'`: PASS
+- `make query-access-corpus-gates`: PASS
+- `make pg-unit-test-gates`: PASS
+- `git diff --check`: clean
+
 ### Release-Surface Evidence (v0.390.0)
 
 - Version assigned: `v0.390.0` (minor after `v0.380.0`; opt-in public Trusted PostgreSQL SDK capability plus same-connection pure-read contract).

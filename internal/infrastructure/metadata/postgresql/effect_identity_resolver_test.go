@@ -797,6 +797,69 @@ func TestResolveColumnTypeOIDs_MultipleCandidatesPartial(t *testing.T) {
 	}
 }
 
+func TestResolveColumnTypeOIDs_FunctionColumn(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "app", table: "orders", column: "amount"}: 1700,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), []appqa.EffectCandidate{
+		{
+			Kind:              appqa.EffectCandidateFunction,
+			Ordinal:           7,
+			Arity:             1,
+			OperandKinds:      []string{"column"},
+			OperandColumnRefs: []appqa.OperandColumnRef{{Schema: "app", Table: "orders", Column: "amount"}},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := result[7]; len(got) != 1 || got[0] != 1700 {
+		t.Fatalf("expected function column type OID, got %v", result)
+	}
+}
+
+func TestAdapter_CountColumnUsesUniqueAnyElementCatalogMatch(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"pg_catalog": 11},
+		fns: map[fnKey][]functionRow{
+			{ns: 11, name: "count", args: "2276"}: {{
+				OID: 2147, NamespaceOID: 11, ResultType: 20, Volatility: "i",
+				SchemaName: "pg_catalog", FuncName: "count", ArgTypeOIDs: []uint32{2276},
+			}},
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	batch, err := a.ResolveEffectIdentities(context.Background(), appqa.EffectIdentityRequest{
+		Candidates: []appqa.EffectCandidate{{
+			Kind:              appqa.EffectCandidateFunction,
+			Ordinal:           0,
+			NamePath:          []string{"pg_catalog", "count"},
+			Arity:             1,
+			OperandKinds:      []string{"column"},
+			OperandColumnRefs: []appqa.OperandColumnRef{{Schema: "app", Table: "orders", Column: "amount"}},
+		}},
+		OperandTypeOIDs: map[int][]uint32{0: {23}},
+		Resolution:      live,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(batch.Items) != 1 || batch.Items[0].Status != domain.IdentityStatusResolved {
+		t.Fatalf("expected resolved count(anyelement), got %+v", batch.Items)
+	}
+	if got := batch.Items[0].Facts.OperandTypeOIDs; !reflect.DeepEqual(got, []uint32{2276}) {
+		t.Fatalf("expected catalog polymorphic operand OID, got %v", got)
+	}
+}
+
 // --- fake catalog ---
 
 type opKey struct {
@@ -873,7 +936,11 @@ func (f *fakeCatalog) lookupOperators(_ context.Context, nsOID uint32, name stri
 
 func (f *fakeCatalog) lookupFunctions(_ context.Context, nsOID uint32, name string, argOIDs []uint32) ([]functionRow, error) {
 	key := fnKey{ns: nsOID, name: name, args: oidVectorLiteral(argOIDs)}
-	return append([]functionRow(nil), f.fns[key]...), nil
+	rows := f.fns[key]
+	if len(rows) == 0 && len(argOIDs) == 1 {
+		rows = f.fns[fnKey{ns: nsOID, name: name, args: "2276"}]
+	}
+	return append([]functionRow(nil), rows...), nil
 }
 
 func (f *fakeCatalog) lookupCasts(_ context.Context, sourceOID, targetOID uint32) ([]castRow, error) {

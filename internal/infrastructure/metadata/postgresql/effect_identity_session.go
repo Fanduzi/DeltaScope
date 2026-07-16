@@ -300,18 +300,25 @@ func (s *PinnedSession) lookupFunctions(ctx context.Context, nsOID uint32, name 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var out []functionRow
-	for rows.Next() {
-		var r functionRow
-		var argText string
-		if err := rows.Scan(&r.OID, &r.NamespaceOID, &r.ResultType, &r.Volatility, &r.SchemaName, &r.FuncName, &argText); err != nil {
-			return nil, err
-		}
-		r.ArgTypeOIDs = parseOIDVectorText(argText)
-		out = append(out, r)
+	out, err := scanFunctionRows(rows)
+	if err != nil {
+		return nil, err
 	}
-	return out, rows.Err()
+	if len(out) > 0 || len(argOIDs) != 1 {
+		return out, nil
+	}
+	rows, err = conn.QueryContext(ctx, `
+		select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
+		from pg_catalog.pg_proc p
+		join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+		where p.pronamespace = $1
+		  and p.proname = $2
+		  and p.proargtypes = '2276'::pg_catalog.oidvector
+	`, nsOID, name)
+	if err != nil {
+		return nil, err
+	}
+	return scanFunctionRows(rows)
 }
 
 type castRow struct {

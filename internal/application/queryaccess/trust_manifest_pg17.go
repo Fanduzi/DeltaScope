@@ -1,5 +1,5 @@
 // Package queryaccess defines the Phase-1 PG17 trusted effect manifest.
-// input: T2 ledger (54 comparison operators + count(*)/count("any"))
+// input: T2 ledger plus PG17 pure aggregate/window expansion
 // output: immutable TrustedEffectManifest for PG17
 // pos: T8 Phase-1 manifest; compile-time owned, versioned, deterministically hashed
 // note: if this file changes, update this header and module README.md.
@@ -9,7 +9,7 @@ package queryaccess
 //
 // It contains the T2 ledger's audited minimum closed set:
 //   - 54 comparison operators (9 types × 6 ops)
-//   - 2 aggregates: count(*) (OID 2803), count("any") (OID 2147)
+//   - 42 functions: count variants, common typed aggregates, and ranking windows
 //
 // All OIDs are stable across PostgreSQL 14.23, 16.14, and 17.10.
 // Phase-1 runtime claim: PostgreSQL 17 only (ServerVersionNum 170000–179999).
@@ -53,8 +53,170 @@ var PG17Manifest = NewPG17Manifest()
 // Sorted by (Kind, ObjectOID, NamespaceOID, CanonicalSignature).
 var pg17Entries = []TrustedEffectEntry{
 	// =========================================================================
-	// Aggregates (2 entries)
+	// Common typed aggregates and ranking windows.
 	// =========================================================================
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2100, NamespaceOID: 11, OperandTypeOIDs: []uint32{20}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(20)", AuditNotes: "avg(bigint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2101, NamespaceOID: 11, OperandTypeOIDs: []uint32{23}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(23)", AuditNotes: "avg(integer); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2102, NamespaceOID: 11, OperandTypeOIDs: []uint32{21}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(21)", AuditNotes: "avg(smallint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2103, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(1700)", AuditNotes: "avg(numeric); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2104, NamespaceOID: 11, OperandTypeOIDs: []uint32{700}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(700)", AuditNotes: "avg(real); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2105, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(701)", AuditNotes: "avg(double precision); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2106, NamespaceOID: 11, OperandTypeOIDs: []uint32{1186}, ResultTypeOID: 1186, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.avg(1186)", AuditNotes: "avg(interval); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2107, NamespaceOID: 11, OperandTypeOIDs: []uint32{20}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(20)", AuditNotes: "sum(bigint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2108, NamespaceOID: 11, OperandTypeOIDs: []uint32{23}, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(23)", AuditNotes: "sum(integer); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2109, NamespaceOID: 11, OperandTypeOIDs: []uint32{21}, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(21)", AuditNotes: "sum(smallint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2110, NamespaceOID: 11, OperandTypeOIDs: []uint32{700}, ResultTypeOID: 700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(700)", AuditNotes: "sum(real); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2111, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(701)", AuditNotes: "sum(double precision); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2112, NamespaceOID: 11, OperandTypeOIDs: []uint32{790}, ResultTypeOID: 790, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(790)", AuditNotes: "sum(money); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2113, NamespaceOID: 11, OperandTypeOIDs: []uint32{1186}, ResultTypeOID: 1186, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(1186)", AuditNotes: "sum(interval); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2114, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.sum(1700)", AuditNotes: "sum(numeric); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2115, NamespaceOID: 11, OperandTypeOIDs: []uint32{20}, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(20)", AuditNotes: "max(bigint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2116, NamespaceOID: 11, OperandTypeOIDs: []uint32{23}, ResultTypeOID: 23, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(23)", AuditNotes: "max(integer); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2117, NamespaceOID: 11, OperandTypeOIDs: []uint32{21}, ResultTypeOID: 21, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(21)", AuditNotes: "max(smallint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2119, NamespaceOID: 11, OperandTypeOIDs: []uint32{700}, ResultTypeOID: 700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(700)", AuditNotes: "max(real); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2120, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(701)", AuditNotes: "max(double precision); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2122, NamespaceOID: 11, OperandTypeOIDs: []uint32{1082}, ResultTypeOID: 1082, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(1082)", AuditNotes: "max(date); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2126, NamespaceOID: 11, OperandTypeOIDs: []uint32{1114}, ResultTypeOID: 1114, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(1114)", AuditNotes: "max(timestamp); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2127, NamespaceOID: 11, OperandTypeOIDs: []uint32{1184}, ResultTypeOID: 1184, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(1184)", AuditNotes: "max(timestamptz); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2129, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 25, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(25)", AuditNotes: "max(text); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2130, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(1700)", AuditNotes: "max(numeric); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2131, NamespaceOID: 11, OperandTypeOIDs: []uint32{20}, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(20)", AuditNotes: "min(bigint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2132, NamespaceOID: 11, OperandTypeOIDs: []uint32{23}, ResultTypeOID: 23, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(23)", AuditNotes: "min(integer); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2133, NamespaceOID: 11, OperandTypeOIDs: []uint32{21}, ResultTypeOID: 21, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(21)", AuditNotes: "min(smallint); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2135, NamespaceOID: 11, OperandTypeOIDs: []uint32{700}, ResultTypeOID: 700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(700)", AuditNotes: "min(real); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2136, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(701)", AuditNotes: "min(double precision); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2138, NamespaceOID: 11, OperandTypeOIDs: []uint32{1082}, ResultTypeOID: 1082, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(1082)", AuditNotes: "min(date); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2142, NamespaceOID: 11, OperandTypeOIDs: []uint32{1114}, ResultTypeOID: 1114, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(1114)", AuditNotes: "min(timestamp); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2143, NamespaceOID: 11, OperandTypeOIDs: []uint32{1184}, ResultTypeOID: 1184, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(1184)", AuditNotes: "min(timestamptz); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2145, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 25, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(25)", AuditNotes: "min(text); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2146, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(1700)", AuditNotes: "min(numeric); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2244, NamespaceOID: 11, OperandTypeOIDs: []uint32{1042}, ResultTypeOID: 1042, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.max(1042)", AuditNotes: "max(bpchar); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 2245, NamespaceOID: 11, OperandTypeOIDs: []uint32{1042}, ResultTypeOID: 1042, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.min(1042)", AuditNotes: "min(bpchar); immutable built-in aggregate; dependency is the input column",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 3100, NamespaceOID: 11, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.row_number()", AuditNotes: "row_number window function; immutable ranking over query row sources",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 3101, NamespaceOID: 11, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.rank()", AuditNotes: "rank window function; immutable ranking over query row sources",
+	},
+	{
+		Kind: EffectCandidateFunction, ObjectOID: 3102, NamespaceOID: 11, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.dense_rank()", AuditNotes: "dense_rank window function; immutable ranking over query row sources",
+	},
+
+	// Existing count aggregates.
 	{
 		Kind:               EffectCandidateFunction,
 		ObjectOID:          2803,

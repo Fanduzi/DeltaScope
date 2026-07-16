@@ -959,28 +959,25 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 // adapter output that returns inconsistent type-map and fact data. It does NOT
 // protect against a hostile in-process resolver that can forge both.
 //
-// Promotion-safe binary operator path: a resolved binary operator candidate may
-// reach TrustPolicy.IsTrusted only when the atomic resolver returns exactly one
-// operand-type entry for that ordinal, that entry has exactly two nonzero OIDs,
-// the resolved fact has exactly two nonzero OperandTypeOIDs, and they match.
+// Promotion-safe column path: a resolved binary operator candidate requires two
+// matching nonzero OIDs; a resolved one-column function candidate requires one.
 //
 // Behavior:
 //   - For each resolved binary-operator item:
 //   - Map entry must exist, have exactly two nonzero OIDs, and equal facts.OperandTypeOIDs
 //   - Absent or unexpected entry, wrong length, zero OID, or mismatch → lookup_failed
-//   - Functions, casts, arity-zero → untouched (no cross-check)
+//   - Other functions, casts, arity-zero → untouched (no cross-check)
 func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs map[int][]uint32, candidates []EffectCandidate) EffectIdentityBatch {
 	candByOrd := make(map[int]EffectCandidate, len(candidates))
 	for _, c := range candidates {
 		candByOrd[c.Ordinal] = c
 	}
 
-	// The atomic adapter only produces type facts for binary operators. An
-	// extra ordinal is contract-violating output, so no resolved item may be
-	// used for promotion from that batch.
+	// The atomic adapter only produces type facts for binary operators and direct
+	// one-column functions. An extra ordinal is contract-violating output.
 	for ordinal := range resolvedTypeOIDs {
 		candidate, ok := candByOrd[ordinal]
-		if !ok || candidate.Kind != EffectCandidateOperator || candidate.Arity != 2 {
+		if !ok || !candidateUsesResolvedColumnType(candidate) {
 			return invalidateResolvedIdentityFacts(batch)
 		}
 	}
@@ -996,30 +993,45 @@ func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs 
 			items = append(items, it)
 			continue
 		}
-		if c.Kind != EffectCandidateOperator || c.Arity != 2 {
+		if !candidateUsesResolvedColumnType(c) {
 			items = append(items, it)
 			continue
 		}
 		expected, hasEntry := resolvedTypeOIDs[it.Ordinal]
-		if !hasEntry || len(expected) != 2 || expected[0] == 0 || expected[1] == 0 {
+		wantLen := 2
+		if c.Kind == EffectCandidateFunction {
+			wantLen = 1
+		}
+		if !hasEntry || len(expected) != wantLen || expected[0] == 0 || (wantLen == 2 && expected[1] == 0) {
 			it.Status = domain.IdentityStatusLookupFailed
 			it.Facts = nil
 			items = append(items, it)
 			continue
 		}
-		if len(it.Facts.OperandTypeOIDs) != 2 || it.Facts.OperandTypeOIDs[0] == 0 || it.Facts.OperandTypeOIDs[1] == 0 {
+		if len(it.Facts.OperandTypeOIDs) != wantLen || it.Facts.OperandTypeOIDs[0] == 0 || (wantLen == 2 && it.Facts.OperandTypeOIDs[1] == 0) {
 			it.Status = domain.IdentityStatusLookupFailed
 			it.Facts = nil
 			items = append(items, it)
 			continue
 		}
-		if !uint32SliceEqual(it.Facts.OperandTypeOIDs, expected) {
+		polymorphicFunction := c.Kind == EffectCandidateFunction &&
+			len(it.Facts.OperandTypeOIDs) == 1 && it.Facts.OperandTypeOIDs[0] == 2276
+		if !uint32SliceEqual(it.Facts.OperandTypeOIDs, expected) && !polymorphicFunction {
 			it.Status = domain.IdentityStatusLookupFailed
 			it.Facts = nil
 		}
 		items = append(items, it)
 	}
 	return NormalizeEffectIdentityBatch(items)
+}
+
+func candidateUsesResolvedColumnType(candidate EffectCandidate) bool {
+	if candidate.Kind == EffectCandidateOperator && candidate.Arity == 2 {
+		return true
+	}
+	return candidate.Kind == EffectCandidateFunction && candidate.Arity == 1 &&
+		len(candidate.OperandKinds) == 1 && candidate.OperandKinds[0] == "column" &&
+		len(candidate.OperandColumnRefs) == 1
 }
 
 func invalidateResolvedIdentityFacts(batch EffectIdentityBatch) EffectIdentityBatch {

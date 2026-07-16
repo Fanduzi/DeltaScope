@@ -90,15 +90,26 @@ func (a *EffectIdentityAdapter) ResolveColumnTypeOIDs(ctx context.Context, candi
 
 	result := make(map[int][]uint32)
 	for _, cand := range candidates {
-		if cand.Kind != appqa.EffectCandidateOperator || cand.Arity != 2 {
+		switch {
+		case cand.Kind == appqa.EffectCandidateOperator && cand.Arity == 2:
+			if len(cand.OperandColumnRefs) != 2 {
+				continue
+			}
+		case cand.Kind == appqa.EffectCandidateFunction && cand.Arity == 1 &&
+			len(cand.OperandKinds) == 1 && cand.OperandKinds[0] == "column":
+			if len(cand.OperandColumnRefs) != 1 {
+				continue
+			}
+		default:
 			continue
 		}
 		refs := cand.OperandColumnRefs
-		if len(refs) != 2 {
-			continue
-		}
 		leftOID, err := a.resolveOneColumnTypeOID(ctx, refs[0], live.NamespaceSearchOIDs)
 		if err != nil || leftOID == 0 {
+			continue
+		}
+		if cand.Kind == appqa.EffectCandidateFunction {
+			result[cand.Ordinal] = []uint32{leftOID}
 			continue
 		}
 		rightOID, err := a.resolveOneColumnTypeOID(ctx, refs[1], live.NamespaceSearchOIDs)
@@ -609,6 +620,28 @@ func (t *txCatalog) lookupFunctions(ctx context.Context, nsOID uint32, name stri
 	if err != nil {
 		return nil, err
 	}
+	out, err := scanFunctionRows(rows)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) > 0 || len(argOIDs) != 1 {
+		return out, nil
+	}
+	rows, err = t.tx.QueryContext(ctx, `
+		select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
+		from pg_catalog.pg_proc p
+		join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+		where p.pronamespace = $1
+		  and p.proname = $2
+		  and p.proargtypes = '2276'::pg_catalog.oidvector
+	`, nsOID, name)
+	if err != nil {
+		return nil, err
+	}
+	return scanFunctionRows(rows)
+}
+
+func scanFunctionRows(rows *sql.Rows) ([]functionRow, error) {
 	defer rows.Close()
 	var out []functionRow
 	for rows.Next() {
@@ -745,15 +778,26 @@ func (a *EffectIdentityAdapter) ResolveColumnTypesAndEffectIdentities(
 	// 2) Resolve column type OIDs for binary column operators under the same tx.
 	typeOIDs := make(map[int][]uint32)
 	for _, cand := range candidates {
-		if cand.Kind != appqa.EffectCandidateOperator || cand.Arity != 2 {
+		switch {
+		case cand.Kind == appqa.EffectCandidateOperator && cand.Arity == 2:
+			if len(cand.OperandColumnRefs) != 2 {
+				continue
+			}
+		case cand.Kind == appqa.EffectCandidateFunction && cand.Arity == 1 &&
+			len(cand.OperandKinds) == 1 && cand.OperandKinds[0] == "column":
+			if len(cand.OperandColumnRefs) != 1 {
+				continue
+			}
+		default:
 			continue
 		}
 		refs := cand.OperandColumnRefs
-		if len(refs) != 2 {
-			continue
-		}
 		leftOID, err := resolveOneColumnTypeOIDWithCatalog(ctx, txCat, refs[0], live1.NamespaceSearchOIDs)
 		if err != nil || leftOID == 0 {
+			continue
+		}
+		if cand.Kind == appqa.EffectCandidateFunction {
+			typeOIDs[cand.Ordinal] = []uint32{leftOID}
 			continue
 		}
 		rightOID, err := resolveOneColumnTypeOIDWithCatalog(ctx, txCat, refs[1], live1.NamespaceSearchOIDs)
