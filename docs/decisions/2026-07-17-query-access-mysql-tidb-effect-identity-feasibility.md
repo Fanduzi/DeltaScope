@@ -1,7 +1,7 @@
 # Decision: Query Access MySQL/TiDB Builtin Effect Identity Feasibility
 
 Date: 2026-07-17
-Status: Proposed
+Status: Accepted
 Baseline: v0.400.0 (`e01d7e8`)
 Branch: `query-access-mysql-tidb-effect-identity-feasibility`
 Related decisions:
