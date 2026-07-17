@@ -2,7 +2,7 @@
 
 Date: 2026-07-16
 Status: Accepted
-Related milestone/version: Unassigned (no release/tag in this milestone)
+Related milestone/version: v0.400.0
 Related commits:
 - Planning baseline: `v0.390.0` (`d72eeb4`)
 - Milestone branch: `query-access-common-pure-effects`
@@ -311,8 +311,15 @@ rejected. Detection now requires the NONDEFAULT bit only. Evidence:
 The milestone favors a small useful set of reporting queries over a broad but
 unverifiable function allowlist. PostgreSQL ships a trusted-session Phase 1
 subset; MySQL and TiDB remain deferred without blocking that subset. This
-decision is `Accepted` for the delivered evidence only and does not assign a
-release version.
+decision is `Accepted` for the delivered evidence and is assigned to the
+v0.400.0 release milestone.
+
+### Release-Surface Evidence (v0.400.0)
+
+- Version assigned: `v0.400.0` (minor after `v0.390.0`; expands the existing opt-in PG17 Trusted PostgreSQL Query Access SDK with manifest-proven common pure aggregates and ranking windows).
+- Release notes: `docs/releases/release-notes-v0.400.0.md`, `docs/releases/release-notes-v0.400.0.zh-CN.md`.
+- Active version pins: `pkg/deltascope/version.go` (`DefaultVersion`), `packages/deltascope-mcp/package.json`, root README EN/ZH install pins, `pkg/deltascope/README.md`, `docs/examples/github-actions.yml`, CHANGELOG, roadmap latest milestone, landing current release, and `scripts/verify_release_consistency.py` `RELEASE_FACTS["v0.400.0"]`.
+- Public contract remains narrow: only the caller-owned-session PG17 trusted SDK can promote the new manifest entries. Default SDK, CLI, and HTTP remain fail-closed; MySQL/TiDB stay deferred; MCP has no query-access tool; this is not authorization, RLS, masking, rewrite, or an execution-snapshot guarantee.
 
 ## Links
 

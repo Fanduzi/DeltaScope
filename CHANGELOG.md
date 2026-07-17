@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.400.0] - 2026-07-17
+
+### Added
+
+- Expanded the opt-in Trusted PostgreSQL Query Access SDK on the caller-owned `*sql.Conn` path. The PG17 manifest-proven subset now includes `COUNT(*)`, `COUNT(base_column)`, typed `SUM` / `AVG` / `MIN` / `MAX` over a direct base column, and `ROW_NUMBER` / `RANK` / `DENSE_RANK` with direct-column window partition and ordering dependencies.
+- Strict requirements now cover aggregate arguments, window partition/order expressions, `DISTINCT ON`, aggregate `FILTER`, and LIMIT/OFFSET subqueries before admission is considered. Unsupported or incomplete forms remain fail-closed.
+- PostgreSQL candidate eligibility rejects FILTER, DISTINCT, explicit window frames, named windows, ordered-set aggregates, nested expressions, casts, unresolved metadata, views, wildcards, parameters, and unqualified relations from the proven path.
+- MySQL and TiDB continue to classify aggregate/window functions as `unknown_function_effect`; no name-based or shared-parser promotion was introduced without a dialect-specific identity proof model.
+- Decision record: `docs/decisions/2026-07-16-query-access-common-pure-effects.md` (Accepted; Related milestone/version: v0.400.0).
+
+### Non-Goals
+
+- Not full PostgreSQL common SELECT admissibility.
+- Not MySQL/TiDB manifest or identity promotion.
+- Not runtime grant evaluation, authentication, RLS, masking, automatic grant, SQL rewrite, or an execution-snapshot guarantee.
+- Not CLI/HTTP trusted-session promotion or an MCP query-access tool.
+- Not a change to the audit rule catalog or a `severity` field.
+
 ## [v0.390.0] - 2026-07-16
 
 ### Added

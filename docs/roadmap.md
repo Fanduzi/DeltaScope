@@ -4,30 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.390.0 Trusted PostgreSQL Query Access SDK
+## Latest Completed Milestone: v0.400.0 Common Pure-Effect Query Access
 
-**Goal:** ship an opt-in Trusted PostgreSQL Query Access SDK path for callers that already own a live `*sql.Conn`, with PG17 manifest-gated pure-read admissibility for a narrow proven subset. Complements the v0.380.0 foundation; does not claim full PostgreSQL common SELECT support. Does not add a `severity` field.
+**Goal:** expand the opt-in Trusted PostgreSQL Query Access SDK with catalog-proven common pure aggregates and ranking windows, while keeping the default SDK, CLI, HTTP, MySQL, TiDB, and MCP boundaries fail-closed. Complements the v0.390.0 trusted-session path; does not claim full PostgreSQL common SELECT support. Does not add a `severity` field.
 
 ### Completed Scope
 
-- Public SDK (postgresql build tag; non-postgresql stub returns `ErrPostgreSQLSessionNotAvailable` with the same symbols): `NewPostgreSQLQueryAccessSessionFromConn`, `AnalyzePostgreSQLQueryAccessWithSession`.
-- Caller-owned `*sql.Conn` contract: session does not close the connection; same-connection metadata/type/identity proof.
-- PG17 closed effect-identity manifest; public E2E-verified shapes include `count(*)` and schema-qualified base-column comparison/JOIN.
-- Default SDK, CLI, and HTTP remain fail-closed for effect-bearing PostgreSQL queries without a trusted session.
-- HTTP Query Access errors are bounded (no raw wrapped-error echo).
+- PG17 closed effect-identity manifest now proves `COUNT(*)`, `COUNT(base_column)`, typed direct-column `SUM` / `AVG` / `MIN` / `MAX`, and direct-column `ROW_NUMBER` / `RANK` / `DENSE_RANK` window shapes on the caller-owned trusted SDK path.
+- Strict requirements cover aggregate arguments and window partition/order dependencies before admission. FILTER, DISTINCT, explicit frames, named windows, ordered-set aggregates, nested expressions, casts, views, wildcards, parameters, unqualified relations, unresolved metadata, and non-manifest identities remain fail-closed.
+- Default SDK, CLI, and HTTP remain fail-closed for these effect-bearing PostgreSQL queries without a trusted session.
+- MySQL and TiDB aggregate/window effects remain `unknown_function_effect` / `indeterminate`; no syntax/name allowlist or shared-parser promotion was introduced.
 - MCP tools unchanged and still do not include query-access.
 - Audit rule catalog unchanged at 371 rules. SQL corpus unchanged at 582/582, 100.0%, 247 YAML files.
 - `level` remains the audit priority field; no `severity` field is introduced.
-- Decision record: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Accepted; Related milestone/version: v0.390.0).
+- Decision record: `docs/decisions/2026-07-16-query-access-common-pure-effects.md` (Accepted; Related milestone/version: v0.400.0).
 
 ### Non-Goals
 
-- Not full PostgreSQL common SELECT admissibility on the default path.
+- Not full PostgreSQL common SELECT admissibility.
 - Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
 - Not row-level security evaluation or column masking.
 - Not a runtime execution-snapshot guarantee after static analysis.
-- Not CLI/HTTP trusted-session promotion.
-- Not an MCP query-access tool.
+- Not CLI/HTTP trusted-session promotion or an MCP query-access tool.
 - Not a MySQL/TiDB trusted identity promotion change.
 - Not a change to existing audit behavior.
 - Not a `severity` field.
@@ -43,6 +41,7 @@ Published Query Access boundaries that these items must not rewrite by documenta
 - Decision: [Query Access Analysis Foundation](decisions/2026-07-11-query-access-analysis-foundation.md) (v0.380.0)
 - Decision: [CTE and Derived Table Lineage Resolution](decisions/2026-07-11-cte-derived-table-lineage-resolution.md) (v0.380.0)
 - Decision: [PostgreSQL Pure-Read Admissibility](decisions/2026-07-12-query-access-pure-read-admissibility.md) (accepted opt-in SDK boundary)
+- Decision: [Common Pure-Effect Admissibility](decisions/2026-07-16-query-access-common-pure-effects.md) (v0.400.0)
 - Shipped surfaces remain SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, and HTTP `POST /v1/query-access/analyze`. **MCP does not include a query-access tool.**
 - An opt-in PostgreSQL SDK path is also available through a caller-owned `*sql.Conn`: `NewPostgreSQLQueryAccessSessionFromConn` and `AnalyzePostgreSQLQueryAccessWithSession`. It is manifest-gated and does not change the default SDK, CLI, or HTTP fail-closed behavior.
 - Query Access emits structured **requirements** for a caller-owned authorization step. It does **not** authenticate callers, evaluate grants, enforce row-level security, apply column masking, auto-grant privileges, or rewrite SQL. Static analysis is not a substitute for database authorization or runtime controls.
@@ -50,7 +49,7 @@ Published Query Access boundaries that these items must not rewrite by documenta
 ### PostgreSQL common SELECT admissibility
 
 - **Status:** narrow opt-in SDK support is delivered; broad common-SELECT admissibility remains a deferred watchlist item.
-- **Delivered boundary:** the caller-owned-session SDK can admit a bounded PG17 manifest-proven subset, including `count(*)` and schema-qualified base-column comparisons, only after same-connection metadata/type/identity proof. It is static requirements analysis, not authorization or a guarantee for a later execution snapshot.
+- **Delivered boundary:** the caller-owned-session SDK can admit a bounded PG17 manifest-proven subset: `COUNT(*)`, `COUNT(base_column)`, typed direct-column `SUM` / `AVG` / `MIN` / `MAX`, direct-column `ROW_NUMBER` / `RANK` / `DENSE_RANK`, and schema-qualified base-column comparisons. Every shape requires same-connection metadata/type/identity proof. It is static requirements analysis, not authorization or a guarantee for a later execution snapshot.
 - **Why broader support remains deferred:** PostgreSQL keeps a conservative fail-closed boundary when operator, cast/coercion, relation qualification, or opaque construct effects cannot be proven safe. The default SDK, CLI, and HTTP paths do not use the opt-in trusted session and remain fail-closed for these effect-bearing queries.
 - **Evidence that would reopen broader evaluation:** a catalog-proven, version-scoped, item-by-item audited effect-identity manifest and proof model for each additional shape. Heuristic allowlists or "looks like a normal SELECT" shortcuts are not sufficient.
 - **Published boundary:** uncertain effects, unqualified relations, views, casts, literals/parameters, unresolved metadata, and non-manifest identities remain non-admissible. MCP still has no query-access tool.
@@ -92,6 +91,34 @@ Published Query Access boundaries that these items must not rewrite by documenta
 - **Why not now:** release workflows already trust the third-party cask tap during install verification (`brew trust --cask fanduzi/deltascope/deltascope` in `release.yml` / `release-recover.yml`). A small static contract test would lock that exact step so future workflow edits cannot drop it silently. That is CI hygiene, not Query Access product work.
 - **Evidence that would reopen evaluation:** any release-engineering pass that prioritizes regression locks for Homebrew install verification, or a near-miss/regression risk around the trust step.
 - **Published boundary:** operational only — pin the precise cask trust steps in `release.yml` and `release-recover.yml`; no SQL, audit, or query-access behavior change. Scope is patch-sized; do not promote this to a product milestone.
+
+## Previous Milestone: v0.390.0 Trusted PostgreSQL Query Access SDK
+
+**Goal:** add an opt-in Trusted PostgreSQL Query Access SDK path for callers that already own a live `*sql.Conn`, with PG17 manifest-gated pure-read admissibility for a narrow proven subset. Complements the v0.380.0 foundation; does not claim full PostgreSQL common SELECT support. Does not add a `severity` field.
+
+### Completed Scope
+
+- Public SDK (postgresql build tag; non-postgresql stub returns `ErrPostgreSQLSessionNotAvailable` with the same symbols): `NewPostgreSQLQueryAccessSessionFromConn`, `AnalyzePostgreSQLQueryAccessWithSession`.
+- Caller-owned `*sql.Conn` contract: session does not close the connection; same-connection metadata/type/identity proof.
+- PG17 closed effect-identity manifest; public E2E-verified shapes include `count(*)` and schema-qualified base-column comparison/JOIN.
+- Default SDK, CLI, and HTTP remain fail-closed for effect-bearing PostgreSQL queries without a trusted session.
+- HTTP Query Access errors are bounded (no raw wrapped-error echo).
+- MCP tools unchanged and still do not include query-access.
+- Audit rule catalog unchanged at 371 rules. SQL corpus unchanged at 582/582, 100.0%, 247 YAML files.
+- `level` remains the audit priority field; no `severity` field is introduced.
+- Decision record: `docs/decisions/2026-07-12-query-access-pure-read-admissibility.md` (Accepted; Related milestone/version: v0.390.0).
+
+### Non-Goals
+
+- Not full PostgreSQL common SELECT admissibility on the default path.
+- Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
+- Not row-level security evaluation or column masking.
+- Not a runtime execution-snapshot guarantee after static analysis.
+- Not CLI/HTTP trusted-session promotion.
+- Not an MCP query-access tool.
+- Not a MySQL/TiDB trusted identity promotion change.
+- Not a change to existing audit behavior.
+- Not a `severity` field.
 
 ## Previous Milestone: v0.380.0 Query Access Analysis Foundation
 
