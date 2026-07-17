@@ -128,3 +128,92 @@ and all claimed dialect/version evidence is executable. Update it to
 `Accepted` only with the actual GO/DEFER/KILL disposition for MySQL and TiDB;
 do not mark it accepted merely because planning or parser characterization was
 completed.
+
+## Evidence and Disposition
+
+### Docker Probe Environment
+
+- Compose: `docker compose -f docker/cli-e2e-compose.yaml up -d --wait`
+- MySQL: `mysql:8.4` container, actual server version `8.4.10`, port 3406
+- TiDB: `pingcap/tidb:v8.5.0` container, actual version
+  `8.0.11-TiDB-v8.5.0`, port 4400
+
+### MySQL 8.4 — KILL
+
+Evidence captured against MySQL 8.4.10 on a caller-owned connection:
+
+| Probe | Result |
+| --- | --- |
+| Candidate execution (COUNT/SUM/AVG/MIN/MAX/ROW_NUMBER/RANK/DENSE_RANK) | All execute correctly |
+| `CREATE FUNCTION my_sum(a INT, b INT) RETURNS INT DETERMINISTIC` | Succeeds; `information_schema.ROUTINES.IS_DETERMINISTIC = YES` |
+| `CREATE FUNCTION count(a INT) RETURNS BIGINT DETERMINISTIC` | Rejected (syntax error — builtin name reserved) |
+| `CREATE FUNCTION COUNT(a INT)` (uppercase) | Rejected (same syntax error) |
+| `mysql.func` table | Exists; columns `name, ret, dl, type`; lists loadable UDFs only |
+| `performance_schema.user_defined_functions` | Lists plugin UDFs (`innodb_*`, `mysqlx_*`, etc.); does NOT list builtins like COUNT/SUM |
+| `EXPLAIN SELECT COUNT(*) FROM users` | Plan text shows `Count rows in users`; no OID, no implementation class |
+| `EXPLAIN ANALYZE` | Execution stats; no builtin identity |
+| Schema-qualified stored function call (`app.my_sum(1, 2)`) | Succeeds — proving schema qualification can select stored functions |
+| `information_schema.TABLES/COLUMNS` | Relation/column metadata available on same connection |
+| Builtin OID-equivalent identity table | **Does not exist** — no `INFORMATION_SCHEMA` table provides OID/implementation-class identity for builtins |
+
+Kill criterion met: the best available identity is the function name.
+`DETERMINISTIC` is a stored-function declaration, not a trust root. No
+OID-equivalent identity binding exists. A name-based allowlist is explicitly
+forbidden by the decision. MySQL 8.4 is **KILL**.
+
+### TiDB 8.5 — KILL
+
+Evidence captured independently against TiDB v8.5.0:
+
+| Probe | Result |
+| --- | --- |
+| Candidate execution | All execute correctly |
+| `CREATE FUNCTION my_sum(...)` | Rejected entirely — TiDB does not support stored functions |
+| `CREATE AGGREGATE FUNCTION ... SONAME` | Rejected — no loadable UDF support |
+| `mysql.func` table | Does not exist |
+| `information_schema.PLUGINS` | Returns 0 rows |
+| `information_schema.KEYWORDS` | Lists reserved/non-reserved words only (ROW_NUMBER/RANK/DENSE_RANK reserved, AVG non-reserved); not a function identity catalog |
+| `EXPLAIN SELECT COUNT(*) FROM users` | Plan text shows `funcs:count(1)`; no OID, no implementation class |
+| `EXPLAIN ANALYZE` | Execution stats; no builtin identity |
+| `information_schema.TABLES/COLUMNS` | Relation/column metadata available on same connection |
+| Builtin OID-equivalent identity table | **Does not exist** |
+
+Kill criterion met independently: the only available identity is the function
+name. No stored-function/UDF/plugin system exists, but no OID-equivalent
+identity binding exists either. A name-based allowlist is explicitly forbidden.
+TiDB 8.5 is **KILL**.
+
+### Independent Proof Domains
+
+MySQL and TiDB reached KILL through different evidence paths:
+- MySQL has stored functions (shadowing risk) but blocks builtin-name creation
+- TiDB has no stored functions at all (different gap)
+
+Neither dialect's evidence was inferred from the other. Both retain
+`unknown_function_effect` for all function-bearing queries.
+
+### Tasks 5–7 Disposition
+
+Skipped. No dialect reached GO, so no caller-owned session foundation,
+proof gateway, manifest, or public opt-in SDK E2E was implemented. The
+default SDK, CLI, HTTP, and MCP surfaces remain unchanged and fail-closed.
+
+### Test Evidence
+
+- Task 1 characterization: `builtin_effect_identity_feasibility_characterization_test.go`
+- Task 2 traversal lock: `builtin_effect_identity_feasibility_traversal_test.go`
+- Task 3/4 ledger: `internal/infrastructure/metadata/mysql/builtin_effect_identity_feasibility_ledger_test.go`
+- Corpus: 43 MySQL fixtures (9 new fail-closed matrix + 4 projection_only) pass `make query-access-corpus-gates`
+- Existing defer evidence: `pure_effect_feasibility_test.go`, `pure_effect_defer_test.go` still pass
+
+### Remaining Indeterminate Boundaries
+
+All MySQL/TiDB function-bearing queries remain `indeterminate` with
+`unknown_function_effect`. This includes but is not limited to:
+`COUNT(*)`, `COUNT(column)`, `SUM/AVG/MIN/MAX(column)`, `ROW_NUMBER/RANK/DENSE_RANK`,
+stored functions, UDFs, `DISTINCT`, aggregate-local ordering, named windows,
+explicit frames, nested expression operands, and any schema-qualified
+function call.
+
+A future GO would require a separately designed, audited identity model that
+does not exist in MySQL 8.4 or TiDB 8.5 as probed.
