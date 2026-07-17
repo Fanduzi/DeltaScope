@@ -292,6 +292,20 @@ Gate evidence run on the milestone branch:
 Remaining P1/P2: none for the delivered PostgreSQL trusted subset and explicit
 MySQL/TiDB deferral.
 
+### Post-acceptance fix: default window frames
+
+Review found that `HasFrame` treated any nonzero `WindowDef.FrameOptions` as an
+explicit frame. PostgreSQL fills default OVER frames (value 1058) without
+`FRAMEOPTION_NONDEFAULT` (0x1), so Phase 1 ranking windows were incorrectly
+rejected. Detection now requires the NONDEFAULT bit only. Evidence:
+
+- Parser/application regression: default
+  `OVER (PARTITION BY … ORDER BY …)` → `HasWindow` without `HasFrame`;
+  explicit `ROWS BETWEEN …` → `HasFrame`.
+- Public PG17 E2E:
+  `TestTrustedSDK_RowNumberAdmissible`,
+  `TestTrustedSDK_RankDenseRankAdmissible` pass against Docker PG17.
+
 ## Consequences
 
 The milestone favors a small useful set of reporting queries over a broad but

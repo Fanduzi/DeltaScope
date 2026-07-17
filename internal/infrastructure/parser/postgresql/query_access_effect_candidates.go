@@ -273,8 +273,20 @@ func recordFunctionCandidate(c *effectCollector, fc *pg_query.FuncCall, scope *s
 		HasDistinct:       fc.GetAggDistinct(),
 		HasAggOrder:       len(fc.GetAggOrder()) > 0,
 		HasWithinGroup:    fc.GetAggWithinGroup(),
-		HasFrame:          window != nil && window.GetFrameOptions() != 0,
+		HasFrame:          windowHasExplicitFrame(window),
 	})
+}
+
+// windowFrameOptionNonDefault is PostgreSQL FRAMEOPTION_NONDEFAULT (parsenodes.h).
+// Default OVER frames set RANGE/ROWS bits without this bit; only explicit frame
+// clauses set NONDEFAULT. Treat only NONDEFAULT as Phase-1 HasFrame.
+const windowFrameOptionNonDefault = 0x00001
+
+func windowHasExplicitFrame(window *pg_query.WindowDef) bool {
+	if window == nil {
+		return false
+	}
+	return window.GetFrameOptions()&windowFrameOptionNonDefault != 0
 }
 
 func recordCastCandidate(c *effectCollector, tc *pg_query.TypeCast) {

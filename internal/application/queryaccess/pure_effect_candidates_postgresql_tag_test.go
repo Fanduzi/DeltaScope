@@ -54,6 +54,20 @@ func TestAnalyzePostgreSQL_PureEffectCandidates_MapFactsWithoutPublicLeak(t *tes
 				if candidate.Arity != 0 || !candidate.HasWindow {
 					t.Fatalf("window candidate: %+v", candidate)
 				}
+				if candidate.HasFrame {
+					t.Fatalf("default OVER must not set HasFrame: %+v", candidate)
+				}
+			},
+		},
+		{
+			name: "window explicit frame",
+			sql:  "SELECT row_number() OVER (PARTITION BY dept ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM public.employees",
+			want: func(t *testing.T, candidates []EffectCandidate) {
+				t.Helper()
+				candidate := functionCandidate(t, candidates, "row_number")
+				if !candidate.HasWindow || !candidate.HasFrame {
+					t.Fatalf("explicit frame must set HasFrame: %+v", candidate)
+				}
 			},
 		},
 		{

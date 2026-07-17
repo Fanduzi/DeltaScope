@@ -275,12 +275,34 @@ func TestExtractQueryAccess_EffectCandidates_AggregateOrdinalAndWindows(t *testi
 				if candidates[0].Arity != 0 || !candidates[0].HasWindow {
 					t.Fatalf("window candidate: %+v", candidates[0])
 				}
+				if candidates[0].HasFrame {
+					t.Fatalf("default OVER must not set HasFrame: %+v", candidates[0])
+				}
 			},
 		},
 		{
 			name: "ranking windows",
 			sql:  "SELECT rank() OVER (ORDER BY id), dense_rank() OVER (ORDER BY id) FROM public.employees",
 			want: []string{"rank", "dense_rank"},
+			check: func(t *testing.T, candidates []EffectCandidate) {
+				t.Helper()
+				for _, c := range candidates {
+					if !c.HasWindow || c.HasFrame {
+						t.Fatalf("default ranking OVER must be HasWindow without HasFrame: %+v", c)
+					}
+				}
+			},
+		},
+		{
+			name: "row number explicit frame",
+			sql:  "SELECT row_number() OVER (PARTITION BY dept ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM public.employees",
+			want: []string{"row_number"},
+			check: func(t *testing.T, candidates []EffectCandidate) {
+				t.Helper()
+				if !candidates[0].HasWindow || !candidates[0].HasFrame {
+					t.Fatalf("explicit frame must set HasFrame: %+v", candidates[0])
+				}
+			},
 		},
 	}
 
