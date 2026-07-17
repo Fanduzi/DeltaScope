@@ -1,0 +1,30 @@
+name: select_row_number_window_projection
+dialect: mysql
+mode: projection_only
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: employees
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: employees
+      column: dept
+      usages: [window]
+    - table: employees
+      column: id
+      usages: [ordering]
+  outputs:
+    - name: ""
+      sources: [employees.dept, employees.id]
+  requirements:
+    - object: employees
+      privilege: read_table
+    - object: employees.dept
+      privilege: read_column
+    - object: employees.id
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [function_call, unknown_function_effect]

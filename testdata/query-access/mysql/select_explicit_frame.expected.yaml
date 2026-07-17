@@ -1,0 +1,30 @@
+name: select_explicit_frame
+dialect: mysql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: orders
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: orders
+      column: amount
+      usages: [projection]
+    - table: orders
+      column: dept
+      usages: [window]
+  outputs:
+    - name: ""
+      sources: [orders.amount, orders.dept]
+  requirements:
+    - object: orders
+      privilege: read_table
+    - object: orders.amount
+      privilege: read_column
+    - object: orders.dept
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [function_call, unknown_function_effect]

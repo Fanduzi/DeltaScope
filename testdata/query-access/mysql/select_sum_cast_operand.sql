@@ -1,0 +1,1 @@
+SELECT SUM(CAST(amount AS SIGNED)) FROM orders

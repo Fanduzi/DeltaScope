@@ -1,0 +1,1 @@
+SELECT GROUP_CONCAT(id ORDER BY id) FROM users

@@ -1,0 +1,25 @@
+name: select_named_window
+dialect: mysql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: employees
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: employees
+      column: dept
+      usages: [window]
+  outputs:
+    - name: ""
+      sources: []
+  requirements:
+    - object: employees
+      privilege: read_table
+    - object: employees.dept
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [function_call, unknown_function_effect]

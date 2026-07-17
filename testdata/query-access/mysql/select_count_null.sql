@@ -1,0 +1,1 @@
+SELECT COUNT(NULL) FROM users
