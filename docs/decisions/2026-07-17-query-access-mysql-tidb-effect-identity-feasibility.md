@@ -359,19 +359,20 @@ investigated facilities.
 
 ### Status Rationale
 
-This decision is `Proposed` (not `Accepted`) because the final independent
-read-only audit (Oracle security/design review and Momus diff/acceptance
-review) has not yet completed with no P1/P2 findings. Per the Acceptance
-Rule, the decision becomes `Accepted` only after executable live evidence,
-full audit, and no P1/P2 findings. The live Docker evidence above supports
-the per-dialect DEFER (MySQL and TiDB) disposition exactly as defined by
-the decision; the `Proposed` status reflects the pending audit, not a
-weakness in the evidence.
+This decision remains `Proposed` (not `Accepted`). Executable live evidence,
+the full automated gates, and the Oracle read-only security/design re-review
+are complete; Oracle reports none P1/P2 and approves the fixed diff. However,
+Momus could not perform the requested arbitrary diff/acceptance review because
+its configured plan-critic interface accepts only a `.omo/plans/*.md` path.
+Per the Acceptance Rule and the reviewer limitation below, the dual-review
+closure needed for `Accepted` cannot be claimed. The live Docker evidence
+supports the per-dialect DEFER (MySQL and TiDB) disposition exactly as defined
+by the decision; `Proposed` is the honest status while Momus approval is
+unavailable.
 
 Momus limitation: the Momus plan-critic agent is designed to review
 `.omo/plans/*.md` files, not arbitrary diffs. It rejected the diff/acceptance
 review request because no `.omo/plans/*.md` path was provided. Per the task
 rule "If a reviewer tool is unavailable, report the limitation honestly and
-do not claim its approval", Momus approval is NOT claimed. Oracle's
-read-only security/design review was completed; its P1/P2 findings were fixed
-(see the commit history for the fix diff).
+do not claim its approval", Momus approval is NOT claimed. Oracle's final
+read-only security/design review approved the fixed diff with none P1/P2.
