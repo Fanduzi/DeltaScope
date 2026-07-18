@@ -165,6 +165,17 @@ Stop a dialect before API or admission work if any of these is true:
 5. A required public path would open a connection implicitly or leak proof
    internals.
 
+KILL must be established by LIVE Docker probes plus version-scoped
+authoritative evidence. `DETERMINISTIC`, rejected `CREATE FUNCTION count`,
+schema qualification, parser spelling, and server documentation are supporting
+negative evidence only — they are NOT a KILL necessary condition and NOT an
+identity root. Do not claim KILL merely because selected catalog tables lack
+OIDs. If live probes plus version-scoped authoritative evidence cannot
+establish that the only available root is a forbidden name-based model,
+downgrade that dialect to DEFER, retain `unknown_function_effect`, and keep
+the decision `Proposed`. Keep KILL and `Accepted` only if the live evidence
+supports the stronger conclusion exactly as defined by the decision.
+
 The implementation response is to retain `unknown_function_effect`, document
 the evidence, and mark that dialect DEFER or KILL. It is never to add a wider
 syntax allowlist.

@@ -75,6 +75,12 @@ real MySQL 8.4 probes on a caller-owned `*sql.Conn`. Add executable tests where
 possible under `internal/infrastructure/metadata/mysql/`; test code must not
 become promotion code.
 
+The probes MUST be live Docker integration tests (build tag `integration`),
+NOT tautological static struct-literal self-assertions. The tests open real
+`*sql.Conn` connections, assert server-returned evidence, and FAIL if the
+Docker server returns materially different evidence. They do not self-assert
+hardcoded struct literals.
+
 Investigate and record:
 
 1. Actual server version/build, current database, SQL mode, and all discovered
@@ -89,6 +95,15 @@ Investigate and record:
    initial/final context can be read on one connection with a defensible
    consistent-read boundary.
 
+KILL predicate (corrected): KILL holds when live probes establish that the
+ONLY available identity root is a forbidden name-based model (name, parser
+token, `DETERMINISTIC`, schema, or vendor promise) OR required
+identity/dependency/context facts cannot be bound. `DETERMINISTIC`, rejected
+`CREATE FUNCTION count`, schema qualification, parser spelling, and server
+documentation are supporting negative evidence only — never a KILL necessary
+condition and never an identity root. Do not claim KILL merely because
+selected catalog tables lack OIDs.
+
 Write the MySQL ledger in the decision/design. Classify GO, DEFER, or KILL
 against the explicit kill criteria. If the result is not GO, commit the
 evidence and stop MySQL promotion tasks.
@@ -98,7 +113,8 @@ evidence and stop MySQL promotion tasks.
 Repeat Task 3 against the TiDB 8.5 Docker service. Do not copy the MySQL
 disposition. Record TiDB-specific server/version/compatibility facts,
 function-resolution behavior, stored/UDF/plugin boundaries, and any identity
-or type facility.
+or type facts. The probes must be independent live Docker integration tests
+that assert server-returned evidence.
 
 Add the TiDB ledger and independent GO/DEFER/KILL result. If it is not GO,
 commit evidence and stop TiDB promotion tasks.
