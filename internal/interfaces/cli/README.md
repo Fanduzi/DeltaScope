@@ -12,6 +12,7 @@ CLI adapter layer for the DeltaScope application.
 | audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout) into the shared metadata-preparation flow and MySQL-compatible client opener |
 | query_access.go | Implements the `query-access analyze` subcommand with SQL input loading, mode/dialect/schema flags, JSON output, and admission-based exit codes |
 | query_access_test.go | Verifies query-access command JSON output, exit codes, field names, mode handling, and no-audit-field-leakage |
+| query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary on the CLI surface: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from stdout/stderr/JSON |
 | rules.go | Implements `rules list` (with dialect/level/kind/category/search/format/limit filters) and `rules explain <rule-id>` on top of the shipped rule catalog, including text and JSON output |
 | config.go | Implements the `config` command group, including `lint` (semantic validation plus rule-level replacement-hazard warnings and `--strict`), `show-default`, and wiring for `status` |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template |
