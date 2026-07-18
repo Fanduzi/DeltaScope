@@ -95,12 +95,12 @@ func TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak(t *testing.T) {
 		},
 		{
 			name:    "mysql_count_with_marker_literal",
-			sql:     "SELECT COUNT(SECRET_LITERAL) FROM users",
+			sql:     "SELECT COUNT('SECRET_LITERAL') FROM users",
 			dialect: DialectMySQL,
 		},
 		{
 			name:    "tidb_count_with_marker_literal",
-			sql:     "SELECT COUNT(SECRET_LITERAL) FROM users",
+			sql:     "SELECT COUNT('SECRET_LITERAL') FROM users",
 			dialect: DialectTiDB,
 		},
 		{

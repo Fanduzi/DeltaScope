@@ -9,13 +9,13 @@
 //
 // pos: research assumption only; superseded for MySQL/TiDB by the live probes
 //
-//	in builtin_effect_identity_live_probes_test.go which established KILL
+//	in builtin_effect_identity_live_probes_test.go which established DEFER
 //
 // note: if this file changes, update this header, the module README.md, and
 //
 //	the decision record's evidence section. See
 //	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
-//	for the live-evidence-backed KILL disposition that supersedes this static
+//	for the live-evidence-backed DEFER disposition that supersedes this static
 //	Phase-1 deferral.
 package mysqlmeta
 
@@ -25,13 +25,13 @@ import "testing"
 // assumption. It does not prove live behavior — for live evidence see
 // builtin_effect_identity_live_probes_test.go. The static deferral is retained
 // only to document the Phase-1 reasoning path; the live probes established the
-// actual KILL disposition for MySQL 8.4 and TiDB 8.5.
+// actual DEFER disposition for MySQL 8.4 and TiDB 8.5.
 func TestPureEffectProofDeferDisposition(t *testing.T) {
 	t.Parallel()
 	// Given: neither dialect has an offline OID-equivalent identity root or a
 	// caller-session proof surface that can distinguish builtins from user code.
 	// This was the Phase-1 static assumption. Live Docker probes later
-	// confirmed the OID-equivalent absence and established the stronger KILL
+	// confirmed the OID-equivalent absence and established the stronger DEFER
 	// disposition (see builtin_effect_identity_live_probes_test.go).
 	cases := map[string]pureEffectFeasibilityEvidence{
 		"mysql": {
@@ -58,7 +58,7 @@ func TestPureEffectProofDeferDisposition(t *testing.T) {
 	for dialect, evidence := range cases {
 		dialect := dialect
 		evidence := evidence
-		t.Run(dialect+" static phase-1 deferral (superseded by live KILL)", func(t *testing.T) {
+		t.Run(dialect+" static phase-1 deferral (superseded by live DEFER)", func(t *testing.T) {
 			t.Parallel()
 			// When: the Phase-1 feasibility assumption is evaluated.
 			// Then: name or determinism allowlists cannot promote functions.

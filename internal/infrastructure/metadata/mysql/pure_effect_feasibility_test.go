@@ -11,13 +11,13 @@
 //
 // pos: research assumption only; superseded for MySQL/TiDB by the live probes
 //
-//	in builtin_effect_identity_live_probes_test.go which established KILL
+//	in builtin_effect_identity_live_probes_test.go which established DEFER
 //
 // note: if this file changes, update this header, the module README.md, and
 //
 //	the decision record's evidence section. See
 //	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
-//	for the live-evidence-backed KILL disposition that supersedes this static
+//	for the live-evidence-backed DEFER disposition that supersedes this static
 //	Phase-1 assumption.
 package mysqlmeta
 
@@ -27,7 +27,7 @@ import "testing"
 // pure-effect feasibility. It is NOT live Docker evidence. The fields encode
 // the Phase-1 hypothesis that motivated the original DEFER disposition; the
 // live Docker probes in builtin_effect_identity_live_probes_test.go later
-// established the actual MySQL 8.4 / TiDB 8.5 behavior and the KILL
+// established the actual MySQL 8.4 / TiDB 8.5 behavior and the DEFER
 // disposition.
 type pureEffectFeasibilityEvidence struct {
 	StoredFunctionCanBeDeterministic  bool

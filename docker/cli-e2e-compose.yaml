@@ -35,4 +35,17 @@ services:
   mysql-client:
     image: mysql:8.4
     container_name: deltascope-cli-e2e-mysql-client
-    entrypoint: ["sleep", "infinity"]
+    depends_on:
+      tidb:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - mysql --protocol=tcp -h tidb -P 4000 -uroot < /docker-entrypoint-initdb.d/tidb-init.sql && exec sleep infinity
+    volumes:
+      - ./tidb/init.sql:/docker-entrypoint-initdb.d/tidb-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb -P 4000 -uroot -Nse \"SELECT CONCAT((SELECT COUNT(*) FROM app.users), ':', (SELECT COUNT(*) FROM app.orders), ':', (SELECT COUNT(*) FROM app.accounts), ':', (SELECT COUNT(*) FROM archive.users))\" | grep -qx '2:2:2:1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

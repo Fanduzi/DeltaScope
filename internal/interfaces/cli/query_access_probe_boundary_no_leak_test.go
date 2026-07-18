@@ -76,8 +76,8 @@ func TestQueryAccess_MySQLTiDBProbeBoundary_NoLeak(t *testing.T) {
 	}{
 		{name: "mysql_udf_marker_function", sql: "SELECT my_secret_udf(id) FROM users", dialect: "mysql"},
 		{name: "tidb_udf_marker_function", sql: "SELECT my_secret_udf(id) FROM users", dialect: "tidb"},
-		{name: "mysql_count_with_marker_literal", sql: "SELECT COUNT(SECRET_LITERAL) FROM users", dialect: "mysql"},
-		{name: "tidb_count_with_marker_literal", sql: "SELECT COUNT(SECRET_LITERAL) FROM users", dialect: "tidb"},
+		{name: "mysql_count_with_marker_literal", sql: "SELECT COUNT('SECRET_LITERAL') FROM users", dialect: "mysql"},
+		{name: "tidb_count_with_marker_literal", sql: "SELECT COUNT('SECRET_LITERAL') FROM users", dialect: "tidb"},
 		{name: "mysql_qualified_marker_function", sql: "SELECT app.my_secret_udf(id) FROM users", dialect: "mysql"},
 		{name: "tidb_qualified_marker_function", sql: "SELECT app.my_secret_udf(id) FROM users", dialect: "tidb"},
 	}
@@ -97,8 +97,8 @@ func TestQueryAccess_MySQLTiDBProbeBoundary_NoLeak(t *testing.T) {
 
 			// Function-bearing SQL must yield indeterminate admission → exit
 			// code 2 (indeterminate), not 0 (admissible) or 1 (rejected).
-			if exitCode == 0 {
-				t.Fatalf("%s: expected non-zero exit for function-bearing SQL, got 0 (admissible leak): %s", tc.name, stdout.String())
+			if exitCode != 2 {
+				t.Fatalf("%s: expected exit 2 for indeterminate function-bearing SQL, got %d: %s", tc.name, exitCode, stdout.String())
 			}
 
 			stdoutStr := stdout.String()

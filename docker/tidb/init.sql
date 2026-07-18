@@ -3,7 +3,7 @@ CREATE DATABASE IF NOT EXISTS archive;
 
 USE app;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL DEFAULT '',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -11,9 +11,10 @@ CREATE TABLE users (
   PRIMARY KEY (id)
 ) COMMENT='app users';
 
-INSERT INTO users (name) VALUES ('delta'), ('scope');
+INSERT INTO users (id, name) VALUES (1, 'delta'), (2, 'scope')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id BIGINT UNSIGNED NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -21,9 +22,10 @@ CREATE TABLE orders (
   PRIMARY KEY (id)
 ) COMMENT='app orders';
 
-INSERT INTO orders (user_id) VALUES (1), (2);
+INSERT INTO orders (id, user_id) VALUES (1, 1), (2, 2)
+ON DUPLICATE KEY UPDATE user_id = VALUES(user_id);
 
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS accounts (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   email VARCHAR(255) NOT NULL DEFAULT '',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -31,13 +33,14 @@ CREATE TABLE accounts (
   PRIMARY KEY (id)
 ) COMMENT='app accounts';
 
-INSERT INTO accounts (email) VALUES ('a@example.com'), ('b@example.com');
+INSERT INTO accounts (id, email) VALUES (1, 'a@example.com'), (2, 'b@example.com')
+ON DUPLICATE KEY UPDATE email = VALUES(email);
 
 ALTER TABLE accounts AUTO_INCREMENT = 10;
 
 USE archive;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL DEFAULT '',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -45,4 +48,5 @@ CREATE TABLE users (
   PRIMARY KEY (id)
 ) COMMENT='archive users';
 
-INSERT INTO users (name) VALUES ('old-delta');
+INSERT INTO users (id, name) VALUES (1, 'old-delta')
+ON DUPLICATE KEY UPDATE name = VALUES(name);

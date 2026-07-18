@@ -81,8 +81,8 @@ func TestHandlerQueryAccess_MySQLTiDBProbeBoundary_NoLeak(t *testing.T) {
 	}{
 		{name: "mysql_udf_marker_function", sql: "SELECT my_secret_udf(id) FROM users", dialect: "mysql"},
 		{name: "tidb_udf_marker_function", sql: "SELECT my_secret_udf(id) FROM users", dialect: "tidb"},
-		{name: "mysql_count_with_marker_literal", sql: "SELECT COUNT(SECRET_LITERAL) FROM users", dialect: "mysql"},
-		{name: "tidb_count_with_marker_literal", sql: "SELECT COUNT(SECRET_LITERAL) FROM users", dialect: "tidb"},
+		{name: "mysql_count_with_marker_literal", sql: "SELECT COUNT('SECRET_LITERAL') FROM users", dialect: "mysql"},
+		{name: "tidb_count_with_marker_literal", sql: "SELECT COUNT('SECRET_LITERAL') FROM users", dialect: "tidb"},
 		{name: "mysql_qualified_marker_function", sql: "SELECT app.my_secret_udf(id) FROM users", dialect: "mysql"},
 		{name: "tidb_qualified_marker_function", sql: "SELECT app.my_secret_udf(id) FROM users", dialect: "tidb"},
 	}
