@@ -12,6 +12,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | handler_test.go | Verifies HTTP request binding, error mapping, and JSON response shape |
 | query_access.go | Handles HTTP query access analysis requests, validates input, calls the public query access API, and returns JSON results |
 | query_access_test.go | Verifies HTTP query access request binding, response shape, default values, error handling, and capability discovery |
+| query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary on the HTTP surface: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from the response body (including the error boundary) |
 | rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata |
 | server.go | Assembles the HTTP handler and long-running server wiring |
 
