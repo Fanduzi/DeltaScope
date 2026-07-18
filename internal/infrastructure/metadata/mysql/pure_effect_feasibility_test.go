@@ -1,11 +1,34 @@
-// Package mysqlmeta records the MySQL/TiDB pure-effect proof kill criterion.
-// input: live feasibility probe conclusions for MySQL 8.0 and TiDB
-// output: a test-locked defer disposition without promotion code
-// pos: research evidence only; shared parser compatibility is not proof-domain compatibility
+// Package mysqlmeta records a STATIC Phase-1 pure-effect feasibility
+// assumption for MySQL/TiDB. This file does NOT open a Docker connection and
+// does NOT claim live evidence. The live Docker probes that supersede this
+// static assumption live in builtin_effect_identity_live_probes_test.go
+// (build tag: integration).
+//
+// input: static Phase-1 assumption (no live server)
+// output: a test-locked static assumption that name/determinism allowlists
+//
+//	cannot promote functions, pending live evidence
+//
+// pos: research assumption only; superseded for MySQL/TiDB by the live probes
+//
+//	in builtin_effect_identity_live_probes_test.go which established KILL
+//
+// note: if this file changes, update this header, the module README.md, and
+//
+//	the decision record's evidence section. See
+//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
+//	for the live-evidence-backed KILL disposition that supersedes this static
+//	Phase-1 assumption.
 package mysqlmeta
 
 import "testing"
 
+// pureEffectFeasibilityEvidence is a STATIC assumption about Phase-1
+// pure-effect feasibility. It is NOT live Docker evidence. The fields encode
+// the Phase-1 hypothesis that motivated the original DEFER disposition; the
+// live Docker probes in builtin_effect_identity_live_probes_test.go later
+// established the actual MySQL 8.4 / TiDB 8.5 behavior and the KILL
+// disposition.
 type pureEffectFeasibilityEvidence struct {
 	StoredFunctionCanBeDeterministic  bool
 	DeterministicFlagIsTrustRoot      bool
@@ -15,10 +38,15 @@ type pureEffectFeasibilityEvidence struct {
 	SessionBoundProofDesigned         bool
 }
 
+// TestPureEffectProofFeasibility locks the STATIC Phase-1 assumption. It does
+// not prove live behavior — for live evidence see
+// builtin_effect_identity_live_probes_test.go. The static assumption is
+// retained only to document the Phase-1 reasoning path; the live probes are
+// the authoritative evidence.
 func TestPureEffectProofFeasibility(t *testing.T) {
-	// The live MySQL 8.0.45 probe observed CREATE FUNCTION my_sum with
-	// DETERMINISTIC, while CREATE FUNCTION count(...) failed. Neither result
-	// supplies a safe identity root for name-based promotion.
+	t.Parallel()
+	// MySQL static assumption: stored functions can declare DETERMINISTIC
+	// (confirmed live in TestMySQL84_LiveProbes_StoredFunctionDeterministic).
 	mysql := pureEffectFeasibilityEvidence{
 		StoredFunctionCanBeDeterministic:  true,
 		DeterministicFlagIsTrustRoot:      false,
@@ -28,9 +56,11 @@ func TestPureEffectProofFeasibility(t *testing.T) {
 		SessionBoundProofDesigned:         false,
 	}
 
-	// TiDB is a separate proof domain even though it shares parser-adjacent
-	// infrastructure with MySQL. No version-scoped, shadowing-safe offline
-	// builtin identity was established by this gate.
+	// TiDB static assumption: stored functions can declare DETERMINISTIC.
+	// NOTE: This static assumption is SUPERSEDED by live evidence — TiDB 8.5
+	// does NOT support CREATE FUNCTION at all (see
+	// TestTiDB85_LiveProbes_StoredFunctionRejected). The field is retained as
+	// documented Phase-1 reasoning, not as a live fact.
 	tidb := pureEffectFeasibilityEvidence{
 		StoredFunctionCanBeDeterministic:  true,
 		DeterministicFlagIsTrustRoot:      false,
@@ -43,21 +73,24 @@ func TestPureEffectProofFeasibility(t *testing.T) {
 		"mysql": mysql,
 		"tidb":  tidb,
 	} {
-		t.Run(dialect+" remains deferred", func(t *testing.T) {
+		dialect := dialect
+		evidence := evidence
+		t.Run(dialect+" static phase-1 assumption (superseded by live probes)", func(t *testing.T) {
+			t.Parallel()
 			if !evidence.StoredFunctionCanBeDeterministic {
-				t.Fatal("stored functions must be able to declare DETERMINISTIC")
+				t.Fatal("static assumption: stored functions must be able to declare DETERMINISTIC")
 			}
 			if evidence.DeterministicFlagIsTrustRoot {
-				t.Fatal("deterministic stored-function metadata must not be a trust root")
+				t.Fatal("static assumption: DETERMINISTIC must not be a trust root")
 			}
 			if !evidence.BuiltinLikeCreateFailed && !evidence.BuiltinLikeNameCanBeAmbiguous {
-				t.Fatal("builtin-like function names must fail creation or retain ambiguity risk")
+				t.Fatal("static assumption: builtin-like names must fail creation or retain ambiguity risk")
 			}
 			if evidence.OfflineBuiltinOIDBindingAvailable {
-				t.Fatal("no offline OID-equivalent builtin binding was established")
+				t.Fatal("static assumption: no offline OID-equivalent builtin binding was established")
 			}
 			if evidence.SessionBoundProofDesigned {
-				t.Fatal("a new caller-session proof surface is outside this milestone")
+				t.Fatal("static assumption: a new caller-session proof surface is outside this milestone")
 			}
 		})
 	}

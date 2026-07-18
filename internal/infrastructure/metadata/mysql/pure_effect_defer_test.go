@@ -1,14 +1,38 @@
-// Package mysqlmeta locks the MySQL/TiDB pure-effect deferral disposition.
-// input: dialect feasibility evidence for the Phase 1 proof boundary
+// Package mysqlmeta locks a STATIC Phase-1 pure-effect deferral assumption
+// for MySQL/TiDB. This file does NOT open a Docker connection and does NOT
+// claim live evidence. The live Docker probes that supersede this static
+// deferral assumption live in builtin_effect_identity_live_probes_test.go
+// (build tag: integration).
+//
+// input: static Phase-1 deferral assumption (no live server)
 // output: explicit deferred status until a separately audited proof model exists
-// pos: research evidence only; no production promotion
+//
+// pos: research assumption only; superseded for MySQL/TiDB by the live probes
+//
+//	in builtin_effect_identity_live_probes_test.go which established KILL
+//
+// note: if this file changes, update this header, the module README.md, and
+//
+//	the decision record's evidence section. See
+//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
+//	for the live-evidence-backed KILL disposition that supersedes this static
+//	Phase-1 deferral.
 package mysqlmeta
 
 import "testing"
 
+// TestPureEffectProofDeferDisposition locks the STATIC Phase-1 deferral
+// assumption. It does not prove live behavior — for live evidence see
+// builtin_effect_identity_live_probes_test.go. The static deferral is retained
+// only to document the Phase-1 reasoning path; the live probes established the
+// actual KILL disposition for MySQL 8.4 and TiDB 8.5.
 func TestPureEffectProofDeferDisposition(t *testing.T) {
+	t.Parallel()
 	// Given: neither dialect has an offline OID-equivalent identity root or a
 	// caller-session proof surface that can distinguish builtins from user code.
+	// This was the Phase-1 static assumption. Live Docker probes later
+	// confirmed the OID-equivalent absence and established the stronger KILL
+	// disposition (see builtin_effect_identity_live_probes_test.go).
 	cases := map[string]pureEffectFeasibilityEvidence{
 		"mysql": {
 			StoredFunctionCanBeDeterministic:  true,
@@ -18,6 +42,10 @@ func TestPureEffectProofDeferDisposition(t *testing.T) {
 			OfflineBuiltinOIDBindingAvailable: false,
 			SessionBoundProofDesigned:         false,
 		},
+		// TiDB static assumption: stored functions can declare DETERMINISTIC.
+		// NOTE: SUPERSEDED by live evidence — TiDB 8.5 does NOT support CREATE
+		// FUNCTION at all (see TestTiDB85_LiveProbes_StoredFunctionRejected).
+		// Retained as documented Phase-1 reasoning, not as a live fact.
 		"tidb": {
 			StoredFunctionCanBeDeterministic:  true,
 			DeterministicFlagIsTrustRoot:      false,
@@ -28,23 +56,26 @@ func TestPureEffectProofDeferDisposition(t *testing.T) {
 	}
 
 	for dialect, evidence := range cases {
-		t.Run(dialect, func(t *testing.T) {
-			// When: the Phase 1 feasibility evidence is evaluated.
+		dialect := dialect
+		evidence := evidence
+		t.Run(dialect+" static phase-1 deferral (superseded by live KILL)", func(t *testing.T) {
+			t.Parallel()
+			// When: the Phase-1 feasibility assumption is evaluated.
 			// Then: name or determinism allowlists cannot promote functions.
 			if !evidence.StoredFunctionCanBeDeterministic {
-				t.Fatal("stored functions must be able to declare DETERMINISTIC")
+				t.Fatal("static assumption: stored functions must be able to declare DETERMINISTIC")
 			}
 			if evidence.DeterministicFlagIsTrustRoot {
-				t.Fatal("DETERMINISTIC must not be a trust root")
+				t.Fatal("static assumption: DETERMINISTIC must not be a trust root")
 			}
 			if !evidence.BuiltinLikeCreateFailed && !evidence.BuiltinLikeNameCanBeAmbiguous {
-				t.Fatal("builtin-like names must retain an ambiguity or creation boundary")
+				t.Fatal("static assumption: builtin-like names must retain an ambiguity or creation boundary")
 			}
 			if evidence.OfflineBuiltinOIDBindingAvailable {
-				t.Fatal("offline OID-equivalent identity must remain unavailable")
+				t.Fatal("static assumption: offline OID-equivalent identity must remain unavailable")
 			}
 			if evidence.SessionBoundProofDesigned {
-				t.Fatal("session-bound proof is outside this deferred disposition")
+				t.Fatal("static assumption: session-bound proof is outside this deferred disposition")
 			}
 		})
 	}
