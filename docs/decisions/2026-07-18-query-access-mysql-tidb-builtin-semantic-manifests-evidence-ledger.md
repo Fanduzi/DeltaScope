@@ -4,7 +4,7 @@
 - Status: Accepted
 - Decision: [2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 - Baseline: `main@9491c5f`
-- HEAD: `9c26a15`
+- HEAD: `1758659`
 
 ## Purpose
 
@@ -476,6 +476,10 @@ have 6 aggregate entries and 3 window entries. TiDB 8.5 has 6 aggregate
 entries and 3 window entries. No profile inherits entries from another
 dialect or version. The `TestProfileBoundaryRejectsCrossDialectPromotion`
 test verifies a MySQL profile cannot affect TiDB and vice versa.
+
+Total shipped manifest rows: 33 (24 aggregate + 9 window). All 33 are
+supported. MySQL 5.7 ranking windows are not shipped manifest rows;
+they are documented as deferred in the per-entry section above.
 
 ## Test Coverage Matrix
 
