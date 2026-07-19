@@ -222,29 +222,53 @@ func assertBuiltinSemanticWindow(t *testing.T, ctx context.Context, conn *sql.Co
 		t.Logf("%s ranking-window evidence deferred: exact profile is MySQL 5.7, which has no ranking-window support", profile.name)
 		return
 	}
-	rows, err := conn.QueryContext(ctx, "SELECT id, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount DESC, id) FROM app.builtin_semantic_facts ORDER BY id")
-	if err != nil {
-		t.Fatalf("%s canonical ranking-window probe failed (driver error suppressed)", profile.name)
+	rankingProbes := []struct {
+		name   string
+		query  string
+		expect [][2]int64
+	}{
+		{
+			name:   "ROW_NUMBER",
+			query:  "SELECT id, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount DESC, id) FROM app.builtin_semantic_facts ORDER BY id",
+			expect: [][2]int64{{1, 1}, {2, 2}, {3, 1}, {4, 2}},
+		},
+		{
+			name:   "RANK",
+			query:  "SELECT id, RANK() OVER (PARTITION BY dept ORDER BY amount DESC, id) FROM app.builtin_semantic_facts ORDER BY id",
+			expect: [][2]int64{{1, 1}, {2, 2}, {3, 1}, {4, 2}},
+		},
+		{
+			name:   "DENSE_RANK",
+			query:  "SELECT id, DENSE_RANK() OVER (PARTITION BY dept ORDER BY amount DESC, id) FROM app.builtin_semantic_facts ORDER BY id",
+			expect: [][2]int64{{1, 1}, {2, 2}, {3, 1}, {4, 2}},
+		},
 	}
-	defer rows.Close()
-	want := [][2]int64{{1, 1}, {2, 2}, {3, 1}, {4, 2}}
-	for rowIndex, expected := range want {
-		if !rows.Next() {
-			t.Fatalf("%s ranking-window probe returned too few rows", profile.name)
+	for _, probe := range rankingProbes {
+		rows, err := conn.QueryContext(ctx, probe.query)
+		if err != nil {
+			t.Fatalf("%s canonical %s ranking-window probe failed (driver error suppressed)", profile.name, probe.name)
 		}
-		var id, rowNumber int64
-		if err := rows.Scan(&id, &rowNumber); err != nil {
-			t.Fatalf("%s ranking-window result scan failed (driver error suppressed)", profile.name)
-		}
-		if id != expected[0] || rowNumber != expected[1] {
-			t.Fatalf("%s ranking-window result row %d did not match the independent fixture expectation", profile.name, rowIndex)
-		}
+		func() {
+			defer rows.Close()
+			for rowIndex, expected := range probe.expect {
+				if !rows.Next() {
+					t.Fatalf("%s %s ranking-window probe returned too few rows", profile.name, probe.name)
+				}
+				var id, rankValue int64
+				if err := rows.Scan(&id, &rankValue); err != nil {
+					t.Fatalf("%s %s ranking-window result scan failed (driver error suppressed)", profile.name, probe.name)
+				}
+				if id != expected[0] || rankValue != expected[1] {
+					t.Fatalf("%s %s ranking-window result row %d did not match the independent fixture expectation", profile.name, probe.name, rowIndex)
+				}
+			}
+			if rows.Next() {
+				t.Fatalf("%s %s ranking-window probe returned too many rows", profile.name, probe.name)
+			}
+			if err := rows.Err(); err != nil {
+				t.Fatalf("%s %s ranking-window iteration failed (driver error suppressed)", profile.name, probe.name)
+			}
+		}()
+		t.Logf("%s canonical %s ranking-window evidence passed", profile.name, probe.name)
 	}
-	if rows.Next() {
-		t.Fatalf("%s ranking-window probe returned too many rows", profile.name)
-	}
-	if err := rows.Err(); err != nil {
-		t.Fatalf("%s ranking-window iteration failed (driver error suppressed)", profile.name)
-	}
-	t.Logf("%s canonical ranking-window evidence passed", profile.name)
 }
