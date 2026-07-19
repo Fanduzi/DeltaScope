@@ -4,7 +4,7 @@
 - Status: Accepted
 - Decision: [2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 - Baseline: `main@9491c5f`
-- HEAD: `1758659`
+- Branch: `query-access-mysql-tidb-builtin-semantic-manifest` (HEAD advances with each commit; see `git log` for the current tip)
 
 ## Purpose
 
