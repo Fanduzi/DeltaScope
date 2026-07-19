@@ -33,6 +33,20 @@ Admission is derived from read classification for all dialects.
 
 Both modes require every permission-bearing relation (`read_table`).
 
+## Analysis Profiles
+
+`QueryAccessRequest.AnalysisProfile` is optional and closed. Valid values are
+the empty value (current behavior), `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and
+`tidb-8.5`. A MySQL profile requires the MySQL dialect; `tidb-8.5` requires
+TiDB. Unknown values return `ErrInvalidQueryAccessAnalysisProfile`; a dialect
+mismatch returns `ErrQueryAccessAnalysisProfileDialectMismatch`.
+
+Profiles are compatibility targets, not server identity or semantic proof.
+Default SDK, CLI, and HTTP analysis remains offline. The production semantic
+registry is currently empty pending profile-specific evidence, so profiled
+function-bearing MySQL/TiDB queries remain `indeterminate`. The profile is not
+included in result JSON.
+
 ### Inference Risk
 
 Projection-only mode emits a `projection_only_inference_risk` warning when non-projected columns exist. This warns the caller that a user authorized only for projected columns could still infer data through WHERE, JOIN, or ORDER BY clauses. Use projection-only mode only when the authorization layer accepts this trade-off.
@@ -163,10 +177,33 @@ Query access analysis is available through the HTTP API:
 ```bash
 curl -X POST http://localhost:8083/v1/query-access/analyze \
   -H "Content-Type: application/json" \
-  -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict"}'
+  -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict","profile":"mysql-8.4"}'
 ```
 
-The endpoint returns the same JSON structure as the SDK. Invalid mode returns `400` with `invalid_mode` error code.
+The endpoint returns the same JSON structure as the SDK. Invalid mode returns
+`400` with `invalid_mode`; invalid profiles return bounded `400` errors without
+echoing the profile or SQL.
+
+## MySQL/TiDB Session Boundary
+
+The explicit SDK session API accepts a caller-owned `*sql.Conn`:
+
+```go
+session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
+    SQL:             "SELECT id FROM app.users",
+    Dialect:         deltascope.DialectMySQL,
+    AnalysisProfile: deltascope.QueryAccessAnalysisProfileMySQL84,
+    DefaultSchema:   "app",
+})
+```
+
+The session does not own or expose the connection. It constructs relation
+metadata resolution from that same connection, rejects an external
+`SchemaResolver`, and is the only SDK boundary that can construct the private
+semantic capability. The production registry is currently empty, so it does
+not yet promote function-bearing MySQL/TiDB queries or expose catalog,
+manifest, connection, or credential details.
 
 ## MCP Deferral
 
@@ -221,8 +258,8 @@ allowlist.
 |---|---|---|
 | PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
 | PostgreSQL | Trusted SDK session only | `admissible` for proven `count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` with complete requirements |
-| MySQL | all | `indeterminate` with `unknown_function_effect` (deferred) |
-| TiDB | all | `indeterminate` with `unknown_function_effect` (deferred) |
+| MySQL | default SDK/CLI/HTTP and current session registry | `indeterminate` with `unknown_function_effect` (production entries deferred) |
+| TiDB | default SDK/CLI/HTTP and current session registry | `indeterminate` with `unknown_function_effect` (production entries deferred) |
 
 The trusted PostgreSQL subset requires exact catalog identity, session and
 database context, complete strict-mode dependencies, and a PG17 manifest proof.

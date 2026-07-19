@@ -33,6 +33,17 @@
 
 两种模式都要求每个权限承载关系（`read_table`）。
 
+## 分析配置
+
+`QueryAccessRequest.AnalysisProfile` 是可选的闭合集合。有效值包括空值（保留当前行为）、
+`mysql-5.7`、`mysql-8.0`、`mysql-8.4` 和 `tidb-8.5`。MySQL 配置只能与 MySQL 方言搭配，
+`tidb-8.5` 只能与 TiDB 搭配。未知值返回 `ErrInvalidQueryAccessAnalysisProfile`；方言不匹配返回
+`ErrQueryAccessAnalysisProfileDialectMismatch`。
+
+配置是兼容性目标，不是服务器身份或语义证明。默认 SDK、CLI 和 HTTP 分析保持离线。当前生产语义
+registry 在 profile 证据被接受前保持为空，因此带配置的 MySQL/TiDB 函数查询仍为 `indeterminate`。
+配置不会出现在结果 JSON 中。
+
 ### 推理风险
 
 当存在非投影列时，projection_only 模式会发出 `projection_only_inference_risk` 警告。这警告调用者：仅被授权投影列的用户仍可通过 WHERE、JOIN 或 ORDER BY 子句推断数据。仅在授权层接受此权衡时使用 projection_only 模式。
@@ -163,10 +174,29 @@ deltascope query-access analyze --file ./query.sql --dialect postgresql --mode p
 ```bash
 curl -X POST http://localhost:8083/v1/query-access/analyze \
   -H "Content-Type: application/json" \
-  -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict"}'
+  -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict","profile":"mysql-8.4"}'
 ```
 
-该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码。
+该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，
+不会回显配置或 SQL。
+
+## MySQL/TiDB 会话边界
+
+显式 SDK 会话 API 接受调用者拥有的 `*sql.Conn`：
+
+```go
+session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
+    SQL:             "SELECT id FROM app.users",
+    Dialect:         deltascope.DialectMySQL,
+    AnalysisProfile: deltascope.QueryAccessAnalysisProfileMySQL84,
+    DefaultSchema:   "app",
+})
+```
+
+会话不拥有或暴露连接。它只从同一连接构造关系元数据解析，拒绝外部 `SchemaResolver`，并且是唯一可以构造私有
+语义能力的 SDK 边界。当前生产 registry 为空，因此尚不会提升带函数的 MySQL/TiDB 查询，也不会暴露目录、manifest、
+连接或凭据细节。
 
 ## MCP 延迟
 
@@ -220,8 +250,8 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 |---|---|---|
 | PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
 | PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
-| MySQL | 全部 | `indeterminate`，原因是 `unknown_function_effect`（已延迟） |
-| TiDB | 全部 | `indeterminate`，原因是 `unknown_function_effect`（已延迟） |
+| MySQL | 默认 SDK/CLI/HTTP 及当前 session registry | `indeterminate`，原因是 `unknown_function_effect`（生产条目已延迟） |
+| TiDB | 默认 SDK/CLI/HTTP 及当前 session registry | `indeterminate`，原因是 `unknown_function_effect`（生产条目已延迟） |
 
 可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的
 strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、

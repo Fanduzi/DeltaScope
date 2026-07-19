@@ -31,6 +31,11 @@ facts, complete candidate closure, and complete strict dependencies.
    `skills-lock.json`.
 8. The new decision record remains `Proposed` until the final audit proves every
    claimed profile entry with executable Docker tests and public-surface coverage.
+9. Default SDK/CLI/HTTP profile analysis stays offline and cannot promote a
+   function query without complete physical metadata. If promotion is shipped,
+   it is available only through an explicit caller-owned MySQL/TiDB `*sql.Conn`
+   SDK session that constructs its resolver internally and rejects external
+   resolver injection; the profile remains a static compatibility target.
 
 ## Acceptance Boundary
 
@@ -222,15 +227,18 @@ Required negative tests per supported profile:
 - `DISTINCT`, aggregate-local `ORDER BY`, `FILTER`, wildcard/metadata gap;
 - mixed query containing one allowed and one unknown candidate.
 
-Every positive test must assert `read_only + admissible`, exact physical
-requirements, and no internal proof data in SDK JSON/CLI/HTTP output. Every
-negative test must assert `indeterminate` and a bounded reason, not just lack of
-admission.
+Every positive session test must assert `read_only + admissible` and exact
+physical requirements through the explicit same-connection SDK session. The
+corresponding offline SDK/CLI/HTTP tests must assert `indeterminate` when
+physical metadata is unavailable, plus no internal proof data in public output.
+Every negative test on both paths must assert `indeterminate` and a bounded
+reason, not just lack of admission.
 
 Verification:
 
 - Profile-specific Docker E2E against each claimed MySQL image.
-- SDK, CLI, and HTTP parity for exact profile input.
+- Offline SDK, CLI, and HTTP parity for exact profile input, plus session-only
+  SDK promotion coverage.
 - `make query-access-corpus-gates`.
 
 Commit: `feat: admit proven MySQL aggregate effects`.
@@ -242,8 +250,9 @@ Use Task 2 evidence to decide MySQL 8.0 and 8.4 independently. Add only direct
 columns if documentation and parser facts prove them. MySQL 5.7 has no window
 entry.
 
-Positive tests must assert exact partition `window` and order `ordering` strict
-usages. Negative tests must cover named windows, explicit/default frames where
+Positive session tests must assert exact partition `window` and order `ordering`
+strict usages. Offline SDK/CLI/HTTP tests remain indeterminate without physical
+metadata. Negative tests must cover named windows, explicit/default frames where
 the parser cannot prove the phase-1 predicate, `FILTER`, `DISTINCT`, nested
 expressions, missing order dependencies, and any unproven function in the query.
 
@@ -351,3 +360,57 @@ Final required gates:
 Before each commit, run `gitnexus_detect_changes`. Before final reporting, refresh
 the GitNexus index, state the exact branch/base/HEAD, distinguish task and
 milestone diffs, and list any profile rows still deferred.
+
+## Executable QA Matrix Added After Review
+
+The following commands and binary pass criteria make the task list executable.
+Required profile tests fail when their service is unavailable; they do not skip
+claimed evidence.
+
+### Docker evidence
+
+- Compose file: `docker/query-access-builtin-compose.yaml`.
+- Start: `docker compose -f docker/query-access-builtin-compose.yaml up -d --wait mysql57 mysql80 mysql84 tidb85`.
+- Stop/cleanup: `docker compose -f docker/query-access-builtin-compose.yaml down -v --remove-orphans`.
+- Probe command: `go test -tags integration ./internal/infrastructure/metadata/mysql -run 'TestBuiltinSemantic(57|80|84|TiDB85)_Live' -count=1 -v`.
+- Pass criteria: every selected service returns the exact profile version prefix,
+  canonical positive calls succeed, collision/qualification/quote/spacing and
+  unsupported-form probes return the expected bounded outcome, and the test
+  process exits 0 without `SKIP` output.
+
+### Parser closure
+
+- Command: `go test ./internal/infrastructure/parser/tidb -run 'TestQueryAccess(EffectCandidates|CandidateClosure|NativeForm|UnsupportedTraversal)' -count=1 -v`.
+- Pass criteria: candidates are ordered, nested, and complete across projection,
+  WHERE, HAVING, GROUP BY, ORDER BY, LIMIT/OFFSET, JOIN, CTE, derived tables,
+  subqueries, set operations, aggregate modifiers, and windows; any unsupported
+  location emits an explicit fail-closed marker; canonical, qualified, quoted,
+  spaced, commented, and ambiguous forms never collapse to a name-only fact.
+
+### Gateway and offline boundary
+
+- Commands: `go test ./internal/application/queryaccess -run 'Test(Builtin|QueryAccessProfile|Offline|StrictDependency|Manifest)' -count=1 -v` and `go test ./pkg/deltascope -run 'Test(AnalyzeQueryAccessProfile|Offline|NoLeak)' -count=1 -v`.
+- Pass criteria: empty profile preserves `unknown_function_effect`; invalid or
+  mismatched profiles return bounded errors; default profile requests never open
+  a connection and remain indeterminate when physical metadata is absent; only
+  complete candidate closure plus complete strict physical requirements can
+  promote; manifest/source mutation cannot alter admission.
+
+### Cross-surface and session-only promotion
+
+- Commands: `go test ./internal/interfaces/cli -run 'TestQueryAccess(Profile|Offline|NoLeak)' -count=1 -v`, `go test ./internal/interfaces/http -run 'TestHandlerQueryAccess(Profile|Offline|NoLeak)' -count=1 -v`, and `go test ./pkg/deltascope -run 'Test(MySQLTiDBQueryAccessSession|ProfileParity)' -count=1 -v`.
+- Pass criteria: SDK/CLI/HTTP produce identical bounded offline results for the
+  same SQL/profile, no response/error contains raw SQL, literals, function names,
+  candidates, manifest internals, DSNs, credentials, driver errors, session
+  details, or `severity`, and the explicit session API alone can promote a
+  profile-backed query after same-connection physical metadata is proven.
+
+### Profile-specific regression commands
+
+- MySQL 5.7: `go test ./internal/application/queryaccess -run 'TestMySQL57(Profile|Aggregate|Boundary)' -count=1 -v`.
+- MySQL 8.0: `go test ./internal/application/queryaccess -run 'TestMySQL80(Profile|Aggregate|Window|Boundary)' -count=1 -v`.
+- MySQL 8.4: `go test ./internal/application/queryaccess -run 'TestMySQL84(Profile|Aggregate|Window|Boundary)' -count=1 -v`.
+- TiDB 8.5: `go test ./internal/application/queryaccess -run 'TestTiDB85(Profile|Aggregate|Window|Boundary)' -count=1 -v`.
+- Pass criteria: each command asserts only that profile's independent manifest
+  rows; deferred rows assert `indeterminate` with bounded reasons rather than
+  pretending a neighboring dialect/version proves them.

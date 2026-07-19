@@ -40,6 +40,17 @@ cannot select a MySQL/TiDB profile; a MySQL request cannot select `tidb-8.5`.
 Invalid values and mismatches return bounded validation errors. There is never a
 fallback to another profile or to name-based proof.
 
+Profile selection alone does not prove physical relation metadata. The default
+offline SDK, CLI, and HTTP paths therefore remain indeterminate for a profiled
+function query when table/view kind, column existence, or complete physical
+dependencies are unavailable. If promotion is shipped, it is exposed only
+through a separate explicit SDK session entry point over a caller-owned
+MySQL/TiDB `*sql.Conn`; that entry point constructs the metadata resolver
+internally, rejects an external resolver, and uses the same connection only to
+prove physical requirements. The caller still declares the static profile, and
+the connection is not used as server-version attestation or as an injected
+semantic manifest.
+
 An empty profile preserves the existing public contract. This avoids silently
 promoting previously indeterminate MySQL/TiDB queries in SDK, CLI, or HTTP.
 
@@ -193,10 +204,12 @@ An unsupported or contradictory probe blocks the entry, not merely the test.
 ## Cross-Surface and Privacy Rules
 
 SDK, CLI, and HTTP share the application result. They must agree for identical
-SQL/profile inputs. A profile is public request configuration, but results and
-errors must not expose internal manifest identifiers, parser facts, raw SQL,
-literals, function names, session information, DSNs, credentials, driver errors,
-effect candidates, catalog data, or `severity`.
+SQL/profile inputs on the same offline path; a session-only SDK promotion is an
+explicitly separate surface and is not silently available to CLI or HTTP. A
+profile is public request configuration, but results and errors must not expose
+internal manifest identifiers, parser facts, raw SQL, literals, function names,
+session information, DSNs, credentials, driver errors, effect candidates,
+catalog data, or `severity`.
 
 MCP remains without a Query Access tool. Existing function-free MySQL/TiDB
 admissibility and all PostgreSQL behavior must remain unchanged when the profile

@@ -1,7 +1,7 @@
 # Decision: MySQL/TiDB Builtin Semantic Manifests for Query Access
 
 - Date: 2026-07-18
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@9491c5f`
 - Milestone branch: `query-access-mysql-tidb-builtin-semantic-manifest`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB feasibility](2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md)
@@ -100,9 +100,13 @@ name, parser facts, SQL mode, server connection details, identities, candidates,
 DSN, credentials, literals, or `severity`.
 
 Default `AnalyzeQueryAccess`, CLI, and HTTP remain offline; they can use an
-explicit static profile but must not open a live database connection. MCP still
-has no Query Access tool. PostgreSQL's caller-owned connection and catalog proof
-chain is unchanged.
+explicit static profile but must not open a live database connection. When a
+profiled query lacks complete physical metadata on those paths it remains
+indeterminate. If promotion is shipped, it is exposed only through a separate
+explicit SDK entry point over a caller-owned MySQL/TiDB `*sql.Conn`; that entry
+point constructs its same-connection metadata resolver internally and rejects
+external resolver injection. MCP still has no Query Access tool. PostgreSQL's
+caller-owned connection and catalog proof chain is unchanged.
 
 `admissible` continues to mean static Query Access requirements only. It is not
 authorization, grant evaluation, RLS or masking evaluation, query rewrite proof,
@@ -157,9 +161,91 @@ Before this decision can become `Accepted`, the milestone must provide:
 6. A documented adversarial review of parser ambiguity, profile mismatch,
    collision attempts, incomplete strict requirements, and manifest mutability.
 
+The decision remains `Proposed` until the offline fail-closed boundary and any
+session-only promotion boundary are both covered by executable tests. A valid
+profile without a session is not evidence of admission; it is evidence that the
+closed profile contract was accepted and that the parser/gateway failed closed
+without physical requirements.
+
+## Task 2 Evidence Status
+
+The dedicated `docker/query-access-builtin-compose.yaml` matrix was exercised
+against independent services pinned to `mysql:5.7.44`, `mysql:8.0.46`,
+`mysql:8.4.10`, and `pingcap/tidb:v8.5.7`. Each profile returned its own
+version marker and passed the fixture-backed `COUNT(*)`, direct-column
+`COUNT`/`SUM`/`AVG`/`MIN`/`MAX` probes. MySQL 8.0 and 8.4 and TiDB 8.5 passed
+the canonical ranking-window probe; MySQL 5.7 was explicitly recorded as
+window-deferred after its version was verified.
+
+The same profile-specific probes recorded stored-function support for MySQL and
+rejection for TiDB, MySQL builtin-like stored-function collision creation in
+the documented spaced form, rejection of loadable-UDF creation, rejection of
+schema-qualified and quoted builtin forms, and bounded spacing/comment outcomes
+under controlled `IGNORE_SPACE`.
+
+## Acceptance Evidence Summary
+
+The production builtin semantic registry has been promoted with the entries
+listed below. Each entry is backed by primary documentation, live Docker
+probes against the exact server image, parser-native-form facts, complete
+candidate closure, strict physical dependency requirements, no-leak coverage,
+and cross-surface parity.
+
+| Profile | Supported entries | Live Docker image | Observed VERSION() |
+|---|---|---|---|
+| `mysql-5.7` | `COUNT(*)`; direct-column `COUNT`, `SUM`, `AVG`, `MIN`, `MAX` | `mysql:5.7.44` | `5.7.44` |
+| `mysql-8.0` | `mysql-5.7` scope plus `ROW_NUMBER`, `RANK`, `DENSE_RANK` with direct partition and order columns | `mysql:8.0.46` | `8.0.46` |
+| `mysql-8.4` | `mysql-5.7` scope plus `ROW_NUMBER`, `RANK`, `DENSE_RANK` with direct partition and order columns | `mysql:8.4.10` | `8.4.10` |
+| `tidb-8.5` | Independently evidenced `mysql-5.7` scope plus `ROW_NUMBER`, `RANK`, `DENSE_RANK` with direct partition and order columns | `pingcap/tidb:v8.5.7` | `8.0.11-TiDB-v8.5.7` |
+
+Ranking-window entries require both `PARTITION BY` and `ORDER BY` clauses
+with direct physical base-table columns. This is deliberately stricter than
+MySQL's syntax contract (which accepts ranking windows without `ORDER BY`)
+to preserve the design's "strict partition/order dependencies" boundary.
+
+The following shapes remain indeterminate under every profile: empty profile
+with a function call, quoted call, schema-qualified call, noncanonical
+spacing (`COUNT (id)`), `IGNORE_SPACE`-dependent ambiguity, `DISTINCT`,
+`FILTER`, aggregate-local `ORDER BY`, named windows, explicit frames, nested
+operands, literals, parameters, casts, wildcard metadata gaps, views,
+CTEs/derived effect inputs, unqualified relations, missing physical
+requirements, unknown functions, and any query containing an unproven
+candidate.
+
+The following shapes return bounded validation errors (not indeterminate):
+unknown profile value, profile/dialect mismatch, and any non-empty external
+proof/resolver injection. A valid profile without the explicit
+same-connection SDK session is not a validation error, but it is not evidence
+of admission either: the parser/gateway fails closed without physical
+requirements and the result remains indeterminate.
+
+The default `Service{}` (no `builtinSemantic` bundle), default SDK
+`AnalyzeQueryAccess`, CLI `query-access analyze`, and HTTP
+`/v1/query-access/analyze` surfaces remain offline and fail-closed. A valid
+profile without the explicit same-connection SDK session
+(`AnalyzeMySQLTiDBQueryAccessWithSession`) cannot promote a function query.
+MCP still has no Query Access tool. PostgreSQL behavior is unchanged.
+
+Independent review evidence:
+
+- Oracle (read-only security/architecture review, session
+  `ses_0884d672affeUoWPeDuu4n9vjn`) confirmed 13 of 14 required checks PASS
+  (parser-native-form proof, MySQL special-function parsing and `IGNORE_SPACE`,
+  quoted/qualified calls, profile validation, manifest mutability, candidate
+  closure, strict dependencies, profile leaks, default behavior, cross-surface
+  parity, session-only promotion, PostgreSQL isolation, MCP boundary). The
+  14th check was the empty-registry state, which this promotion addresses by
+  design.
+- Momus plan-critic was unavailable for this milestone (its tool requires an
+  `.omo/plans/*.md` path that the worktree discipline forbids). A documented
+  manual audit was performed against the implementation plan's task list and
+  the current diff; every task claim is backed by executable code or test.
+
 ## Consequences
 
 The old MySQL/TiDB feasibility record remains `Proposed`; it documents why a
 catalog-OID implementation was not built. This decision refines the product
-direction rather than changing that evidence retroactively. No behavior changes
-until the implementation plan has supplied the required profile-specific proof.
+direction rather than changing that evidence retroactively. The production
+builtin semantic registry is now populated for the four documented profiles;
+the offline fail-closed boundary and the session-only promotion boundary are
+both covered by executable tests.
