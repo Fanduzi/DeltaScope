@@ -1,5 +1,5 @@
 // Package queryaccess provides the application service for query access analysis.
-// input: SQL text, dialect, mode, default schema, and optional schema resolver
+// input: SQL text, dialect, mode, profile, default schema, and optional schema resolver
 // output: domain-typed query access results with optional metadata resolution
 // pos: application orchestration layer for query access analysis
 // note: if this file changes, update this header and module README.md.
@@ -63,7 +63,8 @@ func (b *trustedBundle) validate() error {
 // Service orchestrates query access analysis.
 type Service struct {
 	// trusted is internal-only; zero-value Service has no trust bundle.
-	trusted *trustedBundle
+	trusted         *trustedBundle
+	builtinSemantic *builtinSemanticBundle
 }
 
 // NewService creates a basic Service without manifest proof (fail-closed for PG effects).
@@ -96,6 +97,9 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	if err := ctx.Err(); err != nil {
 		return QueryAccessResult{}, fmt.Errorf("analyze cancelled: %w", err)
 	}
+	if err := ValidateAnalysisProfile(req.AnalysisProfile, req.Dialect); err != nil {
+		return QueryAccessResult{}, err
+	}
 
 	extracted, err := extractByDialect(ctx, req)
 	if err != nil {
@@ -106,6 +110,9 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	schemaResolver := req.SchemaResolver
 	if s != nil && s.trusted != nil && s.trusted.schemaResolver != nil {
 		schemaResolver = s.trusted.schemaResolver
+	}
+	if s != nil && s.builtinSemantic != nil {
+		schemaResolver = s.builtinSemantic.schemaResolver
 	}
 
 	// Barrier is unconditional for PostgreSQL when unqualified physical base
@@ -176,6 +183,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	}
 
 	var proofResult *trustProofResult
+	var builtinProof *builtinSemanticProofResult
 	if !hasUnqualified && !hasView && req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
 		proofResult = s.resolveAndProveEffects(ctx, req, extracted)
 		if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
@@ -210,6 +218,36 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	}
 	extracted.DomainResult.Requirements = reqs
 	extracted.DomainResult.Warnings = append(extracted.DomainResult.Warnings, warnings...)
+
+	if s != nil && s.builtinSemantic != nil && !hasView && (req.Dialect == "mysql" || req.Dialect == "tidb") && len(extracted.EffectCandidates) > 0 {
+		proof := proveBuiltinSemantics(
+			req.AnalysisProfile,
+			req.Dialect,
+			extracted.EffectCandidates,
+			extracted.DomainResult,
+			extracted.DomainResult.Requirements,
+			s.builtinSemantic.registry,
+		)
+		builtinProof = &proof
+		if proof.decision == builtinSemanticAllProven {
+			extracted.DomainResult.ReasonCodes = removeBuiltinSemanticReason(extracted.DomainResult.ReasonCodes)
+		}
+		extracted.DomainResult.ReadClassification = reclassifyAfterResolution(
+			extracted.DomainResult.ReadClassification,
+			extracted.DomainResult.ReasonCodes,
+			extracted.DomainResult.Unresolved,
+			hasResolver,
+			req.Dialect,
+			proofResult,
+			builtinProof,
+		)
+		extracted.DomainResult.Admission = recomputeAdmission(
+			extracted.DomainResult.ReadClassification,
+			extracted.DomainResult.Admission,
+			extracted.DomainResult.Unresolved,
+			hasResolver,
+		)
+	}
 
 	extracted.DomainResult.Relations = domain.SortRelations(extracted.DomainResult.Relations)
 	extracted.DomainResult.ReferencedColumns = domain.SortColumns(extracted.DomainResult.ReferencedColumns)
@@ -357,6 +395,19 @@ func removeUnprovenEffectReasons(codes []domain.ReasonCode) []domain.ReasonCode 
 	return result
 }
 
+func removeBuiltinSemanticReason(codes []domain.ReasonCode) []domain.ReasonCode {
+	result := make([]domain.ReasonCode, 0, len(codes))
+	for _, code := range codes {
+		switch code {
+		case domain.ReasonFunctionEffect, domain.ReasonCode("function_call"):
+			continue
+		default:
+			result = append(result, code)
+		}
+	}
+	return result
+}
+
 func extractByDialect(ctx context.Context, req QueryAccessRequest) (QueryAccessResult, error) {
 	switch req.Dialect {
 	case "mysql", "tidb":
@@ -396,7 +447,7 @@ func recomputeAdmission(classification domain.ReadClassification, current domain
 	return domain.IndeterminateAdmission
 }
 
-func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool, dialect string, proof *trustProofResult) domain.ReadClassification {
+func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool, dialect string, proof *trustProofResult, builtinProof ...*builtinSemanticProofResult) domain.ReadClassification {
 	if classification != domain.Indeterminate {
 		return classification
 	}
@@ -415,6 +466,9 @@ func reclassifyAfterResolution(classification domain.ReadClassification, reasonC
 		}
 		// All effects manifest-proven; check other preconditions.
 		// Fall through to common checks below.
+	}
+	if (dialect == "mysql" || dialect == "tidb") && len(builtinProof) > 0 && (builtinProof[0] == nil || builtinProof[0].decision != builtinSemanticAllProven) {
+		return domain.Indeterminate
 	}
 
 	if len(reasonCodes) > 0 {

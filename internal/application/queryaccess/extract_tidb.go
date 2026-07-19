@@ -41,7 +41,66 @@ func ExtractTiDBQueryAccess(ctx context.Context, req QueryAccessRequest) (QueryA
 
 	result.Admission = computeAdmission(result.ReadClassification)
 
-	return QueryAccessResult{DomainResult: result}, nil
+	return QueryAccessResult{
+		DomainResult:     result,
+		EffectCandidates: mapTiDBEffectCandidates(facts.EffectCandidates),
+	}, nil
+}
+
+func mapTiDBEffectCandidates(in []tidbparser.EffectCandidate) []EffectCandidate {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]EffectCandidate, 0, len(in))
+	for _, candidate := range in {
+		mapped := EffectCandidate{
+			Kind:                 EffectCandidateKind(candidate.Kind),
+			Ordinal:              candidate.Ordinal,
+			NamePath:             append([]string(nil), candidate.NamePath...),
+			OriginalNamePath:     append([]string(nil), candidate.OriginalNamePath...),
+			ExplicitSchema:       candidate.ExplicitSchema,
+			IsQuoted:             candidate.IsQuoted,
+			Canonical:            candidate.Canonical,
+			Ambiguous:            candidate.Ambiguous,
+			ParserClassification: candidate.ParserClassification,
+			UnqualifiedRelation:  candidate.UnqualifiedRelation,
+			Arity:                candidate.Arity,
+			IsAggregate:          candidate.IsAggregate,
+			HasWindow:            candidate.HasWindow,
+			HasFilter:            candidate.HasFilter,
+			HasDistinct:          candidate.HasDistinct,
+			HasAggOrder:          candidate.HasAggOrder,
+			HasWithinGroup:       candidate.HasWithinGroup,
+			HasFrame:             candidate.HasFrame,
+			HasNamedWindow:       candidate.HasNamedWindow,
+			HasWindowPartition:   candidate.HasWindowPartition,
+			HasWindowOrder:       candidate.HasWindowOrder,
+			TargetTypePath:       append([]string(nil), candidate.TargetTypePath...),
+		}
+		for _, kind := range candidate.OperandKinds {
+			mapped.OperandKinds = append(mapped.OperandKinds, string(kind))
+		}
+		for _, kind := range candidate.WindowPartitionKinds {
+			mapped.WindowPartitionKinds = append(mapped.WindowPartitionKinds, string(kind))
+		}
+		for _, kind := range candidate.WindowOrderKinds {
+			mapped.WindowOrderKinds = append(mapped.WindowOrderKinds, string(kind))
+		}
+		for _, kind := range candidate.WindowFrameKinds {
+			mapped.WindowFrameKinds = append(mapped.WindowFrameKinds, string(kind))
+		}
+		for _, ref := range candidate.OperandColumnRefs {
+			mapped.OperandColumnRefs = append(mapped.OperandColumnRefs, OperandColumnRef{Schema: ref.Schema, Table: ref.Table, Column: ref.Column})
+		}
+		for _, ref := range candidate.WindowPartitionColumnRefs {
+			mapped.WindowPartitionColumnRefs = append(mapped.WindowPartitionColumnRefs, OperandColumnRef{Schema: ref.Schema, Table: ref.Table, Column: ref.Column})
+		}
+		for _, ref := range candidate.WindowOrderColumnRefs {
+			mapped.WindowOrderColumnRefs = append(mapped.WindowOrderColumnRefs, OperandColumnRef{Schema: ref.Schema, Table: ref.Table, Column: ref.Column})
+		}
+		out = append(out, mapped)
+	}
+	return out
 }
 
 func convertRelations(facts []tidbparser.RelationFact) []domain.RelationReference {

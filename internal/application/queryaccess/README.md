@@ -8,6 +8,9 @@ Application-level contracts for query access analysis, defining the schema resol
 |------|---------------|
 | doc.go | Declares the queryaccess application package boundary |
 | contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, and QueryAccessResult |
+| profile.go | Defines the closed analysis-profile values and dialect validation |
+| builtin_semantic_manifest.go | Owns immutable MySQL/TiDB builtin semantic entries and session-only capability assembly |
+| builtin_semantic_gateway.go | Proves exact candidate closure and strict physical requirement completeness |
 | identity_resolver.go | EffectIdentityResolver facts-only contract, resolution context, identity batch helpers, bounded volatility/cast enums |
 | phase1_effect_eligibility.go | Fail-closed Phase-1 pure-effect candidate eligibility before identity promotion |
 | identity_resolver_test.go | Contract tests: ordinal uniqueness, status enum, fail-closed mapping, cancellation, no Trusted field |
@@ -32,6 +35,12 @@ Application-level contracts for query access analysis, defining the schema resol
 - `RelationSchema`
 - `ColumnSchema` (optional `TypeOID` fact; zero when unknown)
 - `QueryAccessRequest`
+- `AnalysisProfile`
+- `ValidateAnalysisProfile()`
+- `BuiltinSemanticManifest` / `BuiltinSemanticEntry`
+- `BuiltinSemanticCallClass` / `BuiltinSemanticAggregate` / `BuiltinSemanticWindow`
+- `ErrBuiltinSemanticManifestInvalid`
+- `NewBuiltinSemanticManifest()` / `NewMySQLTiDBSemanticService()`
 - `QueryAccessResult`
 - `EffectCandidate` (application-internal copy; untrusted; never public JSON)
 - `EffectCandidateKind`
@@ -88,6 +97,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - **Unbound relation safety (PostgreSQL):** When `Service.Analyze` detects unqualified base relations in PostgreSQL with a trusted bundle, it marks those relations as `Unbound` and adds a bounded `unqualified_relation` indeterminate requirement. Unbound relations are excluded from the resolution state (`nameMap`, `aliasMap`, `relationOrder`) so the resolver never calls `DefaultSchema` on them. `resolveQualifiedColumn`, `expandTableStar`, and `expandTableWildcard` skip resolution when the relation is unbound and has no qualified entry in `nameMap`. `buildRequirements` skips columns with empty Schema when unbound relation names exist, preventing unresolved references from producing physical `read_column` requirements. `resolveSourceKeys` and `sourceIsUnbound` treat schema-qualified references (3-part keys with non-empty schema) as non-unbound, preserving requirements for qualified relations that share a table name with an unbound relation.
 - The PostgreSQL parser resolves aliases to table names, so `SELECT p.id FROM public.users p JOIN users u` produces both columns with `Table: "users"`. The unbound check uses `resolveRelationRef` → `nameMap` to distinguish: if `nameMap` has a qualified entry, resolution proceeds; if not (all entries unbound), resolution is skipped.
 - **Same-connection metadata resolver (T15):** `QueryAccessConnResolver` in `internal/infrastructure/metadata/postgresql` wraps a single `*sql.Conn` directly (no `*sql.DB` field). It satisfies `SchemaResolver` and ensures metadata queries run on the same backend as the identity adapter. The public SDK wrapper (`PostgreSQLQueryAccessSession` in `pkg/deltascope`) creates all resolvers from the same caller-owned `*sql.Conn`. The assembly helper `newTrustedServiceFromSession` lives in `pkg/deltascope` (postgresql-tagged) to avoid import cycles.
+- MySQL/TiDB builtin semantic proof is independent from PostgreSQL catalog trust. Its production registry is empty until exact profile evidence is accepted; only the explicit same-connection SDK session can construct the private capability, while test-owned manifests exercise the gateway without making a production profile claim.
 
 ## Dependencies
 - Upstream: `internal/interfaces/*`

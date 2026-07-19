@@ -1,5 +1,5 @@
 // Package queryaccess defines application-level contracts for query access analysis.
-// input: SQL text, dialect, mode, and optional schema resolver
+// input: SQL text, dialect, mode, profile, and optional schema resolver
 // output: domain-typed query access results for transport adapters
 // pos: application contract layer for the query access analysis foundation
 // note: if this file changes, update this header and module README.md.
@@ -40,15 +40,15 @@ type ColumnSchema struct {
 // Callers cannot inject effect candidates or trust bits: there is no candidate
 // or Trusted field on the request.
 //
-// T6 note: EffectIdentityResolver is intentionally NOT a field here yet.
-// Public SDK/CLI/HTTP schemas stay unchanged until a complete end-to-end
-// catalog adapter path exists (see identity_resolver.go contract).
+// EffectIdentityResolver remains intentionally absent. Profile selection is
+// compatibility metadata only and does not inject candidates or trust facts.
 type QueryAccessRequest struct {
-	SQL            string
-	Dialect        string
-	Mode           string
-	DefaultSchema  string
-	SchemaResolver SchemaResolver // optional
+	SQL             string
+	Dialect         string
+	Mode            string
+	DefaultSchema   string
+	AnalysisProfile AnalysisProfile
+	SchemaResolver  SchemaResolver // optional
 }
 
 // EffectCandidateKind mirrors parser-internal candidate kinds (application copy).
@@ -58,6 +58,7 @@ const (
 	EffectCandidateOperator EffectCandidateKind = "operator"
 	EffectCandidateFunction EffectCandidateKind = "function"
 	EffectCandidateCast     EffectCandidateKind = "cast"
+	EffectCandidateUnknown  EffectCandidateKind = "unknown"
 )
 
 // OperandColumnRef identifies a base-table column for operand type resolution.
@@ -72,20 +73,34 @@ type OperandColumnRef struct {
 // identity resolution. It is NOT a trust root and is never serialized on
 // domain.Result or SDK/CLI/HTTP JSON.
 type EffectCandidate struct {
-	Kind           EffectCandidateKind
-	Ordinal        int
-	NamePath       []string
-	ExplicitSchema bool
-	Arity          int
-	OperandKinds   []string
-	IsAggregate    bool
-	HasWindow      bool
-	HasFilter      bool
-	HasDistinct    bool `json:"-"`
-	HasAggOrder    bool `json:"-"`
-	HasWithinGroup bool `json:"-"`
-	HasFrame       bool `json:"-"`
-	TargetTypePath []string
+	Kind                      EffectCandidateKind
+	Ordinal                   int
+	NamePath                  []string
+	OriginalNamePath          []string
+	ExplicitSchema            bool
+	IsQuoted                  bool
+	Canonical                 bool
+	Ambiguous                 bool
+	ParserClassification      string
+	UnqualifiedRelation       bool
+	Arity                     int
+	OperandKinds              []string
+	IsAggregate               bool
+	HasWindow                 bool
+	HasFilter                 bool
+	HasDistinct               bool               `json:"-"`
+	HasAggOrder               bool               `json:"-"`
+	HasWithinGroup            bool               `json:"-"`
+	HasFrame                  bool               `json:"-"`
+	HasNamedWindow            bool               `json:"-"`
+	HasWindowPartition        bool               `json:"-"`
+	HasWindowOrder            bool               `json:"-"`
+	WindowPartitionKinds      []string           `json:"-"`
+	WindowOrderKinds          []string           `json:"-"`
+	WindowFrameKinds          []string           `json:"-"`
+	WindowPartitionColumnRefs []OperandColumnRef `json:"-"`
+	WindowOrderColumnRefs     []OperandColumnRef `json:"-"`
+	TargetTypePath            []string
 	// OperandColumnRefs maps operand position to base-table column reference.
 	// Indexed by operand position; nil entries indicate non-column operands.
 	// Only populated for column operands against base tables.

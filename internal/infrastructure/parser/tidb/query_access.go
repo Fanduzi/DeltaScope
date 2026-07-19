@@ -18,12 +18,13 @@ import (
 type QueryAccessExtractor struct{}
 
 type QueryAccessFacts struct {
-	ReadClassification string           `json:"read_classification"`
-	Relations          []RelationFact   `json:"relations,omitempty"`
-	ColumnReferences   []ColumnFact     `json:"column_references,omitempty"`
-	Outputs            []OutputFact     `json:"outputs,omitempty"`
-	Unresolved         []UnresolvedFact `json:"unresolved,omitempty"`
-	ReasonCodes        []string         `json:"reason_codes,omitempty"`
+	ReadClassification string            `json:"read_classification"`
+	Relations          []RelationFact    `json:"relations,omitempty"`
+	ColumnReferences   []ColumnFact      `json:"column_references,omitempty"`
+	Outputs            []OutputFact      `json:"outputs,omitempty"`
+	Unresolved         []UnresolvedFact  `json:"unresolved,omitempty"`
+	ReasonCodes        []string          `json:"reason_codes,omitempty"`
+	EffectCandidates   []EffectCandidate `json:"-"`
 }
 
 type RelationFact struct {
@@ -85,16 +86,21 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	allOutputs := make([]OutputFact, 0)
 	allUnresolved := make([]UnresolvedFact, 0)
 	allReasons := make([]string, 0)
+	candidates := newEffectCandidateCollector(defaultSchema, sql)
 
 	for _, stmt := range parsed {
 		scope := newScopeStack(defaultSchema)
 		facts := analyzeStatement(stmt, scope)
+		candidates.collectStatement(stmt)
 		classifications = append(classifications, facts.classification)
 		allRelations = append(allRelations, facts.relations...)
 		allColumns = append(allColumns, facts.columns...)
 		allOutputs = append(allOutputs, facts.outputs...)
 		allUnresolved = append(allUnresolved, facts.unresolved...)
 		allReasons = append(allReasons, facts.reasons...)
+	}
+	for i := range candidates.candidates {
+		candidates.candidates[i].UnqualifiedRelation = candidates.hasUnqualifiedRelation
 	}
 
 	return &QueryAccessFacts{
@@ -104,6 +110,7 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 		Outputs:            allOutputs,
 		Unresolved:         allUnresolved,
 		ReasonCodes:        deduplicateStrings(allReasons),
+		EffectCandidates:   candidates.candidates,
 	}, nil
 }
 
