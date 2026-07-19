@@ -380,8 +380,8 @@ func newBuiltinSemanticService(schemaResolver SchemaResolver, registry *builtinS
 
 // NewMySQLTiDBSemanticService is the only production constructor for the
 // private semantic capability. It accepts only the session-owned resolver;
-// manifests remain application-owned and the production registry is empty
-// until profile-specific evidence is accepted.
+// manifests remain application-owned. The production registry is populated
+// for mysql-5.7, mysql-8.0, mysql-8.4, and tidb-8.5 and is session-only.
 func NewMySQLTiDBSemanticService(schemaResolver SchemaResolver) (*Service, error) {
 	return newBuiltinSemanticService(schemaResolver, builtinSemanticProductionRegistry)
 }
