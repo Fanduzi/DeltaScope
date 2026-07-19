@@ -235,11 +235,19 @@ Independent review evidence:
   closure, strict dependencies, profile leaks, default behavior, cross-surface
   parity, session-only promotion, PostgreSQL isolation, MCP boundary). The
   14th check was the empty-registry state, which this promotion addresses by
-  design.
-- Momus plan-critic was unavailable for this milestone (its tool requires an
-  `.omo/plans/*.md` path that the worktree discipline forbids). A documented
-  manual audit was performed against the implementation plan's task list and
-  the current diff; every task claim is backed by executable code or test.
+  design. Oracle's final re-review (session `ses_08822ab49ffeb0dmJrAxPnzOOz`)
+  found 0 P1 and 2 P2 findings (exact version assertion; decision-record
+  accuracy). Both P2 findings were reproduced and fixed.
+- Momus plan-critic reviewed the implementation plan and the current diff
+  through an untracked temporary mirror under `.omo/plans/` (which is
+  gitignored). The initial deep executability review found 3 P1 blockers:
+  (1) the plan's Docker start command omitted the `tidb85-fixture` service;
+  (2) live probes only executed `ROW_NUMBER()` as live SQL, not `RANK()` and
+  `DENSE_RANK()`; (3) no per-entry evidence ledger existed, the corpus runner
+  had no profile field, and reference docs had stale "empty registry" claims.
+  All 3 P1 findings were reproduced and fixed across commits `b29e729`,
+  `f0c3c00`, `9c26a15`, `1758659`, `069d59b`, `636fb50`, and `1938322`. Momus's
+  final re-review returned `[OKAY]` with all P1 findings resolved.
 
 ## Consequences
 
