@@ -6,6 +6,29 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.410.0] - 2026-07-19
+
+### Added
+
+- Introduced the opt-in MySQL/TiDB builtin semantic manifest proof model for Query Access. On a caller-owned MySQL or TiDB `*sql.Conn`, a profiled query may return `read_only` + `admissible` only after same-connection metadata resolution, parser-native-form proof, complete candidate closure, and immutable manifest lookup.
+- New public SDK session boundary: `NewMySQLTiDBQueryAccessSessionFromConn` and `AnalyzeMySQLTiDBQueryAccessWithSession`. The session rejects external schema resolvers and constructs the private semantic capability internally.
+- New closed public profile enum: `QueryAccessAnalysisProfileMySQL57` / `MySQL80` / `MySQL84` / `TiDB85`. Unknown values and dialect mismatches return bounded validation errors.
+- Immutable production builtin semantic registry populated for four profiles, each backed by primary documentation and live Docker probes against the exact server image (`mysql:5.7.44`, `mysql:8.0.46`, `mysql:8.4.10`, `pingcap/tidb:v8.5.7`).
+- Proven subset: `COUNT(*)`, direct-column `COUNT` / `SUM` / `AVG` / `MIN` / `MAX` for all four profiles; `ROW_NUMBER` / `RANK` / `DENSE_RANK` with direct-column partition and order dependencies for MySQL 8.0, MySQL 8.4, and TiDB 8.5. MySQL 5.7 ranking windows remain deferred (no native support).
+- Parser effect-candidate collector traverses projection, WHERE, HAVING, GROUP BY, ORDER BY, LIMIT/OFFSET, join conditions, derived tables, CTEs, scalar subqueries, set operations, aggregate modifiers, and window partition/order/frame expressions. Unsupported nodes emit explicit fail-closed markers.
+- Gateway enforces canonical native form, complete candidate closure, strict physical requirements, and `RequireWindowPartition`/`RequireWindowOrder` for ranking windows.
+- CLI `query-access analyze --profile` and HTTP `POST /v1/query-access/analyze` accept the profile input but remain offline and indeterminate without the explicit session API.
+- Decision record: `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md` (Accepted; Related milestone/version: v0.410.0).
+- Evidence ledger: `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests-evidence-ledger.md`.
+
+### Non-Goals
+
+- Not a generic function-name allowlist, a volatility-only allowlist, or a caller-supplied manifest.
+- Not support for UDF/stored functions, quoted/qualified calls, casts, literals, nested expressions, frames, named windows, `FILTER`, `DISTINCT`, or broad common `SELECT`.
+- Not CLI/HTTP semantic promotion or an MCP Query Access tool.
+- Not runtime authorization, grant evaluation, RLS, masking, automatic grant, SQL rewrite, or execution-snapshot proof.
+- No severity field is added, and the registered audit rule catalog is unchanged.
+
 ## [v0.400.0] - 2026-07-17
 
 ### Added

@@ -3,6 +3,7 @@
 - Date: 2026-07-18
 - Status: Accepted
 - Baseline: `main@9491c5f`
+- Related milestone/version: v0.410.0
 - Milestone branch: `query-access-mysql-tidb-builtin-semantic-manifest`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB feasibility](2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md)
 
@@ -249,6 +250,25 @@ Independent review evidence:
   `f0c3c00`, `9c26a15`, `1758659`, `069d59b`, `636fb50`, and `1938322`. Momus's
   final re-review returned `[OKAY]` with all P1 findings resolved.
 
+### Release-Surface Evidence (v0.410.0)
+
+- Version assigned: `v0.410.0` (minor after `v0.400.0`; adds the opt-in
+  MySQL/TiDB builtin semantic manifest session path with explicit profiles).
+- Release notes: `docs/releases/release-notes-v0.410.0.md`,
+  `docs/releases/release-notes-v0.410.0.zh-CN.md`.
+- Evidence ledger:
+  `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests-evidence-ledger.md`.
+- Active version pins: `pkg/deltascope/version.go` (`DefaultVersion`),
+  `packages/deltascope-mcp/package.json`, root README EN/ZH install pins,
+  `pkg/deltascope/README.md`, `docs/examples/github-actions.yml`, CHANGELOG,
+  roadmap latest milestone, landing current release, and
+  `scripts/verify_release_consistency.py` `RELEASE_FACTS["v0.410.0"]`.
+- Public contract remains narrow: only the caller-owned MySQL/TiDB session API
+  with an explicit profile can promote proven entries. Default SDK, CLI, and
+  HTTP remain offline and fail-closed for function-bearing MySQL/TiDB SQL; MCP
+  has no query-access tool; this is not authorization, RLS, masking, rewrite,
+  or an execution-snapshot guarantee. No generic function-name allowlist.
+
 ## Consequences
 
 The old MySQL/TiDB feasibility record remains `Proposed`; it documents why a
@@ -256,4 +276,5 @@ catalog-OID implementation was not built. This decision refines the product
 direction rather than changing that evidence retroactively. The production
 builtin semantic registry is now populated for the four documented profiles;
 the offline fail-closed boundary and the session-only promotion boundary are
-both covered by executable tests.
+both covered by executable tests. Release surface linkage is recorded under
+v0.410.0.

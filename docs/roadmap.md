@@ -4,31 +4,35 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.400.0 Common Pure-Effect Query Access
+## Latest Completed Milestone: v0.410.0 MySQL/TiDB Builtin Semantic Manifests
 
-**Goal:** expand the opt-in Trusted PostgreSQL Query Access SDK with catalog-proven common pure aggregates and ranking windows, while keeping the default SDK, CLI, HTTP, MySQL, TiDB, and MCP boundaries fail-closed. Complements the v0.390.0 trusted-session path; does not claim full PostgreSQL common SELECT support. Does not add a `severity` field.
+**Goal:** ship an opt-in MySQL/TiDB builtin semantic manifest proof model for Query Access on a caller-owned `*sql.Conn`, with explicit version profiles, while keeping default SDK, CLI, HTTP, and MCP fail-closed. Complements the PG17 trusted-session path; does not claim broad MySQL/TiDB common SELECT support or authorization. Does not add a `severity` field.
 
 ### Completed Scope
 
-- PG17 closed effect-identity manifest now proves `COUNT(*)`, `COUNT(base_column)`, typed direct-column `SUM` / `AVG` / `MIN` / `MAX`, and direct-column `ROW_NUMBER` / `RANK` / `DENSE_RANK` window shapes on the caller-owned trusted SDK path.
-- Strict requirements cover aggregate arguments and window partition/order dependencies before admission. FILTER, DISTINCT, explicit frames, named windows, ordered-set aggregates, nested expressions, casts, views, wildcards, parameters, unqualified relations, unresolved metadata, and non-manifest identities remain fail-closed.
-- Default SDK, CLI, and HTTP remain fail-closed for these effect-bearing PostgreSQL queries without a trusted session.
-- MySQL and TiDB aggregate/window effects remain `unknown_function_effect` / `indeterminate`; no syntax/name allowlist or shared-parser promotion was introduced.
-- MCP tools unchanged and still do not include query-access.
+- New public SDK session boundary: `NewMySQLTiDBQueryAccessSessionFromConn` and `AnalyzeMySQLTiDBQueryAccessWithSession`. External schema resolvers are rejected; the private semantic capability is constructed internally from the caller-owned connection.
+- Closed public profiles: `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, `tidb-8.5`. Unknown values and dialect mismatches return bounded validation errors.
+- Immutable production registry proves `COUNT(*)` and direct-column `COUNT` / `SUM` / `AVG` / `MIN` / `MAX` for all four profiles, and `ROW_NUMBER` / `RANK` / `DENSE_RANK` with direct partition/order columns for MySQL 8.0, MySQL 8.4, and TiDB 8.5. MySQL 5.7 ranking windows remain deferred (no native support).
+- Parser-native-form proof rejects quoted, schema-qualified, noncanonical spacing, and `IGNORE_SPACE`-dependent ambiguity. Ranking windows require both partition and order with direct physical columns.
+- Default SDK, CLI, and HTTP accept the profile input but remain offline and indeterminate for function-bearing MySQL/TiDB queries without the explicit session API.
+- MCP tools unchanged and still do not include query-access. PostgreSQL catalog/OID path unchanged.
 - Audit rule catalog unchanged at 371 rules. SQL corpus unchanged at 582/582, 100.0%, 247 YAML files.
 - `level` remains the audit priority field; no `severity` field is introduced.
-- Decision record: `docs/decisions/2026-07-16-query-access-common-pure-effects.md` (Accepted; Related milestone/version: v0.400.0).
+- Decision record: `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md` (Accepted; Related milestone/version: v0.410.0).
+- Evidence ledger: `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests-evidence-ledger.md`.
 
 ### Non-Goals
 
-- Not full PostgreSQL common SELECT admissibility.
-- Not runtime grant evaluation, caller authentication, database session authorization, policy engine, automatic grant, or SQL rewrite.
-- Not row-level security evaluation or column masking.
-- Not a runtime execution-snapshot guarantee after static analysis.
-- Not CLI/HTTP trusted-session promotion or an MCP query-access tool.
-- Not a MySQL/TiDB trusted identity promotion change.
+- Not a generic function-name allowlist, volatility-only allowlist, or caller-supplied manifest.
+- Not UDF/stored functions, quoted/qualified calls, casts, literals, nested expressions, frames, named windows, `FILTER`, `DISTINCT`, or broad common `SELECT`.
+- Not CLI/HTTP semantic promotion or an MCP query-access tool.
+- Not runtime grant evaluation, caller authentication, RLS, masking, automatic grant, SQL rewrite, or execution-snapshot proof.
 - Not a change to existing audit behavior.
 - Not a `severity` field.
+
+## Previous Completed Milestone: v0.400.0 Common Pure-Effect Query Access
+
+**Goal:** expand the opt-in Trusted PostgreSQL Query Access SDK with catalog-proven common pure aggregates and ranking windows. See `docs/releases/release-notes-v0.400.0.md` and `docs/decisions/2026-07-16-query-access-common-pure-effects.md`.
 
 ## Deferred / Evidence Required (watchlist only)
 
@@ -42,8 +46,10 @@ Published Query Access boundaries that these items must not rewrite by documenta
 - Decision: [CTE and Derived Table Lineage Resolution](decisions/2026-07-11-cte-derived-table-lineage-resolution.md) (v0.380.0)
 - Decision: [PostgreSQL Pure-Read Admissibility](decisions/2026-07-12-query-access-pure-read-admissibility.md) (accepted opt-in SDK boundary)
 - Decision: [Common Pure-Effect Admissibility](decisions/2026-07-16-query-access-common-pure-effects.md) (v0.400.0)
+- Decision: [MySQL/TiDB Builtin Semantic Manifests](decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md) (v0.410.0)
 - Shipped surfaces remain SDK `AnalyzeQueryAccess`, CLI `query-access analyze`, and HTTP `POST /v1/query-access/analyze`. **MCP does not include a query-access tool.**
 - An opt-in PostgreSQL SDK path is also available through a caller-owned `*sql.Conn`: `NewPostgreSQLQueryAccessSessionFromConn` and `AnalyzePostgreSQLQueryAccessWithSession`. It is manifest-gated and does not change the default SDK, CLI, or HTTP fail-closed behavior.
+- An opt-in MySQL/TiDB SDK path is also available through a caller-owned `*sql.Conn`: `NewMySQLTiDBQueryAccessSessionFromConn` and `AnalyzeMySQLTiDBQueryAccessWithSession`, with explicit profiles `mysql-5.7` / `mysql-8.0` / `mysql-8.4` / `tidb-8.5`. Default SDK, CLI, and HTTP remain fail-closed for function-bearing MySQL/TiDB queries.
 - Query Access emits structured **requirements** for a caller-owned authorization step. It does **not** authenticate callers, evaluate grants, enforce row-level security, apply column masking, auto-grant privileges, or rewrite SQL. Static analysis is not a substitute for database authorization or runtime controls.
 
 ### PostgreSQL common SELECT admissibility
