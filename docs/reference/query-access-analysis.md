@@ -43,9 +43,15 @@ mismatch returns `ErrQueryAccessAnalysisProfileDialectMismatch`.
 
 Profiles are compatibility targets, not server identity or semantic proof.
 Default SDK, CLI, and HTTP analysis remains offline. The production semantic
-registry is currently empty pending profile-specific evidence, so profiled
-function-bearing MySQL/TiDB queries remain `indeterminate`. The profile is not
-included in result JSON.
+registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`;
+each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`,
+and the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with
+direct partition and order columns. However, profiled function-bearing
+MySQL/TiDB queries remain `indeterminate` on the default offline surface
+because the default `Service` has no schema resolver or live connection.
+Promotion is available only through the explicit same-connection SDK session
+(`AnalyzeMySQLTiDBQueryAccessWithSession`). The profile is not included in
+result JSON.
 
 ### Inference Risk
 
@@ -201,9 +207,11 @@ result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, d
 The session does not own or expose the connection. It constructs relation
 metadata resolution from that same connection, rejects an external
 `SchemaResolver`, and is the only SDK boundary that can construct the private
-semantic capability. The production registry is currently empty, so it does
-not yet promote function-bearing MySQL/TiDB queries or expose catalog,
-manifest, connection, or credential details.
+semantic capability. The production registry is enabled for `mysql-5.7`,
+`mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. When a profiled query has complete
+physical metadata through the session connection, proven entries promote to
+`read_only + admissible`. The session does not expose catalog, manifest,
+connection, or credential details.
 
 ## MCP Deferral
 
@@ -258,8 +266,10 @@ allowlist.
 |---|---|---|
 | PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
 | PostgreSQL | Trusted SDK session only | `admissible` for proven `count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` with complete requirements |
-| MySQL | default SDK/CLI/HTTP and current session registry | `indeterminate` with `unknown_function_effect` (production entries deferred) |
-| TiDB | default SDK/CLI/HTTP and current session registry | `indeterminate` with `unknown_function_effect` (production entries deferred) |
+| MySQL | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
+| MySQL | Explicit SDK session (`AnalyzeMySQLTiDBQueryAccessWithSession`) with `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; 8.x profiles also `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |
+| TiDB | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
+| TiDB | Explicit SDK session with `tidb-8.5` profile | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |
 
 The trusted PostgreSQL subset requires exact catalog identity, session and
 database context, complete strict-mode dependencies, and a PG17 manifest proof.

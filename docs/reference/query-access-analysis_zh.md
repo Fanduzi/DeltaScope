@@ -40,9 +40,12 @@
 `tidb-8.5` 只能与 TiDB 搭配。未知值返回 `ErrInvalidQueryAccessAnalysisProfile`；方言不匹配返回
 `ErrQueryAccessAnalysisProfileDialectMismatch`。
 
-配置是兼容性目标，不是服务器身份或语义证明。默认 SDK、CLI 和 HTTP 分析保持离线。当前生产语义
-registry 在 profile 证据被接受前保持为空，因此带配置的 MySQL/TiDB 函数查询仍为 `indeterminate`。
-配置不会出现在结果 JSON 中。
+配置是兼容性目标，不是服务器身份或语义证明。默认 SDK、CLI 和 HTTP 分析保持离线。生产语义
+registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4` 和 `tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、
+直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 额外支持带直接分区和排序列的
+`ROW_NUMBER`/`RANK`/`DENSE_RANK`。但是，带配置的 MySQL/TiDB 函数查询在默认离线表面上仍为
+`indeterminate`，因为默认 `Service` 没有 schema 解析器或活动连接。只有在显式同连接 SDK 会话
+（`AnalyzeMySQLTiDBQueryAccessWithSession`）下才能提升。配置不会出现在结果 JSON 中。
 
 ### 推理风险
 
@@ -195,8 +198,9 @@ result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, d
 ```
 
 会话不拥有或暴露连接。它只从同一连接构造关系元数据解析，拒绝外部 `SchemaResolver`，并且是唯一可以构造私有
-语义能力的 SDK 边界。当前生产 registry 为空，因此尚不会提升带函数的 MySQL/TiDB 查询，也不会暴露目录、manifest、
-连接或凭据细节。
+语义能力的 SDK 边界。生产 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4` 和 `tidb-8.5` 启用。
+当带配置的查询通过会话连接获得完整物理元数据时，已证明的条目可提升为 `read_only + admissible`。
+会话不会暴露目录、manifest、连接或凭据细节。
 
 ## MCP 延迟
 
@@ -250,8 +254,10 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 |---|---|---|
 | PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
 | PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
-| MySQL | 默认 SDK/CLI/HTTP 及当前 session registry | `indeterminate`，原因是 `unknown_function_effect`（生产条目已延迟） |
-| TiDB | 默认 SDK/CLI/HTTP 及当前 session registry | `indeterminate`，原因是 `unknown_function_effect`（生产条目已延迟） |
+| MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线 fail-closed） |
+| MySQL | 显式 SDK 会话（`AnalyzeMySQLTiDBQueryAccessWithSession`）配合 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` |
+| TiDB | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线 fail-closed） |
+| TiDB | 显式 SDK 会话配合 `tidb-8.5` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` 可为 `admissible` |
 
 可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的
 strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、
