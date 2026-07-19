@@ -1,5 +1,5 @@
 // Package deltascope exposes the public library surface for consumers.
-// input: public query access requests carrying SQL text, dialect, mode, and optional schema resolver
+// input: public query access requests carrying SQL text, dialect, mode, profile, and optional schema resolver
 // output: stable query access analysis results for embedding DeltaScope in tools and agents
 // pos: public query access API above the internal application service
 // note: if this file changes, update this header and module README.md.
@@ -26,6 +26,22 @@ const (
 	QueryAccessModeStrict QueryAccessMode = "strict"
 	// QueryAccessModeProjectionOnly requires only projected columns to be authorized.
 	QueryAccessModeProjectionOnly QueryAccessMode = "projection_only"
+)
+
+// QueryAccessAnalysisProfile identifies a closed engine/version compatibility target.
+type QueryAccessAnalysisProfile string
+
+const (
+	// QueryAccessAnalysisProfileEmpty preserves the existing offline behavior.
+	QueryAccessAnalysisProfileEmpty QueryAccessAnalysisProfile = QueryAccessAnalysisProfile(appqa.AnalysisProfileEmpty)
+	// QueryAccessAnalysisProfileMySQL57 identifies the MySQL 5.7 compatibility target.
+	QueryAccessAnalysisProfileMySQL57 QueryAccessAnalysisProfile = QueryAccessAnalysisProfile(appqa.AnalysisProfileMySQL57)
+	// QueryAccessAnalysisProfileMySQL80 identifies the MySQL 8.0 compatibility target.
+	QueryAccessAnalysisProfileMySQL80 QueryAccessAnalysisProfile = QueryAccessAnalysisProfile(appqa.AnalysisProfileMySQL80)
+	// QueryAccessAnalysisProfileMySQL84 identifies the MySQL 8.4 compatibility target.
+	QueryAccessAnalysisProfileMySQL84 QueryAccessAnalysisProfile = QueryAccessAnalysisProfile(appqa.AnalysisProfileMySQL84)
+	// QueryAccessAnalysisProfileTiDB85 identifies the TiDB 8.5 compatibility target.
+	QueryAccessAnalysisProfileTiDB85 QueryAccessAnalysisProfile = QueryAccessAnalysisProfile(appqa.AnalysisProfileTiDB85)
 )
 
 // QueryAccessReadClassification describes whether SQL is demonstrably read-only.
@@ -88,11 +104,12 @@ type QueryAccessColumnSchema struct {
 
 // QueryAccessRequest is the input for query access analysis.
 type QueryAccessRequest struct {
-	SQL            string
-	Dialect        Dialect
-	Mode           QueryAccessMode
-	DefaultSchema  string
-	SchemaResolver QueryAccessSchemaResolver // optional
+	SQL             string
+	Dialect         Dialect
+	Mode            QueryAccessMode
+	DefaultSchema   string
+	AnalysisProfile QueryAccessAnalysisProfile
+	SchemaResolver  QueryAccessSchemaResolver // optional
 }
 
 // QueryAccessResult is the output of query access analysis.
@@ -158,6 +175,9 @@ func AnalyzeQueryAccess(ctx context.Context, req QueryAccessRequest) (*QueryAcce
 	if err != nil {
 		return nil, err
 	}
+	if err := validateQueryAccessAnalysisProfile(req.AnalysisProfile, dialect); err != nil {
+		return nil, err
+	}
 
 	var resolver appqa.SchemaResolver
 	if req.SchemaResolver != nil {
@@ -166,11 +186,12 @@ func AnalyzeQueryAccess(ctx context.Context, req QueryAccessRequest) (*QueryAcce
 
 	service := &appqa.Service{}
 	appResult, err := service.Analyze(ctx, appqa.QueryAccessRequest{
-		SQL:            req.SQL,
-		Dialect:        dialect,
-		Mode:           string(mode),
-		DefaultSchema:  req.DefaultSchema,
-		SchemaResolver: resolver,
+		SQL:             req.SQL,
+		Dialect:         dialect,
+		Mode:            string(mode),
+		DefaultSchema:   req.DefaultSchema,
+		AnalysisProfile: appqa.AnalysisProfile(req.AnalysisProfile),
+		SchemaResolver:  resolver,
 	})
 	if err != nil {
 		if errors.Is(err, appqa.ErrExtractionFailed) {
@@ -188,6 +209,12 @@ var ErrQueryAccessUnsupportedDialect = errors.New("unsupported dialect for query
 
 // ErrInvalidQueryAccessMode is returned when the mode is not a recognized value.
 var ErrInvalidQueryAccessMode = errors.New("invalid query access mode: must be strict or projection_only")
+
+// ErrInvalidQueryAccessAnalysisProfile is returned for a profile outside the closed set.
+var ErrInvalidQueryAccessAnalysisProfile = errors.New("invalid query access analysis profile")
+
+// ErrQueryAccessAnalysisProfileDialectMismatch is returned when a profile belongs to another dialect.
+var ErrQueryAccessAnalysisProfileDialectMismatch = errors.New("query access analysis profile does not match dialect")
 
 func toDomainQADialect(d Dialect) string {
 	switch d {
@@ -207,7 +234,19 @@ func toDomainQAMode(m QueryAccessMode) (domainqa.Mode, error) {
 	case QueryAccessModeProjectionOnly:
 		return domainqa.ModeProjectionOnly, nil
 	default:
-		return "", fmt.Errorf("%w: %q", ErrInvalidQueryAccessMode, m)
+		return "", ErrInvalidQueryAccessMode
+	}
+}
+
+func validateQueryAccessAnalysisProfile(profile QueryAccessAnalysisProfile, dialect string) error {
+	err := appqa.ValidateAnalysisProfile(appqa.AnalysisProfile(profile), dialect)
+	switch {
+	case errors.Is(err, appqa.ErrInvalidAnalysisProfile):
+		return ErrInvalidQueryAccessAnalysisProfile
+	case errors.Is(err, appqa.ErrAnalysisProfileDialectMismatch):
+		return ErrQueryAccessAnalysisProfileDialectMismatch
+	default:
+		return err
 	}
 }
 

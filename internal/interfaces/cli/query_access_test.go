@@ -94,6 +94,43 @@ func TestQueryAccessAnalyzeProjectionOnlyMode(t *testing.T) {
 	}
 }
 
+func TestQueryAccessAnalyzeProfileRemainsOffline(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze", "--sql", "SELECT COUNT(*) FROM app.users",
+		"--dialect", "mysql", "--profile", "mysql-8.4",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+
+	if exitCode != 2 {
+		t.Fatalf("expected indeterminate exit code 2, got %d: %s", exitCode, stderr.String())
+	}
+	var result map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("decode output: %v", err)
+	}
+	if result["read_classification"] != "indeterminate" || result["admission"] != "indeterminate" {
+		t.Fatalf("profiled offline function query promoted: %#v", result)
+	}
+	if _, ok := result["profile"]; ok {
+		t.Fatalf("profile leaked into result JSON: %#v", result)
+	}
+}
+
+func TestQueryAccessAnalyzeUnknownProfileIsUsageErrorWithoutEcho(t *testing.T) {
+	var stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze", "--sql", "SELECT 1", "--dialect", "mysql",
+		"--profile", "mysql-8.4-secret-password",
+	}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)
+
+	if exitCode != exitQueryAccessUsageError {
+		t.Fatalf("expected usage error exit code %d, got %d", exitQueryAccessUsageError, exitCode)
+	}
+	if bytes.Contains(bytes.ToLower(stderr.Bytes()), []byte("secret-password")) {
+		t.Fatalf("profile leaked into CLI error: %s", stderr.String())
+	}
+}
+
 func TestQueryAccessAnalyzeInvalidMode(t *testing.T) {
 	var stderr bytes.Buffer
 	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--sql", "SELECT 1", "--dialect", "mysql", "--mode", "invalid"}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)

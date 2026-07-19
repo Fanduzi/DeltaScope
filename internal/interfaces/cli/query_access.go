@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags, SQL text from flags/files/stdin, and the public query access API
+// input: query-access command flags including profile, SQL text from flags/files/stdin, and the public query access API
 // output: rendered query access results in JSON format, exit-code mapping for CI integration
 // pos: CLI query-access command implementation above the public DeltaScope query access API
 // note: if this file changes, update this header and module README.md.
@@ -38,6 +38,7 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	var filePath string
 	var mode string
 	var defaultSchema string
+	var profile string
 
 	cmd := &cobra.Command{
 		Use:   "analyze",
@@ -63,10 +64,11 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 			}
 
 			result, err := deltascope.AnalyzeQueryAccess(cmd.Context(), deltascope.QueryAccessRequest{
-				SQL:           sql,
-				Dialect:       deltascope.Dialect(dialect),
-				Mode:          accessMode,
-				DefaultSchema: strings.TrimSpace(defaultSchema),
+				SQL:             sql,
+				Dialect:         deltascope.Dialect(dialect),
+				Mode:            accessMode,
+				DefaultSchema:   strings.TrimSpace(defaultSchema),
+				AnalysisProfile: deltascope.QueryAccessAnalysisProfile(strings.TrimSpace(profile)),
 			})
 			if err != nil {
 				*exitCode = exitQueryAccessUsageError
@@ -97,6 +99,7 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to analyze")
 	cmd.Flags().StringVar(&mode, "mode", "", "analysis mode: strict or projection_only (default strict)")
 	cmd.Flags().StringVar(&defaultSchema, "default-schema", "", "default schema for unqualified references")
+	cmd.Flags().StringVar(&profile, "profile", "", "analysis profile: mysql-5.7, mysql-8.0, mysql-8.4, or tidb-8.5")
 	return cmd
 }
 

@@ -10,6 +10,7 @@ Stable public package surface for library consumers.
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
 | query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access (postgresql build tag) |
+| query_access_session_mysql_tidb.go | Exposes the opaque MySQL/TiDB session boundary for same-connection metadata resolution |
 | query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
 | version.go | Publishes the default semantic version and canonical ASCII logo |
 | audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement input, PostgreSQL request routing, and metadata-aware request plumbing |
@@ -46,7 +47,13 @@ Stable public package surface for library consumers.
 - `AnalyzeQueryAccess(ctx, request)`
   Performs query access analysis and returns read classification, admission, and permission requirements
 - `QueryAccessRequest`
-  Input for query access analysis with SQL, dialect, mode, default schema, and optional schema resolver
+  Input for query access analysis with SQL, dialect, mode, optional analysis profile, default schema, and optional schema resolver
+- `QueryAccessAnalysisProfile`
+  Closed compatibility targets: empty, `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`
+- `ErrInvalidQueryAccessAnalysisProfile`
+  Returned when a profile is outside the closed set
+- `ErrQueryAccessAnalysisProfileDialectMismatch`
+  Returned when a profile is selected for another dialect
 - `QueryAccessResult`
   Output of query access analysis with structured JSON fields for dialect, mode, classification, admission, relations, columns, outputs, requirements, unresolved references, and warnings
 - `QueryAccessMode`
@@ -67,6 +74,12 @@ Stable public package surface for library consumers.
   Creates an opaque session from a caller-owned `*sql.Conn` with context for liveness check; the session does not close the connection (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
 - `AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)`
   Performs trusted PostgreSQL query access analysis using a caller-owned connection session; may return `read_only + admissible` when all effects are manifest-proven (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
+- `MySQLTiDBQueryAccessSession`
+  Opaque wrapper for a caller-owned MySQL/TiDB `*sql.Conn`; the connection remains caller-owned
+- `NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)`
+  Creates an opaque MySQL/TiDB session after a liveness check
+- `AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, req)`
+  Resolves relation metadata through the session connection, rejects external schema resolvers, and is the only SDK boundary that can use the private MySQL/TiDB semantic capability. The production builtin semantic registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. Each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition and order columns. Default `AnalyzeQueryAccess`, CLI, and HTTP remain offline and fail-closed.
 
 ## Notes
 

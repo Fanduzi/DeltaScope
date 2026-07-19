@@ -1,0 +1,86 @@
+services:
+  mysql57:
+    image: mysql:5.7.44
+    platform: linux/amd64
+    container_name: deltascope-query-access-builtin-mysql57
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+    ports:
+      - "3507:3306"
+    volumes:
+      - ./query-access-builtin-mysql-init.sql:/docker-entrypoint-initdb.d/query-access-builtin-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+  mysql80:
+    image: mysql:8.0.46
+    container_name: deltascope-query-access-builtin-mysql80
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+    ports:
+      - "3800:3306"
+    volumes:
+      - ./query-access-builtin-mysql-init.sql:/docker-entrypoint-initdb.d/query-access-builtin-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+  mysql84:
+    image: mysql:8.4.10
+    container_name: deltascope-query-access-builtin-mysql84
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+    ports:
+      - "3840:3306"
+    volumes:
+      - ./query-access-builtin-mysql-init.sql:/docker-entrypoint-initdb.d/query-access-builtin-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+
+  tidb85:
+    image: pingcap/tidb:v8.5.7
+    container_name: deltascope-query-access-builtin-tidb85
+    command:
+      - --store=unistore
+      - --path=
+    ports:
+      - "4850:4000"
+      - "10850:10080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:10080/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tidb85-fixture:
+    image: mysql:8.4.10
+    container_name: deltascope-query-access-builtin-tidb85-fixture
+    depends_on:
+      tidb85:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - mysql --protocol=tcp -h tidb85 -P 4000 -uroot < /fixtures/query-access-builtin-tidb-init.sql && exec sleep infinity
+    volumes:
+      - ./query-access-builtin-tidb-init.sql:/fixtures/query-access-builtin-tidb-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb85 -P 4000 -uroot -Nse \"SELECT COUNT(*) FROM app.builtin_semantic_facts\" | grep -qx '4'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

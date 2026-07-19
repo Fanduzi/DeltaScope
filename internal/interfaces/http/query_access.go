@@ -1,5 +1,5 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: HTTP query-access analysis requests carrying SQL text, dialect, mode, and optional schema context
+// input: HTTP query-access analysis requests carrying SQL text, dialect, mode, profile, and optional schema context
 // output: JSON query access analysis results for the HTTP adapter
 // pos: HTTP adapter glue between request-scoped inputs and the public DeltaScope query access API
 // note: if this file changes, update this header and module README.md.
@@ -18,10 +18,11 @@ import (
 )
 
 type queryAccessRequest struct {
-	SQL           string             `json:"sql"`
-	Dialect       deltascope.Dialect `json:"dialect,omitempty"`
-	Mode          string             `json:"mode,omitempty"`
-	DefaultSchema string             `json:"default_schema,omitempty"`
+	SQL             string                                `json:"sql"`
+	Dialect         deltascope.Dialect                    `json:"dialect,omitempty"`
+	Mode            string                                `json:"mode,omitempty"`
+	DefaultSchema   string                                `json:"default_schema,omitempty"`
+	AnalysisProfile deltascope.QueryAccessAnalysisProfile `json:"profile,omitempty"`
 }
 
 var analyzeQueryAccess = deltascope.AnalyzeQueryAccess
@@ -67,10 +68,11 @@ func handleQueryAccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := analyzeQueryAccess(r.Context(), deltascope.QueryAccessRequest{
-		SQL:           request.SQL,
-		Dialect:       dialect,
-		Mode:          mode,
-		DefaultSchema: strings.TrimSpace(request.DefaultSchema),
+		SQL:             request.SQL,
+		Dialect:         dialect,
+		Mode:            mode,
+		DefaultSchema:   strings.TrimSpace(request.DefaultSchema),
+		AnalysisProfile: request.AnalysisProfile,
 	})
 	if err != nil {
 		status, code := mapQueryAccessError(err)
@@ -87,6 +89,10 @@ func mapQueryAccessError(err error) (int, string) {
 		return http.StatusGatewayTimeout, "request_timeout"
 	case errors.Is(err, context.Canceled):
 		return http.StatusRequestTimeout, "request_canceled"
+	case errors.Is(err, deltascope.ErrInvalidQueryAccessAnalysisProfile):
+		return http.StatusBadRequest, "invalid_profile"
+	case errors.Is(err, deltascope.ErrQueryAccessAnalysisProfileDialectMismatch):
+		return http.StatusBadRequest, "profile_dialect_mismatch"
 	case strings.Contains(err.Error(), "unsupported dialect"):
 		return http.StatusBadRequest, "bad_request"
 	default:
@@ -102,6 +108,10 @@ func mapQueryAccessErrorMessage(err error) string {
 		return "request timed out"
 	case errors.Is(err, context.Canceled):
 		return "request canceled"
+	case errors.Is(err, deltascope.ErrInvalidQueryAccessAnalysisProfile):
+		return "invalid analysis profile"
+	case errors.Is(err, deltascope.ErrQueryAccessAnalysisProfileDialectMismatch):
+		return "analysis profile does not match dialect"
 	case strings.Contains(err.Error(), "unsupported dialect"):
 		return "unsupported dialect"
 	default:

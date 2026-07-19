@@ -151,6 +151,64 @@ func TestHandlerQueryAccessDefaultModeStrict(t *testing.T) {
 	}
 }
 
+func TestHandlerQueryAccessProfilePassesThroughAndRemainsOffline(t *testing.T) {
+	var capturedRequest deltascope.QueryAccessRequest
+	previous := analyzeQueryAccess
+	analyzeQueryAccess = func(_ context.Context, req deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		capturedRequest = req
+		return &deltascope.QueryAccessResult{
+			Dialect:            string(req.Dialect),
+			Mode:               req.Mode,
+			ReadClassification: deltascope.QueryAccessIndeterminate,
+			Admission:          deltascope.QueryAccessIndeterminateAdmission,
+		}, nil
+	}
+	t.Cleanup(func() { analyzeQueryAccess = previous })
+
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT COUNT(*) FROM app.users","dialect":"mysql","profile":"mysql-8.4"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if capturedRequest.AnalysisProfile != deltascope.QueryAccessAnalysisProfileMySQL84 {
+		t.Fatalf("profile = %q, want %q", capturedRequest.AnalysisProfile, deltascope.QueryAccessAnalysisProfileMySQL84)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if _, ok := payload["profile"]; ok {
+		t.Fatalf("profile leaked into HTTP response: %#v", payload)
+	}
+}
+
+func TestHandlerQueryAccessUnknownProfileIsBoundedError(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","dialect":"mysql","profile":"mysql-8.4-secret-password"}`))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	body := strings.ToLower(rec.Body.String())
+	for _, forbidden := range []string{"mysql-8.4-secret-password", "secret-password", "sql"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("HTTP error leaked %q: %s", forbidden, rec.Body.String())
+		}
+	}
+}
+
 func TestHandlerQueryAccessRejectsInvalidMode(t *testing.T) {
 	handler, err := NewHandler("", "test-build")
 	if err != nil {

@@ -174,6 +174,30 @@ func TestQueryAccessResolver_Cancellation(t *testing.T) {
 	}
 }
 
+func TestQueryAccessConnResolver_RejectsSystemView(t *testing.T) {
+	db := openQATestDB(t, map[string]testQueryResult{
+		"from information_schema.tables": {
+			columns: []string{"table_type"},
+			rows:    [][]driver.Value{{"SYSTEM VIEW"}},
+		},
+	})
+	defer db.Close()
+
+	conn, err := db.Conn(context.Background())
+	if err != nil {
+		t.Fatalf("db.Conn: %v", err)
+	}
+	defer conn.Close()
+
+	resolver, err := NewQueryAccessConnResolver(conn)
+	if err != nil {
+		t.Fatalf("NewQueryAccessConnResolver: %v", err)
+	}
+	if _, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "system_view"); err == nil {
+		t.Fatal("system view was accepted as a physical relation")
+	}
+}
+
 // qaTestDriver is a custom sql driver for query access resolver tests.
 type qaTestDriver struct {
 	results map[string]testQueryResult
