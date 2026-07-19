@@ -370,7 +370,7 @@ claimed evidence.
 ### Docker evidence
 
 - Compose file: `docker/query-access-builtin-compose.yaml`.
-- Start: `docker compose -f docker/query-access-builtin-compose.yaml up -d --wait mysql57 mysql80 mysql84 tidb85`.
+- Start: `docker compose -f docker/query-access-builtin-compose.yaml up -d --wait mysql57 mysql80 mysql84 tidb85 tidb85-fixture`.
 - Stop/cleanup: `docker compose -f docker/query-access-builtin-compose.yaml down -v --remove-orphans`.
 - Probe command: `go test -tags integration ./internal/infrastructure/metadata/mysql -run 'TestBuiltinSemantic(57|80|84|TiDB85)_Live' -count=1 -v`.
 - Pass criteria: every selected service returns the exact profile version prefix,
