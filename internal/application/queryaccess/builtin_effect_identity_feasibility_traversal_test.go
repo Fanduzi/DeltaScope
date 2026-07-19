@@ -67,8 +67,8 @@ func TestFeasibilityT2_HiddenFunctionFailClosed(t *testing.T) {
 					if !foundFn {
 						t.Errorf("expected %q in %v", domain.ReasonFunctionEffect, dr.ReasonCodes)
 					}
-					if len(res.EffectCandidates) != 0 {
-						t.Errorf("MySQL/TiDB must not extract effect candidates; got %+v", res.EffectCandidates)
+					if len(res.EffectCandidates) == 0 {
+						t.Errorf("hidden function must retain internal effect candidates")
 					}
 				})
 			}

@@ -164,9 +164,8 @@ func assertFeasibilityNoLeak(t *testing.T, res appqa.QueryAccessResult, sql stri
 	if strings.Contains(dump, sql) {
 		t.Errorf("result must not embed raw SQL text: %s", dump)
 	}
-	// MySQL/TiDB must not extract PG-style EffectCandidates.
-	if len(res.EffectCandidates) != 0 {
-		t.Errorf("MySQL/TiDB must not extract effect candidates; got %+v", res.EffectCandidates)
+	if strings.Contains(sql, "(") && !hasFeasibilityReason(res.DomainResult.ReasonCodes, domain.ReasonParseFailure) && len(res.EffectCandidates) == 0 {
+		t.Errorf("function-bearing query must retain internal effect candidates: %+v", res.EffectCandidates)
 	}
 }
 
@@ -532,8 +531,8 @@ func TestFeasibilityT1_NoLeakMarkerInjection(t *testing.T) {
 					t.Errorf("result leaked marker %q: %s", m, dump)
 				}
 			}
-			if len(res.EffectCandidates) != 0 {
-				t.Errorf("MySQL/TiDB must not extract effect candidates; got %+v", res.EffectCandidates)
+			if len(res.EffectCandidates) == 0 {
+				t.Errorf("function-bearing query must retain internal effect candidates")
 			}
 			assertFeasibilityReasonsMachineIDs(t, res.DomainResult.ReasonCodes)
 		})
@@ -638,9 +637,8 @@ func TestFeasibilityT1_CorpusNoLeak(t *testing.T) {
 				t.Fatalf("analyze: %v", err)
 			}
 			assertFeasibilityReasonsMachineIDs(t, res.DomainResult.ReasonCodes)
-			// Effect candidates must remain empty (no PG-style extraction leak).
-			if len(res.EffectCandidates) != 0 {
-				t.Errorf("effect candidates must be empty; got %+v", res.EffectCandidates)
+			if len(res.EffectCandidates) == 0 {
+				t.Errorf("COUNT(*) must retain an internal effect candidate")
 			}
 		})
 	}

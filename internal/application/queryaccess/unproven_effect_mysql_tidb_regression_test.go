@@ -96,7 +96,7 @@ func TestUnprovenEffectReasons_MySQLTiDBOperatorBearingNoRegression(t *testing.T
 	}
 }
 
-func TestEffectCandidates_MySQLTiDBEmpty(t *testing.T) {
+func TestEffectCandidates_MySQLTiDBOrdered(t *testing.T) {
 	t.Parallel()
 	svc := &Service{}
 	for _, dialect := range []string{"mysql", "tidb"} {
@@ -110,7 +110,21 @@ func TestEffectCandidates_MySQLTiDBEmpty(t *testing.T) {
 				t.Fatalf("analyze: %v", err)
 			}
 			if len(res.EffectCandidates) != 0 {
-				t.Errorf("%s must not extract PG effect candidates; got %+v", dialect, res.EffectCandidates)
+				t.Errorf("%s function-free query must not invent effect candidates: %+v", dialect, res.EffectCandidates)
+			}
+			functionResult, err := svc.Analyze(context.Background(), QueryAccessRequest{
+				SQL: "SELECT COUNT(*) FROM users", Dialect: dialect, Mode: "strict",
+			})
+			if err != nil {
+				t.Fatalf("analyze function: %v", err)
+			}
+			if len(functionResult.EffectCandidates) == 0 {
+				t.Fatalf("%s function-bearing query must extract internal effect candidates", dialect)
+			}
+			for i, candidate := range functionResult.EffectCandidates {
+				if candidate.Ordinal != i {
+					t.Errorf("%s candidate ordinal: got %d at index %d", dialect, candidate.Ordinal, i)
+				}
 			}
 			if res.DomainResult.Admission != domain.Admissible {
 				t.Errorf("admission: got %q, want admissible", res.DomainResult.Admission)

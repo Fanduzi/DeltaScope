@@ -210,8 +210,8 @@ func TestCommonPureEffects_MySQLTiDB_NoLeak(t *testing.T) {
 		if err != nil {
 			t.Fatalf("analyze %s: %v", dialect, err)
 		}
-		if len(res.EffectCandidates) != 0 {
-			t.Errorf("%s effect candidates: got %v, want empty", dialect, res.EffectCandidates)
+		if len(res.EffectCandidates) == 0 {
+			t.Errorf("%s COUNT(*) effect candidates must be retained", dialect)
 		}
 	}
 }
