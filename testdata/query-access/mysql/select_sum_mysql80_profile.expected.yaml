@@ -1,30 +1,25 @@
-name: select_dense_rank_window
+name: select_sum_mysql80_profile
 dialect: mysql
 mode: strict
-profile: mysql-8.4
+profile: mysql-8.0
 expect:
   read_classification: indeterminate
   admission: indeterminate
   relations:
-    - name: employees
+    - name: orders
       kind: table
       permission_required: true
   referenced_columns:
-    - table: employees
-      column: dept
-      usages: [window]
-    - table: employees
-      column: id
-      usages: [ordering]
+    - table: orders
+      column: amount
+      usages: [projection]
   outputs:
     - name: ""
-      sources: [employees.dept, employees.id]
+      sources: [orders.amount]
   requirements:
-    - object: employees
+    - object: orders
       privilege: read_table
-    - object: employees.dept
-      privilege: read_column
-    - object: employees.id
+    - object: orders.amount
       privilege: read_column
   unresolved: []
   warnings: []

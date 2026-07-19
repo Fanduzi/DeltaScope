@@ -1,7 +1,7 @@
-name: select_count_star
+name: select_count_star_mysql57_profile
 dialect: mysql
 mode: strict
-profile: mysql-8.4
+profile: mysql-5.7
 expect:
   read_classification: indeterminate
   admission: indeterminate

@@ -24,6 +24,7 @@ type corpusExpected struct {
 	Name    string `yaml:"name"`
 	Dialect string `yaml:"dialect"`
 	Mode    string `yaml:"mode"`
+	Profile string `yaml:"profile,omitempty"`
 	Expect  struct {
 		ReadClassification string              `yaml:"read_classification"`
 		Admission          string              `yaml:"admission"`
@@ -68,7 +69,7 @@ type corpusUnresolved struct {
 }
 
 // queryAccessDialects lists the dialects this runner exercises without build tags.
-var queryAccessDialects = []string{"mysql"}
+var queryAccessDialects = []string{"mysql", "tidb"}
 
 // queryAccessWalkDialects walks only the dialect subdirectories.
 func queryAccessWalkDialects(corpusRoot string, dialects []string) ([]string, error) {
@@ -147,9 +148,10 @@ func runQueryAccessCorpusCase(t *testing.T, expPath string) {
 	// Run service.
 	svc := &appqa.Service{}
 	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
-		SQL:     string(sqlBytes),
-		Dialect: tc.Dialect,
-		Mode:    tc.Mode,
+		SQL:             string(sqlBytes),
+		Dialect:         tc.Dialect,
+		Mode:            tc.Mode,
+		AnalysisProfile: appqa.AnalysisProfile(tc.Profile),
 	})
 	if err != nil {
 		t.Fatalf("analyze error: %v", err)
