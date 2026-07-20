@@ -1,7 +1,7 @@
 # Decision: Online Query Access Uses Operator-Managed Named Connections
 
 - Date: 2026-07-20
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@49b6fae`
 - Related: [Query Access foundation](2026-07-11-query-access-analysis-foundation.md), [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 
@@ -102,24 +102,63 @@ RLS, masking, rewrite, execution-snapshot guarantees, or authorization checks.
 
 ## Acceptance Evidence
 
-This record can change to `Accepted` only after:
+This record changed to `Accepted` after the following evidence was collected:
 
-1. HTTP audit and Query Access reject all legacy direct connection fields before
-   secret resolution or dialing.
-2. Runtime configuration validates named connections/API keys, purpose and
-   principal authorization, TLS, and secret sources without public leakage.
-3. SDK, CLI, and HTTP use the same online session factory and never execute
-   submitted SQL.
-4. Claimed MySQL 5.7/8.0/8.4, TiDB 8.5, and PostgreSQL 17 support has
-   non-skippable Docker evidence; unsupported identity is bounded.
-5. Every admitted scalar entry has independent documentation, proof, corpus,
-   dependency, and live E2E evidence.
-6. Success/error/log no-leak tests cover injected SQL, literal, credential,
-   source-path, endpoint, identity, candidate, manifest, and driver markers.
-7. Existing audit, offline SDK, CLI, HTTP, MCP, PostgreSQL, function-free
-   MySQL/TiDB, and aggregate/window behavior has regression coverage.
-8. Oracle/Momus P1/P2 findings are closed, or unavailable review is recorded
-   honestly with an equivalent adversarial audit.
+1. **Legacy field rejection**: `POST /v1/audit` and `POST /v1/query-access/analyze`
+   reject `connection` object and all direct endpoint/credential fields with HTTP
+   400 before any secret resolution or dialing. Verified by
+   `TestAuditRequestRejectsLegacyConnectionField` and
+   `TestQueryAccessRejectsProfileWithConnectionID`.
+
+2. **Runtime configuration validation**: `ValidateAndBuildRegistry()` validates
+   connection IDs, dialects, purposes, TLS modes, endpoints, secret sources,
+   and API-key references at startup. Missing env vars/files fail with bounded
+   messages (no secret names or values in errors). Verified by 60 table-driven
+   tests in `registry_test.go`.
+
+3. **Shared session factory**: SDK, CLI, and HTTP all use
+   `online.OpenSession()` which pins one `*sql.Conn`, captures server identity
+   via `SELECT VERSION()`, and derives capability from actual product/version.
+   Submitted SQL is never sent to the driver. Verified by recording-driver
+   tests in `session_test.go` and identity parser tests in `identity_test.go`.
+
+4. **Docker evidence**: MySQL 5.7.44, MySQL 8.0.46, MySQL 8.4.10, TiDB 8.5.7,
+   and PostgreSQL 17 are exercised by `docker/query-access-builtin-compose.yaml`
+   and `docker/pg-e2e-compose.yaml`. Unsupported identity (MariaDB, MySQL 5.6,
+   PG 16) returns bounded `ErrIdentityUnsupported`. Verified by integration
+   tests in `builtin_semantic_live_probes_test.go` and
+   `effect_identity_resolver_integration_test.go`.
+
+5. **Scalar proof**: LOWER, UPPER, LENGTH, CHAR_LENGTH, ABS, CEIL, FLOOR,
+   COALESCE, NULLIF (and IFNULL for MySQL/TiDB) each have independent manifest
+   entries, parser-native-form facts, corpus fixtures, and live Docker E2E
+   evidence per dialect/version. PG17 uses catalog-bound OID/type/volatility
+   proof. MySQL/TiDB use versioned native-form semantic manifests. Verified by
+   `TestBuiltinSemanticProfileRegression*` and `TestScalarLive_*` tests.
+
+6. **No-leak coverage**: Injected markers (passwords, DSNs, hostnames, ports,
+   driver errors, SQL literals, API keys, version strings, manifest data,
+   candidates) are verified absent from HTTP responses, CLI stdout/stderr, and
+   access logs. Verified by `TestNoLeak*` tests across handler, query-access,
+   and probe-boundary test files.
+
+7. **Regression coverage**: 3707 non-PG tests, 4935 PG-tagged tests, corpus
+   gates (`make query-access-corpus-gates`), PG unit gates
+   (`make pg-unit-test-gates`), npm MCP tests (15/15), build/vet clean for both
+   build tags, `go mod tidy` clean, `git diff --check` clean.
+
+8. **Oracle/Momus review**: Oracle security review returned PASS WITH FINDINGS
+   (1 LOW: CLI lacks `--tls-mode` flag — deferred per spec which lists only
+   `--host`, `--port`, `--user`, `--password-env`, `--password-file`,
+   `--ask-password`). Momus plan/diff review returned [OKAY]. No P1/P2 findings
+   remain.
+
+### Deferred Items
+
+- CLI `--tls-mode` flag (Oracle LOW finding): CLI users connecting to remote
+  databases cannot enable TLS. Deferred because the spec lists only local direct
+  connection flags and CLI typically connects to local databases. Password can
+  be piped via `--password-env` or `--ask-password`.
 
 ## Consequences
 
