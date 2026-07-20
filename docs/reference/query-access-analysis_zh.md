@@ -37,7 +37,7 @@
 
 `QueryAccessRequest.AnalysisProfile` 是可选的闭合集合。有效值有空值（保留默认行为）、`mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5`。MySQL 配置只能搭配 MySQL 方言，`tidb-8.5` 只能搭配 TiDB。未知值返回 `ErrInvalidQueryAccessAnalysisProfile`；方言不匹配返回 `ErrQueryAccessAnalysisProfileDialectMismatch`。
 
-配置是一个兼容性目标，告诉分析器“按哪个引擎/版本的语义来看这条 SQL”。它不是服务器身份验证：当前实现不会去查询实际服务器的 `VERSION()` 或 SQL mode，也不会校验连接指向的真是哪个版本。调用方要自己保证所选 profile 与实际 MySQL/TiDB 版本以及相关 SQL mode 匹配；选错 profile，分析仍会按那个 profile 的语义来判断，结果可能与真实服务器行为不一致。
+配置是一个兼容性目标，告诉分析器“按哪个引擎/版本的语义来看这条 SQL”。它不是服务器身份验证：当前实现不会去查询实际服务器的 `VERSION()` 或 SQL mode，也不会校验连接实际指向哪个版本。调用方要自己保证所选 profile 与实际 MySQL/TiDB 版本以及相关 SQL mode 匹配；选错 profile，分析仍会按那个 profile 的语义来判断，结果可能与真实服务器行为不一致。
 
 profile 也不改变默认行为。DeltaScope 的默认路径不会自行创建数据库连接：默认 SDK 可以接受调用方提供的 `SchemaResolver` 来解析表名或展开通配符，但这不会启用 MySQL/TiDB 函数效果提升；CLI 和 HTTP 没有 session 提升路径。生产语义 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 还支持带直接分区和排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK`。
 
