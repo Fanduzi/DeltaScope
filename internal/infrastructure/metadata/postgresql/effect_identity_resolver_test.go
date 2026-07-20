@@ -823,6 +823,31 @@ func TestResolveColumnTypeOIDs_FunctionColumn(t *testing.T) {
 	}
 }
 
+func TestResolveColumnTypeOIDs_FunctionDirectColumns(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCatalog{
+		live: completeLive(),
+		cols: map[colKey]uint32{
+			{schema: "app", table: "users", column: "name"}:  25,
+			{schema: "app", table: "users", column: "email"}: 25,
+		},
+	}
+	a := &EffectIdentityAdapter{catalog: fake}
+	result, err := a.ResolveColumnTypeOIDs(context.Background(), []appqa.EffectCandidate{{
+		Kind:              appqa.EffectCandidateFunction,
+		Ordinal:           7,
+		Arity:             2,
+		OperandKinds:      []string{"column", "column"},
+		OperandColumnRefs: []appqa.OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}, {Schema: "app", Table: "users", Column: "email"}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := result[7]; !reflect.DeepEqual(got, []uint32{25, 25}) {
+		t.Fatalf("expected direct-column function type OIDs, got %v", result)
+	}
+}
+
 func TestAdapter_CountColumnUsesUniqueAnyElementCatalogMatch(t *testing.T) {
 	t.Parallel()
 	live := completeLive()
@@ -939,6 +964,18 @@ func (f *fakeCatalog) lookupFunctions(_ context.Context, nsOID uint32, name stri
 	rows := f.fns[key]
 	if len(rows) == 0 && len(argOIDs) == 1 {
 		rows = f.fns[fnKey{ns: nsOID, name: name, args: "2276"}]
+	}
+	// Variadic fallback: match entries keyed by empty args.
+	if len(rows) == 0 && len(argOIDs) > 0 {
+		rows = f.fns[fnKey{ns: nsOID, name: name, args: ""}]
+	}
+	// Polymorphic fallback: match entries keyed by polymorphic arg OIDs.
+	if len(rows) == 0 && len(argOIDs) > 0 {
+		polyArgs := make([]uint32, len(argOIDs))
+		for i := range polyArgs {
+			polyArgs[i] = 2276
+		}
+		rows = f.fns[fnKey{ns: nsOID, name: name, args: oidVectorLiteral(polyArgs)}]
 	}
 	return append([]functionRow(nil), rows...), nil
 }

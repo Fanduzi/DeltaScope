@@ -304,21 +304,75 @@ func (s *PinnedSession) lookupFunctions(ctx context.Context, nsOID uint32, name 
 	if err != nil {
 		return nil, err
 	}
-	if len(out) > 0 || len(argOIDs) != 1 {
+	if len(out) > 0 {
 		return out, nil
 	}
-	rows, err = conn.QueryContext(ctx, `
-		select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
-		from pg_catalog.pg_proc p
-		join pg_catalog.pg_namespace n on n.oid = p.pronamespace
-		where p.pronamespace = $1
-		  and p.proname = $2
-		  and p.proargtypes = '2276'::pg_catalog.oidvector
-	`, nsOID, name)
-	if err != nil {
-		return nil, err
+	// Fallback 1: single-arg anyelement (OID 2276) overload.
+	if len(argOIDs) == 1 {
+		rows, err = conn.QueryContext(ctx, `
+			select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
+			from pg_catalog.pg_proc p
+			join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+			where p.pronamespace = $1
+			  and p.proname = $2
+			  and p.proargtypes = '2276'::pg_catalog.oidvector
+		`, nsOID, name)
+		if err != nil {
+			return nil, err
+		}
+		out, err = scanFunctionRows(rows)
+		if err != nil {
+			return nil, err
+		}
+		if len(out) > 0 {
+			return out, nil
+		}
 	}
-	return scanFunctionRows(rows)
+	// Fallback 2: purely variadic functions (e.g. COALESCE).
+	// Match functions where proargtypes is empty and provariadic > 0.
+	// Return the variadic element type OID as the argtypes so the resolved
+	// facts carry the polymorphic type, matching the manifest entry.
+	if len(argOIDs) > 0 {
+		rows, err = conn.QueryContext(ctx, `
+			select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.provariadic::text
+			from pg_catalog.pg_proc p
+			join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+			where p.pronamespace = $1
+			  and p.proname = $2
+			  and p.proargtypes = ''::pg_catalog.oidvector
+			  and p.provariadic > 0
+			  and p.pronargs = 0
+		`, nsOID, name)
+		if err != nil {
+			return nil, err
+		}
+		out, err = scanFunctionRows(rows)
+		if err != nil {
+			return nil, err
+		}
+		if len(out) > 0 {
+			return out, nil
+		}
+	}
+	// Fallback 3: polymorphic-arg functions (e.g. NULLIF(any, any)).
+	// Match functions whose proargtypes contain only polymorphic type OIDs
+	// (any=2276, anyelement=2283, anycompatible=5077, etc.) and arity matches.
+	if len(argOIDs) > 0 {
+		rows, err = conn.QueryContext(ctx, `
+			select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
+			from pg_catalog.pg_proc p
+			join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+			where p.pronamespace = $1
+			  and p.proname = $2
+			  and p.pronargs = $3
+			  and p.proargtypes::text ~ '^(2276|2283|2776|3500|3831|5077|5078|5079|5080)( (2276|2283|2776|3500|3831|5077|5078|5079|5080))*$'
+		`, nsOID, name, len(argOIDs))
+		if err != nil {
+			return nil, err
+		}
+		return scanFunctionRows(rows)
+	}
+	return out, nil
 }
 
 type castRow struct {

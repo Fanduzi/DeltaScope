@@ -24,6 +24,14 @@ CREATE TABLE app.orders (
 
 INSERT INTO app.orders (user_id, amount) VALUES (1, 10.50), (2, 20.75);
 
+CREATE TABLE app.scalar_facts (
+  text_value TEXT NOT NULL,
+  fallback_text TEXT NOT NULL,
+  numeric_value NUMERIC NOT NULL
+);
+
+INSERT INTO app.scalar_facts (text_value, fallback_text, numeric_value) VALUES ('Delta', 'fallback', -42.25);
+
 CREATE TABLE app.accounts (
   id BIGSERIAL PRIMARY KEY,
   email VARCHAR(255) NOT NULL DEFAULT '',

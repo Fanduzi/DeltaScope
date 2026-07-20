@@ -294,6 +294,77 @@ func TestTiDB85ProfileWindowBoundary(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticProfiles_ScalarDirectColumnsAdmit(t *testing.T) {
+	profiles := []struct {
+		name    string
+		dialect string
+		profile AnalysisProfile
+	}{
+		{name: "mysql57", dialect: "mysql", profile: AnalysisProfileMySQL57},
+		{name: "mysql80", dialect: "mysql", profile: AnalysisProfileMySQL80},
+		{name: "mysql84", dialect: "mysql", profile: AnalysisProfileMySQL84},
+		{name: "tidb85", dialect: "tidb", profile: AnalysisProfileTiDB85},
+	}
+	probes := []struct {
+		name string
+		sql  string
+	}{
+		{name: "lower", sql: "SELECT LOWER(name) FROM app.users"},
+		{name: "upper", sql: "SELECT UPPER(email) FROM app.users"},
+		{name: "length", sql: "SELECT LENGTH(name) FROM app.users"},
+		{name: "char_length", sql: "SELECT CHAR_LENGTH(name) FROM app.users"},
+		{name: "abs", sql: "SELECT ABS(amount) FROM app.orders"},
+		{name: "ceil", sql: "SELECT CEIL(amount) FROM app.orders"},
+		{name: "floor", sql: "SELECT FLOOR(amount) FROM app.orders"},
+		{name: "coalesce", sql: "SELECT COALESCE(name, email) FROM app.users"},
+		{name: "nullif", sql: "SELECT NULLIF(name, email) FROM app.users"},
+		{name: "ifnull", sql: "SELECT IFNULL(name, 'unknown') FROM app.users"},
+	}
+
+	for _, profile := range profiles {
+		for _, probe := range probes {
+			t.Run(profile.name+"/"+probe.name, func(t *testing.T) {
+				result := analyzeProductionProfile(t, probe.sql, profile.dialect, "app", profile.profile)
+				if result.DomainResult.ReadClassification != domain.ReadOnly || result.DomainResult.Admission != domain.Admissible {
+					t.Fatalf("classification=%q admission=%q candidates=%+v requirements=%+v reasons=%v", result.DomainResult.ReadClassification, result.DomainResult.Admission, result.EffectCandidates, result.DomainResult.Requirements, result.DomainResult.ReasonCodes)
+				}
+			})
+		}
+	}
+}
+
+func TestBuiltinSemanticProfiles_ScalarBoundariesStayIndeterminate(t *testing.T) {
+	profiles := []struct {
+		name    string
+		dialect string
+		profile AnalysisProfile
+	}{
+		{name: "mysql57", dialect: "mysql", profile: AnalysisProfileMySQL57},
+		{name: "mysql80", dialect: "mysql", profile: AnalysisProfileMySQL80},
+		{name: "mysql84", dialect: "mysql", profile: AnalysisProfileMySQL84},
+		{name: "tidb85", dialect: "tidb", profile: AnalysisProfileTiDB85},
+	}
+	probes := []struct {
+		name string
+		sql  string
+	}{
+		{name: "nested", sql: "SELECT LOWER(UPPER(name)) FROM app.users"},
+		{name: "literal", sql: "SELECT LOWER(42) FROM app.users"},
+		{name: "qualified", sql: "SELECT app.LOWER(name) FROM app.users"},
+	}
+
+	for _, profile := range profiles {
+		for _, probe := range probes {
+			t.Run(profile.name+"/"+probe.name, func(t *testing.T) {
+				result := analyzeProductionProfile(t, probe.sql, profile.dialect, "app", profile.profile)
+				if result.DomainResult.ReadClassification == domain.ReadOnly || result.DomainResult.Admission == domain.Admissible {
+					t.Fatalf("scalar boundary was promoted: classification=%q admission=%q", result.DomainResult.ReadClassification, result.DomainResult.Admission)
+				}
+			})
+		}
+	}
+}
+
 // TestProfileBoundaryRejectsCrossDialectPromotion verifies a MySQL profile
 // cannot affect TiDB and vice versa.
 func TestProfileBoundaryRejectsCrossDialectPromotion(t *testing.T) {
@@ -387,5 +458,8 @@ func (*profileTestResolver) ResolveRelation(ctx context.Context, dialect, schema
 	return RelationSchema{Schema: schema, Name: name, Kind: "table", Columns: []ColumnSchema{
 		{Name: "id", Ordinal: 1},
 		{Name: "dept", Ordinal: 2},
+		{Name: "name", Ordinal: 3},
+		{Name: "email", Ordinal: 4},
+		{Name: "amount", Ordinal: 5},
 	}}, nil
 }

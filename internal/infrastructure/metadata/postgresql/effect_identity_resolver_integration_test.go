@@ -3,11 +3,11 @@
 // Package postgresqlmeta runs T7 adapter and trusted-service E2E against a live
 // PostgreSQL 17 session when available.
 // input: DELTASCOPE_PG_* env or docker compose defaults (localhost:5500)
-// output: real catalog facts for = / count(*) under a pinned session;
+// output: real catalog facts for operators, aggregates, and scalar effects under a pinned session;
 //
 //	real Service.Analyze promotion for count(*) via NewTrustedService
 //
-// pos: integration evidence only; skipped when Docker/PG unavailable (not claimed via mocks)
+// pos: non-skippable PostgreSQL 17 integration evidence
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
@@ -28,13 +28,9 @@ import (
 //
 // This is the only test that verifies the full trust chain against a live PG17.
 func TestTrustedService_PG17CountStarE2E(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping PG17 trusted-service E2E in short mode")
-	}
-
 	db, cleanup, err := openIntegrationDB(t)
 	if err != nil {
-		t.Skipf("PG17 integration unavailable (Docker/compose not running): %v", err)
+		t.Fatal("PG17 integration service unavailable at configured endpoint (driver error suppressed)")
 	}
 	defer cleanup()
 
@@ -118,13 +114,9 @@ func TestTrustedService_PG17CountStarE2E(t *testing.T) {
 // Uses existing app.users (id int8) JOIN app.orders (user_id int8) so the
 // int8=int8 comparison operator (OID 20=20) is manifest-proven.
 func TestTrustedService_PG17JoinComparisonE2E(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping PG17 trusted-service JOIN E2E in short mode")
-	}
-
 	db, cleanup, err := openIntegrationDB(t)
 	if err != nil {
-		t.Skipf("PG17 integration unavailable (Docker/compose not running): %v", err)
+		t.Fatal("PG17 integration service unavailable at configured endpoint (driver error suppressed)")
 	}
 	defer cleanup()
 
@@ -209,13 +201,9 @@ func TestTrustedService_PG17JoinComparisonE2E(t *testing.T) {
 }
 
 func TestEffectIdentityAdapter_PG17PinnedSessionIntegration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping PG17 integration in short mode")
-	}
-
 	db, cleanup, err := openIntegrationDB(t)
 	if err != nil {
-		t.Skipf("PG17 integration unavailable (Docker/compose not running): %v", err)
+		t.Fatal("PG17 integration service unavailable at configured endpoint (driver error suppressed)")
 	}
 	defer cleanup()
 
@@ -284,6 +272,137 @@ func TestEffectIdentityAdapter_PG17PinnedSessionIntegration(t *testing.T) {
 	// Explicit and unqualified count should both be pg_catalog.count(*) under default path.
 	if batch.Items[1].Facts.ObjectOID != batch.Items[2].Facts.ObjectOID {
 		t.Fatalf("count OID mismatch unqualified=%d explicit=%d", batch.Items[1].Facts.ObjectOID, batch.Items[2].Facts.ObjectOID)
+	}
+}
+
+func TestScalarLive_PG17Builtins(t *testing.T) {
+	db, cleanup, err := openIntegrationDB(t)
+	if err != nil {
+		t.Fatal("PG17 integration service unavailable at configured endpoint (driver error suppressed)")
+	}
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	stringProbes := []struct {
+		query string
+		want  string
+	}{
+		{query: "SELECT LOWER('TEST')", want: "test"},
+		{query: "SELECT UPPER('test')", want: "TEST"},
+		{query: "SELECT COALESCE(NULL, 'fallback')", want: "fallback"},
+		{query: "SELECT NULLIF('a', 'b')", want: "a"},
+	}
+	for _, probe := range stringProbes {
+		var got string
+		if err := db.QueryRowContext(ctx, probe.query).Scan(&got); err != nil || got != probe.want {
+			t.Fatal("PG17 scalar string probe returned an unexpected bounded value")
+		}
+	}
+
+	numericProbes := []struct {
+		query string
+		want  float64
+	}{
+		{query: "SELECT LENGTH('hello')", want: 5},
+		{query: "SELECT CHAR_LENGTH('hello')", want: 5},
+		{query: "SELECT ABS(-42)", want: 42},
+		{query: "SELECT CEIL(3.14)", want: 4},
+		{query: "SELECT FLOOR(3.14)", want: 3},
+	}
+	for _, probe := range numericProbes {
+		var got float64
+		if err := db.QueryRowContext(ctx, probe.query).Scan(&got); err != nil || got != probe.want {
+			t.Fatal("PG17 scalar numeric probe returned an unexpected bounded value")
+		}
+	}
+
+	rows, err := db.QueryContext(ctx, `
+		SELECT oid, proname, pronargs, proargtypes::text, prorettype::text, provolatile
+		FROM pg_catalog.pg_proc
+		WHERE proname IN ('lower','upper','length','char_length','character_length','abs','ceil','ceiling','floor','coalesce','nullif')
+		  AND pronamespace = 'pg_catalog'::regnamespace
+		ORDER BY proname, pronargs
+	`)
+	if err != nil {
+		t.Fatal("PG17 scalar catalog probe failed (driver error suppressed)")
+	}
+	defer rows.Close()
+	immutableRows := 0
+	for rows.Next() {
+		var (
+			oid        uint32
+			name       string
+			arity      int
+			argTypes   string
+			resultType string
+			volatility string
+		)
+		if err := rows.Scan(&oid, &name, &arity, &argTypes, &resultType, &volatility); err != nil || oid == 0 || name == "" || arity < 0 || argTypes == "" || resultType == "" {
+			t.Fatal("PG17 scalar catalog probe returned an unexpected bounded fact")
+		}
+		if volatility == "i" {
+			immutableRows++
+		}
+	}
+	if err := rows.Err(); err != nil || immutableRows < 17 {
+		t.Fatal("PG17 scalar catalog probe did not return the required immutable rows")
+	}
+}
+
+func TestScalarLive_PG17CatalogBoundQueriesPromote(t *testing.T) {
+	db, cleanup, err := openIntegrationDB(t)
+	if err != nil {
+		t.Fatal("PG17 integration service unavailable at configured endpoint (driver error suppressed)")
+	}
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	session, err := PinSession(ctx, db)
+	if err != nil {
+		t.Fatalf("PinSession: %v", err)
+	}
+	defer session.Close()
+	adapter, err := NewEffectIdentityAdapter(session)
+	if err != nil {
+		t.Fatalf("NewEffectIdentityAdapter: %v", err)
+	}
+	schemaResolver, err := NewQueryAccessConnResolver(session.Conn())
+	if err != nil {
+		t.Fatalf("NewQueryAccessConnResolver: %v", err)
+	}
+	policy, err := appqa.NewTrustPolicy(appqa.NewPG17Manifest())
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+	svc, err := appqa.NewTrustedService(adapter, policy, schemaResolver)
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+
+	for _, query := range []string{
+		"SELECT LOWER(text_value) FROM app.scalar_facts",
+		"SELECT UPPER(text_value) FROM app.scalar_facts",
+		"SELECT LENGTH(text_value) FROM app.scalar_facts",
+		"SELECT CHAR_LENGTH(text_value) FROM app.scalar_facts",
+		"SELECT CHARACTER_LENGTH(text_value) FROM app.scalar_facts",
+		"SELECT ABS(numeric_value) FROM app.scalar_facts",
+		"SELECT CEIL(numeric_value) FROM app.scalar_facts",
+		"SELECT CEILING(numeric_value) FROM app.scalar_facts",
+		"SELECT FLOOR(numeric_value) FROM app.scalar_facts",
+		"SELECT COALESCE(text_value, fallback_text) FROM app.scalar_facts",
+		"SELECT NULLIF(text_value, fallback_text) FROM app.scalar_facts",
+	} {
+		result, err := svc.Analyze(ctx, appqa.QueryAccessRequest{SQL: query, Dialect: "postgresql", Mode: "strict", DefaultSchema: "app"})
+		if err != nil {
+			t.Fatalf("Analyze: %v", err)
+		}
+		if result.DomainResult.ReadClassification != domain.ReadOnly || result.DomainResult.Admission != domain.Admissible {
+			t.Fatal("PG17 catalog-bound scalar query was not promoted")
+		}
 	}
 }
 

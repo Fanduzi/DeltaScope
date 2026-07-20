@@ -394,7 +394,7 @@ func TestPG17Manifest_PureAggregateAndWindowEntries(t *testing.T) {
 	if err := ValidateManifest(manifest); err != nil {
 		t.Fatalf("ValidateManifest: %v", err)
 	}
-	if got, want := len(manifest.Entries), 96; got != want {
+	if got, want := len(manifest.Entries), 115; got != want {
 		t.Fatalf("manifest entry count: got %d, want %d", got, want)
 	}
 	want := map[uint32]struct {
@@ -436,6 +436,47 @@ func TestPG17Manifest_PureAggregateAndWindowEntries(t *testing.T) {
 	for _, oid := range []uint32{3986, 3992} {
 		if _, ok := seen[oid]; ok {
 			t.Fatalf("ordered-set negative OID %d must not be trusted", oid)
+		}
+	}
+}
+
+func TestPG17Manifest_ScalarCatalogEntries(t *testing.T) {
+	manifest := NewPG17Manifest()
+	want := map[uint32]struct {
+		signature string
+		args      []uint32
+		result    uint32
+	}{
+		870:  {"pg_catalog.lower(25)", []uint32{25}, 25},
+		871:  {"pg_catalog.upper(25)", []uint32{25}, 25},
+		1317: {"pg_catalog.length(25)", []uint32{25}, 23},
+		1369: {"pg_catalog.character_length(25)", []uint32{25}, 23},
+		1381: {"pg_catalog.char_length(25)", []uint32{25}, 23},
+		1394: {"pg_catalog.abs(700)", []uint32{700}, 700},
+		1395: {"pg_catalog.abs(701)", []uint32{701}, 701},
+		1396: {"pg_catalog.abs(20)", []uint32{20}, 20},
+		1397: {"pg_catalog.abs(23)", []uint32{23}, 23},
+		1398: {"pg_catalog.abs(21)", []uint32{21}, 21},
+		1705: {"pg_catalog.abs(1700)", []uint32{1700}, 1700},
+		1711: {"pg_catalog.ceil(1700)", []uint32{1700}, 1700},
+		1712: {"pg_catalog.floor(1700)", []uint32{1700}, 1700},
+		2167: {"pg_catalog.ceiling(1700)", []uint32{1700}, 1700},
+		2308: {"pg_catalog.ceil(701)", []uint32{701}, 701},
+		2309: {"pg_catalog.floor(701)", []uint32{701}, 701},
+		2320: {"pg_catalog.ceiling(701)", []uint32{701}, 701},
+	}
+
+	entries := make(map[uint32]TrustedEffectEntry, len(manifest.Entries))
+	for _, entry := range manifest.Entries {
+		entries[entry.ObjectOID] = entry
+	}
+	for oid, expected := range want {
+		entry, ok := entries[oid]
+		if !ok {
+			t.Fatalf("missing scalar manifest entry")
+		}
+		if entry.CanonicalSignature != expected.signature || entry.ResultTypeOID != expected.result || entry.Volatility != EffectVolatilityImmutable || !uint32SliceEqual(entry.OperandTypeOIDs, expected.args) {
+			t.Fatalf("scalar manifest entry did not match catalog contract")
 		}
 	}
 }
@@ -683,9 +724,9 @@ func TestPG17ManifestValid(t *testing.T) {
 		t.Errorf("PG17Manifest invalid: %v", err)
 	}
 
-	// Verify entry count: 54 operators + 42 functions = 96.
-	if len(PG17Manifest.Entries) != 96 {
-		t.Errorf("PG17Manifest has %d entries, want 96", len(PG17Manifest.Entries))
+	// Verify entry count: 54 operators + 61 functions = 115.
+	if len(PG17Manifest.Entries) != 115 {
+		t.Errorf("PG17Manifest has %d entries, want 115", len(PG17Manifest.Entries))
 	}
 
 	// Verify hash is set.

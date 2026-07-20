@@ -73,7 +73,8 @@ func (a *EffectIdentityAdapter) CaptureExecutionBoundContext(ctx context.Context
 
 // ResolveColumnTypeOIDs resolves type OIDs for operand columns on the pinned session.
 // Returns a map from candidate ordinal to type OID slice.
-// Only resolves binary operators with two column operands from base tables.
+// Resolves binary operators and functions whose operands are all direct columns
+// from base tables.
 // Returns empty map if any column cannot be resolved (fail-closed).
 func (a *EffectIdentityAdapter) ResolveColumnTypeOIDs(ctx context.Context, candidates []appqa.EffectCandidate) (map[int][]uint32, error) {
 	if a == nil || a.catalog == nil {
@@ -90,48 +91,13 @@ func (a *EffectIdentityAdapter) ResolveColumnTypeOIDs(ctx context.Context, candi
 
 	result := make(map[int][]uint32)
 	for _, cand := range candidates {
-		switch {
-		case cand.Kind == appqa.EffectCandidateOperator && cand.Arity == 2:
-			if len(cand.OperandColumnRefs) != 2 {
-				continue
-			}
-		case cand.Kind == appqa.EffectCandidateFunction && cand.Arity == 1 &&
-			len(cand.OperandKinds) == 1 && cand.OperandKinds[0] == "column":
-			if len(cand.OperandColumnRefs) != 1 {
-				continue
-			}
-		default:
+		typeOIDs, resolved := resolveDirectColumnOperandTypeOIDs(ctx, a.catalog, cand, live.NamespaceSearchOIDs)
+		if !resolved {
 			continue
 		}
-		refs := cand.OperandColumnRefs
-		leftOID, err := a.resolveOneColumnTypeOID(ctx, refs[0], live.NamespaceSearchOIDs)
-		if err != nil || leftOID == 0 {
-			continue
-		}
-		if cand.Kind == appqa.EffectCandidateFunction {
-			result[cand.Ordinal] = []uint32{leftOID}
-			continue
-		}
-		rightOID, err := a.resolveOneColumnTypeOID(ctx, refs[1], live.NamespaceSearchOIDs)
-		if err != nil || rightOID == 0 {
-			continue
-		}
-		result[cand.Ordinal] = []uint32{leftOID, rightOID}
+		result[cand.Ordinal] = typeOIDs
 	}
 	return result, nil
-}
-
-func (a *EffectIdentityAdapter) resolveOneColumnTypeOID(ctx context.Context, ref appqa.OperandColumnRef, searchPathOIDs []uint32) (uint32, error) {
-	if ref.Table == "" || ref.Column == "" {
-		return 0, nil
-	}
-	if ref.Schema != "" {
-		return a.catalog.columnTypeOID(ctx, ref.Schema, ref.Table, ref.Column)
-	}
-	if len(searchPathOIDs) == 0 {
-		return 0, nil
-	}
-	return a.catalog.resolveColumnTypeOIDBySearchPath(ctx, ref.Table, ref.Column, searchPathOIDs)
 }
 
 // ResolveEffectIdentities implements appqa.EffectIdentityResolver.
@@ -624,21 +590,75 @@ func (t *txCatalog) lookupFunctions(ctx context.Context, nsOID uint32, name stri
 	if err != nil {
 		return nil, err
 	}
-	if len(out) > 0 || len(argOIDs) != 1 {
+	if len(out) > 0 {
 		return out, nil
 	}
-	rows, err = t.tx.QueryContext(ctx, `
-		select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
-		from pg_catalog.pg_proc p
-		join pg_catalog.pg_namespace n on n.oid = p.pronamespace
-		where p.pronamespace = $1
-		  and p.proname = $2
-		  and p.proargtypes = '2276'::pg_catalog.oidvector
-	`, nsOID, name)
-	if err != nil {
-		return nil, err
+	// Fallback 1: single-arg anyelement (OID 2276) overload.
+	if len(argOIDs) == 1 {
+		rows, err = t.tx.QueryContext(ctx, `
+			select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
+			from pg_catalog.pg_proc p
+			join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+			where p.pronamespace = $1
+			  and p.proname = $2
+			  and p.proargtypes = '2276'::pg_catalog.oidvector
+		`, nsOID, name)
+		if err != nil {
+			return nil, err
+		}
+		out, err = scanFunctionRows(rows)
+		if err != nil {
+			return nil, err
+		}
+		if len(out) > 0 {
+			return out, nil
+		}
 	}
-	return scanFunctionRows(rows)
+	// Fallback 2: purely variadic functions (e.g. COALESCE).
+	// Match functions where proargtypes is empty and provariadic > 0.
+	// Return the variadic element type OID as the argtypes so the resolved
+	// facts carry the polymorphic type, matching the manifest entry.
+	if len(argOIDs) > 0 {
+		rows, err = t.tx.QueryContext(ctx, `
+			select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.provariadic::text
+			from pg_catalog.pg_proc p
+			join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+			where p.pronamespace = $1
+			  and p.proname = $2
+			  and p.proargtypes = ''::pg_catalog.oidvector
+			  and p.provariadic > 0
+			  and p.pronargs = 0
+		`, nsOID, name)
+		if err != nil {
+			return nil, err
+		}
+		out, err = scanFunctionRows(rows)
+		if err != nil {
+			return nil, err
+		}
+		if len(out) > 0 {
+			return out, nil
+		}
+	}
+	// Fallback 3: polymorphic-arg functions (e.g. NULLIF(any, any)).
+	// Match functions whose proargtypes contain only polymorphic type OIDs
+	// (any=2276, anyelement=2283, anycompatible=5077, etc.) and arity matches.
+	if len(argOIDs) > 0 {
+		rows, err = t.tx.QueryContext(ctx, `
+			select p.oid, p.pronamespace, p.prorettype, p.provolatile, n.nspname, p.proname, p.proargtypes::text
+			from pg_catalog.pg_proc p
+			join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+			where p.pronamespace = $1
+			  and p.proname = $2
+			  and p.pronargs = $3
+			  and p.proargtypes::text ~ '^(2276|2283|2776|3500|3831|5077|5078|5079|5080)( (2276|2283|2776|3500|3831|5077|5078|5079|5080))*$'
+		`, nsOID, name, len(argOIDs))
+		if err != nil {
+			return nil, err
+		}
+		return scanFunctionRows(rows)
+	}
+	return out, nil
 }
 
 func scanFunctionRows(rows *sql.Rows) ([]functionRow, error) {
@@ -775,36 +795,14 @@ func (a *EffectIdentityAdapter) ResolveColumnTypesAndEffectIdentities(
 		return nil, appqa.BuildUnavailableBatch(candidates), appqa.EffectIdentityResolutionContext{}, nil
 	}
 
-	// 2) Resolve column type OIDs for binary column operators under the same tx.
+	// 2) Resolve direct-column operand type OIDs under the same tx.
 	typeOIDs := make(map[int][]uint32)
 	for _, cand := range candidates {
-		switch {
-		case cand.Kind == appqa.EffectCandidateOperator && cand.Arity == 2:
-			if len(cand.OperandColumnRefs) != 2 {
-				continue
-			}
-		case cand.Kind == appqa.EffectCandidateFunction && cand.Arity == 1 &&
-			len(cand.OperandKinds) == 1 && cand.OperandKinds[0] == "column":
-			if len(cand.OperandColumnRefs) != 1 {
-				continue
-			}
-		default:
+		resolvedOIDs, resolved := resolveDirectColumnOperandTypeOIDs(ctx, txCat, cand, live1.NamespaceSearchOIDs)
+		if !resolved {
 			continue
 		}
-		refs := cand.OperandColumnRefs
-		leftOID, err := resolveOneColumnTypeOIDWithCatalog(ctx, txCat, refs[0], live1.NamespaceSearchOIDs)
-		if err != nil || leftOID == 0 {
-			continue
-		}
-		if cand.Kind == appqa.EffectCandidateFunction {
-			typeOIDs[cand.Ordinal] = []uint32{leftOID}
-			continue
-		}
-		rightOID, err := resolveOneColumnTypeOIDWithCatalog(ctx, txCat, refs[1], live1.NamespaceSearchOIDs)
-		if err != nil || rightOID == 0 {
-			continue
-		}
-		typeOIDs[cand.Ordinal] = []uint32{leftOID, rightOID}
+		typeOIDs[cand.Ordinal] = resolvedOIDs
 	}
 
 	// Merge caller-provided OperandTypeOIDs with resolved column type OIDs.

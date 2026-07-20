@@ -8,7 +8,11 @@ func (c *effectCandidateCollector) appendFunctionCall(call *ast.FuncCallExpr, sc
 	if call.Tp == ast.FuncCallExprTypeKeyword {
 		class = "keyword"
 	}
-	quoted, canonical, ambiguous := candidateCallFacts(c.callSourceText(call), originalPath, explicitSchema, class)
+	factClass := class
+	if class == "keyword" && nativeScalarKeyword(namePath) {
+		factClass = "native_scalar_keyword"
+	}
+	quoted, canonical, ambiguous := candidateCallFacts(c.callSourceText(call), originalPath, explicitSchema, factClass)
 	if c.quotedCall(call) {
 		quoted = true
 		canonical = false
@@ -27,6 +31,18 @@ func (c *effectCandidateCollector) appendFunctionCall(call *ast.FuncCallExpr, sc
 		OperandKinds:         functionOperandKinds(call.Args),
 		OperandColumnRefs:    functionColumnRefs(call.Args, scope),
 	})
+}
+
+func nativeScalarKeyword(namePath []string) bool {
+	if len(namePath) != 1 {
+		return false
+	}
+	switch namePath[0] {
+	case "lower", "upper", "length", "char_length", "abs", "ceil", "ceiling", "floor", "coalesce", "nullif", "ifnull":
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *effectCandidateCollector) appendAggregate(aggregate *ast.AggregateFuncExpr, scope *scopeStack) {

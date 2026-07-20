@@ -205,6 +205,10 @@ func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *s
 	if c == nil || expr == nil {
 		return
 	}
+	if expr.GetKind().String() == "AEXPR_NULLIF" {
+		recordNullIfSyntheticCandidate(c, expr, scope)
+		return
+	}
 	namePath := stringPathFromNodes(expr.GetName())
 	var kinds []OperandKindHint
 	var colRefs []OperandColumnRef
@@ -231,6 +235,26 @@ func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *s
 		OperandKinds:         kinds,
 		OperandColumnRefs:    colRefs,
 		ParserClassification: "operator",
+	})
+}
+
+func recordNullIfSyntheticCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *selectScope) {
+	operands := []*pg_query.Node{expr.GetLexpr(), expr.GetRexpr()}
+	kinds := make([]OperandKindHint, 0, len(operands))
+	columnRefs := make([]OperandColumnRef, 0, len(operands))
+	for _, operand := range operands {
+		kinds = append(kinds, operandKindHint(operand))
+		if ref, ok := operandColumnRef(operand, scope); ok {
+			columnRefs = append(columnRefs, ref)
+		}
+	}
+	c.appendCandidate(EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		NamePath:             []string{"nullif"},
+		Arity:                len(operands),
+		OperandKinds:         kinds,
+		OperandColumnRefs:    columnRefs,
+		ParserClassification: "generic",
 	})
 }
 

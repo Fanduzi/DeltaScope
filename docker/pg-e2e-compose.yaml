@@ -11,7 +11,7 @@ services:
     volumes:
       - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -U root -d postgres && psql -U root -d postgres -tAc \"SELECT to_regclass('app.scalar_facts') IS NOT NULL\" | grep -qx t"]
       interval: 3s
       timeout: 3s
       retries: 30

@@ -940,7 +940,13 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 		}
 	case EffectCandidateFunction:
 		if len(facts.OperandTypeOIDs) != c.Arity {
-			return false
+			// Allow polymorphic variadic functions where OperandTypeOIDs = [2276]
+			// and arity > 1 (e.g. COALESCE(col1, col2)).
+			polymorphicVariadic := len(facts.OperandTypeOIDs) == 1 &&
+				facts.OperandTypeOIDs[0] == 2276 && c.Arity > 1
+			if !polymorphicVariadic {
+				return false
+			}
 		}
 	case EffectCandidateCast:
 		if len(facts.OperandTypeOIDs) != 1 {
@@ -960,7 +966,8 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 // protect against a hostile in-process resolver that can forge both.
 //
 // Promotion-safe column path: a resolved binary operator candidate requires two
-// matching nonzero OIDs; a resolved one-column function candidate requires one.
+// matching nonzero OIDs; a resolved direct-column function candidate requires
+// one matching nonzero OID per argument.
 //
 // Behavior:
 //   - For each resolved binary-operator item:
@@ -998,24 +1005,32 @@ func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs 
 			continue
 		}
 		expected, hasEntry := resolvedTypeOIDs[it.Ordinal]
-		wantLen := 2
-		if c.Kind == EffectCandidateFunction {
-			wantLen = 1
-		}
-		if !hasEntry || len(expected) != wantLen || expected[0] == 0 || (wantLen == 2 && expected[1] == 0) {
+		wantLen := c.Arity
+		if !hasEntry || len(expected) != wantLen || hasZeroTypeOID(expected) {
 			it.Status = domain.IdentityStatusLookupFailed
 			it.Facts = nil
 			items = append(items, it)
 			continue
 		}
-		if len(it.Facts.OperandTypeOIDs) != wantLen || it.Facts.OperandTypeOIDs[0] == 0 || (wantLen == 2 && it.Facts.OperandTypeOIDs[1] == 0) {
-			it.Status = domain.IdentityStatusLookupFailed
-			it.Facts = nil
-			items = append(items, it)
-			continue
+		if len(it.Facts.OperandTypeOIDs) != wantLen || hasZeroTypeOID(it.Facts.OperandTypeOIDs) {
+			// Allow polymorphic variadic functions where OperandTypeOIDs = [2276]
+			// and arity > 1 (e.g. COALESCE(col1, col2) → OperandTypeOIDs = [2276]).
+			polymorphicVariadic := c.Kind == EffectCandidateFunction &&
+				len(it.Facts.OperandTypeOIDs) == 1 && it.Facts.OperandTypeOIDs[0] == 2276 &&
+				wantLen > 1
+			if !polymorphicVariadic {
+				it.Status = domain.IdentityStatusLookupFailed
+				it.Facts = nil
+				items = append(items, it)
+				continue
+			}
 		}
+		// Allow polymorphic functions where all OperandTypeOIDs are polymorphic
+		// type OIDs (any=2276, anyelement=2283, anycompatible=5077, etc.).
+		// These are catalog-resolved facts that match by name/arity/volatility
+		// rather than exact concrete type OIDs.
 		polymorphicFunction := c.Kind == EffectCandidateFunction &&
-			len(it.Facts.OperandTypeOIDs) == 1 && it.Facts.OperandTypeOIDs[0] == 2276
+			allPolymorphicTypeOIDs(it.Facts.OperandTypeOIDs)
 		if !uint32SliceEqual(it.Facts.OperandTypeOIDs, expected) && !polymorphicFunction {
 			it.Status = domain.IdentityStatusLookupFailed
 			it.Facts = nil
@@ -1029,9 +1044,45 @@ func candidateUsesResolvedColumnType(candidate EffectCandidate) bool {
 	if candidate.Kind == EffectCandidateOperator && candidate.Arity == 2 {
 		return true
 	}
-	return candidate.Kind == EffectCandidateFunction && candidate.Arity == 1 &&
-		len(candidate.OperandKinds) == 1 && candidate.OperandKinds[0] == "column" &&
-		len(candidate.OperandColumnRefs) == 1
+	if candidate.Kind != EffectCandidateFunction || candidate.Arity < 1 ||
+		len(candidate.OperandKinds) != candidate.Arity || len(candidate.OperandColumnRefs) != candidate.Arity {
+		return false
+	}
+	for _, kind := range candidate.OperandKinds {
+		if kind != "column" {
+			return false
+		}
+	}
+	return true
+}
+
+func hasZeroTypeOID(typeOIDs []uint32) bool {
+	for _, oid := range typeOIDs {
+		if oid == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func allPolymorphicTypeOIDs(oids []uint32) bool {
+	if len(oids) == 0 {
+		return false
+	}
+	for _, oid := range oids {
+		if !isPolymorphicTypeOID(oid) {
+			return false
+		}
+	}
+	return true
+}
+
+func isPolymorphicTypeOID(oid uint32) bool {
+	switch oid {
+	case 2276, 2283, 2776, 3500, 3831, 5077, 5078, 5079, 5080:
+		return true
+	}
+	return false
 }
 
 func invalidateResolvedIdentityFacts(batch EffectIdentityBatch) EffectIdentityBatch {

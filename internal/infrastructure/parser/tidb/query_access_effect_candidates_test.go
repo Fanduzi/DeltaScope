@@ -285,6 +285,9 @@ func TestQueryAccessEffectCandidates_ScalarFunctionInProjection(t *testing.T) {
 							t.Errorf("operand kind: got %q, want %q", kind, OperandKindColumn)
 						}
 					}
+					if !c.Canonical || c.Ambiguous {
+						t.Errorf("canonical scalar candidate: %+v", c)
+					}
 				}
 			}
 		})

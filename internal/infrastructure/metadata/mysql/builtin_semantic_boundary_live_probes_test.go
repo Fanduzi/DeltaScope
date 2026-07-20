@@ -63,6 +63,12 @@ func assertBuiltinSemanticNativeForms(t *testing.T, ctx context.Context, conn *s
 			t.Fatalf("%s qualified or quoted builtin form was not rejected", profile.name)
 		}
 	}
+	if outcome := scalarQueryOutcome(ctx, conn, "SELECT app.LOWER('TEST')"); outcome != semanticRejected {
+		t.Fatalf("%s qualified scalar builtin form was not rejected", profile.name)
+	}
+	if outcome := scalarQueryOutcome(ctx, conn, "SELECT `LOWER`('TEST')"); outcome != semanticAccepted {
+		t.Fatalf("%s quoted scalar builtin boundary returned an unexpected bounded outcome", profile.name)
+	}
 
 	if _, err := conn.ExecContext(ctx, "SET SESSION sql_mode = ''"); err != nil {
 		t.Fatalf("%s controlled SQL-mode reset failed (driver error suppressed)", profile.name)
@@ -97,6 +103,14 @@ func executeOutcome(ctx context.Context, conn *sql.Conn, statement string) seman
 
 func queryOutcome(ctx context.Context, conn *sql.Conn, query string) semanticProbeOutcome {
 	var value int64
+	if err := conn.QueryRowContext(ctx, query).Scan(&value); err != nil {
+		return semanticRejected
+	}
+	return semanticAccepted
+}
+
+func scalarQueryOutcome(ctx context.Context, conn *sql.Conn, query string) semanticProbeOutcome {
+	var value any
 	if err := conn.QueryRowContext(ctx, query).Scan(&value); err != nil {
 		return semanticRejected
 	}

@@ -1,0 +1,18 @@
+name: select_scalar_functions
+dialect: postgresql
+mode: strict
+default_schema: app
+session_proof: pg17_catalog_scalar
+expect:
+  read_classification: read_only
+  admission: admissible
+  requirements:
+    - object: app.scalar_facts
+      privilege: read_table
+    - object: app.scalar_facts.numeric_value
+      privilege: read_column
+    - object: app.scalar_facts.text_value
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

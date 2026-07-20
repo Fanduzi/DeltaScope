@@ -9,7 +9,8 @@ package queryaccess
 //
 // It contains the T2 ledger's audited minimum closed set:
 //   - 54 comparison operators (9 types × 6 ops)
-//   - 42 functions: count variants, common typed aggregates, and ranking windows
+//   - 61 functions: count variants, common typed aggregates, ranking windows,
+//     direct-column scalar overloads, COALESCE (variadic any), and NULLIF (any, any)
 //
 // All OIDs are stable across PostgreSQL 14.23, 16.14, and 17.10.
 // Phase-1 runtime claim: PostgreSQL 17 only (ServerVersionNum 170000–179999).
@@ -239,6 +240,51 @@ var pg17Entries = []TrustedEffectEntry{
 		CanonicalSignature: "pg_catalog.count(2276)",
 		AuditNotes:         "count(anyelement) aggregate; catalog arg = anyelement OID 2276; unique data dep = query row sources",
 	},
+
+	// Direct-column scalar functions. The catalog OID and argument OIDs bind each
+	// overloaded call to its immutable pg_catalog implementation.
+	{Kind: EffectCandidateFunction, ObjectOID: 870, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 25, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.lower(25)", AuditNotes: "lower(text); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 871, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 25, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.upper(25)", AuditNotes: "upper(text); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1317, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 23, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.length(25)", AuditNotes: "length(text); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1369, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 23, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.character_length(25)", AuditNotes: "character_length(text); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1381, NamespaceOID: 11, OperandTypeOIDs: []uint32{25}, ResultTypeOID: 23, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.char_length(25)", AuditNotes: "char_length(text); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1394, NamespaceOID: 11, OperandTypeOIDs: []uint32{700}, ResultTypeOID: 700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.abs(700)", AuditNotes: "abs(real); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1395, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.abs(701)", AuditNotes: "abs(double precision); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1396, NamespaceOID: 11, OperandTypeOIDs: []uint32{20}, ResultTypeOID: 20, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.abs(20)", AuditNotes: "abs(bigint); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1397, NamespaceOID: 11, OperandTypeOIDs: []uint32{23}, ResultTypeOID: 23, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.abs(23)", AuditNotes: "abs(integer); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1398, NamespaceOID: 11, OperandTypeOIDs: []uint32{21}, ResultTypeOID: 21, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.abs(21)", AuditNotes: "abs(smallint); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1705, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.abs(1700)", AuditNotes: "abs(numeric); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1711, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.ceil(1700)", AuditNotes: "ceil(numeric); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1712, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.floor(1700)", AuditNotes: "floor(numeric); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 2167, NamespaceOID: 11, OperandTypeOIDs: []uint32{1700}, ResultTypeOID: 1700, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.ceiling(1700)", AuditNotes: "ceiling(numeric); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 2308, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.ceil(701)", AuditNotes: "ceil(double precision); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 2309, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.floor(701)", AuditNotes: "floor(double precision); immutable builtin; dependency is the input column"},
+	{Kind: EffectCandidateFunction, ObjectOID: 2320, NamespaceOID: 11, OperandTypeOIDs: []uint32{701}, ResultTypeOID: 701, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.ceiling(701)", AuditNotes: "ceiling(double precision); immutable builtin; dependency is the input column"},
+
+	// Null-handling scalar functions. COALESCE is variadic (provariadic = 2276 "any").
+	// NULLIF takes 2 polymorphic args (proargtypes = 2276 2276 "any"). Both are
+	// IMMUTABLE builtins whose unique data dependency is the input column(s).
+	{Kind: EffectCandidateFunction, ObjectOID: 840, NamespaceOID: 11, OperandTypeOIDs: []uint32{2276}, ResultTypeOID: 2276, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.coalesce(2276)", AuditNotes: "coalesce(variadic any); immutable builtin; polymorphic variadic; dependency is the input columns"},
+	{Kind: EffectCandidateFunction, ObjectOID: 1706, NamespaceOID: 11, OperandTypeOIDs: []uint32{2276, 2276}, ResultTypeOID: 2276, Volatility: EffectVolatilityImmutable,
+		CanonicalSignature: "pg_catalog.nullif(2276,2276)", AuditNotes: "nullif(any, any); immutable builtin; polymorphic 2-arg; dependency is the input columns"},
 
 	// =========================================================================
 	// Comparison operators — bool (OID 16) × 6

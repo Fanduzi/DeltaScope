@@ -621,6 +621,25 @@ func TestExtractQueryAccess_EffectCandidates_CoalesceExprWithLiteralNotCollected
 	}
 }
 
+func TestExtractQueryAccess_EffectCandidates_NullIfSyntheticCandidate(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	facts, err := e.ExtractQueryAccess(context.Background(), "SELECT NULLIF(a, b) FROM public.t", "postgresql", "public")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	for _, candidate := range facts.EffectCandidates {
+		if candidate.Kind == EffectCandidateFunction && len(candidate.NamePath) == 1 && candidate.NamePath[0] == "nullif" {
+			if candidate.Arity != 2 || len(candidate.OperandColumnRefs) != 2 {
+				t.Fatalf("nullif candidate: %+v", candidate)
+			}
+			return
+		}
+	}
+	t.Fatalf("missing nullif synthetic candidate: %+v", facts.EffectCandidates)
+}
+
 func TestExtractQueryAccess_EffectCandidates_ScalarInWhere(t *testing.T) {
 	t.Parallel()
 	e := &QueryAccessExtractor{}

@@ -153,6 +153,7 @@ func runBuiltinSemanticEvidence(t *testing.T, profile builtinSemanticEvidencePro
 
 	assertBuiltinSemanticVersion(t, ctx, conn, profile)
 	assertBuiltinSemanticAggregates(t, ctx, conn, profile)
+	assertBuiltinSemanticScalars(t, ctx, conn, profile)
 	assertBuiltinSemanticWindow(t, ctx, conn, profile)
 	assertBuiltinSemanticBoundaries(t, ctx, conn, profile)
 }
@@ -214,6 +215,46 @@ func assertBuiltinSemanticAggregates(t *testing.T, ctx context.Context, conn *sq
 		t.Fatalf("%s aggregate evidence returned unexpected bounded values", profile.name)
 	}
 	t.Logf("%s canonical aggregate evidence passed for COUNT, SUM, AVG, MIN, and MAX", profile.name)
+}
+
+func assertBuiltinSemanticScalars(t *testing.T, ctx context.Context, conn *sql.Conn, profile builtinSemanticEvidenceProfile) {
+	t.Helper()
+	stringProbes := []struct {
+		name  string
+		query string
+		want  string
+	}{
+		{name: "LOWER", query: "SELECT LOWER('TEST')", want: "test"},
+		{name: "UPPER", query: "SELECT UPPER('test')", want: "TEST"},
+		{name: "COALESCE", query: "SELECT COALESCE(NULL, 'fallback')", want: "fallback"},
+		{name: "NULLIF", query: "SELECT NULLIF('a', 'b')", want: "a"},
+		{name: "IFNULL", query: "SELECT IFNULL(NULL, 'fallback')", want: "fallback"},
+	}
+	for _, probe := range stringProbes {
+		var got string
+		if err := conn.QueryRowContext(ctx, probe.query).Scan(&got); err != nil || got != probe.want {
+			t.Fatalf("%s scalar %s probe returned an unexpected bounded value", profile.name, probe.name)
+		}
+	}
+
+	numericProbes := []struct {
+		name  string
+		query string
+		want  float64
+	}{
+		{name: "LENGTH", query: "SELECT LENGTH('hello')", want: 5},
+		{name: "CHAR_LENGTH", query: "SELECT CHAR_LENGTH('hello')", want: 5},
+		{name: "ABS", query: "SELECT ABS(-42)", want: 42},
+		{name: "CEIL", query: "SELECT CEIL(3.14)", want: 4},
+		{name: "FLOOR", query: "SELECT FLOOR(3.14)", want: 3},
+	}
+	for _, probe := range numericProbes {
+		var got float64
+		if err := conn.QueryRowContext(ctx, probe.query).Scan(&got); err != nil || got != probe.want {
+			t.Fatalf("%s scalar %s probe returned an unexpected bounded value", profile.name, probe.name)
+		}
+	}
+	t.Logf("%s scalar builtin evidence passed", profile.name)
 }
 
 func assertBuiltinSemanticWindow(t *testing.T, ctx context.Context, conn *sql.Conn, profile builtinSemanticEvidenceProfile) {

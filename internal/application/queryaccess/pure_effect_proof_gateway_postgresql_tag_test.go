@@ -97,6 +97,164 @@ func TestPureEffectProofGateway_IneligibleFunctionNeverPromotes(t *testing.T) {
 	}
 }
 
+func TestScalarProof_DirectColumnCatalogOverloadPromotes(t *testing.T) {
+	tests := []struct {
+		name      string
+		sql       string
+		column    string
+		typeOID   uint32
+		objectOID uint32
+		resultOID uint32
+		signature string
+		function  string
+	}{
+		{
+			name: "text", sql: "SELECT lower(name) FROM public.users", column: "name", typeOID: 25,
+			objectOID: 870, resultOID: 25, signature: "pg_catalog.lower(25)", function: "lower",
+		},
+		{
+			name: "numeric", sql: "SELECT abs(amount) FROM public.orders", column: "amount", typeOID: 1700,
+			objectOID: 1705, resultOID: 1700, signature: "pg_catalog.abs(1700)", function: "abs",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			entry := TrustedEffectEntry{
+				Kind:               EffectCandidateFunction,
+				ObjectOID:          tc.objectOID,
+				NamespaceOID:       11,
+				OperandTypeOIDs:    []uint32{tc.typeOID},
+				ResultTypeOID:      tc.resultOID,
+				Volatility:         EffectVolatilityImmutable,
+				CanonicalSignature: tc.signature,
+			}
+			resolver := &mockControlledResolver{
+				ctx:     testResolutionContext(),
+				typeMap: map[int][]uint32{0: {tc.typeOID}},
+				batch: EffectIdentityBatch{Items: []EffectIdentityItem{{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          tc.objectOID,
+						NamespaceOID:       11,
+						OperandTypeOIDs:    []uint32{tc.typeOID},
+						ResultTypeOID:      tc.resultOID,
+						Volatility:         EffectVolatilityImmutable,
+						CanonicalSignature: tc.signature,
+						ResolvedObjectName: tc.function,
+						ResolvedSchemaName: "pg_catalog",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				}}},
+			}
+			svc, err := NewTrustedService(resolver, phase1Policy(t, entry), scalarProofSchemaResolver{column: tc.column, typeOID: tc.typeOID})
+			if err != nil {
+				t.Fatalf("NewTrustedService: %v", err)
+			}
+			result, err := svc.Analyze(context.Background(), QueryAccessRequest{SQL: tc.sql, Dialect: "postgresql", Mode: "strict", DefaultSchema: "public"})
+			if err != nil {
+				t.Fatalf("Analyze: %v", err)
+			}
+			if result.DomainResult.ReadClassification != domain.ReadOnly || result.DomainResult.Admission != domain.Admissible {
+				t.Fatalf("classification=%q admission=%q, want read_only/admissible", result.DomainResult.ReadClassification, result.DomainResult.Admission)
+			}
+		})
+	}
+}
+
+func TestScalarProof_VariadicPolymorphicPromotes(t *testing.T) {
+	tests := []struct {
+		name      string
+		sql       string
+		column    string
+		typeOID   uint32
+		objectOID uint32
+		resultOID uint32
+		signature string
+		function  string
+	}{
+		{
+			name: "coalesce variadic", sql: "SELECT COALESCE(name, email) FROM public.users", column: "name", typeOID: 25,
+			objectOID: 840, resultOID: 2276, signature: "pg_catalog.coalesce(2276)", function: "coalesce",
+		},
+		{
+			name: "nullif polymorphic", sql: "SELECT NULLIF(name, email) FROM public.users", column: "name", typeOID: 25,
+			objectOID: 1706, resultOID: 2276, signature: "pg_catalog.nullif(2276,2276)", function: "nullif",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Manifest entry uses polymorphic type OIDs (2276) to match resolved facts.
+			entry := TrustedEffectEntry{
+				Kind:               EffectCandidateFunction,
+				ObjectOID:          tc.objectOID,
+				NamespaceOID:       11,
+				OperandTypeOIDs:    []uint32{2276},
+				ResultTypeOID:      tc.resultOID,
+				Volatility:         EffectVolatilityImmutable,
+				CanonicalSignature: tc.signature,
+			}
+			resolver := &mockControlledResolver{
+				ctx:     testResolutionContext(),
+				typeMap: map[int][]uint32{0: {tc.typeOID, tc.typeOID}},
+				batch: EffectIdentityBatch{Items: []EffectIdentityItem{{
+					Ordinal: 0,
+					Status:  domain.IdentityStatusResolved,
+					Facts: &EffectIdentityFacts{
+						Kind:               EffectCandidateFunction,
+						ObjectOID:          tc.objectOID,
+						NamespaceOID:       11,
+						OperandTypeOIDs:    []uint32{2276},
+						ResultTypeOID:      tc.resultOID,
+						Volatility:         EffectVolatilityImmutable,
+						CanonicalSignature: tc.signature,
+						ResolvedObjectName: tc.function,
+						ResolvedSchemaName: "pg_catalog",
+						DatabaseOID:        1,
+						ServerVersionNum:   170000,
+					},
+				}}},
+			}
+			svc, err := NewTrustedService(resolver, phase1Policy(t, entry), scalarProofSchemaResolver{column: tc.column, typeOID: tc.typeOID})
+			if err != nil {
+				t.Fatalf("NewTrustedService: %v", err)
+			}
+			result, err := svc.Analyze(context.Background(), QueryAccessRequest{SQL: tc.sql, Dialect: "postgresql", Mode: "strict", DefaultSchema: "public"})
+			if err != nil {
+				t.Fatalf("Analyze: %v", err)
+			}
+			t.Logf("classification=%q admission=%q reasons=%v candidates=%d",
+				result.DomainResult.ReadClassification, result.DomainResult.Admission,
+				result.DomainResult.ReasonCodes, len(result.EffectCandidates))
+			if result.DomainResult.ReadClassification != domain.ReadOnly || result.DomainResult.Admission != domain.Admissible {
+				t.Fatalf("classification=%q admission=%q, want read_only/admissible", result.DomainResult.ReadClassification, result.DomainResult.Admission)
+			}
+		})
+	}
+}
+
+type scalarProofSchemaResolver struct {
+	column  string
+	typeOID uint32
+}
+
+func (r scalarProofSchemaResolver) ResolveRelation(_ context.Context, _ string, schema, name string) (RelationSchema, error) {
+	return RelationSchema{
+		Schema: schema,
+		Name:   name,
+		Kind:   "table",
+		Columns: []ColumnSchema{
+			{Name: r.column, Ordinal: 1, TypeOID: r.typeOID},
+			{Name: "email", Ordinal: 2, TypeOID: 25},
+			{Name: "id", Ordinal: 3, TypeOID: 23},
+		},
+	}, nil
+}
+
 func TestPureEffectProofGateway_PartialBatchKeepsFunctionReasonAndNoLeak(t *testing.T) {
 	extracted, err := AnalyzePostgreSQL(context.Background(), QueryAccessRequest{SQL: "SELECT count(*) FROM public.users WHERE id = 1", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public"})
 	if err != nil {

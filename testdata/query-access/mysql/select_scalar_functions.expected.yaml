@@ -1,0 +1,21 @@
+name: select_scalar_functions
+dialect: mysql
+mode: strict
+profile: mysql-8.4
+default_schema: app
+session_proof: mysql_tidb_builtin
+expect:
+  read_classification: read_only
+  admission: admissible
+  requirements:
+    - object: app.users
+      privilege: read_table
+    - object: app.users.amount
+      privilege: read_column
+    - object: app.users.email
+      privilege: read_column
+    - object: app.users.name
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []

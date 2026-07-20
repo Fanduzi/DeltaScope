@@ -21,11 +21,13 @@ import (
 
 // corpusExpected is the schema each .expected.yaml file must satisfy.
 type corpusExpected struct {
-	Name    string `yaml:"name"`
-	Dialect string `yaml:"dialect"`
-	Mode    string `yaml:"mode"`
-	Profile string `yaml:"profile,omitempty"`
-	Expect  struct {
+	Name          string `yaml:"name"`
+	Dialect       string `yaml:"dialect"`
+	Mode          string `yaml:"mode"`
+	Profile       string `yaml:"profile,omitempty"`
+	DefaultSchema string `yaml:"default_schema,omitempty"`
+	SessionProof  string `yaml:"session_proof,omitempty"`
+	Expect        struct {
 		ReadClassification string              `yaml:"read_classification"`
 		Admission          string              `yaml:"admission"`
 		Relations          []corpusRelation    `yaml:"relations"`
@@ -146,12 +148,13 @@ func runQueryAccessCorpusCase(t *testing.T, expPath string) {
 	}
 
 	// Run service.
-	svc := &appqa.Service{}
+	svc := newCorpusService(t, tc)
 	result, err := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 		SQL:             string(sqlBytes),
 		Dialect:         tc.Dialect,
 		Mode:            tc.Mode,
 		AnalysisProfile: appqa.AnalysisProfile(tc.Profile),
+		DefaultSchema:   tc.DefaultSchema,
 	})
 	if err != nil {
 		t.Fatalf("analyze error: %v", err)

@@ -657,6 +657,33 @@ func TestValidateFactOperandTypeBinding_CountStar(t *testing.T) {
 	}
 }
 
+func TestValidateFactOperandTypeBinding_DirectColumnScalarArguments(t *testing.T) {
+	t.Parallel()
+	batch := EffectIdentityBatch{
+		Items: []EffectIdentityItem{{
+			Ordinal: 0,
+			Status:  domain.IdentityStatusResolved,
+			Facts: &EffectIdentityFacts{
+				Kind:            EffectCandidateFunction,
+				ObjectOID:       999,
+				OperandTypeOIDs: []uint32{25, 25},
+			},
+		}},
+	}
+	candidates := []EffectCandidate{{
+		Ordinal:           0,
+		Kind:              EffectCandidateFunction,
+		Arity:             2,
+		OperandKinds:      []string{"column", "column"},
+		OperandColumnRefs: []OperandColumnRef{{Column: "name"}, {Column: "email"}},
+	}}
+
+	result := ValidateFactOperandTypeBinding(batch, map[int][]uint32{0: {25, 25}}, candidates)
+	if len(result.Items) != 1 || result.Items[0].Status != domain.IdentityStatusResolved {
+		t.Fatalf("direct-column scalar type binding = %+v, want resolved", result.Items)
+	}
+}
+
 func TestValidateFactOperandTypeBinding_UnexpectedNonOperatorOrdinal(t *testing.T) {
 	t.Parallel()
 	batch := EffectIdentityBatch{

@@ -1,0 +1,1 @@
+SELECT LOWER(text_value), UPPER(text_value), LENGTH(text_value), CHAR_LENGTH(text_value), CHARACTER_LENGTH(text_value), ABS(numeric_value), CEIL(numeric_value), CEILING(numeric_value), FLOOR(numeric_value) FROM app.scalar_facts;
