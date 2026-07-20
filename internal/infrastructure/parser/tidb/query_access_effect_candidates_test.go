@@ -241,3 +241,200 @@ func assertCandidateOrdinals(t *testing.T, candidates []EffectCandidate) {
 		}
 	}
 }
+
+func TestQueryAccessEffectCandidates_ScalarFunctionInProjection(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		sql       string
+		wantName  string
+		wantArity int
+	}{
+		{name: "lower", sql: "SELECT LOWER(name) FROM users", wantName: "lower", wantArity: 1},
+		{name: "upper", sql: "SELECT UPPER(name) FROM users", wantName: "upper", wantArity: 1},
+		{name: "length", sql: "SELECT LENGTH(name) FROM users", wantName: "length", wantArity: 1},
+		{name: "char_length", sql: "SELECT CHAR_LENGTH(name) FROM users", wantName: "char_length", wantArity: 1},
+		{name: "abs", sql: "SELECT ABS(amount) FROM orders", wantName: "abs", wantArity: 1},
+		{name: "ceil", sql: "SELECT CEIL(amount) FROM orders", wantName: "ceil", wantArity: 1},
+		{name: "ceiling", sql: "SELECT CEILING(amount) FROM orders", wantName: "ceiling", wantArity: 1},
+		{name: "floor", sql: "SELECT FLOOR(amount) FROM orders", wantName: "floor", wantArity: 1},
+		{name: "nullif", sql: "SELECT NULLIF(a, b) FROM t", wantName: "nullif", wantArity: 2},
+		{name: "ifnull", sql: "SELECT IFNULL(a, b) FROM t", wantName: "ifnull", wantArity: 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(), tc.sql, "mysql", "")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if !candidateHasName(facts.EffectCandidates, tc.wantName) {
+				t.Fatalf("missing candidate %q in %+v", tc.wantName, facts.EffectCandidates)
+			}
+			for _, c := range facts.EffectCandidates {
+				if len(c.NamePath) > 0 && c.NamePath[0] == tc.wantName {
+					if c.Arity != tc.wantArity {
+						t.Errorf("arity: got %d, want %d", c.Arity, tc.wantArity)
+					}
+					if c.ParserClassification != "generic" && c.ParserClassification != "keyword" {
+						t.Errorf("classification: got %q, want generic or keyword", c.ParserClassification)
+					}
+					for _, kind := range c.OperandKinds {
+						if kind != OperandKindColumn {
+							t.Errorf("operand kind: got %q, want %q", kind, OperandKindColumn)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestQueryAccessEffectCandidates_CoalesceVariableArity(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		sql       string
+		wantArity int
+	}{
+		{name: "two_args", sql: "SELECT COALESCE(a, b) FROM t", wantArity: 2},
+		{name: "three_args", sql: "SELECT COALESCE(a, b, c) FROM t", wantArity: 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(), tc.sql, "mysql", "")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if !candidateHasName(facts.EffectCandidates, "coalesce") {
+				t.Fatalf("missing coalesce candidate in %+v", facts.EffectCandidates)
+			}
+			for _, c := range facts.EffectCandidates {
+				if len(c.NamePath) > 0 && c.NamePath[0] == "coalesce" {
+					if c.Arity != tc.wantArity {
+						t.Errorf("arity: got %d, want %d", c.Arity, tc.wantArity)
+					}
+					if c.ParserClassification != "generic" && c.ParserClassification != "keyword" {
+						t.Errorf("classification: got %q, want generic or keyword", c.ParserClassification)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestQueryAccessEffectCandidates_ScalarNotCollectedWithLiteral(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT LOWER('hello') FROM users", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	for _, c := range facts.EffectCandidates {
+		if len(c.NamePath) > 0 && c.NamePath[0] == "lower" {
+			if len(c.OperandKinds) > 0 && c.OperandKinds[0] == OperandKindColumn {
+				t.Errorf("literal arg was recorded as column operand: %+v", c)
+			}
+		}
+	}
+}
+
+func TestQueryAccessEffectCandidates_ScalarNotCollectedWithNestedCall(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT LOWER(UPPER(name)) FROM users", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	for _, c := range facts.EffectCandidates {
+		if len(c.NamePath) > 0 && c.NamePath[0] == "lower" {
+			if len(c.OperandKinds) > 0 && c.OperandKinds[0] == OperandKindColumn {
+				t.Errorf("nested call arg was recorded as column operand: %+v", c)
+			}
+		}
+	}
+}
+
+func TestQueryAccessEffectCandidates_ScalarInWhere(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT id FROM users WHERE UPPER(name) = 'FOO'", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !candidateHasName(facts.EffectCandidates, "upper") {
+		t.Errorf("missing upper in WHERE: %+v", facts.EffectCandidates)
+	}
+}
+
+func TestQueryAccessEffectCandidates_ScalarInGroupBy(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT LENGTH(name), COUNT(*) FROM users GROUP BY LENGTH(name)", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	count := 0
+	for _, c := range facts.EffectCandidates {
+		if len(c.NamePath) > 0 && c.NamePath[0] == "length" {
+			count++
+		}
+	}
+	if count < 1 {
+		t.Errorf("missing length in GROUP BY: %+v", facts.EffectCandidates)
+	}
+}
+
+func TestQueryAccessEffectCandidates_ScalarInOrderBy(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT id FROM users ORDER BY ABS(id)", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !candidateHasName(facts.EffectCandidates, "abs") {
+		t.Errorf("missing abs in ORDER BY: %+v", facts.EffectCandidates)
+	}
+}
+
+func TestQueryAccessEffectCandidates_AggregateRegression(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT COUNT(*) FROM users", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(facts.EffectCandidates) != 1 {
+		t.Fatalf("candidates: got %d, want 1", len(facts.EffectCandidates))
+	}
+	c := facts.EffectCandidates[0]
+	if !c.IsAggregate || c.ParserClassification != "aggregate" {
+		t.Errorf("aggregate regression: %+v", c)
+	}
+}
+
+func TestQueryAccessEffectCandidates_WindowRegression(t *testing.T) {
+	t.Parallel()
+
+	facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(),
+		"SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY id) FROM employees", "mysql", "")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(facts.EffectCandidates) != 1 {
+		t.Fatalf("candidates: got %d, want 1", len(facts.EffectCandidates))
+	}
+	c := facts.EffectCandidates[0]
+	if !c.HasWindow || c.ParserClassification != "window" {
+		t.Errorf("window regression: %+v", c)
+	}
+}

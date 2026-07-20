@@ -53,21 +53,22 @@ type OperandColumnRef struct {
 // NamePath / TargetTypePath are internal spelling facts for the resolver only;
 // public outputs must continue to use only bounded unproven_* reason codes.
 type EffectCandidate struct {
-	Kind              EffectCandidateKind
-	Ordinal           int // stable 0-based traversal order
-	NamePath          []string
-	ExplicitSchema    bool
-	Arity             int
-	OperandKinds      []OperandKindHint
-	OperandColumnRefs []OperandColumnRef
-	IsAggregate       bool
-	HasWindow         bool
-	HasFilter         bool
-	HasDistinct       bool `json:"-"`
-	HasAggOrder       bool `json:"-"`
-	HasWithinGroup    bool `json:"-"`
-	HasFrame          bool `json:"-"`
-	TargetTypePath    []string
+	Kind                 EffectCandidateKind
+	Ordinal              int
+	NamePath             []string
+	ExplicitSchema       bool
+	Arity                int
+	OperandKinds         []OperandKindHint
+	OperandColumnRefs    []OperandColumnRef
+	IsAggregate          bool
+	HasWindow            bool
+	HasFilter            bool
+	HasDistinct          bool `json:"-"`
+	HasAggOrder          bool `json:"-"`
+	HasWithinGroup       bool `json:"-"`
+	HasFrame             bool `json:"-"`
+	TargetTypePath       []string
+	ParserClassification string
 }
 
 // effectCollector is the single-pass accumulator for unproven effect presence
@@ -223,12 +224,13 @@ func recordOperatorCandidate(c *effectCollector, expr *pg_query.A_Expr, scope *s
 		}
 	}
 	c.appendCandidate(EffectCandidate{
-		Kind:              EffectCandidateOperator,
-		NamePath:          namePath,
-		ExplicitSchema:    namePathExplicitSchema(namePath),
-		Arity:             arity,
-		OperandKinds:      kinds,
-		OperandColumnRefs: colRefs,
+		Kind:                 EffectCandidateOperator,
+		NamePath:             namePath,
+		ExplicitSchema:       namePathExplicitSchema(namePath),
+		Arity:                arity,
+		OperandKinds:         kinds,
+		OperandColumnRefs:    colRefs,
+		ParserClassification: "operator",
 	})
 }
 
@@ -260,20 +262,27 @@ func recordFunctionCandidate(c *effectCollector, fc *pg_query.FuncCall, scope *s
 	isAgg := fc.GetAggStar() || fc.GetAggDistinct() || fc.GetAggWithinGroup() ||
 		fc.GetAggFilter() != nil || len(fc.GetAggOrder()) > 0
 	window := fc.GetOver()
+	classification := "generic"
+	if isAgg {
+		classification = "aggregate"
+	} else if window != nil {
+		classification = "window"
+	}
 	c.appendCandidate(EffectCandidate{
-		Kind:              EffectCandidateFunction,
-		NamePath:          namePath,
-		ExplicitSchema:    namePathExplicitSchema(namePath),
-		Arity:             arity,
-		OperandKinds:      kinds,
-		OperandColumnRefs: colRefs,
-		IsAggregate:       isAgg,
-		HasWindow:         window != nil,
-		HasFilter:         fc.GetAggFilter() != nil,
-		HasDistinct:       fc.GetAggDistinct(),
-		HasAggOrder:       len(fc.GetAggOrder()) > 0,
-		HasWithinGroup:    fc.GetAggWithinGroup(),
-		HasFrame:          windowHasExplicitFrame(window),
+		Kind:                 EffectCandidateFunction,
+		NamePath:             namePath,
+		ExplicitSchema:       namePathExplicitSchema(namePath),
+		Arity:                arity,
+		OperandKinds:         kinds,
+		OperandColumnRefs:    colRefs,
+		IsAggregate:          isAgg,
+		HasWindow:            window != nil,
+		HasFilter:            fc.GetAggFilter() != nil,
+		HasDistinct:          fc.GetAggDistinct(),
+		HasAggOrder:          len(fc.GetAggOrder()) > 0,
+		HasWithinGroup:       fc.GetAggWithinGroup(),
+		HasFrame:             windowHasExplicitFrame(window),
+		ParserClassification: classification,
 	})
 }
 
@@ -296,12 +305,13 @@ func recordCastCandidate(c *effectCollector, tc *pg_query.TypeCast) {
 	target := typeNamePath(tc.GetTypeName())
 	kinds := []OperandKindHint{operandKindHint(tc.GetArg())}
 	c.appendCandidate(EffectCandidate{
-		Kind:           EffectCandidateCast,
-		NamePath:       nil, // casts are identified by target type path + arg structure
-		ExplicitSchema: namePathExplicitSchema(target),
-		Arity:          1,
-		OperandKinds:   kinds,
-		TargetTypePath: target,
+		Kind:                 EffectCandidateCast,
+		NamePath:             nil,
+		ExplicitSchema:       namePathExplicitSchema(target),
+		Arity:                1,
+		OperandKinds:         kinds,
+		TargetTypePath:       target,
+		ParserClassification: "cast",
 	})
 }
 
@@ -310,11 +320,27 @@ func recordSyntheticFunctionCandidate(c *effectCollector, namePath []string, ari
 		return
 	}
 	c.appendCandidate(EffectCandidate{
-		Kind:           EffectCandidateFunction,
-		NamePath:       namePath,
-		ExplicitSchema: namePathExplicitSchema(namePath),
-		Arity:          arity,
-		OperandKinds:   kinds,
+		Kind:                 EffectCandidateFunction,
+		NamePath:             namePath,
+		ExplicitSchema:       namePathExplicitSchema(namePath),
+		Arity:                arity,
+		OperandKinds:         kinds,
+		ParserClassification: "generic",
+	})
+}
+
+func recordCoalesceSyntheticCandidate(c *effectCollector, arity int, kinds []OperandKindHint, colRefs []OperandColumnRef) {
+	if c == nil {
+		return
+	}
+	c.appendCandidate(EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		NamePath:             []string{"coalesce"},
+		ExplicitSchema:       false,
+		Arity:                arity,
+		OperandKinds:         kinds,
+		OperandColumnRefs:    colRefs,
+		ParserClassification: "generic",
 	})
 }
 
@@ -327,11 +353,12 @@ func recordSQLValueFunctionCandidate(c *effectCollector, svf *pg_query.SQLValueF
 		return
 	}
 	c.appendCandidate(EffectCandidate{
-		Kind:           EffectCandidateFunction,
-		NamePath:       []string{name},
-		ExplicitSchema: false,
-		Arity:          0,
-		OperandKinds:   nil,
+		Kind:                 EffectCandidateFunction,
+		NamePath:             []string{name},
+		ExplicitSchema:       false,
+		Arity:                0,
+		OperandKinds:         nil,
+		ParserClassification: "generic",
 	})
 }
 

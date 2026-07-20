@@ -17,6 +17,7 @@ type BuiltinSemanticCallClass string
 const (
 	BuiltinSemanticAggregate BuiltinSemanticCallClass = "aggregate"
 	BuiltinSemanticWindow    BuiltinSemanticCallClass = "window"
+	BuiltinSemanticScalar    BuiltinSemanticCallClass = "scalar"
 )
 
 // BuiltinSemanticEntry describes one exact native call shape. It contains no
@@ -28,6 +29,14 @@ type BuiltinSemanticEntry struct {
 	CallClass    BuiltinSemanticCallClass
 	Arity        int
 	OperandKinds []string
+
+	// MinArity and MaxArity support variable-arity functions (e.g. COALESCE).
+	// When MinArity > 0, the entry uses range-based arity matching:
+	// candidate.Arity >= MinArity && (MaxArity == 0 || candidate.Arity <= MaxArity).
+	// MaxArity == 0 means unlimited. Fixed-arity entries leave both at zero
+	// and use Arity for exact match.
+	MinArity int
+	MaxArity int
 
 	AllowFilter          bool
 	AllowDistinct        bool
@@ -96,11 +105,20 @@ func validateBuiltinSemanticEntry(entry BuiltinSemanticEntry) error {
 	if entry.Name == "" || entry.Name != strings.ToLower(entry.Name) || strings.TrimSpace(entry.Name) != entry.Name {
 		return fmt.Errorf("invalid native name")
 	}
-	if entry.CallClass != BuiltinSemanticAggregate && entry.CallClass != BuiltinSemanticWindow {
+	if entry.CallClass != BuiltinSemanticAggregate && entry.CallClass != BuiltinSemanticWindow && entry.CallClass != BuiltinSemanticScalar {
 		return fmt.Errorf("unsupported call class")
 	}
 	if entry.Arity < 0 {
 		return fmt.Errorf("negative arity")
+	}
+	if entry.MinArity < 0 {
+		return fmt.Errorf("negative min arity")
+	}
+	if entry.MaxArity < 0 {
+		return fmt.Errorf("negative max arity")
+	}
+	if entry.MinArity > 0 && entry.MaxArity > 0 && entry.MinArity > entry.MaxArity {
+		return fmt.Errorf("min arity exceeds max arity")
 	}
 	for _, kind := range entry.OperandKinds {
 		if !validBuiltinOperandKind(kind) {
@@ -109,6 +127,9 @@ func validateBuiltinSemanticEntry(entry BuiltinSemanticEntry) error {
 	}
 	if entry.CallClass == BuiltinSemanticAggregate && (entry.AllowWindowPartition || entry.AllowWindowOrder || entry.AllowFrame || entry.AllowNamedWindow || entry.RequireWindowPartition || entry.RequireWindowOrder) {
 		return fmt.Errorf("window modifier on aggregate")
+	}
+	if entry.CallClass == BuiltinSemanticScalar && (entry.AllowWindowPartition || entry.AllowWindowOrder || entry.AllowFrame || entry.AllowNamedWindow || entry.RequireWindowPartition || entry.RequireWindowOrder || entry.AllowFilter || entry.AllowDistinct || entry.AllowAggOrder || entry.AllowWithinGroup) {
+		return fmt.Errorf("aggregate/window modifier on scalar")
 	}
 	if entry.RequireWindowPartition && !entry.AllowWindowPartition {
 		return fmt.Errorf("require without allow: window partition")
@@ -129,7 +150,7 @@ func validBuiltinOperandKind(kind string) bool {
 }
 
 func builtinSemanticEntryKey(entry BuiltinSemanticEntry) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%d|%v|%t%t%t%t%t%t%t%t%t%t", entry.Dialect, entry.Profile, entry.Name, entry.CallClass, entry.Arity, entry.OperandKinds, entry.AllowFilter, entry.AllowDistinct, entry.AllowAggOrder, entry.AllowWithinGroup, entry.AllowFrame, entry.AllowNamedWindow, entry.AllowWindowPartition, entry.AllowWindowOrder, entry.RequireWindowPartition, entry.RequireWindowOrder)
+	return fmt.Sprintf("%s|%s|%s|%s|%d|%v|%d|%d|%t%t%t%t%t%t%t%t%t%t", entry.Dialect, entry.Profile, entry.Name, entry.CallClass, entry.Arity, entry.OperandKinds, entry.MinArity, entry.MaxArity, entry.AllowFilter, entry.AllowDistinct, entry.AllowAggOrder, entry.AllowWithinGroup, entry.AllowFrame, entry.AllowNamedWindow, entry.AllowWindowPartition, entry.AllowWindowOrder, entry.RequireWindowPartition, entry.RequireWindowOrder)
 }
 
 func cloneBuiltinSemanticEntry(entry BuiltinSemanticEntry) BuiltinSemanticEntry {
@@ -259,6 +280,58 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		tidbRankingWindowEntry("row_number"),
 		tidbRankingWindowEntry("rank"),
 		tidbRankingWindowEntry("dense_rank"),
+
+		// MySQL 5.7 scalar functions (direct-column operands only).
+		mysqlScalarEntry(AnalysisProfileMySQL57, "lower", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "upper", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "length", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "char_length", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "abs", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "ceil", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "ceiling", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "floor", 1, []string{"column"}),
+		mysqlVariableArityScalarEntry(AnalysisProfileMySQL57, "coalesce", 2, []string{"column", "column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "ifnull", 2, []string{"column", "column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "nullif", 2, []string{"column", "column"}),
+
+		// MySQL 8.0 scalar functions (independently evidenced from 5.7).
+		mysqlScalarEntry(AnalysisProfileMySQL80, "lower", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "upper", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "length", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "char_length", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "abs", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "ceil", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "ceiling", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "floor", 1, []string{"column"}),
+		mysqlVariableArityScalarEntry(AnalysisProfileMySQL80, "coalesce", 2, []string{"column", "column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "ifnull", 2, []string{"column", "column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "nullif", 2, []string{"column", "column"}),
+
+		// MySQL 8.4 scalar functions (independently evidenced from 5.7 and 8.0).
+		mysqlScalarEntry(AnalysisProfileMySQL84, "lower", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "upper", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "length", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "char_length", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "abs", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "ceil", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "ceiling", 1, []string{"column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "floor", 1, []string{"column"}),
+		mysqlVariableArityScalarEntry(AnalysisProfileMySQL84, "coalesce", 2, []string{"column", "column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "ifnull", 2, []string{"column", "column"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "nullif", 2, []string{"column", "column"}),
+
+		// TiDB 8.5 scalar functions (independently evidenced).
+		tidbScalarEntry("lower", 1, []string{"column"}),
+		tidbScalarEntry("upper", 1, []string{"column"}),
+		tidbScalarEntry("length", 1, []string{"column"}),
+		tidbScalarEntry("char_length", 1, []string{"column"}),
+		tidbScalarEntry("abs", 1, []string{"column"}),
+		tidbScalarEntry("ceil", 1, []string{"column"}),
+		tidbScalarEntry("ceiling", 1, []string{"column"}),
+		tidbScalarEntry("floor", 1, []string{"column"}),
+		tidbVariableArityScalarEntry("coalesce", 2, []string{"column", "column"}),
+		tidbScalarEntry("ifnull", 2, []string{"column", "column"}),
+		tidbScalarEntry("nullif", 2, []string{"column", "column"}),
 	}
 	manifest, err := NewBuiltinSemanticManifest(entries)
 	if err != nil {
@@ -344,6 +417,50 @@ func tidbRankingWindowEntry(name string) BuiltinSemanticEntry {
 		AllowWindowOrder:       true,
 		RequireWindowPartition: true,
 		RequireWindowOrder:     true,
+	}
+}
+
+func mysqlScalarEntry(profile AnalysisProfile, name string, arity int, operandKinds []string) BuiltinSemanticEntry {
+	return BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      profile,
+		Name:         name,
+		CallClass:    BuiltinSemanticScalar,
+		Arity:        arity,
+		OperandKinds: operandKinds,
+	}
+}
+
+func mysqlVariableArityScalarEntry(profile AnalysisProfile, name string, minArity int, operandKinds []string) BuiltinSemanticEntry {
+	return BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      profile,
+		Name:         name,
+		CallClass:    BuiltinSemanticScalar,
+		MinArity:     minArity,
+		OperandKinds: operandKinds,
+	}
+}
+
+func tidbScalarEntry(name string, arity int, operandKinds []string) BuiltinSemanticEntry {
+	return BuiltinSemanticEntry{
+		Dialect:      "tidb",
+		Profile:      AnalysisProfileTiDB85,
+		Name:         name,
+		CallClass:    BuiltinSemanticScalar,
+		Arity:        arity,
+		OperandKinds: operandKinds,
+	}
+}
+
+func tidbVariableArityScalarEntry(name string, minArity int, operandKinds []string) BuiltinSemanticEntry {
+	return BuiltinSemanticEntry{
+		Dialect:      "tidb",
+		Profile:      AnalysisProfileTiDB85,
+		Name:         name,
+		CallClass:    BuiltinSemanticScalar,
+		MinArity:     minArity,
+		OperandKinds: operandKinds,
 	}
 }
 

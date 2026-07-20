@@ -38,7 +38,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - `AnalysisProfile`
 - `ValidateAnalysisProfile()`
 - `BuiltinSemanticManifest` / `BuiltinSemanticEntry`
-- `BuiltinSemanticCallClass` / `BuiltinSemanticAggregate` / `BuiltinSemanticWindow`
+- `BuiltinSemanticCallClass` / `BuiltinSemanticAggregate` / `BuiltinSemanticWindow` / `BuiltinSemanticScalar`
 - `ErrBuiltinSemanticManifestInvalid`
 - `NewBuiltinSemanticManifest()` / `NewMySQLTiDBSemanticService()`
 - `QueryAccessResult`

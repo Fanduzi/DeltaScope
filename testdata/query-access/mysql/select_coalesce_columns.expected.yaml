@@ -1,0 +1,30 @@
+name: select_coalesce_columns
+dialect: mysql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - name: t
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - table: t
+      column: a
+      usages: [projection]
+    - table: t
+      column: b
+      usages: [projection]
+  outputs:
+    - name: ""
+      sources: [t.a, t.b]
+  requirements:
+    - object: t
+      privilege: read_table
+    - object: t.a
+      privilege: read_column
+    - object: t.b
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [function_call, unknown_function_effect]

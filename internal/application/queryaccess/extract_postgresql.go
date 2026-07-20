@@ -111,21 +111,22 @@ func mapEffectCandidates(in []pgparser.EffectCandidate) []EffectCandidate {
 		}
 
 		out = append(out, EffectCandidate{
-			Kind:              EffectCandidateKind(c.Kind),
-			Ordinal:           c.Ordinal,
-			NamePath:          append([]string(nil), c.NamePath...),
-			ExplicitSchema:    c.ExplicitSchema,
-			Arity:             c.Arity,
-			OperandKinds:      kinds,
-			IsAggregate:       c.IsAggregate,
-			HasWindow:         c.HasWindow,
-			HasFilter:         c.HasFilter,
-			HasDistinct:       c.HasDistinct,
-			HasAggOrder:       c.HasAggOrder,
-			HasWithinGroup:    c.HasWithinGroup,
-			HasFrame:          c.HasFrame,
-			TargetTypePath:    append([]string(nil), c.TargetTypePath...),
-			OperandColumnRefs: colRefs,
+			Kind:                 EffectCandidateKind(c.Kind),
+			Ordinal:              c.Ordinal,
+			NamePath:             append([]string(nil), c.NamePath...),
+			ExplicitSchema:       c.ExplicitSchema,
+			Arity:                c.Arity,
+			OperandKinds:         kinds,
+			IsAggregate:          c.IsAggregate,
+			HasWindow:            c.HasWindow,
+			HasFilter:            c.HasFilter,
+			HasDistinct:          c.HasDistinct,
+			HasAggOrder:          c.HasAggOrder,
+			HasWithinGroup:       c.HasWithinGroup,
+			HasFrame:             c.HasFrame,
+			TargetTypePath:       append([]string(nil), c.TargetTypePath...),
+			OperandColumnRefs:    colRefs,
+			ParserClassification: c.ParserClassification,
 		})
 	}
 	return out

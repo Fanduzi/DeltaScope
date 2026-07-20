@@ -75,7 +75,16 @@ func builtinCandidateMatches(candidate EffectCandidate, entries []BuiltinSemanti
 		return false
 	}
 	for _, entry := range entries {
-		if candidate.ParserClassification != string(entry.CallClass) || candidate.NamePath[0] != entry.Name || candidate.Arity != entry.Arity || candidate.IsAggregate != (entry.CallClass == BuiltinSemanticAggregate) || candidate.HasWindow != (entry.CallClass == BuiltinSemanticWindow) || !stringSliceEqual(candidate.OperandKinds, entry.OperandKinds) {
+		if !candidateCallClassMatches(candidate, entry) {
+			continue
+		}
+		if candidate.NamePath[0] != entry.Name {
+			continue
+		}
+		if !candidateArityMatches(candidate, entry) {
+			continue
+		}
+		if !candidateOperandKindsMatch(candidate, entry) {
 			continue
 		}
 		if !candidateOperandRefsShape(candidate) {
@@ -87,6 +96,47 @@ func builtinCandidateMatches(candidate EffectCandidate, entries []BuiltinSemanti
 		return true
 	}
 	return false
+}
+
+func candidateCallClassMatches(candidate EffectCandidate, entry BuiltinSemanticEntry) bool {
+	switch entry.CallClass {
+	case BuiltinSemanticAggregate:
+		return candidate.ParserClassification == "aggregate"
+	case BuiltinSemanticWindow:
+		return candidate.ParserClassification == "window"
+	case BuiltinSemanticScalar:
+		return candidate.ParserClassification == "generic" || candidate.ParserClassification == "keyword"
+	default:
+		return false
+	}
+}
+
+func candidateArityMatches(candidate EffectCandidate, entry BuiltinSemanticEntry) bool {
+	if entry.MinArity > 0 {
+		if candidate.Arity < entry.MinArity {
+			return false
+		}
+		if entry.MaxArity > 0 && candidate.Arity > entry.MaxArity {
+			return false
+		}
+		return true
+	}
+	return candidate.Arity == entry.Arity
+}
+
+func candidateOperandKindsMatch(candidate EffectCandidate, entry BuiltinSemanticEntry) bool {
+	if entry.MinArity > 0 {
+		if len(candidate.OperandKinds) < entry.MinArity {
+			return false
+		}
+		for _, kind := range candidate.OperandKinds {
+			if kind != "column" {
+				return false
+			}
+		}
+		return true
+	}
+	return stringSliceEqual(candidate.OperandKinds, entry.OperandKinds)
 }
 
 func candidateModifiersAllowed(candidate EffectCandidate, entry BuiltinSemanticEntry) bool {
@@ -103,6 +153,9 @@ func candidateModifiersAllowed(candidate EffectCandidate, entry BuiltinSemanticE
 		return false
 	}
 	if entry.CallClass == BuiltinSemanticWindow && !candidate.HasWindow {
+		return false
+	}
+	if entry.CallClass == BuiltinSemanticScalar && (candidate.HasWindow || candidate.IsAggregate || candidate.HasFilter || candidate.HasDistinct || candidate.HasAggOrder || candidate.HasWithinGroup || candidate.HasFrame || candidate.HasNamedWindow || candidate.HasWindowPartition || candidate.HasWindowOrder) {
 		return false
 	}
 	if !candidate.HasWindowPartition && len(candidate.WindowPartitionKinds) > 0 || !candidate.HasWindowOrder && len(candidate.WindowOrderKinds) > 0 || !candidate.HasFrame && len(candidate.WindowFrameKinds) > 0 {

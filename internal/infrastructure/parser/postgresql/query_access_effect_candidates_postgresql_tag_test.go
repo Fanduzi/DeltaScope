@@ -507,3 +507,182 @@ func stringSlicesEqual(a, b []string) bool {
 	}
 	return true
 }
+
+func TestExtractQueryAccess_EffectCandidates_ScalarFunctionDirectColumns(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	cases := []struct {
+		name      string
+		sql       string
+		wantName  string
+		wantArity int
+	}{
+		{name: "lower", sql: "SELECT lower(name) FROM public.users", wantName: "lower", wantArity: 1},
+		{name: "upper", sql: "SELECT upper(name) FROM public.users", wantName: "upper", wantArity: 1},
+		{name: "length", sql: "SELECT length(name) FROM public.users", wantName: "length", wantArity: 1},
+		{name: "char_length", sql: "SELECT char_length(name) FROM public.users", wantName: "char_length", wantArity: 1},
+		{name: "abs", sql: "SELECT abs(amount) FROM public.orders", wantName: "abs", wantArity: 1},
+		{name: "ceil", sql: "SELECT ceil(amount) FROM public.orders", wantName: "ceil", wantArity: 1},
+		{name: "floor", sql: "SELECT floor(amount) FROM public.orders", wantName: "floor", wantArity: 1},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := e.ExtractQueryAccess(context.Background(), tc.sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			found := false
+			for _, c := range facts.EffectCandidates {
+				if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && strings.EqualFold(c.NamePath[0], tc.wantName) {
+					if c.Arity != tc.wantArity {
+						t.Errorf("arity: got %d, want %d", c.Arity, tc.wantArity)
+					}
+					if c.ParserClassification != "generic" {
+						t.Errorf("classification: got %q, want %q", c.ParserClassification, "generic")
+					}
+					for _, kind := range c.OperandKinds {
+						if kind != OperandKindColumn {
+							t.Errorf("operand kind: got %q, want %q", kind, OperandKindColumn)
+						}
+					}
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("missing %s candidate: %+v", tc.wantName, facts.EffectCandidates)
+			}
+		})
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_CoalesceExprSyntheticCandidate(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	cases := []struct {
+		name      string
+		sql       string
+		wantArity int
+		wantCols  int
+	}{
+		{name: "two_columns", sql: "SELECT COALESCE(a, b) FROM public.t", wantArity: 2, wantCols: 2},
+		{name: "three_columns", sql: "SELECT COALESCE(a, b, c) FROM public.t", wantArity: 3, wantCols: 3},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := e.ExtractQueryAccess(context.Background(), tc.sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			found := false
+			for _, c := range facts.EffectCandidates {
+				if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && c.NamePath[0] == "coalesce" {
+					if c.Arity != tc.wantArity {
+						t.Errorf("arity: got %d, want %d", c.Arity, tc.wantArity)
+					}
+					if len(c.OperandColumnRefs) != tc.wantCols {
+						t.Errorf("column refs: got %d, want %d", len(c.OperandColumnRefs), tc.wantCols)
+					}
+					if c.ParserClassification != "generic" {
+						t.Errorf("classification: got %q, want %q", c.ParserClassification, "generic")
+					}
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("missing coalesce synthetic candidate: %+v", facts.EffectCandidates)
+			}
+		})
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_CoalesceExprWithLiteralNotCollected(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	facts, err := e.ExtractQueryAccess(context.Background(),
+		"SELECT COALESCE(a, 42) FROM public.t", "postgresql", "public")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	for _, c := range facts.EffectCandidates {
+		if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && c.NamePath[0] == "coalesce" {
+			t.Errorf("coalesce with literal arg should not produce synthetic candidate: %+v", c)
+		}
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_ScalarInWhere(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	facts, err := e.ExtractQueryAccess(context.Background(),
+		"SELECT id FROM public.users WHERE upper(name) = 'FOO'", "postgresql", "public")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	found := false
+	for _, c := range facts.EffectCandidates {
+		if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && strings.EqualFold(c.NamePath[0], "upper") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("missing upper in WHERE: %+v", facts.EffectCandidates)
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_ScalarInOrderBy(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	facts, err := e.ExtractQueryAccess(context.Background(),
+		"SELECT id FROM public.users ORDER BY abs(id)", "postgresql", "public")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	found := false
+	for _, c := range facts.EffectCandidates {
+		if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && strings.EqualFold(c.NamePath[0], "abs") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("missing abs in ORDER BY: %+v", facts.EffectCandidates)
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_AggregateRegression(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	facts, err := e.ExtractQueryAccess(context.Background(),
+		"SELECT COUNT(*) FROM public.users", "postgresql", "public")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	found := false
+	for _, c := range facts.EffectCandidates {
+		if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && strings.EqualFold(c.NamePath[0], "count") {
+			if !c.IsAggregate || c.ParserClassification != "aggregate" {
+				t.Errorf("aggregate regression: %+v", c)
+			}
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("missing count candidate: %+v", facts.EffectCandidates)
+	}
+}

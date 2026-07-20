@@ -1,0 +1,25 @@
+name: select_lower_column
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - schema: public
+      name: users
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - schema: public
+      table: users
+      column: name
+      usages: [projection]
+  outputs: []
+  requirements:
+    - object: public.users
+      privilege: read_table
+    - object: public.users.name
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [unproven_function_effect]

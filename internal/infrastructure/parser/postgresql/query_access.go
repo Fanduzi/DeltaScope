@@ -377,7 +377,24 @@ func collectNodeEffects(node *pg_query.Node, c *effectCollector, scope *selectSc
 			collectNodeEffects(n.BooleanTest.GetArg(), c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_CoalesceExpr:
-		for _, arg := range n.CoalesceExpr.GetArgs() {
+		args := n.CoalesceExpr.GetArgs()
+		allColumns := len(args) >= 2
+		var kinds []OperandKindHint
+		var colRefs []OperandColumnRef
+		for _, arg := range args {
+			kind := operandKindHint(arg)
+			kinds = append(kinds, kind)
+			if kind != OperandKindColumn {
+				allColumns = false
+			}
+			if ref, ok := operandColumnRef(arg, scope); ok {
+				colRefs = append(colRefs, ref)
+			}
+		}
+		if allColumns && len(colRefs) == len(args) {
+			recordCoalesceSyntheticCandidate(c, len(args), kinds, colRefs)
+		}
+		for _, arg := range args {
 			collectNodeEffects(arg, c, scope, defaultSchema, cteNames)
 		}
 	case *pg_query.Node_CaseExpr:

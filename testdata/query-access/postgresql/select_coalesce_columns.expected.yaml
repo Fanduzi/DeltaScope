@@ -1,0 +1,31 @@
+name: select_coalesce_columns
+dialect: postgresql
+mode: strict
+expect:
+  read_classification: indeterminate
+  admission: indeterminate
+  relations:
+    - schema: public
+      name: t
+      kind: table
+      permission_required: true
+  referenced_columns:
+    - schema: public
+      table: t
+      column: a
+      usages: [projection]
+    - schema: public
+      table: t
+      column: b
+      usages: [projection]
+  outputs: []
+  requirements:
+    - object: public.t
+      privilege: read_table
+    - object: public.t.a
+      privilege: read_column
+    - object: public.t.b
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: [unproven_function_effect]
