@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -21,8 +22,9 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -295,7 +297,116 @@ func TestHandlerAuditReturnsJSONResult(t *testing.T) {
 	}
 }
 
-func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T) {
+func TestHandlerAuditReturnsLegacyConnectionRejection(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection":{"host":"localhost"}}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+		t.Fatalf("expected invalid_request code, got %q", rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte("connection_id")) {
+		t.Fatalf("expected hint about connection_id in message, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditRejectsLegacyConnectionWithCredentials(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection":{"host":"localhost","user":"root","password":"secret123"}}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+		t.Fatalf("expected invalid_request code, got %q", rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "secret123") {
+		t.Fatalf("response must not leak password, got %q", body)
+	}
+}
+
+func TestHandlerAuditConnectionNotFoundForNonexistentID(t *testing.T) {
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "k1", SecretEnv: "TEST_API_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "exists", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"k1"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"nonexistent"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"connection_not_found"`)) {
+		t.Fatalf("expected connection_not_found code, got %q", rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "nonexistent") {
+		t.Fatalf("response must not leak connection ID, got %q", body)
+	}
+}
+
+func TestHandlerAuditMetadataAwareWithRegistryConnection(t *testing.T) {
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "k1", SecretEnv: "TEST_API_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "mydb", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Schema: "app", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"k1"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
 	previous := prepareHTTPMetadataAudit
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		if request.Connection.Host != "127.0.0.1" || request.Connection.User != "root" || request.Connection.Password != "secret" {
@@ -311,7 +422,7 @@ func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
-	handler, err := NewHandler("", "test-build", WithAuditFunc(func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
+	handler, err := NewHandler("", "test-build", WithRegistry(reg), WithAuditFunc(func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
 		if request.Schema != "app" {
 			t.Fatalf("expected schema app, got %#v", request.Schema)
 		}
@@ -324,8 +435,9 @@ func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T
 		t.Fatalf("new handler: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","connection":{"host":"127.0.0.1","port":3306,"user":"root","password":"secret","schema":"app"}}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","connection_id":"mydb"}`))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "key-value")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -344,8 +456,288 @@ func TestHandlerAuditReturnsMetadataAwareContextForDirectConnection(t *testing.T
 	if contextValue["mode"] != "metadata-aware" {
 		t.Fatalf("expected metadata-aware mode, got %#v", contextValue["mode"])
 	}
-	if contextValue["metadata_source"] != "direct" {
-		t.Fatalf("expected direct metadata source, got %#v", contextValue["metadata_source"])
+	if contextValue["metadata_source"] != "registry" {
+		t.Fatalf("expected registry metadata source, got %#v", contextValue["metadata_source"])
+	}
+}
+
+func TestHandlerAuditNotAuthorizedForDisallowedPrincipal(t *testing.T) {
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	t.Setenv("TEST_OTHER_SECRET", "other-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys: []runtimeconfig.APIKeyConfig{
+					{ID: "k1", SecretEnv: "TEST_API_SECRET"},
+					{ID: "other-key", SecretEnv: "TEST_OTHER_SECRET"},
+				},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "mydb", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"other-key"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"mydb"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"not_authorized"`)) {
+		t.Fatalf("expected not_authorized code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditNoLeakDriverErrorWithPassword(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return nil, &auditmeta.Error{
+			Kind:    auditmeta.ErrorConnectionOpen,
+			Message: "open metadata connection: password=secret123 tcp(10.0.0.1:3306)",
+			Err:     fmt.Errorf("dial tcp: password=secret123 tcp(10.0.0.1:3306)"),
+		}
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "k1", SecretEnv: "TEST_API_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "mydb", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"k1"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"mydb"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	for _, leak := range []string{"secret123", "10.0.0.1", "password=", "tcp("} {
+		if strings.Contains(body, leak) {
+			t.Fatalf("response must not leak %q, got %q", leak, body)
+		}
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"connection_failed"`)) {
+		t.Fatalf("expected connection_failed code, got %q", body)
+	}
+}
+
+func TestHandlerAuditNoLeakDSNInError(t *testing.T) {
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return nil, &auditmeta.Error{
+			Kind:    auditmeta.ErrorConnectionOpen,
+			Message: "open metadata connection: mysql://user:pass@host/db",
+			Err:     fmt.Errorf("mysql://user:pass@host/db"),
+		}
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "k1", SecretEnv: "TEST_API_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "mydb", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"k1"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"mydb"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	for _, leak := range []string{"user", "pass", "mysql://"} {
+		if strings.Contains(body, leak) {
+			t.Fatalf("response must not leak DSN component %q, got %q", leak, body)
+		}
+	}
+}
+
+func TestHandlerAuditNoLeakConnectionIDInNotFound(t *testing.T) {
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "k1", SecretEnv: "TEST_API_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "exists", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"k1"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"my-secret-conn-id"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	if strings.Contains(body, "my-secret-conn-id") {
+		t.Fatalf("response must not leak connection ID, got %q", body)
+	}
+	if !strings.Contains(body, "connection not found") {
+		t.Fatalf("expected 'connection not found' message, got %q", body)
+	}
+}
+
+func TestHandlerAuditOfflineBehaviorPreserved(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	contextValue, ok := payload["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", payload["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue["mode"])
+	}
+}
+
+func TestHandlerAuditMissingAPIKeyWhenAuthEnabled(t *testing.T) {
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_SECRET", "key-value")
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "k1", SecretEnv: "TEST_API_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{ID: "mydb", Dialect: "mysql", Host: "127.0.0.1", Port: 3306, User: "root", PasswordEnv: "TEST_DB_PASSWORD", Purposes: []string{"audit"}, AllowedAPIKeyIDs: []string{"k1"}},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"mydb"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"auth_required"`)) {
+		t.Fatalf("expected auth_required code, got %q", rec.Body.String())
+	}
+}
+
+func TestMapAuditErrorConnectionNotFound(t *testing.T) {
+	status, code := mapAuditError(online.ErrConnectionNotFound)
+	if status != http.StatusNotFound || code != "connection_not_found" {
+		t.Fatalf("unexpected mapping: status=%d code=%s", status, code)
+	}
+}
+
+func TestMapAuditErrorMessageBoundedForOnlineErrors(t *testing.T) {
+	msg := mapAuditErrorMessage(online.ErrConnectionNotFound)
+	if msg != "connection not found" {
+		t.Fatalf("expected bounded message, got %q", msg)
+	}
+}
+
+func TestMapAuditErrorMessageBoundedForAuditmetaErrors(t *testing.T) {
+	err := &auditmeta.Error{Kind: auditmeta.ErrorConnectionOpen, Message: "open metadata connection: password=secret"}
+	msg := mapAuditErrorMessage(err)
+	if msg != "connection failed" {
+		t.Fatalf("expected bounded message 'connection failed', got %q", msg)
+	}
+	if strings.Contains(msg, "secret") {
+		t.Fatalf("message must not leak secrets, got %q", msg)
 	}
 }
 
@@ -353,23 +745,6 @@ func TestHandlerAuditRejectsExplicitPostgreSQLMetadataAwareRequestsOnUnsupported
 	if _, err := appaudit.Parse(context.Background(), "SELECT 1", spec.DialectPostgreSQL); err == nil {
 		t.Skip("skipping: real PG parser available, capability boundary test requires stub build")
 	}
-	previous := prepareHTTPMetadataAudit
-	client := &metadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}
-	prepareHTTPMetadataAudit = func(ctx context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		return auditmeta.Prepare(ctx, auditmeta.Request{
-			SQL:                  request.SQL,
-			Connection:           request.Connection,
-			RequestedDialect:     request.RequestedDialect,
-			ExplicitDialect:      request.ExplicitDialect,
-			ExplicitSchema:       request.ExplicitSchema,
-			ExplicitSchemaSource: request.ExplicitSchemaSource,
-			SchemaHint:           request.SchemaHint,
-			OpenClient: func(auditmeta.ConnectionConfig) (auditmeta.Client, error) {
-				return client, nil
-			},
-		})
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	handler, err := NewHandler("", "test-build")
 	if err != nil {
@@ -384,30 +759,33 @@ func TestHandlerAuditRejectsExplicitPostgreSQLMetadataAwareRequestsOnUnsupported
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+		t.Fatalf("expected invalid_request code for legacy connection field, got %q", rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "secret") {
+		t.Fatalf("response must not leak password, got %q", body)
+	}
+}
 
-	var payload map[string]any
-	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
-		t.Fatalf("decode response: %v", err)
+func TestMapAuditErrorConnectionOpen(t *testing.T) {
+	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorConnectionOpen, Message: "open metadata connection: boom"})
+	if status != http.StatusBadGateway || code != "connection_failed" {
+		t.Fatalf("unexpected connection open mapping: status=%d code=%s", status, code)
 	}
-	errPayload, ok := payload["error"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected error envelope, got %#v", payload)
+}
+
+func TestMapAuditErrorSchemaHintRequired(t *testing.T) {
+	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorSchemaHintRequired, Message: "set schema"})
+	if status != http.StatusBadRequest || code != "schema_required" {
+		t.Fatalf("unexpected schema hint mapping: status=%d code=%s", status, code)
 	}
-	message, ok := errPayload["message"].(string)
-	if !ok || message == "" {
-		t.Fatalf("expected non-empty error message, got %#v", errPayload["message"])
-	}
-	if !strings.Contains(message, "PG-capable") {
-		t.Fatalf("expected capability-boundary wording, got %q", message)
-	}
-	if strings.Contains(strings.ToLower(message), "resolve schema targets:") {
-		t.Fatalf("did not expect metadata parse wrapper wording, got %q", message)
-	}
-	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
-		t.Fatalf("did not expect mismatch wording, got %q", message)
-	}
-	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
-		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
+}
+
+func TestMapAuditErrorPlainTextConnectionMessageFallsBackToBadRequest(t *testing.T) {
+	status, code := mapAuditError(errors.New("connection must include at least one non-password field"))
+	if status != http.StatusBadRequest || code != "bad_request" {
+		t.Fatalf("expected plain text connection message to avoid special classification: status=%d code=%s", status, code)
 	}
 }
 
@@ -491,12 +869,6 @@ func TestHandlerAuditRejectsExplicitPostgreSQLOfflineRequestsOnUnsupportedBuild(
 	}
 	if !strings.Contains(message, "PG-capable") {
 		t.Fatalf("expected capability-boundary message, got %q", message)
-	}
-	if strings.Contains(strings.ToLower(message), "possible dialect mismatch") {
-		t.Fatalf("did not expect mismatch wording, got %q", message)
-	}
-	if strings.Contains(strings.ToLower(message), "if you are auditing postgresql") {
-		t.Fatalf("did not expect heuristic suggestion wording, got %q", message)
 	}
 }
 
@@ -853,14 +1225,14 @@ func TestHandlerAuditReturnsTimeoutWhenRequestDeadlineExceeded(t *testing.T) {
 	if rec.Code != http.StatusGatewayTimeout {
 		t.Fatalf("expected 504, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !bytes.Contains(rec.Body.Bytes(), []byte(`"request_timeout"`)) {
-		t.Fatalf("expected request_timeout code, got %q", rec.Body.String())
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"timeout"`)) {
+		t.Fatalf("expected timeout code, got %q", rec.Body.String())
 	}
 }
 
 func TestMapAuditErrorTimeout(t *testing.T) {
 	status, code := mapAuditError(context.DeadlineExceeded)
-	if status != http.StatusGatewayTimeout || code != "request_timeout" {
+	if status != http.StatusGatewayTimeout || code != "timeout" {
 		t.Fatalf("unexpected timeout mapping: status=%d code=%s", status, code)
 	}
 }
@@ -871,14 +1243,14 @@ func TestMapAuditErrorWrappedTimeout(t *testing.T) {
 		Message: "open metadata connection: context deadline exceeded",
 		Err:     context.DeadlineExceeded,
 	})
-	if status != http.StatusGatewayTimeout || code != "request_timeout" {
+	if status != http.StatusGatewayTimeout || code != "timeout" {
 		t.Fatalf("unexpected wrapped timeout mapping: status=%d code=%s", status, code)
 	}
 }
 
 func TestMapAuditErrorCanceled(t *testing.T) {
 	status, code := mapAuditError(context.Canceled)
-	if status != http.StatusRequestTimeout || code != "request_canceled" {
+	if status != 499 || code != "canceled" {
 		t.Fatalf("unexpected canceled mapping: status=%d code=%s", status, code)
 	}
 }
@@ -889,7 +1261,7 @@ func TestMapAuditErrorWrappedCanceled(t *testing.T) {
 		Message: "detect dialect: context canceled",
 		Err:     context.Canceled,
 	})
-	if status != http.StatusRequestTimeout || code != "request_canceled" {
+	if status != 499 || code != "canceled" {
 		t.Fatalf("unexpected wrapped canceled mapping: status=%d code=%s", status, code)
 	}
 }
@@ -898,47 +1270,6 @@ func TestMapAuditErrorEmptySQL(t *testing.T) {
 	status, code := mapAuditError(appaudit.ErrEmptySQL)
 	if status != http.StatusBadRequest || code != "bad_request" {
 		t.Fatalf("unexpected bad request mapping: status=%d code=%s", status, code)
-	}
-}
-
-func TestMapAuditErrorSchemaHintRequired(t *testing.T) {
-	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorSchemaHintRequired, Message: "set schema"})
-	if status != http.StatusBadRequest || code != "connection_invalid" {
-		t.Fatalf("unexpected schema hint mapping: status=%d code=%s", status, code)
-	}
-}
-
-func TestMapAuditErrorConnectionOpen(t *testing.T) {
-	status, code := mapAuditError(&auditmeta.Error{Kind: auditmeta.ErrorConnectionOpen, Message: "open metadata connection: boom"})
-	if status != http.StatusBadGateway || code != "connection_failed" {
-		t.Fatalf("unexpected connection open mapping: status=%d code=%s", status, code)
-	}
-}
-
-func TestMapAuditErrorConnectionValidation(t *testing.T) {
-	status, code := mapAuditError(&ifaceconn.ConnectionInputError{
-		Kind:    ifaceconn.ErrorKindValidation,
-		Message: "connection must include at least one non-password field",
-	})
-	if status != http.StatusBadRequest || code != "connection_invalid" {
-		t.Fatalf("unexpected connection validation mapping: status=%d code=%s", status, code)
-	}
-}
-
-func TestMapAuditErrorPasswordEnv(t *testing.T) {
-	status, code := mapAuditError(&ifaceconn.ConnectionInputError{
-		Kind:    ifaceconn.ErrorKindPasswordLookup,
-		Message: `password env "DB_PASS" is not set`,
-	})
-	if status != http.StatusBadRequest || code != "connection_invalid" {
-		t.Fatalf("unexpected password env mapping: status=%d code=%s", status, code)
-	}
-}
-
-func TestMapAuditErrorPlainTextConnectionMessageFallsBackToBadRequest(t *testing.T) {
-	status, code := mapAuditError(errors.New("connection must include at least one non-password field"))
-	if status != http.StatusBadRequest || code != "bad_request" {
-		t.Fatalf("expected plain text connection message to avoid special classification: status=%d code=%s", status, code)
 	}
 }
 

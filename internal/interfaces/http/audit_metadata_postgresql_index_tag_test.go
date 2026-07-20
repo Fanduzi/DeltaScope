@@ -13,11 +13,16 @@ import (
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 func TestExecuteAuditRequestPostgreSQLMetadataResolvesQualifiedRenameIndexWithoutRequestSchema(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -39,15 +44,12 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesQualifiedRenameIndexWithou
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "alter index accounting.missing_idx rename to idx_new;",
-		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1",
-			User: "root",
-		},
+		SQL:          "alter index accounting.missing_idx rename to idx_new;",
+		Dialect:      deltascope.DialectPostgreSQL,
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}

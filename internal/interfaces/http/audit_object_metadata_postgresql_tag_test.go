@@ -13,10 +13,16 @@ import (
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 )
 
 func TestHTTPAuditProjectsAmbiguousObjectMetadata(t *testing.T) {
-	handler, err := NewHandler("", "test-build")
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
+	handler, err := NewHandler("", "test-build", WithRegistry(testReg))
 	if err != nil {
 		t.Fatalf("new handler: %v", err)
 	}
@@ -44,9 +50,10 @@ func TestHTTPAuditProjectsAmbiguousObjectMetadata(t *testing.T) {
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
-	body := `{"sql":"CREATE PUBLICATION my_pub FOR ALL TABLES","dialect":"postgresql","connection":{"host":"127.0.0.1","user":"root","schema":"public"}}`
+	body := `{"sql":"CREATE PUBLICATION my_pub FOR ALL TABLES","dialect":"postgresql","connection_id":"test-pg","schema":"public"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 

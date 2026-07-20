@@ -67,6 +67,12 @@ type ConnectionConfig struct {
 	resolvedPassword string `yaml:"-"`
 }
 
+// ResolvedPassword returns the password resolved from the configured secret source at startup.
+// It never appears in serialized output.
+func (c ConnectionConfig) ResolvedPassword() string {
+	return c.resolvedPassword
+}
+
 // HTTPConfig controls HTTP service settings.
 type HTTPConfig struct {
 	Auth AuthConfig `yaml:"auth"`

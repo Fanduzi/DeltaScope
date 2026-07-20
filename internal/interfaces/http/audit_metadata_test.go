@@ -1,21 +1,20 @@
 // Package httpapi verifies metadata-aware HTTP audit execution wiring.
 // input: HTTP audit requests, fake metadata preparation results, and stub public audit functions
-// output: focused coverage for offline context emission and direct metadata-aware adapter behavior
+// output: focused coverage for offline context emission and registry-based metadata-aware adapter behavior
 // pos: interface-layer tests for HTTP metadata-aware audit execution
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (
 	"context"
-	"os"
-	"path/filepath"
+	"errors"
 	"testing"
 	"time"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
-	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -72,6 +71,83 @@ func (c *metadataAuditTestClient) ResolveObject(_ context.Context, _ spec.Dialec
 	return c.objectSnapshot, nil
 }
 
+func newTestRegistry(t *testing.T, connID string, opts ...func(*runtimeconfig.ConnectionConfig)) *runtimeconfig.Registry {
+	t.Helper()
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_KEY_SECRET", "test-key-value")
+
+	conn := runtimeconfig.ConnectionConfig{
+		ID:               connID,
+		Dialect:          "mysql",
+		Host:             "127.0.0.1",
+		Port:             3306,
+		User:             "root",
+		PasswordEnv:      "TEST_DB_PASSWORD",
+		Schema:           "app",
+		Purposes:         []string{"audit"},
+		AllowedAPIKeyIDs: []string{"default-key"},
+	}
+	for _, opt := range opts {
+		opt(&conn)
+	}
+
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "default-key", SecretEnv: "TEST_API_KEY_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{conn},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+	return reg
+}
+
+func newTestRegistryWithAuth(t *testing.T, connID string, keyID string, allowedKeyIDs []string) *runtimeconfig.Registry {
+	t.Helper()
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+	t.Setenv("TEST_API_KEY_SECRET", "test-key-value")
+	t.Setenv("TEST_OTHER_KEY_SECRET", "other-key-value")
+
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys: []runtimeconfig.APIKeyConfig{
+					{ID: keyID, SecretEnv: "TEST_API_KEY_SECRET"},
+					{ID: "other-key", SecretEnv: "TEST_OTHER_KEY_SECRET"},
+				},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{
+					ID:               connID,
+					Dialect:          "mysql",
+					Host:             "127.0.0.1",
+					Port:             3306,
+					User:             "root",
+					PasswordEnv:      "TEST_DB_PASSWORD",
+					Schema:           "app",
+					Purposes:         []string{"audit"},
+					AllowedAPIKeyIDs: allowedKeyIDs,
+				},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+	return reg
+}
+
 func TestExecuteAuditRequestReturnsOfflineContext(t *testing.T) {
 	var captured deltascope.Request
 
@@ -81,7 +157,7 @@ func TestExecuteAuditRequestReturnsOfflineContext(t *testing.T) {
 	}, "", func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
 		captured = request
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, nil, "")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
@@ -99,7 +175,7 @@ func TestExecuteAuditRequestReturnsOfflineContext(t *testing.T) {
 	}
 }
 
-func TestExecuteAuditRequestReturnsMetadataAwareContextForDirectConnection(t *testing.T) {
+func TestExecuteAuditRequestReturnsMetadataAwareContextForRegistryConnection(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &metadataAuditTestClient{}
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
@@ -116,16 +192,12 @@ func TestExecuteAuditRequestReturnsMetadataAwareContextForDirectConnection(t *te
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
+	reg := newTestRegistry(t, "test-conn")
+
 	var captured deltascope.Request
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:     "127.0.0.1",
-			Port:     3306,
-			User:     "root",
-			Password: "secret",
-			Schema:   "app",
-		},
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		captured = request
 		if request.MetadataProvider == nil {
@@ -135,7 +207,7 @@ func TestExecuteAuditRequestReturnsMetadataAwareContextForDirectConnection(t *te
 			t.Fatalf("load instance facts: %v", err)
 		}
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, reg, "default-key")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
@@ -145,8 +217,8 @@ func TestExecuteAuditRequestReturnsMetadataAwareContextForDirectConnection(t *te
 	if response.Context.Mode != "metadata-aware" {
 		t.Fatalf("expected metadata-aware mode, got %#v", response.Context.Mode)
 	}
-	if response.Context.MetadataSource != "direct" {
-		t.Fatalf("expected direct metadata source, got %#v", response.Context.MetadataSource)
+	if response.Context.MetadataSource != "registry" {
+		t.Fatalf("expected registry metadata source, got %#v", response.Context.MetadataSource)
 	}
 	if captured.Schema != "app" {
 		t.Fatalf("expected schema to flow to public audit request, got %#v", captured.Schema)
@@ -159,58 +231,69 @@ func TestExecuteAuditRequestReturnsMetadataAwareContextForDirectConnection(t *te
 	}
 }
 
-func TestExecuteAuditRequestReturnsConfigErrorBeforeMetadataPreparation(t *testing.T) {
-	dir := t.TempDir()
-	configPath := filepath.Join(dir, "policy.yaml")
-	if err := os.WriteFile(configPath, []byte("rules:\n"), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-	if _, err := NewHandler(configPath, "test-build"); err != nil {
-		t.Fatalf("new handler: %v", err)
-	}
-	if err := os.Remove(configPath); err != nil {
-		t.Fatalf("remove config: %v", err)
-	}
+func TestExecuteAuditRequestReturnsConnectionNotFoundForMissingID(t *testing.T) {
+	reg := newTestRegistry(t, "test-conn")
 
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:          "delete from users",
+		ConnectionID: "nonexistent",
+	}, "", func(context.Context, deltascope.Request) (deltascope.Result, error) {
+		t.Fatalf("auditFn should not be called for missing connection")
+		return deltascope.Result{}, nil
+	}, MetadataConfig{}, reg, "")
+	if err == nil {
+		t.Fatalf("expected error for missing connection")
+	}
+	if !errors.Is(err, online.ErrConnectionNotFound) {
+		t.Fatalf("expected ErrConnectionNotFound, got %v", err)
+	}
+}
+
+func TestExecuteAuditRequestReturnsConnectionNotFoundWhenRegistryNil(t *testing.T) {
+	_, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
+	}, "", func(context.Context, deltascope.Request) (deltascope.Result, error) {
+		t.Fatalf("auditFn should not be called when registry is nil")
+		return deltascope.Result{}, nil
+	}, MetadataConfig{}, nil, "")
+	if err == nil {
+		t.Fatalf("expected error when registry is nil")
+	}
+	if !errors.Is(err, online.ErrConnectionNotFound) {
+		t.Fatalf("expected ErrConnectionNotFound, got %v", err)
+	}
+}
+
+func TestExecuteAuditRequestReturnsNotAuthorizedWhenPrincipalNotAllowed(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
-	prepareHTTPMetadataAudit = func(context.Context, auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		t.Fatalf("prepareHTTPMetadataAudit should not be called when config reload fails")
+	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		t.Fatalf("prepare should not be called when principal is not authorized")
 		return nil, nil
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
+	reg := newTestRegistryWithAuth(t, "test-conn", "key-1", []string{"other-key"})
+
 	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1",
-			User: "root",
-		},
-	}, configPath, func(context.Context, deltascope.Request) (deltascope.Result, error) {
-		t.Fatalf("auditFn should not be called when config reload fails")
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
+	}, "", func(context.Context, deltascope.Request) (deltascope.Result, error) {
+		t.Fatalf("auditFn should not be called when unauthorized")
 		return deltascope.Result{}, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, reg, "key-1")
 	if err == nil {
-		t.Fatalf("expected config error")
+		t.Fatalf("expected authorization error")
 	}
-	status, code := mapAuditError(err)
-	if status != 500 || code != "config_invalid" {
-		t.Fatalf("expected config_invalid, got status=%d code=%s err=%v", status, code, err)
+	if !errors.Is(err, online.ErrPrincipalNotAllowed) {
+		t.Fatalf("expected ErrPrincipalNotAllowed, got %v", err)
 	}
 }
 
-func TestExecuteAuditRequestUsesConfigSnapshotForMetadataAwareAudit(t *testing.T) {
-	dir := t.TempDir()
-	configPath := filepath.Join(dir, "policy.yaml")
-	if err := os.WriteFile(configPath, []byte("rules:\n"), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
+func TestExecuteAuditRequestAllowsAuthorizedPrincipal(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &metadataAuditTestClient{}
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		if err := os.WriteFile(configPath, []byte("rules:\n  select:\n    require_where: nope\n"), 0o600); err != nil {
-			t.Fatalf("mutate config: %v", err)
-		}
 		return &auditmeta.PreparedAudit{
 			Client:        client,
 			Dialect:       spec.DialectMySQL,
@@ -221,109 +304,26 @@ func TestExecuteAuditRequestUsesConfigSnapshotForMetadataAwareAudit(t *testing.T
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
-	var capturedConfigPath string
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:     "127.0.0.1",
-			Port:     3306,
-			User:     "root",
-			Password: "secret",
-			Schema:   "app",
-		},
-	}, configPath, func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
-		capturedConfigPath = request.ConfigPath
-		if capturedConfigPath == configPath {
-			t.Fatalf("expected metadata-aware audit to use config snapshot path")
-		}
-		if _, err := loadHTTPPolicy(capturedConfigPath); err != nil {
-			t.Fatalf("expected snapshot config to remain loadable, got %v", err)
-		}
-		if _, err := loadHTTPPolicy(configPath); err == nil {
-			t.Fatalf("expected original config mutation to make source path invalid")
-		}
+	reg := newTestRegistryWithAuth(t, "test-conn", "key-1", []string{"key-1"})
+
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
+	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, reg, "key-1")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
-	if !client.closed {
-		t.Fatalf("expected metadata client close to be called")
+	if response.Context == nil {
+		t.Fatalf("expected additive context")
 	}
-	if capturedConfigPath == "" {
-		t.Fatalf("expected captured config snapshot path")
-	}
-	if _, err := os.Stat(capturedConfigPath); !os.IsNotExist(err) {
-		t.Fatalf("expected config snapshot cleanup, got err=%v", err)
+	if response.Context.Mode != "metadata-aware" {
+		t.Fatalf("expected metadata-aware mode, got %#v", response.Context.Mode)
 	}
 }
 
-func TestExecuteAuditRequestValidatesSnapshotInsteadOfSourcePolicyPath(t *testing.T) {
-	dir := t.TempDir()
-	configPath := filepath.Join(dir, "policy.yaml")
-	if err := os.WriteFile(configPath, []byte("rules:\n"), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	previousPrepare := prepareHTTPMetadataAudit
-	client := &metadataAuditTestClient{}
-	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		return &auditmeta.PreparedAudit{
-			Client:        client,
-			Dialect:       spec.DialectMySQL,
-			Schema:        "app",
-			DialectSource: "detected",
-			SchemaSource:  "request",
-		}, nil
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previousPrepare })
-
-	previousLoad := loadHTTPPolicy
-	validatedSourcePath := false
-	loadHTTPPolicy = func(path string) (domainpolicy.Policy, error) {
-		if path == configPath {
-			validatedSourcePath = true
-			if err := os.WriteFile(configPath, []byte("rules:\n  select:\n    require_where: nope\n"), 0o600); err != nil {
-				t.Fatalf("mutate config during validation: %v", err)
-			}
-			return domainpolicy.Default(), nil
-		}
-		return previousLoad(path)
-	}
-	t.Cleanup(func() { loadHTTPPolicy = previousLoad })
-
-	var capturedConfigPath string
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:     "127.0.0.1",
-			Port:     3306,
-			User:     "root",
-			Password: "secret",
-			Schema:   "app",
-		},
-	}, configPath, func(_ context.Context, request deltascope.Request) (deltascope.Result, error) {
-		capturedConfigPath = request.ConfigPath
-		if _, err := previousLoad(capturedConfigPath); err != nil {
-			t.Fatalf("expected snapshot config to stay valid, got %v", err)
-		}
-		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
-	if err != nil {
-		t.Fatalf("execute audit request: %v", err)
-	}
-	if validatedSourcePath {
-		t.Fatalf("expected snapshot validation to avoid source policy path")
-	}
-	if !client.closed {
-		t.Fatalf("expected metadata client close to be called")
-	}
-	if capturedConfigPath == "" {
-		t.Fatalf("expected captured config snapshot path")
-	}
-}
-
-func TestExecuteAuditRequestPassesConnectionConnectTimeout(t *testing.T) {
+func TestExecuteAuditRequestPassesRegistryConnectTimeout(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &metadataAuditTestClient{}
 	var capturedConfig auditmeta.ConnectionConfig
@@ -339,19 +339,16 @@ func TestExecuteAuditRequestPassesConnectionConnectTimeout(t *testing.T) {
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
+	reg := newTestRegistry(t, "test-conn", func(c *runtimeconfig.ConnectionConfig) {
+		c.ConnectTimeout = "5s"
+	})
+
 	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:           "127.0.0.1",
-			Port:           3306,
-			User:           "root",
-			Password:       "secret",
-			Schema:         "app",
-			ConnectTimeout: "5s",
-		},
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
 	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, reg, "default-key")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
@@ -360,7 +357,7 @@ func TestExecuteAuditRequestPassesConnectionConnectTimeout(t *testing.T) {
 	}
 }
 
-func TestExecuteAuditRequestAcceptsZeroConnectionConnectTimeoutAsDefault(t *testing.T) {
+func TestExecuteAuditRequestUsesRuntimeDefaultWhenRegistryTimeoutUnset(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &metadataAuditTestClient{}
 	var capturedConfig auditmeta.ConnectionConfig
@@ -376,106 +373,14 @@ func TestExecuteAuditRequestAcceptsZeroConnectionConnectTimeoutAsDefault(t *test
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
+	reg := newTestRegistry(t, "test-conn")
+
 	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:           "127.0.0.1",
-			Port:           3306,
-			User:           "root",
-			Password:       "secret",
-			Schema:         "app",
-			ConnectTimeout: "0s",
-		},
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
 	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
-	if err != nil {
-		t.Fatalf("execute audit request: %v", err)
-	}
-	if capturedConfig.ConnectTimeout != 0 {
-		t.Fatalf("expected ConnectTimeout=0 for 0s, got %v", capturedConfig.ConnectTimeout)
-	}
-}
-
-func TestExecuteAuditRequestRejectsInvalidConnectionConnectTimeout(t *testing.T) {
-	previous := prepareHTTPMetadataAudit
-	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		t.Fatal("expected prepare to not be called for invalid timeout")
-		return nil, nil
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
-
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:           "127.0.0.1",
-			User:           "root",
-			Password:       "secret",
-			ConnectTimeout: "not-a-duration",
-		},
-	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
-		t.Fatal("auditFn should not be called")
-		return deltascope.Result{}, nil
-	}, MetadataConfig{})
-	if err == nil {
-		t.Fatal("expected error for invalid connect_timeout")
-	}
-	status, code := mapAuditError(err)
-	if status != 400 {
-		t.Fatalf("expected 400 status, got %d code=%s err=%v", status, code, err)
-	}
-}
-
-func TestExecuteAuditRequestRejectsNegativeConnectionConnectTimeout(t *testing.T) {
-	previous := prepareHTTPMetadataAudit
-	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		t.Fatal("expected prepare to not be called for negative timeout")
-		return nil, nil
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
-
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host:           "127.0.0.1",
-			User:           "root",
-			Password:       "secret",
-			ConnectTimeout: "-5s",
-		},
-	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
-		t.Fatal("auditFn should not be called")
-		return deltascope.Result{}, nil
-	}, MetadataConfig{})
-	if err == nil {
-		t.Fatal("expected error for negative connect_timeout")
-	}
-	status, code := mapAuditError(err)
-	if status != 400 {
-		t.Fatalf("expected 400 status, got %d code=%s err=%v", status, code, err)
-	}
-}
-
-func TestHTTPRuntimeMetadataTimeoutUsedWhenRequestOmitsTimeout(t *testing.T) {
-	previous := prepareHTTPMetadataAudit
-	client := &metadataAuditTestClient{}
-	var capturedConfig auditmeta.ConnectionConfig
-	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		capturedConfig = request.Connection
-		return &auditmeta.PreparedAudit{
-			Client: client, Dialect: spec.DialectMySQL, Schema: "app",
-			DialectSource: "detected", SchemaSource: "request",
-		}, nil
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
-
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1", Port: 3306, User: "root", Password: "secret", Schema: "app",
-		},
-	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
-		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{ConnectTimeout: 7 * time.Second})
+	}, MetadataConfig{ConnectTimeout: 7 * time.Second}, reg, "default-key")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
@@ -484,118 +389,94 @@ func TestHTTPRuntimeMetadataTimeoutUsedWhenRequestOmitsTimeout(t *testing.T) {
 	}
 }
 
-func TestHTTPRequestConnectTimeoutOverridesRuntimeDefault(t *testing.T) {
+func TestExecuteAuditRequestRegistryTimeoutOverridesRuntimeDefault(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &metadataAuditTestClient{}
 	var capturedConfig auditmeta.ConnectionConfig
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		capturedConfig = request.Connection
 		return &auditmeta.PreparedAudit{
-			Client: client, Dialect: spec.DialectMySQL, Schema: "app",
-			DialectSource: "detected", SchemaSource: "request",
+			Client:        client,
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "request",
 		}, nil
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
+	reg := newTestRegistry(t, "test-conn", func(c *runtimeconfig.ConnectionConfig) {
+		c.ConnectTimeout = "3s"
+	})
+
 	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1", Port: 3306, User: "root", Password: "secret",
-			Schema: "app", ConnectTimeout: "3s",
-		},
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
 	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{ConnectTimeout: 7 * time.Second})
+	}, MetadataConfig{ConnectTimeout: 7 * time.Second}, reg, "default-key")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
 	if capturedConfig.ConnectTimeout != 3*time.Second {
-		t.Fatalf("expected ConnectTimeout=3s from request override, got %v", capturedConfig.ConnectTimeout)
+		t.Fatalf("expected ConnectTimeout=3s from registry override, got %v", capturedConfig.ConnectTimeout)
 	}
 }
 
-func TestHTTPRequestZeroConnectTimeoutDoesNotOverrideRuntimeDefault(t *testing.T) {
+func TestExecuteAuditRequestRequestSchemaOverridesRegistrySchema(t *testing.T) {
 	previous := prepareHTTPMetadataAudit
 	client := &metadataAuditTestClient{}
-	var capturedConfig auditmeta.ConnectionConfig
+	var capturedRequest auditmeta.Request
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		capturedConfig = request.Connection
+		capturedRequest = request
 		return &auditmeta.PreparedAudit{
-			Client: client, Dialect: spec.DialectMySQL, Schema: "app",
-			DialectSource: "detected", SchemaSource: "request",
+			Client:        client,
+			Dialect:       spec.DialectMySQL,
+			Schema:        "custom_schema",
+			DialectSource: "detected",
+			SchemaSource:  "request",
 		}, nil
 	}
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1", Port: 3306, User: "root", Password: "secret",
-			Schema: "app", ConnectTimeout: "0s",
-		},
+	reg := newTestRegistry(t, "test-conn")
+
+	response, err := executeAuditRequest(context.Background(), auditRequest{
+		SQL:          "delete from users",
+		ConnectionID: "test-conn",
+		Schema:       "custom_schema",
 	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{ConnectTimeout: 7 * time.Second})
+	}, MetadataConfig{}, reg, "default-key")
 	if err != nil {
 		t.Fatalf("execute audit request: %v", err)
 	}
-	if capturedConfig.ConnectTimeout != 7*time.Second {
-		t.Fatalf("expected ConnectTimeout=7s from runtime default (0s should not override), got %v", capturedConfig.ConnectTimeout)
+	if capturedRequest.ExplicitSchema != "custom_schema" {
+		t.Fatalf("expected explicit schema custom_schema, got %q", capturedRequest.ExplicitSchema)
+	}
+	if response.Context.Schema != "custom_schema" {
+		t.Fatalf("expected schema custom_schema in context, got %q", response.Context.Schema)
 	}
 }
 
-func TestHTTPRuntimeMetadataTimeoutUnsetKeepsZeroDefault(t *testing.T) {
-	previous := prepareHTTPMetadataAudit
-	client := &metadataAuditTestClient{}
-	var capturedConfig auditmeta.ConnectionConfig
-	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		capturedConfig = request.Connection
-		return &auditmeta.PreparedAudit{
-			Client: client, Dialect: spec.DialectMySQL, Schema: "app",
-			DialectSource: "detected", SchemaSource: "request",
-		}, nil
+func TestMapRegistryAuthorizeErrorMapsAllCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    error
+		expected error
+	}{
+		{"connection_not_found", runtimeconfig.ErrConnectionNotFound, online.ErrConnectionNotFound},
+		{"purpose_not_allowed", runtimeconfig.ErrPurposeNotAllowed, online.ErrPurposeNotAllowed},
+		{"principal_not_allowed", runtimeconfig.ErrPrincipalNotAllowed, online.ErrPrincipalNotAllowed},
+		{"passthrough", context.Canceled, context.Canceled},
 	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1", Port: 3306, User: "root", Password: "secret", Schema: "app",
-		},
-	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
-		return deltascope.Result{Verdict: deltascope.VerdictReject}, nil
-	}, MetadataConfig{})
-	if err != nil {
-		t.Fatalf("execute audit request: %v", err)
-	}
-	if capturedConfig.ConnectTimeout != 0 {
-		t.Fatalf("expected ConnectTimeout=0 when no runtime default and no request timeout, got %v", capturedConfig.ConnectTimeout)
-	}
-}
-
-func TestHTTPRejectsInvalidRequestConnectTimeoutStillBeforeOpen(t *testing.T) {
-	previous := prepareHTTPMetadataAudit
-	prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
-		t.Fatal("expected prepare to not be called for invalid timeout")
-		return nil, nil
-	}
-	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
-
-	_, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL: "delete from users",
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1", User: "root", Password: "secret",
-			ConnectTimeout: "not-a-duration",
-		},
-	}, "", func(_ context.Context, _ deltascope.Request) (deltascope.Result, error) {
-		t.Fatal("auditFn should not be called")
-		return deltascope.Result{}, nil
-	}, MetadataConfig{ConnectTimeout: 7 * time.Second})
-	if err == nil {
-		t.Fatal("expected error for invalid connect_timeout")
-	}
-	status, code := mapAuditError(err)
-	if status != 400 {
-		t.Fatalf("expected 400 status, got %d code=%s err=%v", status, code, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapRegistryAuthorizeError(tt.input)
+			if !errors.Is(got, tt.expected) {
+				t.Fatalf("expected %v, got %v", tt.expected, got)
+			}
+		})
 	}
 }

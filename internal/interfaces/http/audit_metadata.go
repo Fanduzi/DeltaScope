@@ -1,20 +1,22 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: parsed HTTP audit requests, shared metadata-preparation helpers, and public audit execution functions
-// output: additive HTTP audit context plus offline or metadata-aware audit execution results
+// output: additive HTTP audit context plus offline or registry-based metadata-aware audit execution results
 // pos: HTTP adapter glue between request-scoped metadata inputs and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -41,11 +43,13 @@ func executeAuditRequest(
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
 	metadataDefault MetadataConfig,
+	registry *runtimeconfig.Registry,
+	principalID string,
 ) (auditResponse, error) {
-	if request.Connection == nil {
+	if request.ConnectionID == "" {
 		return executeOfflineAudit(ctx, request, configPath, auditFn)
 	}
-	return executeMetadataAwareAudit(ctx, request, configPath, auditFn, metadataDefault)
+	return executeRegistryAwareAudit(ctx, request, configPath, auditFn, registry, principalID, metadataDefault)
 }
 
 func executeOfflineAudit(
@@ -81,63 +85,60 @@ func executeOfflineAudit(
 	}, nil
 }
 
-func executeMetadataAwareAudit(
+func executeRegistryAwareAudit(
 	ctx context.Context,
 	request auditRequest,
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
+	registry *runtimeconfig.Registry,
+	principalID string,
 	metadataDefault MetadataConfig,
 ) (auditResponse, error) {
+	if registry == nil {
+		return auditResponse{}, online.ErrConnectionNotFound
+	}
+
+	conn, ok := registry.LookupConnection(request.ConnectionID)
+	if !ok {
+		return auditResponse{}, online.ErrConnectionNotFound
+	}
+
+	if err := registry.Authorize(principalID, request.ConnectionID, "audit"); err != nil {
+		return auditResponse{}, mapRegistryAuthorizeError(err)
+	}
+
 	configSnapshotPath, cleanupConfigSnapshot, err := snapshotHTTPPolicy(configPath)
 	if err != nil {
 		return auditResponse{}, err
 	}
 	defer cleanupConfigSnapshot()
 
-	if err := ifaceconn.ValidateConnectionInput(*request.Connection); err != nil {
-		return auditResponse{}, err
-	}
-
-	password, err := ifaceconn.ResolvePassword(*request.Connection, ifaceconn.ResolveConnectionOptions{})
-	if err != nil {
-		return auditResponse{}, err
-	}
-
-	connectTimeout, set, err := ifaceconn.ParseConnectTimeout(*request.Connection)
-	if err != nil {
-		return auditResponse{}, err
-	}
-	if !set {
+	connectTimeout, _, _ := runtimeconfig.ParseConnectTimeout(conn.ConnectTimeout)
+	if connectTimeout == 0 {
 		connectTimeout = metadataDefault.ConnectTimeout
 	}
 
-	explicitDialectValue := strings.TrimSpace(string(request.Dialect))
-	if explicitDialectValue == "" {
-		explicitDialectValue = strings.TrimSpace(request.Connection.Dialect)
+	connDialect := deltascope.Dialect(strings.ToLower(strings.TrimSpace(conn.Dialect)))
+	schema := strings.TrimSpace(conn.Schema)
+	if strings.TrimSpace(request.Schema) != "" {
+		schema = strings.TrimSpace(request.Schema)
 	}
-	requestedPublicDialect, _ := resolveHTTPAuditDialect(explicitDialectValue)
-	schema, schemaSource := resolveRequestSchema(request)
 
 	prepared, err := prepareHTTPMetadataAudit(ctx, auditmeta.Request{
 		SQL: request.SQL,
 		Connection: auditmeta.ConnectionConfig{
-			Host:           strings.TrimSpace(request.Connection.Host),
-			Port:           request.Connection.Port,
-			Socket:         strings.TrimSpace(request.Connection.Socket),
-			User:           strings.TrimSpace(request.Connection.User),
-			Password:       password,
+			Host:           strings.TrimSpace(conn.Host),
+			Port:           conn.Port,
+			Socket:         strings.TrimSpace(conn.Socket),
+			User:           strings.TrimSpace(conn.User),
+			Password:       conn.ResolvedPassword(),
 			ConnectTimeout: connectTimeout,
-			Dialect: func() spec.Dialect {
-				if explicitDialectValue != "" {
-					return toMetadataDialect(requestedPublicDialect)
-				}
-				return ""
-			}(),
+			Dialect:        toMetadataDialect(connDialect),
 		},
-		RequestedDialect:     toMetadataDialect(requestedPublicDialect),
-		ExplicitDialect:      explicitDialectValue != "",
+		RequestedDialect:     toMetadataDialect(connDialect),
+		ExplicitDialect:      true,
 		ExplicitSchema:       schema,
-		ExplicitSchemaSource: schemaSource,
+		ExplicitSchemaSource: "registry",
 		SchemaHint:           "schema",
 	})
 	if err != nil {
@@ -153,6 +154,9 @@ func executeMetadataAwareAudit(
 		MetadataProvider: publicMetadataProvider{client: prepared.Client},
 	})
 	if err != nil {
+		if len(result.Diagnostics) > 0 {
+			return auditResponse{Result: result}, err
+		}
 		return auditResponse{}, err
 	}
 	return auditResponse{
@@ -163,9 +167,22 @@ func executeMetadataAwareAudit(
 			DialectSource:  prepared.DialectSource,
 			Schema:         prepared.Schema,
 			SchemaSource:   prepared.SchemaSource,
-			MetadataSource: "direct",
+			MetadataSource: "registry",
 		},
 	}, nil
+}
+
+func mapRegistryAuthorizeError(err error) error {
+	if errors.Is(err, runtimeconfig.ErrConnectionNotFound) {
+		return online.ErrConnectionNotFound
+	}
+	if errors.Is(err, runtimeconfig.ErrPurposeNotAllowed) {
+		return online.ErrPurposeNotAllowed
+	}
+	if errors.Is(err, runtimeconfig.ErrPrincipalNotAllowed) {
+		return online.ErrPrincipalNotAllowed
+	}
+	return err
 }
 
 func snapshotHTTPPolicy(configPath string) (string, func(), error) {
@@ -222,14 +239,10 @@ func resolveHTTPAuditDialect(raw string) (deltascope.Dialect, string) {
 }
 
 func resolveRequestSchema(request auditRequest) (string, string) {
-	switch {
-	case strings.TrimSpace(request.Schema) != "":
+	if strings.TrimSpace(request.Schema) != "" {
 		return strings.TrimSpace(request.Schema), "request"
-	case request.Connection != nil && strings.TrimSpace(request.Connection.Schema) != "":
-		return strings.TrimSpace(request.Connection.Schema), "connection"
-	default:
-		return "", ""
 	}
+	return "", ""
 }
 
 func toMetadataDialect(dialect deltascope.Dialect) spec.Dialect {

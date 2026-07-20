@@ -16,7 +16,7 @@ import (
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -40,6 +40,11 @@ func (c *plannerMetadataAuditTestClient) LoadPlanEstimate(context.Context, spec.
 }
 
 func TestExecuteAuditRequestSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}}
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
@@ -59,17 +64,14 @@ func TestExecuteAuditRequestSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "delete from public.users where id = 1",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1",
-			User: "root",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		result, err := deltascope.Audit(ctx, request)
 		if err != nil {
 			return deltascope.Result{}, err
 		}
 		return result, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -95,6 +97,11 @@ func TestExecuteAuditRequestSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}}
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
@@ -111,17 +118,14 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "update public.users set name = 'x' where id = 1",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1",
-			User: "root",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		result, err := deltascope.Audit(ctx, request)
 		if err != nil {
 			return deltascope.Result{}, err
 		}
 		return result, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -140,6 +144,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataAwareINSERTDoesNotTriggerPlanEstimation(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{detectDialect: spec.DialectPostgreSQL}}
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
@@ -154,19 +163,16 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareINSERTDoesNotTriggerPlanEstim
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "insert into public.users (id, name) values (1, 'alice')",
-		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host: "127.0.0.1",
-			User: "root",
-		},
+		SQL:          "insert into public.users (id, name) values (1, 'alice')",
+		Dialect:      deltascope.DialectPostgreSQL,
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		result, err := deltascope.Audit(ctx, request)
 		if err != nil {
 			return deltascope.Result{}, err
 		}
 		return result, nil
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -182,6 +188,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareINSERTDoesNotTriggerPlanEstim
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -204,16 +215,12 @@ func TestExecuteAuditRequestPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "alter table users drop constraint users_pkey;",
-		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host:   "127.0.0.1",
-			User:   "root",
-			Schema: "public",
-		},
+		SQL:          "alter table users drop constraint users_pkey;",
+		Dialect:      deltascope.DialectPostgreSQL,
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -236,6 +243,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -261,14 +273,10 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForRenameCol
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users rename column missing_email to email;",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host:   "127.0.0.1",
-			User:   "root",
-			Schema: "public",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -291,6 +299,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForRenameCol
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -316,14 +329,10 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColum
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users drop column missing_email;",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host:   "127.0.0.1",
-			User:   "root",
-			Schema: "public",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -346,6 +355,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColum
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -368,14 +382,10 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingTableForRenameTabl
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users rename to users_archive;",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host:   "127.0.0.1",
-			User:   "root",
-			Schema: "public",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -398,12 +408,17 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingTableForRenameTabl
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterColumnActionsMapToSemanticRules(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users alter column created_at set default now(), alter column updated_at drop default, alter column email set not null, alter column phone drop not null;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -435,12 +450,17 @@ func TestExecuteAuditRequestPostgreSQLAlterColumnActionsMapToSemanticRules(t *te
 }
 
 func TestExecuteAuditRequestPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users alter column status type bigint;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -463,12 +483,17 @@ func TestExecuteAuditRequestPostgreSQLSetDataTypeMapsToForbidRule(t *testing.T) 
 }
 
 func TestExecuteAuditRequestPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter index idx_old rename to idx_new;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -487,12 +512,17 @@ func TestExecuteAuditRequestPostgreSQLRenameIndexMapsToForbidRule(t *testing.T) 
 }
 
 func TestExecuteAuditRequestPostgreSQLCreateViewMapsToForbidRule(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "create view public.active_users as select id from public.users;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -511,12 +541,17 @@ func TestExecuteAuditRequestPostgreSQLCreateViewMapsToForbidRule(t *testing.T) {
 }
 
 func TestExecuteAuditRequestPostgreSQLDropViewMapsToForbidRule(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "drop view if exists public.active_users;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -535,12 +570,17 @@ func TestExecuteAuditRequestPostgreSQLDropViewMapsToForbidRule(t *testing.T) {
 }
 
 func TestExecuteAuditRequestPostgreSQLValidateConstraintReturnsNormalResult(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users validate constraint chk_amount;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -561,12 +601,17 @@ func TestExecuteAuditRequestPostgreSQLValidateConstraintReturnsNormalResult(t *t
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterColumnSetNotNullReturnsNormalResult(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users alter column status set not null;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -592,12 +637,17 @@ func TestExecuteAuditRequestPostgreSQLAlterColumnSetNotNullReturnsNormalResult(t
 }
 
 func TestExecuteAuditRequestPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyFinding(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter table users drop constraint chk_amount;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -615,6 +665,11 @@ func TestExecuteAuditRequestPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerP
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -639,14 +694,10 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "alter index missing_idx rename to idx_new;",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host:   "127.0.0.1",
-			User:   "root",
-			Schema: "public",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -681,6 +732,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(
 }
 
 func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
@@ -705,14 +761,10 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "drop index missing_idx;",
 		Dialect: deltascope.DialectPostgreSQL,
-		Connection: &ifaceconn.ConnectionInput{
-			Host:   "127.0.0.1",
-			User:   "root",
-			Schema: "public",
-		},
+		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql metadata-aware request to succeed, got %v", err)
 	}
@@ -747,6 +799,11 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 }
 
 func TestExecuteAuditRequestPostgreSQLCreateTableConstraintsReturnNormalResult(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]string{
 		"named table-level CHECK":        "create table orders (id bigint primary key, amount numeric, constraint chk_orders_amount check (amount > 0));",
 		"column-level inline CHECK":      "create table orders (id bigint primary key, amount numeric check (amount > 0));",
@@ -763,7 +820,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableConstraintsReturnNormalResult(t
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -784,6 +841,11 @@ func TestExecuteAuditRequestPostgreSQLCreateTableConstraintsReturnNormalResult(t
 }
 
 func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]string{
 		"named FOREIGN KEY": "create table orders (id bigint primary key, user_id bigint, constraint bad_fk foreign key (user_id) references users(id));",
 		"inline REFERENCES": "create table orders (id bigint primary key, user_id bigint references users(id));",
@@ -796,7 +858,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -820,6 +882,11 @@ func TestExecuteAuditRequestPostgreSQLCreateTableForeignKeyRendersForbidFinding(
 }
 
 func TestExecuteAuditRequestPostgreSQLSchemaQualifiedReferencesRenderFKFindings(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]string{
 		"inline REFERENCES public.users":   "create table orders (id bigint primary key, user_id bigint references public.users(id));",
 		"named FK REFERENCES public.users": "create table orders (id bigint primary key, approver_id bigint, constraint fk_orders_approver foreign key (approver_id) references public.users(id));",
@@ -832,7 +899,7 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedReferencesRenderFKFindings(
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -861,6 +928,11 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedReferencesRenderFKFindings(
 }
 
 func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]struct {
 		sql     string
 		feature string
@@ -882,7 +954,7 @@ func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err == nil {
 				t.Fatalf("expected unsupported error for %s, got nil", name)
 			}
@@ -894,6 +966,11 @@ func TestExecuteAuditRequestPostgreSQLCreateTableBoundaryReturnsUnsupportedError
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterTableGeneratedIdentityStateTransitionsNowSupported(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]struct {
 		sql string
 	}{
@@ -922,7 +999,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableGeneratedIdentityStateTransition
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported %s, got error: %v", name, err)
 			}
@@ -943,6 +1020,11 @@ func TestExecuteAuditRequestPostgreSQLAlterTableGeneratedIdentityStateTransition
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSupported(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]struct {
 		sql string
 	}{
@@ -964,7 +1046,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSup
 				result, auditErr := deltascope.Audit(ctx, request)
 				captured = result
 				return result, auditErr
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported, got error: %v", err)
 			}
@@ -979,12 +1061,17 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddGeneratedIdentityNarrowNowSup
 }
 
 func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferencedObjectMetadata(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES public.users(id));",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1031,12 +1118,17 @@ func TestExecuteAuditRequestPostgreSQLSchemaQualifiedForeignKeyExposesReferenced
 }
 
 func TestExecuteAuditRequestPostgreSQLCrossSchemaFKRendersAdvisoryNotice(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint, CONSTRAINT fk_orders_approver FOREIGN KEY (approver_id) REFERENCES auth.users(id));",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1076,12 +1168,17 @@ func TestExecuteAuditRequestPostgreSQLCrossSchemaFKRendersAdvisoryNotice(t *test
 }
 
 func TestExecuteAuditRequestPostgreSQLSameSchemaFKDoesNotRenderAdvisory(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE public.orders (id bigint PRIMARY KEY, user_id bigint, CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES public.users(id));",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1097,12 +1194,17 @@ func TestExecuteAuditRequestPostgreSQLSameSchemaFKDoesNotRenderAdvisory(t *testi
 }
 
 func TestExecuteAuditRequestPostgreSQLBareFKDoesNotRenderAdvisory(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE public.orders (id bigint PRIMARY KEY, approver_id bigint REFERENCES users(id));",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1121,6 +1223,11 @@ func TestExecuteAuditRequestPostgreSQLBareFKDoesNotRenderAdvisory(t *testing.T) 
 // narrow generated/identity forms are now processed through the normal supported HTTP path.
 // Each case asserts: no error, no unsupported details, one statement result.
 func TestExecuteAuditRequestPostgreSQLGeneratedIdentityNarrowNowSupported(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	cases := map[string]struct {
 		sql string
 	}{
@@ -1151,7 +1258,7 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityNarrowNowSupported(t *tes
 				result, auditErr := deltascope.Audit(ctx, request)
 				captured = result
 				return result, auditErr
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported, got error: %v", err)
 			}
@@ -1168,6 +1275,11 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityNarrowNowSupported(t *tes
 // TestExecuteAuditRequestPostgreSQLGeneratedIdentityRuleCoverage locks the
 // three PG-only generated/identity state-transition forbid rules at the HTTP surface.
 func TestExecuteAuditRequestPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	tests := []struct {
 		name       string
 		sql        string
@@ -1202,7 +1314,7 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported path, got error: %v", err)
 			}
@@ -1235,12 +1347,17 @@ func TestExecuteAuditRequestPostgreSQLGeneratedIdentityRuleCoverage(t *testing.T
 
 // httpMetadataValueEqual compares values with numeric type coercion.
 func TestExecuteAuditRequestPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE bad_pk_type (id integer PRIMARY KEY, name text);",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1270,12 +1387,17 @@ func TestExecuteAuditRequestPostgreSQLPrimaryKeyRuleCoverage(t *testing.T) {
 }
 
 func TestExecuteAuditRequestPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE UNIQUE INDEX bad_email_unique ON users (email);",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1305,12 +1427,17 @@ func TestExecuteAuditRequestPostgreSQLUniqueIndexRuleCoverage(t *testing.T) {
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "ALTER TABLE users ADD CONSTRAINT bad_email_key UNIQUE (email);",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1334,6 +1461,11 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintRuleCoverage(t *tes
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterTableForeignKeyRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	tests := []struct {
 		name       string
 		sql        string
@@ -1358,7 +1490,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableForeignKeyRuleCoverage(t *testin
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected postgresql request to succeed, got %v", err)
 			}
@@ -1387,6 +1519,11 @@ func TestExecuteAuditRequestPostgreSQLAlterTableForeignKeyRuleCoverage(t *testin
 }
 
 func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	configPath := filepath.Join(t.TempDir(), "policy.yaml")
 	if err := os.WriteFile(configPath, []byte("rules:\n  ddl.constraint.check.name.prefix.require:\n    enabled: true\n    params:\n      prefix: ck_\n"), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -1397,7 +1534,7 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t
 		Dialect: deltascope.DialectPostgreSQL,
 	}, configPath, func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1425,12 +1562,17 @@ func TestExecuteAuditRequestPostgreSQLAlterTableAddConstraintCheckRuleCoverage(t
 }
 
 func TestExecuteAuditRequestPostgreSQLNotValidConstraintValidationRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "ALTER TABLE orders ADD CONSTRAINT chk_orders_amount CHECK (amount >= 0) NOT VALID;",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("expected postgresql request to succeed, got %v", err)
 	}
@@ -1453,12 +1595,17 @@ func TestExecuteAuditRequestPostgreSQLNotValidConstraintValidationRuleCoverage(t
 }
 
 func TestExecuteAuditRequestDefaultPolicyDialectHygienePostgreSQLExcludesMySQLFamilyRules(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	response, err := executeAuditRequest(context.Background(), auditRequest{
 		SQL:     "CREATE TABLE pg_smoke (id bigint primary key);",
 		Dialect: deltascope.DialectPostgreSQL,
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
-	}, MetadataConfig{})
+	}, MetadataConfig{}, testReg, "default-key")
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
@@ -1519,6 +1666,11 @@ func httpToFloat64(v any) (float64, bool) {
 }
 
 func TestExecuteAuditRequestPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	tests := []struct {
 		name       string
 		sql        string
@@ -1558,7 +1710,7 @@ func TestExecuteAuditRequestPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) 
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported path, got error: %v", err)
 			}
@@ -1590,6 +1742,11 @@ func TestExecuteAuditRequestPostgreSQLObjectLifecycleRuleCoverage(t *testing.T) 
 }
 
 func TestExecuteAuditRequestPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	tests := []struct {
 		name       string
 		sql        string
@@ -1639,7 +1796,7 @@ func TestExecuteAuditRequestPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) 
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported path, got error: %v", err)
 			}
@@ -1671,6 +1828,11 @@ func TestExecuteAuditRequestPostgreSQLPolicyLifecycleRuleCoverage(t *testing.T) 
 }
 
 func TestExecuteAuditRequestPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T) {
+	testReg := newTestRegistry(t, "test-pg", func(c *runtimeconfig.ConnectionConfig) {
+		c.Dialect = "postgresql"
+		c.Port = 5432
+		c.Database = "app"
+	})
 	tests := []struct {
 		name       string
 		sql        string
@@ -1700,7 +1862,7 @@ func TestExecuteAuditRequestPostgreSQLTriggerLifecycleRuleCoverage(t *testing.T)
 				Dialect: deltascope.DialectPostgreSQL,
 			}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 				return deltascope.Audit(ctx, request)
-			}, MetadataConfig{})
+			}, MetadataConfig{}, testReg, "default-key")
 			if err != nil {
 				t.Fatalf("expected supported path, got error: %v", err)
 			}

@@ -6,6 +6,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -25,20 +26,19 @@ import (
 	"golang.org/x/time/rate"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
-	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 type auditRequest struct {
-	SQL        string                     `json:"sql"`
-	Dialect    deltascope.Dialect         `json:"dialect,omitempty"`
-	Schema     string                     `json:"schema,omitempty"`
-	Connection *ifaceconn.ConnectionInput `json:"connection,omitempty"`
+	SQL          string             `json:"sql"`
+	Dialect      deltascope.Dialect `json:"dialect,omitempty"`
+	Schema       string             `json:"schema,omitempty"`
+	ConnectionID string             `json:"connection_id,omitempty"`
 }
 
 type errorEnvelope struct {
@@ -222,7 +222,7 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 		handleCapabilities(c.Writer)
 	})
 	router.POST("/v1/audit", func(c *gin.Context) {
-		handleAudit(c.Writer, c.Request, configPath, options.auditFn, options.metadataDefault)
+		handleAudit(c.Writer, c.Request, configPath, options.auditFn, options.metadataDefault, options.registry)
 	})
 	router.POST("/v1/query-access/analyze", func(c *gin.Context) {
 		handleQueryAccess(c.Writer, c.Request)
@@ -555,13 +555,28 @@ func handleAudit(
 	configPath string,
 	auditFn func(context.Context, deltascope.Request) (deltascope.Result, error),
 	metadataDefault MetadataConfig,
+	registry *runtimeconfig.Registry,
 ) {
 	defer r.Body.Close()
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxAuditRequestBodyBytes)
 
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
+		return
+	}
+
+	var legacyCheck struct {
+		Connection json.RawMessage `json:"connection"`
+	}
+	if err := json.Unmarshal(bodyBytes, &legacyCheck); err == nil && legacyCheck.Connection != nil {
+		writeError(w, http.StatusBadRequest, "invalid_request", "connection field is no longer accepted; use connection_id")
+		return
+	}
+
 	var request auditRequest
-	decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(bytes.NewReader(bodyBytes))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&request); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_json", "request body must be valid JSON")
@@ -575,34 +590,37 @@ func handleAudit(
 		return
 	}
 
+	principalID := PrincipalIDFromContext(r.Context())
+
 	type auditOutput struct {
 		response auditResponse
 		err      error
 	}
 	resultChan := make(chan auditOutput, 1)
 	go func() {
-		response, err := executeAuditRequest(r.Context(), request, configPath, auditFn, metadataDefault)
+		response, err := executeAuditRequest(r.Context(), request, configPath, auditFn, metadataDefault, registry, principalID)
 		resultChan <- auditOutput{response: response, err: err}
 	}()
 
 	var (
 		response auditResponse
-		err      error
+		reqErr   error
 	)
 	select {
 	case <-r.Context().Done():
-		err = r.Context().Err()
+		reqErr = r.Context().Err()
 	case out := <-resultChan:
 		response = out.response
-		err = out.err
+		reqErr = out.err
 	}
-	if err != nil {
-		status, code := mapAuditError(err)
+	if reqErr != nil {
+		status, code := mapAuditError(reqErr)
+		message := mapAuditErrorMessage(reqErr)
 		if len(response.Diagnostics) > 0 {
-			writeDiagnosticError(w, status, code, err.Error(), response.Diagnostics)
+			writeDiagnosticError(w, status, code, message, response.Diagnostics)
 			return
 		}
-		writeError(w, status, code, err.Error())
+		writeError(w, status, code, message)
 		return
 	}
 
@@ -611,34 +629,41 @@ func handleAudit(
 
 func mapAuditError(err error) (status int, code string) {
 	switch {
-	case errors.Is(err, context.DeadlineExceeded):
-		return http.StatusGatewayTimeout, "request_timeout"
-	case errors.Is(err, context.Canceled):
-		return http.StatusRequestTimeout, "request_canceled"
-	}
-
-	var prepErr *auditmeta.Error
-	if errors.As(err, &prepErr) {
-		switch prepErr.Kind {
-		case auditmeta.ErrorInvalidSQL, auditmeta.ErrorDialectMismatch:
-			return http.StatusBadRequest, "bad_request"
-		case auditmeta.ErrorSchemaHintRequired:
-			return http.StatusBadRequest, "connection_invalid"
-		case auditmeta.ErrorSchemaLookupFailed, auditmeta.ErrorConnectionOpen, auditmeta.ErrorDialectDetect:
-			return http.StatusBadGateway, "connection_failed"
-		}
-	}
-
-	switch {
 	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
 		return http.StatusBadRequest, "bad_request"
-	case ifaceconn.IsConnectionInputError(err):
-		return http.StatusBadRequest, "connection_invalid"
 	case strings.Contains(err.Error(), "load policy:"):
 		return http.StatusInternalServerError, "config_invalid"
-	default:
+	}
+
+	code, _, status = online.MapOnlineError(err)
+	if code == "internal_error" && status == http.StatusInternalServerError {
 		return http.StatusBadRequest, "bad_request"
 	}
+	return status, code
+}
+
+// mapAuditErrorMessage returns a bounded error message safe for HTTP clients.
+// It never exposes raw driver text, DSN, credentials, hostnames, ports, or version strings.
+func mapAuditErrorMessage(err error) string {
+	switch {
+	case errors.Is(err, appaudit.ErrEmptySQL):
+		return "sql must not be empty"
+	case errors.Is(err, appaudit.ErrUnknownDialect):
+		return "unsupported dialect"
+	case strings.Contains(err.Error(), "load policy:"):
+		return "invalid policy configuration"
+	}
+
+	_, message, status := online.MapOnlineError(err)
+	if status != 0 && message != "internal server error" {
+		return message
+	}
+
+	if strings.Contains(err.Error(), "not audited") || strings.Contains(err.Error(), "parse") || strings.Contains(err.Error(), "PG-capable") {
+		return err.Error()
+	}
+
+	return "invalid request"
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

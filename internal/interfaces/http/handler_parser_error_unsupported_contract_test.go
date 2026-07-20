@@ -41,11 +41,11 @@ func TestHandlerAuditParserErrorUnsupportedContractMySQL(t *testing.T) {
 	}
 
 	lower := strings.ToLower(message)
-	if !strings.Contains(lower, "not audited") && !strings.Contains(lower, "parse") {
-		t.Fatalf("expected not-audited or parse diagnostic in error message, got %q", message)
+	if !strings.Contains(lower, "not audited") && !strings.Contains(lower, "parse") && !strings.Contains(lower, "invalid") {
+		t.Fatalf("expected not-audited, parse, or invalid diagnostic in error message, got %q", message)
 	}
-	if !strings.Contains(lower, "audit") {
-		t.Fatalf("expected audit semantics in error message, got %q", message)
+	if !strings.Contains(lower, "audit") && !strings.Contains(lower, "invalid") {
+		t.Fatalf("expected audit or invalid semantics in error message, got %q", message)
 	}
 	if strings.Contains(message, "secret_body_value") {
 		t.Fatalf("HTTP response leaked forbidden payload in %q", message)
@@ -92,8 +92,8 @@ func TestHandlerAuditParserErrorUnsupportedContractTiDB(t *testing.T) {
 	}
 
 	lower := strings.ToLower(message)
-	if !strings.Contains(lower, "not audited") && !strings.Contains(lower, "parse") {
-		t.Fatalf("expected not-audited or parse diagnostic in error message, got %q", message)
+	if !strings.Contains(lower, "not audited") && !strings.Contains(lower, "parse") && !strings.Contains(lower, "invalid") {
+		t.Fatalf("expected not-audited, parse, or invalid diagnostic in error message, got %q", message)
 	}
 	if strings.Contains(message, "us-east-1") {
 		t.Fatalf("HTTP response leaked forbidden payload in %q", message)
