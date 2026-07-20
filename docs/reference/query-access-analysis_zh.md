@@ -37,9 +37,11 @@
 
 `QueryAccessRequest.AnalysisProfile` 是可选的闭合集合。有效值有空值（保留默认行为）、`mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5`。MySQL 配置只能搭配 MySQL 方言，`tidb-8.5` 只能搭配 TiDB。未知值返回 `ErrInvalidQueryAccessAnalysisProfile`；方言不匹配返回 `ErrQueryAccessAnalysisProfileDialectMismatch`。
 
-配置是一个兼容性目标，告诉分析器“按哪个服务版本的语义来看这条 SQL”。它本身不证明服务端身份，也不改变默认行为：默认 SDK、CLI 和 HTTP 仍然是离线的。生产语义 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 还支持带直接分区和排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK`。
+配置是一个兼容性目标，告诉分析器“按哪个引擎/版本的语义来看这条 SQL”。它不是服务器身份验证：当前实现不会去查询实际服务器的 `VERSION()` 或 SQL mode，也不会校验连接指向的真是哪个版本。调用方要自己保证所选 profile 与实际 MySQL/TiDB 版本以及相关 SQL mode 匹配；选错 profile，分析仍会按那个 profile 的语义来判断，结果可能与真实服务器行为不一致。
 
-但要注意一条边界：带了配置、又含函数的 MySQL/TiDB 查询，在默认离线表面上仍然是 `indeterminate`。原因是默认 `Service` 没有连数据库，也没有 schema 解析器，无法确认这些函数会读取什么。配置不会出现在结果 JSON 里。
+profile 也不改变默认行为。DeltaScope 的默认路径不会自行创建数据库连接：默认 SDK 可以接受调用方提供的 `SchemaResolver` 来解析表名或展开通配符，但这不会启用 MySQL/TiDB 函数效果提升；CLI 和 HTTP 没有 session 提升路径。生产语义 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 还支持带直接分区和排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK`。
+
+但要注意一条边界：带了配置、又含函数的 MySQL/TiDB 查询，在默认离线表面上仍然是 `indeterminate`。原因是默认 `Service` 走的是离线路径，不会连数据库、也不会启用函数语义提升，无法确认这些函数会读取什么。配置不会出现在结果 JSON 里。
 
 ### 推理风险
 
@@ -55,7 +57,7 @@ strict 和 projection_only 都要求每个基表和视图有 `read_table` 权限
 
 下面几种情况默认就会得到 `indeterminate`：
 
-- **带函数的查询**，例如 `SELECT NOW()`、`SELECT COUNT(*) FROM users`，在默认离线表面上无法确认函数会读取什么。
+- **带函数的查询**，例如 `SELECT NOW()`、`SELECT COUNT(*) FROM app.users`，在默认离线表面上无法确认函数会读取什么（默认路径不启用函数效果提升；要提升必须走下文的同连接会话）。
 - **`SELECT *`**：没有元数据时无法展开通配符，分类为 `indeterminate`，`unresolved` 里会出现 `{reference: "*", reason: schema_unavailable}`。
 - **未限定的表名**（PostgreSQL）：`SELECT id FROM users` 这种没有 schema 限定符的关系，运行时到底解析到哪个 schema 取决于会话的 `search_path`，分析器无法确定，见后文“未绑定关系和列”。
 - **未知的函数或运算符效果**：MySQL/TiDB 上带函数查询返回 `indeterminate`，原因是 `unknown_function_effect`。
@@ -187,44 +189,55 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
 
 如果你的 Go 程序已经连上了 MySQL 或 TiDB，可以把这条连接交给 SDK，SDK 才能确认真实的表和列，并在支持的函数范围内给出可用的权限清单。这是唯一能让 MySQL/TiDB 函数查询从“无法确认”提升为“可准入”的路径。CLI、HTTP 和默认 SDK 都做不到这一点，因为它们不会打开数据库连接。
 
+这里要分清两件事：你传入的连接只用于解析真实的关系和列元数据；函数本身的语义来自你显式选择的兼容性 profile（`AnalysisProfile`），也就是内置的不可变语义 manifest。当前连接不会被用来验证服务器版本或 SQL mode，也不会被用来证明函数语义——函数语义由 profile 决定，连接只负责把表名、列名落到真实对象上。
+
 最小示例：
 
 ```go
 session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
 result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
-    SQL:             "SELECT id FROM app.users",
+    SQL:             "SELECT COUNT(*) FROM app.orders",
     Dialect:         deltascope.DialectMySQL,
     AnalysisProfile: deltascope.QueryAccessAnalysisProfileMySQL84,
     DefaultSchema:   "app",
 })
 ```
 
+注意示例里的表名写成 `app.orders`，带 schema 限定符。这是提升的硬性要求，见下文。
+
+### 提升要求 schema 限定的基表
+
+会话提升要求被引用的基表是 schema-qualified 的（例如 `app.orders`，而不是 `orders`）。即使请求里带了 `DefaultSchema`，未限定表名仍然保持 `indeterminate`，不会被提升。原因是提升路径要求把每个函数输入都严格解析到物理基表列，未限定表名无法稳定绑定到某个 schema，也就无法形成可靠的物理依赖。
+
 ### `COUNT(*)` 的正向示例
 
-通过会话连接、配置正确、表列元数据完整时，下面这类查询可以提升为 `read_only + admissible`：
+通过会话连接、profile 正确、表名 schema 限定且列元数据完整时，下面这类查询可以提升为 `read_only + admissible`：
 
-- `SELECT COUNT(*) FROM orders`（四个 profile 都支持）
-- `SELECT SUM(amount) FROM orders`（直接列 `SUM`/`AVG`/`MIN`/`MAX`）
-- `SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM orders`（8.x profile，直接列分区和排序）
+- `SELECT COUNT(*) FROM app.orders`（四个 profile 都支持）
+- `SELECT SUM(amount) FROM app.orders`（直接列 `SUM`/`AVG`/`MIN`/`MAX`）
+- `SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM app.orders`（8.x profile，直接列分区和排序）
 
 ### 仍然“无法确认”的情况
 
 即便用了会话连接，下面这些仍为 `indeterminate`：
 
+- 表名未限定，例如 `SELECT COUNT(*) FROM orders`，即使请求携带 `DefaultSchema`。
 - 查询引用了视图、CTE、派生表或通配符（`SELECT *`）。
 - 使用了 `DISTINCT`、`FILTER`、嵌套表达式、cast、显式窗口 frame、命名窗口。
-- 表名未限定且默认 schema 无法确定。
-- 元数据不完整，或函数/运算符不在支持的清单内。
+- ranking window 缺少 `ORDER BY`，或分区/排序不是直接基表列。
+- 函数调用被 schema 限定（`app.COUNT(*)`）、被引号包裹（`` `COUNT`(*) ``）或间距不规范（`COUNT (id)`）。
+- 元数据不完整，或函数/运算符不在所选 profile 的支持清单内。
 - MySQL 5.7 上的 ranking-window 函数（该 profile 没有原生 ranking-window 支持，保持延迟）。
 
 ### `admissible` 不是授权
 
-会话分析返回 `admissible`，只表示静态分析拿到了完整的已知要求，并针对当前连接的目录上下文证明了有界的效果清单。它**不**：
+会话分析返回 `admissible`，只表示静态分析拿到了完整的已知要求：表名和列名通过你的连接解析到了真实物理对象，且查询里的每个函数效果都在你选择的 profile 的支持清单内。它**不**：
 
 - 授权执行这条查询。
 - 评估 grant 或权限。
 - 保证稍后真正执行时数据库状态和现在一致。
 - 考虑行级安全、脱敏或 SQL 重写。
+- 证明当前服务器的真实版本或 SQL mode 与你选的 profile 一致（这由调用方负责保证）。
 
 换句话说，`admissible` 是“我能完整列出它会读取什么”，不是“调用者被允许读取”，也不是“查询安全”或“只读执行结果保证”。
 
@@ -280,6 +293,8 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 | TiDB | 显式 SDK 会话配合 `tidb-8.5` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` 可为 `admissible` |
 
 可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的 strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、cast、窗口 frame、命名窗口和不完整元数据仍为 `indeterminate`。MySQL/TiDB 不会仅因语法或函数名称而获得提升。
+
+两种证明根不同：PostgreSQL 走 catalog identity（用连接的目录解析对象身份）；MySQL/TiDB 走内置的、与 profile 绑定的语义 manifest，连接只负责把 schema-qualified 表名和列名解析到真实物理对象，函数语义本身来自 profile，不依赖 catalog 身份。两者互不影响。
 
 ## 纵深防御
 

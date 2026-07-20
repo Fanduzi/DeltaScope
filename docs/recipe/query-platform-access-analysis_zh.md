@@ -166,6 +166,7 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 - 没有元数据时，通配符产生 `indeterminate` 分类。
 - 默认 SDK/CLI/HTTP 在默认离线路径上不连数据库；带函数的 PostgreSQL、MySQL、TiDB 查询在这条路径上都保持 `indeterminate`。
 - 要让带函数的查询从 `indeterminate` 提升为 `admissible`，必须用显式同连接会话 SDK：PostgreSQL 走 `AnalyzePostgreSQLQueryAccessWithSession`，MySQL/TiDB 走 `AnalyzeMySQLTiDBQueryAccessWithSession`。提升仅限 SDK，CLI、HTTP、MCP 都不会打开数据库连接。
+- MySQL/TiDB 会话提升要求被引用的基表是 schema-qualified（例如 `app.orders`）。未限定表名即使请求携带 `DefaultSchema` 也保持 `indeterminate`。profile 是调用方声明的兼容性目标，不验证实际服务器版本或 SQL mode；调用方必须确保所选 profile 与实际版本匹配。
 - 在授权层里把 `indeterminate` 当作拒绝处理。
 
 ### Phase 1 表面矩阵

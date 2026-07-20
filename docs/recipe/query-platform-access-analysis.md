@@ -165,6 +165,7 @@ The `projection_only_inference_risk` warning indicates that `salary` is used in 
 - Without metadata, wildcards produce `indeterminate` classification.
 - The default SDK/CLI/HTTP path does not connect to a database; function-bearing PostgreSQL, MySQL, and TiDB queries stay `indeterminate` on this default path.
 - To promote a function-bearing query from `indeterminate` to `admissible`, you must use an explicit same-connection session SDK: `AnalyzePostgreSQLQueryAccessWithSession` for PostgreSQL, `AnalyzeMySQLTiDBQueryAccessWithSession` for MySQL/TiDB. Promotion is SDK-only; CLI, HTTP, and MCP do not open database connections.
+- MySQL/TiDB session promotion requires the referenced base table to be schema-qualified (e.g. `app.orders`). An unqualified table name stays `indeterminate` even when the request carries `DefaultSchema`. The profile is a caller-declared compatibility target; it does not verify the actual server version or SQL mode, so the caller must ensure the chosen profile matches the real version.
 - Treat `indeterminate` as denied in your authorization layer.
 
 ### Phase 1 Surface Matrix

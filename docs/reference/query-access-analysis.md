@@ -42,16 +42,27 @@ TiDB. Unknown values return `ErrInvalidQueryAccessAnalysisProfile`; a dialect
 mismatch returns `ErrQueryAccessAnalysisProfileDialectMismatch`.
 
 Profiles are compatibility targets, not server identity or semantic proof.
-Default SDK, CLI, and HTTP analysis remains offline. The production semantic
-registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`;
-each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`,
-and the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with
-direct partition and order columns. However, profiled function-bearing
-MySQL/TiDB queries remain `indeterminate` on the default offline surface
-because the default `Service` has no schema resolver or live connection.
-Promotion is available only through the explicit same-connection SDK session
-(`AnalyzeMySQLTiDBQueryAccessWithSession`). The profile is not included in
-result JSON.
+The implementation does not query the actual server's `VERSION()` or SQL mode,
+and a profile is not validated against the real server the connection points
+at. The caller is responsible for ensuring the chosen profile matches the
+actual MySQL/TiDB version and relevant SQL mode; a mismatched profile is still
+analyzed under that profile's semantics and may diverge from real server
+behavior.
+
+A profile also does not change the default path. DeltaScope's default path does
+not create a database connection on its own: the default SDK may accept a
+caller-supplied `SchemaResolver` to resolve table names or expand wildcards,
+but this does not enable MySQL/TiDB function-effect promotion; CLI and HTTP
+have no session promotion path. The production semantic registry is enabled
+for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`; each profile
+supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and the
+8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct
+partition and order columns. However, profiled function-bearing MySQL/TiDB
+queries remain `indeterminate` on the default offline surface because the
+default path does not connect to a database and does not enable function
+semantic promotion. Promotion is available only through the explicit
+same-connection SDK session (`AnalyzeMySQLTiDBQueryAccessWithSession`). The
+profile is not included in result JSON.
 
 ### Inference Risk
 
@@ -196,43 +207,61 @@ echoing the profile or SQL.
 
 If your Go program is already connected to MySQL or TiDB, you can hand that connection to the SDK. The SDK can then confirm the real tables and columns, and — within the supported function set — produce a usable permission list. This is the only path that can promote a MySQL/TiDB function-bearing query from `indeterminate` to `admissible`. CLI, HTTP, and the default SDK cannot do this, because they do not open a database connection.
 
+Two things must be distinguished: the connection you pass in is used only to resolve real relations and column metadata; the function semantics themselves come from the compatibility profile you select explicitly (`AnalysisProfile`), i.e. the built-in, immutable semantic manifest. The connection is not used to verify the server version or SQL mode, and it is not used to prove function semantics — the profile supplies those, and the connection only grounds table and column names onto real objects.
+
 Minimal example:
 
 ```go
 session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
 result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
-    SQL:             "SELECT id FROM app.users",
+    SQL:             "SELECT COUNT(*) FROM app.orders",
     Dialect:         deltascope.DialectMySQL,
     AnalysisProfile: deltascope.QueryAccessAnalysisProfileMySQL84,
     DefaultSchema:   "app",
 })
 ```
 
+Note the table is written as `app.orders`, with a schema qualifier. That is a hard requirement for promotion, explained next.
+
+### Promotion Requires a Schema-Qualified Base Relation
+
+Session promotion requires the referenced base table to be schema-qualified (e.g. `app.orders`, not `orders`). Even when the request carries `DefaultSchema`, an unqualified table name stays `indeterminate` and is not promoted. The reason is that promotion requires every function input to resolve strictly to a physical base-table column; an unqualified table name cannot be bound stably to a schema and therefore cannot form a reliable physical dependency.
+
 ### Positive `COUNT(*)` Example
 
-With a session connection, a correct profile, and complete table/column metadata, queries like the following can promote to `read_only + admissible`:
+With a session connection, a correct profile, schema-qualified tables, and complete column metadata, queries like the following can promote to `read_only + admissible`:
 
-- `SELECT COUNT(*) FROM orders` (all four profiles)
-- `SELECT SUM(amount) FROM orders` (direct-column `SUM`/`AVG`/`MIN`/`MAX`)
-- `SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM orders` (8.x profiles, direct partition and order columns)
+- `SELECT COUNT(*) FROM app.orders` (all four profiles)
+- `SELECT SUM(amount) FROM app.orders` (direct-column `SUM`/`AVG`/`MIN`/`MAX`)
+- `SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM app.orders` (8.x profiles, direct partition and order columns)
 
 ### What Still Returns `indeterminate`
 
 Even with a session connection, the following remain `indeterminate`:
 
+- An unqualified table name, e.g. `SELECT COUNT(*) FROM orders`, even when the request carries `DefaultSchema`.
 - The query references views, CTEs, derived tables, or wildcards (`SELECT *`).
 - It uses `DISTINCT`, `FILTER`, nested expressions, casts, explicit window frames, or named windows.
-- Table names are unqualified and the default schema cannot be determined.
-- Metadata is incomplete, or the function/operator is outside the supported set.
+- A ranking window is missing `ORDER BY`, or its partition/order operands are not direct base-table columns.
+- The function call is schema-qualified (`app.COUNT(*)`), quoted (`` `COUNT`(*) ``), or has noncanonical spacing (`COUNT (id)`).
+- Metadata is incomplete, or the function/operator is outside the supported set for the chosen profile.
 - Ranking-window functions on MySQL 5.7 (that profile has no native ranking-window support and stays deferred).
 
 ### `admissible` Is Not Authorization
 
-A session analysis returning `admissible` only means static analysis obtained the complete known requirements and proved the bounded effect manifest against the current connection's catalog context. It does **not** authorize execution, evaluate grants, guarantee a later execution snapshot matches the current database state, or account for row-level security, masking, or SQL rewrite. In other words, `admissible` means "I can fully enumerate what this query reads," not "the caller is permitted to read it," and not "the query is safe."
+A session analysis returning `admissible` only means static analysis obtained the complete known requirements: table and column names were resolved to real physical objects through your connection, and every function effect in the query is within the supported set of the profile you selected. It does **not**:
+
+- Authorize execution of the query.
+- Evaluate grants or permissions.
+- Guarantee a later execution snapshot matches the current database state.
+- Account for row-level security, masking, or SQL rewrite.
+- Prove that the actual server's version or SQL mode matches the profile you selected (that is the caller's responsibility).
+
+In other words, `admissible` means "I can fully enumerate what this query reads," not "the caller is permitted to read it," and not "the query is safe."
 
 ### Connection Ownership and Safety
 
-The session does not own or expose the connection you pass in. It constructs relation metadata resolution from that same connection, rejects an external `SchemaResolver`, and is the only SDK boundary that can construct the private semantic capability. The session does not expose catalog, manifest, connection, or credential details. The caller is responsible for closing the connection. The production registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. When a profiled query has complete physical metadata through the session connection, proven entries promote to `read_only + admissible`.
+The session does not own or expose the connection you pass in. It constructs relation metadata resolution from that same connection, rejects an external `SchemaResolver`, and is the only SDK boundary that can construct the private semantic capability. The session does not expose catalog, manifest, connection, or credential details. The caller is responsible for closing the connection. The production registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`.
 
 ## MCP Deferral
 
@@ -297,6 +326,12 @@ database context, complete strict-mode dependencies, and a PG17 manifest proof.
 `DISTINCT`, `FILTER`, nested arguments, casts, frames, named windows, and
 incomplete metadata remain `indeterminate`. MySQL/TiDB are not promoted by
 syntax or function names.
+
+The two proof roots differ: PostgreSQL uses catalog identity (the connection's
+catalog resolves object identity); MySQL/TiDB uses the built-in, profile-bound
+semantic manifest, where the connection only grounds schema-qualified table and
+column names onto real physical objects and the function semantics come from the
+profile, not from catalog identity. The two paths do not affect each other.
 
 ## Defense in Depth
 
