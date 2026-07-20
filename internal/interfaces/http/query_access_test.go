@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -370,4 +371,214 @@ func TestHandlerQueryAccessCapabilitiesIncludesEndpoint(t *testing.T) {
 	if !found {
 		t.Fatalf("expected POST /v1/query-access/analyze in endpoints, got %#v", endpoints)
 	}
+}
+
+func TestHandlerQueryAccessConnectionIDNotFound(t *testing.T) {
+	reg := newQueryAccessTestRegistry(t, "test-conn")
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"nonexistent"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"connection_not_found"`)) {
+		t.Fatalf("expected connection_not_found code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerQueryAccessConnectionIDUnauthorized(t *testing.T) {
+	reg := newQueryAccessTestRegistryWithAuth(t, "test-conn", "key-1", []string{"other-key"})
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"not_authorized"`)) {
+		t.Fatalf("expected not_authorized code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerQueryAccessProfileRejectedWithConnectionID(t *testing.T) {
+	reg := newQueryAccessTestRegistry(t, "test-conn")
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn","profile":"mysql-8.4"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+		t.Fatalf("expected invalid_request code, got %q", rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "profile is not allowed with connection_id") {
+		t.Fatalf("expected profile rejection message, got %q", body)
+	}
+}
+
+func TestHandleQueryAccessOnlineNilRegistry(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	handleQueryAccess(rec, req, nil)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"connection_not_found"`)) {
+		t.Fatalf("expected connection_not_found code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandleQueryAccessOnlineConnectionNotFound(t *testing.T) {
+	reg := newQueryAccessTestRegistry(t, "test-conn")
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"nonexistent"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	handleQueryAccess(rec, req, reg)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"connection_not_found"`)) {
+		t.Fatalf("expected connection_not_found code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandleQueryAccessOnlineUnauthorized(t *testing.T) {
+	reg := newQueryAccessTestRegistryWithAuth(t, "test-conn", "key-1", []string{"other-key"})
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	handleQueryAccess(rec, req, reg)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"not_authorized"`)) {
+		t.Fatalf("expected not_authorized code, got %q", rec.Body.String())
+	}
+}
+
+func TestHandleQueryAccessOnlineProfileAndConnectionIDRejected(t *testing.T) {
+	reg := newQueryAccessTestRegistry(t, "test-conn")
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn","profile":"mysql-8.4"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	handleQueryAccess(rec, req, reg)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+		t.Fatalf("expected invalid_request code, got %q", rec.Body.String())
+	}
+}
+
+func newQueryAccessTestRegistry(t *testing.T, connID string) *runtimeconfig.Registry {
+	t.Helper()
+	t.Setenv("TEST_QA_DB_PASSWORD", "secret")
+	t.Setenv("TEST_QA_API_KEY_SECRET", "test-key-value")
+
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys:    []runtimeconfig.APIKeyConfig{{ID: "default-key", SecretEnv: "TEST_QA_API_KEY_SECRET"}},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{
+					ID:               connID,
+					Dialect:          "mysql",
+					Host:             "127.0.0.1",
+					Port:             3306,
+					User:             "root",
+					PasswordEnv:      "TEST_QA_DB_PASSWORD",
+					Schema:           "app",
+					Purposes:         []string{"query_access"},
+					AllowedAPIKeyIDs: []string{"default-key"},
+				},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+	return reg
+}
+
+func newQueryAccessTestRegistryWithAuth(t *testing.T, connID string, keyID string, allowedKeyIDs []string) *runtimeconfig.Registry {
+	t.Helper()
+	t.Setenv("TEST_QA_DB_PASSWORD", "secret")
+	t.Setenv("TEST_QA_API_KEY_SECRET", "test-key-value")
+	t.Setenv("TEST_QA_OTHER_KEY_SECRET", "other-key-value")
+
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{
+				Enabled: true,
+				Keys: []runtimeconfig.APIKeyConfig{
+					{ID: keyID, SecretEnv: "TEST_QA_API_KEY_SECRET"},
+					{ID: "other-key", SecretEnv: "TEST_QA_OTHER_KEY_SECRET"},
+				},
+			},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{
+					ID:               connID,
+					Dialect:          "mysql",
+					Host:             "127.0.0.1",
+					Port:             3306,
+					User:             "root",
+					PasswordEnv:      "TEST_QA_DB_PASSWORD",
+					Schema:           "app",
+					Purposes:         []string{"query_access"},
+					AllowedAPIKeyIDs: allowedKeyIDs,
+				},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+	return reg
 }

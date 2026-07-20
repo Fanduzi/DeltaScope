@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including profile, SQL text from flags/files/stdin, and the public query access API
+// input: query-access command flags including connection flags, SQL text from flags/files/stdin, and the public query access API
 // output: rendered query access results in JSON format, exit-code mapping for CI integration
 // pos: CLI query-access command implementation above the public DeltaScope query access API
 // note: if this file changes, update this header and module README.md.
@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/spf13/cobra"
 )
@@ -38,14 +40,17 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	var filePath string
 	var mode string
 	var defaultSchema string
-	var profile string
 
 	cmd := &cobra.Command{
 		Use:   "analyze",
 		Short: "Analyze SQL for query access requirements",
-		Long:  "Analyze SQL to determine read classification, admission, and permission requirements.",
-		Example: "  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --dialect mysql\n" +
-			"  deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only",
+		Long: "Analyze SQL to determine read classification, admission, and permission requirements.\n" +
+			"When connection flags are present, DeltaScope uses online mode with server-identity-derived capability.",
+		Example: "Offline example:\n" +
+			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --dialect mysql\n" +
+			"  deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only\n\n" +
+			"Online example:\n" +
+			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sql, err := resolveQueryAccessSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd))
 			if err != nil {
@@ -63,35 +68,16 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 				return fmt.Errorf("invalid mode %q: must be strict or projection_only", accessMode)
 			}
 
-			result, err := deltascope.AnalyzeQueryAccess(cmd.Context(), deltascope.QueryAccessRequest{
-				SQL:             sql,
-				Dialect:         deltascope.Dialect(dialect),
-				Mode:            accessMode,
-				DefaultSchema:   strings.TrimSpace(defaultSchema),
-				AnalysisProfile: deltascope.QueryAccessAnalysisProfile(strings.TrimSpace(profile)),
-			})
+			connection, err := resolveConnectionOptions(cmd, options)
 			if err != nil {
 				*exitCode = exitQueryAccessUsageError
 				return err
 			}
 
-			output, err := json.MarshalIndent(result, "", "  ")
-			if err != nil {
-				*exitCode = exitInternal
-				return fmt.Errorf("marshal result: %w", err)
+			if !connection.Enabled() {
+				return runQueryAccessOffline(cmd, sql, dialect, accessMode, defaultSchema, exitCode)
 			}
-
-			if _, err := cmd.OutOrStdout().Write(output); err != nil {
-				*exitCode = exitInternal
-				return err
-			}
-			if _, err := io.WriteString(cmd.OutOrStdout(), "\n"); err != nil {
-				*exitCode = exitInternal
-				return err
-			}
-
-			*exitCode = exitCodeForQueryAccess(result)
-			return nil
+			return runQueryAccessOnline(cmd, sql, dialect, accessMode, defaultSchema, connection, exitCode)
 		},
 	}
 
@@ -99,7 +85,17 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to analyze")
 	cmd.Flags().StringVar(&mode, "mode", "", "analysis mode: strict or projection_only (default strict)")
 	cmd.Flags().StringVar(&defaultSchema, "default-schema", "", "default schema for unqualified references")
-	cmd.Flags().StringVar(&profile, "profile", "", "analysis profile: mysql-5.7, mysql-8.0, mysql-8.4, or tidb-8.5")
+	cmd.Flags().BoolP("help", "", false, "help for analyze")
+	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for online query access")
+	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for online query access")
+	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for online query access")
+	cmd.Flags().StringVarP(&options.Password, "password", "p", "", "database password for online query access")
+	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for online query access")
+	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for online query access")
+	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
+	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for online query access")
+	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for online query access")
+	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "connection timeout for online query access, for example 5s or 500ms")
 	return cmd
 }
 
@@ -154,4 +150,102 @@ func exitCodeForQueryAccess(result *deltascope.QueryAccessResult) int {
 	default:
 		return exitQueryAccessIndeterminate
 	}
+}
+
+func runQueryAccessOffline(cmd *cobra.Command, sql string, dialect spec.Dialect, accessMode deltascope.QueryAccessMode, defaultSchema string, exitCode *int) error {
+	result, err := deltascope.AnalyzeQueryAccess(cmd.Context(), deltascope.QueryAccessRequest{
+		SQL:           sql,
+		Dialect:       deltascope.Dialect(dialect),
+		Mode:          accessMode,
+		DefaultSchema: strings.TrimSpace(defaultSchema),
+	})
+	if err != nil {
+		*exitCode = exitQueryAccessUsageError
+		return err
+	}
+
+	return writeQueryAccessResult(cmd, result, exitCode)
+}
+
+func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, accessMode deltascope.QueryAccessMode, defaultSchema string, connection auditConnectionOptions, exitCode *int) error {
+	sessionCfg := online.SessionConfig{
+		Host:           connection.Host,
+		Port:           connection.Port,
+		Socket:         connection.Socket,
+		User:           connection.User,
+		Password:       connection.Password,
+		Schema:         connection.Schema,
+		Dialect:        string(dialect),
+		ConnectTimeout: connection.ConnectTimeout,
+	}
+
+	session, err := online.OpenSession(cmd.Context(), sessionCfg)
+	if err != nil {
+		*exitCode = exitQueryAccessUsageError
+		return err
+	}
+	defer session.Close()
+
+	req := deltascope.QueryAccessRequest{
+		SQL:           sql,
+		Mode:          accessMode,
+		DefaultSchema: strings.TrimSpace(defaultSchema),
+	}
+
+	var result *deltascope.QueryAccessResult
+	switch session.Identity.Product {
+	case online.ProductPostgreSQL:
+		req.Dialect = deltascope.DialectPostgreSQL
+		pgSession, sessErr := deltascope.NewPostgreSQLQueryAccessSessionFromConn(cmd.Context(), session.Conn)
+		if sessErr != nil {
+			*exitCode = exitQueryAccessUsageError
+			return sessErr
+		}
+		result, err = deltascope.AnalyzePostgreSQLQueryAccessWithSession(cmd.Context(), pgSession, req)
+	case online.ProductMySQL:
+		req.Dialect = deltascope.DialectMySQL
+		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(cmd.Context(), session.Conn)
+		if sessErr != nil {
+			*exitCode = exitQueryAccessUsageError
+			return sessErr
+		}
+		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(cmd.Context(), mySession, req)
+	case online.ProductTiDB:
+		req.Dialect = deltascope.DialectTiDB
+		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(cmd.Context(), session.Conn)
+		if sessErr != nil {
+			*exitCode = exitQueryAccessUsageError
+			return sessErr
+		}
+		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(cmd.Context(), mySession, req)
+	default:
+		*exitCode = exitQueryAccessUsageError
+		return fmt.Errorf("unsupported server product")
+	}
+	if err != nil {
+		*exitCode = exitQueryAccessUsageError
+		return err
+	}
+
+	return writeQueryAccessResult(cmd, result, exitCode)
+}
+
+func writeQueryAccessResult(cmd *cobra.Command, result *deltascope.QueryAccessResult, exitCode *int) error {
+	output, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		*exitCode = exitInternal
+		return fmt.Errorf("marshal result: %w", err)
+	}
+
+	if _, err := cmd.OutOrStdout().Write(output); err != nil {
+		*exitCode = exitInternal
+		return err
+	}
+	if _, err := io.WriteString(cmd.OutOrStdout(), "\n"); err != nil {
+		*exitCode = exitInternal
+		return err
+	}
+
+	*exitCode = exitCodeForQueryAccess(result)
+	return nil
 }

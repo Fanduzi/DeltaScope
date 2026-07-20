@@ -94,40 +94,30 @@ func TestQueryAccessAnalyzeProjectionOnlyMode(t *testing.T) {
 	}
 }
 
-func TestQueryAccessAnalyzeProfileRemainsOffline(t *testing.T) {
-	var stdout, stderr bytes.Buffer
-	exitCode := Execute(t.Context(), []string{
-		"query-access", "analyze", "--sql", "SELECT COUNT(*) FROM app.users",
-		"--dialect", "mysql", "--profile", "mysql-8.4",
-	}, &bytes.Buffer{}, &stdout, &stderr)
+func TestQueryAccessAnalyzeHelpNoProfile(t *testing.T) {
+	var stdout bytes.Buffer
+	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--help"}, &bytes.Buffer{}, &stdout, &bytes.Buffer{})
 
-	if exitCode != 2 {
-		t.Fatalf("expected indeterminate exit code 2, got %d: %s", exitCode, stderr.String())
+	if exitCode != 0 {
+		t.Fatalf("expected exit code 0 for --help, got %d", exitCode)
 	}
-	var result map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
-		t.Fatalf("decode output: %v", err)
-	}
-	if result["read_classification"] != "indeterminate" || result["admission"] != "indeterminate" {
-		t.Fatalf("profiled offline function query promoted: %#v", result)
-	}
-	if _, ok := result["profile"]; ok {
-		t.Fatalf("profile leaked into result JSON: %#v", result)
+	if bytes.Contains(stdout.Bytes(), []byte("--profile")) {
+		t.Fatalf("--profile flag should not appear in help output:\n%s", stdout.String())
 	}
 }
 
-func TestQueryAccessAnalyzeUnknownProfileIsUsageErrorWithoutEcho(t *testing.T) {
-	var stderr bytes.Buffer
-	exitCode := Execute(t.Context(), []string{
-		"query-access", "analyze", "--sql", "SELECT 1", "--dialect", "mysql",
-		"--profile", "mysql-8.4-secret-password",
-	}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)
+func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
+	var stdout bytes.Buffer
+	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--help"}, &bytes.Buffer{}, &stdout, &bytes.Buffer{})
 
-	if exitCode != exitQueryAccessUsageError {
-		t.Fatalf("expected usage error exit code %d, got %d", exitQueryAccessUsageError, exitCode)
+	if exitCode != 0 {
+		t.Fatalf("expected exit code 0 for --help, got %d", exitCode)
 	}
-	if bytes.Contains(bytes.ToLower(stderr.Bytes()), []byte("secret-password")) {
-		t.Fatalf("profile leaked into CLI error: %s", stderr.String())
+	requiredFlags := []string{"--host", "--port", "--user", "--password", "--password-env", "--password-file", "--ask-password", "--schema", "--socket", "--metadata-connect-timeout"}
+	for _, flag := range requiredFlags {
+		if !bytes.Contains(stdout.Bytes(), []byte(flag)) {
+			t.Errorf("expected %q in help output", flag)
+		}
 	}
 }
 

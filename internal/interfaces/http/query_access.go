@@ -1,5 +1,5 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: HTTP query-access analysis requests carrying SQL text, dialect, mode, profile, and optional schema context
+// input: HTTP query-access analysis requests carrying SQL text, dialect, mode, profile, connection_id, and optional schema context
 // output: JSON query access analysis results for the HTTP adapter
 // pos: HTTP adapter glue between request-scoped inputs and the public DeltaScope query access API
 // note: if this file changes, update this header and module README.md.
@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -23,11 +25,12 @@ type queryAccessRequest struct {
 	Mode            string                                `json:"mode,omitempty"`
 	DefaultSchema   string                                `json:"default_schema,omitempty"`
 	AnalysisProfile deltascope.QueryAccessAnalysisProfile `json:"profile,omitempty"`
+	ConnectionID    string                                `json:"connection_id,omitempty"`
 }
 
 var analyzeQueryAccess = deltascope.AnalyzeQueryAccess
 
-func handleQueryAccess(w http.ResponseWriter, r *http.Request) {
+func handleQueryAccess(w http.ResponseWriter, r *http.Request, registry *runtimeconfig.Registry) {
 	defer r.Body.Close()
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxAuditRequestBodyBytes)
@@ -67,6 +70,15 @@ func handleQueryAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.TrimSpace(request.ConnectionID) != "" {
+		if request.AnalysisProfile != deltascope.QueryAccessAnalysisProfileEmpty {
+			writeError(w, http.StatusBadRequest, "invalid_request", "profile is not allowed with connection_id")
+			return
+		}
+		handleQueryAccessOnline(w, r, registry, request, dialect, mode)
+		return
+	}
+
 	result, err := analyzeQueryAccess(r.Context(), deltascope.QueryAccessRequest{
 		SQL:             request.SQL,
 		Dialect:         dialect,
@@ -81,6 +93,123 @@ func handleQueryAccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+func handleQueryAccessOnline(
+	w http.ResponseWriter,
+	r *http.Request,
+	registry *runtimeconfig.Registry,
+	request queryAccessRequest,
+	dialect deltascope.Dialect,
+	mode deltascope.QueryAccessMode,
+) {
+	if registry == nil {
+		writeError(w, http.StatusNotFound, "connection_not_found", "connection not found")
+		return
+	}
+
+	conn, ok := registry.LookupConnection(request.ConnectionID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "connection_not_found", "connection not found")
+		return
+	}
+
+	principalID := PrincipalIDFromContext(r.Context())
+	if err := registry.Authorize(principalID, request.ConnectionID, "query_access"); err != nil {
+		mappedErr := mapRegistryAuthorizeError(err)
+		status, code := mapOnlineSessionError(mappedErr)
+		writeError(w, status, code, mapOnlineSessionErrorMessage(mappedErr))
+		return
+	}
+
+	connectTimeout, _, _ := runtimeconfig.ParseConnectTimeout(conn.ConnectTimeout)
+
+	connDialect := strings.ToLower(strings.TrimSpace(conn.Dialect))
+	schema := strings.TrimSpace(conn.Schema)
+	if strings.TrimSpace(request.DefaultSchema) != "" {
+		schema = strings.TrimSpace(request.DefaultSchema)
+	}
+
+	sessionCfg := online.SessionConfig{
+		Host:           strings.TrimSpace(conn.Host),
+		Port:           conn.Port,
+		Socket:         strings.TrimSpace(conn.Socket),
+		User:           strings.TrimSpace(conn.User),
+		Password:       conn.ResolvedPassword(),
+		Database:       strings.TrimSpace(conn.Database),
+		Schema:         schema,
+		Dialect:        connDialect,
+		ConnectTimeout: connectTimeout,
+		TLSMode:        strings.ToLower(strings.TrimSpace(conn.TLSMode)),
+	}
+
+	session, err := online.OpenSession(r.Context(), sessionCfg)
+	if err != nil {
+		status, code := mapOnlineSessionError(err)
+		writeError(w, status, code, mapOnlineSessionErrorMessage(err))
+		return
+	}
+	defer session.Close()
+
+	req := deltascope.QueryAccessRequest{
+		SQL:           request.SQL,
+		Mode:          mode,
+		DefaultSchema: schema,
+	}
+
+	var result *deltascope.QueryAccessResult
+	switch session.Identity.Product {
+	case online.ProductPostgreSQL:
+		req.Dialect = deltascope.DialectPostgreSQL
+		pgSession, sessErr := deltascope.NewPostgreSQLQueryAccessSessionFromConn(r.Context(), session.Conn)
+		if sessErr != nil {
+			writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
+			return
+		}
+		result, err = deltascope.AnalyzePostgreSQLQueryAccessWithSession(r.Context(), pgSession, req)
+	case online.ProductMySQL:
+		req.Dialect = deltascope.DialectMySQL
+		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(r.Context(), session.Conn)
+		if sessErr != nil {
+			writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
+			return
+		}
+		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(r.Context(), mySession, req)
+	case online.ProductTiDB:
+		req.Dialect = deltascope.DialectTiDB
+		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(r.Context(), session.Conn)
+		if sessErr != nil {
+			writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
+			return
+		}
+		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(r.Context(), mySession, req)
+	default:
+		writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
+		return
+	}
+	if err != nil {
+		status, code := mapQueryAccessError(err)
+		writeError(w, status, code, mapQueryAccessErrorMessage(err))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+func mapOnlineSessionError(err error) (int, string) {
+	code, _, status := online.MapOnlineError(err)
+	if status != 0 {
+		return status, code
+	}
+	return http.StatusBadGateway, "connection_failed"
+}
+
+func mapOnlineSessionErrorMessage(err error) string {
+	_, message, _ := online.MapOnlineError(err)
+	if message != "" && message != "internal server error" {
+		return message
+	}
+	return "connection failed"
 }
 
 func mapQueryAccessError(err error) (int, string) {
