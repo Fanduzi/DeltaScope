@@ -95,7 +95,9 @@ Columns that fail to resolve (column not found in the schema) produce an `unreso
 
 ## Fail-Closed Behavior
 
-When analysis cannot determine the read classification or required permissions, the result is `indeterminate`. The authorization layer should treat `indeterminate` as denied by default. Specific fail-closed scenarios:
+When analysis cannot determine the read classification or required permissions, the result is `indeterminate`. The authorization layer should treat `indeterminate` as denied by default. This means the analysis cannot fully enumerate what the query reads — it does **not** mean the query is safe, read-only, or that it will write data.
+
+Common default `indeterminate` scenarios (see specific entries below):
 
 - **Parse failure**: `read_classification: indeterminate`, `reason_codes: [parse_failure]`
 - **Empty input**: `read_classification: indeterminate`, `reason_codes: [zero_statements]`
@@ -190,9 +192,11 @@ The endpoint returns the same JSON structure as the SDK. Invalid mode returns
 `400` with `invalid_mode`; invalid profiles return bounded `400` errors without
 echoing the profile or SQL.
 
-## MySQL/TiDB Session Boundary
+## Confirming MySQL/TiDB Function Queries via a Same-Connection Session
 
-The explicit SDK session API accepts a caller-owned `*sql.Conn`:
+If your Go program is already connected to MySQL or TiDB, you can hand that connection to the SDK. The SDK can then confirm the real tables and columns, and — within the supported function set — produce a usable permission list. This is the only path that can promote a MySQL/TiDB function-bearing query from `indeterminate` to `admissible`. CLI, HTTP, and the default SDK cannot do this, because they do not open a database connection.
+
+Minimal example:
 
 ```go
 session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
@@ -204,14 +208,31 @@ result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, d
 })
 ```
 
-The session does not own or expose the connection. It constructs relation
-metadata resolution from that same connection, rejects an external
-`SchemaResolver`, and is the only SDK boundary that can construct the private
-semantic capability. The production registry is enabled for `mysql-5.7`,
-`mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. When a profiled query has complete
-physical metadata through the session connection, proven entries promote to
-`read_only + admissible`. The session does not expose catalog, manifest,
-connection, or credential details.
+### Positive `COUNT(*)` Example
+
+With a session connection, a correct profile, and complete table/column metadata, queries like the following can promote to `read_only + admissible`:
+
+- `SELECT COUNT(*) FROM orders` (all four profiles)
+- `SELECT SUM(amount) FROM orders` (direct-column `SUM`/`AVG`/`MIN`/`MAX`)
+- `SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM orders` (8.x profiles, direct partition and order columns)
+
+### What Still Returns `indeterminate`
+
+Even with a session connection, the following remain `indeterminate`:
+
+- The query references views, CTEs, derived tables, or wildcards (`SELECT *`).
+- It uses `DISTINCT`, `FILTER`, nested expressions, casts, explicit window frames, or named windows.
+- Table names are unqualified and the default schema cannot be determined.
+- Metadata is incomplete, or the function/operator is outside the supported set.
+- Ranking-window functions on MySQL 5.7 (that profile has no native ranking-window support and stays deferred).
+
+### `admissible` Is Not Authorization
+
+A session analysis returning `admissible` only means static analysis obtained the complete known requirements and proved the bounded effect manifest against the current connection's catalog context. It does **not** authorize execution, evaluate grants, guarantee a later execution snapshot matches the current database state, or account for row-level security, masking, or SQL rewrite. In other words, `admissible` means "I can fully enumerate what this query reads," not "the caller is permitted to read it," and not "the query is safe."
+
+### Connection Ownership and Safety
+
+The session does not own or expose the connection you pass in. It constructs relation metadata resolution from that same connection, rejects an external `SchemaResolver`, and is the only SDK boundary that can construct the private semantic capability. The session does not expose catalog, manifest, connection, or credential details. The caller is responsible for closing the connection. The production registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. When a profiled query has complete physical metadata through the session connection, proven entries promote to `read_only + admissible`.
 
 ## MCP Deferral
 

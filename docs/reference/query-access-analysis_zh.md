@@ -1,72 +1,90 @@
 # 查询访问分析参考
 
-查询访问分析检查 SQL 语句并确定调用者必须被授权读取的数据库对象。它**不会**认证调用者、评估授权、执行行级安全或屏蔽敏感列。它生成一个结构化结果供授权层消费。
+查询访问分析检查一条 SQL，列出它需要读取的表和列，供你的授权层拿去比对调用者权限。它不替你做认证，也不评估 grant、不强制行级安全、不脱敏列。它只产出一份结构化结果。
 
 ## 读取分类
 
-每条被分析的语句会获得以下三种读取分类之一：
+每条被分析的语句会得到下面三种分类之一：
 
 | 分类 | 含义 |
 |---|---|
-| `read_only` | 语句不包含写操作、锁定子句或需要运行时求值的函数。 |
-| `not_read_only` | 语句包含至少一个写操作（`INSERT`、`UPDATE`、`DELETE`、`FOR UPDATE`、`INTO OUTFILE`、DDL 等）。 |
-| `indeterminate` | 无法确定只读状态。常见原因：函数调用（`NOW()`）、未解析的通配符（无元数据时的 `SELECT *`）、歧义列引用、解析失败或空输入。 |
+| `read_only` | 语句不含写操作、不含锁定子句、不含需要运行时求值的函数。 |
+| `not_read_only` | 语句至少包含一个写操作（`INSERT`、`UPDATE`、`DELETE`、`FOR UPDATE`、`INTO OUTFILE`、DDL 等）。 |
+| `indeterminate` | 无法判断是否只读。常见原因：函数调用（`NOW()`）、未解析的通配符（无元数据时的 `SELECT *`）、歧义列引用、解析失败、空输入。 |
 
 ## 准入判定
 
-准入判定由读取分类推导：
+准入（admission）从读取分类推导：
 
 | 准入 | 条件 |
 |---|---|
-| `admissible` | 分类为 `read_only`。语句有资格进行授权检查。 |
-| `rejected` | 分类为 `not_read_only`。语句无资格。 |
-| `indeterminate` | 分类为 `indeterminate`。无法在缺少额外信息的情况下进行授权。 |
+| `admissible` | 分类为 `read_only`。语句可以进入授权检查。 |
+| `rejected` | 分类为 `not_read_only`。语句不可进入授权。 |
+| `indeterminate` | 分类为 `indeterminate`。信息不足，授权无法继续。 |
 
-准入判定由读取分类推导，适用于所有方言。
+所有方言都按这个映射推导。
 
 ## 模式
 
 | 模式 | 列要求 | 使用场景 |
 |---|---|---|
 | `strict`（默认） | 每个被引用的列都需要 `read_column` 权限。 | 完整的列级访问控制。 |
-| `projection_only` | 仅 SELECT 列表中出现的列（输出列）需要 `read_column` 权限。过滤、连接、分组和排序列不需要。 | 仅投影授权，调用者被信任进行过滤但不被信任查看非投影数据。 |
+| `projection_only` | 仅 SELECT 列表里出现的列（输出列）需要 `read_column`。过滤、连接、分组、排序列不需要。 | 只授权投影列；调用者可以参与过滤，但不能看到非投影数据。 |
 
-两种模式都要求每个权限承载关系（`read_table`）。
+两种模式都要求每个承载权限的关系有 `read_table` 权限。
 
 ## 分析配置
 
-`QueryAccessRequest.AnalysisProfile` 是可选的闭合集合。有效值包括空值（保留当前行为）、
-`mysql-5.7`、`mysql-8.0`、`mysql-8.4` 和 `tidb-8.5`。MySQL 配置只能与 MySQL 方言搭配，
-`tidb-8.5` 只能与 TiDB 搭配。未知值返回 `ErrInvalidQueryAccessAnalysisProfile`；方言不匹配返回
-`ErrQueryAccessAnalysisProfileDialectMismatch`。
+`QueryAccessRequest.AnalysisProfile` 是可选的闭合集合。有效值有空值（保留默认行为）、`mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5`。MySQL 配置只能搭配 MySQL 方言，`tidb-8.5` 只能搭配 TiDB。未知值返回 `ErrInvalidQueryAccessAnalysisProfile`；方言不匹配返回 `ErrQueryAccessAnalysisProfileDialectMismatch`。
 
-配置是兼容性目标，不是服务器身份或语义证明。默认 SDK、CLI 和 HTTP 分析保持离线。生产语义
-registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4` 和 `tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、
-直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 额外支持带直接分区和排序列的
-`ROW_NUMBER`/`RANK`/`DENSE_RANK`。但是，带配置的 MySQL/TiDB 函数查询在默认离线表面上仍为
-`indeterminate`，因为默认 `Service` 没有 schema 解析器或活动连接。只有在显式同连接 SDK 会话
-（`AnalyzeMySQLTiDBQueryAccessWithSession`）下才能提升。配置不会出现在结果 JSON 中。
+配置是一个兼容性目标，告诉分析器“按哪个服务版本的语义来看这条 SQL”。它本身不证明服务端身份，也不改变默认行为：默认 SDK、CLI 和 HTTP 仍然是离线的。生产语义 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 还支持带直接分区和排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK`。
+
+但要注意一条边界：带了配置、又含函数的 MySQL/TiDB 查询，在默认离线表面上仍然是 `indeterminate`。原因是默认 `Service` 没有连数据库，也没有 schema 解析器，无法确认这些函数会读取什么。配置不会出现在结果 JSON 里。
 
 ### 推理风险
 
-当存在非投影列时，projection_only 模式会发出 `projection_only_inference_risk` 警告。这警告调用者：仅被授权投影列的用户仍可通过 WHERE、JOIN 或 ORDER BY 子句推断数据。仅在授权层接受此权衡时使用 projection_only 模式。
+projection_only 模式下如果存在非投影列，会发出 `projection_only_inference_risk` 警告。意思是一个只被授权看到投影列的用户，仍可能通过 WHERE、JOIN 或 ORDER BY 推测出其他列的数据。只有当你的授权层愿意接受这个权衡时再用 projection_only。
 
 ## 表权限
 
-strict 和 projection_only 模式都要求对每个基表和视图具有 `read_table` 权限。CTE 和派生表本身不需要权限；它们的权限要求来自它们引用的底层物理表和视图。
+strict 和 projection_only 都要求每个基表和视图有 `read_table` 权限。CTE 和派生表本身不直接要求权限，它们的要求来自底层引用的物理表和视图。
+
+## 默认行为和何时会“无法确认”
+
+命令行、HTTP 和普通 SDK 调用（`AnalyzeQueryAccess`）在遇到信息不足以判断的情况时，会保守地返回 `indeterminate`（无法确认），不会直接放行。这表示当前分析结果不足以完整列出查询会读取什么，并不是说这条查询安全、只读或会写数据。
+
+下面几种情况默认就会得到 `indeterminate`：
+
+- **带函数的查询**，例如 `SELECT NOW()`、`SELECT COUNT(*) FROM users`，在默认离线表面上无法确认函数会读取什么。
+- **`SELECT *`**：没有元数据时无法展开通配符，分类为 `indeterminate`，`unresolved` 里会出现 `{reference: "*", reason: schema_unavailable}`。
+- **未限定的表名**（PostgreSQL）：`SELECT id FROM users` 这种没有 schema 限定符的关系，运行时到底解析到哪个 schema 取决于会话的 `search_path`，分析器无法确定，见后文“未绑定关系和列”。
+- **未知的函数或运算符效果**：MySQL/TiDB 上带函数查询返回 `indeterminate`，原因是 `unknown_function_effect`。
+- **解析失败**：`reason_codes: [parse_failure]`。
+- **空输入**：`reason_codes: [zero_statements]`。
+- **歧义列**：`unresolved: [{reference: "unqualified_column", reason: ambiguous_reference}]`。
+
+授权层应该把 `indeterminate` 当作拒绝处理。
+
+## 元数据要求
+
+通配符（`SELECT *`）没有元数据时无法解析，分类为 `indeterminate`。要解析通配符，需提供返回关系模式（表名、带序号的列）的 `SchemaResolver`。有了元数据之后：
+
+- 通配符按序号顺序展开为单独的列引用。
+- 当恰好一个源关系包含该列时，未限定列会被解析。
+- 视图会被检测出来，标记为 `RelationView` 类型。
 
 ## 未绑定关系和列（PostgreSQL）
 
-在 PostgreSQL 上，未限定模式的基表关系（没有 schema 限定符的关系）是**执行未绑定的**：分析器无法确定该关系在运行时解析到哪个 schema，因为 `search_path` 是会话控制的。为防止错误的权限证明，这些关系及其列在结果中标记为 `unbound: true`。
+PostgreSQL 上，没有 schema 限定符的基表关系是**执行未绑定的**：运行时它解析到哪个 schema，取决于会话的 `search_path`，而 `search_path` 是会话控制的，分析器无法确定。为避免给出错误的权限证明，这类关系和它们的列在结果里被标记为 `unbound: true`。
 
-### 未绑定的含义
+### 未绑定意味着什么
 
 - 标记为 `unbound: true` 的关系**永远不会**产生 `read_table` 权限要求。
 - 标记为 `unbound: true` 的列**永远不会**产生 `read_column` 权限要求。
-- `unresolved` 中会出现 `unqualified_relation` 条目，原因为 `unqualified_relation_blocked`。
+- `unresolved` 中会出现 `unqualified_relation` 条目，原因是 `unqualified_relation_blocked`。
 - 分类变为 `indeterminate`，准入变为 `indeterminate`。
 
-**授权层不得基于未绑定关系或列授予访问权限。** `unbound` 字段表示该权限要求不是查询在运行时实际读取内容的可靠证明。
+授权层不得基于未绑定关系或列授予访问权限。`unbound` 字段表示这条权限要求不是查询在运行时实际读取内容的可靠证明。
 
 ### 何时设置未绑定标记
 
@@ -80,29 +98,12 @@ strict 和 projection_only 模式都要求对每个基表和视图具有 `read_t
 
 ### 分析器如何处理混合查询
 
-当查询包含对同一表名的限定和未限定引用时（例如 `public.users p JOIN users u`），PostgreSQL 解析器将别名解析为裸表名。`p.id` 和 `u.name` 都产生 `table: "users"`。分析器使用解析状态来区分：
+当查询同时对同一表名做了限定和未限定引用（例如 `public.users p JOIN users u`），PostgreSQL 解析器会把别名解析回裸表名。`p.id` 和 `u.name` 都产生 `table: "users"`。分析器用解析状态来区分：
 
 - 如果解析映射中存在限定条目，列通过它解析（获得 schema 赋值）。
 - 如果只有未绑定条目，则跳过解析，列保持无 schema 状态。
 
-解析失败的列（在 schema 中找不到列）产生 `reason: column_not_found` 的 `unresolved` 条目，也被标记为 `unbound: true`。
-
-## 失败关闭行为
-
-当分析无法确定读取分类或所需权限时，结果为 `indeterminate`。授权层应默认将 `indeterminate` 视为拒绝。特定的失败关闭场景：
-
-- **解析失败**：`read_classification: indeterminate`，`reason_codes: [parse_failure]`
-- **空输入**：`read_classification: indeterminate`，`reason_codes: [zero_statements]`
-- **未解析通配符**：`read_classification: indeterminate`，`unresolved: [{reference: "*", reason: schema_unavailable}]`
-- **歧义列**：`read_classification: indeterminate`，`unresolved: [{reference: "unqualified_column", reason: ambiguous_reference}]`
-
-## 元数据要求
-
-没有元数据时，通配符（`SELECT *`）保持未解析状态，分类变为 `indeterminate`。要解析通配符，需提供返回关系模式（表名、带序号的列）的 `SchemaResolver`。有元数据时：
-
-- 通配符按序号顺序展开为单独的列引用。
-- 当恰好一个源关系包含该列时，未限定列会被解析。
-- 视图被检测并标记为 `RelationView` 类型。
+解析失败的列（在 schema 中找不到列）产生 `reason: column_not_found` 的 `unresolved` 条目，也会被标记为 `unbound: true`。
 
 ## 方言差异
 
@@ -180,12 +181,13 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
   -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict","profile":"mysql-8.4"}'
 ```
 
-该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，
-不会回显配置或 SQL。
+该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，不会回显配置或 SQL。
 
-## MySQL/TiDB 会话边界
+## 让 SDK 真正确认 MySQL/TiDB 的函数查询（同连接会话）
 
-显式 SDK 会话 API 接受调用者拥有的 `*sql.Conn`：
+如果你的 Go 程序已经连上了 MySQL 或 TiDB，可以把这条连接交给 SDK，SDK 才能确认真实的表和列，并在支持的函数范围内给出可用的权限清单。这是唯一能让 MySQL/TiDB 函数查询从“无法确认”提升为“可准入”的路径。CLI、HTTP 和默认 SDK 都做不到这一点，因为它们不会打开数据库连接。
+
+最小示例：
 
 ```go
 session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
@@ -197,18 +199,46 @@ result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, d
 })
 ```
 
-会话不拥有或暴露连接。它只从同一连接构造关系元数据解析，拒绝外部 `SchemaResolver`，并且是唯一可以构造私有
-语义能力的 SDK 边界。生产 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4` 和 `tidb-8.5` 启用。
-当带配置的查询通过会话连接获得完整物理元数据时，已证明的条目可提升为 `read_only + admissible`。
-会话不会暴露目录、manifest、连接或凭据细节。
+### `COUNT(*)` 的正向示例
+
+通过会话连接、配置正确、表列元数据完整时，下面这类查询可以提升为 `read_only + admissible`：
+
+- `SELECT COUNT(*) FROM orders`（四个 profile 都支持）
+- `SELECT SUM(amount) FROM orders`（直接列 `SUM`/`AVG`/`MIN`/`MAX`）
+- `SELECT ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) FROM orders`（8.x profile，直接列分区和排序）
+
+### 仍然“无法确认”的情况
+
+即便用了会话连接，下面这些仍为 `indeterminate`：
+
+- 查询引用了视图、CTE、派生表或通配符（`SELECT *`）。
+- 使用了 `DISTINCT`、`FILTER`、嵌套表达式、cast、显式窗口 frame、命名窗口。
+- 表名未限定且默认 schema 无法确定。
+- 元数据不完整，或函数/运算符不在支持的清单内。
+- MySQL 5.7 上的 ranking-window 函数（该 profile 没有原生 ranking-window 支持，保持延迟）。
+
+### `admissible` 不是授权
+
+会话分析返回 `admissible`，只表示静态分析拿到了完整的已知要求，并针对当前连接的目录上下文证明了有界的效果清单。它**不**：
+
+- 授权执行这条查询。
+- 评估 grant 或权限。
+- 保证稍后真正执行时数据库状态和现在一致。
+- 考虑行级安全、脱敏或 SQL 重写。
+
+换句话说，`admissible` 是“我能完整列出它会读取什么”，不是“调用者被允许读取”，也不是“查询安全”或“只读执行结果保证”。
+
+### 会话的连接归属和安全细节
+
+会话不拥有也不暴露你传入的连接。它只从这条连接构造关系元数据解析，拒绝外部 `SchemaResolver`，是唯一能构造私有语义能力的 SDK 边界。会话不会暴露目录、manifest、连接或凭据细节。连接由你负责关闭。
 
 ## MCP 延迟
 
-查询访问分析的 MCP 表面集成已延迟。当前 MCP 服务器仅暴露 `audit_sql`、`describe_rule`、`list_rules` 和 `get_capabilities`。
+查询访问分析的 MCP 表面集成已延迟。当前 MCP 服务器只暴露 `audit_sql`、`describe_rule`、`list_rules` 和 `get_capabilities`。
 
 ## 可信 PostgreSQL SDK 路径
 
-可信 PostgreSQL SDK 路径支持 PostgreSQL 查询的 manifest 门控准入提升。此路径仅在使用 `postgresql` 构建标签构建时可用。
+PostgreSQL 也有类似的同连接会话路径，支持 manifest 门控的准入提升。此路径仅在使用 `postgresql` 构建标签构建时可用。
 
 ### 会话构建
 
@@ -216,9 +246,9 @@ result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, d
 session, err := deltascope.NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
 ```
 
-- 接受调用者拥有的 `*sql.Conn`（非 `*sql.DB`）
+- 接受调用者拥有的 `*sql.Conn`（不是 `*sql.DB`）
 - 通过 `PingContext` 验证连接活性
-- 不获取连接的所有权；调用者必须关闭它
+- 不获取连接的所有权；连接由调用者关闭
 - 在非 postgresql 构建中返回 `ErrPostgreSQLSessionNotAvailable`
 
 ### 可信分析
@@ -232,43 +262,32 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 - 当每个效果都已目录解析并列在 PG17 manifest 中时，可能返回 `read_only + admissible`
 - 在非 postgresql 构建中返回 `ErrPostgreSQLSessionNotAvailable`
 
-### 准入语义
-
-`admissible` 仅表示静态分析获得了完整的已知要求，并针对提供的连接目录上下文证明了有界效果 manifest。它**不**：
-
-- 授权执行
-- 评估授权或许可
-- 保证后续执行快照使用相同的数据库状态
-- 考虑行级安全、屏蔽或 SQL 重写
-
 ### 默认路径
 
-默认的 `AnalyzeQueryAccess` 函数（无会话）对 PostgreSQL 保持失败关闭。CLI、HTTP 和 MCP 表面继续使用默认路径，不会获得可信提升。
+默认的 `AnalyzeQueryAccess`（不带会话）对 PostgreSQL 保持“无法确认”的保守行为。CLI、HTTP 和 MCP 表面继续走默认路径，不会获得可信提升。
 
 ### Phase 1 纯效果矩阵
 
-以下是 Phase 1 的精确契约。“仅表征”表示测试观察到了该形状；它不是
-受支持或可准入的函数白名单。
+下面是 Phase 1 的精确契约。“仅表征”表示测试观察到了该形状；它不是受支持或可准入的函数白名单。
 
 | 方言 | 表面 | Phase 1 聚合/窗口 |
 |---|---|---|
 | PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
 | PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
-| MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线 fail-closed） |
+| MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
 | MySQL | 显式 SDK 会话（`AnalyzeMySQLTiDBQueryAccessWithSession`）配合 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` |
-| TiDB | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线 fail-closed） |
+| TiDB | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
 | TiDB | 显式 SDK 会话配合 `tidb-8.5` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` 可为 `admissible` |
 
-可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的
-strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、
-cast、窗口 frame、命名窗口和不完整元数据仍为 `indeterminate`。MySQL/TiDB
-不会因语法或函数名称而获得提升。
+可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的 strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、cast、窗口 frame、命名窗口和不完整元数据仍为 `indeterminate`。MySQL/TiDB 不会仅因语法或函数名称而获得提升。
 
 ## 纵深防御
 
-查询访问分析是纵深防御授权策略中的一层。它确定查询触及哪些对象，但不评估调用者是否有权限访问这些对象。将其与以下措施配合使用：
+查询访问分析是纵深防御授权策略中的一层。它确定查询触及哪些对象，但不评估调用者是否有权限访问这些对象。把它和下面这些措施配合使用：
 
 - **认证**：在分析之前验证调用者身份。
-- **授权评估**：将生成的需求与调用者已授予的权限进行检查。
+- **授权评估**：把产出的要求与调用者已授予的权限比对。
 - **行级安全**：独立于列级分析应用行过滤器。
 - **审计日志**：记录分析结果和授权决策以供合规使用。
+
+不要只靠静态分析做安全关键的授权决策。
