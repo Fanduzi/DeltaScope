@@ -128,7 +128,6 @@ func TestQueryAccessResultJSONOmitsAnalysisProfile(t *testing.T) {
 }
 
 func TestMySQLTiDBQueryAccessSessionBoundaryValidation(t *testing.T) {
-	validProfile := QueryAccessAnalysisProfileMySQL84
 	tests := []struct {
 		name      string
 		req       QueryAccessRequest
@@ -137,29 +136,28 @@ func TestMySQLTiDBQueryAccessSessionBoundaryValidation(t *testing.T) {
 		forbidden []string
 	}{
 		{
-			name:      "nil session",
-			req:       QueryAccessRequest{Dialect: DialectMySQL, AnalysisProfile: validProfile},
+			name:      "nil session with empty profile",
+			req:       QueryAccessRequest{Dialect: DialectMySQL},
 			want:      ErrMySQLTiDBQueryAccessSessionUnavailable,
 			forbidden: []string{"mysql-8.4", "dsn", "password"},
 		},
 		{
 			name:    "wrong dialect",
-			req:     QueryAccessRequest{Dialect: DialectPostgreSQL, AnalysisProfile: QueryAccessAnalysisProfileEmpty},
+			req:     QueryAccessRequest{Dialect: DialectPostgreSQL},
 			session: &MySQLTiDBQueryAccessSession{},
 			want:    ErrMySQLTiDBQueryAccessDialectRequired,
 		},
 		{
-			name:    "profile mismatch",
-			req:     QueryAccessRequest{Dialect: DialectTiDB, AnalysisProfile: validProfile},
+			name:    "profile not allowed",
+			req:     QueryAccessRequest{Dialect: DialectMySQL, AnalysisProfile: QueryAccessAnalysisProfileMySQL84},
 			session: &MySQLTiDBQueryAccessSession{},
-			want:    ErrQueryAccessAnalysisProfileDialectMismatch,
+			want:    ErrMySQLTiDBQueryAccessProfileNotAllowed,
 		},
 		{
 			name: "external resolver",
 			req: QueryAccessRequest{
-				Dialect:         DialectMySQL,
-				AnalysisProfile: validProfile,
-				SchemaResolver:  testQueryAccessSchemaResolver{},
+				Dialect:        DialectMySQL,
+				SchemaResolver: testQueryAccessSchemaResolver{},
 			},
 			session: &MySQLTiDBQueryAccessSession{},
 			want:    ErrMySQLTiDBQueryAccessSchemaResolverNotAllowed,

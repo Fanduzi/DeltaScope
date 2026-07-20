@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 
+	online "github.com/Fanduzi/DeltaScope/internal/application/online"
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 )
@@ -19,14 +20,18 @@ var (
 	ErrMySQLTiDBQueryAccessSessionUnavailable       = errors.New("mysql/tidb query access session is unavailable")
 	ErrMySQLTiDBQueryAccessDialectRequired          = errors.New("mysql/tidb query access session requires MySQL or TiDB dialect")
 	ErrMySQLTiDBQueryAccessSchemaResolverNotAllowed = errors.New("mysql/tidb query access session does not accept an external schema resolver")
+	ErrMySQLTiDBQueryAccessProfileNotAllowed        = errors.New("mysql/tidb query access session rejects caller analysis profile; capability is derived from server identity")
 )
 
 // MySQLTiDBQueryAccessSession is an opaque wrapper around a caller-owned *sql.Conn.
+// The session derives its capability target from server identity at construction time.
 type MySQLTiDBQueryAccessSession struct {
-	conn *sql.Conn
+	conn   *sql.Conn
+	target online.CapabilityTarget
 }
 
-// NewMySQLTiDBQueryAccessSessionFromConn creates a session after a context-controlled liveness check.
+// NewMySQLTiDBQueryAccessSessionFromConn creates a session after a context-controlled
+// liveness check and server identity validation.
 func NewMySQLTiDBQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*MySQLTiDBQueryAccessSession, error) {
 	if ctx == nil || conn == nil {
 		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
@@ -34,11 +39,23 @@ func NewMySQLTiDBQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn)
 	if err := conn.PingContext(ctx); err != nil {
 		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
 	}
-	return &MySQLTiDBQueryAccessSession{conn: conn}, nil
+
+	identity, err := online.IdentifyFromConn(ctx, conn, "")
+	if err != nil {
+		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
+	}
+
+	target := online.DeriveCapabilityTarget(identity)
+	if target == "" {
+		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
+	}
+
+	return &MySQLTiDBQueryAccessSession{conn: conn, target: target}, nil
 }
 
 // AnalyzeMySQLTiDBQueryAccessWithSession resolves relation metadata on the caller's connection and
 // enables the private application semantic capability for the session-owned resolver.
+// Rejects a non-empty caller AnalysisProfile; the capability is derived from server identity.
 func AnalyzeMySQLTiDBQueryAccessWithSession(
 	ctx context.Context,
 	session *MySQLTiDBQueryAccessSession,
@@ -50,9 +67,8 @@ func AnalyzeMySQLTiDBQueryAccessWithSession(
 	if req.Dialect != DialectMySQL && req.Dialect != DialectTiDB {
 		return nil, ErrMySQLTiDBQueryAccessDialectRequired
 	}
-	dialect := toDomainQADialect(req.Dialect)
-	if err := validateQueryAccessAnalysisProfile(req.AnalysisProfile, dialect); err != nil {
-		return nil, err
+	if req.AnalysisProfile != QueryAccessAnalysisProfileEmpty {
+		return nil, ErrMySQLTiDBQueryAccessProfileNotAllowed
 	}
 	if req.SchemaResolver != nil {
 		return nil, ErrMySQLTiDBQueryAccessSchemaResolverNotAllowed
@@ -60,6 +76,8 @@ func AnalyzeMySQLTiDBQueryAccessWithSession(
 	if session == nil || session.conn == nil {
 		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
 	}
+
+	profile := capabilityTargetToAnalysisProfile(session.target)
 
 	resolver, err := mysqlmeta.NewQueryAccessConnResolver(session.conn)
 	if err != nil {
@@ -76,10 +94,10 @@ func AnalyzeMySQLTiDBQueryAccessWithSession(
 	}
 	appResult, err := service.Analyze(ctx, appqa.QueryAccessRequest{
 		SQL:             req.SQL,
-		Dialect:         dialect,
+		Dialect:         toDomainQADialect(req.Dialect),
 		Mode:            string(mode),
 		DefaultSchema:   req.DefaultSchema,
-		AnalysisProfile: appqa.AnalysisProfile(req.AnalysisProfile),
+		AnalysisProfile: profile,
 		SchemaResolver:  resolver,
 	})
 	if err != nil {
@@ -91,4 +109,21 @@ func AnalyzeMySQLTiDBQueryAccessWithSession(
 
 	result := fromDomainQAResult(appResult.DomainResult)
 	return &result, nil
+}
+
+// capabilityTargetToAnalysisProfile maps an identity-derived capability target
+// to the application-layer analysis profile.
+func capabilityTargetToAnalysisProfile(target online.CapabilityTarget) appqa.AnalysisProfile {
+	switch target {
+	case online.TargetMySQL57:
+		return appqa.AnalysisProfileMySQL57
+	case online.TargetMySQL80:
+		return appqa.AnalysisProfileMySQL80
+	case online.TargetMySQL84:
+		return appqa.AnalysisProfileMySQL84
+	case online.TargetTiDB85:
+		return appqa.AnalysisProfileTiDB85
+	default:
+		return appqa.AnalysisProfileEmpty
+	}
 }

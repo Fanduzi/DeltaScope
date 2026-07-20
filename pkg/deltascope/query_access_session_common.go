@@ -8,11 +8,17 @@ package deltascope
 import (
 	"database/sql"
 	"errors"
+
+	online "github.com/Fanduzi/DeltaScope/internal/application/online"
 )
 
 // ErrPostgreSQLSessionNotAvailable indicates PostgreSQL session support was not compiled in.
 // This error is returned by the stub constructor when built without the postgresql tag.
 var ErrPostgreSQLSessionNotAvailable = errors.New("postgresql session support requires build tag: go build -tags postgresql")
+
+// ErrPostgreSQLQueryAccessProfileNotAllowed is returned when a caller supplies
+// a non-empty AnalysisProfile on a session-based PostgreSQL request.
+var ErrPostgreSQLQueryAccessProfileNotAllowed = errors.New("postgresql session rejects caller analysis profile; capability is derived from server identity")
 
 // PostgreSQLQueryAccessSession is an opaque wrapper around a caller-owned
 // *sql.Conn for trusted PostgreSQL query access analysis.
@@ -24,5 +30,6 @@ var ErrPostgreSQLSessionNotAvailable = errors.New("postgresql session support re
 // The wrapper exposes no OIDs, manifest entries, catalog SQL, credentials,
 // session binding, or Trusted flag. It has no JSON-marshalable fields.
 type PostgreSQLQueryAccessSession struct {
-	conn *sql.Conn
+	conn   *sql.Conn
+	target online.CapabilityTarget
 }

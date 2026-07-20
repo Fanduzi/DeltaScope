@@ -29,10 +29,9 @@ func TestMySQLTiDBQueryAccessSessionUsesCallerConnection(t *testing.T) {
 		t.Fatalf("new session: %v", err)
 	}
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
-		SQL:             "SELECT id FROM app.users",
-		Dialect:         DialectMySQL,
-		AnalysisProfile: QueryAccessAnalysisProfileMySQL84,
-		DefaultSchema:   "app",
+		SQL:           "SELECT id FROM app.users",
+		Dialect:       DialectMySQL,
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
@@ -61,10 +60,9 @@ func TestMySQLTiDBQueryAccessSession_PromotesProvenMySQL84CountStar(t *testing.T
 		t.Fatalf("new session: %v", err)
 	}
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
-		SQL:             "SELECT COUNT(*) FROM app.users",
-		Dialect:         DialectMySQL,
-		AnalysisProfile: QueryAccessAnalysisProfileMySQL84,
-		DefaultSchema:   "app",
+		SQL:           "SELECT COUNT(*) FROM app.users",
+		Dialect:       DialectMySQL,
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
@@ -90,10 +88,9 @@ func TestMySQLTiDBQueryAccessSession_RemainsFailClosedForUnknownFunction(t *test
 		t.Fatalf("new session: %v", err)
 	}
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
-		SQL:             "SELECT app_specific_rollup(id) FROM app.users",
-		Dialect:         DialectMySQL,
-		AnalysisProfile: QueryAccessAnalysisProfileMySQL84,
-		DefaultSchema:   "app",
+		SQL:           "SELECT app_specific_rollup(id) FROM app.users",
+		Dialect:       DialectMySQL,
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("analyze: %v", err)
@@ -139,6 +136,8 @@ func (sessionTestConn) QueryContext(_ context.Context, query string, _ []driver.
 		return newSessionTestRows([]string{"table_type"}, [][]driver.Value{{"BASE TABLE"}}), nil
 	case strings.Contains(query, "information_schema.columns"):
 		return newSessionTestRows([]string{"column_name", "ordinal_position"}, [][]driver.Value{{"id", int64(1)}}), nil
+	case strings.Contains(query, "SELECT VERSION()"):
+		return newSessionTestRows([]string{"version"}, [][]driver.Value{{"8.4.10"}}), nil
 	case strings.Contains(query, "SELECT 1"):
 		return newSessionTestRows([]string{"value"}, [][]driver.Value{{int64(1)}}), nil
 	default:
