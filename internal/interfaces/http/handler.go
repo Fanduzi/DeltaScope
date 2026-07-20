@@ -29,6 +29,7 @@ import (
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
+	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -51,6 +52,19 @@ type serviceError struct {
 
 const maxAuditRequestBodyBytes = 1 << 20
 
+type contextKey string
+
+const principalContextKey contextKey = "principal_id"
+
+// PrincipalIDFromContext returns the authenticated principal ID from the request context.
+// Returns empty string when auth is disabled or the request is unauthenticated.
+func PrincipalIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(principalContextKey).(string); ok {
+		return v
+	}
+	return ""
+}
+
 // AuthConfig controls API-key authentication on the HTTP adapter.
 type AuthConfig struct {
 	Enabled    bool
@@ -65,6 +79,7 @@ type MetadataConfig struct {
 
 type handlerOptions struct {
 	auth            AuthConfig
+	registry        *runtimeconfig.Registry
 	requestTimeout  time.Duration
 	logger          *log.Logger
 	auditFn         func(context.Context, deltascope.Request) (deltascope.Result, error)
@@ -81,6 +96,12 @@ type HandlerOption func(*handlerOptions)
 func WithAuthConfig(cfg AuthConfig) HandlerOption {
 	return func(options *handlerOptions) {
 		options.auth = cfg
+	}
+}
+
+func WithRegistry(reg *runtimeconfig.Registry) HandlerOption {
+	return func(options *handlerOptions) {
+		options.registry = reg
 	}
 }
 
@@ -177,7 +198,7 @@ func NewHandler(configPath, version string, opts ...HandlerOption) (http.Handler
 		recoveryMiddleware(options.logger),
 		timeoutMiddleware(options.requestTimeout),
 		metricsMiddleware,
-		authMiddleware(options.auth),
+		registryAuthMiddleware(options.registry, options.auth),
 		rateLimitMiddleware(options.rateLimit),
 		accessLogMiddleware(options.logger),
 	)
@@ -360,6 +381,43 @@ func authMiddleware(cfg AuthConfig) gin.HandlerFunc {
 			return
 		}
 
+		c.Next()
+	}
+}
+
+var defaultAuthAllowPaths = []string{"/healthz", "/readyz", "/version", "/metrics"}
+
+func registryAuthMiddleware(reg *runtimeconfig.Registry, legacy AuthConfig) gin.HandlerFunc {
+	if reg == nil {
+		return authMiddleware(legacy)
+	}
+
+	allowPaths := make(map[string]struct{}, len(defaultAuthAllowPaths))
+	for _, path := range defaultAuthAllowPaths {
+		allowPaths[path] = struct{}{}
+	}
+
+	return func(c *gin.Context) {
+		if _, ok := allowPaths[c.Request.URL.Path]; ok {
+			c.Next()
+			return
+		}
+
+		providedKey := c.GetHeader("X-API-Key")
+		if providedKey == "" {
+			writeError(c.Writer, http.StatusUnauthorized, "auth_required", "X-API-Key header is required")
+			c.Abort()
+			return
+		}
+
+		principalID, ok := reg.ResolveAPIKey(providedKey)
+		if !ok {
+			writeError(c.Writer, http.StatusForbidden, "auth_invalid", "invalid API key")
+			c.Abort()
+			return
+		}
+
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), principalContextKey, principalID))
 		c.Next()
 	}
 }

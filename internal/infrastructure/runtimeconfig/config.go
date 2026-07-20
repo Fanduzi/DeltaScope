@@ -18,6 +18,7 @@ import (
 type Config struct {
 	Logging  LoggingConfig  `yaml:"logging"`
 	Metadata MetadataConfig `yaml:"metadata"`
+	HTTP     HTTPConfig     `yaml:"http"`
 }
 
 // LoggingConfig controls structured logging behavior.
@@ -41,7 +42,50 @@ type RotateConfig struct {
 
 // MetadataConfig controls metadata connection behavior.
 type MetadataConfig struct {
-	ConnectTimeout string `yaml:"connect_timeout"`
+	ConnectTimeout string             `yaml:"connect_timeout"`
+	Connections    []ConnectionConfig `yaml:"connections"`
+}
+
+// ConnectionConfig describes one named metadata connection in the runtime config.
+type ConnectionConfig struct {
+	ID               string   `yaml:"id"`
+	Dialect          string   `yaml:"dialect"` // "mysql", "tidb", "postgresql"
+	Host             string   `yaml:"host"`
+	Port             int      `yaml:"port"`
+	Socket           string   `yaml:"socket"`
+	Database         string   `yaml:"database"`
+	Schema           string   `yaml:"schema"`
+	User             string   `yaml:"user"`
+	PasswordEnv      string   `yaml:"password_env"`
+	PasswordFile     string   `yaml:"password_file"`
+	ConnectTimeout   string   `yaml:"connect_timeout"`
+	TLSMode          string   `yaml:"tls_mode"` // "disabled" (default), "enabled"
+	Purposes         []string `yaml:"purposes"` // "audit", "query_access"
+	AllowedAPIKeyIDs []string `yaml:"allowed_api_key_ids"`
+
+	// resolvedPassword is set at startup and never serialized.
+	resolvedPassword string `yaml:"-"`
+}
+
+// HTTPConfig controls HTTP service settings.
+type HTTPConfig struct {
+	Auth AuthConfig `yaml:"auth"`
+}
+
+// AuthConfig controls API-key authentication.
+type AuthConfig struct {
+	Enabled bool           `yaml:"enabled"`
+	Keys    []APIKeyConfig `yaml:"keys"`
+}
+
+// APIKeyConfig describes one API key identity.
+type APIKeyConfig struct {
+	ID         string `yaml:"id"`
+	SecretEnv  string `yaml:"secret_env"`
+	SecretFile string `yaml:"secret_file"`
+
+	// resolvedSecret is set at startup and never serialized.
+	resolvedSecret string `yaml:"-"`
 }
 
 // Load reads a runtime config YAML file. An empty path returns a zero Config.

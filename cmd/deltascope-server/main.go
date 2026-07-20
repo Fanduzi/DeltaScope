@@ -32,9 +32,6 @@ func main() {
 	listen := flag.String("listen", "127.0.0.1:8083", "HTTP listen address")
 	configPath := flag.String("config", "", "path to YAML policy config")
 	showVersion := flag.Bool("version", false, "print the DeltaScope server build version")
-	authEnabled := flag.Bool("auth-enabled", false, "enable X-API-Key authentication for protected routes")
-	authKeys := flag.String("auth-keys", "", "comma-separated API keys for X-API-Key auth")
-	authAllowPaths := flag.String("auth-allow-paths", "/healthz,/readyz,/version,/metrics", "comma-separated paths that bypass auth")
 	rateLimitEnabled := flag.Bool("rate-limit-enabled", false, "enable rate limiting middleware")
 	rateLimitRPS := flag.Float64("rate-limit-rps", 5, "rate limit requests per second")
 	rateLimitBurst := flag.Int("rate-limit-burst", 10, "rate limit burst size")
@@ -59,13 +56,7 @@ func main() {
 		return
 	}
 
-	keys := parseCSV(*authKeys)
-	allowPaths := parseCSV(*authAllowPaths)
 	proxies := parseCSV(*trustedProxies)
-	if *authEnabled && len(keys) == 0 {
-		_, _ = fmt.Fprintln(os.Stderr, "auth is enabled but no keys were provided; set --auth-keys")
-		os.Exit(2)
-	}
 	gin.SetMode(gin.ReleaseMode)
 
 	runtimeCfg, err := runtimeconfig.Load(*runtimeConfigPath)
@@ -97,11 +88,13 @@ func main() {
 		os.Exit(2)
 	}
 
-	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithAuthConfig(httpapi.AuthConfig{
-		Enabled:    *authEnabled,
-		Keys:       keys,
-		AllowPaths: allowPaths,
-	}), httpapi.WithSlogLogger(slogLogger), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
+	registry, err := runtimeconfig.ValidateAndBuildRegistry(runtimeCfg)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "validate runtime config: %v\n", err)
+		os.Exit(2)
+	}
+
+	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithRegistry(registry), httpapi.WithSlogLogger(slogLogger), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
 		MetricsEnabled: metricsEnabled,
 		RateLimit: httpapi.RateLimitConfig{
 			Enabled:    *rateLimitEnabled,
