@@ -3,7 +3,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,79 +15,44 @@ import (
 func TestTLSMySQLAuditSucceedsWithTrustedCA(t *testing.T) {
 	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
 	if serverAddr == "" {
-		t.Skip("TLS_E2E_SERVER_ADDR not set")
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	body := `{"sql":"SELECT 1","connection_id":"mysql-tls"}`
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s/v1/audit", serverAddr), strings.NewReader(body))
-	if err != nil {
-		t.Fatalf("create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("send request: %v", err)
-	}
-	defer resp.Body.Close()
+	resp, body := doAuditRequest(t, serverAddr, "mysql-tls")
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(bodyBytes))
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	result := parseJSON(t, body)
+	ctx := getContext(t, result)
 
-	// Verify metadata-aware mode
-	ctx, ok := result["context"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected context in response, got %v", result)
-	}
 	if ctx["mode"] != "metadata-aware" {
 		t.Fatalf("expected mode metadata-aware, got %v", ctx["mode"])
 	}
 	if ctx["metadata_source"] != "registry" {
 		t.Fatalf("expected metadata_source registry, got %v", ctx["metadata_source"])
 	}
+	if ctx["dialect"] != "mysql" {
+		t.Fatalf("expected dialect mysql, got %v", ctx["dialect"])
+	}
 }
 
 func TestTLSPostgreSQLAuditSucceedsWithTrustedCA(t *testing.T) {
 	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
 	if serverAddr == "" {
-		t.Skip("TLS_E2E_SERVER_ADDR not set")
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	body := `{"sql":"SELECT 1","connection_id":"postgresql-tls"}`
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s/v1/audit", serverAddr), strings.NewReader(body))
-	if err != nil {
-		t.Fatalf("create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("send request: %v", err)
-	}
-	defer resp.Body.Close()
+	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls")
 
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(bodyBytes))
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		t.Fatalf("decode response: %v", err)
-	}
+	result := parseJSON(t, body)
+	ctx := getContext(t, result)
 
-	// Verify metadata-aware mode
-	ctx, ok := result["context"].(map[string]any)
-	if !ok {
-		t.Fatalf("expected context in response, got %v", result)
-	}
 	if ctx["mode"] != "metadata-aware" {
 		t.Fatalf("expected mode metadata-aware, got %v", ctx["mode"])
 	}
@@ -101,31 +65,44 @@ func TestTLSPostgreSQLAuditSucceedsWithTrustedCA(t *testing.T) {
 }
 
 func TestTLSMySQLAuditFailsWithUntrustedCA(t *testing.T) {
-	// This test proves that TLS validation is real by verifying that
-	// a connection to a server with an untrusted certificate fails.
-	// We can't directly test this through the HTTP API because the
-	// server's trust store is fixed at build time. Instead, we verify
-	// that the server correctly rejects connections when the CA is not trusted.
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
 
-	// For now, this test documents the requirement. A full implementation
-	// would require a second server instance with the untrusted CA installed.
-	t.Skip("requires separate server instance with untrusted CA")
+	resp, body := doAuditRequest(t, serverAddr, "mysql-tls-untrusted")
+
+	// Must fail with a bounded error (502 Bad Gateway for connection failure).
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
 }
 
-func TestTLSPostgreSQLAuditFailsWithHostnameMismatch(t *testing.T) {
-	// This test proves that hostname validation is real by verifying that
-	// a connection to a server with a mismatched hostname fails.
-	// We can't directly test this through the HTTP API because the
-	// server's connection config uses the correct hostname.
+func TestTLSPostgreSQLAuditFailsWithUntrustedCA(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
 
-	// For now, this test documents the requirement. A full implementation
-	// would require a separate server instance connecting to a hostname
-	// not present in the certificate's SANs.
-	t.Skip("requires separate server instance with hostname mismatch")
+	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls-untrusted")
+
+	// Must fail with a bounded error (502 Bad Gateway for connection failure).
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
 }
 
-// testAuditRequest is a helper that sends an audit request and returns the response.
-func testAuditRequest(t *testing.T, serverAddr, connectionID string) (*http.Response, []byte) {
+// Helper functions
+
+func doAuditRequest(t *testing.T, serverAddr, connectionID string) (*http.Response, []byte) {
 	t.Helper()
 
 	body := fmt.Sprintf(`{"sql":"SELECT 1","connection_id":"%s"}`, connectionID)
@@ -147,4 +124,59 @@ func testAuditRequest(t *testing.T, serverAddr, connectionID string) (*http.Resp
 	resp.Body.Close()
 
 	return resp, bodyBytes
+}
+
+func parseJSON(t *testing.T, data []byte) map[string]any {
+	t.Helper()
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("parse JSON: %v\nbody: %s", err, string(data))
+	}
+	return result
+}
+
+func getContext(t *testing.T, result map[string]any) map[string]any {
+	t.Helper()
+	ctx, ok := result["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context in response, got %v", result)
+	}
+	return ctx
+}
+
+func assertBoundedError(t *testing.T, result map[string]any, expectedCode string) {
+	t.Helper()
+	errObj, ok := result["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error in response, got %v", result)
+	}
+	code, ok := errObj["code"].(string)
+	if !ok {
+		t.Fatalf("expected error code, got %v", errObj)
+	}
+	if code != expectedCode {
+		t.Fatalf("expected error code %q, got %q", expectedCode, code)
+	}
+}
+
+func assertNoLeaks(t *testing.T, body []byte) {
+	t.Helper()
+	s := string(body)
+	// Must not leak sensitive information
+	leakPatterns := []string{
+		"-----BEGIN",
+		"-----END",
+		"root:",
+		"password",
+		"secret",
+		"tls_ca_file",
+		"/etc/deltascope/",
+		"mysql-tls-untrusted",
+		"postgresql-tls-untrusted",
+	}
+	for _, pattern := range leakPatterns {
+		if strings.Contains(strings.ToLower(s), strings.ToLower(pattern)) {
+			t.Errorf("response contains potential leak %q: %s", pattern, s)
+		}
+	}
 }

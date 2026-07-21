@@ -141,6 +141,7 @@ func handleQueryAccessOnline(
 		Dialect:        connDialect,
 		ConnectTimeout: connectTimeout,
 		TLSMode:        strings.ToLower(strings.TrimSpace(conn.TLSMode)),
+		TLSCAFile:      strings.TrimSpace(conn.TLSCAFile),
 	}
 
 	session, err := online.OpenSession(r.Context(), sessionCfg)

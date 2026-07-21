@@ -20,3 +20,4 @@ docs/plans_zh/
 /.understand-anything/
 /.omo/
 /skills-lock.json
+/docker/tls-e2e/certs/

@@ -349,14 +349,15 @@ func TestBuildMySQLDSN_Disabled(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	dsn, err := buildMySQLDSN(cfg)
+	mysqlCfg, err := buildMySQLConfig(cfg)
 	if err != nil {
-		t.Fatalf("buildMySQLDSN: %v", err)
+		t.Fatalf("buildMySQLConfig: %v", err)
 	}
+	dsn := mysqlCfg.FormatDSN()
 
-	// Should not contain tls= parameter.
-	if strings.Contains(dsn, "tls=") {
-		t.Errorf("DSN should not contain tls= when disabled, got: %s", dsn)
+	// TLS should not be configured.
+	if mysqlCfg.TLS != nil {
+		t.Errorf("TLS should be nil when disabled")
 	}
 	// Should contain user and address.
 	if !strings.Contains(dsn, "root:") {
@@ -378,18 +379,52 @@ func TestBuildMySQLDSN_Enabled(t *testing.T) {
 		TLSMode:  "enabled",
 	}
 
-	dsn, err := buildMySQLDSN(cfg)
+	mysqlCfg, err := buildMySQLConfig(cfg)
 	if err != nil {
-		t.Fatalf("buildMySQLDSN: %v", err)
+		t.Fatalf("buildMySQLConfig: %v", err)
 	}
+	dsn := mysqlCfg.FormatDSN()
 
-	// Should contain tls= parameter.
-	if !strings.Contains(dsn, "tls=") {
-		t.Errorf("DSN should contain tls= when enabled, got: %s", dsn)
+	// TLS should be configured with correct ServerName.
+	if mysqlCfg.TLS == nil {
+		t.Fatal("TLS should be configured when enabled")
 	}
-	// Should contain the host for ServerName.
+	if mysqlCfg.TLS.ServerName != "db.example.com" {
+		t.Errorf("ServerName should be db.example.com, got: %s", mysqlCfg.TLS.ServerName)
+	}
+	if mysqlCfg.TLS.InsecureSkipVerify {
+		t.Error("InsecureSkipVerify should be false")
+	}
+	// Should contain the host.
 	if !strings.Contains(dsn, "db.example.com") {
 		t.Errorf("DSN should contain host, got: %s", dsn)
+	}
+}
+
+func TestBuildMySQLConfig_TLSDoesNotUseGlobalRegistry(t *testing.T) {
+	// Regression test: online session TLS must use cfg.TLS directly,
+	// NOT cfg.TLSConfig (which requires RegisterTLSConfig and leaks global state).
+	cfg := SessionConfig{
+		Host:     "db.example.com",
+		Port:     3306,
+		User:     "app",
+		Password: "secret",
+		Database: "mydb",
+		Dialect:  "mysql",
+		TLSMode:  "enabled",
+	}
+
+	mysqlCfg, err := buildMySQLConfig(cfg)
+	if err != nil {
+		t.Fatalf("buildMySQLConfig: %v", err)
+	}
+
+	// Must use cfg.TLS (direct), not cfg.TLSConfig (global registry).
+	if mysqlCfg.TLS == nil {
+		t.Fatal("TLS should be configured")
+	}
+	if mysqlCfg.TLSConfig != "" {
+		t.Errorf("TLSConfig should be empty (no global registry), got: %s", mysqlCfg.TLSConfig)
 	}
 }
 
@@ -454,10 +489,11 @@ func TestBuildMySQLDSN_Socket(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	dsn, err := buildMySQLDSN(cfg)
+	mysqlCfg, err := buildMySQLConfig(cfg)
 	if err != nil {
-		t.Fatalf("buildMySQLDSN: %v", err)
+		t.Fatalf("buildMySQLConfig: %v", err)
 	}
+	dsn := mysqlCfg.FormatDSN()
 
 	if !strings.Contains(dsn, "unix") {
 		t.Errorf("DSN should contain unix network for socket, got: %s", dsn)
@@ -550,10 +586,11 @@ func TestBuildMySQLDSN_DefaultPort(t *testing.T) {
 		Dialect:  "mysql",
 	}
 
-	dsn, err := buildMySQLDSN(cfg)
+	mysqlCfg, err := buildMySQLConfig(cfg)
 	if err != nil {
-		t.Fatalf("buildMySQLDSN: %v", err)
+		t.Fatalf("buildMySQLConfig: %v", err)
 	}
+	dsn := mysqlCfg.FormatDSN()
 
 	if !strings.Contains(dsn, "127.0.0.1:3306") {
 		t.Errorf("DSN should use default port 3306, got: %s", dsn)

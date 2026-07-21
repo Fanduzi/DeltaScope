@@ -7,6 +7,7 @@ package runtimeconfig
 
 import (
 	"bytes"
+	"crypto/x509"
 	"fmt"
 	"os"
 	"time"
@@ -59,18 +60,28 @@ type ConnectionConfig struct {
 	PasswordEnv      string   `yaml:"password_env"`
 	PasswordFile     string   `yaml:"password_file"`
 	ConnectTimeout   string   `yaml:"connect_timeout"`
-	TLSMode          string   `yaml:"tls_mode"` // "disabled" (default), "enabled"
-	Purposes         []string `yaml:"purposes"` // "audit", "query_access"
+	TLSMode          string   `yaml:"tls_mode"`    // "disabled" (default), "enabled"
+	TLSCAFile        string   `yaml:"tls_ca_file"` // PEM file for private CA; only used when tls_mode=enabled
+	Purposes         []string `yaml:"purposes"`    // "audit", "query_access"
 	AllowedAPIKeyIDs []string `yaml:"allowed_api_key_ids"`
 
 	// resolvedPassword is set at startup and never serialized.
 	resolvedPassword string `yaml:"-"`
+	// resolvedCACert is the parsed CA certificate pool from tls_ca_file.
+	resolvedCACert *x509.CertPool `yaml:"-"`
 }
 
 // ResolvedPassword returns the password resolved from the configured secret source at startup.
 // It never appears in serialized output.
 func (c ConnectionConfig) ResolvedPassword() string {
 	return c.resolvedPassword
+}
+
+// ResolvedCACert returns the parsed CA certificate pool from tls_ca_file at startup.
+// Returns nil when no CA file is configured or tls_mode is disabled.
+// It never appears in serialized output.
+func (c ConnectionConfig) ResolvedCACert() *x509.CertPool {
+	return c.resolvedCACert
 }
 
 // HTTPConfig controls HTTP service settings.

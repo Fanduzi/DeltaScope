@@ -1,5 +1,6 @@
 # TLS E2E fixture for DeltaScope HTTP audit.
-# Tests TLS-enabled MySQL and PostgreSQL connections with certificate validation.
+# Server runs inside the compose network; only HTTP port is exposed.
+# Certificates are generated at runtime by generate-certs.sh.
 
 services:
   mysql-tls:
@@ -10,9 +11,9 @@ services:
       MYSQL_DATABASE: app
     volumes:
       - ./mysql-tls-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./certs/trusted/mysql-tls-cert.pem:/etc/mysql/ssl/server-cert.pem:ro
-      - ./certs/trusted/mysql-tls-key.pem:/etc/mysql/ssl/server-key.pem:ro
-      - ./certs/trusted/trusted-ca-cert.pem:/etc/mysql/ssl/ca-cert.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/mysql-tls-cert.pem:/etc/mysql/ssl/server-cert.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/mysql-tls-key.pem:/etc/mysql/ssl/server-key.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/trusted-ca-cert.pem:/etc/mysql/ssl/ca-cert.pem:ro
     command: >
       --require-secure-transport=ON
       --ssl-ca=/etc/mysql/ssl/ca-cert.pem
@@ -34,9 +35,9 @@ services:
       POSTGRES_DB: app
     volumes:
       - ./postgresql-tls-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./certs/trusted/postgresql-tls-cert.pem:/var/lib/postgresql/server-cert.pem:ro
-      - ./certs/trusted/postgresql-tls-key.pem:/var/lib/postgresql/server-key.pem:ro
-      - ./certs/trusted/trusted-ca-cert.pem:/var/lib/postgresql/ca-cert.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/postgresql-tls-cert.pem:/var/lib/postgresql/server-cert.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/postgresql-tls-key.pem:/var/lib/postgresql/server-key.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/trusted-ca-cert.pem:/var/lib/postgresql/ca-cert.pem:ro
     command: >
       postgres
       -c ssl=on
@@ -49,3 +50,80 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
+
+  mysql-tls-untrusted:
+    image: mysql:8.4
+    container_name: deltascope-tls-mysql-untrusted
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app
+    volumes:
+      - ./mysql-tls-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ${TLS_CERTS_DIR}/untrusted/mysql-tls-untrusted-cert.pem:/etc/mysql/ssl/server-cert.pem:ro
+      - ${TLS_CERTS_DIR}/untrusted/mysql-tls-untrusted-key.pem:/etc/mysql/ssl/server-key.pem:ro
+      - ${TLS_CERTS_DIR}/untrusted/untrusted-ca-cert.pem:/etc/mysql/ssl/ca-cert.pem:ro
+    command: >
+      --require-secure-transport=ON
+      --ssl-ca=/etc/mysql/ssl/ca-cert.pem
+      --ssl-cert=/etc/mysql/ssl/server-cert.pem
+      --ssl-key=/etc/mysql/ssl/server-key.pem
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  postgresql-tls-untrusted:
+    image: postgres:17
+    container_name: deltascope-tls-postgresql-untrusted
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: app
+    volumes:
+      - ./postgresql-tls-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ${TLS_CERTS_DIR}/untrusted/postgresql-tls-untrusted-cert.pem:/var/lib/postgresql/server-cert.pem:ro
+      - ${TLS_CERTS_DIR}/untrusted/postgresql-tls-untrusted-key.pem:/var/lib/postgresql/server-key.pem:ro
+      - ${TLS_CERTS_DIR}/untrusted/untrusted-ca-cert.pem:/var/lib/postgresql/ca-cert.pem:ro
+    command: >
+      postgres
+      -c ssl=on
+      -c ssl_cert_file=/var/lib/postgresql/server-cert.pem
+      -c ssl_key_file=/var/lib/postgresql/server-key.pem
+      -c ssl_ca_file=/var/lib/postgresql/ca-cert.pem
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d app && psql -U root -d app -c 'SELECT 1 FROM app.users LIMIT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  deltascope-server:
+    build:
+      context: ..
+      dockerfile: docker/tls-e2e/Dockerfile
+    container_name: deltascope-tls-server
+    environment:
+      MYSQL_PASSWORD: root
+      PG_PASSWORD: root
+    volumes:
+      - ${TLS_RUNTIME_CONFIG}:/etc/deltascope/runtime.yaml:ro
+      - ${TLS_CERTS_DIR}/trusted/trusted-ca-cert.pem:/etc/deltascope/trusted-ca.pem:ro
+    ports:
+      - "${TLS_HTTP_PORT:-18932}:18932"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:18932/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      mysql-tls:
+        condition: service_healthy
+      postgresql-tls:
+        condition: service_healthy
+      mysql-tls-untrusted:
+        condition: service_healthy
+      postgresql-tls-untrusted:
+        condition: service_healthy

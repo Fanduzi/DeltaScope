@@ -7,6 +7,7 @@ package runtimeconfig
 
 import (
 	"crypto/subtle"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"os"
@@ -178,6 +179,11 @@ func validateConnections(cfg Config) error {
 			return fmt.Errorf("connection %q: tls_mode enabled requires host (not socket)", id)
 		}
 
+		// tls_ca_file is only valid when tls_mode is enabled.
+		if strings.TrimSpace(c.TLSCAFile) != "" && tlsMode != "enabled" {
+			return fmt.Errorf("connection %q: tls_ca_file requires tls_mode enabled", id)
+		}
+
 		seenPurpose := make(map[string]bool)
 		for _, p := range c.Purposes {
 			if p != "audit" && p != "query_access" {
@@ -240,6 +246,15 @@ func resolveSecrets(cfg Config) error {
 			return fmt.Errorf("connection %q: %w", c.ID, err)
 		}
 		c.resolvedPassword = pw
+
+		// Resolve TLS CA file if configured.
+		if caFile := strings.TrimSpace(c.TLSCAFile); caFile != "" {
+			caCert, err := resolveCACert(caFile)
+			if err != nil {
+				return fmt.Errorf("connection %q: tls_ca_file: %w", c.ID, err)
+			}
+			c.resolvedCACert = caCert
+		}
 	}
 	for i := range cfg.HTTP.Auth.Keys {
 		k := &cfg.HTTP.Auth.Keys[i]
@@ -250,6 +265,18 @@ func resolveSecrets(cfg Config) error {
 		k.resolvedSecret = secret
 	}
 	return nil
+}
+
+func resolveCACert(filePath string) (*x509.CertPool, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read CA file")
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(data) {
+		return nil, fmt.Errorf("unable to parse CA certificate PEM")
+	}
+	return pool, nil
 }
 
 func resolveSecretSource(envKey, filePath string) (string, error) {

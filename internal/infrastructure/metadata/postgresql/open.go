@@ -32,6 +32,7 @@ type ConnectionConfig struct {
 	User           string
 	Password       string
 	SSLMode        string
+	SSLCAFile      string // PEM file for private CA; only used when sslmode requires verification
 	ConnectTimeout time.Duration
 }
 
@@ -81,6 +82,11 @@ func (c ConnectionConfig) DSN() string {
 	query := url.Values{}
 	query.Set("sslmode", c.sslMode())
 	query.Set("connect_timeout", strconv.Itoa(int(math.Ceil(c.connectTimeout().Seconds()))))
+
+	// Add private CA if configured.
+	if caFile := strings.TrimSpace(c.SSLCAFile); caFile != "" && c.sslMode() != "disable" {
+		query.Set("sslrootcert", caFile)
+	}
 
 	if strings.TrimSpace(c.Socket) != "" {
 		query.Set("host", c.Address())

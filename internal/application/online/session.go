@@ -8,10 +8,12 @@ package online
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -34,6 +36,7 @@ type SessionConfig struct {
 	Dialect        string
 	ConnectTimeout time.Duration
 	TLSMode        string // "disabled" or "enabled"
+	TLSCAFile      string // PEM file for private CA; only used when tls_mode=enabled
 }
 
 // Session holds the pinned connection and derived identity/metadata.
@@ -44,9 +47,6 @@ type Session struct {
 	Target   CapabilityTarget
 	Close    func() error // idempotent, closes both Conn and DB
 }
-
-// tlsNameCounter generates unique TLS config names per session.
-var tlsNameCounter atomic.Uint64
 
 // OpenSession opens a database connection, pins it, captures identity, and returns a session.
 // On any failure after opening, both DB and Conn are closed.
@@ -70,15 +70,16 @@ func OpenSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
 
 // openMySQLSession opens a MySQL/TiDB session.
 func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
-	dsn, err := buildMySQLDSN(cfg)
+	mysqlCfg, err := buildMySQLConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("build dsn: %w", err)
+		return nil, fmt.Errorf("build config: %w", err)
 	}
 
-	db, err := sql.Open("mysql", dsn)
+	connector, err := gomysql.NewConnector(mysqlCfg)
 	if err != nil {
-		return nil, fmt.Errorf("open connection: %w", err)
+		return nil, fmt.Errorf("create connector: %w", err)
 	}
+	db := sql.OpenDB(connector)
 
 	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(1)
@@ -208,8 +209,8 @@ func IdentifyFromConn(ctx context.Context, conn *sql.Conn, expectedDialect strin
 	return identity, nil
 }
 
-// buildMySQLDSN constructs a MySQL driver DSN from the session config.
-func buildMySQLDSN(cfg SessionConfig) (string, error) {
+// buildMySQLConfig constructs a MySQL driver config from the session config.
+func buildMySQLConfig(cfg SessionConfig) (*gomysql.Config, error) {
 	mysqlCfg := gomysql.NewConfig()
 
 	if strings.TrimSpace(cfg.Socket) != "" {
@@ -243,7 +244,7 @@ func buildMySQLDSN(cfg SessionConfig) (string, error) {
 		mysqlCfg.DBName = cfg.Database
 	}
 
-	// TLS configuration.
+	// TLS configuration - set directly on config to avoid global registry.
 	tlsMode := strings.ToLower(strings.TrimSpace(cfg.TLSMode))
 	if tlsMode == "enabled" {
 		host := strings.TrimSpace(cfg.Host)
@@ -254,14 +255,22 @@ func buildMySQLDSN(cfg SessionConfig) (string, error) {
 			ServerName:         host,
 			InsecureSkipVerify: false,
 		}
-		tlsName := fmt.Sprintf("deltascope-online-%d", tlsNameCounter.Add(1))
-		if err := gomysql.RegisterTLSConfig(tlsName, tlsCfg); err != nil {
-			return "", fmt.Errorf("register tls: %w", err)
+		// Load private CA if configured.
+		if caFile := strings.TrimSpace(cfg.TLSCAFile); caFile != "" {
+			caCert, err := os.ReadFile(caFile)
+			if err != nil {
+				return nil, fmt.Errorf("read TLS CA file: %w", err)
+			}
+			pool := x509.NewCertPool()
+			if !pool.AppendCertsFromPEM(caCert) {
+				return nil, fmt.Errorf("parse TLS CA certificate")
+			}
+			tlsCfg.RootCAs = pool
 		}
-		mysqlCfg.TLSConfig = tlsName
+		mysqlCfg.TLS = tlsCfg
 	}
 
-	return mysqlCfg.FormatDSN(), nil
+	return mysqlCfg, nil
 }
 
 // buildPostgreSQLDSN constructs a PostgreSQL connection string from the session config.
@@ -287,6 +296,10 @@ func buildPostgreSQLDSN(cfg SessionConfig) (string, error) {
 	tlsMode := strings.ToLower(strings.TrimSpace(cfg.TLSMode))
 	if tlsMode == "enabled" {
 		query.Set("sslmode", "verify-full")
+		// Load private CA if configured.
+		if caFile := strings.TrimSpace(cfg.TLSCAFile); caFile != "" {
+			query.Set("sslrootcert", caFile)
+		}
 	} else {
 		query.Set("sslmode", "disable")
 	}

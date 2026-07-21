@@ -8,9 +8,11 @@ package mysqlmeta
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +36,7 @@ type ConnectionConfig struct {
 	Database       string
 	ConnectTimeout time.Duration
 	TLSMode        string // "disabled" (default) or "enabled"
+	TLSCAFile      string // PEM file for private CA; only used when tls_mode=enabled
 }
 
 // connectTimeout returns the configured timeout, defaulting to DefaultConnectTimeout when zero.
@@ -91,10 +94,21 @@ func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
 		if host == "" {
 			host = "127.0.0.1"
 		}
-		cfg.TLS = &tls.Config{
+		tlsCfg := &tls.Config{
 			ServerName:         host,
 			InsecureSkipVerify: false,
 		}
+		// Load private CA if configured.
+		if caFile := strings.TrimSpace(c.TLSCAFile); caFile != "" {
+			caCert, err := os.ReadFile(caFile)
+			if err == nil {
+				pool := x509.NewCertPool()
+				if pool.AppendCertsFromPEM(caCert) {
+					tlsCfg.RootCAs = pool
+				}
+			}
+		}
+		cfg.TLS = tlsCfg
 	}
 
 	return cfg

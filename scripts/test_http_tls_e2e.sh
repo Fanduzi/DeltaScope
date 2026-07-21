@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # TLS E2E test for DeltaScope HTTP audit.
-# Starts TLS-enabled MySQL and PostgreSQL fixtures, then runs Go E2E tests.
+# Generates certs, starts TLS fixtures with server in compose network,
+# runs Go E2E tests, and cleans up everything on exit.
 
 set -euo pipefail
 
@@ -22,7 +23,14 @@ compose() {
 }
 
 cleanup() {
+  log "cleaning up"
   compose down -v --remove-orphans >/dev/null 2>&1 || true
+  if [[ -n "${TLS_CERTS_DIR:-}" && -d "${TLS_CERTS_DIR}" ]]; then
+    rm -rf "${TLS_CERTS_DIR}"
+  fi
+  if [[ -n "${TLS_RUNTIME_CONFIG:-}" && -f "${TLS_RUNTIME_CONFIG}" ]]; then
+    rm -f "${TLS_RUNTIME_CONFIG}"
+  fi
 }
 
 require_cmd() {
@@ -48,7 +56,10 @@ wait_for_health() {
 
 generate_certs() {
   log "generating TLS certificates"
-  "${SCRIPT_DIR}/generate-certs.sh"
+  TLS_CERTS_DIR="$(mktemp -d /tmp/deltascope-tls-e2e-certs.XXXXXX)"
+  TLS_RUNTIME_CONFIG="${TLS_CERTS_DIR}/runtime-config.yaml"
+  export TLS_CERTS_DIR TLS_RUNTIME_CONFIG
+  "${SCRIPT_DIR}/generate-certs.sh" "${TLS_CERTS_DIR}" "${TLS_RUNTIME_CONFIG}"
 }
 
 start_tls_stack() {
@@ -56,40 +67,25 @@ start_tls_stack() {
   compose up -d --build
   wait_for_health "deltascope-tls-mysql"
   wait_for_health "deltascope-tls-postgresql"
+  wait_for_health "deltascope-tls-mysql-untrusted"
+  wait_for_health "deltascope-tls-postgresql-untrusted"
+  wait_for_health "deltascope-tls-server"
 }
 
 run_tls_tests() {
   log "running TLS E2E tests"
 
-  local tmp_dir
-  tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/deltascope-tls-e2e.XXXXXX")"
+  # The server is exposed on localhost at TLS_HTTP_PORT (default 18932)
+  local server_addr="127.0.0.1:${TLS_HTTP_PORT:-18932}"
 
-  # Build the server binary
-  local server_bin="${tmp_dir}/deltascope-server"
-  (
-    cd "${ROOT_DIR}"
-    CGO_ENABLED=1 go build -tags postgresql -o "${server_bin}" ./cmd/deltascope-server
-  )
-
-  # Start the server with the TLS runtime config
-  local server_addr="127.0.0.1:18932"
-  export MYSQL_PASSWORD="root"
-  export PG_PASSWORD="root"
-
-  "${server_bin}" \
-    -listen "${server_addr}" \
-    -runtime-config "${SCRIPT_DIR}/runtime-config.yaml" &
-  local server_pid=$!
-
-  # Wait for server to be ready
+  # Verify server is reachable
   local retries=30
   for ((i = 1; i <= retries; i++)); do
     if curl -sf "http://${server_addr}/healthz" >/dev/null 2>&1; then
       break
     fi
     if [[ $i -eq $retries ]]; then
-      kill "${server_pid}" 2>/dev/null || true
-      fail "server did not become ready"
+      fail "server did not become reachable at ${server_addr}"
     fi
     sleep 1
   done
@@ -98,17 +94,8 @@ run_tls_tests() {
   (
     cd "${ROOT_DIR}"
     TLS_E2E_SERVER_ADDR="${server_addr}" \
-    TLS_E2E_TRUSTED_CA="${SCRIPT_DIR}/certs/trusted/trusted-ca-cert.pem" \
-    TLS_E2E_UNTRUSTED_CA="${SCRIPT_DIR}/certs/untrusted/untrusted-ca-cert.pem" \
     go test -tags='e2e,tls' -count=1 -run 'TestTLS' -v ./cmd/deltascope-server
   )
-  local test_exit=$?
-
-  # Cleanup
-  kill "${server_pid}" 2>/dev/null || true
-  rm -rf "${tmp_dir}"
-
-  return "${test_exit}"
 }
 
 main() {
