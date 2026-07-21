@@ -18,7 +18,7 @@ func TestTLSMySQLAuditSucceedsWithTrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	resp, body := doAuditRequest(t, serverAddr, "mysql-tls")
+	resp, body := doAuditRequest(t, serverAddr, "mysql-tls", "SELECT id FROM app.users")
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
@@ -44,7 +44,8 @@ func TestTLSPostgreSQLAuditSucceedsWithTrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls")
+	// Use DELETE instead of SELECT - audit endpoint is for DDL/DML, not SELECT
+	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls", "DELETE FROM app.users WHERE id = 1")
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
@@ -70,7 +71,7 @@ func TestTLSMySQLAuditFailsWithUntrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	resp, body := doAuditRequest(t, serverAddr, "mysql-tls-untrusted")
+	resp, body := doAuditRequest(t, serverAddr, "mysql-tls-untrusted", "SELECT id FROM app.users")
 
 	// Must fail with a bounded error (502 Bad Gateway for connection failure).
 	if resp.StatusCode != http.StatusBadGateway {
@@ -88,7 +89,7 @@ func TestTLSPostgreSQLAuditFailsWithUntrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls-untrusted")
+	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls-untrusted", "SELECT id FROM app.users")
 
 	// Must fail with a bounded error (502 Bad Gateway for connection failure).
 	if resp.StatusCode != http.StatusBadGateway {
@@ -102,10 +103,10 @@ func TestTLSPostgreSQLAuditFailsWithUntrustedCA(t *testing.T) {
 
 // Helper functions
 
-func doAuditRequest(t *testing.T, serverAddr, connectionID string) (*http.Response, []byte) {
+func doAuditRequest(t *testing.T, serverAddr, connectionID, sql string) (*http.Response, []byte) {
 	t.Helper()
 
-	body := fmt.Sprintf(`{"sql":"SELECT 1","connection_id":"%s"}`, connectionID)
+	body := fmt.Sprintf(`{"sql":"%s","connection_id":"%s"}`, sql, connectionID)
 	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s/v1/audit", serverAddr), strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("create request: %v", err)

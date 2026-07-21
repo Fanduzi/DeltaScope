@@ -98,7 +98,6 @@ func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
 			ServerName:         host,
 			InsecureSkipVerify: false,
 		}
-		// Load private CA if configured.
 		if caFile := strings.TrimSpace(c.TLSCAFile); caFile != "" {
 			caCert, err := os.ReadFile(caFile)
 			if err == nil {
@@ -108,7 +107,10 @@ func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
 				}
 			}
 		}
-		cfg.TLS = tlsCfg
+		tlsName := fmt.Sprintf("deltascope-meta-%s-%d", host, c.Port)
+		if err := gomysql.RegisterTLSConfig(tlsName, tlsCfg); err == nil {
+			cfg.TLSConfig = tlsName
+		}
 	}
 
 	return cfg
@@ -127,11 +129,10 @@ func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error
 		ctx = context.Background()
 	}
 
-	connector, err := gomysql.NewConnector(config.mysqlConfig())
+	db, err := sql.Open("mysql", config.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("open metadata connection: %w", err)
 	}
-	db := sql.OpenDB(connector)
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)

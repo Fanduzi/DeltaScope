@@ -96,6 +96,21 @@ run_tls_tests() {
     TLS_E2E_SERVER_ADDR="${server_addr}" \
     go test -tags='e2e,tls' -count=1 -run 'TestTLS' -v ./cmd/deltascope-server
   )
+  local test_exit=$?
+
+  # Show server logs on failure
+  if [[ ${test_exit} -ne 0 ]]; then
+    log "server logs:"
+    compose logs deltascope-server 2>&1 | tail -30
+    log "mysql logs:"
+    compose logs mysql-tls 2>&1 | tail -10
+    log "postgresql logs:"
+    compose logs postgresql-tls 2>&1 | tail -10
+    # Don't cleanup on failure so logs can be inspected
+    trap - EXIT
+  fi
+
+  return "${test_exit}"
 }
 
 main() {
@@ -103,13 +118,21 @@ main() {
   require_cmd go
   require_cmd curl
   require_cmd openssl
-  trap cleanup EXIT
 
   generate_certs
   start_tls_stack
   run_tls_tests
+  local test_exit=$?
 
-  log "all TLS E2E tests passed"
+  if [[ ${test_exit} -eq 0 ]]; then
+    log "all TLS E2E tests passed"
+    cleanup
+  else
+    log "TLS E2E tests failed, leaving containers running for inspection"
+    log "Run 'docker compose -f ${COMPOSE_FILE} down -v --remove-orphans' to cleanup"
+  fi
+
+  exit "${test_exit}"
 }
 
 main "$@"

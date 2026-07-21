@@ -29,15 +29,18 @@ services:
   postgresql-tls:
     image: postgres:17
     container_name: deltascope-tls-postgresql
+    user: root
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
       POSTGRES_DB: app
     volumes:
       - ./postgresql-tls-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ${TLS_CERTS_DIR}/trusted/postgresql-tls-cert.pem:/var/lib/postgresql/server-cert.pem:ro
-      - ${TLS_CERTS_DIR}/trusted/postgresql-tls-key.pem:/var/lib/postgresql/server-key.pem:ro
-      - ${TLS_CERTS_DIR}/trusted/trusted-ca-cert.pem:/var/lib/postgresql/ca-cert.pem:ro
+      - ./postgresql-entrypoint.sh:/usr/local/bin/postgresql-entrypoint.sh:ro
+      - ${TLS_CERTS_DIR}/trusted/postgresql-tls-cert.pem:/etc/tls/server-cert.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/postgresql-tls-key.pem:/etc/tls/server-key.pem:ro
+      - ${TLS_CERTS_DIR}/trusted/trusted-ca-cert.pem:/etc/tls/ca-cert.pem:ro
+    entrypoint: /usr/local/bin/postgresql-entrypoint.sh
     command: >
       postgres
       -c ssl=on
@@ -77,15 +80,18 @@ services:
   postgresql-tls-untrusted:
     image: postgres:17
     container_name: deltascope-tls-postgresql-untrusted
+    user: root
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
       POSTGRES_DB: app
     volumes:
       - ./postgresql-tls-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ${TLS_CERTS_DIR}/untrusted/postgresql-tls-untrusted-cert.pem:/var/lib/postgresql/server-cert.pem:ro
-      - ${TLS_CERTS_DIR}/untrusted/postgresql-tls-untrusted-key.pem:/var/lib/postgresql/server-key.pem:ro
-      - ${TLS_CERTS_DIR}/untrusted/untrusted-ca-cert.pem:/var/lib/postgresql/ca-cert.pem:ro
+      - ./postgresql-entrypoint.sh:/usr/local/bin/postgresql-entrypoint.sh:ro
+      - ${TLS_CERTS_DIR}/untrusted/postgresql-tls-untrusted-cert.pem:/etc/tls/server-cert.pem:ro
+      - ${TLS_CERTS_DIR}/untrusted/postgresql-tls-untrusted-key.pem:/etc/tls/server-key.pem:ro
+      - ${TLS_CERTS_DIR}/untrusted/untrusted-ca-cert.pem:/etc/tls/ca-cert.pem:ro
+    entrypoint: /usr/local/bin/postgresql-entrypoint.sh
     command: >
       postgres
       -c ssl=on
@@ -101,7 +107,7 @@ services:
 
   deltascope-server:
     build:
-      context: ..
+      context: ../..
       dockerfile: docker/tls-e2e/Dockerfile
     container_name: deltascope-tls-server
     environment:
