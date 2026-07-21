@@ -12,7 +12,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,8 +34,8 @@ type ConnectionConfig struct {
 	Password       string
 	Database       string
 	ConnectTimeout time.Duration
-	TLSMode        string // "disabled" (default) or "enabled"
-	TLSCAFile      string // PEM file for private CA; only used when tls_mode=enabled
+	TLSMode        string         // "disabled" (default) or "enabled"
+	CACert         *x509.CertPool // pre-parsed CA pool; only used when tls_mode=enabled
 }
 
 // connectTimeout returns the configured timeout, defaulting to DefaultConnectTimeout when zero.
@@ -71,7 +70,7 @@ func (c ConnectionConfig) Address() string {
 	return net.JoinHostPort(host, strconv.Itoa(port))
 }
 
-// DSN formats the config for the MySQL driver.
+// mysqlConfig builds a go-sql-driver/mysql Config from this connection config.
 // When TLS is enabled, the TLS config is set directly on the driver config
 // rather than using RegisterTLSConfig, avoiding global state accumulation.
 func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
@@ -98,19 +97,10 @@ func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
 			ServerName:         host,
 			InsecureSkipVerify: false,
 		}
-		if caFile := strings.TrimSpace(c.TLSCAFile); caFile != "" {
-			caCert, err := os.ReadFile(caFile)
-			if err == nil {
-				pool := x509.NewCertPool()
-				if pool.AppendCertsFromPEM(caCert) {
-					tlsCfg.RootCAs = pool
-				}
-			}
+		if c.CACert != nil {
+			tlsCfg.RootCAs = c.CACert
 		}
-		tlsName := fmt.Sprintf("deltascope-meta-%s-%d", host, c.Port)
-		if err := gomysql.RegisterTLSConfig(tlsName, tlsCfg); err == nil {
-			cfg.TLSConfig = tlsName
-		}
+		cfg.TLS = tlsCfg
 	}
 
 	return cfg

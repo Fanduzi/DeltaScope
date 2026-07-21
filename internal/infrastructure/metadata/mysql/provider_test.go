@@ -7,6 +7,7 @@ package mysqlmeta
 
 import (
 	"context"
+	"crypto/x509"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -217,11 +218,14 @@ func TestConnectionConfigTLSEnabledSetsServerName(t *testing.T) {
 	}
 
 	cfg := config.mysqlConfig()
-	if cfg.TLSConfig == "" {
-		t.Fatal("expected TLSConfig name to be set when TLSMode is enabled")
+	if cfg.TLS == nil {
+		t.Fatal("expected TLS config to be set when TLSMode is enabled")
 	}
-	if !strings.Contains(cfg.TLSConfig, "mysql-tls.example.com") {
-		t.Fatalf("expected TLSConfig name to contain host, got %q", cfg.TLSConfig)
+	if cfg.TLS.ServerName != "mysql-tls.example.com" {
+		t.Fatalf("expected TLS ServerName mysql-tls.example.com, got %q", cfg.TLS.ServerName)
+	}
+	if cfg.TLSConfig != "" {
+		t.Fatalf("expected empty TLSConfig name (no RegisterTLSConfig), got %q", cfg.TLSConfig)
 	}
 }
 
@@ -234,11 +238,14 @@ func TestConnectionConfigTLSEnabledDefaultsServerNameToLocalhost(t *testing.T) {
 	}
 
 	cfg := config.mysqlConfig()
-	if cfg.TLSConfig == "" {
-		t.Fatal("expected TLSConfig name to be set when TLSMode is enabled")
+	if cfg.TLS == nil {
+		t.Fatal("expected TLS config to be set when TLSMode is enabled")
 	}
-	if !strings.Contains(cfg.TLSConfig, "127.0.0.1") {
-		t.Fatalf("expected TLSConfig name to contain 127.0.0.1 for empty host, got %q", cfg.TLSConfig)
+	if cfg.TLS.ServerName != "127.0.0.1" {
+		t.Fatalf("expected TLS ServerName 127.0.0.1 for empty host, got %q", cfg.TLS.ServerName)
+	}
+	if cfg.TLSConfig != "" {
+		t.Fatalf("expected empty TLSConfig name (no RegisterTLSConfig), got %q", cfg.TLSConfig)
 	}
 }
 
@@ -268,6 +275,46 @@ func TestConnectionConfigTLSEmptyDoesNotSetTLS(t *testing.T) {
 	cfg := config.mysqlConfig()
 	if cfg.TLS != nil {
 		t.Fatal("expected TLS config to be nil when TLSMode is empty")
+	}
+}
+
+func TestConnectionConfigTLSCACertDoesNotFallBackToSystemRoots(t *testing.T) {
+	customPool := x509.NewCertPool()
+	customPool.AppendCertsFromPEM([]byte("-----BEGIN CERTIFICATE-----\nMIIBkTCB+wIJAL...\n-----END CERTIFICATE-----"))
+
+	config := ConnectionConfig{
+		Host:     "mysql-tls.example.com",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+		TLSMode:  "enabled",
+		CACert:   customPool,
+	}
+
+	cfg := config.mysqlConfig()
+	if cfg.TLS == nil {
+		t.Fatal("expected TLS config to be set when TLSMode is enabled")
+	}
+	if cfg.TLS.RootCAs != customPool {
+		t.Fatal("expected TLS RootCAs to be the custom pool, not system roots")
+	}
+}
+
+func TestConnectionConfigTLSNilCACertUsesSystemRoots(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "mysql-tls.example.com",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+		TLSMode:  "enabled",
+	}
+
+	cfg := config.mysqlConfig()
+	if cfg.TLS == nil {
+		t.Fatal("expected TLS config to be set when TLSMode is enabled")
+	}
+	if cfg.TLS.RootCAs != nil {
+		t.Fatal("expected TLS RootCAs to be nil (system roots) when CACert is nil")
 	}
 }
 
