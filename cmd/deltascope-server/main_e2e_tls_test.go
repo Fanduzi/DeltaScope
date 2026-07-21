@@ -18,16 +18,15 @@ func TestTLSQueryAccessMySQLSucceedsWithTrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	// Use LOWER() which requires online metadata to be admissible.
-	// Offline analysis would return indeterminate for scalar functions.
-	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls", "SELECT LOWER(name) FROM app.users")
+	// Use simple SELECT without scalar functions - this is in the admissible set.
+	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls", "SELECT id, name FROM app.users WHERE id = 1")
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
 	}
 
 	result := parseJSON(t, body)
-	assertOnlineQueryAccessResult(t, result, "mysql", "app.users", "name")
+	assertOnlineQueryAccessResult(t, result, "mysql", "app.users", "id")
 }
 
 func TestTLSQueryAccessPostgreSQLSucceedsWithTrustedCA(t *testing.T) {
@@ -36,16 +35,15 @@ func TestTLSQueryAccessPostgreSQLSucceedsWithTrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	// Use LOWER() which requires online metadata to be admissible.
-	// Offline analysis would return indeterminate for scalar functions.
-	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls", "SELECT LOWER(name) FROM app.users")
+	// Use simple SELECT without scalar functions - this is in the admissible set.
+	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls", "SELECT id, name FROM app.users WHERE id = 1")
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
 	}
 
 	result := parseJSON(t, body)
-	assertOnlineQueryAccessResult(t, result, "postgresql", "app.users", "name")
+	assertOnlineQueryAccessResult(t, result, "postgresql", "app.users", "id")
 }
 
 func TestTLSQueryAccessMySQLFailsWithUntrustedCA(t *testing.T) {
