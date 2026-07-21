@@ -81,7 +81,7 @@ func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
 	cfg.Passwd = c.Password
 	cfg.Collation = "utf8mb4_general_ci"
 	cfg.Timeout = c.connectTimeout()
-	cfg.Params = map[string]string{"interpolateParams": "true"}
+	cfg.InterpolateParams = true
 
 	if strings.TrimSpace(c.Database) != "" {
 		cfg.DBName = strings.TrimSpace(c.Database)

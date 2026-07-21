@@ -18,8 +18,7 @@ func TestTLSQueryAccessMySQLSucceedsWithTrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	// Use simple SELECT without scalar functions - this is in the admissible set.
-	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls", "SELECT id, name FROM app.users WHERE id = 1")
+	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls", "SELECT count(id) FROM app.users")
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
@@ -35,8 +34,7 @@ func TestTLSQueryAccessPostgreSQLSucceedsWithTrustedCA(t *testing.T) {
 		t.Fatal("TLS_E2E_SERVER_ADDR not set")
 	}
 
-	// Use simple SELECT without scalar functions - this is in the admissible set.
-	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls", "SELECT id, name FROM app.users WHERE id = 1")
+	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls", "SELECT count(id) FROM app.users")
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
@@ -348,7 +346,7 @@ func assertNoLeaks(t *testing.T, body []byte) {
 		"dsn:",
 		"driver:",
 		"api_key",
-		"SELECT LOWER(name) FROM app.users",
+		"SELECT count(id) FROM app.users",
 		":3306",
 		":5432",
 	}

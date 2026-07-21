@@ -252,7 +252,7 @@ func buildMySQLConfig(cfg SessionConfig) (*gomysql.Config, error) {
 		timeout = 5 * time.Second
 	}
 	mysqlCfg.Timeout = timeout
-	mysqlCfg.Params = map[string]string{"interpolateParams": "true"}
+	mysqlCfg.InterpolateParams = true
 
 	if cfg.Database != "" {
 		mysqlCfg.DBName = cfg.Database
