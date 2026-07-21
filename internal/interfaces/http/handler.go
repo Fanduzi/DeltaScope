@@ -392,6 +392,12 @@ func registryAuthMiddleware(reg *runtimeconfig.Registry, legacy AuthConfig) gin.
 		return authMiddleware(legacy)
 	}
 
+	if !reg.IsAuthEnabled() {
+		return func(c *gin.Context) {
+			c.Next()
+		}
+	}
+
 	allowPaths := make(map[string]struct{}, len(defaultAuthAllowPaths))
 	for _, path := range defaultAuthAllowPaths {
 		allowPaths[path] = struct{}{}

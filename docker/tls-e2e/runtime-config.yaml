@@ -1,0 +1,25 @@
+# Runtime config for TLS E2E testing.
+# Contains connection entries for TLS-enabled MySQL and PostgreSQL.
+
+metadata:
+  connections:
+    - id: mysql-tls
+      dialect: mysql
+      host: mysql-tls
+      port: 3306
+      user: root
+      password_env: MYSQL_PASSWORD
+      schema: app
+      tls_mode: enabled
+      purposes: [audit]
+
+    - id: postgresql-tls
+      dialect: postgresql
+      host: postgresql-tls
+      port: 5432
+      user: root
+      password_env: PG_PASSWORD
+      database: app
+      schema: app
+      tls_mode: enabled
+      purposes: [audit]

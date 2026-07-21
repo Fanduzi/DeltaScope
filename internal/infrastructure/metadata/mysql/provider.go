@@ -7,6 +7,7 @@ package mysqlmeta
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"net"
@@ -30,7 +31,9 @@ type ConnectionConfig struct {
 	Socket         string
 	User           string
 	Password       string
+	Database       string
 	ConnectTimeout time.Duration
+	TLSMode        string // "disabled" (default) or "enabled"
 }
 
 // connectTimeout returns the configured timeout, defaulting to DefaultConnectTimeout when zero.
@@ -66,7 +69,9 @@ func (c ConnectionConfig) Address() string {
 }
 
 // DSN formats the config for the MySQL driver.
-func (c ConnectionConfig) DSN() string {
+// When TLS is enabled, the TLS config is set directly on the driver config
+// rather than using RegisterTLSConfig, avoiding global state accumulation.
+func (c ConnectionConfig) mysqlConfig() *gomysql.Config {
 	cfg := gomysql.NewConfig()
 	cfg.Net = c.Network()
 	cfg.Addr = c.Address()
@@ -75,7 +80,28 @@ func (c ConnectionConfig) DSN() string {
 	cfg.Collation = "utf8mb4_general_ci"
 	cfg.Timeout = c.connectTimeout()
 	cfg.Params = map[string]string{"interpolateParams": "true"}
-	return cfg.FormatDSN()
+
+	if strings.TrimSpace(c.Database) != "" {
+		cfg.DBName = strings.TrimSpace(c.Database)
+	}
+
+	tlsMode := strings.ToLower(strings.TrimSpace(c.TLSMode))
+	if tlsMode == "enabled" {
+		host := strings.TrimSpace(c.Host)
+		if host == "" {
+			host = "127.0.0.1"
+		}
+		cfg.TLS = &tls.Config{
+			ServerName:         host,
+			InsecureSkipVerify: false,
+		}
+	}
+
+	return cfg
+}
+
+func (c ConnectionConfig) DSN() string {
+	return c.mysqlConfig().FormatDSN()
 }
 
 // OpenDBContext connects to a MySQL-compatible database for metadata reads,
@@ -86,10 +112,12 @@ func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	db, err := sql.Open("mysql", config.DSN())
+
+	connector, err := gomysql.NewConnector(config.mysqlConfig())
 	if err != nil {
 		return nil, fmt.Errorf("open metadata connection: %w", err)
 	}
+	db := sql.OpenDB(connector)
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)

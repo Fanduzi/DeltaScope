@@ -62,8 +62,8 @@ func TestExecuteAuditRequestSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "delete from public.users where id = 1",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "delete from public.users where id = 1",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		result, err := deltascope.Audit(ctx, request)
@@ -116,8 +116,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataAwareUPDATETriggersPlanEstimation(
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "update public.users set name = 'x' where id = 1",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "update public.users set name = 'x' where id = 1",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		result, err := deltascope.Audit(ctx, request)
@@ -271,8 +271,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForRenameCol
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "alter table users rename column missing_email to email;",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "alter table users rename column missing_email to email;",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
@@ -327,8 +327,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColum
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "alter table users drop column missing_email;",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "alter table users drop column missing_email;",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
@@ -380,8 +380,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingTableForRenameTabl
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "alter table users rename to users_archive;",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "alter table users rename to users_archive;",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
@@ -692,8 +692,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "alter index missing_idx rename to idx_new;",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "alter index missing_idx rename to idx_new;",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)
@@ -759,8 +759,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
 
 	response, err := executeAuditRequest(context.Background(), auditRequest{
-		SQL:     "drop index missing_idx;",
-		Dialect: deltascope.DialectPostgreSQL,
+		SQL:          "drop index missing_idx;",
+		Dialect:      deltascope.DialectPostgreSQL,
 		ConnectionID: "test-pg",
 	}, "", func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
 		return deltascope.Audit(ctx, request)

@@ -87,6 +87,11 @@ func (r *Registry) ResolveAPIKey(rawKey string) (string, bool) {
 	return "", false
 }
 
+// IsAuthEnabled reports whether API-key authentication is required.
+func (r *Registry) IsAuthEnabled() bool {
+	return r.authEnabled
+}
+
 func (r *Registry) String() string {
 	connIDs := make([]string, 0, len(r.connections))
 	for id := range r.connections {

@@ -2,7 +2,7 @@
 
 - Date: 2026-07-20
 - Status: Accepted
-- Baseline: `main@49b6fae`
+- Baseline: `main@6903364`
 - Related: [Query Access foundation](2026-07-11-query-access-analysis-foundation.md), [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 
 ## Context
@@ -132,9 +132,12 @@ This record changed to `Accepted` after the following evidence was collected:
 5. **Scalar proof**: LOWER, UPPER, LENGTH, CHAR_LENGTH, ABS, CEIL, FLOOR,
    COALESCE, NULLIF (and IFNULL for MySQL/TiDB) each have independent manifest
    entries, parser-native-form facts, corpus fixtures, and live Docker E2E
-   evidence per dialect/version. PG17 uses catalog-bound OID/type/volatility
-   proof. MySQL/TiDB use versioned native-form semantic manifests. Verified by
-   `TestBuiltinSemanticProfileRegression*` and `TestScalarLive_*` tests.
+   evidence per dialect/version. Every scalar function requires all operands to
+   be direct physical base columns; `IFNULL(column, literal)` and
+   `COALESCE(column, literal)` are indeterminate. PG17 uses catalog-bound
+   OID/type/volatility proof. MySQL/TiDB use versioned native-form semantic
+   manifests. Verified by `TestBuiltinSemanticProfileRegression*` and
+   `TestScalarLive_*` tests.
 
 6. **No-leak coverage**: Injected markers (passwords, DSNs, hostnames, ports,
    driver errors, SQL literals, API keys, version strings, manifest data,
@@ -152,6 +155,33 @@ This record changed to `Accepted` after the following evidence was collected:
    `--host`, `--port`, `--user`, `--password-env`, `--password-file`,
    `--ask-password`). Momus plan/diff review returned [OKAY]. No P1/P2 findings
    remain.
+
+9. **Auth-disabled mode**: With `http.auth.enabled: false`, HTTP endpoints accept
+   requests without `X-API-Key`; connection existence and purpose checks still
+   apply. With auth enabled, missing/invalid/unauthorized keys remain denied.
+   Route-level evidence proves `connection_id` requests reach the
+   registered-connection path, not merely the offline path. Wrong-purpose
+   requests remain denied with `purpose_not_allowed`. Verified by
+   `TestHandlerAuditConnectionIDWorksWithAuthDisabled`,
+   `TestHandlerAuditConnectionIDWrongPurposeDeniedWithAuthDisabled`,
+   `TestHandlerAuditAllowsRequestWithoutAPIKeyWhenAuthDisabled`, and
+   `TestHandlerQueryAccessAllowsRequestWithoutAPIKeyWhenAuthDisabled`.
+
+10. **Database and TLS propagation**: `runtimeconfig.ConnectionConfig.Database`
+    and `TLSMode` are threaded through `auditmeta.ConnectionConfig` to
+    `mysqlmeta.ConnectionConfig` and `postgresqlmeta.ConnectionConfig`. PostgreSQL
+    audit connects to the configured database (never silently defaults to
+    `postgres`). `tls_mode: enabled` enforces certificate and hostname validation
+    (`InsecureSkipVerify=false` for MySQL, `sslmode=verify-full` for PostgreSQL).
+    Verified by `TestConnectionConfigDSN*` tests and dedicated TLS E2E fixture
+    (`docker/tls-e2e/`) with trusted CA and hostname-valid certificates.
+
+11. **CLI database selection**: `query-access analyze --database` flag allows
+    PostgreSQL users to select the target database. The flag is threaded through
+    `auditConnectionOptions` to `online.SessionConfig.Database`. Without the
+    flag, PostgreSQL defaults to `postgres`. Verified by
+    `TestQueryAccessAnalyzeHelpShowsConnectionFlags` and CLI E2E case 16/17
+    proving non-default database selection and default-database negative control.
 
 ### Deferred Items
 

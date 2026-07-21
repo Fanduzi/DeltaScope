@@ -318,7 +318,7 @@ func TestBuiltinSemanticProfiles_ScalarDirectColumnsAdmit(t *testing.T) {
 		{name: "floor", sql: "SELECT FLOOR(amount) FROM app.orders"},
 		{name: "coalesce", sql: "SELECT COALESCE(name, email) FROM app.users"},
 		{name: "nullif", sql: "SELECT NULLIF(name, email) FROM app.users"},
-		{name: "ifnull", sql: "SELECT IFNULL(name, 'unknown') FROM app.users"},
+		{name: "ifnull", sql: "SELECT IFNULL(name, email) FROM app.users"},
 	}
 
 	for _, profile := range profiles {
@@ -351,6 +351,8 @@ func TestBuiltinSemanticProfiles_ScalarBoundariesStayIndeterminate(t *testing.T)
 		{name: "nested", sql: "SELECT LOWER(UPPER(name)) FROM app.users"},
 		{name: "literal", sql: "SELECT LOWER(42) FROM app.users"},
 		{name: "qualified", sql: "SELECT app.LOWER(name) FROM app.users"},
+		{name: "ifnull_literal", sql: "SELECT IFNULL(name, 'unknown') FROM app.users"},
+		{name: "coalesce_literal", sql: "SELECT COALESCE(name, 'fallback') FROM app.users"},
 	}
 
 	for _, profile := range profiles {

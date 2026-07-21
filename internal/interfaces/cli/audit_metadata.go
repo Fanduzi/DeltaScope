@@ -178,6 +178,7 @@ func toAuditMetaConnection(options auditConnectionOptions, requestedDialect spec
 		Socket:         options.Socket,
 		User:           options.User,
 		Password:       options.Password,
+		Database:       options.Database,
 		ConnectTimeout: options.ConnectTimeout,
 	}
 	if explicitDialect {

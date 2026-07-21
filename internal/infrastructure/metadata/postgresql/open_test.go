@@ -135,3 +135,63 @@ func TestConnectTimeoutDSNCeilsSubsecondTimeout(t *testing.T) {
 		t.Fatalf("expected connect_timeout=2 (ceiled from 1.5s) in DSN, got %q", dsn)
 	}
 }
+
+func TestConnectionConfigSSLModeVerifyFull(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		Database: "mydb",
+		User:     "admin",
+		Password: "pw",
+		SSLMode:  "verify-full",
+	}
+
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "sslmode=verify-full") {
+		t.Fatalf("expected sslmode=verify-full in DSN, got %q", dsn)
+	}
+}
+
+func TestConnectionConfigSSLModeDisable(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		Database: "mydb",
+		User:     "admin",
+		Password: "pw",
+		SSLMode:  "disable",
+	}
+
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "sslmode=disable") {
+		t.Fatalf("expected sslmode=disable in DSN, got %q", dsn)
+	}
+}
+
+func TestConnectionConfigSSLModeEmptyDefaultsToDisable(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		Database: "mydb",
+		User:     "admin",
+		Password: "pw",
+	}
+
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "sslmode=disable") {
+		t.Fatalf("expected sslmode=disable as default, got %q", dsn)
+	}
+}
+
+func TestConnectionConfigDatabaseDefaultsToPostgres(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		User:     "admin",
+		Password: "pw",
+	}
+
+	if got := config.DatabaseName(); got != "postgres" {
+		t.Fatalf("expected default database postgres, got %q", got)
+	}
+}

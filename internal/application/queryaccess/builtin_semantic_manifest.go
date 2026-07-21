@@ -292,7 +292,6 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		mysqlScalarEntry(AnalysisProfileMySQL57, "floor", 1, []string{"column"}),
 		mysqlVariableArityScalarEntry(AnalysisProfileMySQL57, "coalesce", 2, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "ifnull", 2, []string{"column", "column"}),
-		mysqlScalarEntry(AnalysisProfileMySQL57, "ifnull", 2, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "nullif", 2, []string{"column", "column"}),
 
 		// MySQL 8.0 scalar functions (independently evidenced from 5.7).
@@ -306,7 +305,6 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		mysqlScalarEntry(AnalysisProfileMySQL80, "floor", 1, []string{"column"}),
 		mysqlVariableArityScalarEntry(AnalysisProfileMySQL80, "coalesce", 2, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "ifnull", 2, []string{"column", "column"}),
-		mysqlScalarEntry(AnalysisProfileMySQL80, "ifnull", 2, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "nullif", 2, []string{"column", "column"}),
 
 		// MySQL 8.4 scalar functions (independently evidenced from 5.7 and 8.0).
@@ -320,7 +318,6 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		mysqlScalarEntry(AnalysisProfileMySQL84, "floor", 1, []string{"column"}),
 		mysqlVariableArityScalarEntry(AnalysisProfileMySQL84, "coalesce", 2, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "ifnull", 2, []string{"column", "column"}),
-		mysqlScalarEntry(AnalysisProfileMySQL84, "ifnull", 2, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "nullif", 2, []string{"column", "column"}),
 
 		// TiDB 8.5 scalar functions (independently evidenced).
@@ -334,7 +331,6 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		tidbScalarEntry("floor", 1, []string{"column"}),
 		tidbVariableArityScalarEntry("coalesce", 2, []string{"column", "column"}),
 		tidbScalarEntry("ifnull", 2, []string{"column", "column"}),
-		tidbScalarEntry("ifnull", 2, []string{"column", "const"}),
 		tidbScalarEntry("nullif", 2, []string{"column", "column"}),
 	}
 	manifest, err := NewBuiltinSemanticManifest(entries)

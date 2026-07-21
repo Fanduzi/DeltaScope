@@ -30,6 +30,22 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type fakeMetadataClient struct{}
+
+func (c *fakeMetadataClient) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*deltascope.InstanceFacts, error) {
+	return &deltascope.InstanceFacts{}, nil
+}
+func (c *fakeMetadataClient) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*deltascope.TableSnapshot, error) {
+	return &deltascope.TableSnapshot{}, nil
+}
+func (c *fakeMetadataClient) DetectDialect(ctx context.Context) (spec.Dialect, error) {
+	return spec.DialectMySQL, nil
+}
+func (c *fakeMetadataClient) FindSchemasForTable(ctx context.Context, table string) ([]string, error) {
+	return []string{"app"}, nil
+}
+func (c *fakeMetadataClient) Close() error { return nil }
+
 func TestHandlerHealthz(t *testing.T) {
 	handler, err := NewHandler("", "test-build")
 	if err != nil {
@@ -1154,6 +1170,138 @@ func TestHandlerHealthzBypassesAuthWhenAllowPathConfigured(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func newTestRegistryAuthDisabled(t *testing.T, connID string, purposes []string) *runtimeconfig.Registry {
+	t.Helper()
+	t.Setenv("TEST_AUTH_DISABLED_DB_PASSWORD", "secret")
+
+	cfg := runtimeconfig.Config{
+		HTTP: runtimeconfig.HTTPConfig{
+			Auth: runtimeconfig.AuthConfig{Enabled: false},
+		},
+		Metadata: runtimeconfig.MetadataConfig{
+			Connections: []runtimeconfig.ConnectionConfig{
+				{
+					ID:          connID,
+					Dialect:     "mysql",
+					Host:        "127.0.0.1",
+					Port:        3306,
+					User:        "root",
+					PasswordEnv: "TEST_AUTH_DISABLED_DB_PASSWORD",
+					Schema:      "app",
+					Purposes:    purposes,
+				},
+			},
+		},
+	}
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+	return reg
+}
+
+func TestHandlerAuditAllowsRequestWithoutAPIKeyWhenAuthDisabled(t *testing.T) {
+	reg := newTestRegistryAuthDisabled(t, "mydb", []string{"audit"})
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"delete from users","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden {
+		t.Fatalf("auth disabled: expected non-auth error, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandlerQueryAccessAllowsRequestWithoutAPIKeyWhenAuthDisabled(t *testing.T) {
+	reg := newTestRegistryAuthDisabled(t, "mydb", []string{"query_access"})
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT id FROM users","dialect":"mysql"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden {
+		t.Fatalf("auth disabled: expected non-auth error, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestHandlerAuditConnectionIDWorksWithAuthDisabled(t *testing.T) {
+	reg := newTestRegistryAuthDisabled(t, "mydb", []string{"audit"})
+
+	previous := prepareHTTPMetadataAudit
+	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
+		return &auditmeta.PreparedAudit{
+			Client:        &fakeMetadataClient{},
+			Dialect:       spec.DialectMySQL,
+			Schema:        "app",
+			DialectSource: "detected",
+			SchemaSource:  "registry",
+		}, nil
+	}
+	t.Cleanup(func() { prepareHTTPMetadataAudit = previous })
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"mydb"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	contextObj, ok := response["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context in response, got %v", response)
+	}
+	if contextObj["mode"] != "metadata-aware" {
+		t.Fatalf("expected mode metadata-aware, got %v", contextObj["mode"])
+	}
+	if contextObj["metadata_source"] != "registry" {
+		t.Fatalf("expected metadata_source registry, got %v", contextObj["metadata_source"])
+	}
+}
+
+func TestHandlerAuditConnectionIDWrongPurposeDeniedWithAuthDisabled(t *testing.T) {
+	reg := newTestRegistryAuthDisabled(t, "mydb", []string{"query_access"})
+
+	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"mydb"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for wrong purpose, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"purpose_not_allowed"`)) {
+		t.Fatalf("expected purpose_not_allowed code, got %s", rec.Body.String())
 	}
 }
 

@@ -414,6 +414,40 @@ CFG
     assert_findings_text_absent "${stdout_file}" "${token}"
   done
 
+  # Case 16: --database flag selects non-default database
+  # The query_access_e2e database has a sentinel table app.query_access_only
+  # that does NOT exist in the default postgres database.
+  stdout_file="$(mktemp "${TMP_DIR}/pg-database.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-database.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" query-access analyze --sql "SELECT id FROM app.query_access_only" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --database query_access_e2e --schema app --dialect postgresql; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0 "case16-database-selection"
+  assert_json_field_eq "${stdout_file}" "admission" "admissible"
+
+  # Case 17: default postgres database does NOT have the sentinel table
+  # Without --database, the CLI defaults to postgres where query_access_only
+  # does not exist, so the query must fail or be indeterminate.
+  stdout_file="$(mktemp "${TMP_DIR}/pg-database-default.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/pg-database-default.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" query-access analyze --sql "SELECT id FROM app.query_access_only" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --schema app --dialect postgresql; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  # The default postgres database does not have query_access_only, so
+  # metadata resolution should fail or return indeterminate.
+  if [[ "${exit_code}" == "0" ]]; then
+    # If it succeeded, verify it's NOT admissible (indeterminate or rejected)
+    local admission
+    admission="$(python3 -c "import json; print(json.load(open('${stdout_file}')).get('admission', ''))")"
+    if [[ "${admission}" == "admissible" ]]; then
+      fail "case17-default-database: expected non-admissible for default postgres, got admissible"
+    fi
+  fi
+
   log "all PostgreSQL CLI metadata-aware e2e cases passed"
 }
 

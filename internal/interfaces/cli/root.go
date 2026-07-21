@@ -26,6 +26,7 @@ type cliOptions struct {
 	PasswordFile           string
 	AskPassword            bool
 	Schema                 string
+	Database               string
 	Socket                 string
 	MetadataConnectTimeout string
 	ShowVersion            bool

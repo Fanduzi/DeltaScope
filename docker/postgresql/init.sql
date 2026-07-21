@@ -93,3 +93,17 @@ COMMENT ON TABLE app.users IS 'sensitive comment text should not leak';
 
 -- Ambiguous: same type name in two schemas.
 CREATE TYPE archive.address AS (street TEXT, city TEXT);
+
+-- Non-default database for --database flag E2E testing.
+-- This database exists only to prove that --database selects a specific database
+-- rather than silently defaulting to 'postgres'.
+\connect query_access_e2e
+
+CREATE SCHEMA IF NOT EXISTS app;
+
+CREATE TABLE app.query_access_only (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL DEFAULT ''
+);
+
+INSERT INTO app.query_access_only (name) VALUES ('sentinel');

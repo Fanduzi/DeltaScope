@@ -166,6 +166,114 @@ func TestConnectionConfigDSNSocketFormat(t *testing.T) {
 	}
 }
 
+func TestConnectionConfigDSNIncludesDatabase(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+		Database: "mydb",
+	}
+
+	dsn := config.DSN()
+	if !strings.Contains(dsn, "mydb") {
+		t.Fatalf("expected DSN to contain database mydb, got %q", dsn)
+	}
+}
+
+func TestConnectionConfigDSNOmitsDatabaseWhenEmpty(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+	}
+
+	dsn := config.DSN()
+	// MySQL DSN format: user:pass@tcp(host:port)/dbname?params
+	// When Database is empty, the DSN should end with "/" after host:port
+	// (no database name between "/" and "?")
+	if strings.Contains(dsn, "/?") || strings.HasSuffix(dsn, "/") {
+		// This is correct - empty database means "/" immediately followed by "?" or end
+		return
+	}
+	// If there's a database name between "/" and "?", that's wrong
+	parts := strings.SplitN(dsn, "/", 2)
+	if len(parts) == 2 {
+		dbPart := strings.SplitN(parts[1], "?", 2)[0]
+		if dbPart != "" {
+			t.Fatalf("expected no database name in DSN when empty, got %q", dsn)
+		}
+	}
+}
+
+func TestConnectionConfigTLSEnabledSetsServerName(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "mysql-tls.example.com",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+		TLSMode:  "enabled",
+	}
+
+	cfg := config.mysqlConfig()
+	if cfg.TLS == nil {
+		t.Fatal("expected TLS config to be set when TLSMode is enabled")
+	}
+	if cfg.TLS.ServerName != "mysql-tls.example.com" {
+		t.Fatalf("expected ServerName mysql-tls.example.com, got %q", cfg.TLS.ServerName)
+	}
+	if cfg.TLS.InsecureSkipVerify {
+		t.Fatal("expected InsecureSkipVerify to be false")
+	}
+}
+
+func TestConnectionConfigTLSEnabledDefaultsServerNameToLocalhost(t *testing.T) {
+	config := ConnectionConfig{
+		Host:    "",
+		Port:    3306,
+		User:    "root",
+		TLSMode: "enabled",
+	}
+
+	cfg := config.mysqlConfig()
+	if cfg.TLS == nil {
+		t.Fatal("expected TLS config to be set when TLSMode is enabled")
+	}
+	if cfg.TLS.ServerName != "127.0.0.1" {
+		t.Fatalf("expected ServerName 127.0.0.1 for empty host, got %q", cfg.TLS.ServerName)
+	}
+}
+
+func TestConnectionConfigTLSDisabledDoesNotSetTLS(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+		TLSMode:  "disabled",
+	}
+
+	cfg := config.mysqlConfig()
+	if cfg.TLS != nil {
+		t.Fatal("expected TLS config to be nil when TLSMode is disabled")
+	}
+}
+
+func TestConnectionConfigTLSEmptyDoesNotSetTLS(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     3306,
+		User:     "root",
+		Password: "secret",
+	}
+
+	cfg := config.mysqlConfig()
+	if cfg.TLS != nil {
+		t.Fatal("expected TLS config to be nil when TLSMode is empty")
+	}
+}
+
 func TestDetectDialectFromVersion(t *testing.T) {
 	tests := []struct {
 		version string

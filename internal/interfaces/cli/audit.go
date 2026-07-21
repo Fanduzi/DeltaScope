@@ -150,6 +150,7 @@ type auditConnectionOptions struct {
 	PasswordEnv    string
 	PasswordFile   string
 	Schema         string
+	Database       string
 	Socket         string
 	Dialect        string
 	ConnectTimeout time.Duration
@@ -167,6 +168,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 		PasswordEnv:  strings.TrimSpace(options.PasswordEnv),
 		PasswordFile: strings.TrimSpace(options.PasswordFile),
 		Schema:       strings.TrimSpace(options.Schema),
+		Database:     strings.TrimSpace(options.Database),
 		Socket:       strings.TrimSpace(options.Socket),
 	}
 

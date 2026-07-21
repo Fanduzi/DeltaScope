@@ -286,6 +286,10 @@ test-e2e-http-postgresql:
 test-e2e-mcp-postgresql:
 	./scripts/test_mcp_metadata_e2e_postgresql.sh
 
+# test-e2e-http-tls: run TLS-enabled HTTP audit E2E tests.
+test-e2e-http-tls:
+	./scripts/test_http_tls_e2e.sh
+
 # Canonical PostgreSQL confidence gates (v0.22.0).
 # These targets compose existing commands into reusable confidence entry-points.
 

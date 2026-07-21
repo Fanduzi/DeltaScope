@@ -113,7 +113,7 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0 for --help, got %d", exitCode)
 	}
-	requiredFlags := []string{"--host", "--port", "--user", "--password", "--password-env", "--password-file", "--ask-password", "--schema", "--socket", "--metadata-connect-timeout"}
+	requiredFlags := []string{"--host", "--port", "--user", "--password", "--password-env", "--password-file", "--ask-password", "--schema", "--database", "--socket", "--metadata-connect-timeout"}
 	for _, flag := range requiredFlags {
 		if !bytes.Contains(stdout.Bytes(), []byte(flag)) {
 			t.Errorf("expected %q in help output", flag)

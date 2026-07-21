@@ -35,8 +35,10 @@ type ConnectionConfig struct {
 	Socket         string
 	User           string
 	Password       string
+	Database       string
 	Dialect        spec.Dialect
 	ConnectTimeout time.Duration
+	TLSMode        string // "disabled" (default) or "enabled"
 }
 
 // Request describes one shared metadata-aware audit preparation request.
@@ -267,12 +269,18 @@ func openPreparedClientContext(ctx context.Context, config ConnectionConfig) (Cl
 // openMySQLClientContext opens a metadata client respecting the caller's context.
 func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Client, error) {
 	if config.Dialect == spec.DialectPostgreSQL {
+		sslMode := "disable"
+		if strings.ToLower(strings.TrimSpace(config.TLSMode)) == "enabled" {
+			sslMode = "verify-full"
+		}
 		db, err := postgresqlmeta.OpenDBContext(ctx, postgresqlmeta.ConnectionConfig{
 			Host:           config.Host,
 			Port:           config.Port,
 			Socket:         config.Socket,
 			User:           config.User,
 			Password:       config.Password,
+			Database:       config.Database,
+			SSLMode:        sslMode,
 			ConnectTimeout: config.ConnectTimeout,
 		})
 		if err != nil {
@@ -290,7 +298,9 @@ func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Clien
 		Socket:         config.Socket,
 		User:           config.User,
 		Password:       config.Password,
+		Database:       config.Database,
 		ConnectTimeout: config.ConnectTimeout,
+		TLSMode:        config.TLSMode,
 	})
 	if err != nil {
 		return nil, err

@@ -94,6 +94,7 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for online query access")
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
 	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for online query access")
+	cmd.Flags().StringVar(&options.Database, "database", "", "database name for online query access (PostgreSQL)")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for online query access")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "connection timeout for online query access, for example 5s or 500ms")
 	return cmd
@@ -177,6 +178,9 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 		Schema:         connection.Schema,
 		Dialect:        string(dialect),
 		ConnectTimeout: connection.ConnectTimeout,
+	}
+	if dialect == spec.DialectPostgreSQL {
+		sessionCfg.Database = connection.Database
 	}
 
 	session, err := online.OpenSession(cmd.Context(), sessionCfg)
