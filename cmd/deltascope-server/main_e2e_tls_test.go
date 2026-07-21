@@ -23,6 +23,9 @@ func TestTLSQueryAccessMySQLSucceedsWithTrustedCA(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
 	}
+
+	result := parseJSON(t, body)
+	assertOnlineQueryAccessResult(t, result, "mysql", "app.users", "id")
 }
 
 func TestTLSQueryAccessPostgreSQLSucceedsWithTrustedCA(t *testing.T) {
@@ -36,6 +39,9 @@ func TestTLSQueryAccessPostgreSQLSucceedsWithTrustedCA(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
 	}
+
+	result := parseJSON(t, body)
+	assertOnlineQueryAccessResult(t, result, "postgresql", "app.users", "id")
 }
 
 func TestTLSQueryAccessMySQLFailsWithUntrustedCA(t *testing.T) {
@@ -62,6 +68,40 @@ func TestTLSQueryAccessPostgreSQLFailsWithUntrustedCA(t *testing.T) {
 	}
 
 	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls-untrusted", "SELECT id FROM app.users")
+
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
+}
+
+func TestTLSQueryAccessMySQLFailsWithHostnameMismatch(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls-hostname-mismatch", "SELECT id FROM app.users")
+
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
+}
+
+func TestTLSQueryAccessPostgreSQLFailsWithHostnameMismatch(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls-hostname-mismatch", "SELECT id FROM app.users")
 
 	if resp.StatusCode != http.StatusBadGateway {
 		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
@@ -305,5 +345,62 @@ func assertNoLeaks(t *testing.T, body []byte) {
 		if strings.Contains(strings.ToLower(s), strings.ToLower(pattern)) {
 			t.Errorf("response contains potential leak %q: %s", pattern, s)
 		}
+	}
+}
+
+func assertOnlineQueryAccessResult(t *testing.T, result map[string]any, expectedDialect, expectedTable, expectedColumn string) {
+	t.Helper()
+
+	// Assert this is an online result (not offline fallback)
+	classification, ok := result["read_classification"].(string)
+	if !ok {
+		t.Fatalf("expected read_classification in response, got %v", result)
+	}
+	if classification != "read_only" {
+		t.Fatalf("expected read_classification read_only, got %q", classification)
+	}
+
+	admission, ok := result["admission"].(string)
+	if !ok {
+		t.Fatalf("expected admission in response, got %v", result)
+	}
+	if admission != "admissible" {
+		t.Fatalf("expected admission admissible, got %q", admission)
+	}
+
+	// Assert requirements contain expected schema-qualified base table and column
+	requirements, ok := result["requirements"].([]any)
+	if !ok {
+		t.Fatalf("expected requirements in response, got %v", result)
+	}
+	if len(requirements) == 0 {
+		t.Fatal("expected at least one requirement")
+	}
+
+	foundTable := false
+	foundColumn := false
+	for _, req := range requirements {
+		reqMap, ok := req.(map[string]any)
+		if !ok {
+			continue
+		}
+		object, _ := reqMap["object"].(string)
+		privilege, _ := reqMap["privilege"].(string)
+
+		// Check for table reference (schema.table format)
+		if strings.Contains(object, expectedTable) {
+			foundTable = true
+		}
+		// Check for column reference (schema.table.column format)
+		if strings.Contains(object, expectedColumn) && privilege == "SELECT" {
+			foundColumn = true
+		}
+	}
+
+	if !foundTable {
+		t.Errorf("expected table %q in requirements, got %v", expectedTable, requirements)
+	}
+	if !foundColumn {
+		t.Errorf("expected column %q with SELECT privilege in requirements, got %v", expectedColumn, requirements)
 	}
 }
