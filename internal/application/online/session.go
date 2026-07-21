@@ -34,8 +34,8 @@ type SessionConfig struct {
 	Schema         string
 	Dialect        string
 	ConnectTimeout time.Duration
-	TLSMode        string          // "disabled" or "enabled"
-	CACert         *x509.CertPool  // pre-parsed CA pool; only used when tls_mode=enabled
+	TLSMode        string         // "disabled" or "enabled"
+	CACert         *x509.CertPool // pre-parsed CA pool; only used when tls_mode=enabled
 }
 
 // Session holds the pinned connection and derived identity/metadata.
