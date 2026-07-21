@@ -7,6 +7,7 @@ package auditmeta
 
 import (
 	"context"
+	"crypto/x509"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -38,8 +39,8 @@ type ConnectionConfig struct {
 	Database       string
 	Dialect        spec.Dialect
 	ConnectTimeout time.Duration
-	TLSMode        string // "disabled" (default) or "enabled"
-	TLSCAFile      string // PEM file for private CA; only used when tls_mode=enabled
+	TLSMode        string          // "disabled" (default) or "enabled"
+	CACert         *x509.CertPool  // pre-parsed CA pool; only used when tls_mode=enabled
 }
 
 // Request describes one shared metadata-aware audit preparation request.
@@ -282,7 +283,7 @@ func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Clien
 			Password:       config.Password,
 			Database:       config.Database,
 			SSLMode:        sslMode,
-			SSLCAFile:      config.TLSCAFile,
+			CACert:         config.CACert,
 			ConnectTimeout: config.ConnectTimeout,
 		})
 		if err != nil {
@@ -303,7 +304,7 @@ func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Clien
 		Database:       config.Database,
 		ConnectTimeout: config.ConnectTimeout,
 		TLSMode:        config.TLSMode,
-		TLSCAFile:      config.TLSCAFile,
+		CACert:         config.CACert,
 	})
 	if err != nil {
 		return nil, err

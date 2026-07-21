@@ -7,6 +7,7 @@ package postgresqlmeta
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"strings"
 	"testing"
@@ -193,5 +194,41 @@ func TestConnectionConfigDatabaseDefaultsToPostgres(t *testing.T) {
 
 	if got := config.DatabaseName(); got != "postgres" {
 		t.Fatalf("expected default database postgres, got %q", got)
+	}
+}
+
+func TestConnectionConfigCACertDoesNotFallBackToSystemRoots(t *testing.T) {
+	customPool := x509.NewCertPool()
+	customPool.AppendCertsFromPEM([]byte("-----BEGIN CERTIFICATE-----\nMIIBkTCB+wIJAL...\n-----END CERTIFICATE-----"))
+
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		Database: "mydb",
+		User:     "admin",
+		Password: "pw",
+		SSLMode:  "verify-full",
+		CACert:   customPool,
+	}
+
+	dsn := config.DSN()
+	if strings.Contains(dsn, "sslrootcert") {
+		t.Fatal("expected no sslrootcert in DSN when using CACert directly")
+	}
+}
+
+func TestConnectionConfigNilCACertNoSSLRootCert(t *testing.T) {
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		Database: "mydb",
+		User:     "admin",
+		Password: "pw",
+		SSLMode:  "verify-full",
+	}
+
+	dsn := config.DSN()
+	if strings.Contains(dsn, "sslrootcert") {
+		t.Fatal("expected no sslrootcert in DSN when CACert is nil")
 	}
 }

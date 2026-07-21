@@ -7,6 +7,8 @@ package postgresqlmeta
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"fmt"
 	"math"
@@ -32,7 +34,7 @@ type ConnectionConfig struct {
 	User           string
 	Password       string
 	SSLMode        string
-	SSLCAFile      string // PEM file for private CA; only used when sslmode requires verification
+	CACert         *x509.CertPool // pre-parsed CA pool; only used when sslmode requires verification
 	ConnectTimeout time.Duration
 }
 
@@ -83,11 +85,6 @@ func (c ConnectionConfig) DSN() string {
 	query.Set("sslmode", c.sslMode())
 	query.Set("connect_timeout", strconv.Itoa(int(math.Ceil(c.connectTimeout().Seconds()))))
 
-	// Add private CA if configured.
-	if caFile := strings.TrimSpace(c.SSLCAFile); caFile != "" && c.sslMode() != "disable" {
-		query.Set("sslrootcert", caFile)
-	}
-
 	if strings.TrimSpace(c.Socket) != "" {
 		query.Set("host", c.Address())
 		return (&url.URL{Scheme: "postgres", User: user, Path: database, RawQuery: query.Encode()}).String()
@@ -108,6 +105,19 @@ func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error
 	if err != nil {
 		return nil, fmt.Errorf("parse metadata connection: %w", err)
 	}
+
+	if strings.ToLower(strings.TrimSpace(config.SSLMode)) != "disable" && config.CACert != nil {
+		host := strings.TrimSpace(config.Host)
+		if host == "" {
+			host = "127.0.0.1"
+		}
+		connConfig.TLSConfig = &tls.Config{
+			ServerName:         host,
+			RootCAs:            config.CACert,
+			InsecureSkipVerify: false,
+		}
+	}
+
 	db := stdlib.OpenDB(*connConfig)
 
 	db.SetMaxOpenConns(25)

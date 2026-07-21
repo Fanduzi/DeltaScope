@@ -136,7 +136,7 @@ func executeRegistryAwareAudit(
 			ConnectTimeout: connectTimeout,
 			Dialect:        toMetadataDialect(connDialect),
 			TLSMode:        strings.ToLower(strings.TrimSpace(conn.TLSMode)),
-			TLSCAFile:      strings.TrimSpace(conn.TLSCAFile),
+			CACert:         conn.ResolvedCACert(),
 		},
 		RequestedDialect:     toMetadataDialect(connDialect),
 		ExplicitDialect:      true,

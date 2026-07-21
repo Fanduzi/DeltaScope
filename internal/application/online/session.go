@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -35,8 +34,8 @@ type SessionConfig struct {
 	Schema         string
 	Dialect        string
 	ConnectTimeout time.Duration
-	TLSMode        string // "disabled" or "enabled"
-	TLSCAFile      string // PEM file for private CA; only used when tls_mode=enabled
+	TLSMode        string          // "disabled" or "enabled"
+	CACert         *x509.CertPool  // pre-parsed CA pool; only used when tls_mode=enabled
 }
 
 // Session holds the pinned connection and derived identity/metadata.
@@ -142,6 +141,21 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 	connConfig, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parse connection: %w", err)
+	}
+
+	if strings.ToLower(strings.TrimSpace(cfg.TLSMode)) == "enabled" {
+		host := strings.TrimSpace(cfg.Host)
+		if host == "" {
+			host = "127.0.0.1"
+		}
+		tlsCfg := &tls.Config{
+			ServerName:         host,
+			InsecureSkipVerify: false,
+		}
+		if cfg.CACert != nil {
+			tlsCfg.RootCAs = cfg.CACert
+		}
+		connConfig.TLSConfig = tlsCfg
 	}
 
 	db := stdlib.OpenDB(*connConfig)
@@ -255,17 +269,8 @@ func buildMySQLConfig(cfg SessionConfig) (*gomysql.Config, error) {
 			ServerName:         host,
 			InsecureSkipVerify: false,
 		}
-		// Load private CA if configured.
-		if caFile := strings.TrimSpace(cfg.TLSCAFile); caFile != "" {
-			caCert, err := os.ReadFile(caFile)
-			if err != nil {
-				return nil, fmt.Errorf("read TLS CA file: %w", err)
-			}
-			pool := x509.NewCertPool()
-			if !pool.AppendCertsFromPEM(caCert) {
-				return nil, fmt.Errorf("parse TLS CA certificate")
-			}
-			tlsCfg.RootCAs = pool
+		if cfg.CACert != nil {
+			tlsCfg.RootCAs = cfg.CACert
 		}
 		mysqlCfg.TLS = tlsCfg
 	}
@@ -296,10 +301,6 @@ func buildPostgreSQLDSN(cfg SessionConfig) (string, error) {
 	tlsMode := strings.ToLower(strings.TrimSpace(cfg.TLSMode))
 	if tlsMode == "enabled" {
 		query.Set("sslmode", "verify-full")
-		// Load private CA if configured.
-		if caFile := strings.TrimSpace(cfg.TLSCAFile); caFile != "" {
-			query.Set("sslrootcert", caFile)
-		}
 	} else {
 		query.Set("sslmode", "disable")
 	}
