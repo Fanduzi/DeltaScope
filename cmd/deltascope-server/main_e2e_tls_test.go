@@ -327,7 +327,6 @@ func assertBoundedError(t *testing.T, result map[string]any, expectedCode string
 func assertNoLeaks(t *testing.T, body []byte) {
 	t.Helper()
 	s := string(body)
-	// Must not leak sensitive information
 	leakPatterns := []string{
 		"-----BEGIN",
 		"-----END",
@@ -340,6 +339,14 @@ func assertNoLeaks(t *testing.T, body []byte) {
 		"postgresql-tls-untrusted",
 		"mysql-tls-hostname-mismatch",
 		"postgresql-tls-hostname-mismatch",
+		"mysql-tls-wrong",
+		"postgresql-tls-wrong",
+		"MYSQL_PASSWORD",
+		"PG_PASSWORD",
+		"dsn:",
+		"driver:",
+		"api_key",
+		"SELECT id FROM app.users",
 	}
 	for _, pattern := range leakPatterns {
 		if strings.Contains(strings.ToLower(s), strings.ToLower(pattern)) {
@@ -350,6 +357,15 @@ func assertNoLeaks(t *testing.T, body []byte) {
 
 func assertOnlineQueryAccessResult(t *testing.T, result map[string]any, expectedDialect, expectedTable, expectedColumn string) {
 	t.Helper()
+
+	// Assert dialect matches expected
+	dialect, ok := result["dialect"].(string)
+	if !ok {
+		t.Fatalf("expected dialect in response, got %v", result)
+	}
+	if dialect != expectedDialect {
+		t.Fatalf("expected dialect %q, got %q", expectedDialect, dialect)
+	}
 
 	// Assert this is an online result (not offline fallback)
 	classification, ok := result["read_classification"].(string)
@@ -387,20 +403,20 @@ func assertOnlineQueryAccessResult(t *testing.T, result map[string]any, expected
 		object, _ := reqMap["object"].(string)
 		privilege, _ := reqMap["privilege"].(string)
 
-		// Check for table reference (schema.table format)
-		if strings.Contains(object, expectedTable) {
+		// Check for exact table reference (schema.table format)
+		if object == expectedTable {
 			foundTable = true
 		}
-		// Check for column reference (schema.table.column format)
-		if strings.Contains(object, expectedColumn) && privilege == "SELECT" {
+		// Check for exact column reference (schema.table.column format) with read_column privilege
+		if object == expectedTable+"."+expectedColumn && privilege == "read_column" {
 			foundColumn = true
 		}
 	}
 
 	if !foundTable {
-		t.Errorf("expected table %q in requirements, got %v", expectedTable, requirements)
+		t.Errorf("expected exact table %q in requirements, got %v", expectedTable, requirements)
 	}
 	if !foundColumn {
-		t.Errorf("expected column %q with SELECT privilege in requirements, got %v", expectedColumn, requirements)
+		t.Errorf("expected exact column %q with read_column privilege in requirements, got %v", expectedColumn, requirements)
 	}
 }

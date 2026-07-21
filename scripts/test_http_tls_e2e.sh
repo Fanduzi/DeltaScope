@@ -96,7 +96,7 @@ run_tls_tests() {
   (
     cd "${ROOT_DIR}"
     TLS_E2E_SERVER_ADDR="${server_addr}" \
-    go test -tags='e2e,tls' -count=1 -run 'TestTLS' -v ./cmd/deltascope-server
+    go test -tags='e2e,tls,postgresql' -count=1 -run 'TestTLS' -v ./cmd/deltascope-server
   )
   local test_exit=$?
 
