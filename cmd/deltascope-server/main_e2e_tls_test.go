@@ -12,6 +12,66 @@ import (
 	"testing"
 )
 
+func TestTLSQueryAccessMySQLSucceedsWithTrustedCA(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls", "SELECT id FROM app.users")
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
+	}
+}
+
+func TestTLSQueryAccessPostgreSQLSucceedsWithTrustedCA(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls", "SELECT id FROM app.users")
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.StatusCode, string(body))
+	}
+}
+
+func TestTLSQueryAccessMySQLFailsWithUntrustedCA(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doQueryAccessRequest(t, serverAddr, "mysql-tls-untrusted", "SELECT id FROM app.users")
+
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
+}
+
+func TestTLSQueryAccessPostgreSQLFailsWithUntrustedCA(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doQueryAccessRequest(t, serverAddr, "postgresql-tls-untrusted", "SELECT id FROM app.users")
+
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
+}
+
 func TestTLSMySQLAuditSucceedsWithTrustedCA(t *testing.T) {
 	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
 	if serverAddr == "" {
@@ -101,6 +161,46 @@ func TestTLSPostgreSQLAuditFailsWithUntrustedCA(t *testing.T) {
 	assertNoLeaks(t, body)
 }
 
+func TestTLSMySQLAuditFailsWithHostnameMismatch(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doAuditRequest(t, serverAddr, "mysql-tls-hostname-mismatch", "SELECT id FROM app.users")
+
+	// Must fail with a bounded error (502 Bad Gateway for connection failure).
+	// The trusted CA validates the cert, but hostname verification fails because
+	// the cert SAN only contains "mysql-tls", not "mysql-tls-wrong".
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
+}
+
+func TestTLSPostgreSQLAuditFailsWithHostnameMismatch(t *testing.T) {
+	serverAddr := os.Getenv("TLS_E2E_SERVER_ADDR")
+	if serverAddr == "" {
+		t.Fatal("TLS_E2E_SERVER_ADDR not set")
+	}
+
+	resp, body := doAuditRequest(t, serverAddr, "postgresql-tls-hostname-mismatch", "SELECT id FROM app.users")
+
+	// Must fail with a bounded error (502 Bad Gateway for connection failure).
+	// The trusted CA validates the cert, but hostname verification fails because
+	// the cert SAN only contains "postgresql-tls", not "postgresql-tls-wrong".
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected 502, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	result := parseJSON(t, body)
+	assertBoundedError(t, result, "connection_failed")
+	assertNoLeaks(t, body)
+}
+
 // Helper functions
 
 func doAuditRequest(t *testing.T, serverAddr, connectionID, sql string) (*http.Response, []byte) {
@@ -108,6 +208,30 @@ func doAuditRequest(t *testing.T, serverAddr, connectionID, sql string) (*http.R
 
 	body := fmt.Sprintf(`{"sql":"%s","connection_id":"%s"}`, sql, connectionID)
 	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s/v1/audit", serverAddr), strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("send request: %v", err)
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read response: %v", err)
+	}
+	resp.Body.Close()
+
+	return resp, bodyBytes
+}
+
+func doQueryAccessRequest(t *testing.T, serverAddr, connectionID, sql string) (*http.Response, []byte) {
+	t.Helper()
+
+	body := fmt.Sprintf(`{"sql":"%s","connection_id":"%s"}`, sql, connectionID)
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://%s/v1/query-access/analyze", serverAddr), strings.NewReader(body))
 	if err != nil {
 		t.Fatalf("create request: %v", err)
 	}
@@ -174,6 +298,8 @@ func assertNoLeaks(t *testing.T, body []byte) {
 		"/etc/deltascope/",
 		"mysql-tls-untrusted",
 		"postgresql-tls-untrusted",
+		"mysql-tls-hostname-mismatch",
+		"postgresql-tls-hostname-mismatch",
 	}
 	for _, pattern := range leakPatterns {
 		if strings.Contains(strings.ToLower(s), strings.ToLower(pattern)) {

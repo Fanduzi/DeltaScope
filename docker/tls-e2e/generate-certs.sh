@@ -94,7 +94,7 @@ metadata:
       schema: app
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/trusted-ca.pem
-      purposes: [audit]
+      purposes: [audit, query_access]
 
     - id: postgresql-tls
       dialect: postgresql
@@ -106,7 +106,7 @@ metadata:
       schema: app
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/trusted-ca.pem
-      purposes: [audit]
+      purposes: [audit, query_access]
 
     - id: mysql-tls-untrusted
       dialect: mysql
@@ -117,11 +117,34 @@ metadata:
       schema: app
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/trusted-ca.pem
-      purposes: [audit]
+      purposes: [audit, query_access]
 
     - id: postgresql-tls-untrusted
       dialect: postgresql
       host: postgresql-tls-untrusted
+      port: 5432
+      user: root
+      password_env: PG_PASSWORD
+      database: app
+      schema: app
+      tls_mode: enabled
+      tls_ca_file: /etc/deltascope/trusted-ca.pem
+      purposes: [audit]
+
+    - id: mysql-tls-hostname-mismatch
+      dialect: mysql
+      host: mysql-tls-wrong
+      port: 3306
+      user: root
+      password_env: MYSQL_PASSWORD
+      schema: app
+      tls_mode: enabled
+      tls_ca_file: /etc/deltascope/trusted-ca.pem
+      purposes: [audit]
+
+    - id: postgresql-tls-hostname-mismatch
+      dialect: postgresql
+      host: postgresql-tls-wrong
       port: 5432
       user: root
       password_env: PG_PASSWORD
