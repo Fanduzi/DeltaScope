@@ -33,6 +33,8 @@ cleanup() {
   fi
 }
 
+trap cleanup EXIT INT TERM
+
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
 }
@@ -106,14 +108,19 @@ run_tls_tests() {
     compose logs mysql-tls 2>&1 | tail -10
     log "postgresql logs:"
     compose logs postgresql-tls 2>&1 | tail -10
-    # Don't cleanup on failure so logs can be inspected
-    trap - EXIT
   fi
 
   return "${test_exit}"
 }
 
 main() {
+  local test_failure_mode=false
+  for arg in "$@"; do
+    case "${arg}" in
+      --test-failure) test_failure_mode=true ;;
+    esac
+  done
+
   require_cmd docker
   require_cmd go
   require_cmd curl
@@ -121,17 +128,23 @@ main() {
 
   generate_certs
   start_tls_stack
+
+  if [[ "${test_failure_mode}" == "true" ]]; then
+    log "--test-failure flag set, simulating failure to verify cleanup"
+    exit 1
+  fi
+
+  # Disable errexit so run_tls_tests return code is captured reliably.
+  set +e
   run_tls_tests
   local test_exit=$?
+  set -e
 
   if [[ ${test_exit} -eq 0 ]]; then
     log "all TLS E2E tests passed"
-    cleanup
-  else
-    log "TLS E2E tests failed, leaving containers running for inspection"
-    log "Run 'docker compose -f ${COMPOSE_FILE} down -v --remove-orphans' to cleanup"
   fi
 
+  # Cleanup is handled by the EXIT trap; exit with the test result.
   exit "${test_exit}"
 }
 
