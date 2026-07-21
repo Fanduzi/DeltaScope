@@ -1,7 +1,7 @@
 # Decision: Online Query Access Uses Operator-Managed Named Connections
 
 - Date: 2026-07-20
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@6903364`
 - Related: [Query Access foundation](2026-07-11-query-access-analysis-foundation.md), [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 
