@@ -39,8 +39,8 @@ type ConnectionConfig struct {
 	Database       string
 	Dialect        spec.Dialect
 	ConnectTimeout time.Duration
-	TLSMode        string          // "disabled" (default) or "enabled"
-	CACert         *x509.CertPool  // pre-parsed CA pool; only used when tls_mode=enabled
+	TLSMode        string         // "disabled" (default) or "enabled"
+	CACert         *x509.CertPool // pre-parsed CA pool; only used when tls_mode=enabled
 }
 
 // Request describes one shared metadata-aware audit preparation request.
