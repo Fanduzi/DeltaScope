@@ -119,10 +119,11 @@ func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error
 		ctx = context.Background()
 	}
 
-	db, err := sql.Open("mysql", config.DSN())
+	connector, err := gomysql.NewConnector(config.mysqlConfig())
 	if err != nil {
-		return nil, fmt.Errorf("open metadata connection: %w", err)
+		return nil, fmt.Errorf("create metadata connector: %w", err)
 	}
+	db := sql.OpenDB(connector)
 
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)

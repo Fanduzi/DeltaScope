@@ -129,7 +129,7 @@ metadata:
       schema: app
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/trusted-ca.pem
-      purposes: [audit]
+      purposes: [audit, query_access]
 
     - id: mysql-tls-hostname-mismatch
       dialect: mysql
@@ -140,7 +140,7 @@ metadata:
       schema: app
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/trusted-ca.pem
-      purposes: [audit]
+      purposes: [audit, query_access]
 
     - id: postgresql-tls-hostname-mismatch
       dialect: postgresql
@@ -152,7 +152,7 @@ metadata:
       schema: app
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/trusted-ca.pem
-      purposes: [audit]
+      purposes: [audit, query_access]
 EOF
 
 echo "TLS certificates generated in ${CERTS_DIR}"

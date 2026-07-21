@@ -92,13 +92,13 @@ func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) 
 
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("ping: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("pin connection: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
 	identity, err := IdentifyFromConn(ctx, conn, cfg.Dialect)
@@ -171,13 +171,13 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("ping: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("pin connection: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
 	identity, err := IdentifyFromConn(ctx, conn, "postgresql")
