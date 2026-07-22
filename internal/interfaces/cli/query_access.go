@@ -194,7 +194,7 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 	session, err := online.OpenSession(cmd.Context(), sessionCfg)
 	if err != nil {
 		*exitCode = exitQueryAccessUsageError
-		return err
+		return mapOnlineCLIBoundaryError(err)
 	}
 	defer session.Close()
 

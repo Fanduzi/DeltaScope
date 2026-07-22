@@ -17,6 +17,7 @@ PG_TLS_UNTRUSTED_PORT="${PG_TLS_UNTRUSTED_PORT:-15433}"
 
 TLS_CERTS_DIR=""
 TLS_OVERRIDE_FILE=""
+TLS_RUNTIME_CONFIG=""
 CLI_BIN=""
 MODE="${1:-all}"
 
@@ -38,6 +39,9 @@ cleanup() {
   if [[ -n "${TLS_OVERRIDE_FILE}" && -f "${TLS_OVERRIDE_FILE}" ]]; then
     compose down -v --remove-orphans >/dev/null 2>&1 || true
     rm -f "${TLS_OVERRIDE_FILE}"
+  fi
+  if [[ -n "${TLS_RUNTIME_CONFIG}" && -f "${TLS_RUNTIME_CONFIG}" ]]; then
+    rm -f "${TLS_RUNTIME_CONFIG}"
   fi
   if [[ -n "${TLS_CERTS_DIR}" && -d "${TLS_CERTS_DIR}" ]]; then
     rm -rf "${TLS_CERTS_DIR}"
@@ -70,9 +74,10 @@ wait_for_health() {
 generate_certs() {
   log "generating TLS certificates"
   TLS_CERTS_DIR="$(mktemp -d /tmp/deltascope-cli-tls-e2e-certs.XXXXXX)"
-  export TLS_CERTS_DIR
-  # Second arg (runtime config) not needed for CLI tests; pass a dummy path.
-  "${SCRIPT_DIR}/generate-certs.sh" "${TLS_CERTS_DIR}" "/dev/null" >/dev/null
+  TLS_RUNTIME_CONFIG="$(mktemp /tmp/deltascope-cli-tls-runtime.XXXXXX.yaml)"
+  echo "logging:" > "${TLS_RUNTIME_CONFIG}"
+  export TLS_CERTS_DIR TLS_RUNTIME_CONFIG
+  "${SCRIPT_DIR}/generate-certs.sh" "${TLS_CERTS_DIR}" "${TLS_RUNTIME_CONFIG}" >/dev/null
 }
 
 generate_port_override() {
@@ -272,10 +277,11 @@ run_mysql_audit_suite() {
     "--schema app"
 
   # Untrusted CA — expect connection failure (exit 2)
+  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "mysql84-audit-untrusted" \
     "audit" "mysql" 2 \
-    "localhost" "${untrusted_port}" "${untrusted_ca}" \
+    "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${audit_sql}" \
     "--schema app"
 
@@ -306,10 +312,11 @@ run_mysql_query_access_suite() {
     "--schema app"
 
   # Untrusted CA — expect connection failure (exit 2)
+  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "mysql84-query-access-untrusted" \
     "query-access" "mysql" 2 \
-    "localhost" "${untrusted_port}" "${untrusted_ca}" \
+    "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app"
 
@@ -340,10 +347,11 @@ run_pg_audit_suite() {
     "--schema app --database app"
 
   # Untrusted CA — expect connection failure (exit 2)
+  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "pg17-audit-untrusted" \
     "audit" "postgresql" 2 \
-    "localhost" "${untrusted_port}" "${untrusted_ca}" \
+    "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${audit_sql}" \
     "--schema app --database app"
 
@@ -374,10 +382,11 @@ run_pg_query_access_suite() {
     "--schema app --database app"
 
   # Untrusted CA — expect connection failure (exit 2)
+  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "pg17-query-access-untrusted" \
     "query-access" "postgresql" 2 \
-    "localhost" "${untrusted_port}" "${untrusted_ca}" \
+    "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app --database app"
 

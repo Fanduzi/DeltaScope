@@ -3180,6 +3180,10 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 		{name: "timeout", input: "dial tcp 127.0.0.1:3306: i/o timeout", wantMsg: "connection timed out"},
 		{name: "context canceled", input: "context canceled", wantMsg: "request canceled"},
 		{name: "unknown error", input: "some unexpected driver error with details", wantMsg: "connection failed"},
+		{name: "tls handshake failure", input: "tls: handshake failure", wantMsg: "TLS handshake failed"},
+		{name: "x509 unknown authority", input: "x509: certificate signed by unknown authority", wantMsg: "TLS handshake failed"},
+		{name: "pgpass missing", input: "pgpass file not found", wantMsg: "connection failed"},
+		{name: "connection failed", input: "connection failed: host unreachable", wantMsg: "connection failed"},
 	}
 
 	for _, tt := range tests {
@@ -3262,4 +3266,63 @@ func generateTestCAPEM(t *testing.T) []byte {
 		t.Fatalf("encode CA cert PEM: %v", err)
 	}
 	return []byte(buf.String())
+}
+
+func TestPasswordSourceErrorsAreBounded(t *testing.T) {
+	t.Run("unset env var does not leak var name", func(t *testing.T) {
+		stderr := &strings.Builder{}
+		code := Execute(
+			context.Background(),
+			[]string{"audit", "--sql", "delete from users", "-u", "root", "--password-env", "MY_SECRET_VAR_NAME"},
+			strings.NewReader(""),
+			&strings.Builder{},
+			stderr,
+		)
+		if code != 2 {
+			t.Fatalf("expected exit code 2, got %d", code)
+		}
+		if strings.Contains(stderr.String(), "MY_SECRET_VAR_NAME") {
+			t.Fatalf("stderr must not leak env var name, got %q", stderr.String())
+		}
+		if !strings.Contains(stderr.String(), "invalid password source") {
+			t.Fatalf("expected bounded error message, got %q", stderr.String())
+		}
+	})
+
+	t.Run("missing file does not leak path", func(t *testing.T) {
+		stderr := &strings.Builder{}
+		code := Execute(
+			context.Background(),
+			[]string{"audit", "--sql", "delete from users", "-u", "root", "--password-file", "/tmp/super-secret-path.txt"},
+			strings.NewReader(""),
+			&strings.Builder{},
+			stderr,
+		)
+		if code != 2 {
+			t.Fatalf("expected exit code 2, got %d", code)
+		}
+		if strings.Contains(stderr.String(), "/tmp/super-secret-path.txt") {
+			t.Fatalf("stderr must not leak file path, got %q", stderr.String())
+		}
+		if !strings.Contains(stderr.String(), "invalid password source") {
+			t.Fatalf("expected bounded error message, got %q", stderr.String())
+		}
+	})
+}
+
+func TestTLSModeIsCaseSensitive(t *testing.T) {
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "Enabled"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for case-sensitive tls-mode, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "tls-mode") {
+		t.Fatalf("expected tls-mode error, got %q", stderr.String())
+	}
 }

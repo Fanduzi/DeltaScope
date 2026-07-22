@@ -81,6 +81,9 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				client, resolvedDialect, resolvedSchema, metadataContext, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
 				if err != nil {
 					*exitCode = exitUser
+					if isOnlineConnectionError(err) {
+						return mapOnlineCLIBoundaryError(err)
+					}
 					return err
 				}
 				defer client.Close()
@@ -195,7 +198,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 	}
 
 	// TLS validation
-	tlsMode := strings.ToLower(strings.TrimSpace(options.TLSMode))
+	tlsMode := strings.TrimSpace(options.TLSMode)
 	if tlsMode == "" {
 		tlsMode = "disabled"
 	}
@@ -251,7 +254,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 		PasswordFile: resolved.PasswordFile,
 	}, ifaceconn.ResolveConnectionOptions{})
 	if err != nil {
-		return auditConnectionOptions{}, newUserError(err.Error())
+		return auditConnectionOptions{}, newUserError("invalid password source")
 	}
 	resolved.Password = password
 	return resolved, nil
@@ -534,7 +537,11 @@ func isOnlineConnectionError(err error) bool {
 	return strings.Contains(msg, "connection refused") ||
 		strings.Contains(msg, "certificate") ||
 		strings.Contains(msg, "timeout") ||
-		strings.Contains(msg, "dial tcp")
+		strings.Contains(msg, "dial tcp") ||
+		strings.Contains(msg, "tls:") ||
+		strings.Contains(msg, "x509:") ||
+		strings.Contains(msg, "connection failed") ||
+		strings.Contains(msg, "pgpass")
 }
 
 func promptPassword(stderr io.Writer) (string, error) {
@@ -575,14 +582,18 @@ func promptPassword(stderr io.Writer) (string, error) {
 func mapOnlineCLIBoundaryError(err error) error {
 	msg := err.Error()
 	switch {
-	case strings.Contains(msg, "connection refused"):
-		return newUserError("connection failed")
 	case strings.Contains(msg, "certificate"):
+		return newUserError("TLS handshake failed")
+	case strings.Contains(msg, "x509:"):
+		return newUserError("TLS certificate verification failed")
+	case strings.Contains(msg, "tls:"):
 		return newUserError("TLS handshake failed")
 	case strings.Contains(msg, "timeout"):
 		return newUserError("connection timed out")
 	case strings.Contains(msg, "context canceled"):
 		return newUserError("request canceled")
+	case strings.Contains(msg, "connection refused"):
+		return newUserError("connection failed")
 	default:
 		return newUserError("connection failed")
 	}
