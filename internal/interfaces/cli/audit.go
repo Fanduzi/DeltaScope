@@ -559,13 +559,27 @@ func isBoundedApplicationError(err error) bool {
 func mapAuditMetaErrorToBounded(err *auditmeta.Error) error {
 	switch err.Kind {
 	case auditmeta.ErrorConnectionOpen:
-		return newUserError("connection failed")
+		return classifyConnectionError(err)
 	case auditmeta.ErrorDialectDetect:
 		return newUserError("server identity error")
 	case auditmeta.ErrorSchemaLookupFailed:
 		return newUserError("metadata analysis failed")
 	case auditmeta.ErrorInvalidSQL:
 		return newUserError("invalid SQL input")
+	default:
+		return newUserError("connection failed")
+	}
+}
+
+func classifyConnectionError(err *auditmeta.Error) error {
+	msg := strings.ToLower(err.Error())
+	switch {
+	case strings.Contains(msg, "certificate") || strings.Contains(msg, "x509"):
+		return newUserError("TLS certificate verification failed")
+	case strings.Contains(msg, "tls"):
+		return newUserError("TLS handshake failed")
+	case strings.Contains(msg, "timeout"):
+		return newUserError("connection timed out")
 	default:
 		return newUserError("connection failed")
 	}
