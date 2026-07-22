@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // testQueryResult holds pre-configured results for mock queries.
@@ -613,5 +615,41 @@ func TestBuildPostgreSQLDSN_DefaultDatabase(t *testing.T) {
 
 	if !strings.Contains(dsn, "/postgres") {
 		t.Errorf("DSN should use default database 'postgres', got: %s", dsn)
+	}
+}
+
+func TestBuildPostgreSQLConfigSetsExplicitPasswordAfterParse(t *testing.T) {
+	t.Parallel()
+
+	cfg := SessionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		User:     "postgres",
+		Password: "secret-password",
+		Database: "test",
+		Dialect:  "postgresql",
+		TLSMode:  "disabled",
+	}
+
+	dsn, err := buildPostgreSQLDSN(cfg)
+	if err != nil {
+		t.Fatalf("buildPostgreSQLDSN: %v", err)
+	}
+
+	if strings.Contains(dsn, "secret-password") {
+		t.Fatal("DSN must not contain password")
+	}
+
+	connConfig, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		t.Fatalf("pgx.ParseConfig: %v", err)
+	}
+	if connConfig.Password != "" {
+		t.Fatalf("password should not be in parsed config from DSN, got %q", connConfig.Password)
+	}
+
+	connConfig.Password = cfg.Password
+	if connConfig.Password != "secret-password" {
+		t.Fatalf("explicit password not set correctly, got %q", connConfig.Password)
 	}
 }

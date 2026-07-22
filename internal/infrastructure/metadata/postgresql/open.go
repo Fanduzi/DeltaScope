@@ -79,7 +79,7 @@ func (c ConnectionConfig) sslMode() string {
 
 // DSN formats the config for the pgx database/sql driver.
 func (c ConnectionConfig) DSN() string {
-	user := url.UserPassword(c.User, c.Password)
+	user := url.User(c.User)
 	database := "/" + url.PathEscape(c.DatabaseName())
 	query := url.Values{}
 	query.Set("sslmode", c.sslMode())
@@ -105,6 +105,8 @@ func OpenDBContext(ctx context.Context, config ConnectionConfig) (*sql.DB, error
 	if err != nil {
 		return nil, fmt.Errorf("parse metadata connection: %w", err)
 	}
+
+	connConfig.Password = config.Password
 
 	if strings.ToLower(strings.TrimSpace(config.SSLMode)) != "disable" && config.CACert != nil {
 		host := strings.TrimSpace(config.Host)

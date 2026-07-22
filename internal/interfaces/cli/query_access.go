@@ -169,8 +169,8 @@ func runQueryAccessOffline(cmd *cobra.Command, sql string, dialect spec.Dialect,
 	return writeQueryAccessResult(cmd, result, exitCode)
 }
 
-func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, accessMode deltascope.QueryAccessMode, defaultSchema string, connection auditConnectionOptions, exitCode *int) error {
-	sessionCfg := online.SessionConfig{
+func buildOnlineSessionConfig(connection auditConnectionOptions, dialect spec.Dialect) online.SessionConfig {
+	cfg := online.SessionConfig{
 		Host:           connection.Host,
 		Port:           connection.Port,
 		Socket:         connection.Socket,
@@ -179,10 +179,17 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 		Schema:         connection.Schema,
 		Dialect:        string(dialect),
 		ConnectTimeout: connection.ConnectTimeout,
+		TLSMode:        connection.TLSMode,
+		CACert:         connection.CACert,
 	}
 	if dialect == spec.DialectPostgreSQL {
-		sessionCfg.Database = connection.Database
+		cfg.Database = connection.Database
 	}
+	return cfg
+}
+
+func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, accessMode deltascope.QueryAccessMode, defaultSchema string, connection auditConnectionOptions, exitCode *int) error {
+	sessionCfg := buildOnlineSessionConfig(connection, dialect)
 
 	session, err := online.OpenSession(cmd.Context(), sessionCfg)
 	if err != nil {

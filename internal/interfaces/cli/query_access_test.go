@@ -7,9 +7,11 @@ package cli
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/json"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -181,5 +183,41 @@ func TestQueryAccessAnalyzeRejectsRemovedPasswordFlag(t *testing.T) {
 	}
 	if !bytes.Contains(stderr.Bytes(), []byte("unknown flag")) {
 		t.Fatalf("expected unknown flag error, got %q", stderr.String())
+	}
+}
+
+func TestQueryAccessOnlineBuildsTLSSessionConfig(t *testing.T) {
+	t.Parallel()
+
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM([]byte("-----BEGIN CERTIFICATE-----\nMIIBkTCB+wIJAL...\n-----END CERTIFICATE-----"))
+
+	connection := auditConnectionOptions{
+		Host:     "db.example.com",
+		Port:     5432,
+		User:     "admin",
+		Password: "secret",
+		Database: "mydb",
+		Schema:   "app",
+		TLSMode:  "enabled",
+		CACert:   pool,
+	}
+
+	cfg := buildOnlineSessionConfig(connection, spec.DialectPostgreSQL)
+
+	if cfg.TLSMode != "enabled" {
+		t.Errorf("TLSMode = %q, want %q", cfg.TLSMode, "enabled")
+	}
+	if cfg.CACert == nil {
+		t.Fatal("CACert should not be nil when connection provides a CA pool")
+	}
+	if cfg.CACert != pool {
+		t.Error("CACert should be the same pool passed via connection")
+	}
+	if cfg.Database != "mydb" {
+		t.Errorf("Database = %q, want %q", cfg.Database, "mydb")
+	}
+	if cfg.Host != "db.example.com" {
+		t.Errorf("Host = %q, want %q", cfg.Host, "db.example.com")
 	}
 }

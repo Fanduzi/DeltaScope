@@ -143,6 +143,8 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 		return nil, fmt.Errorf("parse connection: %w", err)
 	}
 
+	connConfig.Password = cfg.Password
+
 	if strings.ToLower(strings.TrimSpace(cfg.TLSMode)) == "enabled" {
 		host := strings.TrimSpace(cfg.Host)
 		if host == "" {
@@ -280,7 +282,7 @@ func buildMySQLConfig(cfg SessionConfig) (*gomysql.Config, error) {
 
 // buildPostgreSQLDSN constructs a PostgreSQL connection string from the session config.
 func buildPostgreSQLDSN(cfg SessionConfig) (string, error) {
-	user := url.UserPassword(cfg.User, cfg.Password)
+	user := url.User(cfg.User)
 	host := strings.TrimSpace(cfg.Host)
 	if host == "" {
 		host = "127.0.0.1"

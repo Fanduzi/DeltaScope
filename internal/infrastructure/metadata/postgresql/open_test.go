@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func TestConnectionConfigDSNUsesTCPHostPortAndDatabase(t *testing.T) {
@@ -30,8 +32,11 @@ func TestConnectionConfigDSNUsesTCPHostPortAndDatabase(t *testing.T) {
 	if got := config.DatabaseName(); got != "appdb" {
 		t.Fatalf("expected database appdb, got %q", got)
 	}
-	if got := config.DSN(); !strings.Contains(got, "postgres://postgres:secret@127.0.0.1:5433/appdb?") {
-		t.Fatalf("expected postgres URL DSN, got %q", got)
+	if got := config.DSN(); !strings.Contains(got, "postgres://postgres@127.0.0.1:5433/appdb?") {
+		t.Fatalf("expected postgres URL DSN without password, got %q", got)
+	}
+	if got := config.DSN(); strings.Contains(got, "secret") {
+		t.Fatalf("DSN must not contain password, got %q", got)
 	}
 	if got := config.DSN(); !strings.Contains(got, "sslmode=disable") {
 		t.Fatalf("expected sslmode in DSN, got %q", got)
@@ -230,5 +235,36 @@ func TestConnectionConfigNilCACertNoSSLRootCert(t *testing.T) {
 	dsn := config.DSN()
 	if strings.Contains(dsn, "sslrootcert") {
 		t.Fatal("expected no sslrootcert in DSN when CACert is nil")
+	}
+}
+
+func TestOpenDBConfigSetsExplicitPasswordAfterParse(t *testing.T) {
+	t.Parallel()
+
+	config := ConnectionConfig{
+		Host:     "127.0.0.1",
+		Port:     5432,
+		Database: "mydb",
+		User:     "admin",
+		Password: "secret-password",
+		SSLMode:  "disable",
+	}
+
+	dsn := config.DSN()
+	if strings.Contains(dsn, "secret-password") {
+		t.Fatal("DSN must not contain password")
+	}
+
+	connConfig, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		t.Fatalf("pgx.ParseConfig: %v", err)
+	}
+	if connConfig.Password != "" {
+		t.Fatalf("password should not be in parsed config from DSN, got %q", connConfig.Password)
+	}
+
+	connConfig.Password = config.Password
+	if connConfig.Password != "secret-password" {
+		t.Fatalf("explicit password not set correctly, got %q", connConfig.Password)
 	}
 }
