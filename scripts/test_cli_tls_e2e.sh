@@ -276,7 +276,7 @@ run_mysql_audit_suite() {
     "${audit_sql}" \
     "--schema app"
 
-  # Untrusted CA — expect connection failure (exit 2)
+  # Untrusted CA — expect usage error (exit 3; query-access uses exitQueryAccessUsageError for connection failures)
   # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "mysql84-audit-untrusted" \
@@ -311,19 +311,19 @@ run_mysql_query_access_suite() {
     "${qa_sql}" \
     "--schema app"
 
-  # Untrusted CA — expect connection failure (exit 2)
+  # Untrusted CA — expect usage error (exit 3; query-access uses exitQueryAccessUsageError for connection failures)
   # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "mysql84-query-access-untrusted" \
-    "query-access analyze" "mysql" 2 \
+    "query-access analyze" "mysql" 3 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app"
 
-  # Hostname mismatch (exit 2)
+  # Hostname mismatch (exit 3; query-access uses exitQueryAccessUsageError)
   run_tls_case \
     "mysql84-query-access-hostname-mismatch" \
-    "query-access analyze" "mysql" 2 \
+    "query-access analyze" "mysql" 3 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app"
@@ -346,7 +346,7 @@ run_pg_audit_suite() {
     "${audit_sql}" \
     "--schema app --database app"
 
-  # Untrusted CA — expect connection failure (exit 2)
+  # Untrusted CA — expect usage error (exit 3; query-access uses exitQueryAccessUsageError for connection failures)
   # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "pg17-audit-untrusted" \
@@ -355,7 +355,7 @@ run_pg_audit_suite() {
     "${audit_sql}" \
     "--schema app --database app"
 
-  # Hostname mismatch (exit 2)
+  # Hostname mismatch (exit 3; query-access uses exitQueryAccessUsageError)
   run_tls_case \
     "pg17-audit-hostname-mismatch" \
     "audit" "postgresql" 2 \
@@ -381,19 +381,19 @@ run_pg_query_access_suite() {
     "${qa_sql}" \
     "--schema app --database app"
 
-  # Untrusted CA — expect connection failure (exit 2)
+  # Untrusted CA — expect usage error (exit 3; query-access uses exitQueryAccessUsageError for connection failures)
   # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "pg17-query-access-untrusted" \
-    "query-access analyze" "postgresql" 2 \
+    "query-access analyze" "postgresql" 3 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app --database app"
 
-  # Hostname mismatch (exit 2)
+  # Hostname mismatch (exit 3; query-access uses exitQueryAccessUsageError)
   run_tls_case \
     "pg17-query-access-hostname-mismatch" \
-    "query-access analyze" "postgresql" 2 \
+    "query-access analyze" "postgresql" 3 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app --database app"
