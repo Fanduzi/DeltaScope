@@ -1,7 +1,7 @@
 # Query Access CLI TLS and Credential Boundary
 
 - **Date:** 2026-07-22
-- **Status:** Accepted
+- **Status:** Proposed
 - **Related released milestone:** v0.420.0 Online Query Access Connection Registry
 
 ## Context
