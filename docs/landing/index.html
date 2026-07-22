@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.410.0",
+    "softwareVersion": "v0.420.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.410.0 — MySQL/TiDB Builtin Semantic Manifests</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.420.0 — Online Query Access Connection Registry</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,21 +1081,30 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-            <div class="release-version">v0.410.0</div>
+            <div class="release-version">v0.420.0</div>
             <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
           </div>
-            <div class="release-title" data-i18n="releases.currentTitle">MySQL/TiDB Builtin Semantic Manifests</div>
-            <div class="release-copy" data-i18n="releases.items.v04100">v0.410.0 introduces the opt-in MySQL/TiDB builtin semantic manifest proof model. On a caller-owned MySQL/TiDB *sql.Conn, profiled queries may return read_only + admissible after same-connection metadata, parser-native-form proof, complete candidate closure, and immutable manifest lookup. Proven: COUNT(*) and direct-column COUNT/SUM/AVG/MIN/MAX for all four profiles; ROW_NUMBER/RANK/DENSE_RANK for MySQL 8.0/8.4 and TiDB 8.5. MySQL 5.7 windows deferred. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Online Query Access Connection Registry</div>
+            <div class="release-copy" data-i18n="releases.items.v04200">v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions. Teams can register, inspect, and rotate named database connections through a centralised registry; TLS mode enforces transport-level protections; bounded scalar functions provide a constrained extension point for registered read-only functions. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
             <article class="release-card">
               <div class="release-card-head">
+                <div class="release-card-version">v0.410.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v04100">MySQL/TiDB Builtin Semantic Manifests</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v04100">v0.410.0 introduces the opt-in MySQL/TiDB builtin semantic manifest proof model. On a caller-owned MySQL/TiDB *sql.Conn, profiled queries may return read_only + admissible after same-connection metadata, parser-native-form proof, complete candidate closure, and immutable manifest lookup. Proven: COUNT(*) and direct-column COUNT/SUM/AVG/MIN/MAX for all four profiles; ROW_NUMBER/RANK/DENSE_RANK for MySQL 8.0/8.4 and TiDB 8.5. MySQL 5.7 windows deferred. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04100" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.zh-CN.md">Open v0.410.0 notes →</a>
+            </article>
+
+            <article class="release-card">
+              <div class="release-card-head">
                 <div class="release-card-version">v0.400.0</div>
                 <div class="release-card-label" data-i18n="releases.labels.v04000">Common Pure-Effect Query Access</div>
               </div>
-              <div class="release-card-copy" data-i18n="releases.items.v04000">v0.400.0 expands the opt-in PG17 Trusted PostgreSQL Query Access SDK with manifest-proven COUNT variants, typed SUM/AVG/MIN/MAX, and ranking windows over direct base-column dependencies. Default SDK/CLI/HTTP remain fail-closed; MySQL/TiDB remain deferred; MCP has no query-access tool. Not full common SELECT, not authorization.</div>
+              <div class="release-card-copy" data-i18n="releases.items.v04000">v0.400.0 expands the opt-in PG17 Trusted PostgreSQL Query Access SDK with manifest-proven COUNT variants, typed SUM/AVG/MIN/MAX, and ranking windows over direct base-column dependencies. Default SDK/CLI/HTTP stay fail-closed; MySQL/TiDB remain deferred; MCP has no query-access tool. Not full common SELECT, not authorization.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.400.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04000" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.400.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.400.0.zh-CN.md">Open v0.400.0 notes →</a>
             </article>
 
@@ -1106,14 +1115,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v03900">v0.390.0 adds an opt-in Trusted PostgreSQL Query Access SDK over a caller-owned *sql.Conn: PG17 manifest-gated pure-read admissibility for a narrow proven subset (count(*) and schema-qualified base-column comparison/JOIN). Default SDK/CLI/HTTP stay fail-closed; MCP still has no query-access tool. Not full common SELECT, not authorization.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.390.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v03900" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.390.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.390.0.zh-CN.md">Open v0.390.0 notes →</a>
-            </article>
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.380.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v03800">Query Access Analysis Foundation</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v03800">v0.380.0 ships Query Access Analysis as a separate public capability: read classification, admission, and table/column requirements with physical lineage. SDK, CLI, and HTTP are available; MCP has no query-access tool. Fail-closed and no-leak; not runtime authorization.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.380.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v03800" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.380.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.380.0.zh-CN.md">Open v0.380.0 notes →</a>
             </article>
             <article class="release-card archive">
               <div class="release-card-head">
@@ -1197,7 +1198,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.410.0 introduces the opt-in MySQL/TiDB builtin semantic manifest proof model with profiled COUNT/SUM/AVG/MIN/MAX and ranking windows over a caller-owned *sql.Conn; default SDK/CLI/HTTP stay fail-closed and MCP still has no query-access tool.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1209,7 +1210,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.410.0.zh-CN.md">Release Notes v0.410.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.zh-CN.md">Release Notes v0.420.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1253,7 +1254,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.410.0 — MySQL/TiDB Builtin Semantic Manifests',
+          badge: 'v0.420.0 — Online Query Access Connection Registry',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1379,9 +1380,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'MySQL/TiDB Builtin Semantic Manifests',
+          currentTitle: 'Online Query Access Connection Registry',
           currentLink: 'Read release notes →',
           labels: {
+            v04100: 'MySQL/TiDB Builtin Semantic Manifests',
             v04000: 'Common Pure-Effect Query Access',
             v03900: 'Trusted PostgreSQL Query Access SDK',
             v03800: 'Query Access Analysis Foundation',
@@ -1414,6 +1416,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v04100: 'Open v0.410.0 notes →',
             v04000: 'Open v0.400.0 notes →',
             v03900: 'Open v0.390.0 notes →',
             v03800: 'Open v0.380.0 notes →',
@@ -1449,6 +1452,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v04200: 'v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions. Teams can register, inspect, and rotate named database connections through a centralised registry; TLS mode enforces transport-level protections; bounded scalar functions provide a constrained extension point for registered read-only functions. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.',
             v04100: 'v0.410.0 introduces the opt-in MySQL/TiDB builtin semantic manifest proof model. On a caller-owned MySQL/TiDB *sql.Conn, profiled queries may return read_only + admissible after same-connection metadata, parser-native-form proof, complete candidate closure, and immutable manifest lookup. Proven: COUNT(*) and direct-column COUNT/SUM/AVG/MIN/MAX for all four profiles; ROW_NUMBER/RANK/DENSE_RANK for MySQL 8.0/8.4 and TiDB 8.5. MySQL 5.7 windows deferred. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.',
             v04000: 'v0.400.0 expands the opt-in PG17 Trusted PostgreSQL Query Access SDK with manifest-proven COUNT variants, typed SUM/AVG/MIN/MAX, and ranking windows over direct base-column dependencies. Default SDK/CLI/HTTP stay fail-closed; MySQL/TiDB remain deferred; MCP has no query-access tool. Not full common SELECT, not authorization.',
             v03900: 'v0.390.0 adds an opt-in Trusted PostgreSQL Query Access SDK over a caller-owned *sql.Conn: PG17 manifest-gated pure-read admissibility for a narrow proven subset (count(*) and schema-qualified base-column comparison/JOIN). Default SDK/CLI/HTTP stay fail-closed; MCP still has no query-access tool. Not full common SELECT, not authorization.',
@@ -1492,14 +1496,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.410.0 introduces the opt-in MySQL/TiDB builtin semantic manifest proof model with profiled COUNT/SUM/AVG/MIN/MAX and ranking windows over a caller-owned *sql.Conn; default SDK/CLI/HTTP stay fail-closed and MCP still has no query-access tool.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.410.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.420.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1517,7 +1521,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.410.0 —— MySQL/TiDB Builtin Semantic Manifests / MySQL/TiDB 内建语义清单',
+          badge: 'v0.420.0 —— Online Query Access Connection Registry / 在线查询访问连接注册表',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1643,9 +1647,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'MySQL/TiDB Builtin Semantic Manifests / MySQL/TiDB 内建语义清单',
+          currentTitle: 'Online Query Access Connection Registry / 在线查询访问连接注册表',
           currentLink: '查看发布说明 →',
           labels: {
+            v04100: 'MySQL/TiDB Builtin Semantic Manifests / MySQL/TiDB 内建语义清单',
             v04000: 'Common Pure-Effect Query Access / 常见纯效果查询访问',
             v03900: 'Trusted PostgreSQL Query Access SDK / 可信 PostgreSQL 查询访问 SDK',
             v03800: 'Query Access Analysis Foundation / 查询访问分析基础能力',
@@ -1678,6 +1683,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v04100: '查看 v0.410.0 发布说明 →',
             v04000: '查看 v0.400.0 发布说明 →',
             v03900: '查看 v0.390.0 发布说明 →',
             v03800: '查看 v0.380.0 发布说明 →',
@@ -1714,6 +1720,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v04200: 'v0.420.0 引入在线查询访问连接注册表：运维管理的命名连接、TLS 模式和有界标量函数。团队可以通过集中注册表注册、检查和轮换命名数据库连接；TLS 模式强制传输层保护；有界标量函数为已注册只读函数提供受限扩展点。默认 SDK/CLI/HTTP 仍 fail-closed；MCP 无 query-access 工具。不是鉴权。',
             v04100: 'v0.410.0 引入可选的 MySQL/TiDB builtin semantic manifest 证明模型。在调用方自有的 MySQL/TiDB *sql.Conn 上，带配置的查询经过同连接元数据、parser-native-form 证明、完整 candidate 闭包和不可变 manifest 查找后，可返回 read_only + admissible。已证明：四个 profile 的 COUNT(*) 和直接列 COUNT/SUM/AVG/MIN/MAX；MySQL 8.0/8.4 和 TiDB 8.5 的 ROW_NUMBER/RANK/DENSE_RANK。MySQL 5.7 窗口延迟。默认 SDK/CLI/HTTP 仍 fail-closed；MCP 无 query-access 工具。不是鉴权。',
             v04000: 'v0.400.0 扩展可选的 PG17 Trusted PostgreSQL Query Access SDK：manifest 已证明 COUNT 变体、直接基列上的带类型 SUM/AVG/MIN/MAX，以及排名窗口。默认 SDK/CLI/HTTP 仍 fail-closed；MySQL/TiDB 仍 deferred；MCP 无 query-access 工具。不是全面 common SELECT，也不是鉴权。',
             v03900: 'v0.390.0 新增可选的 Trusted PostgreSQL Query Access SDK（调用方自有 *sql.Conn）：PG17 manifest 门控的 pure-read 准入，覆盖已证明的窄范围（count(*) 与 schema 限定基列比较/JOIN）。默认 SDK/CLI/HTTP 仍 fail-closed；MCP 仍无 query-access 工具。不是全面 common SELECT，也不是鉴权。',
@@ -1754,14 +1761,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.410.0 引入可选的 MySQL/TiDB builtin semantic manifest 证明模型，在调用方自有的 *sql.Conn 上对带配置的 COUNT/SUM/AVG/MIN/MAX 和 ranking window 进行证明；默认 SDK/CLI/HTTP 仍 fail-closed，MCP 仍无 query-access 工具。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.420.0 引入在线查询访问连接注册表：运维管理的命名连接、TLS 模式和有界标量函数。',
           start: '开始',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 采用 Apache 2.0 许可。',
           version: '',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.410.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.420.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

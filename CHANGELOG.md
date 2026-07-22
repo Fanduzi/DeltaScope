@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.420.0] - 2026-07-22
+
+### Added
+
+- Online Query Access and metadata-aware HTTP audit now use operator-managed named connections. HTTP requests carry `connection_id`; the direct `connection` object is removed without a compatibility switch. Runtime configuration owns connection endpoints, credentials, TLS settings, and API key allowlists.
+- TLS mode per connection: `disabled` (default) or `enabled`. When enabled, DeltaScope enforces certificate chain validation and hostname verification. MySQL uses `InsecureSkipVerify=false`; PostgreSQL uses `sslmode=verify-full`. Optional `tls_ca_file` supplies a private CA PEM. No insecure mode exists.
+- Bounded public scalar function subset for Query Access admission: `LOWER`, `UPPER`, `LENGTH`, `CHAR_LENGTH`, `ABS`, `CEIL`, `FLOOR`, `COALESCE`, `NULLIF`, and dialect-specific `IFNULL`. Every operand must be a direct physical base column; `IFNULL(column, literal)` and `COALESCE(column, literal)` remain indeterminate.
+- Online sessions derive capability from connected-server identity (`SELECT VERSION()`). Supported: MySQL 5.7.44, MySQL 8.0.46, MySQL 8.4.10, TiDB 8.5.7, PostgreSQL 17. Unknown products, forks, malformed identity, unsupported versions, and dialect disagreement return bounded errors.
+- CLI `query-access analyze --database` flag for PostgreSQL target database selection.
+- HTTP authentication with configurable API keys per connection. Each connection declares permitted key IDs and permitted purposes (`audit`, `query_access`, or both). With auth disabled, deployment is treated as trusted self-hosted.
+- Decision record: `docs/decisions/2026-07-20-query-access-online-connection-registry.md` (Accepted; Related milestone/version: v0.420.0).
+
+### Non-Goals
+
+- Not SQL execution or data-returning APIs; not arbitrary host/password HTTP requests; not user-selected server files/environment variables; not a mandatory secret manager.
+- Not SQL-mode attestation; not unsupported database forks or releases; not arbitrary functions/UDFs; not casts, literals, parameters, nested expressions, JSON/regex/date functions, views, broad SELECT support.
+- Not grants, RLS, masking, rewrite, execution-snapshot guarantees, or authorization checks.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog.
+
 ## [v0.410.0] - 2026-07-19
 
 ### Added

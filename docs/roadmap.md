@@ -4,31 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.410.0 MySQL/TiDB Builtin Semantic Manifests
+## Latest Completed Milestone: v0.420.0 Online Query Access Connection Registry
 
-**Goal:** ship an opt-in MySQL/TiDB builtin semantic manifest proof model for Query Access on a caller-owned `*sql.Conn`, with explicit version profiles, while keeping default SDK, CLI, HTTP, and MCP fail-closed. Complements the PG17 trusted-session path; does not claim broad MySQL/TiDB common SELECT support or authorization. Does not add a `severity` field.
+**Goal:** replace per-request direct connection objects with operator-managed named connections carrying `connection_id`, TLS mode, and API key allowlists. Online sessions derive Query Access capability from connected-server identity. Adds bounded scalar functions for admission and a `--database` flag for PostgreSQL. See `docs/releases/release-notes-v0.420.0.md` and `docs/decisions/2026-07-20-query-access-online-connection-registry.md`.
 
 ### Completed Scope
 
-- New public SDK session boundary: `NewMySQLTiDBQueryAccessSessionFromConn` and `AnalyzeMySQLTiDBQueryAccessWithSession`. External schema resolvers are rejected; the private semantic capability is constructed internally from the caller-owned connection.
-- Closed public profiles: `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, `tidb-8.5`. Unknown values and dialect mismatches return bounded validation errors.
-- Immutable production registry proves `COUNT(*)` and direct-column `COUNT` / `SUM` / `AVG` / `MIN` / `MAX` for all four profiles, and `ROW_NUMBER` / `RANK` / `DENSE_RANK` with direct partition/order columns for MySQL 8.0, MySQL 8.4, and TiDB 8.5. MySQL 5.7 ranking windows remain deferred (no native support).
-- Parser-native-form proof rejects quoted, schema-qualified, noncanonical spacing, and `IGNORE_SPACE`-dependent ambiguity. Ranking windows require both partition and order with direct physical columns.
-- Default SDK, CLI, and HTTP accept the profile input but remain offline and indeterminate for function-bearing MySQL/TiDB queries without the explicit session API.
-- MCP tools unchanged and still do not include query-access. PostgreSQL catalog/OID path unchanged.
-- Audit rule catalog unchanged at 371 rules. SQL corpus unchanged at 582/582, 100.0%, 247 YAML files.
-- `level` remains the audit priority field; no `severity` field is introduced.
-- Decision record: `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md` (Accepted; Related milestone/version: v0.410.0).
-- Evidence ledger: `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests-evidence-ledger.md`.
+- Online Query Access and metadata-aware HTTP audit use operator-managed named connections. HTTP requests carry `connection_id`; the direct `connection` object is removed without a compatibility switch. Runtime configuration owns connection endpoints, credentials, TLS settings, and API key allowlists.
+- TLS mode per connection: `disabled` (default) or `enabled`. Certificate chain validation and hostname verification enforced when enabled. MySQL uses `InsecureSkipVerify=false`; PostgreSQL uses `sslmode=verify-full`. Optional `tls_ca_file` supplies a private CA PEM.
+- Bounded public scalar function subset for Query Access admission: `LOWER`, `UPPER`, `LENGTH`, `CHAR_LENGTH`, `ABS`, `CEIL`, `FLOOR`, `COALESCE`, `NULLIF`, and dialect-specific `IFNULL`. Every operand must be a direct physical base column.
+- Online sessions derive capability from connected-server identity (`SELECT VERSION()`). Supported: MySQL 5.7.44, MySQL 8.0.46, MySQL 8.4.10, TiDB 8.5.7, PostgreSQL 17.
+- CLI `query-access analyze --database` flag for PostgreSQL target database selection.
+- HTTP authentication with configurable API keys per connection. Each connection declares permitted key IDs and permitted purposes (`audit`, `query_access`, or both).
+- Decision record: `docs/decisions/2026-07-20-query-access-online-connection-registry.md` (Accepted; Related milestone/version: v0.420.0).
 
 ### Non-Goals
 
-- Not a generic function-name allowlist, volatility-only allowlist, or caller-supplied manifest.
-- Not UDF/stored functions, quoted/qualified calls, casts, literals, nested expressions, frames, named windows, `FILTER`, `DISTINCT`, or broad common `SELECT`.
-- Not CLI/HTTP semantic promotion or an MCP query-access tool.
-- Not runtime grant evaluation, caller authentication, RLS, masking, automatic grant, SQL rewrite, or execution-snapshot proof.
-- Not a change to existing audit behavior.
-- Not a `severity` field.
+- Not SQL execution or data-returning APIs; not arbitrary host/password HTTP requests; not user-selected server files/environment variables; not a mandatory secret manager.
+- Not SQL-mode attestation; not unsupported database forks or releases; not arbitrary functions/UDFs; not casts, literals, parameters, nested expressions, JSON/regex/date functions, views, broad SELECT support.
+- Not grants, RLS, masking, rewrite, execution-snapshot guarantees, or authorization checks.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.410.0 MySQL/TiDB Builtin Semantic Manifests
+
+**Goal:** ship an opt-in MySQL/TiDB builtin semantic manifest proof model for Query Access on a caller-owned `*sql.Conn`, with explicit version profiles, while keeping default SDK, CLI, HTTP, and MCP fail-closed. See `docs/releases/release-notes-v0.410.0.md` and `docs/decisions/2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md`.
 
 ## Previous Completed Milestone: v0.400.0 Common Pure-Effect Query Access
 
