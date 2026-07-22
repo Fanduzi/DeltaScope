@@ -8,6 +8,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -137,6 +138,8 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for metadata-aware audit")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "metadata connection timeout for metadata-aware audit, for example 5s or 500ms")
+	cmd.Flags().StringVar(&options.TLSMode, "tls-mode", "disabled", "TLS mode for database connection: disabled or enabled")
+	cmd.Flags().StringVar(&options.TLSCAFile, "tls-ca-file", "", "path to TLS CA certificate PEM file (requires tls-mode=enabled)")
 	return cmd
 }
 
@@ -153,6 +156,9 @@ type auditConnectionOptions struct {
 	Socket         string
 	Dialect        string
 	ConnectTimeout time.Duration
+	TLSMode        string
+	TLSCAFile      string
+	CACert         *x509.CertPool
 }
 
 var passwordPrompt = promptPassword
@@ -187,6 +193,49 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 	if resolved.Socket != "" && (resolved.Host != "" || resolved.PortSet) {
 		return auditConnectionOptions{}, newUserError("--socket cannot be combined with host/port TCP options")
 	}
+
+	// TLS validation
+	tlsMode := strings.ToLower(strings.TrimSpace(options.TLSMode))
+	if tlsMode == "" {
+		tlsMode = "disabled"
+	}
+	if tlsMode != "disabled" && tlsMode != "enabled" {
+		return auditConnectionOptions{}, newUserError("invalid --tls-mode: must be disabled or enabled")
+	}
+	resolved.TLSMode = tlsMode
+
+	caFile := strings.TrimSpace(options.TLSCAFile)
+	if caFile != "" && tlsMode != "enabled" {
+		return auditConnectionOptions{}, newUserError("--tls-ca-file requires --tls-mode=enabled")
+	}
+	if tlsMode == "enabled" {
+		if resolved.Host == "" {
+			return auditConnectionOptions{}, newUserError("--tls-mode=enabled requires --host")
+		}
+		if resolved.User == "" {
+			return auditConnectionOptions{}, newUserError("--tls-mode=enabled requires --user")
+		}
+		if resolved.Socket != "" {
+			return auditConnectionOptions{}, newUserError("--tls-mode=enabled cannot be used with --socket")
+		}
+	}
+
+	if caFile != "" {
+		expanded, err := ifaceconn.ExpandHome(caFile)
+		if err != nil {
+			return auditConnectionOptions{}, newUserError("invalid TLS CA file path")
+		}
+		pemBytes, err := os.ReadFile(expanded)
+		if err != nil {
+			return auditConnectionOptions{}, newUserError("cannot read TLS CA file")
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(pemBytes) {
+			return auditConnectionOptions{}, newUserError("invalid TLS CA certificate")
+		}
+		resolved.CACert = pool
+	}
+
 	if options.AskPassword {
 		password, err := passwordPrompt(cmd.ErrOrStderr())
 		if err != nil {
@@ -471,10 +520,21 @@ func mapAuditError(exitCode *int, err error) error {
 		*exitCode = exitUser
 	case strings.Contains(err.Error(), "load policy:"):
 		*exitCode = exitUser
+	case isOnlineConnectionError(err):
+		*exitCode = exitUser
+		return mapOnlineCLIBoundaryError(err)
 	default:
 		*exitCode = exitInternal
 	}
 	return err
+}
+
+func isOnlineConnectionError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "connection refused") ||
+		strings.Contains(msg, "certificate") ||
+		strings.Contains(msg, "timeout") ||
+		strings.Contains(msg, "dial tcp")
 }
 
 func promptPassword(stderr io.Writer) (string, error) {
@@ -510,4 +570,20 @@ func promptPassword(stderr io.Writer) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(line), nil
+}
+
+func mapOnlineCLIBoundaryError(err error) error {
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "connection refused"):
+		return newUserError("connection failed")
+	case strings.Contains(msg, "certificate"):
+		return newUserError("TLS handshake failed")
+	case strings.Contains(msg, "timeout"):
+		return newUserError("connection timed out")
+	case strings.Contains(msg, "context canceled"):
+		return newUserError("request canceled")
+	default:
+		return newUserError("connection failed")
+	}
 }

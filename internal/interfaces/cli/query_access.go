@@ -96,6 +96,8 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&options.Database, "database", "", "database name for online query access (PostgreSQL)")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for online query access")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "connection timeout for online query access, for example 5s or 500ms")
+	cmd.Flags().StringVar(&options.TLSMode, "tls-mode", "disabled", "TLS mode for database connection: disabled or enabled")
+	cmd.Flags().StringVar(&options.TLSCAFile, "tls-ca-file", "", "path to TLS CA certificate PEM file (requires tls-mode=enabled)")
 	return cmd
 }
 

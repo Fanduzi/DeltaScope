@@ -7,13 +7,21 @@ package cli
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"io"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -2955,4 +2963,303 @@ func TestAuditCommandRejectsRemovedPasswordFlag(t *testing.T) {
 	if !strings.Contains(stderr.String(), "unknown flag") {
 		t.Fatalf("expected unknown flag error, got %q", stderr.String())
 	}
+}
+
+func TestAuditCommandRejectsUnknownTLSMode(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "invalid"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for invalid --tls-mode, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "tls-mode") {
+		t.Fatalf("expected tls-mode error message, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandDefaultsTLSModeToDisabled(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "select 1", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for offline audit, got %d: %s", code, stderr.String())
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json: %v", err)
+	}
+	contextObj, ok := decoded["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context in JSON output, got %#v", decoded["context"])
+	}
+	if contextObj["mode"] != "offline" {
+		t.Fatalf("expected offline mode (TLS defaults to disabled, no connection), got %#v", contextObj["mode"])
+	}
+}
+
+func TestAuditCommandRejectsTLSCAFileWhenDisabled(t *testing.T) {
+	dir := t.TempDir()
+	caPath := filepath.Join(dir, "ca.pem")
+	if err := os.WriteFile(caPath, []byte("not-used"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-ca-file", caPath},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for --tls-ca-file without --tls-mode=enabled, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "tls-ca-file") || !strings.Contains(stderr.String(), "tls-mode=enabled") {
+		t.Fatalf("expected tls-ca-file requires tls-mode=enabled error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsTLSWithoutHost(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "enabled", "--user", "root"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for TLS without --host, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "tls-mode=enabled") || !strings.Contains(stderr.String(), "--host") {
+		t.Fatalf("expected tls-mode=enabled requires --host error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsTLSWithoutUser(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "enabled", "--host", "127.0.0.1"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for TLS without --user, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "tls-mode=enabled") || !strings.Contains(stderr.String(), "--user") {
+		t.Fatalf("expected tls-mode=enabled requires --user error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsTLSSocket(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "enabled", "--host", "127.0.0.1", "--user", "root", "--socket", "/tmp/mysql.sock"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for TLS with --socket, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "socket") {
+		t.Fatalf("expected socket conflict error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandLoadsTLSCAFile(t *testing.T) {
+	dir := t.TempDir()
+	caPath := filepath.Join(dir, "ca.pem")
+
+	caPEM := generateTestCAPEM(t)
+	if err := os.WriteFile(caPath, caPEM, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "enabled", "--host", "127.0.0.1", "--user", "root", "--tls-ca-file", caPath},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 (connection will fail since no real DB), got %d: %s", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "cannot read TLS CA file") {
+		t.Fatalf("CA file should have been readable, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "invalid TLS CA certificate") {
+		t.Fatalf("CA file should have been valid PEM, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsInvalidCAFile(t *testing.T) {
+	dir := t.TempDir()
+	caPath := filepath.Join(dir, "bad.pem")
+	if err := os.WriteFile(caPath, []byte("not a PEM file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "enabled", "--host", "127.0.0.1", "--user", "root", "--tls-ca-file", caPath},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for invalid CA file, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "invalid TLS CA certificate") {
+		t.Fatalf("expected invalid TLS CA certificate error, got %q", stderr.String())
+	}
+}
+
+func TestAuditCommandRejectsMissingCAFile(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--tls-mode", "enabled", "--host", "127.0.0.1", "--user", "root", "--tls-ca-file", "/nonexistent/ca.pem"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2 for missing CA file, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "cannot read TLS CA file") {
+		t.Fatalf("expected cannot read TLS CA file error, got %q", stderr.String())
+	}
+}
+
+func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantMsg string
+	}{
+		{name: "connection refused", input: "dial tcp 127.0.0.1:3306: connection refused", wantMsg: "connection failed"},
+		{name: "certificate error", input: "x509: certificate signed by unknown authority", wantMsg: "TLS handshake failed"},
+		{name: "timeout", input: "dial tcp 127.0.0.1:3306: i/o timeout", wantMsg: "connection timed out"},
+		{name: "context canceled", input: "context canceled", wantMsg: "request canceled"},
+		{name: "unknown error", input: "some unexpected driver error with details", wantMsg: "connection failed"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := mapOnlineCLIBoundaryError(errors.New(tt.input))
+			if err.Error() != tt.wantMsg {
+				t.Fatalf("expected %q, got %q", tt.wantMsg, err.Error())
+			}
+		})
+	}
+}
+
+func TestQueryAccessAnalyzeHelpShowsTLSFlags(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"query-access", "analyze", "--help"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0 for help, got %d", code)
+	}
+	help := stdout.String()
+	if !strings.Contains(help, "--tls-mode") {
+		t.Fatalf("expected --tls-mode in help output, got %q", help)
+	}
+	if !strings.Contains(help, "--tls-ca-file") {
+		t.Fatalf("expected --tls-ca-file in help output, got %q", help)
+	}
+}
+
+func TestQueryAccessAnalyzeRejectsUnknownTLSMode(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"query-access", "analyze", "--sql", "select 1", "--tls-mode", "badmode"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 3 {
+		t.Fatalf("expected exit code 3 for invalid --tls-mode on query-access, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "tls-mode") {
+		t.Fatalf("expected tls-mode error message, got %q", stderr.String())
+	}
+}
+
+func generateTestCAPEM(t *testing.T) []byte {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate CA key: %v", err)
+	}
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "test-ca"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		KeyUsage:     x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("create CA cert: %v", err)
+	}
+
+	var buf strings.Builder
+	if err := pem.Encode(&buf, &pem.Block{Type: "CERTIFICATE", Bytes: certDER}); err != nil {
+		t.Fatalf("encode CA cert PEM: %v", err)
+	}
+	return []byte(buf.String())
 }

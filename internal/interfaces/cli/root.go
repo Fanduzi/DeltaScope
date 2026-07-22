@@ -28,6 +28,8 @@ type cliOptions struct {
 	Database               string
 	Socket                 string
 	MetadataConnectTimeout string
+	TLSMode                string
+	TLSCAFile              string
 	ShowVersion            bool
 }
 
