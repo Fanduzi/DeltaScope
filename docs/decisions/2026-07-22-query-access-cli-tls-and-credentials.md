@@ -1,7 +1,7 @@
 # Query Access CLI TLS and Credential Boundary
 
 - **Date:** 2026-07-22
-- **Status:** Proposed
+- **Status:** Accepted
 - **Related released milestone:** v0.420.0 Online Query Access Connection Registry
 
 ## Context
@@ -35,6 +35,39 @@ The direct CLI boundary remains separate from the HTTP connection registry. It d
 The CLI user has intentionally selected the database target, so requiring an HTTP-style server registry would make a local operator tool unnecessarily complex. At the same time, accepting a plaintext password or allowing certificate validation to be bypassed would make the direct path weaker than the HTTP path.
 
 A strict enabled-TLS mode gives users an explicit secure mode without changing existing non-TLS use. Reusing existing online metadata/session adapters avoids a second SQL analysis path and preserves the rule that submitted Query Access SQL is never executed.
+
+## Public Contract
+
+Both `deltascope audit` and `deltascope query-access analyze` expose:
+
+- `--tls-mode disabled|enabled` (default: `disabled`)
+- `--tls-ca-file PATH` (optional, requires `--tls-mode=enabled`)
+- `--password-env ENV`, `--password-file PATH`, `--ask-password` (mutually exclusive)
+
+When `--tls-mode=enabled`:
+
+- `--host` and `--user` are required
+- `--socket` is rejected
+- The certificate chain and hostname (exact `--host` value) are verified
+- `--tls-ca-file` provides a custom CA pool; system trust roots are used when absent
+- MySQL/TiDB use per-connection `*tls.Config` (no global `RegisterTLSConfig`)
+- PostgreSQL uses `sslmode=verify-full` semantics
+
+The `--password` and `-p` flags are removed without compatibility aliases.
+
+## Verification Evidence
+
+1. **Unit tests**: 3761 tests pass (`go test ./... -count=1`); 4936 PostgreSQL-tagged tests pass (`go test -tags postgresql ./... -count=1`)
+2. **Race tests**: 409 tests pass with `-race` on CLI, online, and pkg packages
+3. **CLI TLS normalization**: 14 focused tests prove flag validation, CA parsing, bounded errors
+4. **Metadata adapter wiring**: 3 tests prove TLS flows through audit metadata adapter
+5. **Query Access TLS**: 3 tests prove TLS flows through online session; DSN contains no password
+6. **PostgreSQL credential hardening**: explicit `connConfig.Password` after `ParseConfig` prevents `.pgpass` fallback
+7. **Docker CLI E2E**: `make test-e2e-cli-tls` — 12 cases covering MySQL 8.4 + PostgreSQL 17 x audit + query-access x trusted/untrusted/hostname-mismatch (requires Docker)
+8. **Docs drift**: `make docs-example-gates` passes; no bare `--password` in public docs
+9. **Static analysis**: `go vet ./...`, `go vet -tags postgresql ./...`, `gofmt` clean
+10. **Oracle review**: 4 P1 findings addressed (bounded errors, pgpass, fail-closed TLS, implicit TCP defaults)
+11. **Momus review**: 3 blocking issues addressed (task ordering, Makefile target, concrete QA commands)
 
 ## Consequences
 

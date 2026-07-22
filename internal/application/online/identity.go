@@ -206,8 +206,8 @@ func parseMySQLIdentity(raw string) (*ServerIdentity, error) {
 
 // pgSeriesForVersion maps PostgreSQL major.minor to a supported series.
 func pgSeriesForVersion(major, minor int) (VersionSeries, bool) {
-	switch {
-	case major == 17:
+	switch major {
+	case 17:
 		return SeriesPG17, true
 	default:
 		return "", false
