@@ -21,7 +21,6 @@ type cliOptions struct {
 	Host                   string
 	Port                   int
 	User                   string
-	Password               string
 	PasswordEnv            string
 	PasswordFile           string
 	AskPassword            bool

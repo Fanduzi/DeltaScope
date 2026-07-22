@@ -11,6 +11,8 @@ COMPOSE_FILE="${ROOT_DIR}/docker/cli-e2e-compose.yaml"
 MYSQL_CONTAINER="deltascope-cli-e2e-mysql"
 TIDB_CONTAINER="deltascope-cli-e2e-tidb"
 CLIENT_CONTAINER="deltascope-cli-e2e-mysql-client"
+MYSQL_PASSWORD="root"
+export MYSQL_PASSWORD
 TMP_DIR=""
 CLI_BIN=""
 
@@ -227,7 +229,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-infer.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-infer.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from orders where id = 1" --host 127.0.0.1 --port 3406 --user root --password root --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from orders where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -239,7 +241,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-ambiguous.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-ambiguous.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 3406 --user root --password root --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -250,7 +252,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-explicit-schema.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-explicit-schema.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 3406 --user root --password root --schema archive --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --schema archive --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -260,7 +262,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-qualified.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-qualified.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host 127.0.0.1 --port 3406 --user root --password root --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -270,7 +272,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-dialect-mismatch.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-dialect-mismatch.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host 127.0.0.1 --port 3406 --user root --password root --dialect tidb --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --dialect tidb --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -280,7 +282,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-exists.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-exists.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'" --host 127.0.0.1 --port 3406 --user root --password root --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -290,7 +292,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-compat.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-compat.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts modify column email varchar(16) not null default '' comment 'email'" --host 127.0.0.1 --port 3406 --user root --password root --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts modify column email varchar(16) not null default '' comment 'email'" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -300,7 +302,7 @@ run_mysql_suite() {
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-partial-create.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-partial-create.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table huge_profiles (id bigint unsigned not null auto_increment comment 'id', c1 varchar(16383) not null default '' comment 'c1', c2 varchar(16383) not null default '' comment 'c2', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) engine=InnoDB default charset=utf8mb4 row_format=dynamic comment='huge profiles'" --host 127.0.0.1 --port 3406 --user root --password root --schema app --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table huge_profiles (id bigint unsigned not null auto_increment comment 'id', c1 varchar(16383) not null default '' comment 'c1', c2 varchar(16383) not null default '' comment 'c2', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) engine=InnoDB default charset=utf8mb4 row_format=dynamic comment='huge profiles'" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --schema app --format json; then
     exit_code=0
   else
     exit_code=$?

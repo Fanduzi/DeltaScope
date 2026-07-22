@@ -113,7 +113,7 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0 for --help, got %d", exitCode)
 	}
-	requiredFlags := []string{"--host", "--port", "--user", "--password", "--password-env", "--password-file", "--ask-password", "--schema", "--database", "--socket", "--metadata-connect-timeout"}
+	requiredFlags := []string{"--host", "--port", "--user", "--password-env", "--password-file", "--ask-password", "--schema", "--database", "--socket", "--metadata-connect-timeout"}
 	for _, flag := range requiredFlags {
 		if !bytes.Contains(stdout.Bytes(), []byte(flag)) {
 			t.Errorf("expected %q in help output", flag)
@@ -169,5 +169,17 @@ func TestExitCodeForQueryAccess_UnknownAdmissionFailsClosed(t *testing.T) {
 	code := exitCodeForQueryAccess(result)
 	if code != exitQueryAccessIndeterminate {
 		t.Errorf("unknown admission: got exit code %d, want %d (indeterminate)", code, exitQueryAccessIndeterminate)
+	}
+}
+
+func TestQueryAccessAnalyzeRejectsRemovedPasswordFlag(t *testing.T) {
+	var stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--sql", "SELECT 1", "--password", "secret"}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)
+
+	if exitCode != 3 {
+		t.Fatalf("expected usage error exit code 3 for removed --password flag, got %d: %s", exitCode, stderr.String())
+	}
+	if !bytes.Contains(stderr.Bytes(), []byte("unknown flag")) {
+		t.Fatalf("expected unknown flag error, got %q", stderr.String())
 	}
 }

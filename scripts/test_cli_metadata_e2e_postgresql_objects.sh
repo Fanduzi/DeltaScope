@@ -13,6 +13,7 @@ PG_HOST="127.0.0.1"
 PG_PORT="5500"
 PG_USER="root"
 PG_PASSWORD="root"
+export PG_PASSWORD
 TMP_DIR=""
 CLI_BIN=""
 
@@ -220,7 +221,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP EXTENSION pgcrypto" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema public --format json; then
     exit_code=0
   else
@@ -239,7 +240,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP SCHEMA missing_schema" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema public --format json; then
     exit_code=0
   else
@@ -257,7 +258,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "ALTER TYPE address RENAME TO old_address" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --format json; then
     exit_code=0
   else
@@ -275,7 +276,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP DOMAIN app.email_address" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema app --format json; then
     exit_code=0
   else
@@ -293,7 +294,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP PUBLICATION e2e_test_pub" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema public --format json; then
     exit_code=0
   else
@@ -311,7 +312,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP PUBLICATION missing_pub" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema public --format json; then
     exit_code=0
   else
@@ -329,7 +330,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP SEQUENCE app.ticket_seq" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema app --format json; then
     exit_code=0
   else
@@ -347,7 +348,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP SERVER fs_test" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema public --format json; then
     exit_code=0
   else
@@ -367,7 +368,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP USER MAPPING FOR root SERVER fs_test" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema public --format json; then
     exit_code=0
   else
@@ -386,7 +387,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "COMMENT ON TABLE app.users IS 'new comment text'" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema app --format json; then
     exit_code=0
   else
@@ -406,7 +407,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP MATERIALIZED VIEW app.user_summary" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema app --format json; then
     exit_code=0
   else
@@ -424,7 +425,7 @@ run_object_suite() {
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit \
     --sql "DROP TYPE app.color" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
-    --user "${PG_USER}" --password "${PG_PASSWORD}" \
+    --user "${PG_USER}" --password-env PG_PASSWORD \
     --dialect postgresql --schema app --format json; then
     exit_code=0
   else

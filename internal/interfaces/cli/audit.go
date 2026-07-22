@@ -131,7 +131,6 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for metadata-aware audit")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for metadata-aware audit")
-	cmd.Flags().StringVarP(&options.Password, "password", "p", "", "database password for metadata-aware audit")
 	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for metadata-aware audit")
 	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for metadata-aware audit")
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
@@ -164,7 +163,6 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 		Port:         options.Port,
 		PortSet:      cmd.Flags().Changed("port"),
 		User:         strings.TrimSpace(options.User),
-		Password:     options.Password,
 		PasswordEnv:  strings.TrimSpace(options.PasswordEnv),
 		PasswordFile: strings.TrimSpace(options.PasswordFile),
 		Schema:       strings.TrimSpace(options.Schema),
@@ -184,7 +182,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 	}
 
 	if options.AskPassword && hasConfiguredPasswordSource(resolved) {
-		return auditConnectionOptions{}, newUserError("--password, --password-env, --password-file, and --ask-password are mutually exclusive")
+		return auditConnectionOptions{}, newUserError("--password-env, --password-file, and --ask-password are mutually exclusive")
 	}
 	if resolved.Socket != "" && (resolved.Host != "" || resolved.PortSet) {
 		return auditConnectionOptions{}, newUserError("--socket cannot be combined with host/port TCP options")
@@ -211,7 +209,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 }
 
 func hasConfiguredPasswordSource(options auditConnectionOptions) bool {
-	return strings.TrimSpace(options.Password) != "" || options.PasswordEnv != "" || options.PasswordFile != ""
+	return options.PasswordEnv != "" || options.PasswordFile != ""
 }
 
 func (o auditConnectionOptions) Enabled() bool {

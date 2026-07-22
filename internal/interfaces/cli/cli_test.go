@@ -865,11 +865,13 @@ func TestAuditCommandAcceptsMySQLStyleConnectionFlagsWithoutChangingOfflineBehav
 	}
 	t.Cleanup(func() { newMetadataClient = previous })
 
+	t.Setenv("TEST_DB_PASSWORD", "secret")
+
 	stdout := &strings.Builder{}
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "delete from users", "-h", "127.0.0.1", "-P", "3307", "-u", "root", "-p", "secret", "-D", "app"},
+		[]string{"audit", "--sql", "delete from users", "-h", "127.0.0.1", "-P", "3307", "-u", "root", "--password-env", "TEST_DB_PASSWORD", "-D", "app"},
 		strings.NewReader(""),
 		stdout,
 		&strings.Builder{},
@@ -880,25 +882,6 @@ func TestAuditCommandAcceptsMySQLStyleConnectionFlagsWithoutChangingOfflineBehav
 	}
 	if !strings.Contains(stdout.String(), "# DeltaScope Audit Result") {
 		t.Fatalf("expected standard offline report output, got %q", stdout.String())
-	}
-}
-
-func TestAuditCommandRejectsAskPasswordWithPassword(t *testing.T) {
-	stderr := &strings.Builder{}
-
-	code := Execute(
-		context.Background(),
-		[]string{"audit", "--sql", "delete from users", "-u", "root", "-p", "secret", "--ask-password"},
-		strings.NewReader(""),
-		&strings.Builder{},
-		stderr,
-	)
-
-	if code != 2 {
-		t.Fatalf("expected user error exit code 2, got %d", code)
-	}
-	if !strings.Contains(stderr.String(), "mutually exclusive") {
-		t.Fatalf("expected mutual exclusion error, got %q", stderr.String())
 	}
 }
 
@@ -2952,5 +2935,24 @@ func TestAuditCommandDatabaseSchemaLifecycleRules(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAuditCommandRejectsRemovedPasswordFlag(t *testing.T) {
+	stderr := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--password", "secret"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		stderr,
+	)
+
+	if code != 3 {
+		t.Fatalf("expected exit code 3 for removed --password flag, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "unknown flag") {
+		t.Fatalf("expected unknown flag error, got %q", stderr.String())
 	}
 }

@@ -89,7 +89,6 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for online query access")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for online query access")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for online query access")
-	cmd.Flags().StringVarP(&options.Password, "password", "p", "", "database password for online query access")
 	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for online query access")
 	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for online query access")
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")

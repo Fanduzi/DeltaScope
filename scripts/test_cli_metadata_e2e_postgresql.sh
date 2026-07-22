@@ -13,6 +13,7 @@ PG_HOST="127.0.0.1"
 PG_PORT="5500"
 PG_USER="root"
 PG_PASSWORD="root"
+export PG_PASSWORD
 TMP_DIR=""
 CLI_BIN=""
 
@@ -217,7 +218,7 @@ run_pg_suite() {
   # Case 1: basic metadata-aware connection with qualified schema
   stdout_file="$(mktemp "${TMP_DIR}/pg-qualified.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-qualified.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.users where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -230,7 +231,7 @@ run_pg_suite() {
   # Case 2: explicit --schema flag
   stdout_file="$(mktemp "${TMP_DIR}/pg-explicit-schema.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-explicit-schema.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --schema archive --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --schema archive --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -241,7 +242,7 @@ run_pg_suite() {
   # Case 3: table existence check — create table that already exists
   stdout_file="$(mktemp "${TMP_DIR}/pg-exists.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-exists.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table app.users (id bigserial primary key)" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table app.users (id bigserial primary key)" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -252,7 +253,7 @@ run_pg_suite() {
   # Case 4: DELETE with plan estimation (planner impact)
   stdout_file="$(mktemp "${TMP_DIR}/pg-plan-delete.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-plan-delete.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.orders where user_id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from app.orders where user_id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -264,7 +265,7 @@ run_pg_suite() {
   # Case 5: UPDATE with plan estimation
   stdout_file="$(mktemp "${TMP_DIR}/pg-plan-update.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-plan-update.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "update app.users set name = 'x' where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "update app.users set name = 'x' where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -276,7 +277,7 @@ run_pg_suite() {
   # Case 6: DROP CONSTRAINT → primary key mapping
   stdout_file="$(mktemp "${TMP_DIR}/pg-drop-constraint.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-drop-constraint.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts drop constraint accounts_pkey" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts drop constraint accounts_pkey" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -287,7 +288,7 @@ run_pg_suite() {
   # Case 7: rename column existence check
   stdout_file="$(mktemp "${TMP_DIR}/pg-rename-col.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-rename-col.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.users rename column missing_col to email" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.users rename column missing_col to email" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -298,7 +299,7 @@ run_pg_suite() {
   # Case 8: rename index fires forbid rule for an existing index
   stdout_file="$(mktemp "${TMP_DIR}/pg-rename-idx.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-rename-idx.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter index idx_accounts_email rename to idx_new" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --schema app --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter index idx_accounts_email rename to idx_new" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --schema app --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -309,7 +310,7 @@ run_pg_suite() {
   # Case 9: drop column existence check — column does not exist
   stdout_file="$(mktemp "${TMP_DIR}/pg-drop-col.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-drop-col.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.users drop column missing_col" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --dialect postgresql --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.users drop column missing_col" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -419,7 +420,7 @@ CFG
   # that does NOT exist in the default postgres database.
   stdout_file="$(mktemp "${TMP_DIR}/pg-database.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-database.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" query-access analyze --sql "SELECT id FROM app.query_access_only" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --database query_access_e2e --schema app --dialect postgresql; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" query-access analyze --sql "SELECT id FROM app.query_access_only" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --database query_access_e2e --schema app --dialect postgresql; then
     exit_code=0
   else
     exit_code=$?
@@ -432,7 +433,7 @@ CFG
   # does not exist, so the query must fail or be indeterminate.
   stdout_file="$(mktemp "${TMP_DIR}/pg-database-default.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-database-default.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" query-access analyze --sql "SELECT id FROM app.query_access_only" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password "${PG_PASSWORD}" --schema app --dialect postgresql; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" query-access analyze --sql "SELECT id FROM app.query_access_only" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --schema app --dialect postgresql; then
     exit_code=0
   else
     exit_code=$?
