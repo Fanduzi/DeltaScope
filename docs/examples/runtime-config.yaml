@@ -40,9 +40,9 @@ metadata:
   # Named connections for metadata-aware audit and query-access analysis.
   # The HTTP adapter references these by connection_id; credentials are never
   # submitted directly in HTTP requests.
+  # connections is a YAML sequence (list), not a mapping.
   connections:
-    local_mysql:
-      id: local_mysql
+    - id: local_mysql
       dialect: mysql
       host: 127.0.0.1
       port: 3306
@@ -53,9 +53,30 @@ metadata:
       purposes:
         - audit
         - query_access
+      allowed_api_key_ids:
+        - ci_bot
+        - dba_tool
+
+    # PostgreSQL connection with TLS using a private CA certificate.
+    - id: local_pg
+      dialect: postgresql
+      host: 127.0.0.1
+      port: 5432
+      user: postgres
+      password_env: PG_PASSWORD
+      schema: public
+      tls_mode: enabled
+      tls_ca_file: /etc/deltascope/ca.crt
+      purposes:
+        - audit
+        - query_access
 
 # HTTP adapter configuration.
 http:
   auth:
-    enabled: false
-    keys: []
+    enabled: true
+    keys:
+      - id: ci_bot
+        secret_env: DS_API_KEY_CI_BOT
+      - id: dba_tool
+        secret_file: /etc/deltascope/keys/dba_tool.secret

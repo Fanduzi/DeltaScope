@@ -149,7 +149,6 @@ curl http://127.0.0.1:8083/v1/capabilities
   "audit_modes": ["offline", "metadata-aware"],
   "dialects": ["mysql", "tidb", "postgresql"],
   "top_level_inputs": ["sql", "dialect", "schema", "connection_id"],
-  "connection_id": "references a named connection defined in runtime config; HTTP requests cannot submit credentials directly",
   "input_rules": [
     "connection_id references a named connection in the server's runtime config",
     "top-level schema overrides the named connection's schema when both are set",
@@ -180,7 +179,6 @@ curl http://127.0.0.1:8083/v1/capabilities
 ```
 
 `connection_id` references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly. `result_fields` lists the always-relevant result keys; an audit response may also carry additive `unsupported` and `diagnostics` arrays, documented under [Response Field Reference](#response-field-reference).
-```
 
 ---
 
@@ -464,11 +462,11 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 ### POST /v1/query-access/analyze
 
-Analyzes a SELECT-style query for read-side access control. The request body must be a single JSON object containing `sql` and a `connection_id` that references a named connection in the server's runtime config. HTTP requests cannot submit credentials directly.
+Analyzes a SELECT-style query for read-side access control. The request body must be a single JSON object. The endpoint supports both offline analysis (no `connection_id`) and online analysis with a `connection_id` that references a named connection in the server's runtime config. HTTP requests cannot submit credentials directly.
 
-Query Access requires a `connection_id`. Offline (credential-free) requests are rejected with `400 bad_request`. The named connection must include `query_access` in its `purposes` list; otherwise the server returns `400 connection_invalid`.
+When `connection_id` is omitted, the request runs in offline mode using the built-in parser. When `connection_id` is set, the server opens a metadata connection and resolves schema information from the live database. The `profile` field is accepted in offline mode but rejected with `400 invalid_request` when `connection_id` is set.
 
-The server prohibits SQL profiles in query-access requests. If the SQL contains a `SHOW PROFILE` or `SHOW PROFILES` statement, the server returns `400 bad_request`.
+The named connection must include `query_access` in its `purposes` list; otherwise the server returns `403 purpose_not_allowed`.
 
 #### Request
 
@@ -476,8 +474,10 @@ The server prohibits SQL profiles in query-access requests. If the SQL contains 
 |-------|------|----------|-------------|
 | `sql` | string | Yes | A SELECT-style query to analyze for read-side access control |
 | `dialect` | string | No | `mysql`, `tidb`, or `postgresql`. Defaults to `mysql` when omitted. |
-| `schema` | string | No | Optional schema name. When both top-level `schema` and the named connection's `schema` are supplied, the top-level value takes precedence. |
-| `connection_id` | string | Yes | References a named connection defined in the server's runtime config. The named connection must have `query_access` in its `purposes`. |
+| `mode` | string | No | `strict` or `projection_only`. Defaults to `strict` when omitted. |
+| `default_schema` | string | No | Optional schema name. When both `default_schema` and the named connection's schema are supplied, `default_schema` takes precedence. |
+| `profile` | string | No | Analysis profile for offline mode (e.g. `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, `tidb-8.5`). Accepted offline but rejected when `connection_id` is set. |
+| `connection_id` | string | No | References a named connection defined in the server's runtime config. The named connection must have `query_access` in its `purposes`. |
 
 > **Note:** The server uses `DisallowUnknownFields`. Sending extra fields that are not listed above returns a `400 invalid_json` error.
 >
@@ -485,7 +485,16 @@ The server prohibits SQL profiles in query-access requests. If the SQL contains 
 
 #### Example
 
-Request:
+Offline request (no connection):
+
+```json
+{
+  "sql": "SELECT id, email FROM users WHERE status = 'active'",
+  "default_schema": "app"
+}
+```
+
+Online request via a named connection:
 
 ```json
 {
@@ -494,25 +503,49 @@ Request:
 }
 ```
 
-Response fragment:
+Response (the response shape is `QueryAccessResult`, not an audit result):
 
 ```json
 {
-  "verdict": "pass",
-  "summary": {
-    "statements": 1,
-    "blockers": 0,
-    "warnings": 0,
-    "notices": 0
-  },
-  "context": {
-    "mode": "metadata-aware",
-    "dialect": "mysql",
-    "dialect_source": "detected",
-    "schema": "app",
-    "schema_source": "connection",
-    "metadata_source": "direct"
-  }
+  "dialect": "mysql",
+  "mode": "strict",
+  "read_classification": "read_only",
+  "admission": "admissible",
+  "relations": [
+    {
+      "schema": "app",
+      "name": "users",
+      "kind": "table",
+      "permission_required": true
+    }
+  ],
+  "referenced_columns": [
+    {
+      "schema": "app",
+      "table": "users",
+      "column": "id",
+      "usages": ["projection"]
+    },
+    {
+      "schema": "app",
+      "table": "users",
+      "column": "email",
+      "usages": ["projection"]
+    },
+    {
+      "schema": "app",
+      "table": "users",
+      "column": "status",
+      "usages": ["filter"]
+    }
+  ],
+  "outputs": [
+    { "name": "id", "sources": ["app.users.id"] },
+    { "name": "email", "sources": ["app.users.email"] }
+  ],
+  "requirements": [
+    { "object": "app.users", "privilege": "SELECT" }
+  ]
 }
 ```
 
@@ -521,8 +554,14 @@ Response fragment:
 | HTTP Status | Error Code | Trigger |
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, or exceeds 1 MiB |
-| 400 | `bad_request` | `sql` is empty, `connection_id` is missing, or the SQL contains a prohibited profile statement |
-| 400 | `connection_invalid` | `connection_id` references a connection that does not exist, is malformed, or does not have `query_access` in its `purposes` |
+| 400 | `bad_request` | `sql` is empty or `dialect` value is unrecognized |
+| 400 | `invalid_mode` | `mode` is not `strict` or `projection_only` |
+| 400 | `invalid_request` | `profile` is set together with `connection_id` |
+| 400 | `invalid_profile` | `profile` is outside the closed set of supported profiles |
+| 400 | `profile_dialect_mismatch` | `profile` does not match the selected `dialect` |
+| 404 | `connection_not_found` | `connection_id` references a connection that does not exist in the server's runtime config |
+| 403 | `not_authorized` | The authenticated principal is not authorized for the requested connection |
+| 403 | `purpose_not_allowed` | The named connection does not have `query_access` in its `purposes` |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |
@@ -535,16 +574,21 @@ Response fragment:
 #### curl Examples
 
 ```bash
-# Analyze a SELECT query via a named connection
+# Offline analysis (no connection)
+curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"sql": "SELECT id, email FROM users WHERE status = '\''active'\''", "default_schema": "app"}'
+
+# Online analysis via a named connection
 curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
   -H 'Content-Type: application/json' \
   -d '{"sql": "SELECT id, email FROM users WHERE status = '\''active'\''", "connection_id": "local_mysql"}'
 
-# Trigger error: missing connection_id
+# Trigger error: profile with connection_id
 curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
   -H 'Content-Type: application/json' \
-  -d '{"sql": "SELECT 1"}'
-# Returns: {"error":{"code":"bad_request","message":"connection_id is required for query-access analysis"}}
+  -d '{"sql": "SELECT 1", "connection_id": "local_mysql", "profile": "mysql-8.0"}'
+# Returns: {"error":{"code":"invalid_request","message":"profile is not allowed with connection_id"}}
 ```
 
 ---

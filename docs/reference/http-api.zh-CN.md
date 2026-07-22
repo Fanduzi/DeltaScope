@@ -149,7 +149,6 @@ curl http://127.0.0.1:8083/v1/capabilities
   "audit_modes": ["offline", "metadata-aware"],
   "dialects": ["mysql", "tidb", "postgresql"],
   "top_level_inputs": ["sql", "dialect", "schema", "connection_id"],
-  "connection_id": "引用 runtime config 中定义的命名连接；HTTP 请求不能直接提交凭据",
   "input_rules": [
     "connection_id 引用服务端 runtime config 中的命名连接",
     "顶层 schema 覆盖命名连接中的 schema",
@@ -180,7 +179,6 @@ curl http://127.0.0.1:8083/v1/capabilities
 ```
 
 `connection_id` 引用服务端 runtime config 中定义的命名连接。HTTP 请求不能直接提交凭据。`result_fields` 列出始终相关的结果字段；审计响应还可能携带附加的 `unsupported` 和 `diagnostics` 数组，详见[响应字段参考](#响应字段参考)。
-```
 
 ---
 
@@ -452,11 +450,11 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 ### POST /v1/query-access/analyze
 
-分析 SELECT 类查询的读侧访问控制。请求体必须是单个 JSON 对象，包含 `sql` 和引用服务端 runtime config 中命名连接的 `connection_id`。HTTP 请求不能直接提交凭据。
+分析 SELECT 类查询的读侧访问控制。请求体必须是单个 JSON 对象。该端点同时支持离线分析（不带 `connection_id`）和带 `connection_id` 的在线分析，`connection_id` 引用服务端 runtime config 中的命名连接。HTTP 请求不能直接提交凭据。
 
-Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会被拒绝，返回 `400 bad_request`。命名连接的 `purposes` 列表中必须包含 `query_access`，否则服务端返回 `400 connection_invalid`。
+省略 `connection_id` 时，请求以离线模式运行，使用内置解析器。设置 `connection_id` 时，服务端会打开元数据连接并从实时数据库解析 schema 信息。`profile` 字段在离线模式下可用，但当设置了 `connection_id` 时会被拒绝，返回 `400 invalid_request`。
 
-服务端禁止在 query-access 请求中使用 SQL profile。如果 SQL 包含 `SHOW PROFILE` 或 `SHOW PROFILES` 语句，服务端返回 `400 bad_request`。
+命名连接的 `purposes` 列表中必须包含 `query_access`，否则服务端返回 `403 purpose_not_allowed`。
 
 #### 请求
 
@@ -464,8 +462,10 @@ Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会
 |------|------|------|------|
 | `sql` | string | 是 | 待分析的 SELECT 类查询 |
 | `dialect` | string | 否 | `mysql`、`tidb` 或 `postgresql`，省略时默认为 `mysql` |
-| `schema` | string | 否 | 可选 schema 名称；如果同时提供顶层 `schema` 和命名连接的 `schema`，以顶层值为准 |
-| `connection_id` | string | 是 | 引用服务端 runtime config 中定义的命名连接。命名连接的 `purposes` 中必须包含 `query_access` |
+| `mode` | string | 否 | `strict` 或 `projection_only`，省略时默认为 `strict` |
+| `default_schema` | string | 否 | 可选 schema 名称；如果同时提供 `default_schema` 和命名连接的 schema，以 `default_schema` 为准 |
+| `profile` | string | 否 | 离线模式的分析配置（如 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5`）。离线模式下可用，但当设置了 `connection_id` 时会被拒绝 |
+| `connection_id` | string | 否 | 引用服务端 runtime config 中定义的命名连接。命名连接的 `purposes` 中必须包含 `query_access` |
 
 > **注意：** 服务器启用了 `DisallowUnknownFields`。传入上述列表之外的额外字段将返回 `400 invalid_json` 错误。
 >
@@ -473,7 +473,16 @@ Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会
 
 #### 示例
 
-请求：
+离线请求（不带连接）：
+
+```json
+{
+  "sql": "SELECT id, email FROM users WHERE status = 'active'",
+  "default_schema": "app"
+}
+```
+
+通过命名连接的在线请求：
 
 ```json
 {
@@ -482,25 +491,49 @@ Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会
 }
 ```
 
-响应片段：
+响应（响应结构为 `QueryAccessResult`，不是审计结果）：
 
 ```json
 {
-  "verdict": "pass",
-  "summary": {
-    "statements": 1,
-    "blockers": 0,
-    "warnings": 0,
-    "notices": 0
-  },
-  "context": {
-    "mode": "metadata-aware",
-    "dialect": "mysql",
-    "dialect_source": "detected",
-    "schema": "app",
-    "schema_source": "connection",
-    "metadata_source": "direct"
-  }
+  "dialect": "mysql",
+  "mode": "strict",
+  "read_classification": "read_only",
+  "admission": "admissible",
+  "relations": [
+    {
+      "schema": "app",
+      "name": "users",
+      "kind": "table",
+      "permission_required": true
+    }
+  ],
+  "referenced_columns": [
+    {
+      "schema": "app",
+      "table": "users",
+      "column": "id",
+      "usages": ["projection"]
+    },
+    {
+      "schema": "app",
+      "table": "users",
+      "column": "email",
+      "usages": ["projection"]
+    },
+    {
+      "schema": "app",
+      "table": "users",
+      "column": "status",
+      "usages": ["filter"]
+    }
+  ],
+  "outputs": [
+    { "name": "id", "sources": ["app.users.id"] },
+    { "name": "email", "sources": ["app.users.email"] }
+  ],
+  "requirements": [
+    { "object": "app.users", "privilege": "SELECT" }
+  ]
 }
 ```
 
@@ -509,8 +542,14 @@ Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会
 | HTTP 状态码 | 错误码 | 触发条件 |
 |-------------|--------|----------|
 | 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段，或超过 1 MiB |
-| 400 | `bad_request` | `sql` 为空、缺少 `connection_id`，或 SQL 包含被禁止的 profile 语句 |
-| 400 | `connection_invalid` | `connection_id` 引用了不存在的命名连接、连接格式无效，或 `purposes` 中不含 `query_access` |
+| 400 | `bad_request` | `sql` 为空或 `dialect` 值无法识别 |
+| 400 | `invalid_mode` | `mode` 不是 `strict` 或 `projection_only` |
+| 400 | `invalid_request` | 同时设置了 `profile` 和 `connection_id` |
+| 400 | `invalid_profile` | `profile` 不在支持的闭合集合内 |
+| 400 | `profile_dialect_mismatch` | `profile` 与所选 `dialect` 不匹配 |
+| 404 | `connection_not_found` | `connection_id` 引用了服务端 runtime config 中不存在的连接 |
+| 403 | `not_authorized` | 已认证的主体无权访问所请求的连接 |
+| 403 | `purpose_not_allowed` | 命名连接的 `purposes` 中不含 `query_access` |
 | 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法解析 schema 信息 |
 | 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
 | 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |
@@ -523,16 +562,21 @@ Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会
 #### curl 示例
 
 ```bash
-# 通过命名连接分析 SELECT 查询
+# 离线分析（不带连接）
+curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"sql": "SELECT id, email FROM users WHERE status = '\''active'\''", "default_schema": "app"}'
+
+# 通过命名连接进行在线分析
 curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
   -H 'Content-Type: application/json' \
   -d '{"sql": "SELECT id, email FROM users WHERE status = '\''active'\''", "connection_id": "local_mysql"}'
 
-# 触发错误：缺少 connection_id
+# 触发错误：同时设置 profile 和 connection_id
 curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
   -H 'Content-Type: application/json' \
-  -d '{"sql": "SELECT 1"}'
-# 返回：{"error":{"code":"bad_request","message":"connection_id is required for query-access analysis"}}
+  -d '{"sql": "SELECT 1", "connection_id": "local_mysql", "profile": "mysql-8.0"}'
+# 返回：{"error":{"code":"invalid_request","message":"profile is not allowed with connection_id"}}
 ```
 
 ---
