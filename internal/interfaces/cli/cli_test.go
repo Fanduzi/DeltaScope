@@ -3196,6 +3196,24 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 	}
 }
 
+func TestAuditOnlineErrorsNeverBreachCLIBoundary(t *testing.T) {
+	// Adversarial: any unrecognized metadata/driver error must still produce
+	// a bounded message when it crosses the online audit boundary.
+	adversarialInputs := []string{
+		"permission denied for table users",
+		"unknown database driver error: panic at 0xdeadbeef",
+		"pg_catalog read failed: relation does not exist",
+		"mysql: 1045 access denied for user 'root'@'localhost'",
+		"unexpected notice: server closed the connection unexpectedly",
+	}
+	for _, input := range adversarialInputs {
+		err := mapOnlineCLIBoundaryError(errors.New(input))
+		if err == nil || err.Error() == input {
+			t.Fatalf("raw error breached CLI boundary: %q", input)
+		}
+	}
+}
+
 func TestQueryAccessAnalyzeHelpShowsTLSFlags(t *testing.T) {
 	stdout := &strings.Builder{}
 

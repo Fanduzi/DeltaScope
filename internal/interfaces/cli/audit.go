@@ -18,6 +18,7 @@ import (
 	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -81,10 +82,10 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				client, resolvedDialect, resolvedSchema, metadataContext, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
 				if err != nil {
 					*exitCode = exitUser
-					if isOnlineConnectionError(err) {
-						return mapOnlineCLIBoundaryError(err)
+					if isBoundedApplicationError(err) {
+						return err
 					}
-					return err
+					return mapOnlineCLIBoundaryError(err)
 				}
 				defer client.Close()
 				dialect = resolvedDialect
@@ -530,6 +531,22 @@ func mapAuditError(exitCode *int, err error) error {
 		*exitCode = exitInternal
 	}
 	return err
+}
+
+func isBoundedApplicationError(err error) bool {
+	var ue userError
+	if errors.As(err, &ue) {
+		return true
+	}
+	var auditMetaErr *auditmeta.Error
+	if errors.As(err, &auditMetaErr) {
+		return true
+	}
+	var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
+	if errors.As(err, &capabilityErr) {
+		return true
+	}
+	return false
 }
 
 func isOnlineConnectionError(err error) bool {

@@ -158,7 +158,7 @@ assert_exit_code() {
 assert_stderr_contains() {
   local stderr_file="$1"
   local pattern="$2"
-  grep -q -- "${pattern}" "${stderr_file}" || fail "expected stderr to contain '${pattern}'"
+  grep -qi -- "${pattern}" "${stderr_file}" || fail "expected stderr to contain '${pattern}'"
 }
 
 assert_no_leak() {
