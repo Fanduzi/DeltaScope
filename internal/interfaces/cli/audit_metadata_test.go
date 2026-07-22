@@ -7,6 +7,7 @@ package cli
 
 import (
 	"context"
+	"crypto/x509"
 	"strings"
 	"testing"
 	"time"
@@ -385,5 +386,123 @@ func TestAuditCommandIgnoresMetadataConnectTimeoutWithoutConnection(t *testing.T
 	}
 	if !strings.Contains(stdout.String(), "delete") {
 		t.Fatalf("expected normal offline audit output, got %q", stdout.String())
+	}
+}
+
+func TestAuditCommandPassesTLSConfigurationToMySQLMetadataClient(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		client.options = options
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--host", "127.0.0.1", "--user", "root", "--tls-mode", "enabled"},
+		strings.NewReader(""),
+		&strings.Builder{},
+		&strings.Builder{},
+	)
+
+	if code != 1 {
+		t.Fatalf("expected audit exit code 1, got %d", code)
+	}
+	if client.options.TLSMode != "enabled" {
+		t.Fatalf("expected TLSMode=enabled, got %q", client.options.TLSMode)
+	}
+
+	connection := toAuditMetaConnection(client.options, "", false)
+	if connection.TLSMode != "enabled" {
+		t.Fatalf("expected toAuditMetaConnection TLSMode=enabled, got %q", connection.TLSMode)
+	}
+}
+
+func TestAuditCommandPassesTLSConfigurationToPostgreSQLMetadataClient(t *testing.T) {
+	pool := x509.NewCertPool()
+	options := auditConnectionOptions{
+		Host:    "127.0.0.1",
+		Port:    5432,
+		User:    "root",
+		TLSMode: "enabled",
+		CACert:  pool,
+	}
+
+	connection := toAuditMetaConnection(options, spec.DialectPostgreSQL, true)
+	if connection.TLSMode != "enabled" {
+		t.Fatalf("expected toAuditMetaConnection TLSMode=enabled, got %q", connection.TLSMode)
+	}
+	if connection.CACert != pool {
+		t.Fatalf("expected toAuditMetaConnection CACert to be the same pool instance")
+	}
+	if connection.Dialect != spec.DialectPostgreSQL {
+		t.Fatalf("expected Dialect=postgresql, got %q", connection.Dialect)
+	}
+}
+
+func TestToAuditMetaConnectionIncludesTLSFields(t *testing.T) {
+	pool := x509.NewCertPool()
+	options := auditConnectionOptions{
+		Host:    "127.0.0.1",
+		Port:    3306,
+		User:    "root",
+		TLSMode: "enabled",
+		CACert:  pool,
+	}
+	connection := toAuditMetaConnection(options, "", false)
+
+	if connection.TLSMode != "enabled" {
+		t.Fatalf("expected TLSMode=enabled, got %q", connection.TLSMode)
+	}
+	if connection.CACert != pool {
+		t.Fatalf("expected CACert to be the same pool instance")
+	}
+}
+
+func TestToAuditMetaConnectionOmitsTLSFieldsWhenDisabled(t *testing.T) {
+	options := auditConnectionOptions{
+		Host:    "127.0.0.1",
+		Port:    3306,
+		User:    "root",
+		TLSMode: "disabled",
+	}
+	connection := toAuditMetaConnection(options, "", false)
+
+	if connection.TLSMode != "disabled" {
+		t.Fatalf("expected TLSMode=disabled, got %q", connection.TLSMode)
+	}
+	if connection.CACert != nil {
+		t.Fatalf("expected CACert=nil when disabled, got %v", connection.CACert)
+	}
+}
+
+func TestOpenMetadataClientPassesTLSToMySQLProvider(t *testing.T) {
+	options := auditConnectionOptions{
+		Host:    "127.0.0.1",
+		Port:    3306,
+		User:    "root",
+		TLSMode: "disabled",
+	}
+	_, err := openMetadataClient(options)
+	if err == nil {
+		t.Fatalf("expected connection error without real server")
+	}
+}
+
+func TestOpenMetadataClientPassesTLSToPostgreSQLProvider(t *testing.T) {
+	options := auditConnectionOptions{
+		Host:    "127.0.0.1",
+		Port:    5432,
+		User:    "root",
+		Dialect: string(spec.DialectPostgreSQL),
+		TLSMode: "disabled",
+	}
+	_, err := openMetadataClient(options)
+	if err == nil {
+		t.Fatalf("expected connection error without real server")
 	}
 }

@@ -8,6 +8,7 @@ package cli
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -29,6 +30,10 @@ type auditRunContext struct {
 
 func openMetadataClient(options auditConnectionOptions) (metadataClient, error) {
 	if options.Dialect == string(spec.DialectPostgreSQL) {
+		sslMode := "disable"
+		if strings.ToLower(strings.TrimSpace(options.TLSMode)) == "enabled" {
+			sslMode = "verify-full"
+		}
 		db, err := postgresqlmeta.OpenDB(postgresqlmeta.ConnectionConfig{
 			Host:           options.Host,
 			Port:           options.Port,
@@ -36,6 +41,8 @@ func openMetadataClient(options auditConnectionOptions) (metadataClient, error) 
 			User:           options.User,
 			Password:       options.Password,
 			ConnectTimeout: options.ConnectTimeout,
+			SSLMode:        sslMode,
+			CACert:         options.CACert,
 		})
 		if err != nil {
 			return nil, err
@@ -53,6 +60,8 @@ func openMetadataClient(options auditConnectionOptions) (metadataClient, error) 
 		User:           options.User,
 		Password:       options.Password,
 		ConnectTimeout: options.ConnectTimeout,
+		TLSMode:        options.TLSMode,
+		CACert:         options.CACert,
 	})
 	if err != nil {
 		return nil, err
@@ -155,6 +164,8 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 				Password:       config.Password,
 				Dialect:        string(config.Dialect),
 				ConnectTimeout: config.ConnectTimeout,
+				TLSMode:        config.TLSMode,
+				CACert:         config.CACert,
 			})
 		},
 	})
@@ -180,6 +191,8 @@ func toAuditMetaConnection(options auditConnectionOptions, requestedDialect spec
 		Password:       options.Password,
 		Database:       options.Database,
 		ConnectTimeout: options.ConnectTimeout,
+		TLSMode:        options.TLSMode,
+		CACert:         options.CACert,
 	}
 	if explicitDialect {
 		connection.Dialect = requestedDialect
