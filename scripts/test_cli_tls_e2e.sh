@@ -220,7 +220,7 @@ run_tls_case() {
 
   # shellcheck disable=SC2086
   if run_cli_capture "${stdout_file}" "${stderr_file}" \
-    "${subcmd}" \
+    ${subcmd} \
     --sql "${sql}" \
     --dialect "${dialect}" \
     --host "${host}" \
@@ -306,7 +306,7 @@ run_mysql_query_access_suite() {
   # Trusted CA — expect success (exit 0)
   run_tls_case \
     "mysql84-query-access-trusted" \
-    "query-access" "mysql" 0 \
+    "query-access analyze" "mysql" 0 \
     "localhost" "${port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app"
@@ -315,7 +315,7 @@ run_mysql_query_access_suite() {
   # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "mysql84-query-access-untrusted" \
-    "query-access" "mysql" 2 \
+    "query-access analyze" "mysql" 2 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app"
@@ -323,7 +323,7 @@ run_mysql_query_access_suite() {
   # Hostname mismatch (exit 2)
   run_tls_case \
     "mysql84-query-access-hostname-mismatch" \
-    "query-access" "mysql" 2 \
+    "query-access analyze" "mysql" 2 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app"
@@ -376,7 +376,7 @@ run_pg_query_access_suite() {
   # Trusted CA — expect success (exit 0)
   run_tls_case \
     "pg17-query-access-trusted" \
-    "query-access" "postgresql" 0 \
+    "query-access analyze" "postgresql" 0 \
     "localhost" "${port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app --database app"
@@ -385,7 +385,7 @@ run_pg_query_access_suite() {
   # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "pg17-query-access-untrusted" \
-    "query-access" "postgresql" 2 \
+    "query-access analyze" "postgresql" 2 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app --database app"
@@ -393,7 +393,7 @@ run_pg_query_access_suite() {
   # Hostname mismatch (exit 2)
   run_tls_case \
     "pg17-query-access-hostname-mismatch" \
-    "query-access" "postgresql" 2 \
+    "query-access analyze" "postgresql" 2 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${qa_sql}" \
     "--schema app --database app"
