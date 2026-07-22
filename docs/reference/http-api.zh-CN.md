@@ -150,10 +150,10 @@ curl http://127.0.0.1:8083/v1/capabilities
   "dialects": ["mysql", "tidb", "postgresql"],
   "top_level_inputs": ["sql", "dialect", "schema", "connection_id"],
   "input_rules": [
-    "connection_id 引用服务端 runtime config 中的命名连接",
-    "顶层 schema 覆盖命名连接中的 schema",
-    "顶层 dialect 覆盖命名连接中的 dialect",
-    "connection_id 支持 mysql、tidb 和 postgresql 元数据感知审计"
+    "connection_id references a named connection in the server runtime config",
+    "top-level schema overrides the named connection schema when both are set",
+    "top-level dialect overrides the named connection dialect when both are set",
+    "connection_id supports mysql, tidb, and postgresql metadata-aware audit"
   ],
   "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
   "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"],
@@ -245,7 +245,7 @@ curl http://127.0.0.1:8083/v1/rules/dml.where.require
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `sql` | string | 是 | 待审计的一条或多条 SQL 语句 |
-| `dialect` | string | 否 | `mysql` 或 `tidb`，省略时默认为 `mysql` |
+| `dialect` | string | 否 | `mysql`、`tidb` 或 `postgresql`，省略时默认为 `mysql` |
 | `schema` | string | 否 | 离线审计和元数据感知审计都可使用的可选 schema 名称；如果同时提供顶层 `schema` 和命名连接的 `schema`，以顶层值为准 |
 | `connection_id` | string | 否 | 引用服务端 runtime config 中定义的命名连接。命名连接提供 host、port、user、schema、dialect 和凭据配置。HTTP 请求不能直接提交凭据。 |
 
@@ -454,6 +454,8 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 省略 `connection_id` 时，请求以离线模式运行，使用内置解析器。设置 `connection_id` 时，服务端会打开元数据连接并从实时数据库解析 schema 信息。`profile` 字段在离线模式下可用，但当设置了 `connection_id` 时会被拒绝，返回 `400 invalid_request`。
 
+> **在线方言行为：** 当设置了 `connection_id` 时，服务端会忽略请求中的 `dialect` 字段，从实时数据库会话中推断实际方言。`dialect` 字段仅在离线模式下进行校验；无法识别的方言仅在未提供 `connection_id` 时才返回 `400 bad_request`。
+
 命名连接的 `purposes` 列表中必须包含 `query_access`，否则服务端返回 `403 purpose_not_allowed`。
 
 #### 请求
@@ -511,13 +513,13 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
     {
       "schema": "app",
       "table": "users",
-      "column": "id",
+      "column": "email",
       "usages": ["projection"]
     },
     {
       "schema": "app",
       "table": "users",
-      "column": "email",
+      "column": "id",
       "usages": ["projection"]
     },
     {
@@ -532,7 +534,8 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
     { "name": "email", "sources": ["app.users.email"] }
   ],
   "requirements": [
-    { "object": "app.users", "privilege": "SELECT" }
+    { "object": "app.users", "privilege": "read_column" },
+    { "object": "app.users", "privilege": "read_table" }
   ]
 }
 ```

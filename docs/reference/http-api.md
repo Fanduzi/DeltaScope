@@ -150,9 +150,9 @@ curl http://127.0.0.1:8083/v1/capabilities
   "dialects": ["mysql", "tidb", "postgresql"],
   "top_level_inputs": ["sql", "dialect", "schema", "connection_id"],
   "input_rules": [
-    "connection_id references a named connection in the server's runtime config",
-    "top-level schema overrides the named connection's schema when both are set",
-    "top-level dialect overrides the named connection's dialect when both are set",
+    "connection_id references a named connection in the server runtime config",
+    "top-level schema overrides the named connection schema when both are set",
+    "top-level dialect overrides the named connection dialect when both are set",
     "connection_id supports mysql, tidb, and postgresql metadata-aware audit"
   ],
   "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
@@ -466,6 +466,8 @@ Analyzes a SELECT-style query for read-side access control. The request body mus
 
 When `connection_id` is omitted, the request runs in offline mode using the built-in parser. When `connection_id` is set, the server opens a metadata connection and resolves schema information from the live database. The `profile` field is accepted in offline mode but rejected with `400 invalid_request` when `connection_id` is set.
 
+> **Online dialect behavior:** When `connection_id` is set, the server ignores the request-level `dialect` field and derives the actual dialect from the live database session. The `dialect` field is only validated in offline mode; an unrecognized dialect returns `400 bad_request` only when no `connection_id` is provided.
+
 The named connection must include `query_access` in its `purposes` list; otherwise the server returns `403 purpose_not_allowed`.
 
 #### Request
@@ -523,13 +525,13 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
     {
       "schema": "app",
       "table": "users",
-      "column": "id",
+      "column": "email",
       "usages": ["projection"]
     },
     {
       "schema": "app",
       "table": "users",
-      "column": "email",
+      "column": "id",
       "usages": ["projection"]
     },
     {
@@ -544,7 +546,8 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
     { "name": "email", "sources": ["app.users.email"] }
   ],
   "requirements": [
-    { "object": "app.users", "privilege": "SELECT" }
+    { "object": "app.users", "privilege": "read_column" },
+    { "object": "app.users", "privilege": "read_table" }
   ]
 }
 ```

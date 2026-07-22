@@ -64,12 +64,16 @@ metadata:
       port: 5432
       user: postgres
       password_env: PG_PASSWORD
+      database: postgres
       schema: public
       tls_mode: enabled
       tls_ca_file: /etc/deltascope/ca.crt
       purposes:
         - audit
         - query_access
+      allowed_api_key_ids:
+        - ci_bot
+        - dba_tool
 
 # HTTP adapter configuration.
 http:
