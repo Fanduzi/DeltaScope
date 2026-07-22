@@ -24,7 +24,7 @@ v0.420.0 将内联 HTTP `connection` 对象替换为通过 `connection_id` 引�
 - Query Access 仅发出静态要求。它不认证调用方、不评估授权、不强制 RLS、不脱敏列、不自动授予权限、不重写 SQL、不保证后续执行快照。
 - MCP 工具仍仅为 `audit_sql`、`describe_rule`、`list_rules` 和 `get_capabilities`。不添加 Query Access 工具。
 - 审计规则目录和默认审计行为不变。`level` 仍是公开审计优先级字段；不引入 severity 字段。
-- Query Access 结果不包含原始 SQL、字面量、函数名、DSN、凭证、驱动错误、会话数据、端点地址或密钥。不包含 `severity` 字段。
+- Query Access 结果不包含原始 SQL、字面量、函数名、DSN、凭证、驱动错误、会话数据、端点地址或密钥。不引入 `severity` 字段。
 - PostgreSQL 的受控会话目录/OID 证明路径不变。MySQL/TiDB 连接注册表条目不会影响 PostgreSQL，反之亦然。
 
 ## 非目标
@@ -35,7 +35,7 @@ v0.420.0 将内联 HTTP `connection` 对象替换为通过 `connection_id` 引�
 - 不是授权、RLS、脱敏、重写或执行快照保证。
 - 不是 MySQL/TiDB 配置作为 SQL 模式证明。
 - 不是 MCP Query Access 工具。
-- 不添加 severity 字段，注册的审计规则目录不变。
+- 不引入 severity 字段，注册的审计规则目录不变。
 
 ## 支持矩阵
 

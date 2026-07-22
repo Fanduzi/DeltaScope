@@ -53,7 +53,7 @@ jobs:
         # first shipped in v0.330.0. Bump the pin when you adopt a newer
         # release.
         env:
-          DELTASCOPE_VERSION: v0.410.0
+          DELTASCOPE_VERSION: v0.420.0
         shell: bash
         run: |
           curl -fsSL "https://raw.githubusercontent.com/Fanduzi/DeltaScope/${DELTASCOPE_VERSION}/install.sh" | sh
