@@ -155,23 +155,13 @@ curl http://127.0.0.1:8083/v1/capabilities
   ],
   "audit_modes": ["offline", "metadata-aware"],
   "dialects": ["mysql", "tidb", "postgresql"],
-  "top_level_inputs": ["sql", "dialect", "schema", "connection"],
-  "connection_inputs": [
-    "connection.host",
-    "connection.port",
-    "connection.socket",
-    "connection.user",
-    "connection.schema",
-    "connection.dialect",
-    "connection.password",
-    "connection.password_env",
-    "connection.password_file"
-  ],
+  "top_level_inputs": ["sql", "dialect", "schema", "connection_id"],
+  "connection_id": "references a named connection defined in runtime config; HTTP requests cannot submit credentials directly",
   "input_rules": [
-    "connection.password, connection.password_env, and connection.password_file are mutually exclusive",
-    "top-level schema overrides connection.schema when both are set",
-    "top-level dialect overrides connection.dialect when both are set",
-    "connection inputs support mysql, tidb, and postgresql metadata-aware audit"
+    "connection_id references a named connection in the server's runtime config",
+    "top-level schema overrides the named connection's schema when both are set",
+    "top-level dialect overrides the named connection's dialect when both are set",
+    "connection_id supports mysql, tidb, and postgresql metadata-aware audit"
   ],
   "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
   "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"],
@@ -196,7 +186,7 @@ curl http://127.0.0.1:8083/v1/capabilities
 }
 ```
 
-`connection_inputs` lists the advertised direct connection keys. The server also accepts `connection.connect_timeout` (documented in the `connection` table below). `result_fields` lists the always-relevant result keys; an audit response may also carry additive `unsupported` and `diagnostics` arrays, documented under [Response Field Reference](#response-field-reference).
+`connection_id` references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly. `result_fields` lists the always-relevant result keys; an audit response may also carry additive `unsupported` and `diagnostics` arrays, documented under [Response Field Reference](#response-field-reference).
 ```
 
 ---
@@ -255,7 +245,9 @@ If the rule id does not exist, the adapter returns `404 not_found`.
 
 ### POST /v1/audit
 
-Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with an optional inline `connection` block. HTTP requests do not support `connection_ref`.
+Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with a `connection_id` that references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly.
+
+> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`). The `connection_id` boundary applies to HTTP and MCP surfaces only.
 
 #### Request
 
@@ -263,27 +255,8 @@ Audits one or more SQL statements. The request body must be a single JSON object
 |-------|------|----------|-------------|
 | `sql` | string | Yes | One or more SQL statements to audit |
 | `dialect` | string | No | `mysql`, `tidb`, or `postgresql`. Defaults to `mysql` when omitted. PostgreSQL requires a PG-capable server binary. |
-| `schema` | string | No | Optional schema name used by offline and metadata-aware audits. When both top-level `schema` and `connection.schema` are supplied, the top-level value takes precedence. |
-| `connection` | object | No | Optional direct metadata-aware connection input |
-
-##### `connection`
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `host` | string | No | Database host for TCP connections |
-| `port` | int | No | Database port for TCP connections |
-| `socket` | string | No | Unix socket path for socket connections |
-| `user` | string | No | Database user |
-| `schema` | string | No | Schema to audit against when using direct metadata-aware input; ignored when the top-level `schema` field is present |
-| `dialect` | string | No | `mysql`, `tidb`, or `postgresql`; used as the requested dialect for metadata-aware requests |
-| `password` | string | No | Inline password value |
-| `password_env` | string | No | Environment variable name that contains the password |
-| `password_file` | string | No | File path that contains the password |
-| `connect_timeout` | string | No | Metadata connection timeout as a duration string, for example `5s` or `500ms`. Empty, omitted, or `0s` falls back to the runtime config default; invalid or negative values are rejected with `400 connection_invalid`. |
-
-> `password`, `password_env`, and `password_file` are mutually exclusive. Set at most one of them in a single request.
->
-> Use `host` with `user` for TCP connections, or `socket` with `user` for Unix socket connections. Do not combine `socket` with `host` or `port`.
+| `schema` | string | No | Optional schema name used by offline and metadata-aware audits. When both top-level `schema` and the named connection's `schema` are supplied, the top-level value takes precedence. |
+| `connection_id` | string | No | References a named connection defined in the server's runtime config. The named connection provides host, port, user, schema, dialect, and credential configuration. HTTP requests cannot submit credentials directly. |
 
 > **Note:** The server uses `DisallowUnknownFields`. Sending extra fields that are not listed above returns a `400 invalid_json` error.
 >
@@ -296,14 +269,7 @@ Request (MySQL):
 ```json
 {
   "sql": "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL COMMENT 'order status'",
-  "connection": {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "schema": "app",
-    "dialect": "mysql",
-    "password_env": "DELTASCOPE_DB_PASSWORD"
-  }
+  "connection_id": "local_mysql"
 }
 ```
 
@@ -313,12 +279,7 @@ Request (PostgreSQL):
 {
   "sql": "ALTER TABLE orders DROP CONSTRAINT orders_pkey",
   "dialect": "postgresql",
-  "connection": {
-    "host": "127.0.0.1",
-    "port": 5432,
-    "user": "readonly",
-    "schema": "public"
-  }
+  "connection_id": "local_pg"
 }
 ```
 
@@ -452,7 +413,7 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, contains more than one JSON object, or exceeds the 1 MiB request-body limit |
 | 400 | `bad_request` | `sql` field is empty, or `dialect` value is unrecognized |
-| 400 | `connection_invalid` | `connection` block is malformed, missing required host/user or socket/user pairing, uses mutually exclusive connection/password inputs, fails to resolve `password_env` / `password_file`, or hits schema-hint-required / ambiguous schema inference during metadata-aware execution |
+| 400 | `connection_invalid` | `connection_id` references a named connection that does not exist in the server's runtime config, or the named connection is malformed, or schema-hint-required / ambiguous schema inference was triggered during metadata-aware execution |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information from the live database |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |

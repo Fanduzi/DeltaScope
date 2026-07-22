@@ -377,7 +377,9 @@ Endpoints:
 - `GET /version`
 - `POST /v1/audit`
 
-`POST /v1/audit` supports both offline JSON audit requests and metadata-aware requests with an optional `connection` block. The HTTP response keeps the public audit result body and adds a `context` block. See the full contract in [HTTP API reference](docs/reference/http-api.md).
+`POST /v1/audit` supports both offline JSON audit requests and metadata-aware requests with a `connection_id` that references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly. The HTTP response keeps the public audit result body and adds a `context` block. See the full contract in [HTTP API reference](docs/reference/http-api.md).
+
+> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`). The `connection_id` boundary applies to HTTP and MCP surfaces only.
 
 ### HTTP metadata-aware request with connect timeout
 
@@ -385,18 +387,11 @@ Endpoints:
 {
   "sql": "alter table users add column email varchar(255)",
   "dialect": "mysql",
-  "connection": {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "password_env": "MYSQL_PASSWORD",
-    "schema": "app",
-    "connect_timeout": "5s"
-  }
+  "connection_id": "local_mysql"
 }
 ```
 
-The `connection.connect_timeout` field accepts Go duration strings (`500ms`, `5s`, `1m`). It overrides the runtime config default. Empty or `0s` falls back to the runtime config default. Invalid or negative values return a `400` error. MySQL, TiDB, and PostgreSQL all support metadata connect timeout.
+The `connection_id` references a named connection in the server's runtime config (see [docs/examples/runtime-config.yaml](docs/examples/runtime-config.yaml)). The named connection can define `connect_timeout` as a Go duration string (`500ms`, `5s`, `1m`). Empty or `0s` falls back to the runtime config default. Invalid or negative values return a `400` error. MySQL, TiDB, and PostgreSQL all support metadata connect timeout.
 
 ## Library Usage
 

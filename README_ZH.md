@@ -388,7 +388,9 @@ deltascope-server --port 8080 -runtime-config /etc/deltascope/runtime.yaml
 
 完整 runtime config 示例见 [docs/examples/runtime-config.yaml](docs/examples/runtime-config.yaml)。
 
-`POST /v1/audit` 同时支持离线 JSON 审核请求和带可选 `connection` 块的元数据感知请求。HTTP 响应会保留公开的审核结果主体，并额外返回 `context` 块。完整协议见 [HTTP API 参考](docs/reference/http-api.zh-CN.md)。
+`POST /v1/audit` 同时支持离线 JSON 审核请求和带 `connection_id` 的元数据感知请求，`connection_id` 引用服务端 runtime config 中定义的命名连接。HTTP 请求不能直接提交凭据。HTTP 响应会保留公开的审核结果主体，并额外返回 `context` 块。完整协议见 [HTTP API 参考](docs/reference/http-api.zh-CN.md)。
+
+> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`）。`connection_id` 边界仅适用于 HTTP 和 MCP 接口。
 
 ### HTTP 元数据感知请求带 connect_timeout
 
@@ -396,18 +398,11 @@ deltascope-server --port 8080 -runtime-config /etc/deltascope/runtime.yaml
 {
   "sql": "alter table users add column email varchar(255)",
   "dialect": "mysql",
-  "connection": {
-    "host": "127.0.0.1",
-    "port": 3306,
-    "user": "root",
-    "password_env": "MYSQL_PASSWORD",
-    "schema": "app",
-    "connect_timeout": "5s"
-  }
+  "connection_id": "local_mysql"
 }
 ```
 
-`connection.connect_timeout` 接受 Go duration 字符串（`500ms`、`5s`、`1m`），会覆盖 runtime config 默认值。留空或 `0s` 使用 runtime config 默认值。无效或负值返回 `400` 错误。MySQL、TiDB 和 PostgreSQL 都支持 metadata connect timeout。
+`connection_id` 引用服务端 runtime config 中的命名连接（见 [docs/examples/runtime-config.yaml](docs/examples/runtime-config.yaml)）。命名连接可定义 `connect_timeout`，使用 Go duration 字符串（`500ms`、`5s`、`1m`）。留空或 `0s` 使用 runtime config 默认值。无效或负值返回 `400` 错误。MySQL、TiDB 和 PostgreSQL 都支持 metadata connect timeout。
 
 ## Library 用法
 
