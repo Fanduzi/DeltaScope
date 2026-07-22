@@ -4,16 +4,16 @@
 
 v0.420.0 将内联 HTTP `connection` 对象替换为通过 `connection_id` 引用的运营方管理的命名连接。HTTP 在线审计和 Query Access 现在从服务端连接注册表解析数据库目标，而非在每个请求中接受 host/port/user/password 字段。TLS 模式、API 密钥允许列表和能力推导均附加在命名连接条目上。
 
-一个有界的标量函数子集（LOWER、UPPER、LENGTH、CHAR_LENGTH、ABS、CEIL、FLOOR、COALESCE、NULLIF、IFNULL）在连接的服务器身份匹配受支持的配置（MySQL 5.7、MySQL 8.0、MySQL 8.4、TiDB 8.5、PostgreSQL 17）时，为在线 Query Access 启用。该子集经过刻意收窄。COALESCE 和 NULLIF 仅接受直接列操作数。
+一个有界的标量函数子集（LOWER、UPPER、LENGTH、CHAR_LENGTH、ABS、CEIL、FLOOR、COALESCE、NULLIF、IFNULL）在连接的服务器身份匹配受支持的系列（MySQL 5.7.x、MySQL 8.0.x、MySQL 8.4.x、TiDB 8.5.x、PostgreSQL 17.x）时，为在线 Query Access 启用。该子集经过刻意收窄。每个标量函数的每个操作数都必须是直接物理基表列；嵌套表达式、字面量和函数调用会被拒绝。
 
 默认离线 SDK、CLI 和 HTTP 保持不变。CLI 保留直接连接标志并新增 `--database` 用于 PostgreSQL 目标选择。MCP 仍然没有 Query Access 工具。
 
 ## 变更内容
 
 - HTTP 在线审计和 Query Access 通过 `connection_id` 从运营方管理的命名连接解析目标。内联 HTTP `connection` 对象（host/port/user/password_env/schema）已移除，不提供兼容性开关。
-- TLS 模式按连接声明：`disabled`（默认）或 `enabled`，支持 CA 链路径和主机名验证。HTTP 请求体不接受任何 TLS 配置。
-- 为在线 Query Access 启用的有界标量函数子集：LOWER、UPPER、LENGTH、CHAR_LENGTH、ABS、CEIL、FLOOR、COALESCE、NULLIF、IFNULL。COALESCE 和 NULLIF 仅接受直接列操作数。IFNULL 仅限 MySQL/TiDB（PostgreSQL 上为 N/A）。
-- 在线会话从连接的服务器身份推导能力：MySQL 5.7、MySQL 8.0、MySQL 8.4、TiDB 8.5、PostgreSQL 17。不接受调用方提供的清单或配置覆盖。
+- TLS 模式按连接声明：`disabled`（默认）或 `enabled`。启用时，证书链和主机名验证不可禁用。`tls_ca_file` 是可选的；未指定时使用系统信任根。`tls_mode: disabled` 故意不使用 TLS。HTTP 请求体不接受任何 TLS 配置。
+- 为在线 Query Access 启用的有界标量函数子集：LOWER、UPPER、LENGTH、CHAR_LENGTH、ABS、CEIL、FLOOR、COALESCE、NULLIF、IFNULL。每个操作数都必须是直接物理基表列。IFNULL 仅限 MySQL/TiDB（PostgreSQL 上为 N/A）。
+- 在线会话从连接的服务器身份推导能力：MySQL 5.7.x、MySQL 8.0.x、MySQL 8.4.x、TiDB 8.5.x、PostgreSQL 17.x。不接受调用方提供的清单或配置覆盖。
 - HTTP 认证使用每个连接条目的 API 密钥允许列表。不接受每请求凭证。
 - CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--ask-password`、`--schema`）。CLI 新增 `--database` 标志用于 PostgreSQL 目标选择。
 - 决策记录：`docs/decisions/2026-07-20-query-access-online-connection-registry.md`（已接受；关联里程碑/版本：v0.420.0）。
@@ -32,7 +32,7 @@ v0.420.0 将内联 HTTP `connection` 对象替换为通过 `connection_id` 引�
 - 不是 SQL 执行或数据返回 API。
 - 不是任意 host/password HTTP 请求。请求体不能提交数据库凭证、主机、DSN 或 CA 路径。
 - 不是 UDF/存储函数、类型转换、字面量、嵌套表达式或宽泛的函数名允许列表。
-- 不是授权、RLS、脱敏、重写或执行快照保证。
+- 不是数据库 grant、role、RLS 或会话授权评估。不是脱敏、重写或执行快照保证。
 - 不是 MySQL/TiDB 配置作为 SQL 模式证明。
 - 不是 MCP Query Access 工具。
 - 不引入 severity 字段，注册的审计规则目录不变。
@@ -43,10 +43,10 @@ v0.420.0 将内联 HTTP `connection` 对象替换为通过 `connection_id` 引�
 |---|---|---|---|---|---|
 | LOWER, UPPER, LENGTH, CHAR_LENGTH | ✓ | ✓ | ✓ | ✓ | ✓ |
 | ABS, CEIL, FLOOR | ✓ | ✓ | ✓ | ✓ | ✓ |
-| COALESCE, NULLIF | ✓（仅直接列） | ✓（仅直接列） | ✓（仅直接列） | ✓（仅直接列） | ✓（仅直接列） |
-| IFNULL | ✓ | ✓ | ✓ | ✓ | N/A |
+| COALESCE, NULLIF | ✓（直接列） | ✓（直接列） | ✓（直接列） | ✓（直接列） | ✓（直接列） |
+| IFNULL | ✓（直接列） | ✓（直接列） | ✓（直接列） | ✓（直接列） | N/A |
 
-COALESCE 和 NULLIF 仅接受直接物理基表列操作数。不支持这些运算符内的嵌套表达式、字面量和函数调用。IFNULL 是 MySQL/TiDB 内建函数，PostgreSQL 无等效函数。
+每个标量函数的每个操作数都必须是直接物理基表列。不支持这些运算符内的嵌套表达式、字面量和函数调用。IFNULL 是 MySQL/TiDB 内建函数，PostgreSQL 无等效函数。
 
 ## 规则目录事实
 
