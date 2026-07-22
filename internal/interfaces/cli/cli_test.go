@@ -24,6 +24,7 @@ import (
 	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -3197,8 +3198,6 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 }
 
 func TestAuditOnlineErrorsNeverBreachCLIBoundary(t *testing.T) {
-	// Adversarial: any unrecognized metadata/driver error must still produce
-	// a bounded message when it crosses the online audit boundary.
 	adversarialInputs := []string{
 		"permission denied for table users",
 		"unknown database driver error: panic at 0xdeadbeef",
@@ -3211,6 +3210,84 @@ func TestAuditOnlineErrorsNeverBreachCLIBoundary(t *testing.T) {
 		if err == nil || err.Error() == input {
 			t.Fatalf("raw error breached CLI boundary: %q", input)
 		}
+	}
+}
+
+func TestAuditMetaConnectionOpenErrorDoesNotLeakSensitiveData(t *testing.T) {
+	sensitiveCases := []struct {
+		name string
+		err  *auditmeta.Error
+	}{
+		{
+			name: "connection_open with DSN",
+			err: &auditmeta.Error{
+				Kind:    auditmeta.ErrorConnectionOpen,
+				Message: "open metadata connection: dial tcp 10.0.0.1:3306: connect: connection refused",
+			},
+		},
+		{
+			name: "schema_lookup with table name and driver error",
+			err: &auditmeta.Error{
+				Kind:    auditmeta.ErrorSchemaLookupFailed,
+				Message: `resolve schema for table "users": pq: password authentication failed`,
+			},
+		},
+		{
+			name: "dialect_detect with version string",
+			err: &auditmeta.Error{
+				Kind:    auditmeta.ErrorDialectDetect,
+				Message: "detect dialect: unexpected version string 8.0.36-custom",
+			},
+		},
+		{
+			name: "invalid_sql with parser error",
+			err: &auditmeta.Error{
+				Kind:    auditmeta.ErrorInvalidSQL,
+				Message: "resolve schema targets: syntax error at position 42",
+			},
+		},
+	}
+
+	sensitiveTokens := []string{
+		"10.0.0.1", "3306", "password", "users", "8.0.36", "position 42",
+		"dial tcp", "pq:", "connection refused",
+	}
+
+	for _, tc := range sensitiveCases {
+		t.Run(tc.name, func(t *testing.T) {
+			bounded := mapAuditMetaErrorToBounded(tc.err)
+			for _, token := range sensitiveTokens {
+				if strings.Contains(strings.ToLower(bounded.Error()), strings.ToLower(token)) {
+					t.Fatalf("bounded message %q leaked sensitive token %q", bounded.Error(), token)
+				}
+			}
+		})
+	}
+}
+
+func TestAuditMetaSafeErrorsPassThrough(t *testing.T) {
+	dialectMismatch := &auditmeta.Error{
+		Kind:    auditmeta.ErrorDialectMismatch,
+		Message: `detected dialect "mysql" does not match requested dialect "postgresql"`,
+	}
+	if !isBoundedApplicationError(dialectMismatch) {
+		t.Fatal("dialect mismatch should be bounded")
+	}
+
+	schemaHint := &auditmeta.Error{
+		Kind:    auditmeta.ErrorSchemaHintRequired,
+		Message: "ambiguous schema for table orders",
+	}
+	if !isBoundedApplicationError(schemaHint) {
+		t.Fatal("schema hint required should be bounded")
+	}
+
+	connOpen := &auditmeta.Error{
+		Kind:    auditmeta.ErrorConnectionOpen,
+		Message: "open metadata connection: some driver error",
+	}
+	if isBoundedApplicationError(connOpen) {
+		t.Fatal("connection open should NOT be bounded (must be mapped)")
 	}
 }
 

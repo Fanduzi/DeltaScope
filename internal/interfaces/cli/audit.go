@@ -85,6 +85,10 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 					if isBoundedApplicationError(err) {
 						return err
 					}
+					var auditMetaErr *auditmeta.Error
+					if errors.As(err, &auditMetaErr) {
+						return mapAuditMetaErrorToBounded(auditMetaErr)
+					}
 					return mapOnlineCLIBoundaryError(err)
 				}
 				defer client.Close()
@@ -538,15 +542,33 @@ func isBoundedApplicationError(err error) bool {
 	if errors.As(err, &ue) {
 		return true
 	}
-	var auditMetaErr *auditmeta.Error
-	if errors.As(err, &auditMetaErr) {
-		return true
-	}
 	var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
 	if errors.As(err, &capabilityErr) {
 		return true
 	}
+	var auditMetaErr *auditmeta.Error
+	if errors.As(err, &auditMetaErr) {
+		switch auditMetaErr.Kind {
+		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired:
+			return true
+		}
+	}
 	return false
+}
+
+func mapAuditMetaErrorToBounded(err *auditmeta.Error) error {
+	switch err.Kind {
+	case auditmeta.ErrorConnectionOpen:
+		return newUserError("connection failed")
+	case auditmeta.ErrorDialectDetect:
+		return newUserError("server identity error")
+	case auditmeta.ErrorSchemaLookupFailed:
+		return newUserError("metadata analysis failed")
+	case auditmeta.ErrorInvalidSQL:
+		return newUserError("invalid SQL input")
+	default:
+		return newUserError("connection failed")
+	}
 }
 
 func isOnlineConnectionError(err error) bool {
