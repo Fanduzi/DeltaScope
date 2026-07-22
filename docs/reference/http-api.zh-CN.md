@@ -534,8 +534,10 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
     { "name": "email", "sources": ["app.users.email"] }
   ],
   "requirements": [
-    { "object": "app.users", "privilege": "read_column" },
-    { "object": "app.users", "privilege": "read_table" }
+    { "object": "app.users", "privilege": "read_table" },
+    { "object": "app.users.email", "privilege": "read_column" },
+    { "object": "app.users.id", "privilege": "read_column" },
+    { "object": "app.users.status", "privilege": "read_column" }
   ]
 }
 ```
@@ -545,7 +547,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | HTTP 状态码 | 错误码 | 触发条件 |
 |-------------|--------|----------|
 | 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段，或超过 1 MiB |
-| 400 | `bad_request` | `sql` 为空或 `dialect` 值无法识别 |
+| 400 | `bad_request` | `sql` 为空或 `dialect` 值无法识别（仅离线模式；在线模式忽略请求中的 dialect） |
 | 400 | `invalid_mode` | `mode` 不是 `strict` 或 `projection_only` |
 | 400 | `invalid_request` | 同时设置了 `profile` 和 `connection_id` |
 | 400 | `invalid_profile` | `profile` 不在支持的闭合集合内 |

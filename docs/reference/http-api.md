@@ -546,8 +546,10 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
     { "name": "email", "sources": ["app.users.email"] }
   ],
   "requirements": [
-    { "object": "app.users", "privilege": "read_column" },
-    { "object": "app.users", "privilege": "read_table" }
+    { "object": "app.users", "privilege": "read_table" },
+    { "object": "app.users.email", "privilege": "read_column" },
+    { "object": "app.users.id", "privilege": "read_column" },
+    { "object": "app.users.status", "privilege": "read_column" }
   ]
 }
 ```
@@ -557,7 +559,7 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
 | HTTP Status | Error Code | Trigger |
 |-------------|------------|---------|
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, or exceeds 1 MiB |
-| 400 | `bad_request` | `sql` is empty or `dialect` value is unrecognized |
+| 400 | `bad_request` | `sql` is empty or `dialect` value is unrecognized (offline only; online mode ignores request dialect) |
 | 400 | `invalid_mode` | `mode` is not `strict` or `projection_only` |
 | 400 | `invalid_request` | `profile` is set together with `connection_id` |
 | 400 | `invalid_profile` | `profile` is outside the closed set of supported profiles |
