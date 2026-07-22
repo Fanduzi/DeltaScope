@@ -238,7 +238,7 @@ If the rule id does not exist, the adapter returns `404 not_found`.
 
 Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with a `connection_id` that references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly.
 
-> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`). The `connection_id` boundary applies to HTTP only. MCP has no Query Access tool and retains its separate metadata-audit connection model.
+> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`, `--tls-mode`, `--tls-ca-file`). The `connection_id` boundary applies to HTTP only. MCP has no Query Access tool and retains its separate metadata-audit connection model.
 
 #### Request
 

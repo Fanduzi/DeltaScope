@@ -60,13 +60,16 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | `--host` | `-h` | （无） | MySQL/TiDB 主机地址 |
 | `--port` | `-P` | `3306` | 端口号 |
 | `--user` | `-u` | （无） | 数据库用户名 |
-| `--password` | `-p` | （无） | 命令行密码（生产环境中应避免使用——会出现在 shell 历史记录中） |
 | `--password-env` | | （无） | 包含数据库密码的环境变量名 |
 | `--password-file` | | （无） | 包含数据库密码的文件路径 |
-| `--ask-password` | | false | 交互式密码提示。与 `--password`、`--password-env` 和 `--password-file` 互斥。 |
+| `--ask-password` | | false | 交互式密码提示。与 `--password-env` 和 `--password-file` 互斥。 |
 | `--schema` | `-D` | （无） | 用于解析无限定表名的默认 schema |
-| `--socket` | `-S` | （无） | Unix socket 路径。与 `--host`/`--port` 互斥。 |
+| `--socket` | `-S` | （无） | Unix socket 路径。与 `--host`/`--port` 和 `--tls-mode enabled` 互斥。 |
+| `--tls-mode` | | `disabled` | TLS 连接模式：`disabled` 或 `enabled`。设为 `enabled` 时要求 `--host` 和 `--user`；与 `--socket` 互斥。 |
+| `--tls-ca-file` | | （无） | TLS 验证用 CA 证书文件路径。仅在 `--tls-mode enabled` 时使用。 |
 | `--metadata-connect-timeout` | | （无） | 元数据感知审计的元数据连接超时，例如 `5s` 或 `500ms` |
+
+> **迁移说明：** `--password` / `-p` 标志已移除。请使用 `--password-env`、`--password-file` 或 `--ask-password` 代替。之前在命令行上传递 `--password` 的脚本应切换到上述安全密码来源之一。
 
 **元数据感知模式下的行为：**
 
@@ -89,6 +92,22 @@ deltascope audit \
   --user dba --password-env DELTASCOPE_DB_PASSWORD \
   --schema mydb \
   --sql "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL DEFAULT 0"
+
+# 通过 TLS 连接 MySQL
+deltascope audit \
+  --host db.example.com --port 3306 \
+  --user dba --ask-password \
+  --tls-mode enabled \
+  --schema mydb \
+  --file ./migration.sql
+
+# 通过 TLS 连接 PostgreSQL 并指定自定义 CA 证书
+deltascope audit \
+  --host pg.example.com --port 5432 \
+  --user readonly --ask-password \
+  --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
+  --dialect postgresql --schema public \
+  --file ./migration.sql
 ```
 
 ### 输出格式

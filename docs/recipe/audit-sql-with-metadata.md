@@ -1,6 +1,6 @@
 # Audit SQL With Metadata
 
-Use metadata-aware mode when current schema state or instance configuration matters. Metadata-aware mode activates automatically when any connection flag is provided (`--host`, `--port`, `--user`, `--password`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, or `--socket`).
+Use metadata-aware mode when current schema state or instance configuration matters. Metadata-aware mode activates automatically when any connection flag is provided (`--host`, `--port`, `--user`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, or `--socket`).
 
 In this mode DeltaScope connects to the target database before evaluating rules, attaches a `TableSnapshot` (current column list, indexes, row estimates) and `InstanceFacts` (version, key configuration variables) to each statement, and then runs the full rule set — including rules that require live schema context.
 
@@ -90,6 +90,35 @@ deltascope audit \
   --port 5432 \
   --user deltascope \
   --password-env DELTASCOPE_PASSWORD \
+  --schema public
+```
+
+## Connecting via TLS
+
+When the database requires an encrypted connection, use `--tls-mode enabled`. TLS requires `--host` and `--user` and rejects `--socket`:
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'email address'" \
+  --host db.example.com \
+  --port 3306 \
+  --user deltascope \
+  --ask-password \
+  --tls-mode enabled \
+  --schema app
+```
+
+To provide a custom CA certificate for TLS verification:
+
+```bash
+deltascope audit \
+  --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255) NOT NULL DEFAULT ''" \
+  --dialect postgresql \
+  --host pg.example.com \
+  --port 5432 \
+  --user deltascope \
+  --ask-password \
+  --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
   --schema public
 ```
 

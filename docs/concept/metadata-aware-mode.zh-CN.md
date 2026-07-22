@@ -17,10 +17,13 @@
 | `--host` | MySQL/TiDB 主机地址 |
 | `--port` | 端口号（默认：3306） |
 | `--user` | 数据库用户名 |
-| `--password` | 密码（通过命令行传入） |
+| `--password-env` | 包含数据库密码的环境变量名 |
+| `--password-file` | 包含数据库密码的文件路径 |
 | `--ask-password` | 以交互方式提示输入密码 |
 | `--socket` | Unix socket 路径 |
 | `--schema` | 非限定表名的默认 Schema |
+| `--tls-mode` | TLS 连接模式：`disabled`（默认）或 `enabled` |
+| `--tls-ca-file` | TLS 验证用 CA 证书文件路径 |
 
 任意单个连接标志即可激活该模式。例如：
 

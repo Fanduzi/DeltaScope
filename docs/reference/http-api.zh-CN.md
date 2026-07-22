@@ -238,7 +238,7 @@ curl http://127.0.0.1:8083/v1/rules/dml.where.require
 
 审计一条或多条 SQL 语句。请求体必须是单个 JSON 对象。HTTP 适配层同时支持离线 JSON 审计请求和带 `connection_id` 的元数据感知请求，`connection_id` 引用服务端 runtime config 中定义的命名连接。HTTP 请求不能直接提交凭据。
 
-> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`）。`connection_id` 边界仅适用于 HTTP。MCP 没有 Query Access 工具，保留其独立的元数据审计连接模型。
+> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`、`--tls-mode`、`--tls-ca-file`）。`connection_id` 边界仅适用于 HTTP。MCP 没有 Query Access 工具，保留其独立的元数据审计连接模型。
 
 #### 请求
 

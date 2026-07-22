@@ -175,12 +175,13 @@ CLI_AUDIT_METADATA_FLAGS = [
     "--host",
     "--port",
     "--user",
-    "--password",
     "--password-env",
     "--password-file",
     "--ask-password",
     "--schema",
     "--socket",
+    "--tls-mode",
+    "--tls-ca-file",
 ]
 
 # SDK Result shape docs: the exported Result struct fields and the

@@ -227,6 +227,17 @@ deltascope audit \
   --metadata-connect-timeout 5s
 ```
 
+Metadata-aware audit over TLS:
+
+```bash
+deltascope audit \
+  --sql "alter table orders add column status text not null" \
+  --dialect postgresql \
+  --host pg.example.com --port 5432 --user root --ask-password \
+  --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
+  --schema app --metadata-connect-timeout 5s
+```
+
 See all shipped rules:
 
 ```bash
@@ -379,7 +390,7 @@ Endpoints:
 
 `POST /v1/audit` supports both offline JSON audit requests and metadata-aware requests with a `connection_id` that references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly. The HTTP response keeps the public audit result body and adds a `context` block. See the full contract in [HTTP API reference](docs/reference/http-api.md).
 
-> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`). The `connection_id` boundary applies to HTTP only. MCP has no Query Access tool and retains its separate metadata-audit connection model.
+> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`, `--tls-mode`, `--tls-ca-file`). The `connection_id` boundary applies to HTTP only. MCP has no Query Access tool and retains its separate metadata-audit connection model.
 
 ### HTTP metadata-aware request with connect timeout
 

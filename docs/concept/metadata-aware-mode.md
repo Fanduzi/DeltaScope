@@ -17,10 +17,13 @@ Connection flags that activate the mode:
 | `--host` | Database host address |
 | `--port` | Port number (default: 3306 for MySQL/TiDB, 5432 for PostgreSQL) |
 | `--user` | Database user |
-| `--password` | Password (passed on command line) |
+| `--password-env` | Environment variable containing the database password |
+| `--password-file` | File path containing the database password |
 | `--ask-password` | Prompt for password interactively |
 | `--socket` | Unix socket path |
 | `--schema` | Default schema for unqualified table names |
+| `--tls-mode` | TLS connection mode: `disabled` (default) or `enabled` |
+| `--tls-ca-file` | CA certificate file for TLS verification |
 
 Any single connection flag is sufficient to activate the mode. For example:
 

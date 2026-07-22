@@ -65,13 +65,16 @@ definitions, instance variables) and attaches them to each statement before rule
 | `--host` | `-h` | (none) | Database host address |
 | `--port` | `-P` | `3306` | Port number (default 3306 for MySQL/TiDB, 5432 for PostgreSQL) |
 | `--user` | `-u` | (none) | Database user |
-| `--password` | `-p` | (none) | Password on the command line (avoid in production — it appears in shell history) |
 | `--password-env` | | (none) | Environment variable that contains the database password |
 | `--password-file` | | (none) | File path that contains the database password |
-| `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password`, `--password-env`, and `--password-file`. |
+| `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password-env` and `--password-file`. |
 | `--schema` | `-D` | (none) | Default schema for unqualified table name resolution |
-| `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port`. |
+| `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port` and `--tls-mode enabled`. |
+| `--tls-mode` | | `disabled` | TLS connection mode: `disabled` or `enabled`. When `enabled`, requires `--host` and `--user`; rejects `--socket`. |
+| `--tls-ca-file` | | (none) | Path to a CA certificate file for TLS verification. Only used when `--tls-mode enabled`. |
 | `--metadata-connect-timeout` | | (none) | Metadata connection timeout for metadata-aware audit, for example `5s` or `500ms` |
+
+> **Migration note:** The `--password` / `-p` flag has been removed. Use `--password-env`, `--password-file`, or `--ask-password` instead. Scripts that passed `--password` on the command line should switch to one of these secure password sources.
 
 **Behavior in metadata-aware mode:**
 
@@ -102,6 +105,22 @@ deltascope audit \
 deltascope audit \
   --host 127.0.0.1 --port 5432 \
   --user readonly --ask-password \
+  --dialect postgresql --schema public \
+  --file ./migration.sql
+
+# Connect to MySQL over TLS
+deltascope audit \
+  --host db.example.com --port 3306 \
+  --user dba --ask-password \
+  --tls-mode enabled \
+  --schema mydb \
+  --file ./migration.sql
+
+# Connect to PostgreSQL over TLS with a custom CA certificate
+deltascope audit \
+  --host pg.example.com --port 5432 \
+  --user readonly --ask-password \
+  --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
   --dialect postgresql --schema public \
   --file ./migration.sql
 ```
