@@ -45,7 +45,6 @@ type httpCapabilitiesResponse struct {
 	AuditModes        []string `json:"audit_modes"`
 	Dialects          []string `json:"dialects"`
 	TopLevelInputs    []string `json:"top_level_inputs"`
-	ConnectionInputs  []string `json:"connection_inputs"`
 	InputRules        []string `json:"input_rules"`
 	ResultFields      []string `json:"result_fields"`
 	ContextFields     []string `json:"context_fields"`
@@ -114,20 +113,9 @@ func httpCapabilitiesPayload() httpCapabilitiesResponse {
 			"sql",
 			"dialect",
 			"schema",
-			"connection",
+			"connection_id",
 		},
-		ConnectionInputs: []string{
-			"connection.host",
-			"connection.port",
-			"connection.socket",
-			"connection.user",
-			"connection.schema",
-			"connection.dialect",
-			"connection.password",
-			"connection.password_env",
-			"connection.password_file",
-		},
-		InputRules:        []string{"connection.password, connection.password_env, and connection.password_file are mutually exclusive", "top-level schema overrides connection.schema when both are set", "top-level dialect overrides connection.dialect when both are set", "connection inputs support mysql, tidb, and postgresql metadata-aware audit"},
+		InputRules:        []string{"connection_id references a named connection in the server runtime config", "top-level schema overrides the named connection schema when both are set", "top-level dialect overrides the named connection dialect when both are set", "connection_id supports mysql, tidb, and postgresql metadata-aware audit"},
 		ResultFields:      []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},
 		ContextFields:     []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"},
 		StructuredErrors:  []string{"invalid_json", "bad_request", "connection_invalid", "connection_failed", "config_invalid", "auth_required", "auth_invalid", "rate_limited", "request_timeout", "request_canceled", "internal_error", "not_found"},

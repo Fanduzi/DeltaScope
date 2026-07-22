@@ -390,7 +390,7 @@ deltascope-server --port 8080 -runtime-config /etc/deltascope/runtime.yaml
 
 `POST /v1/audit` 同时支持离线 JSON 审核请求和带 `connection_id` 的元数据感知请求，`connection_id` 引用服务端 runtime config 中定义的命名连接。HTTP 请求不能直接提交凭据。HTTP 响应会保留公开的审核结果主体，并额外返回 `context` 块。完整协议见 [HTTP API 参考](docs/reference/http-api.zh-CN.md)。
 
-> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`）。`connection_id` 边界仅适用于 HTTP 和 MCP 接口。
+> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`）。`connection_id` 边界仅适用于 HTTP。MCP 没有 Query Access 工具，保留其独立的元数据审计连接模型。
 
 ### HTTP 元数据感知请求带 connect_timeout
 

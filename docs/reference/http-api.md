@@ -11,8 +11,6 @@ The HTTP adapter sets `X-Request-ID` on every response. If a request already inc
 ```
 -listen string   HTTP listen address (default "127.0.0.1:8083")
 -config string   path to YAML policy config file (optional)
--auth-enabled    enable X-API-Key authentication for protected routes
--auth-keys       comma-separated API keys for X-API-Key auth
 -auth-allow-paths comma-separated paths that bypass auth (default "/healthz,/readyz,/version,/metrics")
 -rate-limit-enabled enable rate limiting middleware
 -rate-limit-rps  rate limit requests per second (default 5)
@@ -32,12 +30,6 @@ deltascope-server -listen 127.0.0.1:8083
 
 # With a custom policy config
 deltascope-server -listen 127.0.0.1:8083 -config ./deltascope.yaml
-
-# Enable API-key auth (protects `/v1/*` endpoints unless explicitly allowed)
-deltascope-server \
-  -listen 127.0.0.1:8083 \
-  -auth-enabled \
-  -auth-keys 'ds_live_key_1,ds_live_key_2'
 
 # Enable rate limiting by API key and keep /metrics open
 deltascope-server \
@@ -149,6 +141,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "GET /version",
     "GET /metrics",
     "POST /v1/audit",
+    "POST /v1/query-access/analyze",
     "GET /v1/rules",
     "GET /v1/rules/{rule_id}",
     "GET /v1/capabilities"
@@ -247,7 +240,7 @@ If the rule id does not exist, the adapter returns `404 not_found`.
 
 Audits one or more SQL statements. The request body must be a single JSON object. The HTTP adapter supports both offline JSON audit requests and metadata-aware requests with a `connection_id` that references a named connection defined in the server's runtime config. HTTP requests cannot submit credentials directly.
 
-> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`). The `connection_id` boundary applies to HTTP and MCP surfaces only.
+> The CLI retains direct connection flags (`--host`, `--port`, `--user`, `--password-env`, `--ask-password`, `--schema`). The `connection_id` boundary applies to HTTP only. MCP has no Query Access tool and retains its separate metadata-audit connection model.
 
 #### Request
 
@@ -465,6 +458,93 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
   -H 'Content-Type: application/json' \
   -d '{"sql": "SELECT 1", "unknown_field": "value"}'
 # Returns: {"error":{"code":"invalid_json","message":"request body must be valid JSON"}}
+```
+
+---
+
+### POST /v1/query-access/analyze
+
+Analyzes a SELECT-style query for read-side access control. The request body must be a single JSON object containing `sql` and a `connection_id` that references a named connection in the server's runtime config. HTTP requests cannot submit credentials directly.
+
+Query Access requires a `connection_id`. Offline (credential-free) requests are rejected with `400 bad_request`. The named connection must include `query_access` in its `purposes` list; otherwise the server returns `400 connection_invalid`.
+
+The server prohibits SQL profiles in query-access requests. If the SQL contains a `SHOW PROFILE` or `SHOW PROFILES` statement, the server returns `400 bad_request`.
+
+#### Request
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sql` | string | Yes | A SELECT-style query to analyze for read-side access control |
+| `dialect` | string | No | `mysql`, `tidb`, or `postgresql`. Defaults to `mysql` when omitted. |
+| `schema` | string | No | Optional schema name. When both top-level `schema` and the named connection's `schema` are supplied, the top-level value takes precedence. |
+| `connection_id` | string | Yes | References a named connection defined in the server's runtime config. The named connection must have `query_access` in its `purposes`. |
+
+> **Note:** The server uses `DisallowUnknownFields`. Sending extra fields that are not listed above returns a `400 invalid_json` error.
+>
+> **Body size limit:** `POST /v1/query-access/analyze` accepts request bodies up to 1 MiB.
+
+#### Example
+
+Request:
+
+```json
+{
+  "sql": "SELECT id, email FROM users WHERE status = 'active'",
+  "connection_id": "local_mysql"
+}
+```
+
+Response fragment:
+
+```json
+{
+  "verdict": "pass",
+  "summary": {
+    "statements": 1,
+    "blockers": 0,
+    "warnings": 0,
+    "notices": 0
+  },
+  "context": {
+    "mode": "metadata-aware",
+    "dialect": "mysql",
+    "dialect_source": "detected",
+    "schema": "app",
+    "schema_source": "connection",
+    "metadata_source": "direct"
+  }
+}
+```
+
+#### Error Responses
+
+| HTTP Status | Error Code | Trigger |
+|-------------|------------|---------|
+| 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, or exceeds 1 MiB |
+| 400 | `bad_request` | `sql` is empty, `connection_id` is missing, or the SQL contains a prohibited profile statement |
+| 400 | `connection_invalid` | `connection_id` references a connection that does not exist, is malformed, or does not have `query_access` in its `purposes` |
+| 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information |
+| 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
+| 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |
+| 429 | `rate_limited` | Request exceeded configured rate limit |
+| 408 | `request_canceled` | Request context was canceled before analysis completed |
+| 500 | `internal_error` | A panic was recovered by HTTP middleware |
+| 500 | `config_invalid` | Server config file failed to load |
+| 504 | `request_timeout` | Analysis did not complete before request timeout |
+
+#### curl Examples
+
+```bash
+# Analyze a SELECT query via a named connection
+curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"sql": "SELECT id, email FROM users WHERE status = '\''active'\''", "connection_id": "local_mysql"}'
+
+# Trigger error: missing connection_id
+curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"sql": "SELECT 1"}'
+# Returns: {"error":{"code":"bad_request","message":"connection_id is required for query-access analysis"}}
 ```
 
 ---

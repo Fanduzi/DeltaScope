@@ -11,8 +11,6 @@ HTTP 适配层会在每个响应写入 `X-Request-ID`。如果请求已经携带
 ```
 -listen string   HTTP 监听地址（默认 "127.0.0.1:8083"）
 -config string   YAML 策略配置文件路径（可选）
--auth-enabled    开启受保护路由的 X-API-Key 认证
--auth-keys       X-API-Key 认证使用的逗号分隔 key 列表
 -auth-allow-paths 逗号分隔的免认证路径（默认 "/healthz,/readyz,/version,/metrics"）
 -rate-limit-enabled 开启限流中间件
 -rate-limit-rps  每秒请求上限（默认 5）
@@ -32,12 +30,6 @@ deltascope-server -listen 127.0.0.1:8083
 
 # 指定自定义策略配置
 deltascope-server -listen 127.0.0.1:8083 -config ./deltascope.yaml
-
-# 开启 API Key 认证（默认保护所有 `/v1/*` 路径，除非显式放行）
-deltascope-server \
-  -listen 127.0.0.1:8083 \
-  -auth-enabled \
-  -auth-keys 'ds_live_key_1,ds_live_key_2'
 
 # 开启按 API Key 限流，并放行 /metrics
 deltascope-server \
@@ -149,6 +141,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "GET /version",
     "GET /metrics",
     "POST /v1/audit",
+    "POST /v1/query-access/analyze",
     "GET /v1/rules",
     "GET /v1/rules/{rule_id}",
     "GET /v1/capabilities"
@@ -247,7 +240,7 @@ curl http://127.0.0.1:8083/v1/rules/dml.where.require
 
 审计一条或多条 SQL 语句。请求体必须是单个 JSON 对象。HTTP 适配层同时支持离线 JSON 审计请求和带 `connection_id` 的元数据感知请求，`connection_id` 引用服务端 runtime config 中定义的命名连接。HTTP 请求不能直接提交凭据。
 
-> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`）。`connection_id` 边界仅适用于 HTTP 和 MCP 接口。
+> CLI 保留直接连接标志（`--host`、`--port`、`--user`、`--password-env`、`--ask-password`、`--schema`）。`connection_id` 边界仅适用于 HTTP。MCP 没有 Query Access 工具，保留其独立的元数据审计连接模型。
 
 #### 请求
 
@@ -453,6 +446,93 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
   -H 'Content-Type: application/json' \
   -d '{"sql": "SELECT 1", "unknown_field": "value"}'
 # 返回：{"error":{"code":"invalid_json","message":"request body must be valid JSON"}}
+```
+
+---
+
+### POST /v1/query-access/analyze
+
+分析 SELECT 类查询的读侧访问控制。请求体必须是单个 JSON 对象，包含 `sql` 和引用服务端 runtime config 中命名连接的 `connection_id`。HTTP 请求不能直接提交凭据。
+
+Query Access 要求必须提供 `connection_id`。离线（无凭据）请求会被拒绝，返回 `400 bad_request`。命名连接的 `purposes` 列表中必须包含 `query_access`，否则服务端返回 `400 connection_invalid`。
+
+服务端禁止在 query-access 请求中使用 SQL profile。如果 SQL 包含 `SHOW PROFILE` 或 `SHOW PROFILES` 语句，服务端返回 `400 bad_request`。
+
+#### 请求
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `sql` | string | 是 | 待分析的 SELECT 类查询 |
+| `dialect` | string | 否 | `mysql`、`tidb` 或 `postgresql`，省略时默认为 `mysql` |
+| `schema` | string | 否 | 可选 schema 名称；如果同时提供顶层 `schema` 和命名连接的 `schema`，以顶层值为准 |
+| `connection_id` | string | 是 | 引用服务端 runtime config 中定义的命名连接。命名连接的 `purposes` 中必须包含 `query_access` |
+
+> **注意：** 服务器启用了 `DisallowUnknownFields`。传入上述列表之外的额外字段将返回 `400 invalid_json` 错误。
+>
+> **请求体大小限制：** `POST /v1/query-access/analyze` 最多接受 1 MiB 的请求体。
+
+#### 示例
+
+请求：
+
+```json
+{
+  "sql": "SELECT id, email FROM users WHERE status = 'active'",
+  "connection_id": "local_mysql"
+}
+```
+
+响应片段：
+
+```json
+{
+  "verdict": "pass",
+  "summary": {
+    "statements": 1,
+    "blockers": 0,
+    "warnings": 0,
+    "notices": 0
+  },
+  "context": {
+    "mode": "metadata-aware",
+    "dialect": "mysql",
+    "dialect_source": "detected",
+    "schema": "app",
+    "schema_source": "connection",
+    "metadata_source": "direct"
+  }
+}
+```
+
+#### 错误响应
+
+| HTTP 状态码 | 错误码 | 触发条件 |
+|-------------|--------|----------|
+| 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段，或超过 1 MiB |
+| 400 | `bad_request` | `sql` 为空、缺少 `connection_id`，或 SQL 包含被禁止的 profile 语句 |
+| 400 | `connection_invalid` | `connection_id` 引用了不存在的命名连接、连接格式无效，或 `purposes` 中不含 `query_access` |
+| 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法解析 schema 信息 |
+| 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
+| 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |
+| 429 | `rate_limited` | 请求超过当前限流阈值 |
+| 408 | `request_canceled` | 分析完成前，请求上下文被取消 |
+| 500 | `internal_error` | HTTP 中间件捕获并恢复了 panic |
+| 500 | `config_invalid` | 服务器配置文件加载失败 |
+| 504 | `request_timeout` | 分析在请求超时时间内未完成 |
+
+#### curl 示例
+
+```bash
+# 通过命名连接分析 SELECT 查询
+curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"sql": "SELECT id, email FROM users WHERE status = '\''active'\''", "connection_id": "local_mysql"}'
+
+# 触发错误：缺少 connection_id
+curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"sql": "SELECT 1"}'
+# 返回：{"error":{"code":"bad_request","message":"connection_id is required for query-access analysis"}}
 ```
 
 ---

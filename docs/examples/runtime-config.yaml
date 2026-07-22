@@ -36,3 +36,26 @@ logging:
 # Empty or "0s" means no default is set; the internal fallback is used.
 metadata:
   connect_timeout: 5s  # e.g. 500ms, 5s, 1m
+
+  # Named connections for metadata-aware audit and query-access analysis.
+  # The HTTP adapter references these by connection_id; credentials are never
+  # submitted directly in HTTP requests.
+  connections:
+    local_mysql:
+      id: local_mysql
+      dialect: mysql
+      host: 127.0.0.1
+      port: 3306
+      user: root
+      password_env: MYSQL_PASSWORD
+      schema: app
+      tls_mode: disabled
+      purposes:
+        - audit
+        - query_access
+
+# HTTP adapter configuration.
+http:
+  auth:
+    enabled: false
+    keys: []
