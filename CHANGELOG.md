@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.440.0] - 2026-07-23
+
+### Added
+
+- CLI TLS end-to-end suite (`make test-e2e-cli-tls`) runs as a required GitHub Actions gate on pull requests and pushes to `main`, and is composed into `make release-test-gates` invoked by the release workflow.
+- TLS fixtures use Compose-assigned dynamic host ports, unique Compose project names, and container-name overrides so runs do not collide with other services or parallel runs.
+- Fail-closed Docker policy: the suite fails in CI when Docker is unavailable, and `--docker-optional` is rejected in CI or when the required flag is set.
+- Hardened fixture lifecycle with a dedicated cleanup regression harness (`make test-e2e-cli-tls-regression`) that verifies container/network/volume/workspace teardown and dynamic port release.
+- MySQL TLS fixtures use a TCP + TLS readiness healthcheck and readable server keys so the gate reflects real TCP+TLS connectivity on Linux CI instead of a Unix-socket false positive.
+- Decision record: `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md` (Accepted) records the CLI TLS E2E PR/push CI gate and its composition into the release test gates.
+
+### Non-Goals
+
+- Not a new product feature; CI, release gating, and test infrastructure only.
+- Not a change to Query Access semantics, provable pure-function ranges, or literal-operand admissibility.
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog. Default offline CLI/SDK/HTTP behavior and MCP Query Access availability remain unchanged.
+
 ## [v0.430.0] - 2026-07-23
 
 ### Added
