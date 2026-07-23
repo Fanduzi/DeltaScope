@@ -161,6 +161,12 @@ assert_stderr_contains() {
   grep -qi -- "${pattern}" "${stderr_file}" || fail "expected stderr to contain '${pattern}'"
 }
 
+assert_stdout_contains() {
+  local stdout_file="$1"
+  local pattern="$2"
+  grep -qi -- "${pattern}" "${stdout_file}" || fail "expected stdout to contain '${pattern}'"
+}
+
 assert_no_leak() {
   local stdout_file="$1"
   local stderr_file="$2"
@@ -198,6 +204,7 @@ assert_no_leak() {
 #   $7  CA cert file path (trusted or untrusted)
 #   $8  SQL text
 #   $9  extra args (space-separated, optional)
+#   $10 stdout contains pattern (optional)
 run_tls_case() {
   local label="$1"
   local subcmd="$2"
@@ -208,6 +215,7 @@ run_tls_case() {
   local ca_file="$7"
   local sql="$8"
   local extra_args="${9:-}"
+  local stdout_pattern="${10:-}"
 
   local stdout_file
   local stderr_file
@@ -256,6 +264,10 @@ run_tls_case() {
   # No sensitive data in output.
   assert_no_leak "${stdout_file}" "${stderr_file}" "${label}"
 
+  if [[ -n "${stdout_pattern}" ]]; then
+    assert_stdout_contains "${stdout_file}" "${stdout_pattern}"
+  fi
+
   rm -f "${stdout_file}" "${stderr_file}"
 }
 
@@ -268,22 +280,22 @@ run_mysql_audit_suite() {
   local untrusted_port="${MYSQL_TLS_UNTRUSTED_PORT}"
   local audit_sql="ALTER TABLE app.users ADD COLUMN tls_e2e_col VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'tls e2e'"
 
-  # Trusted CA — expect success (exit 0)
+  # Trusted CA — expect success (exit 0); --fail-on none so audit-policy findings don't affect exit code.
   run_tls_case \
     "mysql84-audit-trusted" \
     "audit" "mysql" 0 \
     "localhost" "${port}" "${trusted_ca}" \
     "${audit_sql}" \
-    "--schema app"
+    "--schema app --fail-on none" \
+    "metadata-aware"
 
   # Untrusted CA — expect connection failure (exit 2; audit uses exitUser for connection failures)
-  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "mysql84-audit-untrusted" \
     "audit" "mysql" 2 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${audit_sql}" \
-    "--schema app"
+    "--schema app --fail-on none"
 
   # Hostname mismatch — cert has localhost SAN, connect via 127.0.0.1 (exit 2)
   run_tls_case \
@@ -291,7 +303,7 @@ run_mysql_audit_suite() {
     "audit" "mysql" 2 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${audit_sql}" \
-    "--schema app"
+    "--schema app --fail-on none"
 }
 
 run_mysql_query_access_suite() {
@@ -311,8 +323,7 @@ run_mysql_query_access_suite() {
     "${qa_sql}" \
     "--schema app"
 
-  # Untrusted CA — expect connection failure (exit 2; audit uses exitUser for connection failures)
-  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
+  # Untrusted CA — expect usage error (exit 3; query-access uses exitQueryAccessUsageError)
   run_tls_case \
     "mysql84-query-access-untrusted" \
     "query-access analyze" "mysql" 3 \
@@ -338,30 +349,30 @@ run_pg_audit_suite() {
   local untrusted_port="${PG_TLS_UNTRUSTED_PORT}"
   local audit_sql="ALTER TABLE app.users ADD COLUMN tls_e2e_col TEXT NOT NULL DEFAULT ''"
 
-  # Trusted CA — expect success (exit 0)
+  # Trusted CA — expect success (exit 0); --fail-on none so audit-policy findings don't affect exit code.
   run_tls_case \
     "pg17-audit-trusted" \
     "audit" "postgresql" 0 \
     "localhost" "${port}" "${trusted_ca}" \
     "${audit_sql}" \
-    "--schema app --database app"
+    "--schema app --database app --fail-on none" \
+    "metadata-aware"
 
   # Untrusted CA — expect connection failure (exit 2; audit uses exitUser for connection failures)
-  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
   run_tls_case \
     "pg17-audit-untrusted" \
     "audit" "postgresql" 2 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${audit_sql}" \
-    "--schema app --database app"
+    "--schema app --database app --fail-on none"
 
-  # Hostname mismatch (exit 3; query-access uses exitQueryAccessUsageError)
+  # Hostname mismatch — cert has localhost SAN, connect via 127.0.0.1 (exit 2)
   run_tls_case \
     "pg17-audit-hostname-mismatch" \
     "audit" "postgresql" 2 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${audit_sql}" \
-    "--schema app --database app"
+    "--schema app --database app --fail-on none"
 }
 
 run_pg_query_access_suite() {
@@ -381,8 +392,7 @@ run_pg_query_access_suite() {
     "${qa_sql}" \
     "--schema app --database app"
 
-  # Untrusted CA — expect connection failure (exit 2; audit uses exitUser for connection failures)
-  # Pass the trusted CA cert (which did NOT sign the untrusted server cert) so TLS handshake fails.
+  # Untrusted CA — expect usage error (exit 3; query-access uses exitQueryAccessUsageError)
   run_tls_case \
     "pg17-query-access-untrusted" \
     "query-access analyze" "postgresql" 3 \
