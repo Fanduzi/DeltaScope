@@ -43,7 +43,7 @@ make test-e2e-cli-tls-regression
 
 `make test-e2e-http-tls` runs the HTTP TLS E2E suite independently.
 
-`make test-e2e-cli-tls-regression` verifies fixture lifecycle: dynamic port allocation, cleanup after passing and failed runs, and Docker availability policy. The regression harness tracks all port-holder PIDs, verifies ports are released after cleanup, and asserts no residual Docker containers/networks/volumes or workspace files remain after both normal and intentional-failure runs.
+`make test-e2e-cli-tls-regression` verifies fixture lifecycle: dynamic port allocation, cleanup after passing and failed runs, and Docker availability policy. The regression harness tracks all port-holder PIDs, verifies ports are released after cleanup, parses the machine-readable `CLI_TLS_E2E_PORTS` line from each run, and uses `lsof` to confirm no listener remains on any dynamic port after both normal and intentional-failure runs. It also asserts no residual Docker containers/networks/volumes or workspace files remain.
 
 Cleanup in `test_cli_tls_e2e.sh` is fail-closed: leftover Docker resources are force-removed and re-verified absent; if residuals persist, the success path fails. The original nonzero test exit code is preserved (cleanup never masks a test failure as success).
 

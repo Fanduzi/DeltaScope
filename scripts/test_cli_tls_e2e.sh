@@ -250,6 +250,10 @@ resolve_ports() {
   log "  postgresql-tls:       ${PG_TLS_PORT}"
   log "  mysql-tls-untrusted:  ${MYSQL_TLS_UNTRUSTED_PORT}"
   log "  postgresql-tls-untrusted: ${PG_TLS_UNTRUSTED_PORT}"
+
+  # Machine-readable port line for regression harness parsing.
+  printf 'CLI_TLS_E2E_PORTS mysql_tls=%s pg_tls=%s mysql_untrusted=%s pg_untrusted=%s\n' \
+    "${MYSQL_TLS_PORT}" "${PG_TLS_PORT}" "${MYSQL_TLS_UNTRUSTED_PORT}" "${PG_TLS_UNTRUSTED_PORT}"
 }
 
 start_db_stack() {

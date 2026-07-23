@@ -107,7 +107,10 @@ Cleanup is fail-closed on both success and failure paths:
 
 - Occupies all 4 legacy ports (13306, 15432, 13307, 15433) with tracked PIDs; all are terminated on exit.
 - Verifies legacy ports are released after cleanup.
-- After both normal and intentional-failure runs, asserts: no Docker containers/networks/volumes for the project, no workspace directory, no port-listening containers.
+- Parses the machine-readable `CLI_TLS_E2E_PORTS mysql_tls=... pg_tls=... mysql_untrusted=... pg_untrusted=...` line from each run's output; fails closed if the line is missing or malformed.
+- Validates all 4 dynamic ports are numeric and unique.
+- After both normal and intentional-failure runs, uses `lsof -i :PORT -sTCP:LISTEN` to confirm no listener remains on each dynamic port.
+- Asserts no Docker containers/networks/volumes for the project and no workspace directory.
 - Verifies Docker-required mode fails without Docker, and `--docker-optional` is rejected in CI.
 
 ### Exact Commands

@@ -14,6 +14,7 @@ LEGACY_PORTS=(13306 15432 13307 15433)
 
 PORT_HOLDER_PIDS=()
 PORT_HOLDERS_DIR=""
+DYNAMIC_PORTS=()
 
 log() {
   printf '[cli-tls-regression] %s\n' "$*"
@@ -153,17 +154,61 @@ extract_workspace() {
   echo "${output}" | grep -o '/tmp/deltascope-cli-tls-e2e\.[^ ]*' | head -1
 }
 
-# Verify no processes are listening on the dynamic ports used by a run.
+# Parse the machine-readable dynamic port line from test output.
+# Sets DYNAMIC_PORTS array. Fails closed if the line is missing or malformed.
+extract_dynamic_ports() {
+  local label="$1"
+  local output="$2"
+
+  local port_line
+  port_line="$(echo "${output}" | grep '^CLI_TLS_E2E_PORTS ' | head -1)"
+  if [[ -z "${port_line}" ]]; then
+    fail "[${label}] CLI_TLS_E2E_PORTS line not found in output — cannot verify dynamic port release"
+  fi
+
+  # Parse key=value pairs.
+  local mysql_tls="" pg_tls="" mysql_untrusted="" pg_untrusted=""
+  for token in ${port_line#CLI_TLS_E2E_PORTS }; do
+    case "${token}" in
+      mysql_tls=*) mysql_tls="${token#mysql_tls=}" ;;
+      pg_tls=*) pg_tls="${token#pg_tls=}" ;;
+      mysql_untrusted=*) mysql_untrusted="${token#mysql_untrusted=}" ;;
+      pg_untrusted=*) pg_untrusted="${token#pg_untrusted=}" ;;
+    esac
+  done
+
+  # Validate all four are present and numeric.
+  local ports=("${mysql_tls}" "${pg_tls}" "${mysql_untrusted}" "${pg_untrusted}")
+  for p in "${ports[@]}"; do
+    if [[ -z "${p}" || ! "${p}" =~ ^[0-9]+$ ]]; then
+      fail "[${label}] invalid dynamic port value: '${p}' (line: ${port_line})"
+    fi
+  done
+
+  # Validate uniqueness.
+  local unique_count
+  unique_count="$(printf '%s\n' "${ports[@]}" | sort -u | wc -l | tr -d ' ')"
+  if [[ "${unique_count}" -ne 4 ]]; then
+    fail "[${label}] dynamic ports are not all unique: ${ports[*]}"
+  fi
+
+  DYNAMIC_PORTS=("${ports[@]}")
+}
+
+# Verify no processes are listening on the dynamic ports from a completed run.
 assert_no_port_listeners() {
   local label="$1"
-  local project="$2"
+  local output="$2"
 
-  # Find any containers for this project and check their published ports are free.
-  local ports
-  ports="$(docker ps -a --filter "label=com.docker.compose.project=${project}" --format '{{.Ports}}' 2>/dev/null || true)"
-  if [[ -n "${ports}" ]]; then
-    fail "[${label}] containers with published ports still exist for project ${project}"
-  fi
+  extract_dynamic_ports "${label}" "${output}"
+
+  for port in "${DYNAMIC_PORTS[@]}"; do
+    if lsof -i ":${port}" -sTCP:LISTEN >/dev/null 2>&1; then
+      fail "[${label}] dynamic port ${port} still has a listener after cleanup"
+    fi
+  done
+
+  log "[${label}] dynamic ports released: ${DYNAMIC_PORTS[*]}"
 }
 
 # Test 1: Normal run should pass with occupied legacy ports.
@@ -186,7 +231,7 @@ test_normal_run() {
   if [[ -n "${workspace}" ]]; then
     assert_no_generated_files "normal-run" "${workspace}"
   fi
-  assert_no_port_listeners "normal-run" "${project}"
+  assert_no_port_listeners "normal-run" "${output}"
 
   log "normal run passed — cleanup verified"
 }
@@ -212,7 +257,7 @@ test_failure_run() {
   if [[ -n "${workspace}" ]]; then
     assert_no_generated_files "failure-run" "${workspace}"
   fi
-  assert_no_port_listeners "failure-run" "${project}"
+  assert_no_port_listeners "failure-run" "${output}"
 
   log "intentional failure run exited ${exit_code} (expected nonzero) — cleanup verified"
 }
