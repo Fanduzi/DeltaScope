@@ -2,7 +2,7 @@
 
 ## 概要 - 安全直接 CLI TLS 与凭证清理
 
-v0.430.0 对 CLI 直接连接的 `audit` 和 `query-access analyze` 强制启用 TLS。启用 TLS 时，CLI 会验证完整证书链和精确主机名，这些检查不可禁用。明文 `--password` 和 `-p` 标志已移除。支持的密码来源仅有 `--password-env`、`--password-file` 和 `--ask-password`。CLI 新增 `--database` 标志，用于 `audit` 和 `query-access analyze` 的 PostgreSQL 目标选择。Query Access 提交的 SQL 不会被执行。
+v0.430.0 为 CLI 直接连接的 `audit` 和 `query-access analyze` 新增可选的安全 TLS 模式。启用 TLS 时，CLI 会验证完整证书链和精确主机名，这些检查不可禁用。明文 `--password` 和 `-p` 标志已移除。支持的密码来源仅有 `--password-env`、`--password-file` 和 `--ask-password`。CLI 新增 `--database` 标志，用于 `audit` 和 `query-access analyze` 的 PostgreSQL 目标选择。Query Access 提交的 SQL 不会被执行。
 
 默认离线 SDK、CLI 和 HTTP 行为以及 MCP Query Access 可用性保持不变。
 
@@ -34,7 +34,7 @@ v0.430.0 对 CLI 直接连接的 `audit` 和 `query-access analyze` 强制启用
 
 ## 规则目录事实
 
-注册的审计规则目录自 v0.420.0 起不变。本版本仅更改 CLI TLS 和凭证模型。
+注册的审计规则目录自 v0.420.0 起不变。本版本更改了直接 CLI 连接边界：TLS、凭证源和 PostgreSQL 目标数据库选择。
 
 | 指标 | 数量 |
 |------|------:|

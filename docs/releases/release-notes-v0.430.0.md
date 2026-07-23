@@ -2,7 +2,7 @@
 
 ## Summary - Secure Direct CLI TLS and Credential Hygiene
 
-v0.430.0 enforces TLS on CLI direct connections for `audit` and `query-access analyze`. When TLS is enabled, the CLI validates the full certificate chain and exact hostname; these checks cannot be disabled. Plaintext `--password` and `-p` flags are removed. The only supported password sources are `--password-env`, `--password-file`, and `--ask-password`. CLI `--database` support is added for PostgreSQL target selection in both `audit` and `query-access analyze`. Query Access submitted SQL is not executed.
+v0.430.0 adds an opt-in secure TLS mode for CLI direct connections for `audit` and `query-access analyze`. When TLS is enabled, the CLI validates the full certificate chain and exact hostname; these checks cannot be disabled. Plaintext `--password` and `-p` flags are removed. The only supported password sources are `--password-env`, `--password-file`, and `--ask-password`. CLI `--database` support is added for PostgreSQL target selection in both `audit` and `query-access analyze`. Query Access submitted SQL is not executed.
 
 Default offline SDK, CLI, and HTTP behavior and MCP Query Access availability remain unchanged.
 
@@ -34,7 +34,7 @@ Default offline SDK, CLI, and HTTP behavior and MCP Query Access availability re
 
 ## Rule Catalog Facts
 
-The registered audit rule catalog is unchanged from v0.420.0. This release changes only the CLI TLS and credential model.
+The registered audit rule catalog is unchanged from v0.420.0. This release changes the direct CLI connection boundary: TLS, credential sources, and PostgreSQL target-database selection.
 
 | Metric | Count |
 |--------|------:|

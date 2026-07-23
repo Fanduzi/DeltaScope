@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-22
 - **Status:** Accepted
-- **Related released milestone:** v0.420.0 Online Query Access Connection Registry
+- **Related released milestone:** v0.430.0 Secure CLI TLS and Credential Boundary
 
 ## Context
 

@@ -4,7 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.420.0 Online Query Access Connection Registry
+## Latest Completed Milestone: v0.430.0 Secure CLI TLS and Credential Boundary
+
+**Goal:** add secure direct CLI TLS for `audit` and `query-access analyze`, remove plaintext `--password`/`-p` flags, enforce secure password sources (`--password-env`, `--password-file`, `--ask-password`), validate certificate chain and exact host when TLS enabled, and add `--database` for PostgreSQL metadata-aware operations. See `docs/releases/release-notes-v0.430.0.md` and `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md`.
+
+### Completed Scope
+
+- Secure direct CLI TLS: `--tls-mode=disabled|enabled` (default `disabled`), optional `--tls-ca-file` for custom CA PEM. When enabled, validates certificate chain and exact `--host` hostname. Rejects TLS over Unix sockets and invalid TLS option combinations.
+- Plaintext `--password` and `-p` flags removed without compatibility aliases. Supported secure password sources: `--password-env` (env var), `--password-file` (file path), `--ask-password` (TTY no-echo prompt).
+- PostgreSQL `--database` flag for `audit` and `query-access analyze` to select target database for metadata-aware operations.
+- Connection error classification prevents sensitive data leakage from public CLI output.
+- Query Access submitted SQL is not executed. Default offline CLI/SDK/HTTP behavior and MCP Query Access availability remain unchanged.
+- Decision record: `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md` (Accepted; Related milestone/version: v0.430.0).
+
+### Non-Goals
+
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not SQL-mode attestation, arbitrary functions, UDFs, or SQL execution.
+- Not an MCP Query Access tool.
+- Not hostname override, insecure TLS mode, or TLS-over-socket support.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.420.0 Online Query Access Connection Registry
 
 **Goal:** replace per-request direct connection objects with operator-managed named connections carrying `connection_id`, TLS mode, and API key allowlists. Online sessions derive Query Access capability from connected-server identity. Adds bounded scalar functions for admission and a `--database` flag for PostgreSQL. See `docs/releases/release-notes-v0.420.0.md` and `docs/decisions/2026-07-20-query-access-online-connection-registry.md`.
 
