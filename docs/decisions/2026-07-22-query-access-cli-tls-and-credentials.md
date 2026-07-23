@@ -65,9 +65,60 @@ The `--password` and `-p` flags are removed without compatibility aliases.
 6. **PostgreSQL credential hardening**: explicit `connConfig.Password` after `ParseConfig` prevents `.pgpass` fallback
 7. **Docker CLI E2E**: `make test-e2e-cli-tls` — 12/12 cases pass, zero skips, covering MySQL 8.4 + PostgreSQL 17 x audit + query-access x trusted/untrusted/hostname-mismatch. Trusted audit asserts `metadata-aware` mode in stdout. Cleanup verified.
 8. **Docs drift**: `make docs-example-gates` passes; no bare `--password` in public docs
-9. **Static analysis**: `go vet ./...`, `go vet -tags postgresql ./...`, `gofmt` clean
+9. **Static analysis**: `go vet ./...`, `go vet -tags postgresql ...`, `gofmt` clean
 10. **Oracle final review**: 1 P1 found (`--database` not propagated through audit PostgreSQL metadata opener) — fixed in `cb5c865`
 11. **Momus review**: 3 blocking issues addressed (task ordering, Makefile target, concrete QA commands)
+12. **CI/Release gate**: `make test-e2e-cli-tls` is composed into `make release-test-gates` (see below)
+
+## CI/Release Gate
+
+The 12-case CLI TLS E2E suite is a mandatory release-readiness gate, not a manually remembered command.
+
+### Gate Wiring
+
+- `make test-e2e-cli-tls` is the focused developer entry point.
+- `make release-test-gates` invokes `make test-e2e-cli-tls` before npm tests.
+- `.github/workflows/release.yml` runs `make release-test-gates` before release publication.
+- Docker availability is required in CI/release mode. The script fails closed when Docker is unavailable.
+- Developer-only `--docker-optional` mode skips only when explicitly selected outside CI/release mode.
+
+### Dynamic Port Allocation
+
+The suite uses Compose-assigned dynamic host ports to avoid collisions with other services or parallel test runs:
+
+- The override file exposes container ports (`"3306"`, `"5432"`) without specifying host ports.
+- After `compose up`, the script resolves host ports via `docker compose port SERVICE CONTAINER_PORT`.
+- Each run creates a unique Compose project name (`cli-tls-e2e-<PID>`) and temporary workspace.
+- Container names are overridden per project to prevent fixed-name collisions.
+
+### Cleanup Verification
+
+The suite verifies cleanup after every exit path:
+
+- `compose down -v --remove-orphans` tears down containers, networks, and volumes.
+- The script checks for leftover containers, networks, and volumes with the project label.
+- The temporary workspace (certs, config, override) is removed and verified absent.
+- The original test exit status is preserved through the cleanup trap.
+
+### Exact Commands
+
+```bash
+# Focused developer entry point (required mode, fails closed without Docker):
+make test-e2e-cli-tls
+
+# Release gate composition (runs CLI TLS E2E as part of release verification):
+make release-test-gates
+
+# Optional mode (developer only, skips if Docker unavailable, rejected in CI):
+./scripts/test_cli_tls_e2e.sh --docker-optional
+```
+
+### Evidence (2026-07-23)
+
+- First run: 12/12 cases pass, zero skips, dynamic ports (61499, 61502, 61501, 61500), cleanup verified.
+- Second run: 12/12 cases pass, zero skips, different dynamic ports (61854, 61855, 61853, 61856), cleanup verified.
+- `make release-test-gates`: passes (exit 0), CLI TLS E2E runs as part of the composition.
+- HTTP TLS E2E: `make test-e2e-http-tls` unchanged and unaffected.
 
 ## Consequences
 

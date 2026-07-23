@@ -31,6 +31,37 @@ make test-e2e-http-mysql
 make test-e2e-http-tidb
 ```
 
+## TLS E2E
+
+```bash
+make test-e2e-cli-tls
+make test-e2e-http-tls
+make test-e2e-cli-tls-regression
+```
+
+`make test-e2e-cli-tls` runs the 12-case CLI TLS E2E suite covering MySQL 8.4 and PostgreSQL 17 with trusted CA, untrusted CA, and hostname mismatch scenarios for both `audit` and `query-access analyze`. This target is part of `make release-test-gates` and fails closed when Docker is unavailable.
+
+`make test-e2e-http-tls` runs the HTTP TLS E2E suite independently.
+
+`make test-e2e-cli-tls-regression` verifies fixture lifecycle: dynamic port allocation, cleanup after passing and failed runs, and Docker availability policy.
+
+### Prerequisites
+
+- Docker Engine with Compose v2
+- Go toolchain (for building the CLI)
+- OpenSSL (for certificate generation)
+- Python 3 (for regression harness port holders)
+
+### Developer-Only Optional Mode
+
+For local development when Docker is not available:
+
+```bash
+./scripts/test_cli_tls_e2e.sh --docker-optional
+```
+
+This skips the suite only when Docker is unavailable and `CI` is not set and `DELTASCOPE_CLI_TLS_E2E_REQUIRED` is not `1`. The optional mode is rejected in CI or when the required-mode marker is set.
+
 ## Notes
 
 - `go test ./...` is the default fast verification path.

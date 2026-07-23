@@ -24,6 +24,8 @@ Operational scripts for local DeltaScope workflows.
 | test_cli_metadata_e2e_postgresql.sh | Builds the PG-capable CLI, starts PostgreSQL fixtures, and runs metadata-aware PostgreSQL CLI end-to-end coverage |
 | test_http_metadata_e2e_postgresql.sh | Starts PostgreSQL fixtures and runs tagged HTTP metadata-aware PostgreSQL end-to-end tests against the live JSON API |
 | test_mcp_metadata_e2e_postgresql.sh | Starts PostgreSQL fixtures and runs tagged MCP metadata-aware PostgreSQL end-to-end tests |
+| test_cli_tls_e2e.sh | Starts Docker TLS fixtures with dynamic ports, builds CLI, and runs 12 CLI TLS E2E cases (MySQL 8.4 + PostgreSQL 17 x audit + query-access x trusted/untrusted/hostname-mismatch) |
+| test_cli_tls_e2e_regression.sh | Verifies CLI TLS fixture lifecycle: dynamic port allocation, cleanup after passing and failed runs, and Docker availability policy |
 
 ## Exports
 
@@ -48,6 +50,9 @@ Operational scripts for local DeltaScope workflows.
 - `make test-e2e-cli-postgresql`
 - `make test-e2e-http-postgresql`
 - `make test-e2e-mcp-postgresql`
+- `make test-e2e-cli-tls`
+- `make test-e2e-http-tls`
+- `make test-e2e-cli-tls-regression`
 - `make pg-unit-test-gates`
 - `make pg-e2e-gates`
 - `make pg-confidence-gates`
