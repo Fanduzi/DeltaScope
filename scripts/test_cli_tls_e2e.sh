@@ -3,6 +3,10 @@
 # Generates certs, starts TLS database fixtures (no server), builds CLI,
 # runs 12 test cases (MySQL 8.4 + PostgreSQL 17 x audit + query-access
 # x trusted/untrusted/hostname-mismatch), and cleans up on exit.
+#
+# Uses Compose-assigned dynamic host ports to avoid collisions with other
+# services or parallel test runs. Each run creates a unique Compose project
+# and temporary workspace that are fully cleaned up on exit.
 
 set -euo pipefail
 
@@ -10,16 +14,28 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="${ROOT_DIR}/docker/tls-e2e/docker-compose.yaml"
 SCRIPT_DIR="${ROOT_DIR}/docker/tls-e2e"
 
-MYSQL_TLS_PORT="${MYSQL_TLS_PORT:-13306}"
-PG_TLS_PORT="${PG_TLS_PORT:-15432}"
-MYSQL_TLS_UNTRUSTED_PORT="${MYSQL_TLS_UNTRUSTED_PORT:-13307}"
-PG_TLS_UNTRUSTED_PORT="${PG_TLS_UNTRUSTED_PORT:-15433}"
+# Unique identifiers for this run — prevents collisions with parallel runs.
+RUN_ID="${DELTASCOPE_CLI_TLS_RUN_ID:-$$}"
+PROJECT_NAME="cli-tls-e2e-${RUN_ID}"
+
+# Workspace for all generated files (certs, config, override).
+WORKSPACE_DIR=""
+
+# Dynamically resolved host ports (set after compose up).
+MYSQL_TLS_PORT=""
+PG_TLS_PORT=""
+MYSQL_TLS_UNTRUSTED_PORT=""
+PG_TLS_UNTRUSTED_PORT=""
 
 TLS_CERTS_DIR=""
 TLS_OVERRIDE_FILE=""
 TLS_RUNTIME_CONFIG=""
 CLI_BIN=""
-MODE="${1:-all}"
+MODE="all"
+DOCKER_OPTIONAL=false
+
+# Preserve the original test exit status through cleanup.
+TEST_EXIT_STATUS=0
 
 log() {
   printf '[cli-tls-e2e] %s\n' "$*"
@@ -31,21 +47,50 @@ fail() {
 }
 
 compose() {
-  docker compose -f "${COMPOSE_FILE}" -f "${TLS_OVERRIDE_FILE}" "$@"
+  docker compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" -f "${TLS_OVERRIDE_FILE}" "$@"
 }
 
 cleanup() {
-  log "cleaning up"
+  local cleanup_status=$?
+  log "cleaning up (project: ${PROJECT_NAME})"
+
+  # Tear down Compose resources.
   if [[ -n "${TLS_OVERRIDE_FILE}" && -f "${TLS_OVERRIDE_FILE}" ]]; then
     compose down -v --remove-orphans >/dev/null 2>&1 || true
-    rm -f "${TLS_OVERRIDE_FILE}"
   fi
-  if [[ -n "${TLS_RUNTIME_CONFIG}" && -f "${TLS_RUNTIME_CONFIG}" ]]; then
-    rm -f "${TLS_RUNTIME_CONFIG}"
+
+  # Verify no scoped Docker resources remain.
+  if command -v docker >/dev/null 2>&1; then
+    local leftover_containers
+    leftover_containers="$(docker ps -a --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Names}}' 2>/dev/null || true)"
+    if [[ -n "${leftover_containers}" ]]; then
+      log "WARNING: leftover containers found: ${leftover_containers}"
+      docker rm -f ${leftover_containers} >/dev/null 2>&1 || true
+    fi
+
+    local leftover_networks
+    leftover_networks="$(docker network ls --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Name}}' 2>/dev/null || true)"
+    if [[ -n "${leftover_networks}" ]]; then
+      log "WARNING: leftover networks found: ${leftover_networks}"
+    fi
+
+    local leftover_volumes
+    leftover_volumes="$(docker volume ls --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Name}}' 2>/dev/null || true)"
+    if [[ -n "${leftover_volumes}" ]]; then
+      log "WARNING: leftover volumes found: ${leftover_volumes}"
+    fi
   fi
-  if [[ -n "${TLS_CERTS_DIR}" && -d "${TLS_CERTS_DIR}" ]]; then
-    rm -rf "${TLS_CERTS_DIR}"
+
+  # Remove generated workspace.
+  if [[ -n "${WORKSPACE_DIR}" && -d "${WORKSPACE_DIR}" ]]; then
+    rm -rf "${WORKSPACE_DIR}"
+    if [[ -d "${WORKSPACE_DIR}" ]]; then
+      log "WARNING: workspace directory still exists after cleanup: ${WORKSPACE_DIR}"
+    fi
   fi
+
+  # Preserve the original test exit status.
+  return "${cleanup_status}"
 }
 
 trap cleanup EXIT INT TERM
@@ -54,65 +99,148 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
 }
 
-wait_for_health() {
-  local container="$1"
+# Preflight: verify Docker is available and functional.
+docker_preflight() {
+  log "checking Docker availability"
+  require_cmd docker
+
+  if ! docker info >/dev/null 2>&1; then
+    fail "Docker daemon is not running or not accessible"
+  fi
+
+  if ! docker compose version >/dev/null 2>&1; then
+    fail "docker compose v2 is not available"
+  fi
+
+  log "Docker preflight passed"
+}
+
+# Handle --docker-optional flag: skip only when Docker is unavailable
+# and we are NOT in CI/release mode.
+handle_docker_optional() {
+  if [[ "${DOCKER_OPTIONAL}" != "true" ]]; then
+    # Required mode — Docker must be available.
+    docker_preflight
+    return
+  fi
+
+  # Optional mode — check if we're in CI or required mode.
+  if [[ "${CI:-}" == "true" || "${CI:-}" == "1" ]]; then
+    fail "--docker-optional is not allowed in CI mode"
+  fi
+  if [[ "${DELTASCOPE_CLI_TLS_E2E_REQUIRED:-}" == "1" ]]; then
+    fail "--docker-optional is not allowed when DELTASCOPE_CLI_TLS_E2E_REQUIRED=1"
+  fi
+
+  # Check if Docker is available.
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    log "Docker is not available, skipping (optional mode)"
+    exit 0
+  fi
+
+  # Docker is available — continue normally.
+  docker_preflight
+}
+
+wait_for_service_health() {
+  local service="$1"
   local retries="${2:-60}"
   local delay="${3:-2}"
   local status=""
 
   for ((i = 1; i <= retries; i++)); do
-    status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container}" 2>/dev/null || true)"
+    # Get container ID via compose, then inspect health.
+    local container_id
+    container_id="$(compose ps -q "${service}" 2>/dev/null || true)"
+    if [[ -z "${container_id}" ]]; then
+      sleep "${delay}"
+      continue
+    fi
+
+    status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_id}" 2>/dev/null || true)"
     if [[ "${status}" == "healthy" || "${status}" == "running" ]]; then
       return 0
     fi
     sleep "${delay}"
   done
 
-  fail "container ${container} did not become ready (last status: ${status:-unknown})"
+  fail "service ${service} did not become ready (last status: ${status:-unknown})"
 }
 
 generate_certs() {
   log "generating TLS certificates"
-  TLS_CERTS_DIR="$(mktemp -d /tmp/deltascope-cli-tls-e2e-certs.XXXXXX)"
-  TLS_RUNTIME_CONFIG="$(mktemp /tmp/deltascope-cli-tls-runtime.XXXXXX.yaml)"
+  TLS_CERTS_DIR="${WORKSPACE_DIR}/certs"
+  TLS_RUNTIME_CONFIG="${WORKSPACE_DIR}/runtime-config.yaml"
+  mkdir -p "${TLS_CERTS_DIR}"
   echo "logging:" > "${TLS_RUNTIME_CONFIG}"
   export TLS_CERTS_DIR TLS_RUNTIME_CONFIG
   "${SCRIPT_DIR}/generate-certs.sh" "${TLS_CERTS_DIR}" "${TLS_RUNTIME_CONFIG}" >/dev/null
 }
 
 generate_port_override() {
-  log "generating port override for compose"
-  TLS_OVERRIDE_FILE="$(mktemp /tmp/deltascope-cli-tls-override.XXXXXX.yaml)"
+  log "generating compose override (dynamic ports)"
+  TLS_OVERRIDE_FILE="${WORKSPACE_DIR}/override.yaml"
   cat > "${TLS_OVERRIDE_FILE}" <<EOF
-# Temporary port override for CLI TLS E2E tests.
+# Temporary override for CLI TLS E2E tests.
 # Generated by test_cli_tls_e2e.sh — do not edit manually.
+# Project: ${PROJECT_NAME}
 
 services:
   mysql-tls:
+    container_name: ${PROJECT_NAME}-mysql-tls
     ports:
-      - "${MYSQL_TLS_PORT}:3306"
+      - "3306"
 
   postgresql-tls:
+    container_name: ${PROJECT_NAME}-postgresql-tls
     ports:
-      - "${PG_TLS_PORT}:5432"
+      - "5432"
 
   mysql-tls-untrusted:
+    container_name: ${PROJECT_NAME}-mysql-tls-untrusted
     ports:
-      - "${MYSQL_TLS_UNTRUSTED_PORT}:3306"
+      - "3306"
 
   postgresql-tls-untrusted:
+    container_name: ${PROJECT_NAME}-postgresql-tls-untrusted
     ports:
-      - "${PG_TLS_UNTRUSTED_PORT}:5432"
+      - "5432"
 EOF
 }
 
+# Resolve dynamically assigned host ports from Compose.
+resolve_ports() {
+  log "resolving dynamic host ports"
+
+  MYSQL_TLS_PORT="$(compose port mysql-tls 3306 | cut -d: -f2)"
+  PG_TLS_PORT="$(compose port postgresql-tls 5432 | cut -d: -f2)"
+  MYSQL_TLS_UNTRUSTED_PORT="$(compose port mysql-tls-untrusted 3306 | cut -d: -f2)"
+  PG_TLS_UNTRUSTED_PORT="$(compose port postgresql-tls-untrusted 5432 | cut -d: -f2)"
+
+  # Validate ports are numeric and non-empty.
+  for port_var in MYSQL_TLS_PORT PG_TLS_PORT MYSQL_TLS_UNTRUSTED_PORT PG_TLS_UNTRUSTED_PORT; do
+    local port_value="${!port_var}"
+    if [[ -z "${port_value}" || ! "${port_value}" =~ ^[0-9]+$ ]]; then
+      fail "failed to resolve ${port_var}: got '${port_value}'"
+    fi
+  done
+
+  log "  mysql-tls:            ${MYSQL_TLS_PORT}"
+  log "  postgresql-tls:       ${PG_TLS_PORT}"
+  log "  mysql-tls-untrusted:  ${MYSQL_TLS_UNTRUSTED_PORT}"
+  log "  postgresql-tls-untrusted: ${PG_TLS_UNTRUSTED_PORT}"
+}
+
 start_db_stack() {
-  log "starting TLS database fixtures"
+  log "starting TLS database fixtures (project: ${PROJECT_NAME})"
   compose up -d mysql-tls postgresql-tls mysql-tls-untrusted postgresql-tls-untrusted
-  wait_for_health "deltascope-tls-mysql"
-  wait_for_health "deltascope-tls-postgresql"
-  wait_for_health "deltascope-tls-mysql-untrusted"
-  wait_for_health "deltascope-tls-postgresql-untrusted"
+
+  wait_for_service_health "mysql-tls"
+  wait_for_service_health "postgresql-tls"
+  wait_for_service_health "mysql-tls-untrusted"
+  wait_for_service_health "postgresql-tls-untrusted"
+
+  resolve_ports
 }
 
 build_cli() {
@@ -422,14 +550,25 @@ run_tls_tests() {
 
 main() {
   local test_failure_mode=false
+
+  # Parse arguments.
   for arg in "$@"; do
     case "${arg}" in
       --test-failure) test_failure_mode=true ;;
+      --docker-optional) DOCKER_OPTIONAL=true ;;
+      all|mysql|postgresql) MODE="${arg}" ;;
+      --*) fail "unknown flag: ${arg}" ;;
+      *) fail "unknown argument: ${arg}" ;;
     esac
   done
 
-  require_cmd docker
-  require_cmd go
+  # Docker availability gate.
+  handle_docker_optional
+
+  # Create workspace for all generated files.
+  WORKSPACE_DIR="$(mktemp -d /tmp/deltascope-cli-tls-e2e.XXXXXX)"
+  export WORKSPACE_DIR
+  log "workspace: ${WORKSPACE_DIR}"
 
   generate_certs
   generate_port_override
@@ -456,7 +595,7 @@ main() {
       run_pg_query_access_suite
       ;;
     *)
-      fail "usage: scripts/test_cli_tls_e2e.sh [--test-failure] [all|mysql|postgresql]"
+      fail "usage: scripts/test_cli_tls_e2e.sh [--test-failure] [--docker-optional] [all|mysql|postgresql]"
       ;;
   esac
 }
