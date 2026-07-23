@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates query-access-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-upgrade-candidate-evidence-report ddl-coverage-catalog-test parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql test-e2e-cli-tls pg-unit-test-gates pg-e2e-gates pg-confidence-gates docs-example-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight release-recovery-contract-test release-tag-annotation-test release-tag-annotation-gate lint lint-fix lint-landing decision-record-gate
+.PHONY: test sql-corpus-gates query-access-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-upgrade-candidate-evidence-report ddl-coverage-catalog-test parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql test-e2e-cli-tls test-e2e-cli-tls-regression pg-unit-test-gates pg-e2e-gates pg-confidence-gates docs-example-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight release-recovery-contract-test release-tag-annotation-test release-tag-annotation-gate lint lint-fix lint-landing decision-record-gate
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -57,6 +57,7 @@ release-test-gates:
 	go test ./...
 	$(MAKE) sql-corpus-gates
 	CGO_ENABLED=1 go test -tags postgresql ./internal/application/audit ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+	$(MAKE) test-e2e-cli-tls
 	npm test --prefix packages/deltascope-mcp
 
 build: build-cli build-server build-mcp
@@ -291,8 +292,13 @@ test-e2e-http-tls:
 	./scripts/test_http_tls_e2e.sh
 
 # test-e2e-cli-tls: run TLS-enabled CLI audit and query-access E2E tests.
+# Required mode — fails closed when Docker is unavailable.
 test-e2e-cli-tls: build-cli
-	DELTASCOPE_CLI_BIN="$(BUILD_DIR)/deltascope" ./scripts/test_cli_tls_e2e.sh
+	DELTASCOPE_CLI_BIN="$(BUILD_DIR)/deltascope" DELTASCOPE_CLI_TLS_E2E_REQUIRED=1 ./scripts/test_cli_tls_e2e.sh
+
+# test-e2e-cli-tls-regression: verify CLI TLS fixture lifecycle (dynamic ports, cleanup, Docker policy).
+test-e2e-cli-tls-regression:
+	./scripts/test_cli_tls_e2e_regression.sh
 
 # Canonical PostgreSQL confidence gates (v0.22.0).
 # These targets compose existing commands into reusable confidence entry-points.
