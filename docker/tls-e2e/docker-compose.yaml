@@ -24,7 +24,7 @@ services:
         aliases:
           - mysql-tls-wrong
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot", "--ssl-mode=REQUIRED"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -79,7 +79,7 @@ services:
       --ssl-cert=/etc/mysql/ssl/server-cert.pem
       --ssl-key=/etc/mysql/ssl/server-key.pem
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot", "--ssl-mode=REQUIRED"]
       interval: 5s
       timeout: 5s
       retries: 30
