@@ -12,7 +12,7 @@ SCRIPT="${ROOT_DIR}/scripts/test_cli_tls_e2e.sh"
 # Legacy ports the production suite must not depend on.
 LEGACY_PORTS=(13306 15432 13307 15433)
 
-PORT HOLDERS_PID=""
+PORT_HOLDERS_PID=""
 PORT_HOLDERS_DIR=""
 
 log() {
