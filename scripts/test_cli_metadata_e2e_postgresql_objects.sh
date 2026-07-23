@@ -50,9 +50,19 @@ wait_for_health() {
   local status=""
 
   for ((i = 1; i <= retries; i++)); do
-    status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container}" 2>/dev/null || true)"
-    if [[ "${status}" == "healthy" || "${status}" == "running" ]]; then
-      return 0
+    local has_healthcheck
+    has_healthcheck="$(docker inspect --format '{{if .Config.Healthcheck.Test}}yes{{else}}no{{end}}' "${container}" 2>/dev/null || true)"
+
+    if [[ "${has_healthcheck}" == "yes" ]]; then
+      status="$(docker inspect --format '{{.State.Health.Status}}' "${container}" 2>/dev/null || true)"
+      if [[ "${status}" == "healthy" ]]; then
+        return 0
+      fi
+    else
+      status="$(docker inspect --format '{{.State.Status}}' "${container}" 2>/dev/null || true)"
+      if [[ "${status}" == "running" ]]; then
+        return 0
+      fi
     fi
     sleep "${delay}"
   done

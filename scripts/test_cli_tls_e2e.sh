@@ -178,9 +178,26 @@ wait_for_service_health() {
       continue
     fi
 
-    status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${container_id}" 2>/dev/null || true)"
-    if [[ "${status}" == "healthy" || "${status}" == "running" ]]; then
-      return 0
+    # Use .Config.Healthcheck.Test (set at creation time) to decide the
+    # readiness criterion.  .State.Health can be nil briefly after container
+    # creation even when a healthcheck is defined, so we cannot rely on it to
+    # distinguish "has healthcheck" from "no healthcheck".  Accepting "running"
+    # for a container that DOES have a healthcheck would return before the DB
+    # is ready (the race that caused mysql84-audit-trusted to fail with
+    # "unexpected EOF" on CI).
+    local has_healthcheck
+    has_healthcheck="$(docker inspect --format '{{if .Config.Healthcheck.Test}}yes{{else}}no{{end}}' "${container_id}" 2>/dev/null || true)"
+
+    if [[ "${has_healthcheck}" == "yes" ]]; then
+      status="$(docker inspect --format '{{.State.Health.Status}}' "${container_id}" 2>/dev/null || true)"
+      if [[ "${status}" == "healthy" ]]; then
+        return 0
+      fi
+    else
+      status="$(docker inspect --format '{{.State.Status}}' "${container_id}" 2>/dev/null || true)"
+      if [[ "${status}" == "running" ]]; then
+        return 0
+      fi
     fi
     sleep "${delay}"
   done
