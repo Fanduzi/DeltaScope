@@ -1,7 +1,7 @@
 # Query Access CLI TLS and Credential Boundary
 
 - **Date:** 2026-07-22
-- **Status:** Proposed
+- **Status:** Accepted
 - **Related released milestone:** v0.420.0 Online Query Access Connection Registry
 
 ## Context
@@ -57,16 +57,16 @@ The `--password` and `-p` flags are removed without compatibility aliases.
 
 ## Verification Evidence
 
-1. **Unit tests**: 3761 tests pass (`go test ./... -count=1`); 4936 PostgreSQL-tagged tests pass (`go test -tags postgresql ./... -count=1`)
-2. **Race tests**: 409 tests pass with `-race` on CLI, online, and pkg packages
-3. **CLI TLS normalization**: 14 focused tests prove flag validation, CA parsing, bounded errors
-4. **Metadata adapter wiring**: 3 tests prove TLS flows through audit metadata adapter
-5. **Query Access TLS**: 3 tests prove TLS flows through online session; DSN contains no password
+1. **Unit tests**: 3776 tests pass (`go test ./... -count=1`); 4936 PostgreSQL-tagged tests pass (`go test -tags postgresql ./... -count=1`)
+2. **Race tests**: 424 tests pass with `-race` on CLI, online, and pkg packages
+3. **CLI TLS normalization**: focused tests prove flag validation, CA parsing, bounded errors, auditmeta error classification
+4. **Metadata adapter wiring**: tests prove TLS flows through audit metadata adapter and `--database` propagates to PostgreSQL
+5. **Query Access TLS**: tests prove TLS flows through online session; DSN contains no password
 6. **PostgreSQL credential hardening**: explicit `connConfig.Password` after `ParseConfig` prevents `.pgpass` fallback
-7. **Docker CLI E2E**: `make test-e2e-cli-tls` — 12 cases covering MySQL 8.4 + PostgreSQL 17 x audit + query-access x trusted/untrusted/hostname-mismatch (requires Docker)
+7. **Docker CLI E2E**: `make test-e2e-cli-tls` — 12/12 cases pass, zero skips, covering MySQL 8.4 + PostgreSQL 17 x audit + query-access x trusted/untrusted/hostname-mismatch. Trusted audit asserts `metadata-aware` mode in stdout. Cleanup verified.
 8. **Docs drift**: `make docs-example-gates` passes; no bare `--password` in public docs
 9. **Static analysis**: `go vet ./...`, `go vet -tags postgresql ./...`, `gofmt` clean
-10. **Oracle review**: 4 P1 findings addressed (bounded errors, pgpass, fail-closed TLS, implicit TCP defaults)
+10. **Oracle final review**: 1 P1 found (`--database` not propagated through audit PostgreSQL metadata opener) — fixed in `cb5c865`
 11. **Momus review**: 3 blocking issues addressed (task ordering, Makefile target, concrete QA commands)
 
 ## Consequences
