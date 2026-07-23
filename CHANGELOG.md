@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.430.0] - 2026-07-23
+
+### Added
+
+- Secure direct CLI TLS for `audit` and `query-access analyze`: `--tls-mode=disabled|enabled` (default `disabled`), optional `--tls-ca-file` for custom CA PEM. When enabled, validates certificate chain and exact `--host` hostname. Rejects TLS over Unix sockets.
+- Secure CLI password sources: `--password-env`, `--password-file`, `--ask-password` (mutually exclusive). The plaintext `--password` and `-p` flags are removed without compatibility aliases.
+- PostgreSQL `--database` flag for `audit` and `query-access analyze` to select target database for metadata-aware operations.
+- Decision record: `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md` (Accepted; Related milestone/version: v0.430.0).
+
+### Non-Goals
+
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not SQL-mode attestation, arbitrary functions, UDFs, or SQL execution.
+- Not an MCP Query Access tool.
+- Query Access submitted SQL is not executed. Default offline CLI/SDK/HTTP behavior and MCP Query Access availability remain unchanged.
+- Not a severity field; not a change to the registered audit rule catalog.
+
 ## [v0.420.0] - 2026-07-22
 
 ### Added
