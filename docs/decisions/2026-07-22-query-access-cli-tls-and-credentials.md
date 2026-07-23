@@ -72,17 +72,16 @@ The `--password` and `-p` flags are removed without compatibility aliases.
 
 ## CI/Release Gate
 
-The 12-case CLI TLS E2E suite is a mandatory release-readiness gate, not a manually remembered command.
+The 12-case CLI TLS E2E suite runs as both a PR/push CI gate and a release-readiness gate.
 
 ### Gate Wiring
 
-- `make test-e2e-cli-tls` is the focused developer entry point.
-- `make release-test-gates` invokes `make test-e2e-cli-tls` before npm tests.
-- `.github/workflows/release.yml` runs `make release-test-gates` before release publication.
-- Docker availability is required in CI/release mode. The script fails closed when Docker is unavailable.
+- **PR/push CI**: `.github/workflows/cli-tls-e2e.yml` runs `make test-e2e-cli-tls` on every `pull_request` to `main` and every `push` to `main`. Docker unavailability, test skips, or `--docker-optional` all fail the job.
+- **Release gate**: `.github/workflows/release.yml` runs `make release-test-gates` (which invokes `make test-e2e-cli-tls`) before release publication on tag `v*` push.
+- `make test-e2e-cli-tls` is the focused developer entry point (required mode, fails closed without Docker).
 - Developer-only `--docker-optional` mode skips only when explicitly selected outside CI/release mode.
 
-### Dynamic Port Allocation
+### Dynamic Port Allocation and Project Isolation
 
 The suite uses Compose-assigned dynamic host ports to avoid collisions with other services or parallel test runs:
 
@@ -90,35 +89,42 @@ The suite uses Compose-assigned dynamic host ports to avoid collisions with othe
 - After `compose up`, the script resolves host ports via `docker compose port SERVICE CONTAINER_PORT`.
 - Each run creates a unique Compose project name (`cli-tls-e2e-<PID>`) and temporary workspace.
 - Container names are overridden per project to prevent fixed-name collisions.
+- No fixed host ports, fixed Compose project names, or global Docker TLS registries are used.
 
 ### Cleanup Verification
 
-The suite verifies cleanup after every exit path:
+Cleanup is fail-closed on both success and failure paths:
 
 - `compose down -v --remove-orphans` tears down containers, networks, and volumes.
-- The script checks for leftover containers, networks, and volumes with the project label.
+- Leftover containers, networks, and volumes are force-removed and re-verified absent.
 - The temporary workspace (certs, config, override) is removed and verified absent.
-- The original test exit status is preserved through the cleanup trap.
+- If residuals remain after cleanup attempts, the success path fails (exit 1).
+- The original nonzero test exit code is preserved through cleanup (cleanup never masks a test failure as success).
+
+### Regression Harness
+
+`make test-e2e-cli-tls-regression` verifies fixture lifecycle:
+
+- Occupies all 4 legacy ports (13306, 15432, 13307, 15433) with tracked PIDs; all are terminated on exit.
+- Verifies legacy ports are released after cleanup.
+- After both normal and intentional-failure runs, asserts: no Docker containers/networks/volumes for the project, no workspace directory, no port-listening containers.
+- Verifies Docker-required mode fails without Docker, and `--docker-optional` is rejected in CI.
 
 ### Exact Commands
 
 ```bash
-# Focused developer entry point (required mode, fails closed without Docker):
+# PR/push CI (automatic via .github/workflows/cli-tls-e2e.yml):
 make test-e2e-cli-tls
 
 # Release gate composition (runs CLI TLS E2E as part of release verification):
 make release-test-gates
 
+# Regression harness (fixture lifecycle verification):
+make test-e2e-cli-tls-regression
+
 # Optional mode (developer only, skips if Docker unavailable, rejected in CI):
 ./scripts/test_cli_tls_e2e.sh --docker-optional
 ```
-
-### Evidence (2026-07-23)
-
-- First run: 12/12 cases pass, zero skips, dynamic ports (61499, 61502, 61501, 61500), cleanup verified.
-- Second run: 12/12 cases pass, zero skips, different dynamic ports (61854, 61855, 61853, 61856), cleanup verified.
-- `make release-test-gates`: passes (exit 0), CLI TLS E2E runs as part of the composition.
-- HTTP TLS E2E: `make test-e2e-http-tls` unchanged and unaffected.
 
 ## Consequences
 

@@ -12,7 +12,7 @@ SCRIPT="${ROOT_DIR}/scripts/test_cli_tls_e2e.sh"
 # Legacy ports the production suite must not depend on.
 LEGACY_PORTS=(13306 15432 13307 15433)
 
-PORT_HOLDERS_PID=""
+PORT_HOLDER_PIDS=()
 PORT_HOLDERS_DIR=""
 
 log() {
@@ -25,14 +25,34 @@ fail() {
 }
 
 cleanup_port_holders() {
-  if [[ -n "${PORT_HOLDERS_PID}" ]]; then
-    kill "${PORT_HOLDERS_PID}" 2>/dev/null || true
-    wait "${PORT_HOLDERS_PID}" 2>/dev/null || true
-    PORT_HOLDERS_PID=""
-  fi
+  for pid in "${PORT_HOLDER_PIDS[@]}"; do
+    kill "${pid}" 2>/dev/null || true
+    wait "${pid}" 2>/dev/null || true
+  done
+  PORT_HOLDER_PIDS=()
   if [[ -n "${PORT_HOLDERS_DIR}" && -d "${PORT_HOLDERS_DIR}" ]]; then
     rm -rf "${PORT_HOLDERS_DIR}"
   fi
+  verify_ports_released
+}
+
+verify_ports_released() {
+  local retries=10
+  for ((i = 1; i <= retries; i++)); do
+    local any_listening=false
+    for port in "${LEGACY_PORTS[@]}"; do
+      if lsof -i ":${port}" -sTCP:LISTEN >/dev/null 2>&1; then
+        any_listening=true
+        break
+      fi
+    done
+    if [[ "${any_listening}" == "false" ]]; then
+      return 0
+    fi
+    sleep 0.3
+  done
+  printf '[cli-tls-regression][FAIL] legacy ports still occupied after cleanup\n' >&2
+  exit 1
 }
 
 trap cleanup_port_holders EXIT INT TERM
@@ -45,6 +65,14 @@ require_cmd() {
 # does not depend on them being free.
 start_port_holders() {
   log "occupying legacy ports: ${LEGACY_PORTS[*]}"
+
+  # Pre-check: all legacy ports must be free before we occupy them.
+  for port in "${LEGACY_PORTS[@]}"; do
+    if lsof -i ":${port}" -sTCP:LISTEN >/dev/null 2>&1; then
+      fail "legacy port ${port} is already in use — clean up leftover processes first"
+    fi
+  done
+
   PORT_HOLDERS_DIR="$(mktemp -d /tmp/deltascope-cli-tls-regression-ports.XXXXXX)"
 
   for port in "${LEGACY_PORTS[@]}"; do
@@ -59,8 +87,8 @@ sys.stdout.flush()
 # Hold until killed
 time.sleep(86400)
 " &
+    PORT_HOLDER_PIDS+=($!)
   done
-  PORT_HOLDERS_PID=$!
 
   # Wait for all ports to be bound
   local retries=20
@@ -119,32 +147,74 @@ assert_no_generated_files() {
   fi
 }
 
+# Extract workspace path from test output.
+extract_workspace() {
+  local output="$1"
+  echo "${output}" | grep -o '/tmp/deltascope-cli-tls-e2e\.[^ ]*' | head -1
+}
+
+# Verify no processes are listening on the dynamic ports used by a run.
+assert_no_port_listeners() {
+  local label="$1"
+  local project="$2"
+
+  # Find any containers for this project and check their published ports are free.
+  local ports
+  ports="$(docker ps -a --filter "label=com.docker.compose.project=${project}" --format '{{.Ports}}' 2>/dev/null || true)"
+  if [[ -n "${ports}" ]]; then
+    fail "[${label}] containers with published ports still exist for project ${project}"
+  fi
+}
+
 # Test 1: Normal run should pass with occupied legacy ports.
 test_normal_run() {
   log "=== TEST 1: normal run with occupied legacy ports ==="
 
+  local run_id="regression-normal-$$"
+  local project="cli-tls-e2e-${run_id}"
   local output
-  output="$("${SCRIPT}" 2>&1)" || {
+  output="$(DELTASCOPE_CLI_TLS_RUN_ID="${run_id}" "${SCRIPT}" 2>&1)" || {
     log "normal run output:"
     echo "${output}" | tail -30 >&2 || true
     fail "normal run failed (expected success after T2 hardening)"
   }
 
-  log "normal run passed"
+  local workspace
+  workspace="$(extract_workspace "${output}")"
+
+  assert_no_docker_resources "normal-run" "${project}"
+  if [[ -n "${workspace}" ]]; then
+    assert_no_generated_files "normal-run" "${workspace}"
+  fi
+  assert_no_port_listeners "normal-run" "${project}"
+
+  log "normal run passed — cleanup verified"
 }
 
 # Test 2: Intentional failure run should exit nonzero and still clean up.
 test_failure_run() {
   log "=== TEST 2: intentional failure run ==="
 
+  local run_id="regression-fail-$$"
+  local project="cli-tls-e2e-${run_id}"
   local exit_code=0
-  "${SCRIPT}" --test-failure >/dev/null 2>&1 || exit_code=$?
+  local output
+  output="$(DELTASCOPE_CLI_TLS_RUN_ID="${run_id}" "${SCRIPT}" --test-failure 2>&1)" || exit_code=$?
 
   if [[ "${exit_code}" -eq 0 ]]; then
     fail "intentional failure run exited 0 (expected nonzero)"
   fi
 
-  log "intentional failure run exited ${exit_code} (expected nonzero) — PASS"
+  local workspace
+  workspace="$(extract_workspace "${output}")"
+
+  assert_no_docker_resources "failure-run" "${project}"
+  if [[ -n "${workspace}" ]]; then
+    assert_no_generated_files "failure-run" "${workspace}"
+  fi
+  assert_no_port_listeners "failure-run" "${project}"
+
+  log "intentional failure run exited ${exit_code} (expected nonzero) — cleanup verified"
 }
 
 # Test 3: Docker-required mode should fail when Docker is unavailable.

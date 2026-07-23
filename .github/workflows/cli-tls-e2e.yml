@@ -1,0 +1,27 @@
+name: CLI TLS E2E
+run-name: CLI TLS E2E ${{ github.ref_name }}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  cli-tls-e2e:
+    name: CLI TLS E2E (MySQL 8.4 + PostgreSQL 17)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Verify Docker availability
+        run: |
+          docker info
+          docker compose version
+
+      - name: Run CLI TLS E2E
+        run: make test-e2e-cli-tls

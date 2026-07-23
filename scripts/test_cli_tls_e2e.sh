@@ -34,9 +34,6 @@ CLI_BIN=""
 MODE="all"
 DOCKER_OPTIONAL=false
 
-# Preserve the original test exit status through cleanup.
-TEST_EXIT_STATUS=0
-
 log() {
   printf '[cli-tls-e2e] %s\n' "$*"
 }
@@ -51,7 +48,8 @@ compose() {
 }
 
 cleanup() {
-  local cleanup_status=$?
+  local test_status=$?
+  local cleanup_failed=false
   log "cleaning up (project: ${PROJECT_NAME})"
 
   # Tear down Compose resources.
@@ -59,25 +57,42 @@ cleanup() {
     compose down -v --remove-orphans >/dev/null 2>&1 || true
   fi
 
-  # Verify no scoped Docker resources remain.
+  # Force-remove any scoped Docker resources that survived compose down.
   if command -v docker >/dev/null 2>&1; then
     local leftover_containers
     leftover_containers="$(docker ps -a --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Names}}' 2>/dev/null || true)"
     if [[ -n "${leftover_containers}" ]]; then
-      log "WARNING: leftover containers found: ${leftover_containers}"
+      log "force-removing leftover containers: ${leftover_containers}"
       docker rm -f ${leftover_containers} >/dev/null 2>&1 || true
+      leftover_containers="$(docker ps -a --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Names}}' 2>/dev/null || true)"
+      if [[ -n "${leftover_containers}" ]]; then
+        log "ERROR: containers still remain after force-remove: ${leftover_containers}"
+        cleanup_failed=true
+      fi
     fi
 
     local leftover_networks
     leftover_networks="$(docker network ls --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Name}}' 2>/dev/null || true)"
     if [[ -n "${leftover_networks}" ]]; then
-      log "WARNING: leftover networks found: ${leftover_networks}"
+      log "force-removing leftover networks: ${leftover_networks}"
+      docker network rm ${leftover_networks} >/dev/null 2>&1 || true
+      leftover_networks="$(docker network ls --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Name}}' 2>/dev/null || true)"
+      if [[ -n "${leftover_networks}" ]]; then
+        log "ERROR: networks still remain after force-remove: ${leftover_networks}"
+        cleanup_failed=true
+      fi
     fi
 
     local leftover_volumes
     leftover_volumes="$(docker volume ls --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Name}}' 2>/dev/null || true)"
     if [[ -n "${leftover_volumes}" ]]; then
-      log "WARNING: leftover volumes found: ${leftover_volumes}"
+      log "force-removing leftover volumes: ${leftover_volumes}"
+      docker volume rm ${leftover_volumes} >/dev/null 2>&1 || true
+      leftover_volumes="$(docker volume ls --filter "label=com.docker.compose.project=${PROJECT_NAME}" --format '{{.Name}}' 2>/dev/null || true)"
+      if [[ -n "${leftover_volumes}" ]]; then
+        log "ERROR: volumes still remain after force-remove: ${leftover_volumes}"
+        cleanup_failed=true
+      fi
     fi
   fi
 
@@ -85,12 +100,18 @@ cleanup() {
   if [[ -n "${WORKSPACE_DIR}" && -d "${WORKSPACE_DIR}" ]]; then
     rm -rf "${WORKSPACE_DIR}"
     if [[ -d "${WORKSPACE_DIR}" ]]; then
-      log "WARNING: workspace directory still exists after cleanup: ${WORKSPACE_DIR}"
+      log "ERROR: workspace directory still exists after cleanup: ${WORKSPACE_DIR}"
+      cleanup_failed=true
     fi
   fi
 
-  # Preserve the original test exit status.
-  return "${cleanup_status}"
+  # Cleanup failures must fail the success path but never mask an original test failure.
+  if [[ "${cleanup_failed}" == "true" && "${test_status}" -eq 0 ]]; then
+    log "cleanup found residual resources — failing the run"
+    exit 1
+  fi
+
+  exit "${test_status}"
 }
 
 trap cleanup EXIT INT TERM
