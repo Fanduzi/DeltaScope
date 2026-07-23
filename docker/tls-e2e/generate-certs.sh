@@ -74,7 +74,14 @@ generate_server_cert "${CERTS_DIR}/untrusted" "untrusted" "mysql-tls-untrusted" 
 # Generate PostgreSQL server cert with untrusted CA (for negative testing)
 generate_server_cert "${CERTS_DIR}/untrusted" "untrusted" "postgresql-tls-untrusted" "postgresql-tls-untrusted" "localhost"
 
-# Set permissions for PostgreSQL (requires key to be readable in container)
+# Make server keys readable by the DB container users (uid differs from the
+# host/runner uid on Linux CI). openssl genrsa writes keys as mode 0600 owned
+# by the runner, which the mysql (uid 999) and postgres users cannot read once
+# mounted read-only. macOS Docker Desktop masks this, but native Linux CI
+# enforces it: unreadable keys make server-side TLS fail, so TCP+TLS
+# connections are rejected while Unix-socket pings still succeed.
+chmod 644 "${CERTS_DIR}/trusted/mysql-tls-key.pem"
+chmod 644 "${CERTS_DIR}/untrusted/mysql-tls-untrusted-key.pem"
 chmod 644 "${CERTS_DIR}/trusted/postgresql-tls-key.pem"
 chmod 644 "${CERTS_DIR}/untrusted/postgresql-tls-untrusted-key.pem"
 
