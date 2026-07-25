@@ -78,6 +78,31 @@ func TestBuiltinSemanticGateway_ScalarMixedConstExprNotProven(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticGateway_ScalarMixedConstArityMismatchNotProven(t *testing.T) {
+	t.Parallel()
+	registry := mixedConstRegistry(t)
+	// Arity says 3 but OperandKinds only has 2 entries — must fail closed.
+	candidate := mixedConstCandidate([]string{"column", "const"}, 3)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision == builtinSemanticAllProven {
+		t.Fatal("arity/kinds mismatch was proven")
+	}
+}
+
+func TestBuiltinSemanticGateway_PostgreSQLMixedConstNotProven(t *testing.T) {
+	t.Parallel()
+	registry := mixedConstRegistry(t)
+	candidate := mixedConstCandidate([]string{"column", "const"}, 2)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "postgresql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision == builtinSemanticAllProven {
+		t.Fatal("postgresql dialect was proven by mysql/tidb gateway")
+	}
+}
+
 func TestBuiltinSemanticGateway_RejectsAdversarialCandidates(t *testing.T) {
 	manifest := builtinTestManifest(t)
 	registry, err := newBuiltinSemanticRegistry(map[AnalysisProfile]*BuiltinSemanticManifest{

@@ -165,20 +165,22 @@ Default offline surfaces remain `indeterminate` because:
   "admission": "admissible",
   "reason_codes": [],
   "relations": [
-    {"schema": "app", "name": "users", "kind": "table"}
+    {"schema": "app", "name": "builtin_semantic_facts", "kind": "table"}
   ],
   "referenced_columns": [
-    {"schema": "app", "relation": "users", "name": "name"}
+    {"schema": "app", "table": "builtin_semantic_facts", "column": "name"}
   ],
   "requirements": [
-    {"schema": "app", "relation": "users", "column": "name"}
+    {"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+    {"object": "app.builtin_semantic_facts.name", "privilege": "read_column"}
   ]
 }
 ```
 
-Note: The literal `'unknown'` does NOT appear in requirements. The function
+Note: The literal `'SECRET_LITERAL'` does NOT appear in requirements. The function
 name `COALESCE` does NOT appear in the output. Only physical dependencies
-are reported.
+are reported. The `requirements` array uses `object`/`privilege` fields;
+the `referenced_columns` array uses `table` not `relation`.
 
 ## Deferred / Out Of Scope
 
@@ -241,9 +243,9 @@ have NO physical column dependency and remain indeterminate.
 
 | SQL Shape | Status | Evidence Level |
 |-----------|--------|---------------|
-| `COALESCE(amount, 0)` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
-| `NULLIF(amount, 0)` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
-| `IFNULL(amount, 0)` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
+| `COALESCE(name, 'SECRET_LITERAL')` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
+| `NULLIF(name, 'SECRET_LITERAL')` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
+| `IFNULL(name, 'SECRET_LITERAL')` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
 
 **Evidence levels:**
 - `manifest + unit test`: Gateway and eligibility tests prove the shape
@@ -288,7 +290,7 @@ have NO physical column dependency and remain indeterminate.
 ### Docker E2E (Public SDK Path)
 
 Public SDK E2E via `AnalyzeMySQLTiDBQueryAccessWithSession` verified on
-all 4 profiles. Each profile tests COALESCE/NULLIF/IFNULL with `amount, 0`:
+all 4 profiles. Each profile tests COALESCE/NULLIF/IFNULL with `name, 'SECRET_LITERAL'`:
 
 | Profile | Image | SDK E2E | CLI E2E | HTTP E2E |
 |---------|-------|---------|---------|----------|
@@ -313,7 +315,7 @@ Online promotion no-leak verified on all 3 public surfaces:
 | CLI stderr | SECRET_LITERAL | ✓ (all 4 profiles) |
 | HTTP response | SECRET_LITERAL | ✓ (all 4 profiles) |
 
-The `SECRET_LITERAL` marker is injected via SQL (`COALESCE(amount, 0)`)
+The `SECRET_LITERAL` marker is injected via SQL (`COALESCE(name, 'SECRET_LITERAL')`)
 and verified absent from all public output after promotion to
 `read_only + admissible`.
 

@@ -129,6 +129,9 @@ func candidateOperandKindsMatch(candidate EffectCandidate, entry BuiltinSemantic
 		if len(candidate.OperandKinds) < entry.MinArity {
 			return false
 		}
+		if len(candidate.OperandKinds) != candidate.Arity {
+			return false
+		}
 		if len(entry.OperandKinds) == 0 {
 			return false
 		}
