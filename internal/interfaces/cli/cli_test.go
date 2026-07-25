@@ -3017,7 +3017,7 @@ func TestAuditCommandDefaultsTLSModeToDisabled(t *testing.T) {
 func TestAuditCommandRejectsTLSCAFileWhenDisabled(t *testing.T) {
 	dir := t.TempDir()
 	caPath := filepath.Join(dir, "ca.pem")
-	if err := os.WriteFile(caPath, []byte("not-used"), 0644); err != nil {
+	if err := os.WriteFile(caPath, []byte("not-used"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3101,7 +3101,7 @@ func TestAuditCommandLoadsTLSCAFile(t *testing.T) {
 	caPath := filepath.Join(dir, "ca.pem")
 
 	caPEM := generateTestCAPEM(t)
-	if err := os.WriteFile(caPath, caPEM, 0644); err != nil {
+	if err := os.WriteFile(caPath, caPEM, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3129,7 +3129,7 @@ func TestAuditCommandLoadsTLSCAFile(t *testing.T) {
 func TestAuditCommandRejectsInvalidCAFile(t *testing.T) {
 	dir := t.TempDir()
 	caPath := filepath.Join(dir, "bad.pem")
-	if err := os.WriteFile(caPath, []byte("not a PEM file"), 0644); err != nil {
+	if err := os.WriteFile(caPath, []byte("not a PEM file"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -100,7 +100,7 @@ func handleQueryAccessOnline(
 	r *http.Request,
 	registry *runtimeconfig.Registry,
 	request queryAccessRequest,
-	dialect deltascope.Dialect,
+	_ deltascope.Dialect,
 	mode deltascope.QueryAccessMode,
 ) {
 	if registry == nil {

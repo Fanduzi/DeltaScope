@@ -351,10 +351,7 @@ func TestBuildMySQLDSN_Disabled(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	mysqlCfg, err := buildMySQLConfig(cfg)
-	if err != nil {
-		t.Fatalf("buildMySQLConfig: %v", err)
-	}
+	mysqlCfg := buildMySQLConfig(cfg)
 	dsn := mysqlCfg.FormatDSN()
 
 	// TLS should not be configured.
@@ -381,10 +378,7 @@ func TestBuildMySQLDSN_Enabled(t *testing.T) {
 		TLSMode:  "enabled",
 	}
 
-	mysqlCfg, err := buildMySQLConfig(cfg)
-	if err != nil {
-		t.Fatalf("buildMySQLConfig: %v", err)
-	}
+	mysqlCfg := buildMySQLConfig(cfg)
 	dsn := mysqlCfg.FormatDSN()
 
 	// TLS should be configured with correct ServerName.
@@ -416,10 +410,7 @@ func TestBuildMySQLConfig_TLSDoesNotUseGlobalRegistry(t *testing.T) {
 		TLSMode:  "enabled",
 	}
 
-	mysqlCfg, err := buildMySQLConfig(cfg)
-	if err != nil {
-		t.Fatalf("buildMySQLConfig: %v", err)
-	}
+	mysqlCfg := buildMySQLConfig(cfg)
 
 	// Must use cfg.TLS (direct), not cfg.TLSConfig (global registry).
 	if mysqlCfg.TLS == nil {
@@ -441,10 +432,7 @@ func TestBuildPostgreSQLDSN_Disabled(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		t.Fatalf("buildPostgreSQLDSN: %v", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	if !strings.Contains(dsn, "sslmode=disable") {
 		t.Errorf("DSN should contain sslmode=disable, got: %s", dsn)
@@ -465,10 +453,7 @@ func TestBuildPostgreSQLDSN_Enabled(t *testing.T) {
 		TLSMode:  "enabled",
 	}
 
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		t.Fatalf("buildPostgreSQLDSN: %v", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	if !strings.Contains(dsn, "sslmode=verify-full") {
 		t.Errorf("DSN should contain sslmode=verify-full, got: %s", dsn)
@@ -491,10 +476,7 @@ func TestBuildMySQLDSN_Socket(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	mysqlCfg, err := buildMySQLConfig(cfg)
-	if err != nil {
-		t.Fatalf("buildMySQLConfig: %v", err)
-	}
+	mysqlCfg := buildMySQLConfig(cfg)
 	dsn := mysqlCfg.FormatDSN()
 
 	if !strings.Contains(dsn, "unix") {
@@ -515,10 +497,7 @@ func TestBuildPostgreSQLDSN_Socket(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		t.Fatalf("buildPostgreSQLDSN: %v", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	if !strings.Contains(dsn, "host=") {
 		t.Errorf("DSN should contain host parameter for socket, got: %s", dsn)
@@ -569,10 +548,7 @@ func TestBuildPostgreSQLDSN_DefaultPort(t *testing.T) {
 		Dialect:  "postgresql",
 	}
 
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		t.Fatalf("buildPostgreSQLDSN: %v", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	if !strings.Contains(dsn, ":5432") {
 		t.Errorf("DSN should use default port 5432, got: %s", dsn)
@@ -588,10 +564,7 @@ func TestBuildMySQLDSN_DefaultPort(t *testing.T) {
 		Dialect:  "mysql",
 	}
 
-	mysqlCfg, err := buildMySQLConfig(cfg)
-	if err != nil {
-		t.Fatalf("buildMySQLConfig: %v", err)
-	}
+	mysqlCfg := buildMySQLConfig(cfg)
 	dsn := mysqlCfg.FormatDSN()
 
 	if !strings.Contains(dsn, "127.0.0.1:3306") {
@@ -608,10 +581,7 @@ func TestBuildPostgreSQLDSN_DefaultDatabase(t *testing.T) {
 		Dialect:  "postgresql",
 	}
 
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		t.Fatalf("buildPostgreSQLDSN: %v", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	if !strings.Contains(dsn, "/postgres") {
 		t.Errorf("DSN should use default database 'postgres', got: %s", dsn)
@@ -631,10 +601,7 @@ func TestBuildPostgreSQLConfigSetsExplicitPasswordAfterParse(t *testing.T) {
 		TLSMode:  "disabled",
 	}
 
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		t.Fatalf("buildPostgreSQLDSN: %v", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	if strings.Contains(dsn, "secret-password") {
 		t.Fatal("DSN must not contain password")

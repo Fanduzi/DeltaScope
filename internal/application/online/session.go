@@ -69,10 +69,7 @@ func OpenSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
 
 // openMySQLSession opens a MySQL/TiDB session.
 func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
-	mysqlCfg, err := buildMySQLConfig(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("build config: %w", err)
-	}
+	mysqlCfg := buildMySQLConfig(cfg)
 
 	connector, err := gomysql.NewConnector(mysqlCfg)
 	if err != nil {
@@ -103,7 +100,7 @@ func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) 
 
 	identity, err := IdentifyFromConn(ctx, conn, cfg.Dialect)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		db.Close()
 		return nil, err
 	}
@@ -119,7 +116,7 @@ func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) 
 				return nil
 			}
 			var firstErr error
-			if cErr := conn.Close(); cErr != nil && firstErr == nil {
+			if cErr := conn.Close(); cErr != nil {
 				firstErr = cErr
 			}
 			if dErr := db.Close(); dErr != nil && firstErr == nil {
@@ -133,10 +130,7 @@ func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) 
 
 // openPostgreSQLSession opens a PostgreSQL session.
 func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) {
-	dsn, err := buildPostgreSQLDSN(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("build dsn: %w", err)
-	}
+	dsn := buildPostgreSQLDSN(cfg)
 
 	connConfig, err := pgx.ParseConfig(dsn)
 	if err != nil {
@@ -184,7 +178,7 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 
 	identity, err := IdentifyFromConn(ctx, conn, "postgresql")
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		db.Close()
 		return nil, err
 	}
@@ -200,7 +194,7 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 				return nil
 			}
 			var firstErr error
-			if cErr := conn.Close(); cErr != nil && firstErr == nil {
+			if cErr := conn.Close(); cErr != nil {
 				firstErr = cErr
 			}
 			if dErr := db.Close(); dErr != nil && firstErr == nil {
@@ -226,7 +220,7 @@ func IdentifyFromConn(ctx context.Context, conn *sql.Conn, expectedDialect strin
 }
 
 // buildMySQLConfig constructs a MySQL driver config from the session config.
-func buildMySQLConfig(cfg SessionConfig) (*gomysql.Config, error) {
+func buildMySQLConfig(cfg SessionConfig) *gomysql.Config {
 	mysqlCfg := gomysql.NewConfig()
 
 	if strings.TrimSpace(cfg.Socket) != "" {
@@ -277,11 +271,11 @@ func buildMySQLConfig(cfg SessionConfig) (*gomysql.Config, error) {
 		mysqlCfg.TLS = tlsCfg
 	}
 
-	return mysqlCfg, nil
+	return mysqlCfg
 }
 
 // buildPostgreSQLDSN constructs a PostgreSQL connection string from the session config.
-func buildPostgreSQLDSN(cfg SessionConfig) (string, error) {
+func buildPostgreSQLDSN(cfg SessionConfig) string {
 	user := url.User(cfg.User)
 	host := strings.TrimSpace(cfg.Host)
 	if host == "" {
@@ -320,7 +314,7 @@ func buildPostgreSQLDSN(cfg SessionConfig) (string, error) {
 			User:     user,
 			Path:     "/" + url.PathEscape(database),
 			RawQuery: query.Encode(),
-		}).String(), nil
+		}).String()
 	}
 
 	return (&url.URL{
@@ -329,5 +323,5 @@ func buildPostgreSQLDSN(cfg SessionConfig) (string, error) {
 		Host:     net.JoinHostPort(host, strconv.Itoa(port)),
 		Path:     "/" + url.PathEscape(database),
 		RawQuery: query.Encode(),
-	}).String(), nil
+	}).String()
 }
