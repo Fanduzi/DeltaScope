@@ -1,7 +1,7 @@
 # Decision: Online Query Access Pure Function Literal Operand Support
 
 - Date: 2026-07-25
-- Status: Accepted
+- Status: Proposed
 - Baseline: `v0.440.0`
 - Milestone branch: `feat/query-access-pure-function-literal-operands`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
@@ -50,34 +50,46 @@ argument is a column or a literal.
 
 ### Operand Kind Classification
 
-The parser already classifies operands by kind:
+The parser already classifies operands by kind (using TiDB parser terminology):
 
 - `OperandKindColumn` — direct physical column reference
-- `OperandKindLiteral` — SQL literal value (string/number/null/bool)
-- `OperandKindConst` — existing parser constant (maps to literal)
+- `OperandKindConst` — SQL literal value (string/number/null/bool)
 - `OperandKindParam` — parameter placeholder (out of scope)
+- `OperandKindStar` — wildcard `*`
+- `OperandKindExpr` — nested expression/function call (out of scope)
+- `OperandKindSubquery` — subquery (out of scope)
 
-The manifest gateway validates that each operand matches the expected kind
-from the manifest entry.
+The application layer maps these to string kinds: `"column"`, `"const"`, etc.
+The manifest validates that each operand matches the expected kind from the
+manifest entry at that position.
 
 ### Manifest Extension
 
-Manifest entries declare allowed operand kinds per position:
+Manifest entries declare allowed operand kinds per position. The parser
+classifies operands using its native kind system; the manifest matches
+against those parser kinds:
+
+- `"column"` — direct physical column reference (`OperandKindColumn`)
+- `"const"` — SQL literal value (`OperandKindConst`): string, number, null, bool
+
+The manifest does NOT use `"literal"` or `"any"`. The parser kind `"const"`
+is the canonical name for literal operands.
 
 ```yaml
-# Example: LOWER accepts column or literal
+# Example: COALESCE accepts column in first position, const in second
 - dialect: mysql
   profile: mysql-8.4
-  name: lower
+  name: coalesce
   call_class: scalar
-  arity: 1
-  operand_kinds: ["any"]  # column or literal
+  min_arity: 2
+  operand_kinds: ["column", "const"]
 ```
 
-The `operand_kinds` field uses:
-- `"column"` — must be a direct physical column reference
-- `"literal"` — must be a SQL literal value
-- `"any"` — column or literal (for functions like COALESCE)
+For variable-arity functions, the declared operand kinds match positions
+left-to-right. Positions beyond the declared vector repeat the last declared
+kind. So `["column", "const"]` permits `[column,const]`, `[column,const,const]`,
+etc. It does NOT permit `[const,column]` or `[column,column,const]` — those
+require explicit manifest entries.
 
 ### Requirement Generation
 
@@ -85,8 +97,8 @@ Physical table/column requirements are generated only for column operands:
 
 ```go
 for _, operand := range candidates {
-    if operand.Kind == OperandKindLiteral {
-        continue // skip literals — no requirement
+    if operand.Kind == OperandKindConst {
+        continue // skip const operands — no requirement
     }
     if operand.Column != nil {
         requirements = append(requirements, Requirement{
@@ -164,12 +176,17 @@ Default offline surfaces remain `indeterminate` because:
 }
 ```
 
-Note: The literal `'alice'` does NOT appear in requirements.
+Note: The literal `'unknown'` does NOT appear in requirements. The function
+name `COALESCE` does NOT appear in the output. Only physical dependencies
+are reported.
 
 ## Deferred / Out Of Scope
 
 ### Explicitly Deferred
 
+- **Literal-only functions**: `LOWER('x')`, `ABS(42)` — no column dependency
+- **Literal-first mixed**: `COALESCE('x', name)` — reversed position not in manifest
+- **Literal-only aggregates**: `COUNT(1)` — literal-only, no column dependency
 - **Nested function calls**: `LOWER(TRIM(name))` — needs separate design
 - **Cast expressions**: `CAST(x AS INT)` — Phase 1 doesn't trust casts
 - **Parameter placeholders**: `$1`, `?` — needs parameter binding design
@@ -181,6 +198,8 @@ Note: The literal `'alice'` does NOT appear in requirements.
 - **Quoted/qualified function calls**: `"LOWER"()`, `schema.func()`
 - **Unknown functions**: Functions not in manifest
 - **CASE WHEN**: Complex conditional expressions
+- **PostgreSQL literal operands**: No catalog identity proof path exists
+- **Reversed or all-const operand positions**: Not in manifest
 
 ### Explicitly Out Of Scope
 
@@ -192,37 +211,71 @@ Note: The literal `'alice'` does NOT appear in requirements.
 
 ## Verification Evidence
 
+### Current Status
+
+**Implementation: IN PROGRESS.** This ADR was prematurely marked Accepted
+before any Go implementation, tests, or Docker evidence existed. The prior
+commit `cc01e5b` added only a corpus fixture using `LOWER(name) WHERE
+LOWER(name) = 'alice'` — this tests WHERE-clause literal comparison (existing
+behavior), NOT literal operands inside function arguments.
+
+### Proof Boundary
+
+Literal operands are safe ONLY when:
+1. The function is manifest-proven pure for the exact dialect/profile
+2. At least one operand is a direct physical column reference
+3. The manifest declares per-position operand kinds including `"const"`
+4. The literal operand produces NO table/column requirement
+
+Literal-only functions like `LOWER('x')`, `COALESCE('a', 'b')`, `ABS(42)`
+have NO physical column dependency and remain indeterminate.
+
+### Supported Exact Shapes (MySQL/TiDB)
+
+| SQL Shape | Status | Evidence |
+|-----------|--------|----------|
+| `COALESCE(name, 'unknown')` | GO | manifest + unit test |
+| `NULLIF(name, 'unknown')` | GO | manifest + unit test |
+| `IFNULL(name, 'unknown')` | GO | manifest + unit test |
+
+### Deferred Shapes
+
+| SQL Shape | Reason |
+|-----------|--------|
+| `LOWER('x')` | No column operand → no physical dependency |
+| `COALESCE('x', 'y')` | No column operand → no physical dependency |
+| `COALESCE('x', name)` | Reversed position not in manifest |
+| Any PostgreSQL literal operand | No catalog identity proof path |
+| `COUNT(1)` | Literal-only aggregate |
+| Nested: `COALESCE(LOWER(name), 'x')` | Nested function out of scope |
+| Cast: `COALESCE(name, CAST('x' AS CHAR))` | Cast out of scope |
+
 ### Parser Characterization
 
-- TiDB: `driver.ValueExpr` → `OperandKindLiteral`
-- PostgreSQL: `A_Const` → `OperandKindLiteral`
-- Mixed operands: `LOWER(name, 'fallback')` → `[column, literal]`
+- TiDB: `driver.ValueExpr` → `OperandKindConst` → application `"const"`
+- TiDB: `ColumnNameExpr` → `OperandKindColumn` → application `"column"`
+- Mixed: `COALESCE(name, 'unknown')` → `OperandKinds: ["column", "const"]`
+- Column refs: only `name` produces an `OperandColumnRef`; `'unknown'` is skipped
 
-### Manifest Validation
+### Manifest Entries
 
-- `operand_kinds: ["any"]` accepts column or literal
-- `operand_kinds: ["column"]` rejects literal
-- `operand_kinds: ["literal"]` rejects column
+12 new entries across 4 profiles (3 functions × 4 profiles):
+- `coalesce`: `MinArity=2`, `OperandKinds=["column","const"]`
+- `nullif`: `Arity=2`, `OperandKinds=["column","const"]`
+- `ifnull`: `Arity=2`, `OperandKinds=["column","const"]`
 
 ### Corpus Fixtures
 
-- `testdata/query-access/mysql/select_scalar_literal.sql`
-- `testdata/query-access/tidb/select_scalar_literal.sql`
-- `testdata/query-access/postgresql/select_scalar_literal.sql`
+- `testdata/query-access/mysql/select_scalar_literal.sql` — `COALESCE(name, 'unknown')`
 
-### Docker E2E Probes
+### Docker E2E (BLOCKED)
 
-- MySQL 5.7/8.0/8.4: `LOWER('alice')` → admissible
-- TiDB 8.5: `LOWER('alice')` → admissible
-- PostgreSQL 17: `LOWER('alice')` → admissible
-- Negative: `UNKNOWN_FUNC('test')` → indeterminate
+Docker live probes have not yet been executed. This ADR remains Proposed
+until live evidence is captured for all 4 profiles.
 
-### No-Leak Tests
+### No-Leak Evidence (PENDING)
 
-- SDK JSON doesn't contain literal values
-- CLI stdout/stderr doesn't contain literal values
-- HTTP response doesn't contain literal values
-- Error messages don't contain literal values
+No-leak tests for SDK/CLI/HTTP surfaces have not yet been added.
 
 ## Consequences
 
