@@ -6,7 +6,7 @@
 // output: end-to-end proof that mixed-literal scalar operands yield
 //
 //	read_only + admissible via the HTTP online path across all four MySQL/TiDB
-//	versions, with no-leak assertions on response bodies
+//	versions, with exact requirement assertions and no-leak guards
 //
 // pos: HTTP online E2E coverage for the mixed-literal scalar operand feature
 // note: if this file changes, update this header and module README.md.
@@ -102,11 +102,12 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		name string
 		sql  string
 	}{
-		{"COALESCE", "SELECT COALESCE(amount, 0) FROM app.builtin_semantic_facts"},
-		{"NULLIF", "SELECT NULLIF(amount, 0) FROM app.builtin_semantic_facts"},
-		{"IFNULL", "SELECT IFNULL(amount, 0) FROM app.builtin_semantic_facts"},
+		{"COALESCE", "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		{"NULLIF", "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		{"IFNULL", "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
 	}
 
+	// Online path: connection_id present.
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, probe := range probes {
@@ -144,7 +145,29 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						t.Errorf("admission: got %q, want admissible", result["admission"])
 					}
 
-					// No-leak
+					// Exact requirement assertions.
+					wantReqs := []map[string]string{
+						{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+						{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
+					}
+					rawReqs, ok := result["requirements"].([]any)
+					if !ok {
+						t.Fatalf("requirements: not a slice; got %T", result["requirements"])
+					}
+					if len(rawReqs) != len(wantReqs) {
+						t.Fatalf("requirements: got %d items, want %d", len(rawReqs), len(wantReqs))
+					}
+					for i, raw := range rawReqs {
+						reqMap, ok := raw.(map[string]any)
+						if !ok {
+							t.Fatalf("requirements[%d]: not a map; got %T", i, raw)
+						}
+						if reqMap["object"] != wantReqs[i]["object"] || reqMap["privilege"] != wantReqs[i]["privilege"] {
+							t.Errorf("requirements[%d]: got %+v, want %+v", i, reqMap, wantReqs[i])
+						}
+					}
+
+					// No-leak: body and deserialized JSON fields.
 					bodyStr := body.String()
 					for _, marker := range []string{
 						"SECRET_LITERAL",
@@ -155,10 +178,60 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 							t.Errorf("response leaked %q: %s", marker, bodyStr)
 						}
 					}
+					raw, _ := json.Marshal(result)
+					if strings.Contains(string(raw), "SECRET_LITERAL") {
+						t.Errorf("deserialized result leaked SECRET_LITERAL")
+					}
 				})
 			}
 		})
 	}
+
+	// Default path regression: no connection_id → indeterminate.
+	t.Run("default_path_indeterminate", func(t *testing.T) {
+		for _, probe := range probes {
+			t.Run(probe.name, func(t *testing.T) {
+				payload := fmt.Sprintf(`{"sql":%q}`, probe.sql)
+				req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
+				if err != nil {
+					t.Fatalf("create request: %v", err)
+				}
+				req.Header.Set("Content-Type", "application/json")
+
+				resp, err := http.DefaultClient.Do(req)
+				if err != nil {
+					t.Fatalf("send request: %v", err)
+				}
+				defer resp.Body.Close()
+
+				var body bytes.Buffer
+				if _, err := body.ReadFrom(resp.Body); err != nil {
+					t.Fatalf("read response: %v", err)
+				}
+
+				if resp.StatusCode != http.StatusOK {
+					t.Fatalf("status: got %d, want 200; body: %s", resp.StatusCode, body.String())
+				}
+
+				var result map[string]any
+				if err := json.Unmarshal(body.Bytes(), &result); err != nil {
+					t.Fatalf("unmarshal: %v", err)
+				}
+				if result["read_classification"] != "indeterminate" {
+					t.Errorf("classification: got %q, want indeterminate", result["read_classification"])
+				}
+				if result["admission"] != "indeterminate" {
+					t.Errorf("admission: got %q, want indeterminate", result["admission"])
+				}
+
+				// No-leak.
+				bodyStr := body.String()
+				if strings.Contains(bodyStr, "SECRET_LITERAL") {
+					t.Errorf("response leaked SECRET_LITERAL: %s", bodyStr)
+				}
+			})
+		}
+	})
 }
 
 // writeEmptyTempFile creates a temporary empty file for TiDB password-less auth.

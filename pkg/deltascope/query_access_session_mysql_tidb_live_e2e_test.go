@@ -454,9 +454,9 @@ func assertLiveProfileAdmitsMixedLiteralScalars(t *testing.T, ctx context.Contex
 		name string
 		sql  string
 	}{
-		{"COALESCE_col_const", "SELECT COALESCE(amount, 0) FROM app.builtin_semantic_facts"},
-		{"NULLIF_col_const", "SELECT NULLIF(amount, 0) FROM app.builtin_semantic_facts"},
-		{"IFNULL_col_const", "SELECT IFNULL(amount, 0) FROM app.builtin_semantic_facts"},
+		{"COALESCE", "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		{"NULLIF", "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		{"IFNULL", "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
 	} {
 		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
@@ -473,24 +473,35 @@ func assertLiveProfileAdmitsMixedLiteralScalars(t *testing.T, ctx context.Contex
 		if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
 			t.Fatalf("%s %s classification=%q admission=%q, want read_only/admissible", tc.name, probe.name, result.ReadClassification, result.Admission)
 		}
-		// Verify exact requirements
-		foundTable := false
-		foundColumn := false
-		for _, req := range result.Requirements {
-			if req.Object == "app.builtin_semantic_facts" && req.Privilege == "read_table" {
-				foundTable = true
+		// Exact requirement set — no extras, no missing, no literal-derived
+		wantReqs := map[string]string{
+			"app.builtin_semantic_facts":      "read_table",
+			"app.builtin_semantic_facts.name": "read_column",
+		}
+		gotReqs := map[string]string{}
+		for _, r := range result.Requirements {
+			gotReqs[r.Object] = r.Privilege
+		}
+		if len(gotReqs) != len(wantReqs) {
+			t.Errorf("%s %s requirement count: got %d, want %d; got=%v", tc.name, probe.name, len(gotReqs), len(wantReqs), gotReqs)
+		}
+		for obj, priv := range wantReqs {
+			if gotPriv, ok := gotReqs[obj]; !ok {
+				t.Errorf("%s %s missing requirement %s/%s", tc.name, probe.name, obj, priv)
+			} else if gotPriv != priv {
+				t.Errorf("%s %s requirement %s: got %q, want %q", tc.name, probe.name, obj, gotPriv, priv)
 			}
-			if req.Object == "app.builtin_semantic_facts.amount" && req.Privilege == "read_column" {
-				foundColumn = true
+		}
+		for obj := range gotReqs {
+			if _, ok := wantReqs[obj]; !ok {
+				t.Errorf("%s %s unexpected requirement %s", tc.name, probe.name, obj)
 			}
 		}
-		if !foundTable {
-			t.Errorf("%s %s missing app.builtin_semantic_facts read_table requirement", tc.name, probe.name)
+		// No-leak: SECRET_LITERAL must not appear in struct dump, JSON, or error
+		dump := fmt.Sprintf("%+v", result)
+		if strings.Contains(dump, "SECRET_LITERAL") {
+			t.Errorf("%s %s leaked SECRET_LITERAL in struct dump", tc.name, probe.name)
 		}
-		if !foundColumn {
-			t.Errorf("%s %s missing app.builtin_semantic_facts.amount read_column requirement", tc.name, probe.name)
-		}
-		// No-leak: verify marker literal not in JSON
 		data, err := json.Marshal(result)
 		if err != nil {
 			t.Fatalf("%s %s marshal: %v", tc.name, probe.name, err)
