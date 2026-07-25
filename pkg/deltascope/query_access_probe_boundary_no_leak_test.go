@@ -113,6 +113,26 @@ func TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak(t *testing.T) {
 			sql:     "SELECT app.my_secret_udf(id) FROM users",
 			dialect: DialectTiDB,
 		},
+		{
+			name:    "mysql_coalesce_mixed_const_marker",
+			sql:     "SELECT COALESCE(name, 'SECRET_LITERAL') FROM users",
+			dialect: DialectMySQL,
+		},
+		{
+			name:    "tidb_coalesce_mixed_const_marker",
+			sql:     "SELECT COALESCE(name, 'SECRET_LITERAL') FROM users",
+			dialect: DialectTiDB,
+		},
+		{
+			name:    "mysql_nullif_mixed_const_marker",
+			sql:     "SELECT NULLIF(name, 'SECRET_LITERAL') FROM users",
+			dialect: DialectMySQL,
+		},
+		{
+			name:    "mysql_ifnull_mixed_const_marker",
+			sql:     "SELECT IFNULL(name, 'SECRET_LITERAL') FROM users",
+			dialect: DialectMySQL,
+		},
 	}
 
 	for _, tc := range cases {

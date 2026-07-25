@@ -200,3 +200,54 @@ func TestAnalyzeQueryAccessMalformedSQLErrorDoesNotDiscloseSQL(t *testing.T) {
 func containsSQLText(errMsg, sql string) bool {
 	return errMsg != "" && sql != "" && (errMsg == sql || len(errMsg) >= len(sql) && errMsg[:len(sql)] == sql)
 }
+
+func TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		sql     string
+		dialect Dialect
+	}{
+		{
+			name:    "mysql_coalesce_mixed_const",
+			sql:     "SELECT COALESCE(name, 'unknown') FROM users",
+			dialect: DialectMySQL,
+		},
+		{
+			name:    "tidb_coalesce_mixed_const",
+			sql:     "SELECT COALESCE(name, 'unknown') FROM users",
+			dialect: DialectTiDB,
+		},
+		{
+			name:    "mysql_nullif_mixed_const",
+			sql:     "SELECT NULLIF(name, 'unknown') FROM users",
+			dialect: DialectMySQL,
+		},
+		{
+			name:    "mysql_ifnull_mixed_const",
+			sql:     "SELECT IFNULL(name, 'unknown') FROM users",
+			dialect: DialectMySQL,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+				SQL:     tc.sql,
+				Dialect: tc.dialect,
+				Mode:    QueryAccessModeStrict,
+			})
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
+			}
+			// Default SDK (no session) must remain indeterminate for function-bearing SQL.
+			if result.ReadClassification != QueryAccessIndeterminate {
+				t.Errorf("expected indeterminate, got %q", result.ReadClassification)
+			}
+			if result.Admission != QueryAccessIndeterminateAdmission {
+				t.Errorf("expected indeterminate admission, got %q", result.Admission)
+			}
+		})
+	}
+}
