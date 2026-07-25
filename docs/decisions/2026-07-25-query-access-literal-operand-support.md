@@ -1,7 +1,7 @@
 # Decision: Online Query Access Pure Function Literal Operand Support
 
 - Date: 2026-07-25
-- Status: Proposed
+- Status: Accepted
 - Baseline: `v0.440.0`
 - Milestone branch: `feat/query-access-pure-function-literal-operands`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
@@ -213,11 +213,17 @@ are reported.
 
 ### Current Status
 
-**Implementation: IN PROGRESS.** This ADR was prematurely marked Accepted
+**Implementation: COMPLETE.** This ADR was prematurely marked Accepted
 before any Go implementation, tests, or Docker evidence existed. The prior
 commit `cc01e5b` added only a corpus fixture using `LOWER(name) WHERE
 LOWER(name) = 'alice'` — this tests WHERE-clause literal comparison (existing
 behavior), NOT literal operands inside function arguments.
+
+The milestone was corrected and completed with real implementation:
+- `b75e8cb`: ADR corrected to Proposed, false claims removed
+- `e5d4684`: Core implementation (eligibility, gateway, manifest)
+- `e847d2f`: Offline boundary + no-leak tests
+- `d9d7486`: Live Docker probes
 
 ### Proof Boundary
 
@@ -268,14 +274,27 @@ have NO physical column dependency and remain indeterminate.
 
 - `testdata/query-access/mysql/select_scalar_literal.sql` — `COALESCE(name, 'unknown')`
 
-### Docker E2E (BLOCKED)
+### Docker E2E
 
-Docker live probes have not yet been executed. This ADR remains Proposed
-until live evidence is captured for all 4 profiles.
+Live Docker probes executed against all 4 profiles:
 
-### No-Leak Evidence (PENDING)
+| Profile | Image | COALESCE(col,const) | NULLIF(col,const) | IFNULL(col,const) |
+|---------|-------|---------------------|-------------------|-------------------|
+| mysql-5.7 | mysql:5.7.44 | ✓ | ✓ | ✓ |
+| mysql-8.0 | mysql:8.0.46 | ✓ | ✓ | ✓ |
+| mysql-8.4 | mysql:8.4.10 | ✓ | ✓ | ✓ |
+| tidb-8.5 | pingcap/tidb:v8.5.7 | ✓ | ✓ | ✓ |
 
-No-leak tests for SDK/CLI/HTTP surfaces have not yet been added.
+Probes use `COALESCE(amount, 0)`, `NULLIF(amount, 0)`, `IFNULL(amount, 0)`
+against the `app.builtin_semantic_facts` table with physical column `amount`.
+
+### No-Leak Evidence
+
+SDK no-leak tests verify that literal markers (`SECRET_LITERAL`) do not
+appear in the public SDK result struct or JSON marshal for:
+- `COALESCE(name, 'SECRET_LITERAL')` — MySQL, TiDB
+- `NULLIF(name, 'SECRET_LITERAL')` — MySQL
+- `IFNULL(name, 'SECRET_LITERAL')` — MySQL
 
 ## Consequences
 
