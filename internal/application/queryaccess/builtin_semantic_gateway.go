@@ -129,14 +129,29 @@ func candidateOperandKindsMatch(candidate EffectCandidate, entry BuiltinSemantic
 		if len(candidate.OperandKinds) < entry.MinArity {
 			return false
 		}
-		for _, kind := range candidate.OperandKinds {
-			if kind != "column" {
+		if len(entry.OperandKinds) == 0 {
+			return false
+		}
+		for i, kind := range candidate.OperandKinds {
+			expected := entry.OperandKinds[len(entry.OperandKinds)-1]
+			if i < len(entry.OperandKinds) {
+				expected = entry.OperandKinds[i]
+			}
+			if kind != expected {
 				return false
 			}
 		}
 		return true
 	}
-	return stringSliceEqual(candidate.OperandKinds, entry.OperandKinds)
+	if len(candidate.OperandKinds) != len(entry.OperandKinds) {
+		return false
+	}
+	for i, kind := range candidate.OperandKinds {
+		if kind != entry.OperandKinds[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func candidateModifiersAllowed(candidate EffectCandidate, entry BuiltinSemanticEntry) bool {

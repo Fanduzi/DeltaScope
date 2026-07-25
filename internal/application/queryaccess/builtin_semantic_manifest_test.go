@@ -49,6 +49,46 @@ func TestBuiltinSemanticManifest_RejectsInvalidEntries(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticManifest_MixedConstEntriesExist(t *testing.T) {
+	t.Parallel()
+	profiles := []AnalysisProfile{AnalysisProfileMySQL57, AnalysisProfileMySQL80, AnalysisProfileMySQL84, AnalysisProfileTiDB85}
+	functions := []struct {
+		name     string
+		minArity int
+		arity    int
+		kinds    []string
+	}{
+		{"coalesce", 2, 0, []string{"column", "const"}},
+		{"nullif", 0, 2, []string{"column", "const"}},
+		{"ifnull", 0, 2, []string{"column", "const"}},
+	}
+	for _, profile := range profiles {
+		manifest := builtinSemanticProductionRegistry.manifest(profile)
+		if manifest == nil {
+			t.Fatalf("profile %s: nil manifest", profile)
+		}
+		entries := manifest.Entries()
+		for _, fn := range functions {
+			found := false
+			for _, entry := range entries {
+				if entry.Name == fn.name && entry.CallClass == BuiltinSemanticScalar {
+					if fn.minArity > 0 && entry.MinArity == fn.minArity && stringSliceEqual(entry.OperandKinds, fn.kinds) {
+						found = true
+						break
+					}
+					if fn.arity > 0 && entry.Arity == fn.arity && stringSliceEqual(entry.OperandKinds, fn.kinds) {
+						found = true
+						break
+					}
+				}
+			}
+			if !found {
+				t.Errorf("profile %s: missing mixed entry for %s with kinds %v", profile, fn.name, fn.kinds)
+			}
+		}
+	}
+}
+
 func TestBuiltinSemanticService_ClonesRegistryAtAssembly(t *testing.T) {
 	registry := mustBuiltinTestRegistry(t)
 	service, err := newBuiltinSemanticService(&builtinTestResolver{}, registry)

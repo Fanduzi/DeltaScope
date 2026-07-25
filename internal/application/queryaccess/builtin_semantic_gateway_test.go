@@ -30,6 +30,54 @@ func TestBuiltinSemanticGateway_AllowsOnlyCompleteFixtureProof(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticGateway_ScalarMixedConstMatchesManifest(t *testing.T) {
+	t.Parallel()
+	registry := mixedConstRegistry(t)
+	candidate := mixedConstCandidate([]string{"column", "const"}, 2)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision != builtinSemanticAllProven {
+		t.Fatalf("decision = %q, want all_proven", proof.decision)
+	}
+}
+
+func TestBuiltinSemanticGateway_ScalarMixedConstVariableArityMatches(t *testing.T) {
+	t.Parallel()
+	registry := mixedConstRegistry(t)
+	candidate := mixedConstCandidate([]string{"column", "const", "const"}, 3)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision != builtinSemanticAllProven {
+		t.Fatalf("decision = %q, want all_proven", proof.decision)
+	}
+}
+
+func TestBuiltinSemanticGateway_ScalarMixedConstReversedNotProven(t *testing.T) {
+	t.Parallel()
+	registry := mixedConstRegistry(t)
+	candidate := mixedConstCandidate([]string{"const", "column"}, 2)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision == builtinSemanticAllProven {
+		t.Fatal("reversed operand order was proven")
+	}
+}
+
+func TestBuiltinSemanticGateway_ScalarMixedConstExprNotProven(t *testing.T) {
+	t.Parallel()
+	registry := mixedConstRegistry(t)
+	candidate := mixedConstCandidate([]string{"column", "expr"}, 2)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision == builtinSemanticAllProven {
+		t.Fatal("expr operand was proven")
+	}
+}
+
 func TestBuiltinSemanticGateway_RejectsAdversarialCandidates(t *testing.T) {
 	manifest := builtinTestManifest(t)
 	registry, err := newBuiltinSemanticRegistry(map[AnalysisProfile]*BuiltinSemanticManifest{
@@ -297,6 +345,56 @@ func builtinTestManifest(t *testing.T) *BuiltinSemanticManifest {
 		t.Fatalf("fixture manifest: %v", err)
 	}
 	return manifest
+}
+
+func mixedConstRegistry(t *testing.T) *builtinSemanticRegistry {
+	t.Helper()
+	manifest, err := NewBuiltinSemanticManifest([]BuiltinSemanticEntry{{
+		Dialect:      "mysql",
+		Profile:      AnalysisProfileMySQL57,
+		Name:         "coalesce",
+		CallClass:    BuiltinSemanticScalar,
+		MinArity:     2,
+		OperandKinds: []string{"column", "const"},
+	}})
+	if err != nil {
+		t.Fatalf("new manifest: %v", err)
+	}
+	registry, err := newBuiltinSemanticRegistry(map[AnalysisProfile]*BuiltinSemanticManifest{
+		AnalysisProfileMySQL57: manifest,
+	})
+	if err != nil {
+		t.Fatalf("new registry: %v", err)
+	}
+	return registry
+}
+
+func mixedConstCandidate(operandKinds []string, arity int) EffectCandidate {
+	return EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"coalesce"},
+		OriginalNamePath:     []string{"COALESCE"},
+		Canonical:            true,
+		ParserClassification: "generic",
+		Arity:                arity,
+		OperandKinds:         operandKinds,
+		OperandColumnRefs:    []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
+	}
+}
+
+func mixedConstResult() domain.Result {
+	return domain.Result{
+		Dialect: "mysql", Mode: domain.ModeStrict, ReadClassification: domain.Indeterminate,
+		Relations: []domain.RelationReference{{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true}},
+		ReferencedColumns: []domain.ColumnReference{
+			{Schema: "app", Table: "users", Column: "name"},
+		},
+		Requirements: []domain.Requirement{
+			{Object: "app.users", Privilege: "read_table"},
+			{Object: "app.users.name", Privilege: "read_column"},
+		},
+	}
 }
 
 func mustBuiltinTestRegistry(t *testing.T) *builtinSemanticRegistry {

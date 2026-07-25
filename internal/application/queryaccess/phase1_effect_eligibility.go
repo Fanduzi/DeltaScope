@@ -51,8 +51,17 @@ func phase1FunctionEligible(candidate EffectCandidate) bool {
 		if candidate.HasWindow {
 			return false
 		}
-		return len(candidate.OperandKinds) == 1 &&
-			candidate.OperandKinds[0] == "column" && len(candidate.OperandColumnRefs) == 1
+		if len(candidate.OperandKinds) != 1 {
+			return false
+		}
+		kind := candidate.OperandKinds[0]
+		if kind == "column" {
+			return len(candidate.OperandColumnRefs) == 1
+		}
+		if kind == "const" {
+			return false // literal-only has no column dependency
+		}
+		return false
 	default:
 		if candidate.HasWindow {
 			return false
@@ -68,15 +77,18 @@ func scalarFunctionEligible(candidate EffectCandidate) bool {
 	if len(candidate.OperandKinds) == 0 {
 		return false
 	}
-	if len(candidate.OperandColumnRefs) != len(candidate.OperandKinds) {
-		return false
-	}
+	hasColumn := false
 	for _, kind := range candidate.OperandKinds {
-		if kind != "column" {
+		switch kind {
+		case "column":
+			hasColumn = true
+		case "const":
+			// const operands are allowed alongside column operands
+		default:
 			return false
 		}
 	}
-	return true
+	return hasColumn
 }
 
 func isCountStar(candidate EffectCandidate) bool {

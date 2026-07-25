@@ -7,6 +7,7 @@ package queryaccess
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
@@ -333,6 +334,125 @@ func TestBuiltinSemanticProfiles_ScalarDirectColumnsAdmit(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticProfileRegression_MixedConstFunctions(t *testing.T) {
+	t.Parallel()
+	profiles := []struct {
+		profile AnalysisProfile
+		dialect string
+	}{
+		{AnalysisProfileMySQL57, "mysql"},
+		{AnalysisProfileMySQL80, "mysql"},
+		{AnalysisProfileMySQL84, "mysql"},
+		{AnalysisProfileTiDB85, "tidb"},
+	}
+	for _, p := range profiles {
+		t.Run(string(p.profile), func(t *testing.T) {
+			t.Parallel()
+			functions := []struct {
+				name  string
+				kinds []string
+				arity int
+				refs  []OperandColumnRef
+			}{
+				{"coalesce", []string{"column", "const"}, 2, []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}}},
+				{"nullif", []string{"column", "const"}, 2, []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}}},
+				{"ifnull", []string{"column", "const"}, 2, []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}}},
+			}
+			for _, fn := range functions {
+				candidate := EffectCandidate{
+					Kind:                 EffectCandidateFunction,
+					Ordinal:              0,
+					NamePath:             []string{fn.name},
+					OriginalNamePath:     []string{strings.ToUpper(fn.name)},
+					Canonical:            true,
+					ParserClassification: "generic",
+					Arity:                fn.arity,
+					OperandKinds:         fn.kinds,
+					OperandColumnRefs:    fn.refs,
+				}
+				result := domain.Result{
+					Dialect: p.dialect, Mode: domain.ModeStrict, ReadClassification: domain.Indeterminate,
+					Relations: []domain.RelationReference{{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true}},
+					ReferencedColumns: []domain.ColumnReference{
+						{Schema: "app", Table: "users", Column: "name"},
+					},
+					Requirements: []domain.Requirement{
+						{Object: "app.users", Privilege: "read_table"},
+						{Object: "app.users.name", Privilege: "read_column"},
+					},
+				}
+				proof := proveBuiltinSemantics(p.profile, p.dialect, []EffectCandidate{candidate}, result, result.Requirements, builtinSemanticProductionRegistry)
+				if proof.decision != builtinSemanticAllProven {
+					t.Errorf("%s/%s(%v): decision = %q, want all_proven", p.profile, fn.name, fn.kinds, proof.decision)
+				}
+			}
+		})
+	}
+}
+
+func TestBuiltinSemanticProfileRegression_MixedConstNegativeProbes(t *testing.T) {
+	t.Parallel()
+	registry := builtinSemanticProductionRegistry
+	cases := []struct {
+		name string
+		cand EffectCandidate
+	}{
+		{
+			name: "literal_only_coalesce",
+			cand: EffectCandidate{
+				Kind: EffectCandidateFunction, Ordinal: 0,
+				NamePath: []string{"coalesce"}, OriginalNamePath: []string{"COALESCE"},
+				Canonical: true, ParserClassification: "generic",
+				Arity: 2, OperandKinds: []string{"const", "const"},
+			},
+		},
+		{
+			name: "reversed_coalesce",
+			cand: EffectCandidate{
+				Kind: EffectCandidateFunction, Ordinal: 0,
+				NamePath: []string{"coalesce"}, OriginalNamePath: []string{"COALESCE"},
+				Canonical: true, ParserClassification: "generic",
+				Arity: 2, OperandKinds: []string{"const", "column"},
+				OperandColumnRefs: []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
+			},
+		},
+		{
+			name: "lower_literal_only",
+			cand: EffectCandidate{
+				Kind: EffectCandidateFunction, Ordinal: 0,
+				NamePath: []string{"lower"}, OriginalNamePath: []string{"LOWER"},
+				Canonical: true, ParserClassification: "generic",
+				Arity: 1, OperandKinds: []string{"const"},
+			},
+		},
+		{
+			name: "unknown_function",
+			cand: EffectCandidate{
+				Kind: EffectCandidateFunction, Ordinal: 0,
+				NamePath: []string{"unknown_func"}, OriginalNamePath: []string{"UNKNOWN_FUNC"},
+				Canonical: true, ParserClassification: "generic",
+				Arity: 1, OperandKinds: []string{"column"},
+				OperandColumnRefs: []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result := domain.Result{
+				Dialect: "mysql", Mode: domain.ModeStrict, ReadClassification: domain.Indeterminate,
+				Relations:         []domain.RelationReference{{Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true}},
+				ReferencedColumns: []domain.ColumnReference{{Schema: "app", Table: "users", Column: "name"}},
+				Requirements:      []domain.Requirement{{Object: "app.users", Privilege: "read_table"}, {Object: "app.users.name", Privilege: "read_column"}},
+			}
+			proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{tc.cand}, result, result.Requirements, registry)
+			if proof.decision == builtinSemanticAllProven {
+				t.Errorf("%s: was proven but should not be", tc.name)
+			}
+		})
+	}
+}
+
 func TestBuiltinSemanticProfiles_ScalarBoundariesStayIndeterminate(t *testing.T) {
 	profiles := []struct {
 		name    string
@@ -351,8 +471,6 @@ func TestBuiltinSemanticProfiles_ScalarBoundariesStayIndeterminate(t *testing.T)
 		{name: "nested", sql: "SELECT LOWER(UPPER(name)) FROM app.users"},
 		{name: "literal", sql: "SELECT LOWER(42) FROM app.users"},
 		{name: "qualified", sql: "SELECT app.LOWER(name) FROM app.users"},
-		{name: "ifnull_literal", sql: "SELECT IFNULL(name, 'unknown') FROM app.users"},
-		{name: "coalesce_literal", sql: "SELECT COALESCE(name, 'fallback') FROM app.users"},
 	}
 
 	for _, profile := range profiles {

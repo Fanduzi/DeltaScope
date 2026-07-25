@@ -332,6 +332,26 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		tidbVariableArityScalarEntry("coalesce", 2, []string{"column", "column"}),
 		tidbScalarEntry("ifnull", 2, []string{"column", "column"}),
 		tidbScalarEntry("nullif", 2, []string{"column", "column"}),
+
+		// MySQL 5.7 scalar functions with mixed column+const operands.
+		mysqlVariableArityScalarEntry(AnalysisProfileMySQL57, "coalesce", 2, []string{"column", "const"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "nullif", 2, []string{"column", "const"}),
+		mysqlScalarEntry(AnalysisProfileMySQL57, "ifnull", 2, []string{"column", "const"}),
+
+		// MySQL 8.0 scalar functions with mixed column+const operands.
+		mysqlVariableArityScalarEntry(AnalysisProfileMySQL80, "coalesce", 2, []string{"column", "const"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "nullif", 2, []string{"column", "const"}),
+		mysqlScalarEntry(AnalysisProfileMySQL80, "ifnull", 2, []string{"column", "const"}),
+
+		// MySQL 8.4 scalar functions with mixed column+const operands.
+		mysqlVariableArityScalarEntry(AnalysisProfileMySQL84, "coalesce", 2, []string{"column", "const"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "nullif", 2, []string{"column", "const"}),
+		mysqlScalarEntry(AnalysisProfileMySQL84, "ifnull", 2, []string{"column", "const"}),
+
+		// TiDB 8.5 scalar functions with mixed column+const operands.
+		tidbVariableArityScalarEntry("coalesce", 2, []string{"column", "const"}),
+		tidbScalarEntry("nullif", 2, []string{"column", "const"}),
+		tidbScalarEntry("ifnull", 2, []string{"column", "const"}),
 	}
 	manifest, err := NewBuiltinSemanticManifest(entries)
 	if err != nil {

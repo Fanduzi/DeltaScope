@@ -78,9 +78,10 @@ func TestPhase1Eligibility_ScalarDirectColumnsEligible(t *testing.T) {
 	}
 }
 
-func TestPhase1Eligibility_ScalarWithLiteralNotEligible(t *testing.T) {
+func TestPhase1Eligibility_ScalarSingleLiteralOnlyNotEligible(t *testing.T) {
 	t.Parallel()
 
+	// LOWER('x') is arity-1, literal-only, and has no column dependency.
 	cand := EffectCandidate{
 		Kind:                 EffectCandidateFunction,
 		Ordinal:              0,
@@ -95,6 +96,48 @@ func TestPhase1Eligibility_ScalarWithLiteralNotEligible(t *testing.T) {
 	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for literal operand")
+	}
+	if reason != domain.ReasonUnprovenFunctionEffect {
+		t.Errorf("reason: got %q, want %q", reason, domain.ReasonUnprovenFunctionEffect)
+	}
+}
+
+func TestPhase1Eligibility_ScalarWithMixedConstEligible(t *testing.T) {
+	t.Parallel()
+
+	cand := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"coalesce"},
+		OriginalNamePath:     []string{"COALESCE"},
+		Canonical:            true,
+		ParserClassification: "generic",
+		Arity:                2,
+		OperandKinds:         []string{"column", "const"},
+		OperandColumnRefs:    []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
+	}
+	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if !ok {
+		t.Errorf("expected eligible, got reason: %s", reason)
+	}
+}
+
+func TestPhase1Eligibility_ScalarLiteralOnlyNotEligible(t *testing.T) {
+	t.Parallel()
+
+	cand := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"coalesce"},
+		OriginalNamePath:     []string{"COALESCE"},
+		Canonical:            true,
+		ParserClassification: "generic",
+		Arity:                2,
+		OperandKinds:         []string{"const", "const"},
+	}
+	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if ok {
+		t.Error("expected NOT eligible for literal-only function")
 	}
 	if reason != domain.ReasonUnprovenFunctionEffect {
 		t.Errorf("reason: got %q, want %q", reason, domain.ReasonUnprovenFunctionEffect)
