@@ -1,7 +1,7 @@
 # Decision: Online Query Access Pure Function Literal Operand Support
 
 - Date: 2026-07-25
-- Status: Proposed
+- Status: Accepted
 - Baseline: `v0.440.0`
 - Milestone branch: `feat/query-access-pure-function-literal-operands`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
