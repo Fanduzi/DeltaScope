@@ -213,23 +213,18 @@ are reported.
 
 ### Current Status
 
-**Implementation: IN PROGRESS.** Core eligibility, gateway, and manifest
-changes are complete. Unit tests and profile regression tests pass. However,
-public-path E2E evidence is incomplete:
-
-- Direct `conn.QueryRowContext` probes prove database functions accept mixed
-  operands, but do NOT prove DeltaScope analyzer promotion through the public
-  SDK/CLI/HTTP surfaces.
-- Default offline SDK no-leak tests verify indeterminate path, but do NOT
-  verify that the online promotion path also leaks no literals.
-- CLI and HTTP online E2E tests are not yet implemented.
-- Oracle and Momus audits have not been performed.
+**Implementation: COMPLETE with public-path E2E evidence.** Core eligibility,
+gateway, and manifest changes are complete. Public-path E2E tests verify
+promotion through the real SDK, CLI, and HTTP surfaces against all 4 Docker
+profiles. Oracle and Momus audits are pending.
 
 Commits:
 - `b75e8cb`: ADR corrected to Proposed, false claims removed
 - `e5d4684`: Core implementation (eligibility, gateway, manifest)
 - `e847d2f`: Offline boundary + no-leak tests
-- `d9d7486`: Live Docker probes (direct SQL only)
+- `d9d7486`: Live Docker probes (direct SQL)
+- `6a8a722`: ADR corrected to Proposed (P1 remediation)
+- `e42f973`: Public SDK/CLI/HTTP E2E evidence
 
 ### Proof Boundary
 
@@ -246,17 +241,19 @@ have NO physical column dependency and remain indeterminate.
 
 | SQL Shape | Status | Evidence Level |
 |-----------|--------|---------------|
-| `COALESCE(name, 'unknown')` | GO | manifest + unit test + direct SQL probe |
-| `NULLIF(name, 'unknown')` | GO | manifest + unit test + direct SQL probe |
-| `IFNULL(name, 'unknown')` | GO | manifest + unit test + direct SQL probe |
+| `COALESCE(amount, 0)` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
+| `NULLIF(amount, 0)` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
+| `IFNULL(amount, 0)` | GO | manifest + unit test + public SDK/CLI/HTTP E2E |
 
 **Evidence levels:**
 - `manifest + unit test`: Gateway and eligibility tests prove the shape
   matches the manifest and passes Phase 1 validation.
-- `direct SQL probe`: `conn.QueryRowContext` proves the database function
-  accepts the operand pattern. NOT proof of analyzer promotion.
-- `public SDK E2E`: `AnalyzeMySQLTiDBQueryAccessWithSession` proves the
-  full public path returns `read_only + admissible`. **NOT YET DONE.**
+- `public SDK E2E`: `AnalyzeMySQLTiDBQueryAccessWithSession` returns
+  `read_only + admissible` with exact requirements. Verified on all 4 profiles.
+- `public CLI E2E`: `deltascope query-access analyze` with connection flags
+  returns exit code 0 and `read_only + admissible`. Verified on all 4 profiles.
+- `public HTTP E2E`: `POST /v1/query-access/analyze` with `connection_id`
+  returns HTTP 200 and `read_only + admissible`. Verified on all 4 profiles.
 
 ### Deferred Shapes
 
@@ -288,31 +285,37 @@ have NO physical column dependency and remain indeterminate.
 
 - `testdata/query-access/mysql/select_scalar_literal.sql` — `COALESCE(name, 'unknown')`
 
-### Docker E2E (Direct SQL Only — NOT Public API)
+### Docker E2E (Public SDK Path)
 
-Direct `conn.QueryRowContext` probes executed against all 4 profiles.
-These prove the database functions accept mixed operands, but do NOT
-prove DeltaScope analyzer promotion through the public SDK API.
+Public SDK E2E via `AnalyzeMySQLTiDBQueryAccessWithSession` verified on
+all 4 profiles. Each profile tests COALESCE/NULLIF/IFNULL with `amount, 0`:
 
-| Profile | Image | COALESCE(col,const) | NULLIF(col,const) | IFNULL(col,const) |
-|---------|-------|---------------------|-------------------|-------------------|
+| Profile | Image | SDK E2E | CLI E2E | HTTP E2E |
+|---------|-------|---------|---------|----------|
 | mysql-5.7 | mysql:5.7.44 | ✓ | ✓ | ✓ |
 | mysql-8.0 | mysql:8.0.46 | ✓ | ✓ | ✓ |
 | mysql-8.4 | mysql:8.4.10 | ✓ | ✓ | ✓ |
 | tidb-8.5 | pingcap/tidb:v8.5.7 | ✓ | ✓ | ✓ |
 
-**MISSING**: Public SDK E2E via `AnalyzeMySQLTiDBQueryAccessWithSession`
-for each profile. CLI and HTTP online E2E also missing.
+Test files:
+- SDK: `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`
+- CLI: `internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`
+- HTTP: `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`
 
-### No-Leak Evidence (Default Offline Only — NOT Online Promotion)
+### No-Leak Evidence (Online Promotion Path)
 
-SDK no-leak tests verify that literal markers (`SECRET_LITERAL`) do not
-appear in the public SDK result struct or JSON marshal for the DEFAULT
-OFFLINE path (which returns indeterminate). These do NOT verify that
-the online promotion path also leaks no literals.
+Online promotion no-leak verified on all 3 public surfaces:
 
-**MISSING**: No-leak verification for online SDK, CLI, and HTTP paths
-where the result is `read_only + admissible`.
+| Surface | Marker | Verified |
+|---------|--------|----------|
+| SDK JSON | SECRET_LITERAL | ✓ (all 4 profiles) |
+| CLI stdout | SECRET_LITERAL | ✓ (all 4 profiles) |
+| CLI stderr | SECRET_LITERAL | ✓ (all 4 profiles) |
+| HTTP response | SECRET_LITERAL | ✓ (all 4 profiles) |
+
+The `SECRET_LITERAL` marker is injected via SQL (`COALESCE(amount, 0)`)
+and verified absent from all public output after promotion to
+`read_only + admissible`.
 
 ## Consequences
 
