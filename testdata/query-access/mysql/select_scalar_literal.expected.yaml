@@ -1,24 +1,17 @@
+name: select_scalar_literal
 dialect: mysql
 mode: strict
+profile: mysql-8.4
+default_schema: app
 session_proof: mysql_tidb_builtin
-read_classification: read_only
-admission: admissible
-relations:
-  - schema: app
-    name: users
-    kind: table
-referenced_columns:
-  - schema: app
-    relation: users
-    name: name
-outputs:
-  - schema: app
-    relation: users
-    name: name
-requirements:
-  - schema: app
-    relation: users
-    column: name
-unresolved: []
-warnings: []
-reason_codes: []
+expect:
+  read_classification: read_only
+  admission: admissible
+  requirements:
+    - object: app.users
+      privilege: read_table
+    - object: app.users.name
+      privilege: read_column
+  unresolved: []
+  warnings: []
+  reason_codes: []
