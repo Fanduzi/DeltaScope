@@ -131,6 +131,16 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				if exitCode != exitQueryAccessIndeterminate {
 					t.Errorf("offline exit code: got %d, want %d; stderr: %s", exitCode, exitQueryAccessIndeterminate, stderr.String())
 				}
+				var offlineResult deltascope.QueryAccessResult
+				if err := json.Unmarshal(stdout.Bytes(), &offlineResult); err != nil {
+					t.Fatalf("offline unmarshal: %v", err)
+				}
+				if offlineResult.ReadClassification != deltascope.QueryAccessIndeterminate {
+					t.Errorf("offline classification: got %q, want indeterminate", offlineResult.ReadClassification)
+				}
+				if offlineResult.Admission != deltascope.QueryAccessIndeterminateAdmission {
+					t.Errorf("offline admission: got %q, want indeterminate", offlineResult.Admission)
+				}
 				if strings.Contains(stdout.String(), "SECRET_LITERAL") {
 					t.Errorf("offline stdout leaked SECRET_LITERAL")
 				}

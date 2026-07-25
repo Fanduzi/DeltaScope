@@ -474,27 +474,16 @@ func assertLiveProfileAdmitsMixedLiteralScalars(t *testing.T, ctx context.Contex
 			t.Fatalf("%s %s classification=%q admission=%q, want read_only/admissible", tc.name, probe.name, result.ReadClassification, result.Admission)
 		}
 		// Exact requirement set — no extras, no missing, no literal-derived
-		wantReqs := map[string]string{
-			"app.builtin_semantic_facts":      "read_table",
-			"app.builtin_semantic_facts.name": "read_column",
+		wantReqs := []QueryAccessRequirement{
+			{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"},
 		}
-		gotReqs := map[string]string{}
-		for _, r := range result.Requirements {
-			gotReqs[r.Object] = r.Privilege
+		if len(result.Requirements) != len(wantReqs) {
+			t.Errorf("%s %s requirement count: got %d, want %d; got=%v", tc.name, probe.name, len(result.Requirements), len(wantReqs), result.Requirements)
 		}
-		if len(gotReqs) != len(wantReqs) {
-			t.Errorf("%s %s requirement count: got %d, want %d; got=%v", tc.name, probe.name, len(gotReqs), len(wantReqs), gotReqs)
-		}
-		for obj, priv := range wantReqs {
-			if gotPriv, ok := gotReqs[obj]; !ok {
-				t.Errorf("%s %s missing requirement %s/%s", tc.name, probe.name, obj, priv)
-			} else if gotPriv != priv {
-				t.Errorf("%s %s requirement %s: got %q, want %q", tc.name, probe.name, obj, gotPriv, priv)
-			}
-		}
-		for obj := range gotReqs {
-			if _, ok := wantReqs[obj]; !ok {
-				t.Errorf("%s %s unexpected requirement %s", tc.name, probe.name, obj)
+		for i, got := range result.Requirements {
+			if i < len(wantReqs) && got != wantReqs[i] {
+				t.Errorf("%s %s requirements[%d]: got %+v, want %+v", tc.name, probe.name, i, got, wantReqs[i])
 			}
 		}
 		// No-leak: SECRET_LITERAL must not appear in struct dump, JSON, or error
