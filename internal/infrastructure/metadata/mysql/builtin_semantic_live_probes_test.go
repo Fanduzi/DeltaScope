@@ -254,6 +254,22 @@ func assertBuiltinSemanticScalars(t *testing.T, ctx context.Context, conn *sql.C
 			t.Fatalf("%s scalar %s probe returned an unexpected bounded value", profile.name, probe.name)
 		}
 	}
+
+	mixedConstProbes := []struct {
+		name  string
+		query string
+	}{
+		{name: "COALESCE(col,const)", query: "SELECT COALESCE(amount, 0) FROM app.builtin_semantic_facts LIMIT 1"},
+		{name: "NULLIF(col,const)", query: "SELECT NULLIF(amount, 0) FROM app.builtin_semantic_facts LIMIT 1"},
+		{name: "IFNULL(col,const)", query: "SELECT IFNULL(amount, 0) FROM app.builtin_semantic_facts LIMIT 1"},
+	}
+	for _, probe := range mixedConstProbes {
+		var got int64
+		if err := conn.QueryRowContext(ctx, probe.query).Scan(&got); err != nil {
+			t.Fatalf("%s mixed-const %s probe failed (driver error suppressed)", profile.name, probe.name)
+		}
+	}
+
 	t.Logf("%s scalar builtin evidence passed", profile.name)
 }
 
