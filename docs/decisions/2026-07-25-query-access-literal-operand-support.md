@@ -1,7 +1,7 @@
 # Decision: Online Query Access Pure Function Literal Operand Support
 
 - Date: 2026-07-25
-- Status: Accepted
+- Status: Proposed
 - Baseline: `v0.440.0`
 - Milestone branch: `feat/query-access-pure-function-literal-operands`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
@@ -213,17 +213,23 @@ are reported.
 
 ### Current Status
 
-**Implementation: COMPLETE.** This ADR was prematurely marked Accepted
-before any Go implementation, tests, or Docker evidence existed. The prior
-commit `cc01e5b` added only a corpus fixture using `LOWER(name) WHERE
-LOWER(name) = 'alice'` — this tests WHERE-clause literal comparison (existing
-behavior), NOT literal operands inside function arguments.
+**Implementation: IN PROGRESS.** Core eligibility, gateway, and manifest
+changes are complete. Unit tests and profile regression tests pass. However,
+public-path E2E evidence is incomplete:
 
-The milestone was corrected and completed with real implementation:
+- Direct `conn.QueryRowContext` probes prove database functions accept mixed
+  operands, but do NOT prove DeltaScope analyzer promotion through the public
+  SDK/CLI/HTTP surfaces.
+- Default offline SDK no-leak tests verify indeterminate path, but do NOT
+  verify that the online promotion path also leaks no literals.
+- CLI and HTTP online E2E tests are not yet implemented.
+- Oracle and Momus audits have not been performed.
+
+Commits:
 - `b75e8cb`: ADR corrected to Proposed, false claims removed
 - `e5d4684`: Core implementation (eligibility, gateway, manifest)
 - `e847d2f`: Offline boundary + no-leak tests
-- `d9d7486`: Live Docker probes
+- `d9d7486`: Live Docker probes (direct SQL only)
 
 ### Proof Boundary
 
@@ -238,11 +244,19 @@ have NO physical column dependency and remain indeterminate.
 
 ### Supported Exact Shapes (MySQL/TiDB)
 
-| SQL Shape | Status | Evidence |
-|-----------|--------|----------|
-| `COALESCE(name, 'unknown')` | GO | manifest + unit test |
-| `NULLIF(name, 'unknown')` | GO | manifest + unit test |
-| `IFNULL(name, 'unknown')` | GO | manifest + unit test |
+| SQL Shape | Status | Evidence Level |
+|-----------|--------|---------------|
+| `COALESCE(name, 'unknown')` | GO | manifest + unit test + direct SQL probe |
+| `NULLIF(name, 'unknown')` | GO | manifest + unit test + direct SQL probe |
+| `IFNULL(name, 'unknown')` | GO | manifest + unit test + direct SQL probe |
+
+**Evidence levels:**
+- `manifest + unit test`: Gateway and eligibility tests prove the shape
+  matches the manifest and passes Phase 1 validation.
+- `direct SQL probe`: `conn.QueryRowContext` proves the database function
+  accepts the operand pattern. NOT proof of analyzer promotion.
+- `public SDK E2E`: `AnalyzeMySQLTiDBQueryAccessWithSession` proves the
+  full public path returns `read_only + admissible`. **NOT YET DONE.**
 
 ### Deferred Shapes
 
@@ -274,9 +288,11 @@ have NO physical column dependency and remain indeterminate.
 
 - `testdata/query-access/mysql/select_scalar_literal.sql` — `COALESCE(name, 'unknown')`
 
-### Docker E2E
+### Docker E2E (Direct SQL Only — NOT Public API)
 
-Live Docker probes executed against all 4 profiles:
+Direct `conn.QueryRowContext` probes executed against all 4 profiles.
+These prove the database functions accept mixed operands, but do NOT
+prove DeltaScope analyzer promotion through the public SDK API.
 
 | Profile | Image | COALESCE(col,const) | NULLIF(col,const) | IFNULL(col,const) |
 |---------|-------|---------------------|-------------------|-------------------|
@@ -285,16 +301,18 @@ Live Docker probes executed against all 4 profiles:
 | mysql-8.4 | mysql:8.4.10 | ✓ | ✓ | ✓ |
 | tidb-8.5 | pingcap/tidb:v8.5.7 | ✓ | ✓ | ✓ |
 
-Probes use `COALESCE(amount, 0)`, `NULLIF(amount, 0)`, `IFNULL(amount, 0)`
-against the `app.builtin_semantic_facts` table with physical column `amount`.
+**MISSING**: Public SDK E2E via `AnalyzeMySQLTiDBQueryAccessWithSession`
+for each profile. CLI and HTTP online E2E also missing.
 
-### No-Leak Evidence
+### No-Leak Evidence (Default Offline Only — NOT Online Promotion)
 
 SDK no-leak tests verify that literal markers (`SECRET_LITERAL`) do not
-appear in the public SDK result struct or JSON marshal for:
-- `COALESCE(name, 'SECRET_LITERAL')` — MySQL, TiDB
-- `NULLIF(name, 'SECRET_LITERAL')` — MySQL
-- `IFNULL(name, 'SECRET_LITERAL')` — MySQL
+appear in the public SDK result struct or JSON marshal for the DEFAULT
+OFFLINE path (which returns indeterminate). These do NOT verify that
+the online promotion path also leaks no literals.
+
+**MISSING**: No-leak verification for online SDK, CLI, and HTTP paths
+where the result is `read_only + admissible`.
 
 ## Consequences
 
