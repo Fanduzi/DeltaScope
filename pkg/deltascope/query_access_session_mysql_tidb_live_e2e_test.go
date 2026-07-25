@@ -10,9 +10,11 @@ package deltascope
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,6 +92,8 @@ func TestLiveProfile_AssertsVersionAndAdmitsAggregates(t *testing.T) {
 			assertLiveProfileRejectsDistinct(t, ctx, conn, tc)
 			assertLiveProfileRejectsNestedOperand(t, ctx, conn, tc)
 			assertLiveProfileRejectsUnknownFunction(t, ctx, conn, tc)
+			assertLiveProfileAdmitsMixedLiteralScalars(t, ctx, conn, tc)
+			assertLiveProfileRejectsMixedLiteralNegatives(t, ctx, conn, tc)
 			if tc.windowSupport {
 				assertLiveProfileAdmitsRankingWindows(t, ctx, conn, tc)
 				assertLiveProfileRejectsExplicitFrame(t, ctx, conn, tc)
@@ -153,7 +157,7 @@ func assertLiveProfileAdmitsCountStar(t *testing.T, ctx context.Context, conn *s
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT COUNT(*) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -183,7 +187,7 @@ func assertLiveProfileAdmitsDirectColumnAggregates(t *testing.T, ctx context.Con
 		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:             probe.sql,
 			Dialect:         tc.dialect,
-			AnalysisProfile: tc.profile,
+			AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 			DefaultSchema:   "app",
 		})
 		if err != nil {
@@ -204,7 +208,7 @@ func assertLiveProfileRejectsUnqualified(t *testing.T, ctx context.Context, conn
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT COUNT(*) FROM builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -224,7 +228,7 @@ func assertLiveProfileRejectsQualifiedCall(t *testing.T, ctx context.Context, co
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT app.COUNT(*) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -244,7 +248,7 @@ func assertLiveProfileRejectsQuotedCall(t *testing.T, ctx context.Context, conn 
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT `COUNT`(*) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -264,7 +268,7 @@ func assertLiveProfileRejectsNoncanonicalSpacing(t *testing.T, ctx context.Conte
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT COUNT (id) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -284,7 +288,7 @@ func assertLiveProfileRejectsDistinct(t *testing.T, ctx context.Context, conn *s
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT COUNT(DISTINCT amount) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -304,7 +308,7 @@ func assertLiveProfileRejectsNestedOperand(t *testing.T, ctx context.Context, co
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT COUNT(ABS(amount)) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -324,7 +328,7 @@ func assertLiveProfileRejectsUnknownFunction(t *testing.T, ctx context.Context, 
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -352,7 +356,7 @@ func assertLiveProfileAdmitsRankingWindows(t *testing.T, ctx context.Context, co
 		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:             probe.sql,
 			Dialect:         tc.dialect,
-			AnalysisProfile: tc.profile,
+			AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 			DefaultSchema:   "app",
 		})
 		if err != nil {
@@ -373,7 +377,7 @@ func assertLiveProfileRejectsRankingWindows(t *testing.T, ctx context.Context, c
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount DESC) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -393,7 +397,7 @@ func assertLiveProfileRejectsExplicitFrame(t *testing.T, ctx context.Context, co
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -413,7 +417,7 @@ func assertLiveProfileRejectsNamedWindow(t *testing.T, ctx context.Context, conn
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT ROW_NUMBER() OVER w FROM app.builtin_semantic_facts WINDOW w AS (PARTITION BY dept ORDER BY amount)",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -433,7 +437,7 @@ func assertLiveProfileRejectsMissingOrder(t *testing.T, ctx context.Context, con
 	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
 		SQL:             "SELECT ROW_NUMBER() OVER (PARTITION BY dept) FROM app.builtin_semantic_facts",
 		Dialect:         tc.dialect,
-		AnalysisProfile: tc.profile,
+		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
 		DefaultSchema:   "app",
 	})
 	if err != nil {
@@ -441,6 +445,87 @@ func assertLiveProfileRejectsMissingOrder(t *testing.T, ctx context.Context, con
 	}
 	if result.ReadClassification == QueryAccessReadOnly && result.Admission == QueryAccessAdmissible {
 		t.Fatalf("%s missing ORDER BY was promoted", tc.name)
+	}
+}
+
+func assertLiveProfileAdmitsMixedLiteralScalars(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
+	t.Helper()
+	for _, probe := range []struct {
+		name string
+		sql  string
+	}{
+		{"COALESCE_col_const", "SELECT COALESCE(amount, 0) FROM app.builtin_semantic_facts"},
+		{"NULLIF_col_const", "SELECT NULLIF(amount, 0) FROM app.builtin_semantic_facts"},
+		{"IFNULL_col_const", "SELECT IFNULL(amount, 0) FROM app.builtin_semantic_facts"},
+	} {
+		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		if err != nil {
+			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
+		}
+		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           probe.sql,
+			Dialect:       tc.dialect,
+			DefaultSchema: "app",
+		})
+		if err != nil {
+			t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
+		}
+		if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+			t.Fatalf("%s %s classification=%q admission=%q, want read_only/admissible", tc.name, probe.name, result.ReadClassification, result.Admission)
+		}
+		// Verify exact requirements
+		foundTable := false
+		foundColumn := false
+		for _, req := range result.Requirements {
+			if req.Object == "app.builtin_semantic_facts" && req.Privilege == "read_table" {
+				foundTable = true
+			}
+			if req.Object == "app.builtin_semantic_facts.amount" && req.Privilege == "read_column" {
+				foundColumn = true
+			}
+		}
+		if !foundTable {
+			t.Errorf("%s %s missing app.builtin_semantic_facts read_table requirement", tc.name, probe.name)
+		}
+		if !foundColumn {
+			t.Errorf("%s %s missing app.builtin_semantic_facts.amount read_column requirement", tc.name, probe.name)
+		}
+		// No-leak: verify marker literal not in JSON
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("%s %s marshal: %v", tc.name, probe.name, err)
+		}
+		if strings.Contains(string(data), "SECRET_LITERAL") {
+			t.Errorf("%s %s leaked SECRET_LITERAL in JSON", tc.name, probe.name)
+		}
+	}
+}
+
+func assertLiveProfileRejectsMixedLiteralNegatives(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
+	t.Helper()
+	for _, probe := range []struct {
+		name string
+		sql  string
+	}{
+		{"literal_only", "SELECT COALESCE(0, 1) FROM app.builtin_semantic_facts"},
+		{"reversed", "SELECT COALESCE(0, amount) FROM app.builtin_semantic_facts"},
+		{"unknown_func", "SELECT UNKNOWN_FUNC(amount) FROM app.builtin_semantic_facts"},
+	} {
+		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		if err != nil {
+			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
+		}
+		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           probe.sql,
+			Dialect:       tc.dialect,
+			DefaultSchema: "app",
+		})
+		if err != nil {
+			t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
+		}
+		if result.ReadClassification == QueryAccessReadOnly && result.Admission == QueryAccessAdmissible {
+			t.Errorf("%s %s was promoted but should not be: classification=%q admission=%q", tc.name, probe.name, result.ReadClassification, result.Admission)
+		}
 	}
 }
 

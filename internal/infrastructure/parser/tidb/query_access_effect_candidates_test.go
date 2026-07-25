@@ -441,3 +441,88 @@ func TestQueryAccessEffectCandidates_WindowRegression(t *testing.T) {
 		t.Errorf("window regression: %+v", c)
 	}
 }
+
+func TestQueryAccessEffectCandidates_MixedLiteralOperandShape(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name         string
+		sql          string
+		funcName     string
+		wantKinds    []OperandKindHint
+		wantColCount int
+		wantColName  string
+	}{
+		{
+			name:         "coalesce_column_const",
+			sql:          "SELECT COALESCE(amount, 0) FROM app.builtin_semantic_facts",
+			funcName:     "coalesce",
+			wantKinds:    []OperandKindHint{OperandKindColumn, OperandKindConst},
+			wantColCount: 1,
+			wantColName:  "amount",
+		},
+		{
+			name:         "nullif_column_const",
+			sql:          "SELECT NULLIF(amount, 0) FROM app.builtin_semantic_facts",
+			funcName:     "nullif",
+			wantKinds:    []OperandKindHint{OperandKindColumn, OperandKindConst},
+			wantColCount: 1,
+			wantColName:  "amount",
+		},
+		{
+			name:         "ifnull_column_const",
+			sql:          "SELECT IFNULL(amount, 0) FROM app.builtin_semantic_facts",
+			funcName:     "ifnull",
+			wantKinds:    []OperandKindHint{OperandKindColumn, OperandKindConst},
+			wantColCount: 1,
+			wantColName:  "amount",
+		},
+		{
+			name:         "literal_only_coalesce",
+			sql:          "SELECT COALESCE(0, 1) FROM app.builtin_semantic_facts",
+			funcName:     "coalesce",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "reversed_coalesce",
+			sql:          "SELECT COALESCE(0, amount) FROM app.builtin_semantic_facts",
+			funcName:     "coalesce",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindColumn},
+			wantColCount: 1,
+			wantColName:  "amount",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := (&QueryAccessExtractor{}).ExtractQueryAccess(context.Background(), tc.sql, "mysql", "app")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			var found bool
+			for _, c := range facts.EffectCandidates {
+				if len(c.NamePath) > 0 && c.NamePath[0] == tc.funcName {
+					found = true
+					if len(c.OperandKinds) != len(tc.wantKinds) {
+						t.Fatalf("OperandKinds length: got %d, want %d", len(c.OperandKinds), len(tc.wantKinds))
+					}
+					for i, kind := range c.OperandKinds {
+						if kind != tc.wantKinds[i] {
+							t.Errorf("OperandKinds[%d]: got %q, want %q", i, kind, tc.wantKinds[i])
+						}
+					}
+					if len(c.OperandColumnRefs) != tc.wantColCount {
+						t.Fatalf("OperandColumnRefs length: got %d, want %d", len(c.OperandColumnRefs), tc.wantColCount)
+					}
+					if tc.wantColCount > 0 && c.OperandColumnRefs[0].Column != tc.wantColName {
+						t.Errorf("OperandColumnRefs[0].Column: got %q, want %q", c.OperandColumnRefs[0].Column, tc.wantColName)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("missing %s candidate in %+v", tc.funcName, facts.EffectCandidates)
+			}
+		})
+	}
+}
