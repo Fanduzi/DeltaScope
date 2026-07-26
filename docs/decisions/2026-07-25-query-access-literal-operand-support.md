@@ -221,7 +221,7 @@ promotion through the real SDK, CLI, and HTTP surfaces against all 4 Docker
 profiles.
 
 **Oracle audit:** PASS (initial review found 3 P2s; all fixed in `0d86b78`).
-**Momus audit:** Not applicable (Momus requires `.omo/plans/*.md` input; inline review not supported).
+**Momus audit:** Not completed (Momus requires `.omo/plans/*.md` input contract; inline review not executed).
 
 Commits:
 - `b75e8cb`: ADR corrected to Proposed, false claims removed

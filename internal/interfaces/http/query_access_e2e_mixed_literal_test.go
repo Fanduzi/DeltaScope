@@ -100,6 +100,7 @@ func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 
 func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	t.Setenv("E2E_MYSQL_PASSWORD", "root")
+	t.Setenv("E2E_FAIL_PASSWORD", "FAIL_SECRET_pw_9f3b2a1c")
 
 	emptyPWFile := writeEmptyTempFile(t)
 
@@ -145,6 +146,16 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					PasswordFile: emptyPWFile,
 					Schema:       "app",
 					Purposes:     []string{"query_access"},
+				},
+				{
+					ID:          "fail_conn",
+					Dialect:     "mysql",
+					Host:        "127.0.0.1",
+					Port:        19876,
+					User:        "fail_user_e8a1b2c3",
+					PasswordEnv: "E2E_FAIL_PASSWORD",
+					Schema:      "app",
+					Purposes:    []string{"query_access"},
 				},
 			},
 		},
@@ -313,6 +324,73 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
 				assertNoLogLeaks(t, logOutput, noLeakMarkers())
 			})
+		}
+	})
+
+	// Connection failure path: verify response and access log do not leak
+	// host, port, username, password, password file path, or raw driver error
+	// when the connection attempt fails.
+	t.Run("connection_failure_no_leak", func(t *testing.T) {
+		logBuf.Reset()
+
+		failMarkers := []string{
+			"127.0.0.1",
+			"19876",
+			"fail_user_e8a1b2c3",
+			"FAIL_SECRET_pw_9f3b2a1c",
+			"fail_conn",
+			"E2E_FAIL_PASSWORD",
+			"Access denied",
+			"driver:",
+		}
+
+		payload := `{"sql":"SELECT 1","connection_id":"fail_conn"}`
+		req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
+		if err != nil {
+			t.Fatalf("create request: %v", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("send request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var body bytes.Buffer
+		if _, err := body.ReadFrom(resp.Body); err != nil {
+			t.Fatalf("read response: %v", err)
+		}
+
+		if resp.StatusCode != http.StatusBadGateway {
+			t.Fatalf("status: got %d, want 502; body: %s", resp.StatusCode, body.String())
+		}
+
+		var result map[string]any
+		if err := json.Unmarshal(body.Bytes(), &result); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		errObj, ok := result["error"].(map[string]any)
+		if !ok {
+			t.Fatalf("error: not a map; got %T", result["error"])
+		}
+		if errObj["code"] != "connection_failed" {
+			t.Errorf("error.code: got %q, want connection_failed", errObj["code"])
+		}
+
+		bodyStr := body.String()
+		for _, marker := range failMarkers {
+			if strings.Contains(bodyStr, marker) {
+				t.Errorf("response leaked %q: %s", marker, bodyStr)
+			}
+		}
+
+		logOutput := logBuf.String()
+		assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
+		for _, marker := range failMarkers {
+			if strings.Contains(logOutput, marker) {
+				t.Errorf("access log leaked %q: %s", marker, logOutput)
+			}
 		}
 	})
 }
