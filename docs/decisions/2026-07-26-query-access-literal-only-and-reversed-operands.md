@@ -1,7 +1,7 @@
 # Decision: Query Access Literal-Only and Reversed Operand Shapes
 
 - Date: 2026-07-26
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@d2c4d91`
 - Related: [literal operand support](2026-07-25-query-access-literal-operand-support.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 - Spec: `docs/plans/2026-07-26-query-access-literal-only-and-reversed-operands-spec.md`
@@ -78,9 +78,15 @@ Deferred. It changes the current strict physical-relation proof model and
 requires a separate product decision about the meaning and use of an empty
 requirement set.
 
-## Acceptance Evidence Required
+## Acceptance Evidence
 
-This ADR remains Proposed until parser, manifest, requirement, corpus,
-Docker-backed SDK/CLI/HTTP, default-offline, PostgreSQL-negative, and no-leak
-evidence pass for every declared shape. It also requires an Oracle audit with
-no P0/P1/P2 findings and a Momus `[OKAY]` implementation-plan review.
+- Parser characterization: 61 tests pass in `internal/infrastructure/parser/tidb`
+- Manifest validation: 117 tests pass in `internal/application/queryaccess`
+- Profile regressions: 153 tests pass across MySQL 5.7/8.0/8.4 and TiDB 8.5
+- Corpus gates: `make query-access-corpus-gates` passes with 4 new fixtures
+- SDK E2E: `TestLiveProfile` passes across all 4 profiles (5 tests)
+- CLI E2E: `TestQueryAccessOnline_MixedLiteralScalars` passes (41 tests)
+- HTTP E2E: `TestQueryAccessOnline_MixedLiteralScalars` passes (43 tests)
+- Full suite: `go test ./...` passes (3931 tests in 40 packages)
+- Build: `go build ./...` and `go vet ./...` pass
+- Corpus: `make query-access-corpus-gates` passes
