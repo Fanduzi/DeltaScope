@@ -10,7 +10,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"strconv"
@@ -89,12 +91,28 @@ func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) 
 
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
+		// Check if the root cause is a network error (EOF, connection reset,
+		// etc.) rather than a genuine timeout. Network errors should be
+		// classified as connection failures (502), not timeouts (504).
+		var netErr net.Error
+		if errors.As(err, &netErr) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+		}
+		// Don't wrap context errors in ErrConnectionFailed — they should
+		// be classified as timeout/cancellation, not connection failure.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		db.Close()
+		// Don't wrap context errors in ErrConnectionFailed.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
@@ -167,12 +185,28 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
+		// Check if the root cause is a network error (EOF, connection reset,
+		// etc.) rather than a genuine timeout. Network errors should be
+		// classified as connection failures (502), not timeouts (504).
+		var netErr net.Error
+		if errors.As(err, &netErr) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+		}
+		// Don't wrap context errors in ErrConnectionFailed — they should
+		// be classified as timeout/cancellation, not connection failure.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		db.Close()
+		// Don't wrap context errors in ErrConnectionFailed.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 	}
 
