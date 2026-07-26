@@ -507,9 +507,9 @@ func assertLiveProfileAdmitsMixedLiteralScalars(t *testing.T, ctx context.Contex
 func assertLiveProfileAdmitsLiteralOnlyShapes(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
 	for _, probe := range []struct {
-		name           string
-		sql            string
-		wantReqs       []QueryAccessRequirement
+		name     string
+		sql      string
+		wantReqs []QueryAccessRequirement
 	}{
 		{
 			name: "literal_only_lower",

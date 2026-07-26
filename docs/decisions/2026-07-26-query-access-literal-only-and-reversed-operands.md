@@ -1,7 +1,7 @@
 # Decision: Query Access Literal-Only and Reversed Operand Shapes
 
 - Date: 2026-07-26
-- Status: Accepted
+- Status: Proposed
 - Baseline: `main@d2c4d91`
 - Related: [literal operand support](2026-07-25-query-access-literal-operand-support.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 - Spec: `docs/plans/2026-07-26-query-access-literal-only-and-reversed-operands-spec.md`

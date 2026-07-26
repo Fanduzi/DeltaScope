@@ -37,42 +37,42 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		{"tidb85", "127.0.0.1", 4850, "root", "", "tidb"},
 	}
 	probes := []struct {
-		name              string
-		sql               string
-		wantExitCode      int
+		name               string
+		sql                string
+		wantExitCode       int
 		wantClassification string
-		wantAdmission     string
-		wantRequirements  []string
+		wantAdmission      string
+		wantRequirements   []string
 	}{
 		// Original mixed-literal shapes (column-first operand).
 		{
-			name:              "COALESCE",
-			sql:               "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "COALESCE",
+			sql:                "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 				"app.builtin_semantic_facts.name=read_column",
 			},
 		},
 		{
-			name:              "NULLIF",
-			sql:               "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "NULLIF",
+			sql:                "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 				"app.builtin_semantic_facts.name=read_column",
 			},
 		},
 		{
-			name:              "IFNULL",
-			sql:               "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "IFNULL",
+			sql:                "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 				"app.builtin_semantic_facts.name=read_column",
@@ -80,33 +80,33 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		},
 		// Literal-only scalar.
 		{
-			name:              "LOWER_literal",
-			sql:               "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "LOWER_literal",
+			sql:                "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 			},
 		},
 		// COUNT with literal argument.
 		{
-			name:              "COUNT_literal",
-			sql:               "SELECT COUNT(1) FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "COUNT_literal",
+			sql:                "SELECT COUNT(1) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 			},
 		},
 		// Reversed binary operand order (literal first, column second).
 		{
-			name:              "COALESCE_reversed",
-			sql:               "SELECT COALESCE('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "COALESCE_reversed",
+			sql:                "SELECT COALESCE('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 				"app.builtin_semantic_facts.name=read_column",
@@ -114,11 +114,11 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		},
 		// All-constant operands (no column reference).
 		{
-			name:              "COALESCE_all_constant",
-			sql:               "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
-			wantExitCode:      0,
+			name:               "COALESCE_all_constant",
+			sql:                "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
 			wantClassification: "read_only",
-			wantAdmission:     "admissible",
+			wantAdmission:      "admissible",
 			wantRequirements: []string{
 				"app.builtin_semantic_facts=read_table",
 			},
