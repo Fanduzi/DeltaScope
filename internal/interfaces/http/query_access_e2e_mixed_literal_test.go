@@ -102,19 +102,23 @@ func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 	}
 }
 
-// freePort allocates a port by listening on 127.0.0.1:0 then immediately
-// closing the listener. There is a small window where another process could
-// reuse the port before the test exercises the connection-failure path, but
-// this is acceptable for CI where port contention is rare.
-func freePort(t *testing.T) int {
+// listenAndCloseOnAccept keeps a listener open and returns its port. A
+// background goroutine accepts exactly one connection then immediately closes
+// it, guaranteeing the port cannot be reused by another process before the
+// test exercises the connection-failure path.
+func listenAndCloseOnAccept(t *testing.T) (int, net.Listener) {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("listen for free port: %v", err)
+		t.Fatalf("listen for failure port: %v", err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	ln.Close()
-	return port
+	go func() {
+		conn, err := ln.Accept()
+		if err == nil {
+			conn.Close()
+		}
+	}()
+	return ln.Addr().(*net.TCPAddr).Port, ln
 }
 
 func writeTempFile(t *testing.T, prefix, content string) string {
@@ -139,8 +143,10 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	failPWContent := "FAIL_SECRET_FILE_pw_4d5e6f7a"
 	failPWFile := writeTempFile(t, "fail-pw-*", failPWContent)
 
-	failEnvPort := freePort(t)
-	failFilePort := freePort(t)
+	failEnvPort, failEnvLn := listenAndCloseOnAccept(t)
+	defer failEnvLn.Close()
+	failFilePort, failFileLn := listenAndCloseOnAccept(t)
+	defer failFileLn.Close()
 
 	cfg := runtimeconfig.Config{
 		Metadata: runtimeconfig.MetadataConfig{

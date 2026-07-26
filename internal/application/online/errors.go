@@ -35,6 +35,15 @@ func MapOnlineError(err error) (code string, message string, status int) {
 		return "", "", 0
 	}
 
+	// Connection failures — check before context errors because a connection
+	// failure may wrap a context.DeadlineExceeded (e.g., when the remote end
+	// accepts then immediately closes, causing the driver to see unexpected
+	// EOF and the context to expire). The root cause is the connection
+	// failure, not the timeout.
+	if errors.Is(err, ErrConnectionFailed) {
+		return "connection_failed", "connection failed", http.StatusBadGateway
+	}
+
 	// Context errors — check first, including wrapped inside auditmeta.Error.
 	if errors.Is(err, context.DeadlineExceeded) {
 		return "timeout", "operation timed out", http.StatusGatewayTimeout
@@ -63,9 +72,6 @@ func MapOnlineError(err error) (code string, message string, status int) {
 	}
 	if errors.Is(err, ErrPrincipalNotAllowed) {
 		return "not_authorized", "not authorized for this connection", http.StatusForbidden
-	}
-	if errors.Is(err, ErrConnectionFailed) {
-		return "connection_failed", "connection failed", http.StatusBadGateway
 	}
 
 	// Identity sentinel errors (defined in identity.go).

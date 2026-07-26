@@ -220,7 +220,7 @@ gateway, and manifest changes are complete. Public-path E2E tests verify
 promotion through the real SDK, CLI, and HTTP surfaces against all 4 Docker
 profiles.
 
-**Oracle audit:** PASS (initial review found P0-2 log timing race, P1-2 missing schema marker, P2-1 missing connID in diagnostics; all fixed; final re-audit PASS with no remaining P0/P1/P2).
+**Oracle audit:** PASS (initial review found P0-2 log timing race, P1-2 missing schema marker, P2-1 missing connID in diagnostics; all fixed; subsequent review found P2 test-assurance issues: bind-close-reuse race in freePort() and inaccurate "enters dial-failure path" claims; fixed by restoring listenAndCloseOnAccept and narrowing claims; error classification fixed to map EOF/connection-interruption to 502 connection_failed; final re-audit pending).
 **Momus audit:** [OKAY] (initial review found missing Docker/test paths; plan updated; final re-review [OKAY]).
 
 Commits:
