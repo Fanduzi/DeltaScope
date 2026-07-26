@@ -322,14 +322,16 @@ and verified absent from all public output after promotion to
 
 **HTTP access log capture mechanism:**
 - Logger: `*log.Logger` injected via `WithMiddlewareConfig(MiddlewareConfig{Logger: captureLogger})`
-- Sink: `bytes.Buffer` with `sync.Mutex` isolation for parallel test safety
-- Assertions: After each HTTP request, the captured log is checked for:
+- Sink: `syncBuffer` (thread-safe `bytes.Buffer` with synchronized `Write` and `String` operations)
+- Positive assertion: Each test verifies the captured log contains `"msg":"http request"` and the request path before checking for leaks
+- Negative assertions: After each HTTP request, the captured log is checked for:
   - `SECRET_LITERAL` (marker)
   - `COALESCE(`, `NULLIF(`, `IFNULL(` (raw SQL fragments)
   - `builtin_semantic_facts` (table name)
   - `root` (username)
   - `E2E_MYSQL_PASSWORD` (password env var)
-- Coverage: Both online path (with `connection_id`) and default offline path (without `connection_id`)
+- Coverage: Both online path (with `connection_id`) and default offline path (without `connection_id`) use the same marker set
+- Per-test isolation: `syncBuffer.Reset()` called before each subtest
 - Test file: `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`
 
 ## Consequences

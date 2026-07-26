@@ -27,10 +27,69 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 )
 
+// syncBuffer is a thread-safe bytes.Buffer for capturing log output.
+// It synchronizes both Write and String operations.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (s *syncBuffer) Write(p []byte) (n int, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *syncBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
+
+func (s *syncBuffer) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.buf.Reset()
+}
+
+// noLeakMarkers returns the full set of markers that must not appear in access logs.
+func noLeakMarkers() []string {
+	return []string{
+		"SECRET_LITERAL",
+		"COALESCE(",
+		"NULLIF(",
+		"IFNULL(",
+		"builtin_semantic_facts",
+		"root",
+		"E2E_MYSQL_PASSWORD",
+	}
+}
+
+// assertAccessLogEntry verifies the captured log contains at least one structured
+// access log entry for the given path, proving the capture sink is wired correctly.
+func assertAccessLogEntry(t *testing.T, logOutput, path string) {
+	t.Helper()
+	if !strings.Contains(logOutput, `"msg":"http request"`) {
+		t.Errorf("access log missing structured entry: no 'http request' msg found in: %s", logOutput)
+	}
+	if !strings.Contains(logOutput, path) {
+		t.Errorf("access log missing path %q in: %s", path, logOutput)
+	}
+}
+
+// assertNoLogLeaks checks the log output does not contain any forbidden markers.
+func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
+	t.Helper()
+	for _, marker := range markers {
+		if strings.Contains(logOutput, marker) {
+			t.Errorf("access log leaked %q: %s", marker, logOutput)
+		}
+	}
+}
+
 func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	t.Setenv("E2E_MYSQL_PASSWORD", "root")
 
-	// For TiDB with empty password, write an empty temp file.
 	emptyPWFile := writeEmptyTempFile(t)
 
 	cfg := runtimeconfig.Config{
@@ -84,9 +143,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		t.Fatalf("build registry: %v", err)
 	}
 
-	// Create a log buffer to capture access log output for no-leak assertions.
-	var logBuf bytes.Buffer
-	var logMu sync.Mutex
+	var logBuf syncBuffer
 	captureLogger := log.New(&logBuf, "", 0)
 
 	handler, err := NewHandler("", "test-build",
@@ -119,11 +176,12 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		{"IFNULL", "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
 	}
 
-	// Online path: connection_id present.
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, probe := range probes {
 				t.Run(probe.name, func(t *testing.T) {
+					logBuf.Reset()
+
 					payload := fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, probe.sql, tc.connectionID)
 					req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
 					if err != nil {
@@ -157,7 +215,6 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						t.Errorf("admission: got %q, want admissible", result["admission"])
 					}
 
-					// Exact requirement assertions.
 					wantReqs := []map[string]string{
 						{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
 						{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
@@ -179,13 +236,8 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						}
 					}
 
-					// No-leak: body and deserialized JSON fields.
 					bodyStr := body.String()
-					for _, marker := range []string{
-						"SECRET_LITERAL",
-						"root",
-						"E2E_MYSQL_PASSWORD",
-					} {
+					for _, marker := range []string{"SECRET_LITERAL", "root", "E2E_MYSQL_PASSWORD"} {
 						if strings.Contains(bodyStr, marker) {
 							t.Errorf("response leaked %q: %s", marker, bodyStr)
 						}
@@ -195,32 +247,19 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						t.Errorf("deserialized result leaked SECRET_LITERAL")
 					}
 
-					// No-leak: access log must not contain sensitive markers or raw SQL.
-					logMu.Lock()
 					logOutput := logBuf.String()
-					logMu.Unlock()
-					for _, marker := range []string{
-						"SECRET_LITERAL",
-						"COALESCE(",
-						"NULLIF(",
-						"IFNULL(",
-						"builtin_semantic_facts",
-						"root",
-						"E2E_MYSQL_PASSWORD",
-					} {
-						if strings.Contains(logOutput, marker) {
-							t.Errorf("access log leaked %q: %s", marker, logOutput)
-						}
-					}
+					assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
+					assertNoLogLeaks(t, logOutput, noLeakMarkers())
 				})
 			}
 		})
 	}
 
-	// Default path regression: no connection_id → indeterminate.
 	t.Run("default_path_indeterminate", func(t *testing.T) {
 		for _, probe := range probes {
 			t.Run(probe.name, func(t *testing.T) {
+				logBuf.Reset()
+
 				payload := fmt.Sprintf(`{"sql":%q}`, probe.sql)
 				req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
 				if err != nil {
@@ -254,27 +293,14 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					t.Errorf("admission: got %q, want indeterminate", result["admission"])
 				}
 
-				// No-leak: response body.
 				bodyStr := body.String()
 				if strings.Contains(bodyStr, "SECRET_LITERAL") {
 					t.Errorf("response leaked SECRET_LITERAL: %s", bodyStr)
 				}
 
-				// No-leak: access log must not contain sensitive markers or raw SQL.
-				logMu.Lock()
 				logOutput := logBuf.String()
-				logMu.Unlock()
-				for _, marker := range []string{
-					"SECRET_LITERAL",
-					"COALESCE(",
-					"NULLIF(",
-					"IFNULL(",
-					"builtin_semantic_facts",
-				} {
-					if strings.Contains(logOutput, marker) {
-						t.Errorf("access log leaked %q: %s", marker, logOutput)
-					}
-				}
+				assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
+				assertNoLogLeaks(t, logOutput, noLeakMarkers())
 			})
 		}
 	})
