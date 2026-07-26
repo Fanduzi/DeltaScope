@@ -78,7 +78,7 @@ func TestPhase1Eligibility_ScalarDirectColumnsEligible(t *testing.T) {
 	}
 }
 
-func TestPhase1Eligibility_ScalarSingleLiteralOnlyEligible(t *testing.T) {
+func TestPhase1Eligibility_ScalarSingleLiteralOnlyNotEligible(t *testing.T) {
 	t.Parallel()
 
 	// LOWER('x') is arity-1, literal-only, and has no column dependency.
@@ -93,9 +93,9 @@ func TestPhase1Eligibility_ScalarSingleLiteralOnlyEligible(t *testing.T) {
 		OperandKinds:         []string{"const"},
 		OperandColumnRefs:    nil,
 	}
-	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
-	if !ok {
-		t.Errorf("expected eligible for literal operand, got reason: %s", reason)
+	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if ok {
+		t.Error("expected NOT eligible for literal-only operand")
 	}
 }
 
@@ -119,7 +119,7 @@ func TestPhase1Eligibility_ScalarWithMixedConstEligible(t *testing.T) {
 	}
 }
 
-func TestPhase1Eligibility_ScalarLiteralOnlyEligible(t *testing.T) {
+func TestPhase1Eligibility_ScalarLiteralOnlyNotEligible(t *testing.T) {
 	t.Parallel()
 
 	cand := EffectCandidate{
@@ -132,9 +132,9 @@ func TestPhase1Eligibility_ScalarLiteralOnlyEligible(t *testing.T) {
 		Arity:                2,
 		OperandKinds:         []string{"const", "const"},
 	}
-	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
-	if !ok {
-		t.Errorf("expected eligible for literal-only function, got reason: %s", reason)
+	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if ok {
+		t.Error("expected NOT eligible for literal-only function")
 	}
 }
 
