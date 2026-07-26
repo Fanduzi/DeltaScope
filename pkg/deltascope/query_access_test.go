@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -247,6 +248,83 @@ func TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate(t *testing.T)
 			}
 			if result.Admission != QueryAccessIndeterminateAdmission {
 				t.Errorf("expected indeterminate admission, got %q", result.Admission)
+			}
+		})
+	}
+}
+
+func TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name           string
+		sql            string
+		literalMarkers []string
+	}{
+		{
+			name:           "literal_only_lower",
+			sql:            "SELECT LOWER('x') FROM app.users",
+			literalMarkers: []string{"'x'"},
+		},
+		{
+			name:           "count_literal",
+			sql:            "SELECT COUNT(1) FROM app.orders",
+			literalMarkers: []string{"1"},
+		},
+		{
+			name:           "reversed_coalesce",
+			sql:            "SELECT COALESCE('x', name) FROM app.users",
+			literalMarkers: []string{"'x'"},
+		},
+		{
+			name:           "all_constant_coalesce",
+			sql:            "SELECT COALESCE('x', 'y') FROM app.users",
+			literalMarkers: []string{"'x'", "'y'"},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+				SQL:     tc.sql,
+				Dialect: DialectMySQL,
+				Mode:    QueryAccessModeStrict,
+			})
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
+			}
+			if result.ReadClassification != QueryAccessIndeterminate {
+				t.Errorf("expected indeterminate classification, got %q", result.ReadClassification)
+			}
+			if result.Admission != QueryAccessIndeterminateAdmission {
+				t.Errorf("expected indeterminate admission, got %q", result.Admission)
+			}
+
+			dump := stringifyResult(result)
+			data, err := json.Marshal(result)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			jsonDump := string(data)
+			for _, marker := range mysqlTiDBProbeNoLeakMarkers {
+				if strings.Contains(dump, marker) {
+					t.Errorf("SDK struct dump leaked internal marker %q: %s", marker, dump)
+				}
+				if strings.Contains(jsonDump, marker) {
+					t.Errorf("SDK JSON leaked internal marker %q: %s", marker, jsonDump)
+				}
+			}
+			for _, literal := range tc.literalMarkers {
+				if strings.Contains(dump, literal) {
+					t.Errorf("SDK struct dump leaked literal %q: %s", literal, dump)
+				}
+				if strings.Contains(jsonDump, literal) {
+					t.Errorf("SDK JSON leaked literal %q: %s", literal, jsonDump)
+				}
+			}
+			if strings.Contains(dump, tc.sql) || strings.Contains(jsonDump, tc.sql) {
+				t.Errorf("public output leaked raw SQL %q", tc.sql)
 			}
 		})
 	}

@@ -54,7 +54,6 @@ func TestMySQL57ProfileAggregateBoundary(t *testing.T) {
 		{"filter_clause", "SELECT COUNT(*) FILTER (WHERE id > 0) FROM app.users"},
 		{"agg_local_order", "SELECT COUNT(id ORDER BY id) FROM app.users"},
 		{"nested_operand", "SELECT COUNT(ABS(id)) FROM app.users"},
-		{"literal_operand", "SELECT COUNT(1) FROM app.users"},
 		{"unknown_function", "SELECT app_specific_rollup(id) FROM app.users"},
 		{"mixed_proven_unknown", "SELECT COUNT(*), app_specific_rollup(id) FROM app.users"},
 		{"view_relation", "SELECT COUNT(*) FROM app.users_view"},
@@ -334,6 +333,105 @@ func TestBuiltinSemanticProfiles_ScalarDirectColumnsAdmit(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticProfileRegression_LiteralAndReversedPositive(t *testing.T) {
+	t.Parallel()
+	profiles := []struct {
+		name    string
+		dialect string
+		profile AnalysisProfile
+	}{
+		{name: "mysql57", dialect: "mysql", profile: AnalysisProfileMySQL57},
+		{name: "mysql80", dialect: "mysql", profile: AnalysisProfileMySQL80},
+		{name: "mysql84", dialect: "mysql", profile: AnalysisProfileMySQL84},
+		{name: "tidb85", dialect: "tidb", profile: AnalysisProfileTiDB85},
+	}
+	probes := []struct {
+		name         string
+		sql          string
+		requirements []domain.Requirement
+	}{
+		{name: "lower_literal", sql: "SELECT LOWER('x') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "upper_literal", sql: "SELECT UPPER('x') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "length_literal", sql: "SELECT LENGTH('x') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "char_length_literal", sql: "SELECT CHAR_LENGTH('x') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "abs_literal", sql: "SELECT ABS(42) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "ceil_literal", sql: "SELECT CEIL(42) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "ceiling_literal", sql: "SELECT CEILING(42) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "floor_literal", sql: "SELECT FLOOR(42) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "count_literal_qualified", sql: "SELECT COUNT(1) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "coalesce_reversed", sql: "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}, {Object: "app.builtin_semantic_facts.name", Privilege: "read_column"}}},
+		{name: "nullif_reversed", sql: "SELECT NULLIF('x', name) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}, {Object: "app.builtin_semantic_facts.name", Privilege: "read_column"}}},
+		{name: "ifnull_reversed", sql: "SELECT IFNULL('x', name) FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}, {Object: "app.builtin_semantic_facts.name", Privilege: "read_column"}}},
+		{name: "coalesce_all_constant", sql: "SELECT COALESCE('x', 'y') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "nullif_all_constant", sql: "SELECT NULLIF('x', 'y') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+		{name: "ifnull_all_constant", sql: "SELECT IFNULL('x', 'y') FROM app.builtin_semantic_facts", requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}},
+	}
+
+	for _, profile := range profiles {
+		for _, probe := range probes {
+			t.Run(profile.name+"/"+probe.name, func(t *testing.T) {
+				result := analyzeProductionProfile(t, probe.sql, profile.dialect, "app", profile.profile)
+				assertProfileAdmissible(t, result)
+				assertProfileRequirements(t, result, probe.requirements)
+			})
+		}
+	}
+}
+
+func TestBuiltinSemanticProfileRegression_BoundariesStayIndeterminate(t *testing.T) {
+	t.Parallel()
+	profiles := []struct {
+		name    string
+		dialect string
+		profile AnalysisProfile
+	}{
+		{name: "mysql57", dialect: "mysql", profile: AnalysisProfileMySQL57},
+		{name: "mysql80", dialect: "mysql", profile: AnalysisProfileMySQL80},
+		{name: "mysql84", dialect: "mysql", profile: AnalysisProfileMySQL84},
+		{name: "tidb85", dialect: "tidb", profile: AnalysisProfileTiDB85},
+	}
+	probes := []struct {
+		name string
+		sql  string
+	}{
+		{name: "relationless_lower_literal", sql: "SELECT LOWER('x')"},
+		{name: "relationless_count_literal", sql: "SELECT COUNT(1)"},
+		{name: "coalesce_arity_one", sql: "SELECT COALESCE('x') FROM app.builtin_semantic_facts"},
+		{name: "coalesce_const_first_arity_three", sql: "SELECT COALESCE('x', 'y', 'z') FROM app.builtin_semantic_facts"},
+		{name: "nested_literal_expression", sql: "SELECT LOWER(UPPER('x')) FROM app.builtin_semantic_facts"},
+		{name: "parameter_literal_expression", sql: "SELECT LOWER(?) FROM app.builtin_semantic_facts"},
+		{name: "unknown_function", sql: "SELECT unknown_function('x') FROM app.builtin_semantic_facts"},
+	}
+
+	for _, profile := range profiles {
+		for _, probe := range probes {
+			t.Run(profile.name+"/"+probe.name, func(t *testing.T) {
+				result := analyzeProductionProfile(t, probe.sql, profile.dialect, "app", profile.profile)
+				assertProfileIndeterminate(t, result)
+			})
+		}
+	}
+}
+
+func TestBuiltinSemanticProfileRegression_PostgreSQLBoundariesStayIndeterminate(t *testing.T) {
+	t.Parallel()
+	candidate := EffectCandidate{
+		Kind: EffectCandidateFunction, Ordinal: 0,
+		NamePath: []string{"lower"}, OriginalNamePath: []string{"LOWER"},
+		Canonical: true, ParserClassification: "generic",
+		Arity: 1, OperandKinds: []string{"const"},
+	}
+	result := domain.Result{
+		Dialect: "postgresql", Mode: domain.ModeStrict, ReadClassification: domain.Indeterminate,
+		Relations:    []domain.RelationReference{{Schema: "app", Name: "builtin_semantic_facts", Kind: domain.RelationTable, PermissionRequired: true}},
+		Requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}},
+	}
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL84, "postgresql", []EffectCandidate{candidate}, result, result.Requirements, builtinSemanticProductionRegistry)
+	if proof.decision == builtinSemanticAllProven {
+		t.Fatal("PostgreSQL literal-only candidate was proven by a MySQL profile")
+	}
+}
+
 func TestBuiltinSemanticProfileRegression_MixedConstFunctions(t *testing.T) {
 	t.Parallel()
 	profiles := []struct {
@@ -420,6 +518,37 @@ func TestBuiltinSemanticProfileRegression_MixedConstNegativeProbes(t *testing.T)
 			proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{tc.cand}, result, result.Requirements, registry)
 			if proof.decision == builtinSemanticAllProven {
 				t.Errorf("%s: was proven but should not be", tc.name)
+			}
+		})
+	}
+}
+
+func TestBuiltinSemanticProfileRegression_CastNegativeProbes(t *testing.T) {
+	t.Parallel()
+	profiles := []struct {
+		profile AnalysisProfile
+		dialect string
+	}{
+		{AnalysisProfileMySQL57, "mysql"},
+		{AnalysisProfileMySQL80, "mysql"},
+		{AnalysisProfileMySQL84, "mysql"},
+		{AnalysisProfileTiDB85, "tidb"},
+	}
+	for _, p := range profiles {
+		t.Run(string(p.profile), func(t *testing.T) {
+			candidate := EffectCandidate{
+				Kind: EffectCandidateCast, Ordinal: 0,
+				Canonical: false, ParserClassification: "cast",
+				Arity: 1, OperandKinds: []string{"const"},
+			}
+			result := domain.Result{
+				Dialect: p.dialect, Mode: domain.ModeStrict, ReadClassification: domain.Indeterminate,
+				Relations:    []domain.RelationReference{{Schema: "app", Name: "builtin_semantic_facts", Kind: domain.RelationTable, PermissionRequired: true}},
+				Requirements: []domain.Requirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}},
+			}
+			proof := proveBuiltinSemantics(p.profile, p.dialect, []EffectCandidate{candidate}, result, result.Requirements, builtinSemanticProductionRegistry)
+			if proof.decision == builtinSemanticAllProven {
+				t.Fatalf("cast literal was proven for %s", p.profile)
 			}
 		})
 	}
@@ -513,10 +642,36 @@ func mysqlAggregateBoundaryProbes() []struct{ name, sql string } {
 		{"filter_clause", "SELECT COUNT(*) FILTER (WHERE id > 0) FROM app.users"},
 		{"agg_local_order", "SELECT COUNT(id ORDER BY id) FROM app.users"},
 		{"nested_operand", "SELECT COUNT(ABS(id)) FROM app.users"},
-		{"literal_operand", "SELECT COUNT(1) FROM app.users"},
 		{"unknown_function", "SELECT app_specific_rollup(id) FROM app.users"},
 		{"mixed_proven_unknown", "SELECT COUNT(*), app_specific_rollup(id) FROM app.users"},
 		{"view_relation", "SELECT COUNT(*) FROM app.users_view"},
+	}
+}
+
+func assertProfileAdmissible(t *testing.T, result QueryAccessResult) {
+	t.Helper()
+	if result.DomainResult.ReadClassification != domain.ReadOnly || result.DomainResult.Admission != domain.Admissible {
+		t.Fatalf("classification=%q admission=%q candidates=%+v requirements=%+v reasons=%v", result.DomainResult.ReadClassification, result.DomainResult.Admission, result.EffectCandidates, result.DomainResult.Requirements, result.DomainResult.ReasonCodes)
+	}
+}
+
+func assertProfileIndeterminate(t *testing.T, result QueryAccessResult) {
+	t.Helper()
+	if result.DomainResult.ReadClassification != domain.Indeterminate || result.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Fatalf("classification=%q admission=%q candidates=%+v requirements=%+v reasons=%v", result.DomainResult.ReadClassification, result.DomainResult.Admission, result.EffectCandidates, result.DomainResult.Requirements, result.DomainResult.ReasonCodes)
+	}
+}
+
+func assertProfileRequirements(t *testing.T, result QueryAccessResult, want []domain.Requirement) {
+	t.Helper()
+	got := result.DomainResult.Requirements
+	if len(got) != len(want) {
+		t.Fatalf("requirements=%+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("requirements=%+v, want %+v", got, want)
+		}
 	}
 }
 
