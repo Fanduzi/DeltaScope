@@ -339,7 +339,7 @@ and verified absent from all public output after promotion to
 
 ### No-Leak Evidence (Connection Failure Path)
 
-Connection failure no-leak verified for two independent credential sources on the HTTP surface, using the real MySQL 8.4 fixture (host:port) with invalid credentials:
+Connection failure no-leak verified for two independent credential sources on the HTTP surface, using the real MySQL 8.4 fixture (host:port) with valid user `root` but invalid passwords:
 
 | Failure Mode | Credential Source | SQL Literal Marker | MySQL Fixture | Verified |
 |--------------|-------------------|-------------------|---------------|----------|
@@ -347,8 +347,9 @@ Connection failure no-leak verified for two independent credential sources on th
 | `file_credential_failure` | Temp file with `fail-pw-*` prefix containing wrong password | `FAIL_SQL_LITERAL_file_e5f6a7b8` | Real MySQL 8.4 (127.0.0.1:3840) | ✓ |
 
 **Test structure:**
-- Both failure connections use the same real MySQL 8.4 fixture (host:port) as the success path, proving the failure comes from authentication rejection, not port simulation or input validation
-- Each failure sub-case uses unique: username, connection ID, SQL literal marker
+- Both failure connections use the same real MySQL 8.4 fixture (host:port) as the success path, with valid user `root` but invalid passwords
+- This proves the failure comes from MySQL auth error 1045 (Access denied), not port simulation or input validation
+- Each failure sub-case uses unique: connection ID, SQL literal marker
 - SQL payload contains unique literal: `SELECT COALESCE(name, 'FAIL_SQL_LITERAL_<unique>') FROM app.builtin_semantic_facts`
 - Request uses `POST /v1/query-access/analyze` with the failure `connection_id`
 - Test uses production `NewHandler`, real `runtimeconfig.Registry`, `WithMiddlewareConfig(MiddlewareConfig{Logger: captureLogger})`, and `httptest.Server`
@@ -361,7 +362,6 @@ Connection failure no-leak verified for two independent credential sources on th
    - Host: `127.0.0.1`
    - Port: `3840` (real MySQL 8.4 fixture)
    - Schema: `app`
-   - Username (unique per sub-case)
    - Connection ID (unique per sub-case)
    - Password value (unique per sub-case)
    - Password env name (`E2E_FAIL_ENV_PASSWORD` for env case)

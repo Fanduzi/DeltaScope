@@ -166,15 +166,15 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					Purposes:     []string{"query_access"},
 				},
 				// Failure connections use the real MySQL 8.4 fixture
-				// (host:port) but with invalid credentials. This proves
-				// the failure comes from real authentication rejection,
-				// not port simulation or input validation.
+				// (host:port) with valid user 'root' but invalid passwords.
+				// This proves the failure comes from MySQL auth error 1045
+				// (Access denied), not port simulation or input validation.
 				{
 					ID:          "fail_env_conn",
 					Dialect:     "mysql",
 					Host:        "127.0.0.1",
 					Port:        3840,
-					User:        "fail_user_e8a1b2c3",
+					User:        "root",
 					PasswordEnv: "E2E_FAIL_ENV_PASSWORD",
 					Schema:      "app",
 					Purposes:    []string{"query_access"},
@@ -184,7 +184,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					Dialect:      "mysql",
 					Host:         "127.0.0.1",
 					Port:         3840,
-					User:         "fail_user_f7c6d5e4",
+					User:         "root",
 					PasswordFile: failPWFile,
 					Schema:       "app",
 					Purposes:     []string{"query_access"},
@@ -375,7 +375,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			name:         "env_credential_failure",
 			connectionID: "fail_env_conn",
 			password:     "FAIL_SECRET_ENV_pw_9f3b2a1c",
-			user:         "fail_user_e8a1b2c3",
+			user:         "root",
 			sqlLiteral:   "FAIL_SQL_LITERAL_env_a1b2c3d4",
 			extraMarkers: []string{"E2E_FAIL_ENV_PASSWORD"},
 		},
@@ -383,7 +383,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			name:         "file_credential_failure",
 			connectionID: "fail_file_conn",
 			password:     failPWContent,
-			user:         "fail_user_f7c6d5e4",
+			user:         "root",
 			sqlLiteral:   "FAIL_SQL_LITERAL_file_e5f6a7b8",
 			extraMarkers: []string{failPWFile, failPWBase, "fail-pw-"},
 		},
