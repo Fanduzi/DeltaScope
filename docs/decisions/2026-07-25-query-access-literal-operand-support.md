@@ -220,8 +220,8 @@ gateway, and manifest changes are complete. Public-path E2E tests verify
 promotion through the real SDK, CLI, and HTTP surfaces against all 4 Docker
 profiles.
 
-**Oracle audit:** PASS (initial review found 3 P2s; all fixed in `0d86b78`).
-**Momus audit:** Not completed (Momus requires `.omo/plans/*.md` input contract; inline review not executed).
+**Oracle audit:** PASS (initial review found P0-2 log timing race, P1-2 missing schema marker, P2-1 missing connID in diagnostics; all fixed; final re-audit PASS with no remaining P0/P1/P2).
+**Momus audit:** [OKAY] (initial review found missing Docker/test paths; plan updated; final re-review [OKAY]).
 
 Commits:
 - `b75e8cb`: ADR corrected to Proposed, false claims removed
@@ -336,6 +336,47 @@ and verified absent from all public output after promotion to
 - Coverage: Both online path (with `connection_id`) and default offline path (without `connection_id`) use the same marker set
 - Per-test isolation: `syncBuffer.Reset()` called before each subtest
 - Test file: `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`
+
+### No-Leak Evidence (Connection Failure Path)
+
+Connection failure no-leak verified for two independent failure modes on the HTTP surface:
+
+| Failure Mode | Credential Source | SQL Literal Marker | Dynamic Port | Verified |
+|--------------|-------------------|-------------------|--------------|----------|
+| `env_credential_failure` | `E2E_FAIL_ENV_PASSWORD` env var | `FAIL_SQL_LITERAL_env_a1b2c3d4` | Runtime-allocated via `net.Listen("tcp", "127.0.0.1:0")` | ✓ |
+| `file_credential_failure` | Temp file with `fail-pw-*` prefix | `FAIL_SQL_LITERAL_file_e5f6a7b8` | Runtime-allocated via `net.Listen("tcp", "127.0.0.1:0")` | ✓ |
+
+**Test structure:**
+- Each failure sub-case uses unique: username, connection ID, SQL literal marker, dynamic port
+- Ports are runtime-allocated via `net.Listen("tcp", "127.0.0.1:0")` and immediately closed; no hardcoded failure ports
+- SQL payload contains unique literal: `SELECT COALESCE(name, 'FAIL_SQL_LITERAL_<unique>') FROM app.builtin_semantic_facts`
+- Request uses `POST /v1/query-access/analyze` with the failure `connection_id`
+- Test uses production `NewHandler`, real `runtimeconfig.Registry`, `WithMiddlewareConfig(MiddlewareConfig{Logger: captureLogger})`, and `httptest.Server`
+
+**Assertions per failure sub-case:**
+1. HTTP status: 502 Bad Gateway (proves request reached actual dial path, not input validation)
+2. JSON error code: exactly `connection_failed`
+3. Positive access log: contains `"msg":"http request"` and `/v1/query-access/analyze`
+4. Negative leak checks (response body, deserialized JSON, access log) for:
+   - Host: `127.0.0.1`
+   - Dynamic port (as string)
+   - Username (unique per sub-case)
+   - Connection ID (unique per sub-case)
+   - Password value (unique per sub-case)
+   - Password env name (`E2E_FAIL_ENV_PASSWORD` for env case)
+   - Password file full path, basename, and prefix (`fail-pw-*` for file case)
+   - SQL literal marker (unique per sub-case)
+   - SQL structural fragments: `COALESCE(`, `builtin_semantic_facts`
+   - Driver/connection error substrings: `dial tcp`, `connection refused`, `Access denied`, `driver:`, `Error 1`
+
+**Why this proves non-vacuous failure:**
+- The unique SQL literal marker enters the failure path via the actual HTTP request
+- The 502 status proves the request passed validation and reached the dial stage
+- The `connection_failed` error code proves the handler mapped a real connection error
+- The positive access log entry proves the request was processed by production middleware
+- The negative leak checks prove no sensitive value escaped to the client or log
+
+**Test file:** `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`
 
 ## Consequences
 

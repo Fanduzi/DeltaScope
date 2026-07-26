@@ -21,10 +21,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 )
@@ -72,13 +74,22 @@ func noLeakMarkers() []string {
 	}
 }
 
-func assertAccessLogEntry(t *testing.T, logOutput, path string) {
+func assertAccessLogEntry(t *testing.T, logBuf *syncBuffer, path string) {
 	t.Helper()
-	if !strings.Contains(logOutput, `"msg":"http request"`) {
-		t.Errorf("access log missing structured entry: no 'http request' msg found in: %s", logOutput)
-	}
-	if !strings.Contains(logOutput, path) {
-		t.Errorf("access log missing path %q in: %s", path, logOutput)
+	// Gin's access-log middleware writes after c.Next() returns but before
+	// the response is flushed to the client. A bounded poll avoids a flaky
+	// race while keeping the test fast.
+	deadline := time.After(2 * time.Second)
+	for {
+		output := logBuf.String()
+		if strings.Contains(output, `"msg":"http request"`) && strings.Contains(output, path) {
+			return
+		}
+		select {
+		case <-deadline:
+			t.Fatalf("access log missing structured entry for %q within 2s; log=%s", path, logBuf.String())
+		case <-time.After(10 * time.Millisecond):
+		}
 	}
 }
 
@@ -302,8 +313,8 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						t.Errorf("deserialized result leaked SECRET_LITERAL")
 					}
 
+					assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
 					logOutput := logBuf.String()
-					assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
 					assertNoLogLeaks(t, logOutput, noLeakMarkers())
 				})
 			}
@@ -353,12 +364,16 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					t.Errorf("response leaked SECRET_LITERAL: %s", bodyStr)
 				}
 
+				assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
 				logOutput := logBuf.String()
-				assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
 				assertNoLogLeaks(t, logOutput, noLeakMarkers())
 			})
 		}
 	})
+
+	// failPWBase is the basename of the temp password file; it must not leak
+	// in any HTTP response, JSON body, or access log entry.
+	failPWBase := filepath.Base(failPWFile)
 
 	failureCases := []struct {
 		name         string
@@ -366,23 +381,26 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		password     string
 		port         int
 		user         string
+		sqlLiteral   string // unique per sub-case; proves the exact SQL entered the failure path
 		extraMarkers []string
 	}{
 		{
-			name:         "password_env_failure",
+			name:         "env_credential_failure",
 			connectionID: "fail_env_conn",
 			password:     "FAIL_SECRET_ENV_pw_9f3b2a1c",
 			port:         failEnvPort,
 			user:         "fail_user_e8a1b2c3",
+			sqlLiteral:   "FAIL_SQL_LITERAL_env_a1b2c3d4",
 			extraMarkers: []string{"E2E_FAIL_ENV_PASSWORD"},
 		},
 		{
-			name:         "password_file_failure",
+			name:         "file_credential_failure",
 			connectionID: "fail_file_conn",
 			password:     failPWContent,
 			port:         failFilePort,
 			user:         "fail_user_f7c6d5e4",
-			extraMarkers: []string{failPWFile},
+			sqlLiteral:   "FAIL_SQL_LITERAL_file_e5f6a7b8",
+			extraMarkers: []string{failPWFile, failPWBase, "fail-pw-"},
 		},
 	}
 
@@ -390,70 +408,98 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		t.Run(fc.name, func(t *testing.T) {
 			logBuf.Reset()
 
+			// Build the full set of markers from the current sub-case's real
+			// configuration values. Every marker must originate from this
+			// sub-case's actual config or request — never from a shared constant.
 			failMarkers := []string{
-				"SECRET_LITERAL",
+				// host, dynamic port, and schema
+				"127.0.0.1",
+				strconv.Itoa(fc.port),
+				"app",
+				// credential identity
+				fc.user,
+				fc.connectionID,
+				fc.password,
+				// SQL literal marker unique to this sub-case
+				fc.sqlLiteral,
+				// SQL structural fragments
 				"COALESCE(",
 				"builtin_semantic_facts",
-				fc.user,
-				fc.password,
-				strconv.Itoa(fc.port),
+				// driver/connection error substrings
 				"dial tcp",
 				"connection refused",
 				"Access denied",
 				"driver:",
+				"Error 1",
 			}
 			failMarkers = append(failMarkers, fc.extraMarkers...)
 
-			payload := fmt.Sprintf(
-				`{"sql":%q,"connection_id":%q}`,
-				"SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-				fc.connectionID,
+			// Build SQL with the unique literal marker so the test can prove
+			// the exact SQL text entered the dial-failure path.
+			sql := fmt.Sprintf(
+				"SELECT COALESCE(name, '%s') FROM app.builtin_semantic_facts",
+				fc.sqlLiteral,
 			)
+			payload := fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, sql, fc.connectionID)
 			req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
 			if err != nil {
-				t.Fatalf("create request: %v", err)
+				t.Fatalf("create request: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
 			}
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				t.Fatalf("send request: %v", err)
+				t.Fatalf("send request: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
 			}
 			defer resp.Body.Close()
 
 			var body bytes.Buffer
 			if _, err := body.ReadFrom(resp.Body); err != nil {
-				t.Fatalf("read response: %v", err)
+				t.Fatalf("read response: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
 			}
 
+			// 1) HTTP status must be 502 Bad Gateway — proves the request
+			//    reached the actual dial path, not input validation.
 			if resp.StatusCode != http.StatusBadGateway {
-				t.Fatalf("status: got %d, want 502; body: %s", resp.StatusCode, body.String())
+				t.Fatalf("status: got %d, want 502; body: %s; port=%d; connID=%s", resp.StatusCode, body.String(), fc.port, fc.connectionID)
 			}
 
+			// 2) JSON error code must be exactly "connection_failed".
 			var result map[string]any
 			if err := json.Unmarshal(body.Bytes(), &result); err != nil {
-				t.Fatalf("unmarshal: %v", err)
+				t.Fatalf("unmarshal: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
 			}
 			errObj, ok := result["error"].(map[string]any)
 			if !ok {
-				t.Fatalf("error: not a map; got %T", result["error"])
+				t.Fatalf("error: not a map; got %T; port=%d; connID=%s", result["error"], fc.port, fc.connectionID)
 			}
 			if errObj["code"] != "connection_failed" {
-				t.Errorf("error.code: got %q, want connection_failed", errObj["code"])
+				t.Errorf("error.code: got %q, want connection_failed; port=%d; connID=%s", errObj["code"], fc.port, fc.connectionID)
 			}
 
+			// 3) Raw HTTP response body must not leak any marker.
 			bodyStr := body.String()
 			for _, marker := range failMarkers {
 				if strings.Contains(bodyStr, marker) {
-					t.Errorf("response leaked %q: %s", marker, bodyStr)
+					t.Errorf("response body leaked %q: %s; port=%d; connID=%s", marker, bodyStr, fc.port, fc.connectionID)
 				}
 			}
 
+			// 4) Deserialized JSON must not leak any marker.
+			raw, _ := json.Marshal(result)
+			jsonStr := string(raw)
+			for _, marker := range failMarkers {
+				if strings.Contains(jsonStr, marker) {
+					t.Errorf("deserialized JSON leaked %q: %s; port=%d; connID=%s", marker, jsonStr, fc.port, fc.connectionID)
+				}
+			}
+
+			// 5) Access log must contain the positive entry AND must not leak.
+			assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
 			logOutput := logBuf.String()
-			assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
 			for _, marker := range failMarkers {
 				if strings.Contains(logOutput, marker) {
-					t.Errorf("access log leaked %q: %s", marker, logOutput)
+					t.Errorf("access log leaked %q: %s; port=%d; connID=%s", marker, logOutput, fc.port, fc.connectionID)
 				}
 			}
 		})
