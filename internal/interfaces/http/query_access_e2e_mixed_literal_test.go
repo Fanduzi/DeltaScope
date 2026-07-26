@@ -16,10 +16,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
@@ -82,7 +84,17 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		t.Fatalf("build registry: %v", err)
 	}
 
-	handler, err := NewHandler("", "test-build", WithRegistry(reg))
+	// Create a log buffer to capture access log output for no-leak assertions.
+	var logBuf bytes.Buffer
+	var logMu sync.Mutex
+	captureLogger := log.New(&logBuf, "", 0)
+
+	handler, err := NewHandler("", "test-build",
+		WithRegistry(reg),
+		WithMiddlewareConfig(MiddlewareConfig{
+			Logger: captureLogger,
+		}),
+	)
 	if err != nil {
 		t.Fatalf("new handler: %v", err)
 	}
@@ -182,6 +194,24 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					if strings.Contains(string(raw), "SECRET_LITERAL") {
 						t.Errorf("deserialized result leaked SECRET_LITERAL")
 					}
+
+					// No-leak: access log must not contain sensitive markers or raw SQL.
+					logMu.Lock()
+					logOutput := logBuf.String()
+					logMu.Unlock()
+					for _, marker := range []string{
+						"SECRET_LITERAL",
+						"COALESCE(",
+						"NULLIF(",
+						"IFNULL(",
+						"builtin_semantic_facts",
+						"root",
+						"E2E_MYSQL_PASSWORD",
+					} {
+						if strings.Contains(logOutput, marker) {
+							t.Errorf("access log leaked %q: %s", marker, logOutput)
+						}
+					}
 				})
 			}
 		})
@@ -224,10 +254,26 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					t.Errorf("admission: got %q, want indeterminate", result["admission"])
 				}
 
-				// No-leak.
+				// No-leak: response body.
 				bodyStr := body.String()
 				if strings.Contains(bodyStr, "SECRET_LITERAL") {
 					t.Errorf("response leaked SECRET_LITERAL: %s", bodyStr)
+				}
+
+				// No-leak: access log must not contain sensitive markers or raw SQL.
+				logMu.Lock()
+				logOutput := logBuf.String()
+				logMu.Unlock()
+				for _, marker := range []string{
+					"SECRET_LITERAL",
+					"COALESCE(",
+					"NULLIF(",
+					"IFNULL(",
+					"builtin_semantic_facts",
+				} {
+					if strings.Contains(logOutput, marker) {
+						t.Errorf("access log leaked %q: %s", marker, logOutput)
+					}
 				}
 			})
 		}

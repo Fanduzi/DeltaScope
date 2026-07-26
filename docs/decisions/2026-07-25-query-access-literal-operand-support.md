@@ -314,10 +314,23 @@ Online promotion no-leak verified on all 3 public surfaces:
 | CLI stdout | SECRET_LITERAL | ✓ (all 4 profiles) |
 | CLI stderr | SECRET_LITERAL | ✓ (all 4 profiles) |
 | HTTP response | SECRET_LITERAL | ✓ (all 4 profiles) |
+| HTTP access log | SECRET_LITERAL | ✓ (all 4 profiles) |
 
 The `SECRET_LITERAL` marker is injected via SQL (`COALESCE(name, 'SECRET_LITERAL')`)
 and verified absent from all public output after promotion to
 `read_only + admissible`.
+
+**HTTP access log capture mechanism:**
+- Logger: `*log.Logger` injected via `WithMiddlewareConfig(MiddlewareConfig{Logger: captureLogger})`
+- Sink: `bytes.Buffer` with `sync.Mutex` isolation for parallel test safety
+- Assertions: After each HTTP request, the captured log is checked for:
+  - `SECRET_LITERAL` (marker)
+  - `COALESCE(`, `NULLIF(`, `IFNULL(` (raw SQL fragments)
+  - `builtin_semantic_facts` (table name)
+  - `root` (username)
+  - `E2E_MYSQL_PASSWORD` (password env var)
+- Coverage: Both online path (with `connection_id`) and default offline path (without `connection_id`)
+- Test file: `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`
 
 ## Consequences
 
