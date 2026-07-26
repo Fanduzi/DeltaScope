@@ -53,6 +53,8 @@ func (s *syncBuffer) Reset() {
 }
 
 // noLeakMarkers returns the full set of markers that must not appear in access logs.
+// Covers: injected marker, raw SQL fragments, table identity, credentials,
+// connection endpoints, password file path, and driver error text.
 func noLeakMarkers() []string {
 	return []string{
 		"SECRET_LITERAL",
@@ -62,6 +64,15 @@ func noLeakMarkers() []string {
 		"builtin_semantic_facts",
 		"root",
 		"E2E_MYSQL_PASSWORD",
+		"127.0.0.1",
+		"3507",
+		"3800",
+		"3840",
+		"4850",
+		"empty-pw-",
+		"Error 1",
+		"Access denied",
+		"driver:",
 	}
 }
 
