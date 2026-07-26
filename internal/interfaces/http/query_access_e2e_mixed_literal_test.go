@@ -55,9 +55,12 @@ func (s *syncBuffer) Reset() {
 func noLeakMarkers() []string {
 	return []string{
 		"SECRET_LITERAL",
+		"SECRET_LITERAL2",
 		"COALESCE(",
 		"NULLIF(",
 		"IFNULL(",
+		"LOWER(",
+		"COUNT(",
 		"builtin_semantic_facts",
 		"root",
 		"E2E_MYSQL_PASSWORD",
@@ -222,12 +225,63 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		{"tidb85", "tidb85"},
 	}
 	probes := []struct {
-		name string
-		sql  string
+		name             string
+		sql              string
+		wantRequirements []map[string]string
 	}{
-		{"COALESCE", "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
-		{"NULLIF", "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
-		{"IFNULL", "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		{
+			name: "COALESCE",
+			sql:  "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
+			},
+		},
+		{
+			name: "NULLIF",
+			sql:  "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
+			},
+		},
+		{
+			name: "IFNULL",
+			sql:  "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
+			},
+		},
+		{
+			name: "LOWER_literal",
+			sql:  "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+			},
+		},
+		{
+			name: "COUNT_literal",
+			sql:  "SELECT COUNT(1) FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+			},
+		},
+		{
+			name: "COALESCE_reversed",
+			sql:  "SELECT COALESCE('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
+			},
+		},
+		{
+			name: "COALESCE_all_constant",
+			sql:  "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantRequirements: []map[string]string{
+				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -269,10 +323,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						t.Errorf("admission: got %q, want admissible", result["admission"])
 					}
 
-					wantReqs := []map[string]string{
-						{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-						{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-					}
+					wantReqs := probe.wantRequirements
 					rawReqs, ok := result["requirements"].([]any)
 					if !ok {
 						t.Fatalf("requirements: not a slice; got %T", result["requirements"])
@@ -291,14 +342,16 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					}
 
 					bodyStr := body.String()
-					for _, marker := range []string{"SECRET_LITERAL", "root", "E2E_MYSQL_PASSWORD"} {
+					for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2", "root", "E2E_MYSQL_PASSWORD"} {
 						if strings.Contains(bodyStr, marker) {
 							t.Errorf("response leaked %q: %s", marker, bodyStr)
 						}
 					}
 					raw, _ := json.Marshal(result)
-					if strings.Contains(string(raw), "SECRET_LITERAL") {
-						t.Errorf("deserialized result leaked SECRET_LITERAL")
+					for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2"} {
+						if strings.Contains(string(raw), marker) {
+							t.Errorf("deserialized result leaked %s", marker)
+						}
 					}
 
 					assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
@@ -348,8 +401,10 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				}
 
 				bodyStr := body.String()
-				if strings.Contains(bodyStr, "SECRET_LITERAL") {
-					t.Errorf("response leaked SECRET_LITERAL: %s", bodyStr)
+				for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2"} {
+					if strings.Contains(bodyStr, marker) {
+						t.Errorf("response leaked %s: %s", marker, bodyStr)
+					}
 				}
 
 				assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")

@@ -37,12 +37,92 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		{"tidb85", "127.0.0.1", 4850, "root", "", "tidb"},
 	}
 	probes := []struct {
-		name string
-		sql  string
+		name              string
+		sql               string
+		wantExitCode      int
+		wantClassification string
+		wantAdmission     string
+		wantRequirements  []string
 	}{
-		{"COALESCE", "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
-		{"NULLIF", "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
-		{"IFNULL", "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		// Original mixed-literal shapes (column-first operand).
+		{
+			name:              "COALESCE",
+			sql:               "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+				"app.builtin_semantic_facts.name=read_column",
+			},
+		},
+		{
+			name:              "NULLIF",
+			sql:               "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+				"app.builtin_semantic_facts.name=read_column",
+			},
+		},
+		{
+			name:              "IFNULL",
+			sql:               "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+				"app.builtin_semantic_facts.name=read_column",
+			},
+		},
+		// Literal-only scalar.
+		{
+			name:              "LOWER_literal",
+			sql:               "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		// COUNT with literal argument.
+		{
+			name:              "COUNT_literal",
+			sql:               "SELECT COUNT(1) FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		// Reversed binary operand order (literal first, column second).
+		{
+			name:              "COALESCE_reversed",
+			sql:               "SELECT COALESCE('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+				"app.builtin_semantic_facts.name=read_column",
+			},
+		},
+		// All-constant operands (no column reference).
+		{
+			name:              "COALESCE_all_constant",
+			sql:               "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantExitCode:      0,
+			wantClassification: "read_only",
+			wantAdmission:     "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
 	}
 
 	// Online path: connection flags present.
@@ -69,44 +149,44 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						args,
 						&bytes.Buffer{}, &stdout, &stderr,
 					)
-					if exitCode != 0 {
-						t.Fatalf("exit code: got %d, want 0; stderr: %s", exitCode, stderr.String())
+					if exitCode != probe.wantExitCode {
+						t.Fatalf("exit code: got %d, want %d; stderr: %s", exitCode, probe.wantExitCode, stderr.String())
 					}
 					var result deltascope.QueryAccessResult
 					if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 						t.Fatalf("unmarshal: %v", err)
 					}
-					if result.ReadClassification != deltascope.QueryAccessReadOnly {
-						t.Errorf("classification: got %q, want read_only", result.ReadClassification)
+					if string(result.ReadClassification) != probe.wantClassification {
+						t.Errorf("classification: got %q, want %q", result.ReadClassification, probe.wantClassification)
 					}
-					if result.Admission != deltascope.QueryAccessAdmissible {
-						t.Errorf("admission: got %q, want admissible", result.Admission)
+					if string(result.Admission) != probe.wantAdmission {
+						t.Errorf("admission: got %q, want %q", result.Admission, probe.wantAdmission)
 					}
 
 					// Exact requirement assertions.
-					wantReqs := []deltascope.QueryAccessRequirement{
-						{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
-						{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"},
-					}
-					if len(result.Requirements) != len(wantReqs) {
-						t.Fatalf("requirements: got %d items, want %d; got %+v", len(result.Requirements), len(wantReqs), result.Requirements)
+					if len(result.Requirements) != len(probe.wantRequirements) {
+						t.Fatalf("requirements: got %d items, want %d; got %+v", len(result.Requirements), len(probe.wantRequirements), result.Requirements)
 					}
 					for i, got := range result.Requirements {
-						if got != wantReqs[i] {
-							t.Errorf("requirements[%d]: got %+v, want %+v", i, got, wantReqs[i])
+						want := probe.wantRequirements[i]
+						gotStr := got.Object + "=" + got.Privilege
+						if gotStr != want {
+							t.Errorf("requirements[%d]: got %q, want %q", i, gotStr, want)
 						}
 					}
 
 					// No-leak: stdout, stderr, and deserialized JSON fields.
-					if strings.Contains(stdout.String(), "SECRET_LITERAL") {
-						t.Errorf("stdout leaked SECRET_LITERAL")
-					}
-					if strings.Contains(stderr.String(), "SECRET_LITERAL") {
-						t.Errorf("stderr leaked SECRET_LITERAL")
-					}
-					raw, _ := json.Marshal(result)
-					if strings.Contains(string(raw), "SECRET_LITERAL") {
-						t.Errorf("deserialized result leaked SECRET_LITERAL")
+					for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2"} {
+						if strings.Contains(stdout.String(), marker) {
+							t.Errorf("stdout leaked %s", marker)
+						}
+						if strings.Contains(stderr.String(), marker) {
+							t.Errorf("stderr leaked %s", marker)
+						}
+						raw, _ := json.Marshal(result)
+						if strings.Contains(string(raw), marker) {
+							t.Errorf("deserialized result leaked %s", marker)
+						}
 					}
 				})
 			}
@@ -141,11 +221,13 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				if offlineResult.Admission != deltascope.QueryAccessIndeterminateAdmission {
 					t.Errorf("offline admission: got %q, want indeterminate", offlineResult.Admission)
 				}
-				if strings.Contains(stdout.String(), "SECRET_LITERAL") {
-					t.Errorf("offline stdout leaked SECRET_LITERAL")
-				}
-				if strings.Contains(stderr.String(), "SECRET_LITERAL") {
-					t.Errorf("offline stderr leaked SECRET_LITERAL")
+				for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2"} {
+					if strings.Contains(stdout.String(), marker) {
+						t.Errorf("offline stdout leaked %s", marker)
+					}
+					if strings.Contains(stderr.String(), marker) {
+						t.Errorf("offline stderr leaked %s", marker)
+					}
 				}
 			})
 		}
