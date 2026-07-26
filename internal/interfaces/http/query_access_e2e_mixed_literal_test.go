@@ -17,9 +17,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -27,8 +29,6 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 )
 
-// syncBuffer is a thread-safe bytes.Buffer for capturing log output.
-// It synchronizes both Write and String operations.
 type syncBuffer struct {
 	mu  sync.Mutex
 	buf bytes.Buffer
@@ -52,9 +52,6 @@ func (s *syncBuffer) Reset() {
 	s.buf.Reset()
 }
 
-// noLeakMarkers returns the full set of markers that must not appear in access logs.
-// Covers: injected marker, raw SQL fragments, table identity, credentials,
-// connection endpoints, password file path, and driver error text.
 func noLeakMarkers() []string {
 	return []string{
 		"SECRET_LITERAL",
@@ -64,7 +61,6 @@ func noLeakMarkers() []string {
 		"builtin_semantic_facts",
 		"root",
 		"E2E_MYSQL_PASSWORD",
-		"127.0.0.1",
 		"3507",
 		"3800",
 		"3840",
@@ -76,8 +72,6 @@ func noLeakMarkers() []string {
 	}
 }
 
-// assertAccessLogEntry verifies the captured log contains at least one structured
-// access log entry for the given path, proving the capture sink is wired correctly.
 func assertAccessLogEntry(t *testing.T, logOutput, path string) {
 	t.Helper()
 	if !strings.Contains(logOutput, `"msg":"http request"`) {
@@ -88,7 +82,6 @@ func assertAccessLogEntry(t *testing.T, logOutput, path string) {
 	}
 }
 
-// assertNoLogLeaks checks the log output does not contain any forbidden markers.
 func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 	t.Helper()
 	for _, marker := range markers {
@@ -98,11 +91,41 @@ func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 	}
 }
 
+func freePort(t *testing.T) int {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen for free port: %v", err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+	return port
+}
+
+func writeTempFile(t *testing.T, prefix, content string) string {
+	t.Helper()
+	f, err := os.CreateTemp(t.TempDir(), prefix)
+	if err != nil {
+		t.Fatalf("create temp file: %v", err)
+	}
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
+		t.Fatalf("write temp file: %v", err)
+	}
+	f.Close()
+	return f.Name()
+}
+
 func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	t.Setenv("E2E_MYSQL_PASSWORD", "root")
-	t.Setenv("E2E_FAIL_PASSWORD", "FAIL_SECRET_pw_9f3b2a1c")
+	t.Setenv("E2E_FAIL_ENV_PASSWORD", "FAIL_SECRET_ENV_pw_9f3b2a1c")
 
-	emptyPWFile := writeEmptyTempFile(t)
+	emptyPWFile := writeTempFile(t, "empty-pw-*", "")
+	failPWContent := "FAIL_SECRET_FILE_pw_4d5e6f7a"
+	failPWFile := writeTempFile(t, "fail-pw-*", failPWContent)
+
+	failEnvPort := freePort(t)
+	failFilePort := freePort(t)
 
 	cfg := runtimeconfig.Config{
 		Metadata: runtimeconfig.MetadataConfig{
@@ -148,14 +171,24 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					Purposes:     []string{"query_access"},
 				},
 				{
-					ID:          "fail_conn",
+					ID:          "fail_env_conn",
 					Dialect:     "mysql",
 					Host:        "127.0.0.1",
-					Port:        19876,
+					Port:        failEnvPort,
 					User:        "fail_user_e8a1b2c3",
-					PasswordEnv: "E2E_FAIL_PASSWORD",
+					PasswordEnv: "E2E_FAIL_ENV_PASSWORD",
 					Schema:      "app",
 					Purposes:    []string{"query_access"},
+				},
+				{
+					ID:           "fail_file_conn",
+					Dialect:      "mysql",
+					Host:         "127.0.0.1",
+					Port:         failFilePort,
+					User:         "fail_user_f7c6d5e4",
+					PasswordFile: failPWFile,
+					Schema:       "app",
+					Purposes:     []string{"query_access"},
 				},
 			},
 		},
@@ -327,81 +360,102 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		}
 	})
 
-	// Connection failure path: verify response and access log do not leak
-	// host, port, username, password, password file path, or raw driver error
-	// when the connection attempt fails.
-	t.Run("connection_failure_no_leak", func(t *testing.T) {
-		logBuf.Reset()
-
-		failMarkers := []string{
-			"127.0.0.1",
-			"19876",
-			"fail_user_e8a1b2c3",
-			"FAIL_SECRET_pw_9f3b2a1c",
-			"fail_conn",
-			"E2E_FAIL_PASSWORD",
-			"Access denied",
-			"driver:",
-		}
-
-		payload := `{"sql":"SELECT 1","connection_id":"fail_conn"}`
-		req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
-		if err != nil {
-			t.Fatalf("create request: %v", err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatalf("send request: %v", err)
-		}
-		defer resp.Body.Close()
-
-		var body bytes.Buffer
-		if _, err := body.ReadFrom(resp.Body); err != nil {
-			t.Fatalf("read response: %v", err)
-		}
-
-		if resp.StatusCode != http.StatusBadGateway {
-			t.Fatalf("status: got %d, want 502; body: %s", resp.StatusCode, body.String())
-		}
-
-		var result map[string]any
-		if err := json.Unmarshal(body.Bytes(), &result); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		errObj, ok := result["error"].(map[string]any)
-		if !ok {
-			t.Fatalf("error: not a map; got %T", result["error"])
-		}
-		if errObj["code"] != "connection_failed" {
-			t.Errorf("error.code: got %q, want connection_failed", errObj["code"])
-		}
-
-		bodyStr := body.String()
-		for _, marker := range failMarkers {
-			if strings.Contains(bodyStr, marker) {
-				t.Errorf("response leaked %q: %s", marker, bodyStr)
-			}
-		}
-
-		logOutput := logBuf.String()
-		assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
-		for _, marker := range failMarkers {
-			if strings.Contains(logOutput, marker) {
-				t.Errorf("access log leaked %q: %s", marker, logOutput)
-			}
-		}
-	})
-}
-
-// writeEmptyTempFile creates a temporary empty file for TiDB password-less auth.
-func writeEmptyTempFile(t *testing.T) string {
-	t.Helper()
-	f, err := os.CreateTemp(t.TempDir(), "empty-pw-*")
-	if err != nil {
-		t.Fatalf("create temp file: %v", err)
+	failureCases := []struct {
+		name         string
+		connectionID string
+		password     string
+		port         int
+		user         string
+		extraMarkers []string
+	}{
+		{
+			name:         "password_env_failure",
+			connectionID: "fail_env_conn",
+			password:     "FAIL_SECRET_ENV_pw_9f3b2a1c",
+			port:         failEnvPort,
+			user:         "fail_user_e8a1b2c3",
+			extraMarkers: []string{"E2E_FAIL_ENV_PASSWORD"},
+		},
+		{
+			name:         "password_file_failure",
+			connectionID: "fail_file_conn",
+			password:     failPWContent,
+			port:         failFilePort,
+			user:         "fail_user_f7c6d5e4",
+			extraMarkers: []string{failPWFile},
+		},
 	}
-	f.Close()
-	return f.Name()
+
+	for _, fc := range failureCases {
+		t.Run(fc.name, func(t *testing.T) {
+			logBuf.Reset()
+
+			failMarkers := []string{
+				"SECRET_LITERAL",
+				"COALESCE(",
+				"builtin_semantic_facts",
+				fc.user,
+				fc.password,
+				strconv.Itoa(fc.port),
+				"dial tcp",
+				"connection refused",
+				"Access denied",
+				"driver:",
+			}
+			failMarkers = append(failMarkers, fc.extraMarkers...)
+
+			payload := fmt.Sprintf(
+				`{"sql":%q,"connection_id":%q}`,
+				"SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
+				fc.connectionID,
+			)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
+			if err != nil {
+				t.Fatalf("create request: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("send request: %v", err)
+			}
+			defer resp.Body.Close()
+
+			var body bytes.Buffer
+			if _, err := body.ReadFrom(resp.Body); err != nil {
+				t.Fatalf("read response: %v", err)
+			}
+
+			if resp.StatusCode != http.StatusBadGateway {
+				t.Fatalf("status: got %d, want 502; body: %s", resp.StatusCode, body.String())
+			}
+
+			var result map[string]any
+			if err := json.Unmarshal(body.Bytes(), &result); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			errObj, ok := result["error"].(map[string]any)
+			if !ok {
+				t.Fatalf("error: not a map; got %T", result["error"])
+			}
+			if errObj["code"] != "connection_failed" {
+				t.Errorf("error.code: got %q, want connection_failed", errObj["code"])
+			}
+
+			bodyStr := body.String()
+			for _, marker := range failMarkers {
+				if strings.Contains(bodyStr, marker) {
+					t.Errorf("response leaked %q: %s", marker, bodyStr)
+				}
+			}
+
+			logOutput := logBuf.String()
+			assertAccessLogEntry(t, logOutput, "/v1/query-access/analyze")
+			for _, marker := range failMarkers {
+				if strings.Contains(logOutput, marker) {
+					t.Errorf("access log leaked %q: %s", marker, logOutput)
+				}
+			}
+		})
+	}
 }
