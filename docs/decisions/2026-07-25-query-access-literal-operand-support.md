@@ -220,7 +220,7 @@ gateway, and manifest changes are complete. Public-path E2E tests verify
 promotion through the real SDK, CLI, and HTTP surfaces against all 4 Docker
 profiles.
 
-**Oracle audit:** PASS (initial review found P0-2 log timing race, P1-2 missing schema marker, P2-1 missing connID in diagnostics; all fixed; subsequent review found P2 test-assurance issues: bind-close-reuse race in freePort() and inaccurate "enters dial-failure path" claims; claims narrowed; error classification improved to check network errors before context errors; freePort() race accepted as CI-acceptable risk; final re-audit found P1: ErrConnectionFailed masked genuine timeouts; fixed by checking network errors in session opener).
+**Oracle audit:** Pending final review. Initial review found P0-2 log timing race, P1-2 missing schema marker, P2-1 missing connID in diagnostics; all fixed. Subsequent reviews addressed test-assurance and error-classification issues. Failure path now uses real MySQL 8.4 authentication rejection.
 **Momus audit:** [OKAY] (initial review found missing Docker/test paths; plan updated; final re-review [OKAY]).
 
 Commits:
@@ -339,27 +339,28 @@ and verified absent from all public output after promotion to
 
 ### No-Leak Evidence (Connection Failure Path)
 
-Connection failure no-leak verified for two independent failure modes on the HTTP surface:
+Connection failure no-leak verified for two independent credential sources on the HTTP surface, using the real MySQL 8.4 fixture (host:port) with invalid credentials:
 
-| Failure Mode | Credential Source | SQL Literal Marker | Dynamic Port | Verified |
-|--------------|-------------------|-------------------|--------------|----------|
-| `env_credential_failure` | `E2E_FAIL_ENV_PASSWORD` env var | `FAIL_SQL_LITERAL_env_a1b2c3d4` | Runtime-allocated via `net.Listen("tcp", "127.0.0.1:0")` | ✓ |
-| `file_credential_failure` | Temp file with `fail-pw-*` prefix | `FAIL_SQL_LITERAL_file_e5f6a7b8` | Runtime-allocated via `net.Listen("tcp", "127.0.0.1:0")` | ✓ |
+| Failure Mode | Credential Source | SQL Literal Marker | MySQL Fixture | Verified |
+|--------------|-------------------|-------------------|---------------|----------|
+| `env_credential_failure` | `E2E_FAIL_ENV_PASSWORD` env var with wrong password | `FAIL_SQL_LITERAL_env_a1b2c3d4` | Real MySQL 8.4 (127.0.0.1:3840) | ✓ |
+| `file_credential_failure` | Temp file with `fail-pw-*` prefix containing wrong password | `FAIL_SQL_LITERAL_file_e5f6a7b8` | Real MySQL 8.4 (127.0.0.1:3840) | ✓ |
 
 **Test structure:**
-- Each failure sub-case uses unique: username, connection ID, SQL literal marker, dynamic port
-- Ports are runtime-allocated via `net.Listen("tcp", "127.0.0.1:0")` and immediately closed; no hardcoded failure ports
+- Both failure connections use the same real MySQL 8.4 fixture (host:port) as the success path, proving the failure comes from authentication rejection, not port simulation or input validation
+- Each failure sub-case uses unique: username, connection ID, SQL literal marker
 - SQL payload contains unique literal: `SELECT COALESCE(name, 'FAIL_SQL_LITERAL_<unique>') FROM app.builtin_semantic_facts`
 - Request uses `POST /v1/query-access/analyze` with the failure `connection_id`
 - Test uses production `NewHandler`, real `runtimeconfig.Registry`, `WithMiddlewareConfig(MiddlewareConfig{Logger: captureLogger})`, and `httptest.Server`
 
 **Assertions per failure sub-case:**
-1. HTTP status: 502 Bad Gateway (proves request reached actual dial path, not input validation)
+1. HTTP status: 502 Bad Gateway (proves request reached real MySQL 8.4 fixture and was rejected by authentication)
 2. JSON error code: exactly `connection_failed`
 3. Positive access log: contains `"msg":"http request"` and `/v1/query-access/analyze`
 4. Negative leak checks (response body, deserialized JSON, access log) for:
    - Host: `127.0.0.1`
-   - Dynamic port (as string)
+   - Port: `3840` (real MySQL 8.4 fixture)
+   - Schema: `app`
    - Username (unique per sub-case)
    - Connection ID (unique per sub-case)
    - Password value (unique per sub-case)
@@ -370,8 +371,10 @@ Connection failure no-leak verified for two independent failure modes on the HTT
    - Driver/connection error substrings: `dial tcp`, `connection refused`, `Access denied`, `driver:`, `Error 1`
 
 **Why this proves non-vacuous failure:**
+- The success path proves the MySQL 8.4 fixture is reachable and accepts valid credentials
+- The failure connections use the same host:port but with invalid credentials, proving the failure is from authentication rejection
 - The unique SQL literal marker is sent in the HTTP request and verified absent from response and access log
-- The 502 status proves the request passed validation and reached the session-open stage
+- The 502 status proves the request passed validation and reached the real MySQL server
 - The `connection_failed` error code proves the handler mapped a real connection error
 - The positive access log entry proves the request was processed by production middleware
 - The negative leak checks prove no sensitive value escaped to the client or log

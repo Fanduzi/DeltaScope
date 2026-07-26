@@ -17,12 +17,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -102,21 +100,6 @@ func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 	}
 }
 
-// freePort allocates a port by listening on 127.0.0.1:0 then immediately
-// closing the listener. There is a small window where another process could
-// reuse the port before the test exercises the connection-failure path, but
-// this is acceptable for CI where port contention is rare.
-func freePort(t *testing.T) int {
-	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen for free port: %v", err)
-	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	ln.Close()
-	return port
-}
-
 func writeTempFile(t *testing.T, prefix, content string) string {
 	t.Helper()
 	f, err := os.CreateTemp(t.TempDir(), prefix)
@@ -138,9 +121,6 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	emptyPWFile := writeTempFile(t, "empty-pw-*", "")
 	failPWContent := "FAIL_SECRET_FILE_pw_4d5e6f7a"
 	failPWFile := writeTempFile(t, "fail-pw-*", failPWContent)
-
-	failEnvPort := freePort(t)
-	failFilePort := freePort(t)
 
 	cfg := runtimeconfig.Config{
 		Metadata: runtimeconfig.MetadataConfig{
@@ -185,11 +165,15 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					Schema:       "app",
 					Purposes:     []string{"query_access"},
 				},
+				// Failure connections use the real MySQL 8.4 fixture
+				// (host:port) but with invalid credentials. This proves
+				// the failure comes from real authentication rejection,
+				// not port simulation or input validation.
 				{
 					ID:          "fail_env_conn",
 					Dialect:     "mysql",
 					Host:        "127.0.0.1",
-					Port:        failEnvPort,
+					Port:        3840,
 					User:        "fail_user_e8a1b2c3",
 					PasswordEnv: "E2E_FAIL_ENV_PASSWORD",
 					Schema:      "app",
@@ -199,7 +183,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 					ID:           "fail_file_conn",
 					Dialect:      "mysql",
 					Host:         "127.0.0.1",
-					Port:         failFilePort,
+					Port:         3840,
 					User:         "fail_user_f7c6d5e4",
 					PasswordFile: failPWFile,
 					Schema:       "app",
@@ -383,16 +367,14 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		name         string
 		connectionID string
 		password     string
-		port         int
 		user         string
-		sqlLiteral   string // unique per sub-case; proves request content doesn't leak on session-open failure
+		sqlLiteral   string // unique per sub-case; proves request content doesn't leak on auth failure
 		extraMarkers []string
 	}{
 		{
 			name:         "env_credential_failure",
 			connectionID: "fail_env_conn",
 			password:     "FAIL_SECRET_ENV_pw_9f3b2a1c",
-			port:         failEnvPort,
 			user:         "fail_user_e8a1b2c3",
 			sqlLiteral:   "FAIL_SQL_LITERAL_env_a1b2c3d4",
 			extraMarkers: []string{"E2E_FAIL_ENV_PASSWORD"},
@@ -401,7 +383,6 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			name:         "file_credential_failure",
 			connectionID: "fail_file_conn",
 			password:     failPWContent,
-			port:         failFilePort,
 			user:         "fail_user_f7c6d5e4",
 			sqlLiteral:   "FAIL_SQL_LITERAL_file_e5f6a7b8",
 			extraMarkers: []string{failPWFile, failPWBase, "fail-pw-"},
@@ -416,9 +397,9 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			// configuration values. Every marker must originate from this
 			// sub-case's actual config or request — never from a shared constant.
 			failMarkers := []string{
-				// host, dynamic port, and schema
+				// host, port, and schema (real MySQL 8.4 fixture)
 				"127.0.0.1",
-				strconv.Itoa(fc.port),
+				"3840",
 				"app",
 				// credential identity
 				fc.user,
@@ -439,7 +420,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			failMarkers = append(failMarkers, fc.extraMarkers...)
 
 			// Build SQL with the unique literal marker so the test can prove
-			// request content doesn't leak to response or access log on session-open failure.
+			// request content doesn't leak to response or access log on auth failure.
 			sql := fmt.Sprintf(
 				"SELECT COALESCE(name, '%s') FROM app.builtin_semantic_facts",
 				fc.sqlLiteral,
@@ -447,45 +428,45 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			payload := fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, sql, fc.connectionID)
 			req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
 			if err != nil {
-				t.Fatalf("create request: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
+				t.Fatalf("create request: %v; connID=%s", err, fc.connectionID)
 			}
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				t.Fatalf("send request: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
+				t.Fatalf("send request: %v; connID=%s", err, fc.connectionID)
 			}
 			defer resp.Body.Close()
 
 			var body bytes.Buffer
 			if _, err := body.ReadFrom(resp.Body); err != nil {
-				t.Fatalf("read response: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
+				t.Fatalf("read response: %v; connID=%s", err, fc.connectionID)
 			}
 
 			// 1) HTTP status must be 502 Bad Gateway — proves the request
-			//    reached the actual dial path, not input validation.
+			//    reached the real MySQL 8.4 fixture and was rejected by auth.
 			if resp.StatusCode != http.StatusBadGateway {
-				t.Fatalf("status: got %d, want 502; body: %s; port=%d; connID=%s", resp.StatusCode, body.String(), fc.port, fc.connectionID)
+				t.Fatalf("status: got %d, want 502; body: %s; connID=%s", resp.StatusCode, body.String(), fc.connectionID)
 			}
 
 			// 2) JSON error code must be exactly "connection_failed".
 			var result map[string]any
 			if err := json.Unmarshal(body.Bytes(), &result); err != nil {
-				t.Fatalf("unmarshal: %v; port=%d; connID=%s", err, fc.port, fc.connectionID)
+				t.Fatalf("unmarshal: %v; connID=%s", err, fc.connectionID)
 			}
 			errObj, ok := result["error"].(map[string]any)
 			if !ok {
-				t.Fatalf("error: not a map; got %T; port=%d; connID=%s", result["error"], fc.port, fc.connectionID)
+				t.Fatalf("error: not a map; got %T; connID=%s", result["error"], fc.connectionID)
 			}
 			if errObj["code"] != "connection_failed" {
-				t.Errorf("error.code: got %q, want connection_failed; port=%d; connID=%s", errObj["code"], fc.port, fc.connectionID)
+				t.Errorf("error.code: got %q, want connection_failed; connID=%s", errObj["code"], fc.connectionID)
 			}
 
 			// 3) Raw HTTP response body must not leak any marker.
 			bodyStr := body.String()
 			for _, marker := range failMarkers {
 				if strings.Contains(bodyStr, marker) {
-					t.Errorf("response body leaked %q: %s; port=%d; connID=%s", marker, bodyStr, fc.port, fc.connectionID)
+					t.Errorf("response body leaked %q: %s; connID=%s", marker, bodyStr, fc.connectionID)
 				}
 			}
 
@@ -494,7 +475,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			jsonStr := string(raw)
 			for _, marker := range failMarkers {
 				if strings.Contains(jsonStr, marker) {
-					t.Errorf("deserialized JSON leaked %q: %s; port=%d; connID=%s", marker, jsonStr, fc.port, fc.connectionID)
+					t.Errorf("deserialized JSON leaked %q: %s; connID=%s", marker, jsonStr, fc.connectionID)
 				}
 			}
 
@@ -503,7 +484,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			logOutput := logBuf.String()
 			for _, marker := range failMarkers {
 				if strings.Contains(logOutput, marker) {
-					t.Errorf("access log leaked %q: %s; port=%d; connID=%s", marker, logOutput, fc.port, fc.connectionID)
+					t.Errorf("access log leaked %q: %s; connID=%s", marker, logOutput, fc.connectionID)
 				}
 			}
 		})
