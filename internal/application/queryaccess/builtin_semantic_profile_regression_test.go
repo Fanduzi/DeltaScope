@@ -398,34 +398,6 @@ func TestBuiltinSemanticProfileRegression_MixedConstNegativeProbes(t *testing.T)
 		cand EffectCandidate
 	}{
 		{
-			name: "literal_only_coalesce",
-			cand: EffectCandidate{
-				Kind: EffectCandidateFunction, Ordinal: 0,
-				NamePath: []string{"coalesce"}, OriginalNamePath: []string{"COALESCE"},
-				Canonical: true, ParserClassification: "generic",
-				Arity: 2, OperandKinds: []string{"const", "const"},
-			},
-		},
-		{
-			name: "reversed_coalesce",
-			cand: EffectCandidate{
-				Kind: EffectCandidateFunction, Ordinal: 0,
-				NamePath: []string{"coalesce"}, OriginalNamePath: []string{"COALESCE"},
-				Canonical: true, ParserClassification: "generic",
-				Arity: 2, OperandKinds: []string{"const", "column"},
-				OperandColumnRefs: []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
-			},
-		},
-		{
-			name: "lower_literal_only",
-			cand: EffectCandidate{
-				Kind: EffectCandidateFunction, Ordinal: 0,
-				NamePath: []string{"lower"}, OriginalNamePath: []string{"LOWER"},
-				Canonical: true, ParserClassification: "generic",
-				Arity: 1, OperandKinds: []string{"const"},
-			},
-		},
-		{
 			name: "unknown_function",
 			cand: EffectCandidate{
 				Kind: EffectCandidateFunction, Ordinal: 0,
@@ -469,7 +441,6 @@ func TestBuiltinSemanticProfiles_ScalarBoundariesStayIndeterminate(t *testing.T)
 		sql  string
 	}{
 		{name: "nested", sql: "SELECT LOWER(UPPER(name)) FROM app.users"},
-		{name: "literal", sql: "SELECT LOWER(42) FROM app.users"},
 		{name: "qualified", sql: "SELECT app.LOWER(name) FROM app.users"},
 	}
 

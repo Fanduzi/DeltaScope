@@ -89,6 +89,73 @@ func TestBuiltinSemanticManifest_MixedConstEntriesExist(t *testing.T) {
 	}
 }
 
+func TestBuiltinSemanticManifest_LiteralAndReversedEntriesExistForEveryProfile(t *testing.T) {
+	t.Parallel()
+
+	profiles := []AnalysisProfile{
+		AnalysisProfileMySQL57,
+		AnalysisProfileMySQL80,
+		AnalysisProfileMySQL84,
+		AnalysisProfileTiDB85,
+	}
+	newEntries := []struct {
+		name      string
+		callClass BuiltinSemanticCallClass
+		arity     int
+		kinds     []string
+	}{
+		{name: "lower", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "upper", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "length", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "char_length", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "abs", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "ceil", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "ceiling", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "floor", callClass: BuiltinSemanticScalar, arity: 1, kinds: []string{"const"}},
+		{name: "count", callClass: BuiltinSemanticAggregate, arity: 1, kinds: []string{"const"}},
+		{name: "coalesce", callClass: BuiltinSemanticScalar, arity: 2, kinds: []string{"const", "column"}},
+		{name: "nullif", callClass: BuiltinSemanticScalar, arity: 2, kinds: []string{"const", "column"}},
+		{name: "ifnull", callClass: BuiltinSemanticScalar, arity: 2, kinds: []string{"const", "column"}},
+		{name: "coalesce", callClass: BuiltinSemanticScalar, arity: 2, kinds: []string{"const", "const"}},
+		{name: "nullif", callClass: BuiltinSemanticScalar, arity: 2, kinds: []string{"const", "const"}},
+		{name: "ifnull", callClass: BuiltinSemanticScalar, arity: 2, kinds: []string{"const", "const"}},
+	}
+	if len(newEntries)*len(profiles) != 60 {
+		t.Fatalf("new entry count = %d, want 60", len(newEntries)*len(profiles))
+	}
+
+	found := 0
+	for _, profile := range profiles {
+		manifest := builtinSemanticProductionRegistry.manifest(profile)
+		if manifest == nil {
+			t.Fatalf("profile %s: nil manifest", profile)
+		}
+		for _, want := range newEntries {
+			matches := 0
+			for _, entry := range manifest.Entries() {
+				if entry.Name != want.name || entry.CallClass != want.callClass || entry.Arity != want.arity || !stringSliceEqual(entry.OperandKinds, want.kinds) {
+					continue
+				}
+				matches++
+				if entry.MinArity != 0 || entry.MaxArity != 0 {
+					t.Errorf("profile %s entry %s/%v is variable-arity: %+v", profile, want.name, want.kinds, entry)
+				}
+				if len(entry.OperandKinds) != entry.Arity {
+					t.Errorf("profile %s entry %s/%v has arity %d with %d operand kinds", profile, want.name, want.kinds, entry.Arity, len(entry.OperandKinds))
+				}
+			}
+			if matches != 1 {
+				t.Errorf("profile %s entry %s/%v matches = %d, want 1", profile, want.name, want.kinds, matches)
+				continue
+			}
+			found++
+		}
+	}
+	if found != 60 {
+		t.Fatalf("fixed-arity new entries found = %d, want 60", found)
+	}
+}
+
 func TestBuiltinSemanticService_ClonesRegistryAtAssembly(t *testing.T) {
 	registry := mustBuiltinTestRegistry(t)
 	service, err := newBuiltinSemanticService(&builtinTestResolver{}, registry)

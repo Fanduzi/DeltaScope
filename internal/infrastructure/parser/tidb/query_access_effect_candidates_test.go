@@ -491,6 +491,135 @@ func TestQueryAccessEffectCandidates_MixedLiteralOperandShape(t *testing.T) {
 			wantColCount: 1,
 			wantColName:  "amount",
 		},
+
+		{
+			name:         "literal_only_lower",
+			sql:          "SELECT LOWER('x') FROM app.builtin_semantic_facts",
+			funcName:     "lower",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_upper",
+			sql:          "SELECT UPPER('x') FROM app.builtin_semantic_facts",
+			funcName:     "upper",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_length",
+			sql:          "SELECT LENGTH('x') FROM app.builtin_semantic_facts",
+			funcName:     "length",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_char_length",
+			sql:          "SELECT CHAR_LENGTH('x') FROM app.builtin_semantic_facts",
+			funcName:     "char_length",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_abs",
+			sql:          "SELECT ABS(42) FROM app.builtin_semantic_facts",
+			funcName:     "abs",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_ceil",
+			sql:          "SELECT CEIL(42) FROM app.builtin_semantic_facts",
+			funcName:     "ceil",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_ceiling",
+			sql:          "SELECT CEILING(42) FROM app.builtin_semantic_facts",
+			funcName:     "ceiling",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_floor",
+			sql:          "SELECT FLOOR(42) FROM app.builtin_semantic_facts",
+			funcName:     "floor",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+
+		{
+			name:         "count_literal",
+			sql:          "SELECT COUNT(1) FROM app.builtin_semantic_facts",
+			funcName:     "count",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+
+		{
+			name:         "reversed_nullif",
+			sql:          "SELECT NULLIF('x', amount) FROM app.builtin_semantic_facts",
+			funcName:     "nullif",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindColumn},
+			wantColCount: 1,
+			wantColName:  "amount",
+		},
+		{
+			name:         "reversed_ifnull",
+			sql:          "SELECT IFNULL('x', amount) FROM app.builtin_semantic_facts",
+			funcName:     "ifnull",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindColumn},
+			wantColCount: 1,
+			wantColName:  "amount",
+		},
+
+		{
+			name:         "literal_only_nullif",
+			sql:          "SELECT NULLIF('x', 'y') FROM app.builtin_semantic_facts",
+			funcName:     "nullif",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindConst},
+			wantColCount: 0,
+		},
+		{
+			name:         "literal_only_ifnull",
+			sql:          "SELECT IFNULL('x', 'y') FROM app.builtin_semantic_facts",
+			funcName:     "ifnull",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindConst},
+			wantColCount: 0,
+		},
+
+		{
+			name:         "three_arg_coalesce",
+			sql:          "SELECT COALESCE('x', 'y', 'z') FROM app.builtin_semantic_facts",
+			funcName:     "coalesce",
+			wantKinds:    []OperandKindHint{OperandKindConst, OperandKindConst, OperandKindConst},
+			wantColCount: 0,
+		},
+
+		{
+			name:         "nested_expr",
+			sql:          "SELECT LOWER(UPPER('x')) FROM app.builtin_semantic_facts",
+			funcName:     "lower",
+			wantKinds:    []OperandKindHint{OperandKindExpr},
+			wantColCount: 0,
+		},
+
+		{
+			name:         "cast_expr",
+			sql:          "SELECT CAST('x' AS CHAR) FROM app.builtin_semantic_facts",
+			funcName:     "cast",
+			wantKinds:    []OperandKindHint{OperandKindConst},
+			wantColCount: 0,
+		},
+
+		{
+			name:         "param",
+			sql:          "SELECT LOWER(?) FROM app.builtin_semantic_facts",
+			funcName:     "lower",
+			wantKinds:    []OperandKindHint{OperandKindParam},
+			wantColCount: 0,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -501,7 +630,8 @@ func TestQueryAccessEffectCandidates_MixedLiteralOperandShape(t *testing.T) {
 			}
 			var found bool
 			for _, c := range facts.EffectCandidates {
-				if len(c.NamePath) > 0 && c.NamePath[0] == tc.funcName {
+				if (len(c.NamePath) > 0 && c.NamePath[0] == tc.funcName) ||
+					(len(c.NamePath) == 0 && c.ParserClassification == tc.funcName) {
 					found = true
 					if len(c.OperandKinds) != len(tc.wantKinds) {
 						t.Fatalf("OperandKinds length: got %d, want %d", len(c.OperandKinds), len(tc.wantKinds))

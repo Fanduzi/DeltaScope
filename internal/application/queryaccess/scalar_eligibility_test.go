@@ -78,7 +78,7 @@ func TestPhase1Eligibility_ScalarDirectColumnsEligible(t *testing.T) {
 	}
 }
 
-func TestPhase1Eligibility_ScalarSingleLiteralOnlyNotEligible(t *testing.T) {
+func TestPhase1Eligibility_ScalarSingleLiteralOnlyEligible(t *testing.T) {
 	t.Parallel()
 
 	// LOWER('x') is arity-1, literal-only, and has no column dependency.
@@ -94,11 +94,8 @@ func TestPhase1Eligibility_ScalarSingleLiteralOnlyNotEligible(t *testing.T) {
 		OperandColumnRefs:    nil,
 	}
 	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
-	if ok {
-		t.Error("expected NOT eligible for literal operand")
-	}
-	if reason != domain.ReasonUnprovenFunctionEffect {
-		t.Errorf("reason: got %q, want %q", reason, domain.ReasonUnprovenFunctionEffect)
+	if !ok {
+		t.Errorf("expected eligible for literal operand, got reason: %s", reason)
 	}
 }
 
@@ -122,7 +119,7 @@ func TestPhase1Eligibility_ScalarWithMixedConstEligible(t *testing.T) {
 	}
 }
 
-func TestPhase1Eligibility_ScalarLiteralOnlyNotEligible(t *testing.T) {
+func TestPhase1Eligibility_ScalarLiteralOnlyEligible(t *testing.T) {
 	t.Parallel()
 
 	cand := EffectCandidate{
@@ -136,11 +133,8 @@ func TestPhase1Eligibility_ScalarLiteralOnlyNotEligible(t *testing.T) {
 		OperandKinds:         []string{"const", "const"},
 	}
 	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
-	if ok {
-		t.Error("expected NOT eligible for literal-only function")
-	}
-	if reason != domain.ReasonUnprovenFunctionEffect {
-		t.Errorf("reason: got %q, want %q", reason, domain.ReasonUnprovenFunctionEffect)
+	if !ok {
+		t.Errorf("expected eligible for literal-only function, got reason: %s", reason)
 	}
 }
 
@@ -161,6 +155,43 @@ func TestPhase1Eligibility_ScalarWithNestedCallNotEligible(t *testing.T) {
 	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for nested call operand")
+	}
+}
+
+func TestPhase1Eligibility_ScalarWithParameterNotEligible(t *testing.T) {
+	t.Parallel()
+
+	cand := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"lower"},
+		OriginalNamePath:     []string{"LOWER"},
+		Canonical:            true,
+		ParserClassification: "generic",
+		Arity:                1,
+		OperandKinds:         []string{"param"},
+	}
+	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if ok {
+		t.Error("expected NOT eligible for parameter operand")
+	}
+}
+
+func TestPhase1Eligibility_CastNotEligible(t *testing.T) {
+	t.Parallel()
+
+	cand := EffectCandidate{
+		Kind:         EffectCandidateCast,
+		Ordinal:      0,
+		Arity:        1,
+		OperandKinds: []string{"const"},
+	}
+	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if ok {
+		t.Error("expected NOT eligible for cast")
+	}
+	if reason != domain.ReasonUnprovenCastEffect {
+		t.Errorf("reason: got %q, want %q", reason, domain.ReasonUnprovenCastEffect)
 	}
 }
 

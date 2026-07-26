@@ -59,7 +59,7 @@ func phase1FunctionEligible(candidate EffectCandidate) bool {
 			return len(candidate.OperandColumnRefs) == 1
 		}
 		if kind == "const" {
-			return false // literal-only has no column dependency
+			return true // literal-only eligible; requires physical relation from enclosing query
 		}
 		return false
 	default:
@@ -77,18 +77,17 @@ func scalarFunctionEligible(candidate EffectCandidate) bool {
 	if len(candidate.OperandKinds) == 0 {
 		return false
 	}
-	hasColumn := false
 	for _, kind := range candidate.OperandKinds {
 		switch kind {
 		case "column":
-			hasColumn = true
+			// column operands are allowed
 		case "const":
-			// const operands are allowed alongside column operands
+			// const operands are allowed
 		default:
 			return false
 		}
 	}
-	return hasColumn
+	return true
 }
 
 func isCountStar(candidate EffectCandidate) bool {

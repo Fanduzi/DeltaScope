@@ -91,6 +91,149 @@ func TestBuiltinSemanticGateway_ScalarMixedConstArityMismatchNotProven(t *testin
 	}
 }
 
+func TestBuiltinSemanticGateway_ScalarLiteralOnlyMatchesFixedArityManifest(t *testing.T) {
+	t.Parallel()
+
+	registry := fixedManifestRegistry(t, BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      AnalysisProfileMySQL57,
+		Name:         "lower",
+		CallClass:    BuiltinSemanticScalar,
+		Arity:        1,
+		OperandKinds: []string{"const"},
+	})
+	candidate := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"lower"},
+		OriginalNamePath:     []string{"LOWER"},
+		Canonical:            true,
+		ParserClassification: "generic",
+		Arity:                1,
+		OperandKinds:         []string{"const"},
+	}
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, literalOnlyResult(), literalOnlyResult().Requirements, registry)
+	if proof.decision != builtinSemanticAllProven {
+		t.Fatalf("decision = %q, want all_proven", proof.decision)
+	}
+}
+
+func TestBuiltinSemanticGateway_CountLiteralMatchesAggregateManifest(t *testing.T) {
+	t.Parallel()
+
+	registry := fixedManifestRegistry(t, BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      AnalysisProfileMySQL57,
+		Name:         "count",
+		CallClass:    BuiltinSemanticAggregate,
+		Arity:        1,
+		OperandKinds: []string{"const"},
+	})
+	candidate := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"count"},
+		OriginalNamePath:     []string{"COUNT"},
+		Canonical:            true,
+		ParserClassification: "aggregate",
+		Arity:                1,
+		OperandKinds:         []string{"const"},
+		IsAggregate:          true,
+	}
+
+	result := literalOnlyResult()
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision != builtinSemanticAllProven {
+		t.Fatalf("decision = %q, want all_proven", proof.decision)
+	}
+}
+
+func TestBuiltinSemanticGateway_ScalarReversedOperandsMatchFixedArityManifest(t *testing.T) {
+	t.Parallel()
+
+	registry := fixedManifestRegistry(t, BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      AnalysisProfileMySQL57,
+		Name:         "coalesce",
+		CallClass:    BuiltinSemanticScalar,
+		Arity:        2,
+		OperandKinds: []string{"const", "column"},
+	})
+	candidate := mixedConstCandidate([]string{"const", "column"}, 2)
+	result := mixedConstResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision != builtinSemanticAllProven {
+		t.Fatalf("decision = %q, want all_proven", proof.decision)
+	}
+}
+
+func TestBuiltinSemanticGateway_ScalarAllConstantsMatchFixedArityManifest(t *testing.T) {
+	t.Parallel()
+
+	registry := fixedManifestRegistry(t, BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      AnalysisProfileMySQL57,
+		Name:         "coalesce",
+		CallClass:    BuiltinSemanticScalar,
+		Arity:        2,
+		OperandKinds: []string{"const", "const"},
+	})
+	candidate := mixedConstCandidate([]string{"const", "const"}, 2)
+	candidate.OperandColumnRefs = nil
+	result := literalOnlyResult()
+
+	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+	if proof.decision != builtinSemanticAllProven {
+		t.Fatalf("decision = %q, want all_proven", proof.decision)
+	}
+}
+
+func TestBuiltinSemanticGateway_FixedArityRejectsShapeMismatches(t *testing.T) {
+	t.Parallel()
+
+	registry := fixedManifestRegistry(t, BuiltinSemanticEntry{
+		Dialect:      "mysql",
+		Profile:      AnalysisProfileMySQL57,
+		Name:         "coalesce",
+		CallClass:    BuiltinSemanticScalar,
+		Arity:        2,
+		OperandKinds: []string{"const", "column"},
+	})
+	cases := []struct {
+		name      string
+		candidate EffectCandidate
+	}{
+		{
+			name:      "wrong arity",
+			candidate: mixedConstCandidate([]string{"const"}, 1),
+		},
+		{
+			name:      "wrong position",
+			candidate: mixedConstCandidate([]string{"column", "const"}, 2),
+		},
+		{
+			name:      "expression operand",
+			candidate: mixedConstCandidate([]string{"const", "expr"}, 2),
+		},
+		{
+			name:      "parameter operand",
+			candidate: mixedConstCandidate([]string{"const", "param"}, 2),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			candidate := tc.candidate
+			result := mixedConstResult()
+			proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
+			if proof.decision == builtinSemanticAllProven {
+				t.Fatalf("shape mismatch was proven: %+v", candidate)
+			}
+		})
+	}
+}
+
 func TestBuiltinSemanticGateway_PostgreSQLMixedConstNotProven(t *testing.T) {
 	t.Parallel()
 	registry := mixedConstRegistry(t)
@@ -394,6 +537,21 @@ func mixedConstRegistry(t *testing.T) *builtinSemanticRegistry {
 	return registry
 }
 
+func fixedManifestRegistry(t *testing.T, entry BuiltinSemanticEntry) *builtinSemanticRegistry {
+	t.Helper()
+	manifest, err := NewBuiltinSemanticManifest([]BuiltinSemanticEntry{entry})
+	if err != nil {
+		t.Fatalf("new manifest: %v", err)
+	}
+	registry, err := newBuiltinSemanticRegistry(map[AnalysisProfile]*BuiltinSemanticManifest{
+		AnalysisProfileMySQL57: manifest,
+	})
+	if err != nil {
+		t.Fatalf("new registry: %v", err)
+	}
+	return registry
+}
+
 func mixedConstCandidate(operandKinds []string, arity int) EffectCandidate {
 	return EffectCandidate{
 		Kind:                 EffectCandidateFunction,
@@ -419,6 +577,18 @@ func mixedConstResult() domain.Result {
 			{Object: "app.users", Privilege: "read_table"},
 			{Object: "app.users.name", Privilege: "read_column"},
 		},
+	}
+}
+
+func literalOnlyResult() domain.Result {
+	return domain.Result{
+		Dialect:            "mysql",
+		Mode:               domain.ModeStrict,
+		ReadClassification: domain.Indeterminate,
+		Relations: []domain.RelationReference{{
+			Schema: "app", Name: "users", Kind: domain.RelationTable, PermissionRequired: true,
+		}},
+		Requirements: []domain.Requirement{{Object: "app.users", Privilege: "read_table"}},
 	}
 }
 
