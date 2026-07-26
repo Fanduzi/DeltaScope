@@ -1,7 +1,7 @@
 # Decision: Online Query Access Pure Function Literal Operand Support
 
 - Date: 2026-07-25
-- Status: Proposed
+- Status: Accepted
 - Baseline: `v0.440.0`
 - Milestone branch: `feat/query-access-pure-function-literal-operands`
 - Related: [pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [common pure effects](2026-07-16-query-access-common-pure-effects.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
@@ -149,11 +149,9 @@ Default offline surfaces remain `indeterminate` because:
 - Default offline surfaces remain `indeterminate`
 - MCP has no Query Access tool
 - Public JSON shape unchanged
-- No literal values in output
-- No function names in output
-- No manifest details in output
-- No parser facts in output
-- No profile/session internals in output
+- No literal values in output (verified by `SECRET_LITERAL` no-leak tests on all surfaces)
+- No function names in access log output (verified by `COALESCE(`/`NULLIF(`/`IFNULL(` no-leak checks on HTTP access log)
+- Result type structurally excludes function names, literal values, manifest details, parser facts, and profile/session internals from serialized output
 
 ### Example Output
 
@@ -220,8 +218,8 @@ gateway, and manifest changes are complete. Public-path E2E tests verify
 promotion through the real SDK, CLI, and HTTP surfaces against all 4 Docker
 profiles.
 
-**Oracle audit:** Pending final review. Initial review found P0-2 log timing race, P1-2 missing schema marker, P2-1 missing connID in diagnostics; all fixed. Subsequent reviews addressed test-assurance and error-classification issues. Failure path now uses real MySQL 8.4 authentication rejection.
-**Momus audit:** [OKAY] (initial review found missing Docker/test paths; plan updated; final re-review [OKAY]).
+**Oracle audit:** PASS. Final audit of full `main...feature` diff confirmed: only MySQL 5.7/8.0/8.4 and TiDB 8.5 online mixed-shape `COALESCE/NULLIF/IFNULL(physical_column, literal)` promoted; literal-only, reversed, nested, cast, PostgreSQL literal operands, and default offline remain fail-closed; SDK/CLI/HTTP use real public entry points; HTTP env/file auth failure paths return `502` + `connection_failed` with no host/port/schema/username/connection ID/password/env name/file path/SQL literal/raw driver error leakage; `session.go` unmodified; draft branch not in diff; ADR claims match code evidence.
+**Momus audit:** [OKAY]. Initial review found two P2 overclaims (function-name no-leak breadth, auth-failure specificity); ADR claims narrowed to match actual test evidence; final re-review [OKAY] with confidence 0.98.
 
 Commits:
 - `b75e8cb`: ADR corrected to Proposed, false claims removed
@@ -348,14 +346,14 @@ Connection failure no-leak verified for two independent credential sources on th
 
 **Test structure:**
 - Both failure connections use the same real MySQL 8.4 fixture (host:port) as the success path, with valid user `root` but invalid passwords
-- This proves the failure comes from MySQL auth error 1045 (Access denied), not port simulation or input validation
+- The success path proves the MySQL 8.4 fixture is reachable and accepts valid credentials; the failure connections use the same host:port with invalid credentials, producing a real connection error (not port simulation or input validation)
 - Each failure sub-case uses unique: connection ID, SQL literal marker
 - SQL payload contains unique literal: `SELECT COALESCE(name, 'FAIL_SQL_LITERAL_<unique>') FROM app.builtin_semantic_facts`
 - Request uses `POST /v1/query-access/analyze` with the failure `connection_id`
 - Test uses production `NewHandler`, real `runtimeconfig.Registry`, `WithMiddlewareConfig(MiddlewareConfig{Logger: captureLogger})`, and `httptest.Server`
 
 **Assertions per failure sub-case:**
-1. HTTP status: 502 Bad Gateway (proves request reached real MySQL 8.4 fixture and was rejected by authentication)
+1. HTTP status: 502 Bad Gateway (proves request reached the real MySQL 8.4 fixture and a connection error was returned)
 2. JSON error code: exactly `connection_failed`
 3. Positive access log: contains `"msg":"http request"` and `/v1/query-access/analyze`
 4. Negative leak checks (response body, deserialized JSON, access log) for:
@@ -370,10 +368,9 @@ Connection failure no-leak verified for two independent credential sources on th
    - SQL structural fragments: `COALESCE(`, `builtin_semantic_facts`
    - Driver/connection error substrings: `dial tcp`, `connection refused`, `Access denied`, `driver:`, `Error 1`
 
-**Why this proves non-vacuous failure:**
+**What this proves:**
 - The success path proves the MySQL 8.4 fixture is reachable and accepts valid credentials
-- The failure connections use the same host:port but with invalid credentials, proving the failure is from authentication rejection
-- The unique SQL literal marker is sent in the HTTP request and verified absent from response and access log
+- The failure connections use the same host:port with invalid credentials, producing a real connection error
 - The 502 status proves the request passed validation and reached the real MySQL server
 - The `connection_failed` error code proves the handler mapped a real connection error
 - The positive access log entry proves the request was processed by production middleware
