@@ -290,7 +290,7 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		mysqlScalarEntry(AnalysisProfileMySQL57, "ceil", 1, []string{"column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "ceiling", 1, []string{"column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "floor", 1, []string{"column"}),
-		mysqlVariableArityScalarEntry(AnalysisProfileMySQL57, "coalesce", 2, []string{"column", "column"}),
+		mysqlCoalesceScalarEntry(AnalysisProfileMySQL57, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "ifnull", 2, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "nullif", 2, []string{"column", "column"}),
 
@@ -303,7 +303,7 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		mysqlScalarEntry(AnalysisProfileMySQL80, "ceil", 1, []string{"column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "ceiling", 1, []string{"column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "floor", 1, []string{"column"}),
-		mysqlVariableArityScalarEntry(AnalysisProfileMySQL80, "coalesce", 2, []string{"column", "column"}),
+		mysqlCoalesceScalarEntry(AnalysisProfileMySQL80, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "ifnull", 2, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "nullif", 2, []string{"column", "column"}),
 
@@ -316,7 +316,7 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		mysqlScalarEntry(AnalysisProfileMySQL84, "ceil", 1, []string{"column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "ceiling", 1, []string{"column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "floor", 1, []string{"column"}),
-		mysqlVariableArityScalarEntry(AnalysisProfileMySQL84, "coalesce", 2, []string{"column", "column"}),
+		mysqlCoalesceScalarEntry(AnalysisProfileMySQL84, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "ifnull", 2, []string{"column", "column"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "nullif", 2, []string{"column", "column"}),
 
@@ -329,27 +329,27 @@ func mustBuiltinSemanticProductionRegistry() *builtinSemanticRegistry {
 		tidbScalarEntry("ceil", 1, []string{"column"}),
 		tidbScalarEntry("ceiling", 1, []string{"column"}),
 		tidbScalarEntry("floor", 1, []string{"column"}),
-		tidbVariableArityScalarEntry("coalesce", 2, []string{"column", "column"}),
+		tidbCoalesceScalarEntry([]string{"column", "column"}),
 		tidbScalarEntry("ifnull", 2, []string{"column", "column"}),
 		tidbScalarEntry("nullif", 2, []string{"column", "column"}),
 
 		// MySQL 5.7 scalar functions with mixed column+const operands.
-		mysqlVariableArityScalarEntry(AnalysisProfileMySQL57, "coalesce", 2, []string{"column", "const"}),
+		mysqlCoalesceScalarEntry(AnalysisProfileMySQL57, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "nullif", 2, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL57, "ifnull", 2, []string{"column", "const"}),
 
 		// MySQL 8.0 scalar functions with mixed column+const operands.
-		mysqlVariableArityScalarEntry(AnalysisProfileMySQL80, "coalesce", 2, []string{"column", "const"}),
+		mysqlCoalesceScalarEntry(AnalysisProfileMySQL80, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "nullif", 2, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL80, "ifnull", 2, []string{"column", "const"}),
 
 		// MySQL 8.4 scalar functions with mixed column+const operands.
-		mysqlVariableArityScalarEntry(AnalysisProfileMySQL84, "coalesce", 2, []string{"column", "const"}),
+		mysqlCoalesceScalarEntry(AnalysisProfileMySQL84, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "nullif", 2, []string{"column", "const"}),
 		mysqlScalarEntry(AnalysisProfileMySQL84, "ifnull", 2, []string{"column", "const"}),
 
 		// TiDB 8.5 scalar functions with mixed column+const operands.
-		tidbVariableArityScalarEntry("coalesce", 2, []string{"column", "const"}),
+		tidbCoalesceScalarEntry([]string{"column", "const"}),
 		tidbScalarEntry("nullif", 2, []string{"column", "const"}),
 		tidbScalarEntry("ifnull", 2, []string{"column", "const"}),
 	}
@@ -451,13 +451,13 @@ func mysqlScalarEntry(profile AnalysisProfile, name string, arity int, operandKi
 	}
 }
 
-func mysqlVariableArityScalarEntry(profile AnalysisProfile, name string, minArity int, operandKinds []string) BuiltinSemanticEntry {
+func mysqlCoalesceScalarEntry(profile AnalysisProfile, operandKinds []string) BuiltinSemanticEntry {
 	return BuiltinSemanticEntry{
 		Dialect:      "mysql",
 		Profile:      profile,
-		Name:         name,
+		Name:         "coalesce",
 		CallClass:    BuiltinSemanticScalar,
-		MinArity:     minArity,
+		MinArity:     2,
 		OperandKinds: operandKinds,
 	}
 }
@@ -473,13 +473,13 @@ func tidbScalarEntry(name string, arity int, operandKinds []string) BuiltinSeman
 	}
 }
 
-func tidbVariableArityScalarEntry(name string, minArity int, operandKinds []string) BuiltinSemanticEntry {
+func tidbCoalesceScalarEntry(operandKinds []string) BuiltinSemanticEntry {
 	return BuiltinSemanticEntry{
 		Dialect:      "tidb",
 		Profile:      AnalysisProfileTiDB85,
-		Name:         name,
+		Name:         "coalesce",
 		CallClass:    BuiltinSemanticScalar,
-		MinArity:     minArity,
+		MinArity:     2,
 		OperandKinds: operandKinds,
 	}
 }

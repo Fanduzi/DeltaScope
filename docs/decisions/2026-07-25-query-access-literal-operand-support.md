@@ -370,8 +370,8 @@ Connection failure no-leak verified for two independent failure modes on the HTT
    - Driver/connection error substrings: `dial tcp`, `connection refused`, `Access denied`, `driver:`, `Error 1`
 
 **Why this proves non-vacuous failure:**
-- The unique SQL literal marker enters the failure path via the actual HTTP request
-- The 502 status proves the request passed validation and reached the dial stage
+- The unique SQL literal marker is sent in the HTTP request and verified absent from response and access log
+- The 502 status proves the request passed validation and reached the session-open stage
 - The `connection_failed` error code proves the handler mapped a real connection error
 - The positive access log entry proves the request was processed by production middleware
 - The negative leak checks prove no sensitive value escaped to the client or log
