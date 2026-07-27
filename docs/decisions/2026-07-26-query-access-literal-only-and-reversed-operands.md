@@ -84,25 +84,78 @@ requirement set.
 
 The MySQL/TiDB path bypasses `ValidatePhase1PureEffectCandidates` entirely. In `service.go`, the MySQL/TiDB builtin gateway (`proveBuiltinSemantics`) runs directly on candidates without Phase-1 eligibility filtering. The PostgreSQL path (`resolveAndProveEffects`) calls `ValidatePhase1PureEffectCandidates` which rejects literal-only operands. This preserves the PostgreSQL boundary while enabling literal-only shapes for MySQL/TiDB.
 
-### Test Results
+### Admitted Shapes (15 total)
 
-- Parser characterization: 61 tests pass in `internal/infrastructure/parser/tidb`
-- Manifest validation: 117 tests pass in `internal/application/queryaccess`
-- Profile regressions: 153 tests pass across MySQL 5.7/8.0/8.4 and TiDB 8.5
-- Corpus gates: `make query-access-corpus-gates` passes with 4 new fixtures
-- SDK E2E: `TestLiveProfile` passes across all 4 profiles (5 tests)
-- CLI E2E: `TestQueryAccessOnline_MixedLiteralScalars` passes (41 tests)
-- HTTP E2E: `TestQueryAccessOnline_MixedLiteralScalars` passes (43 tests)
-- PostgreSQL eligibility: `TestPhase1Eligibility` passes (17 tests) - literal-only rejected
-- Full suite: `go test ./...` passes (3931 tests in 40 packages)
-- PostgreSQL-tagged: `go test -tags postgresql ./...` passes (4870 tests)
-- Race: `go test -race` passes (1398 tests in 5 packages)
-- Build: `go build ./...` and `go build -tags postgresql ./...` pass
-- Vet: `go vet ./...` and `go vet -tags postgresql ./...` pass
-- Lint: `golangci-lint run ./...` - no issues found
-- TLS E2E: `make test-e2e-http-tls` and `make test-e2e-cli-tls` pass
-- Docs: `make docs-example-gates VERSION=v0.440.0` passes
-- Decision: `make decision-record-gate` passes
-- Gofmt: `make release-gofmt-gate` passes
-- npm: `npm test --prefix packages/deltascope-mcp` - 15 passed
-- Git: `git diff --check` and `go mod tidy` clean
+| Category | Shapes | OperandKinds |
+|----------|--------|--------------|
+| Unary literal-only | LOWER, UPPER, LENGTH, CHAR_LENGTH, ABS, CEIL, CEILING, FLOOR | `[const]` |
+| Aggregate literal | COUNT(1) | `[const]` |
+| Reversed binary | COALESCE, NULLIF, IFNULL | `[const, column]` |
+| All-constant binary | COALESCE, NULLIF, IFNULL | `[const, const]` |
+
+Each shape is admitted across MySQL 5.7, 8.0, 8.4, and TiDB 8.5 profiles (60 profile-shape combinations).
+
+### Manifest Validator
+
+`validateBuiltinSemanticEntry` now rejects malformed fixed-arity entries:
+- `len(OperandKinds) != Arity` when `MinArity == 0` and `Arity > 0`
+- Arity-0 entries with non-star operand kinds
+
+Regression test: `TestBuiltinSemanticManifest_RejectsInvalidEntries` covers both cases.
+
+### E2E Test Matrix
+
+**SDK** (`pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`):
+- `TestLiveProfile_AssertsVersionAndAdmitsAggregates` runs across all 4 profiles
+- 15 admitted probes: 9 literal-only + 3 reversed + 3 all-constant
+- 7 negative probes: relationless, arity-1, arity-3, nested, cast, param, unknown
+- Each probe verified with exact requirements and no-leak assertions
+
+**CLI** (`internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`):
+- `TestQueryAccessOnline_MixedLiteralScalars` runs across all 4 profiles
+- 18 online probes: 3 existing [column,const] + 8 literal-only + 1 COUNT + 3 reversed + 3 all-constant
+- Each probe verified with exit code, classification, admission, exact requirements, and no-leak
+- Same 18 probes also run through `offline_indeterminate` path asserting exit code 2 and indeterminate classification
+
+**HTTP** (`internal/interfaces/http/query_access_e2e_mixed_literal_test.go`):
+- `TestQueryAccessOnline_MixedLiteralScalars` runs across all 4 profiles
+- 18 online admitted probes: 3 existing [column,const] + 8 literal-only + 1 COUNT + 3 reversed + 3 all-constant
+- 2 failure probes for credential no-leak verification
+- Each probe verified with HTTP 200, classification, admission, exact requirements, and no-leak
+- Same 18 probes also run through `default_path_indeterminate` path asserting indeterminate classification
+
+### Verification Commands
+
+```bash
+# Full suite
+go test ./... -count=1
+
+# PostgreSQL-tagged
+go test -tags postgresql ./... -count=1
+
+# Race detection
+go test -race ./internal/domain/queryaccess/... ./internal/application/queryaccess/... ./internal/interfaces/cli/... ./internal/interfaces/http/... ./pkg/deltascope/... -count=1
+
+# Build and vet
+go build ./... && go build -tags postgresql ./...
+go vet ./... && go vet -tags postgresql ./...
+
+# Corpus and lint
+make query-access-corpus-gates
+golangci-lint run ./...
+
+# Documentation and formatting
+make decision-record-gate
+make release-gofmt-gate
+
+# Git hygiene
+git diff --check
+go mod tidy && git diff --exit-code go.mod go.sum
+```
+
+### Deferred Shapes
+
+- Relationless literal-only `SELECT` (no FROM clause)
+- `COALESCE` with 3+ operands
+- PostgreSQL literal operands
+- Nested expressions, casts, parameters, UDFs, quoted/qualified calls
