@@ -161,10 +161,10 @@ Published Query Access boundaries that these items must not rewrite by documenta
 
 ### Homebrew trust workflow contract test
 
-- **Status:** deferred patch-sized release-engineering follow-up (not a product milestone).
-- **Why not now:** release workflows already trust the third-party cask tap during install verification (`brew trust --cask fanduzi/deltascope/deltascope` in `release.yml` / `release-recover.yml`). A small static contract test would lock that exact step so future workflow edits cannot drop it silently. That is CI hygiene, not Query Access product work.
-- **Evidence that would reopen evaluation:** any release-engineering pass that prioritizes regression locks for Homebrew install verification, or a near-miss/regression risk around the trust step.
-- **Published boundary:** operational only — pin the precise cask trust steps in `release.yml` and `release-recover.yml`; no SQL, audit, or query-access behavior change. Scope is patch-sized; do not promote this to a product milestone.
+- **Status:** completed (patch-sized release-engineering follow-up, not a product milestone).
+- **Implementation:** static structural checker (`scripts/verify_release_workflow_hygiene.py`) with unit tests, integrated into `make release-workflow-hygiene-gates` via existing shell wrapper. Covers both `release.yml` and `release-recover.yml`.
+- **Contract enforced:** both workflows must contain exact `brew trust --cask fanduzi/deltascope/deltascope` command before `brew install --cask deltascope` in `verify-homebrew-cask-install` job. Checker validates job ownership and command ordering, not whole-file substring presence.
+- **Published boundary:** operational only — pins the precise cask trust steps in `release.yml` and `release-recover.yml`; no SQL, audit, or query-access behavior change. Scope is patch-sized; not promoted to a product milestone.
 
 ## Previous Milestone: v0.390.0 Trusted PostgreSQL Query Access SDK
 

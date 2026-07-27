@@ -155,6 +155,30 @@ The tap/install/version-check/audit commands must also not use `|| true` — rea
 
 `make release-workflow-hygiene-gates` (included in `release-contract-gates`) statically checks the release workflow for these violations.
 
+### Homebrew Trust Workflow Contract
+
+The `verify-homebrew-cask-install` job must contain the exact Homebrew cask trust command before the install command. This contract protects the trust sequence from silent removal during workflow edits.
+
+**Required sequence in `verify-homebrew-cask-install` job:**
+```bash
+brew trust --cask fanduzi/deltascope/deltascope
+brew install --cask deltascope
+```
+
+**Contract enforcement:**
+- Both `release.yml` and `release-recover.yml` are checked
+- Trust command must appear before install command in the same job
+- Commands in other jobs, comments, or prose do not satisfy the contract
+- The checker uses structural YAML parsing, not whole-file substring search
+
+**What this gate does NOT do:**
+- Execute workflows, Homebrew, or any external commands
+- Access secrets, network, Docker, or npm
+- Validate workflow syntax beyond the trust/install sequence
+- Replace runtime Homebrew install verification
+
+Run `python3 scripts/test_verify_release_workflow_hygiene.py` to verify the contract checker behavior.
+
 ## Release Recovery
 
 See [release-recovery.md](release-recovery.md) for the failure matrix and recovery procedures when a release partially fails.
