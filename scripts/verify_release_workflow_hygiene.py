@@ -40,25 +40,25 @@ WORKFLOW_FILES = [
 
 def _extract_job_names(yaml_content: str) -> List[str]:
     """Extract top-level job names from YAML content.
-    
+
     This is a narrow parser that only finds job names at the correct indentation
     level (2 spaces under 'jobs:'). It does not parse full YAML structure.
     """
     jobs = []
     in_jobs_section = False
     jobs_indent = None
-    
+
     for line in yaml_content.split('\n'):
         stripped = line.strip()
         if not stripped or stripped.startswith('#'):
             continue
-            
+
         # Detect 'jobs:' section
         if re.match(r'^jobs:\s*$', line.rstrip()):
             in_jobs_section = True
             jobs_indent = len(line) - len(line.lstrip())
             continue
-        
+
         if in_jobs_section:
             current_indent = len(line) - len(line.lstrip())
             # Job names are at jobs_indent + 2
@@ -69,13 +69,13 @@ def _extract_job_names(yaml_content: str) -> List[str]:
             # If we're back to jobs_indent or less, we've left the jobs section
             elif current_indent <= jobs_indent:
                 break
-    
+
     return jobs
 
 
 def _extract_job_run_commands(yaml_content: str, job_name: str) -> List[str]:
     """Extract run commands from a specific job.
-    
+
     This is a narrow parser that locates the named job and extracts content
     from 'run: |' blocks. It handles multiline run blocks by tracking
     indentation.
@@ -87,28 +87,28 @@ def _extract_job_run_commands(yaml_content: str, job_name: str) -> List[str]:
     jobs_indent = None
     job_indent = None
     run_indent = None
-    
+
     lines = yaml_content.split('\n')
     i = 0
     while i < len(lines):
         line = lines[i]
         stripped = line.strip()
-        
+
         # Skip empty lines and comments at top level
         if not stripped or stripped.startswith('#'):
             i += 1
             continue
-        
+
         # Detect 'jobs:' section
         if re.match(r'^jobs:\s*$', line.rstrip()):
             in_jobs_section = True
             jobs_indent = len(line) - len(line.lstrip())
             i += 1
             continue
-        
+
         if in_jobs_section:
             current_indent = len(line) - len(line.lstrip())
-            
+
             # Check if we've left the jobs section
             if current_indent <= jobs_indent:
                 in_jobs_section = False
@@ -116,7 +116,7 @@ def _extract_job_run_commands(yaml_content: str, job_name: str) -> List[str]:
                 in_run_block = False
                 i += 1
                 continue
-            
+
             # Detect job name
             if current_indent == jobs_indent + 2 and stripped.endswith(':'):
                 job_name_candidate = stripped[:-1].strip()
@@ -128,7 +128,7 @@ def _extract_job_run_commands(yaml_content: str, job_name: str) -> List[str]:
                 in_run_block = False
                 i += 1
                 continue
-            
+
             # If we're in the target job, look for run blocks
             if in_target_job:
                 # Detect 'run: |' pattern
@@ -137,7 +137,7 @@ def _extract_job_run_commands(yaml_content: str, job_name: str) -> List[str]:
                     run_indent = current_indent + 2  # Content is indented under run
                     i += 1
                     continue
-                
+
                 # If we're in a run block, collect lines
                 if in_run_block:
                     if current_indent >= run_indent:
@@ -148,14 +148,14 @@ def _extract_job_run_commands(yaml_content: str, job_name: str) -> List[str]:
                     else:
                         # We've left the run block
                         in_run_block = False
-                
+
                 # Detect other step properties (name, env, etc.)
                 if current_indent == job_indent + 4 and stripped.endswith(':'):
                     # This is a step property, not a run block
                     in_run_block = False
-        
+
         i += 1
-    
+
     return commands
 
 
@@ -164,14 +164,14 @@ def _is_shell_command(line: str, expected: str) -> bool:
     stripped = line.strip()
     if stripped.startswith('#'):
         return False
-    
+
     import re
     stripped = re.sub(r'\s+#.*$', '', stripped)
     stripped = stripped.strip()
-    
+
     if stripped != expected:
         return False
-    
+
     original_stripped = line.strip()
     if original_stripped.startswith('echo ') or original_stripped.startswith('echo\t'):
         return False
@@ -181,67 +181,67 @@ def _is_shell_command(line: str, expected: str) -> bool:
         return False
     if original_stripped.startswith("printf '") or original_stripped.startswith('printf "'):
         return False
-    
+
     return True
 
 
 def _check_workflow_trust_contract(workflow_path: Path) -> Optional[str]:
     """Check a single workflow file for the trust contract.
-    
+
     Returns None if valid, error message if violated.
     """
     if not workflow_path.exists():
         return f"missing workflow file: {workflow_path}"
-    
+
     content = workflow_path.read_text(encoding="utf-8")
-    
+
     # Check if verification job exists
     job_names = _extract_job_names(content)
     if VERIFICATION_JOB_NAME not in job_names:
         return f"missing {VERIFICATION_JOB_NAME} job in {workflow_path.name}"
-    
+
     # Extract run commands from verification job
     commands = _extract_job_run_commands(content, VERIFICATION_JOB_NAME)
     if not commands:
         return f"no run commands found in {VERIFICATION_JOB_NAME} job in {workflow_path.name}"
-    
+
     trust_line_pos = None
     install_line_pos = None
-    
+
     for i, cmd in enumerate(commands):
         if _is_shell_command(cmd, REQUIRED_TRUST_COMMAND):
             trust_line_pos = i
         if _is_shell_command(cmd, REQUIRED_INSTALL_COMMAND):
             install_line_pos = i
-    
+
     # Check that trust command exists
     if trust_line_pos is None:
         return f"missing trust command '{REQUIRED_TRUST_COMMAND}' in {VERIFICATION_JOB_NAME} job in {workflow_path.name}"
-    
+
     # Check that install command exists
     if install_line_pos is None:
         return f"missing install command '{REQUIRED_INSTALL_COMMAND}' in {VERIFICATION_JOB_NAME} job in {workflow_path.name}"
-    
+
     # Check order: trust must appear before install
     if trust_line_pos >= install_line_pos:
         return f"trust command must appear before install command in {VERIFICATION_JOB_NAME} job in {workflow_path.name}"
-    
+
     return None
 
 
 def check_homebrew_trust_contract(repo_root: Path) -> None:
     """Check all workflow files for the Homebrew trust contract.
-    
+
     Raises WorkflowContractError if any violation is detected.
     """
     errors = []
-    
+
     for workflow_file in WORKFLOW_FILES:
         workflow_path = repo_root / workflow_file
         error = _check_workflow_trust_contract(workflow_path)
         if error:
             errors.append(error)
-    
+
     if errors:
         raise WorkflowContractError("; ".join(errors))
 
@@ -251,12 +251,12 @@ def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: verify_release_workflow_hygiene.py <repo_root>", file=sys.stderr)
         sys.exit(1)
-    
+
     repo_root = Path(sys.argv[1])
     if not repo_root.is_dir():
         print(f"Error: {repo_root} is not a directory", file=sys.stderr)
         sys.exit(1)
-    
+
     try:
         check_homebrew_trust_contract(repo_root)
         print("Homebrew trust workflow contract: PASS")
