@@ -4,9 +4,56 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.430.0 Secure CLI TLS and Credential Boundary
+## Latest Completed Milestone: v0.450.0 Exact Shape Expansion for Online MySQL/TiDB Literal Operands
 
-**Goal:** add secure direct CLI TLS for `audit` and `query-access analyze`, remove plaintext `--password`/`-p` flags, enforce secure password sources (`--password-env`, `--password-file`, `--ask-password`), validate certificate chain and exact host when TLS enabled, and add `--database` for PostgreSQL metadata-aware operations. See `docs/releases/release-notes-v0.430.0.md` and `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md`.
+**Goal:** extend online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. On a caller-owned session (SDK), online CLI connection, or HTTP `connection_id`, common queries such as `COUNT(1)`, `LOWER('x')`, or `NULLIF('x', name)` now return `admissible` with precise physical requirements. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. See `docs/releases/release-notes-v0.450.0.md` and `docs/decisions/2026-07-26-query-access-literal-only-and-reversed-operands.md`.
+
+### Completed Scope
+
+- Unary literal-only shapes: `LOWER`, `UPPER`, `LENGTH`, `CHAR_LENGTH`, `ABS`, `CEIL`, `CEILING`, `FLOOR` with `[const]` operand, admitted across all four profiles.
+- Aggregate literal shape: `COUNT(1)` with `[const]` operand, admitted across all four profiles.
+- Reversed binary shapes: `COALESCE`, `NULLIF`, `IFNULL` with `[const, column]` operands.
+- All-constant binary shapes: `COALESCE`, `NULLIF`, `IFNULL` with `[const, const]` operands.
+- Existing `[column, const]` forms for `COALESCE`/`NULLIF`/`IFNULL` remain unchanged (v0.440.0).
+- Every admitted query requires at least one resolved physical base relation. Literals contribute no table or column requirement. No `admissible` result produces an empty requirements list.
+- Manifest validator rejects malformed fixed-arity entries.
+- Decision record: `docs/decisions/2026-07-26-query-access-literal-only-and-reversed-operands.md` (Accepted; Related milestone/version: v0.450.0).
+
+### Non-Goals
+
+- Not a general pure-function or SELECT admission. Only the exact shapes listed are admitted.
+- Not relationless literal-only `SELECT` (no FROM clause).
+- Not 3+ operand `COALESCE`/`NULLIF`/`IFNULL`.
+- Not PostgreSQL literal operands.
+- Not nested expressions, casts, parameters, UDFs, quoted/qualified calls, or arbitrary function support.
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.440.0 CLI TLS E2E as CI and Release Gate
+
+**Goal:** promote the CLI TLS end-to-end suite (`make test-e2e-cli-tls`) to an enforced gate that runs on every pull request and push to `main`, and compose it into `make release-test-gates`. See `docs/releases/release-notes-v0.440.0.md` and `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md`.
+
+### Completed Scope
+
+- CLI TLS E2E suite runs as a required GitHub Actions gate on pull requests and pushes to `main`, composed into `make release-test-gates`.
+- TLS fixtures use Compose-assigned dynamic host ports, unique Compose project names, and container-name overrides for safe parallel runs.
+- Fail-closed Docker policy: suite fails in CI when Docker is unavailable; `--docker-optional` rejected in CI.
+- Hardened fixture lifecycle with dedicated cleanup regression harness (`make test-e2e-cli-tls-regression`).
+- MySQL TLS fixtures use TCP + TLS readiness healthcheck for real connectivity verification on Linux CI.
+- Decision record: `docs/decisions/2026-07-22-query-access-cli-tls-and-credentials.md` (Accepted; updated with CI/release gate evidence for v0.440.0).
+
+### Non-Goals
+
+- Not a new product feature. CI, release gating, and test infrastructure only.
+- Not a change to Query Access semantics, provable pure-function ranges, or literal-operand admissibility.
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.430.0 Secure CLI TLS and Credential Boundary
 
 ### Completed Scope
 

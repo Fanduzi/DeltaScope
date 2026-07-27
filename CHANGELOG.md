@@ -6,6 +6,27 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.450.0] - 2026-07-27
+
+### Added
+
+- Online MySQL/TiDB Query Access now admits exact literal-only, reversed, and all-constant operand shapes. On a caller-owned `*sql.Conn` (SDK), online CLI connection, or HTTP registered `connection_id`, queries such as `SELECT COUNT(1) FROM app.orders` or `SELECT LOWER('x') FROM app.users` return `admissible` with precise physical requirements instead of `indeterminate`. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5.
+- New admitted shapes: unary literal-only (`LOWER`, `UPPER`, `LENGTH`, `CHAR_LENGTH`, `ABS`, `CEIL`, `CEILING`, `FLOOR` with `[const]` operand); aggregate literal (`COUNT(1)` with `[const]` operand); reversed binary (`COALESCE`, `NULLIF`, `IFNULL` with `[const, column]` operands); all-constant binary (`COALESCE`, `NULLIF`, `IFNULL` with `[const, const]` operands). 60 profile-shape combinations total.
+- Manifest validator (`validateBuiltinSemanticEntry`) now rejects malformed fixed-arity entries: `len(OperandKinds) != Arity` when `MinArity == 0` and `Arity > 0`, and arity-0 entries with non-star operand kinds.
+- Decision record: `docs/decisions/2026-07-26-query-access-literal-only-and-reversed-operands.md` (Accepted).
+
+### Non-Goals
+
+- Not a general pure-function or SELECT admission. Only the exact shapes listed above are admitted; all other literal-only, nested, or multi-operand forms remain `indeterminate`.
+- Not relationless literal-only `SELECT` (no FROM clause). Every admitted query requires at least one resolved physical base relation.
+- Not 3+ operand `COALESCE`/`NULLIF`/`IFNULL`. Only exactly two operands are admitted.
+- Not PostgreSQL literal operands. Literal operand expansion is MySQL/TiDB online only.
+- Not nested expressions, casts, parameters, UDFs, quoted/qualified calls, or arbitrary function support.
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog. Default offline CLI/SDK/HTTP behavior and MCP Query Access availability remain unchanged.
+
 ## [v0.440.0] - 2026-07-23
 
 ### Added
