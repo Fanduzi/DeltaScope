@@ -89,6 +89,76 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				"app.builtin_semantic_facts=read_table",
 			},
 		},
+		{
+			name:               "UPPER_literal",
+			sql:                "SELECT UPPER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "LENGTH_literal",
+			sql:                "SELECT LENGTH('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "CHAR_LENGTH_literal",
+			sql:                "SELECT CHAR_LENGTH('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "ABS_literal",
+			sql:                "SELECT ABS(42) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "CEIL_literal",
+			sql:                "SELECT CEIL(42) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "CEILING_literal",
+			sql:                "SELECT CEILING(42) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "FLOOR_literal",
+			sql:                "SELECT FLOOR(42) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
 		// COUNT with literal argument.
 		{
 			name:               "COUNT_literal",
@@ -112,10 +182,52 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				"app.builtin_semantic_facts.name=read_column",
 			},
 		},
+		{
+			name:               "NULLIF_reversed",
+			sql:                "SELECT NULLIF('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+				"app.builtin_semantic_facts.name=read_column",
+			},
+		},
+		{
+			name:               "IFNULL_reversed",
+			sql:                "SELECT IFNULL('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+				"app.builtin_semantic_facts.name=read_column",
+			},
+		},
 		// All-constant operands (no column reference).
 		{
 			name:               "COALESCE_all_constant",
 			sql:                "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "NULLIF_all_constant",
+			sql:                "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantExitCode:       0,
+			wantClassification: "read_only",
+			wantAdmission:      "admissible",
+			wantRequirements: []string{
+				"app.builtin_semantic_facts=read_table",
+			},
+		},
+		{
+			name:               "IFNULL_all_constant",
+			sql:                "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
 			wantExitCode:       0,
 			wantClassification: "read_only",
 			wantAdmission:      "admissible",

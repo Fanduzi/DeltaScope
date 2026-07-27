@@ -120,6 +120,20 @@ func validateBuiltinSemanticEntry(entry BuiltinSemanticEntry) error {
 	if entry.MinArity > 0 && entry.MaxArity > 0 && entry.MinArity > entry.MaxArity {
 		return fmt.Errorf("min arity exceeds max arity")
 	}
+	// Fixed-arity entries (MinArity == 0) must have len(OperandKinds) == Arity,
+	// except for arity-0 entries like COUNT(*) which have a star operand.
+	// Variable-arity entries (MinArity > 0) may have fewer OperandKinds than Arity
+	// because the matcher repeats the final kind for additional operands.
+	if entry.MinArity == 0 && entry.Arity > 0 && len(entry.OperandKinds) != entry.Arity {
+		return fmt.Errorf("fixed-arity entry has %d operand kinds but arity %d", len(entry.OperandKinds), entry.Arity)
+	}
+	// Arity-0 entries must have no operand kinds or exactly one star operand (for COUNT(*)).
+	if entry.MinArity == 0 && entry.Arity == 0 && len(entry.OperandKinds) > 1 {
+		return fmt.Errorf("arity-0 entry has %d operand kinds", len(entry.OperandKinds))
+	}
+	if entry.MinArity == 0 && entry.Arity == 0 && len(entry.OperandKinds) == 1 && entry.OperandKinds[0] != "star" {
+		return fmt.Errorf("arity-0 entry has non-star operand kind %q", entry.OperandKinds[0])
+	}
 	for _, kind := range entry.OperandKinds {
 		if !validBuiltinOperandKind(kind) {
 			return fmt.Errorf("unsupported operand kind")

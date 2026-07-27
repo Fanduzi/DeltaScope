@@ -519,6 +519,55 @@ func assertLiveProfileAdmitsLiteralOnlyShapes(t *testing.T, ctx context.Context,
 			},
 		},
 		{
+			name: "literal_only_upper",
+			sql:  "SELECT UPPER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "literal_only_length",
+			sql:  "SELECT LENGTH('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "literal_only_char_length",
+			sql:  "SELECT CHAR_LENGTH('SECRET_LITERAL') FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "literal_only_abs",
+			sql:  "SELECT ABS(42) FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "literal_only_ceil",
+			sql:  "SELECT CEIL(42) FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "literal_only_ceiling",
+			sql:  "SELECT CEILING(42) FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "literal_only_floor",
+			sql:  "SELECT FLOOR(42) FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
 			name: "count_literal",
 			sql:  "SELECT COUNT(1) FROM app.builtin_semantic_facts",
 			wantReqs: []QueryAccessRequirement{
@@ -580,6 +629,22 @@ func assertLiveProfileAdmitsReversedOperandShapes(t *testing.T, ctx context.Cont
 				{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"},
 			},
 		},
+		{
+			name: "reversed_nullif",
+			sql:  "SELECT NULLIF('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+				{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"},
+			},
+		},
+		{
+			name: "reversed_ifnull",
+			sql:  "SELECT IFNULL('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+				{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"},
+			},
+		},
 	} {
 		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
@@ -622,52 +687,69 @@ func assertLiveProfileAdmitsReversedOperandShapes(t *testing.T, ctx context.Cont
 
 func assertLiveProfileAdmitsAllConstantShapes(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	probe := struct {
+	for _, probe := range []struct {
 		name     string
 		sql      string
 		wantReqs []QueryAccessRequirement
 	}{
-		name: "all_constant_coalesce",
-		sql:  "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
-		wantReqs: []QueryAccessRequirement{
-			{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+		{
+			name: "all_constant_coalesce",
+			sql:  "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
 		},
-	}
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
-	if err != nil {
-		t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
-	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:           probe.sql,
-		Dialect:       tc.dialect,
-		DefaultSchema: "app",
-	})
-	if err != nil {
-		t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
-	}
-	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
-		t.Fatalf("%s %s classification=%q admission=%q, want read_only/admissible", tc.name, probe.name, result.ReadClassification, result.Admission)
-	}
-	// Exact requirement set — all-constant produces table-only requirements
-	if len(result.Requirements) != len(probe.wantReqs) {
-		t.Errorf("%s %s requirement count: got %d, want %d; got=%v", tc.name, probe.name, len(result.Requirements), len(probe.wantReqs), result.Requirements)
-	}
-	for i, got := range result.Requirements {
-		if i < len(probe.wantReqs) && got != probe.wantReqs[i] {
-			t.Errorf("%s %s requirements[%d]: got %+v, want %+v", tc.name, probe.name, i, got, probe.wantReqs[i])
+		{
+			name: "all_constant_nullif",
+			sql:  "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+		{
+			name: "all_constant_ifnull",
+			sql:  "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
+			wantReqs: []QueryAccessRequirement{
+				{Object: "app.builtin_semantic_facts", Privilege: "read_table"},
+			},
+		},
+	} {
+		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		if err != nil {
+			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-	}
-	// No-leak: SECRET_LITERAL and SECRET_LITERAL2 must not appear in struct dump or JSON
-	dump := fmt.Sprintf("%+v", result)
-	if strings.Contains(dump, "SECRET_LITERAL") {
-		t.Errorf("%s %s leaked SECRET_LITERAL in struct dump", tc.name, probe.name)
-	}
-	data, err := json.Marshal(result)
-	if err != nil {
-		t.Fatalf("%s %s marshal: %v", tc.name, probe.name, err)
-	}
-	if strings.Contains(string(data), "SECRET_LITERAL") {
-		t.Errorf("%s %s leaked SECRET_LITERAL in JSON", tc.name, probe.name)
+		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           probe.sql,
+			Dialect:       tc.dialect,
+			DefaultSchema: "app",
+		})
+		if err != nil {
+			t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
+		}
+		if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+			t.Fatalf("%s %s classification=%q admission=%q, want read_only/admissible", tc.name, probe.name, result.ReadClassification, result.Admission)
+		}
+		// Exact requirement set — all-constant produces table-only requirements
+		if len(result.Requirements) != len(probe.wantReqs) {
+			t.Errorf("%s %s requirement count: got %d, want %d; got=%v", tc.name, probe.name, len(result.Requirements), len(probe.wantReqs), result.Requirements)
+		}
+		for i, got := range result.Requirements {
+			if i < len(probe.wantReqs) && got != probe.wantReqs[i] {
+				t.Errorf("%s %s requirements[%d]: got %+v, want %+v", tc.name, probe.name, i, got, probe.wantReqs[i])
+			}
+		}
+		// No-leak: SECRET_LITERAL and SECRET_LITERAL2 must not appear in struct dump or JSON
+		dump := fmt.Sprintf("%+v", result)
+		if strings.Contains(dump, "SECRET_LITERAL") {
+			t.Errorf("%s %s leaked SECRET_LITERAL in struct dump", tc.name, probe.name)
+		}
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("%s %s marshal: %v", tc.name, probe.name, err)
+		}
+		if strings.Contains(string(data), "SECRET_LITERAL") {
+			t.Errorf("%s %s leaked SECRET_LITERAL in JSON", tc.name, probe.name)
+		}
 	}
 }
 

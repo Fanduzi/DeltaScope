@@ -41,6 +41,10 @@ func TestBuiltinSemanticManifest_RejectsInvalidEntries(t *testing.T) {
 		{Dialect: "mysql", Profile: AnalysisProfileMySQL57, Name: "count", CallClass: BuiltinSemanticAggregate, Arity: -1},
 		{Dialect: "mysql", Profile: AnalysisProfileMySQL57, Name: "count", CallClass: BuiltinSemanticAggregate, OperandKinds: []string{"bogus"}},
 		{Dialect: "mysql", Profile: AnalysisProfileMySQL57, Name: "count", CallClass: BuiltinSemanticAggregate, OperandKinds: []string{"unknown"}},
+		// Fixed-arity entry with mismatched OperandKinds length
+		{Dialect: "mysql", Profile: AnalysisProfileMySQL57, Name: "lower", CallClass: BuiltinSemanticScalar, Arity: 2, OperandKinds: []string{"const"}},
+		// Fixed-arity entry with zero Arity but non-empty OperandKinds
+		{Dialect: "mysql", Profile: AnalysisProfileMySQL57, Name: "lower", CallClass: BuiltinSemanticScalar, Arity: 0, OperandKinds: []string{"const"}},
 	}
 	for i, entry := range cases {
 		if _, err := NewBuiltinSemanticManifest([]BuiltinSemanticEntry{entry}); err == nil {
