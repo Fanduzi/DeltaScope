@@ -1,7 +1,7 @@
 # Decision: Query Access Literal-Only and Reversed Operand Shapes
 
 - Date: 2026-07-26
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@d2c4d91`
 - Related: [literal operand support](2026-07-25-query-access-literal-operand-support.md), [builtin semantic manifests](2026-07-18-query-access-mysql-tidb-builtin-semantic-manifests.md)
 - Spec: `docs/plans/2026-07-26-query-access-literal-only-and-reversed-operands-spec.md`
@@ -80,6 +80,12 @@ requirement set.
 
 ## Acceptance Evidence
 
+### Architecture
+
+The MySQL/TiDB path bypasses `ValidatePhase1PureEffectCandidates` entirely. In `service.go`, the MySQL/TiDB builtin gateway (`proveBuiltinSemantics`) runs directly on candidates without Phase-1 eligibility filtering. The PostgreSQL path (`resolveAndProveEffects`) calls `ValidatePhase1PureEffectCandidates` which rejects literal-only operands. This preserves the PostgreSQL boundary while enabling literal-only shapes for MySQL/TiDB.
+
+### Test Results
+
 - Parser characterization: 61 tests pass in `internal/infrastructure/parser/tidb`
 - Manifest validation: 117 tests pass in `internal/application/queryaccess`
 - Profile regressions: 153 tests pass across MySQL 5.7/8.0/8.4 and TiDB 8.5
@@ -87,6 +93,16 @@ requirement set.
 - SDK E2E: `TestLiveProfile` passes across all 4 profiles (5 tests)
 - CLI E2E: `TestQueryAccessOnline_MixedLiteralScalars` passes (41 tests)
 - HTTP E2E: `TestQueryAccessOnline_MixedLiteralScalars` passes (43 tests)
+- PostgreSQL eligibility: `TestPhase1Eligibility` passes (17 tests) - literal-only rejected
 - Full suite: `go test ./...` passes (3931 tests in 40 packages)
-- Build: `go build ./...` and `go vet ./...` pass
-- Corpus: `make query-access-corpus-gates` passes
+- PostgreSQL-tagged: `go test -tags postgresql ./...` passes (4870 tests)
+- Race: `go test -race` passes (1398 tests in 5 packages)
+- Build: `go build ./...` and `go build -tags postgresql ./...` pass
+- Vet: `go vet ./...` and `go vet -tags postgresql ./...` pass
+- Lint: `golangci-lint run ./...` - no issues found
+- TLS E2E: `make test-e2e-http-tls` and `make test-e2e-cli-tls` pass
+- Docs: `make docs-example-gates VERSION=v0.440.0` passes
+- Decision: `make decision-record-gate` passes
+- Gofmt: `make release-gofmt-gate` passes
+- npm: `npm test --prefix packages/deltascope-mcp` - 15 passed
+- Git: `git diff --check` and `go mod tidy` clean
