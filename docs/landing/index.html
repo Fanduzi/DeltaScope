@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.440.0 — CLI TLS E2E as CI and Release Gate</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.450.0 — Exact Shape Expansion for Online MySQL/TiDB Literal Operands</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1104,7 +1104,7 @@ Statement 1: CREATE TABLE
                 <div class="release-card-version">v0.430.0</div>
                 <div class="release-card-label" data-i18n="releases.labels.v04300">Secure CLI TLS and Credential Boundary</div>
               </div>
-              <div class="release-card-copy" data-i18n="releases.items.v04300">v0.430.0 introduces Secure CLI TLS and Credential Boundary: direct TLS for audit and query-access analyze with certificate chain and hostname validation, secure password sources replacing plaintext flags, and PostgreSQL --database support. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.</div>
+              <div class="release-card-copy" data-i18n="releases.items.v04300">v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.430.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04300" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.430.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.430.0.zh-CN.md">Open v0.430.0 notes →</a>
             </article>
 
@@ -1198,7 +1198,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.430.0 introduces Secure CLI TLS and Credential Boundary: direct TLS for audit and query-access analyze with certificate chain and hostname validation, secure password sources replacing plaintext flags, and PostgreSQL --database support.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1210,7 +1210,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.440.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.440.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.440.0.zh-CN.md">Release Notes v0.450.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.zh-CN.md">Release Notes v0.450.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1462,7 +1462,7 @@ Statement 1: CREATE TABLE
           items: {
             v04500: 'v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. On a caller-owned session, online CLI connection, or HTTP connection_id, queries such as COUNT(1) or LOWER(x) now return admissible with precise physical requirements instead of indeterminate. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.',
             v04400: 'v0.440.0 promotes the CLI TLS end-to-end suite to a required CI gate on pull requests and pushes to main, and composes it into the release test gates. Fixtures use dynamic host ports and unique Compose projects, Docker is fail-closed in CI, and a cleanup regression harness verifies teardown and port release. Testing and release infrastructure only; no change to Query Access semantics. Default offline behavior unchanged; MCP has no query-access tool.',
-            v04300: 'v0.430.0 introduces Secure CLI TLS and Credential Boundary: direct TLS for audit and query-access analyze with certificate chain and hostname validation, secure password sources replacing plaintext flags, and PostgreSQL --database support. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.',
+            v04300: 'v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.',
             v04200: 'v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions. Teams can register, inspect, and rotate named database connections through a centralised registry; TLS mode enforces transport-level protections; bounded scalar functions provide a constrained extension point for registered read-only functions. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.',
             v04100: 'v0.410.0 introduces the opt-in MySQL/TiDB builtin semantic manifest proof model. On a caller-owned MySQL/TiDB *sql.Conn, profiled queries may return read_only + admissible after same-connection metadata, parser-native-form proof, complete candidate closure, and immutable manifest lookup. Proven: COUNT(*) and direct-column COUNT/SUM/AVG/MIN/MAX for all four profiles; ROW_NUMBER/RANK/DENSE_RANK for MySQL 8.0/8.4 and TiDB 8.5. MySQL 5.7 windows deferred. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.',
             v04000: 'v0.400.0 expands the opt-in PG17 Trusted PostgreSQL Query Access SDK with manifest-proven COUNT variants, typed SUM/AVG/MIN/MAX, and ranking windows over direct base-column dependencies. Default SDK/CLI/HTTP stay fail-closed; MySQL/TiDB remain deferred; MCP has no query-access tool. Not full common SELECT, not authorization.',
