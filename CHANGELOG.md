@@ -6,6 +6,28 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.460.0] - 2026-07-28
+
+### Added
+
+- Online MySQL/TiDB Query Access now admits exact literal-only manifest entries without a FROM clause. On a caller-owned `*sql.Conn` (SDK), online CLI connection, or HTTP registered `connection_id`, queries such as `SELECT LOWER('x')`, `SELECT COUNT(1)`, or `SELECT COALESCE('a','b')` return `read_only` + `admissible` with empty requirements â no tables, no relations, no referenced columns. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5.
+- Admitted relationless shapes: unary literal-only (`LOWER`, `UPPER`, `LENGTH`, `CHAR_LENGTH`, `ABS`, `CEIL`, `CEILING`, `FLOOR` with `[const]` operand); aggregate literal (`COUNT(1)` with `[const]` operand); all-constant binary (`COALESCE`, `NULLIF`, `IFNULL` with `[const, const]` operands).
+- Empty requirements means static analysis found no database object reads. Not authorization, grants, RLS, masking, SQL mode, or execution permission.
+- Decision record: `docs/decisions/2026-07-28-query-access-relationless-literal-selects.md` (Accepted).
+
+### Non-Goals
+
+- Not `SELECT 1` (candidate-free). Candidate-free queries stay at existing behavior.
+- Not relation-bearing or column-bearing queries. Those still require physical requirements proof.
+- Not 3+ operand `COALESCE`/`NULLIF`/`IFNULL`. Only exactly two literal operands are admitted.
+- Not default/offline SDK, CLI, HTTP, PostgreSQL, or MCP. Those paths remain unchanged and fail-closed.
+- Not parameters, casts, operators, nested functions, subqueries, UDFs, quoted/qualified/noncanonical calls, unknown functions, or unsupported modifiers.
+- Not a JSON field, authorization flag, or permission-free flag. `tls_mode` default remains disabled.
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog.
+
 ## [v0.450.0] - 2026-07-27
 
 ### Added
