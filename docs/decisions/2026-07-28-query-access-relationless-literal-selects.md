@@ -35,10 +35,13 @@ this decision and retain their existing analyzer behavior.
 
 - MySQL 5.7/8.0/8.4 and TiDB 8.5 online sessions only.
 - Existing exact `[const]` and `[const,const]` manifest shapes only.
-- Default SDK, CLI, HTTP, PostgreSQL, and MCP remain fail-closed.
-- Any column, relation, parameter, expression, cast, nested call, UDF,
-  unsupported modifier, noncanonical call, or non-manifest shape remains
-  indeterminate.
+- Default/offline SDK, CLI, and HTTP paths, PostgreSQL, and MCP remain
+  fail-closed.
+- A column operand or relation excludes the query from this empty-requirements
+  decision. It remains governed by the existing physical-requirements proof;
+  this decision neither broadens nor narrows that path.
+- Parameters, expressions, casts, nested calls, UDFs, unsupported modifiers,
+  noncanonical calls, and non-manifest shapes remain indeterminate.
 - The existing result schema is retained. An empty SDK requirements slice may
   be omitted from JSON; no new authorization or permission-free flag is added.
 

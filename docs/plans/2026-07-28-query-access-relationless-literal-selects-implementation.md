@@ -7,8 +7,10 @@ Status: Proposed
    nearby rejected shapes. Include candidate-free `SELECT 1` as a no-change
    regression rather than a new positive case.
 2. Add failing gateway tests for relationless `[const]` and `[const,const]`
-   manifest calls. Add negatives for relation, column, wildcard, unresolved,
-   parameter, nested, cast, malformed, and PostgreSQL candidates.
+   manifest calls. Prove relation/column candidates cannot enter the
+   empty-requirements branch while preserving their existing physical-proof
+   behavior. Add negatives for wildcard, unresolved, parameter, nested, cast,
+   malformed, and PostgreSQL candidates.
 3. Add the MySQL/TiDB-only relationless proof predicate in the builtin gateway.
    Do not change the physical requirement predicate, generic requirement
    builder, profile validator, or PostgreSQL Phase 1.

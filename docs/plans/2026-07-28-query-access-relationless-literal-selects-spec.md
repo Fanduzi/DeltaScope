@@ -68,7 +68,9 @@ The following remain indeterminate:
   or qualified calls, unknown functions, unsupported modifiers, and noncanonical
   function syntax;
 - three-or-more argument `COALESCE`, `NULLIF`, or `IFNULL`;
-- any candidate with a column operand.
+- any candidate with a column operand on the empty-requirements branch. Such a
+  query remains governed by the existing physical-requirements proof and is
+  not widened or narrowed by this milestone.
 
 The existing behavior of relationless, candidate-free queries such as
 `SELECT 1` is not widened, narrowed, or documented as part of this feature.
