@@ -73,5 +73,17 @@ echo unreviewed > sneaky2
 git add .release-candidate sneaky2 && git commit -q -m "rc with extra"
 ng "rejects extra files" bash "$PRETAG" v0.1.0
 
+echo "T12: remote tag collision"; setup; rc v0.1.0
+# Simulate a remote tag by creating a bare remote and pushing the tag
+REMOTE="$(mktemp -d)"
+git init --bare -q "$REMOTE"
+git remote add origin "$REMOTE"
+# Create the tag on the reviewed commit (parent) and push it to "origin"
+git tag -a v0.1.0 -m "remote tag" HEAD^
+git push -q origin v0.1.0 2>/dev/null
+git tag -d v0.1.0 2>/dev/null || true
+ng "rejects remote tag" bash "$PRETAG" v0.1.0
+rm -rf "$REMOTE"
+
 echo ""; echo "Results: $P passed, $F failed"
 [ "$F" -eq 0 ] && echo "All tests passed." || exit 1

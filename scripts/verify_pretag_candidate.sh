@@ -105,13 +105,17 @@ if [ -n "$UNREVIEWED" ]; then
 fi
 echo "pretag-candidate: only .release-candidate changed PASS"
 
-# Check 4: Tag must not already exist.
+# Check 4: Tag must not already exist (local or remote).
 if git rev-parse "$TAG" >/dev/null 2>&1; then
   echo "::error::Tag $TAG already exists locally. Delete it first if this is a retry: git tag -d $TAG"
   exit 1
 fi
-echo "pretag-candidate: tag $TAG does not exist PASS"
-
+REMOTE_TAG="$(git ls-remote --tags origin "refs/tags/${TAG}" 2>/dev/null | head -1 || true)"
+if [ -n "$REMOTE_TAG" ]; then
+  echo "::error::Tag $TAG already exists on origin ($REMOTE_TAG). Cannot push a duplicate tag."
+  exit 1
+fi
+echo "pretag-candidate: tag $TAG does not exist locally or on origin PASS"
 # Check 5: Working tree must be clean (tracked files only).
 DIRTY="$(git status --porcelain --untracked-files=no)"
 if [ -n "$DIRTY" ]; then
