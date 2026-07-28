@@ -22,7 +22,10 @@ func proveBuiltinSemantics(profile AnalysisProfile, dialect string, candidates [
 		return builtinSemanticProofResult{decision: builtinSemanticUnproven}
 	}
 	manifest := registry.manifest(profile)
-	if manifest == nil || len(manifest.entries) == 0 || !strictPhysicalRequirementsComplete(result, requirements, candidates) {
+	if manifest == nil || len(manifest.entries) == 0 {
+		return builtinSemanticProofResult{decision: builtinSemanticUnproven}
+	}
+	if !strictPhysicalRequirementsComplete(result, requirements, candidates) && !relationlessLiteralRequirementsComplete(result, requirements, candidates) {
 		return builtinSemanticProofResult{decision: builtinSemanticUnproven}
 	}
 	byName := make(map[string][]BuiltinSemanticEntry, len(manifest.entries))
@@ -253,6 +256,41 @@ func strictPhysicalRequirementsComplete(result domain.Result, requirements []dom
 			}
 			key := domain.FormatColumnKey(ref.Schema, ref.Table, ref.Column) + "\x00read_column"
 			if _, ok := required[key]; !ok {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// relationlessLiteralRequirementsComplete admits only relationless,
+// literal-only statements: an empty requirement set is proof-complete solely
+// when static analysis surfaced no database object read at all. It never
+// substitutes for the physical proof of a relation-bearing statement.
+func relationlessLiteralRequirementsComplete(result domain.Result, requirements []domain.Requirement, candidates []EffectCandidate) bool {
+	if result.Mode != domain.ModeStrict {
+		return false
+	}
+	if len(result.Relations) != 0 || len(result.ReferencedColumns) != 0 || len(result.Unresolved) != 0 || len(requirements) != 0 {
+		return false
+	}
+	for _, output := range result.Outputs {
+		if output.Name == "*" || strings.HasSuffix(output.Name, ".*") {
+			return false
+		}
+	}
+	if len(candidates) == 0 {
+		return false
+	}
+	for _, candidate := range candidates {
+		if len(candidate.OperandColumnRefs) != 0 || len(candidate.WindowPartitionColumnRefs) != 0 || len(candidate.WindowOrderColumnRefs) != 0 {
+			return false
+		}
+		if len(candidate.OperandKinds) == 0 {
+			return false
+		}
+		for _, kind := range candidate.OperandKinds {
+			if kind != "const" {
 				return false
 			}
 		}

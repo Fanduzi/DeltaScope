@@ -378,6 +378,51 @@ func TestBuiltinSemanticProfileRegression_LiteralAndReversedPositive(t *testing.
 	}
 }
 
+func TestBuiltinSemanticProfileRegression_RelationlessLiteralPositive(t *testing.T) {
+	t.Parallel()
+	profiles := []struct {
+		name    string
+		dialect string
+		profile AnalysisProfile
+	}{
+		{name: "mysql57", dialect: "mysql", profile: AnalysisProfileMySQL57},
+		{name: "mysql80", dialect: "mysql", profile: AnalysisProfileMySQL80},
+		{name: "mysql84", dialect: "mysql", profile: AnalysisProfileMySQL84},
+		{name: "tidb85", dialect: "tidb", profile: AnalysisProfileTiDB85},
+	}
+	probes := []struct {
+		name string
+		sql  string
+	}{
+		{name: "lower_literal", sql: "SELECT LOWER('x')"},
+		{name: "upper_literal", sql: "SELECT UPPER('x')"},
+		{name: "length_literal", sql: "SELECT LENGTH('x')"},
+		{name: "char_length_literal", sql: "SELECT CHAR_LENGTH('x')"},
+		{name: "abs_literal", sql: "SELECT ABS(42)"},
+		{name: "ceil_literal", sql: "SELECT CEIL(42)"},
+		{name: "ceiling_literal", sql: "SELECT CEILING(42)"},
+		{name: "floor_literal", sql: "SELECT FLOOR(42)"},
+		{name: "count_literal", sql: "SELECT COUNT(1)"},
+		{name: "coalesce_all_constant", sql: "SELECT COALESCE('x', 'y')"},
+		{name: "nullif_all_constant", sql: "SELECT NULLIF('x', 'y')"},
+		{name: "ifnull_all_constant", sql: "SELECT IFNULL('x', 'y')"},
+	}
+
+	for _, profile := range profiles {
+		for _, probe := range probes {
+			t.Run(profile.name+"/"+probe.name, func(t *testing.T) {
+				result := analyzeProductionProfile(t, probe.sql, profile.dialect, "app", profile.profile)
+				assertProfileAdmissible(t, result)
+				assertProfileRequirements(t, result, nil)
+				got := result.DomainResult
+				if len(got.Relations) != 0 || len(got.ReferencedColumns) != 0 || len(got.Unresolved) != 0 {
+					t.Fatalf("relationless literal leaked physical facts: %+v", got)
+				}
+			})
+		}
+	}
+}
+
 func TestBuiltinSemanticProfileRegression_BoundariesStayIndeterminate(t *testing.T) {
 	t.Parallel()
 	profiles := []struct {
@@ -394,8 +439,6 @@ func TestBuiltinSemanticProfileRegression_BoundariesStayIndeterminate(t *testing
 		name string
 		sql  string
 	}{
-		{name: "relationless_lower_literal", sql: "SELECT LOWER('x')"},
-		{name: "relationless_count_literal", sql: "SELECT COUNT(1)"},
 		{name: "coalesce_arity_one", sql: "SELECT COALESCE('x') FROM app.builtin_semantic_facts"},
 		{name: "coalesce_const_first_arity_three", sql: "SELECT COALESCE('x', 'y', 'z') FROM app.builtin_semantic_facts"},
 		{name: "nested_literal_expression", sql: "SELECT LOWER(UPPER('x')) FROM app.builtin_semantic_facts"},
