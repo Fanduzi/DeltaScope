@@ -1085,11 +1085,20 @@ Statement 1: CREATE TABLE
             <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
           </div>
             <div class="release-title" data-i18n="releases.currentTitle">Relationless Literal-Only Query Access for Online MySQL/TiDB</div>
-            <div class="release-copy" data-i18n="releases.items.v04500">v0.460.0 enables relationless literal-only Query Access on online MySQL/TiDB sessions. Queries such as SELECT LOWER('x') or SELECT COUNT(1) without a FROM clause now return admissible with no requirements on MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline, PostgreSQL, and MCP behavior unchanged. Not authorization.</div>
+            <div class="release-copy" data-i18n="releases.items.v04600">v0.460.0 enables relationless literal-only Query Access on online MySQL/TiDB sessions. Queries such as SELECT LOWER('x') or SELECT COUNT(1) without a FROM clause now return admissible with no requirements on MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline, PostgreSQL, and MCP behavior unchanged. Not authorization.</div>
             <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.460.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.460.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.460.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.450.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v04500">Exact Shape Expansion for Online MySQL/TiDB Literal Operands</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v04500">v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. On a caller-owned session, online CLI connection, or HTTP connection_id, queries such as COUNT(1) or LOWER('x') now return admissible with precise physical requirements instead of indeterminate. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04500" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.zh-CN.md">Open v0.450.0 notes →</a>
+            </article>
+
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.440.0</div>
@@ -1108,14 +1117,6 @@ Statement 1: CREATE TABLE
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.430.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04300" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.430.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.430.0.zh-CN.md">Open v0.430.0 notes →</a>
             </article>
 
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.420.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v04200">Online Query Access Connection Registry</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v04200">v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions. Teams can register, inspect, and rotate named database connections through a centralised registry; TLS mode enforces transport-level protections; bounded scalar functions provide a constrained extension point for registered read-only functions. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04200" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.420.0.zh-CN.md">Open v0.420.0 notes →</a>
-            </article>
             <article class="release-card archive">
               <div class="release-card-head">
                 <div class="release-card-version" data-i18n="releases.archiveTitle">Release archive</div>
@@ -1383,7 +1384,8 @@ Statement 1: CREATE TABLE
           currentTitle: 'Relationless Literal-Only Query Access for Online MySQL/TiDB',
           currentLink: 'Read release notes →',
           labels: {
-            v04500: 'Relationless Literal-Only Query Access for Online MySQL/TiDB',
+            v04600: 'Relationless Literal-Only Query Access for Online MySQL/TiDB',
+            v04500: 'Exact Shape Expansion for Online MySQL/TiDB Literal Operands',
             v04400: 'CLI TLS E2E as a CI and Release Gate',
             v04300: 'Secure CLI TLS and Credential Boundary',
             v04200: 'Online Query Access Connection Registry',
@@ -1420,7 +1422,8 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
-            v04500: 'Open v0.460.0 notes →',
+            v04600: 'Open v0.460.0 notes →',
+            v04500: 'Open v0.450.0 notes →',
             v04400: 'Open v0.440.0 notes →',
             v04300: 'Open v0.430.0 notes →',
             v04200: 'Open v0.420.0 notes →',
@@ -1459,8 +1462,8 @@ Statement 1: CREATE TABLE
           archiveLabel: 'All versions',
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
-          items: {
-            v04500: 'v0.460.0 enables relationless literal-only Query Access on online MySQL/TiDB sessions. Queries such as SELECT LOWER(\'x\') or SELECT COUNT(1) without a FROM clause now return admissible with no requirements on MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline, PostgreSQL, and MCP behavior unchanged. Not authorization.',
+            v04600: 'v0.460.0 enables relationless literal-only Query Access on online MySQL/TiDB sessions. Queries such as SELECT LOWER(\'x\') or SELECT COUNT(1) without a FROM clause now return admissible with no requirements on MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline, PostgreSQL, and MCP behavior unchanged. Not authorization.',
+            v04500: 'v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. On a caller-owned session, online CLI connection, or HTTP connection_id, queries such as COUNT(1) or LOWER(\'x\') now return admissible with precise physical requirements instead of indeterminate. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.',
             v04400: 'v0.440.0 promotes the CLI TLS end-to-end suite to a required CI gate on pull requests and pushes to main, and composes it into the release test gates. Fixtures use dynamic host ports and unique Compose projects, Docker is fail-closed in CI, and a cleanup regression harness verifies teardown and port release. Testing and release infrastructure only; no change to Query Access semantics. Default offline behavior unchanged; MCP has no query-access tool.',
             v04300: 'v0.430.0 introduces Secure CLI TLS and Credential Boundary: direct TLS for audit and query-access analyze with certificate chain and hostname validation, secure password sources replacing plaintext flags, and PostgreSQL --database support. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.',
             v04200: 'v0.420.0 introduces the Online Query Access Connection Registry: operator-managed named connections with TLS mode and bounded scalar functions. Teams can register, inspect, and rotate named database connections through a centralised registry; TLS mode enforces transport-level protections; bounded scalar functions provide a constrained extension point for registered read-only functions. Default SDK/CLI/HTTP remain fail-closed; MCP has no query-access tool. Not authorization.',
@@ -1661,7 +1664,8 @@ Statement 1: CREATE TABLE
           currentTitle: '在线 MySQL/TiDB 无关系纯字面量 Query Access',
           currentLink: '查看发布说明 →',
           labels: {
-            v04500: '在线 MySQL/TiDB 无关系纯字面量 Query Access',
+            v04600: '在线 MySQL/TiDB 无关系纯字面量 Query Access',
+            v04500: '在线 MySQL/TiDB 字面量操作数精确形状扩展',
             v04400: 'CLI TLS E2E as a CI and Release Gate / CLI TLS E2E 成为 CI 与发布门禁',
             v04300: 'Secure CLI TLS and Credential Boundary / 安全 CLI TLS 与凭证边界',
             v04200: 'Online Query Access Connection Registry / 在线查询访问连接注册表',
@@ -1698,7 +1702,8 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
-            v04500: '查看 v0.460.0 发布说明 →',
+            v04600: '查看 v0.460.0 发布说明 →',
+            v04500: '查看 v0.450.0 发布说明 →',
             v04400: '查看 v0.440.0 发布说明 →',
             v04300: '查看 v0.430.0 发布说明 →',
             v04200: '查看 v0.420.0 发布说明 →',
@@ -1739,7 +1744,8 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
-            v04500: 'v0.460.0 在在线 MySQL/TiDB session 上启用无关系纯字面量 Query Access。不含 FROM 子句的查询如 SELECT LOWER(x) 或 SELECT COUNT(1) 现在在 MySQL 5.7、8.0、8.4 和 TiDB 8.5 上返回 admissible，无物理要求。默认离线、PostgreSQL 和 MCP 行为不变。不是鉴权。',
+            v04600: 'v0.460.0 在在线 MySQL/TiDB session 上启用无关系纯字面量 Query Access。不含 FROM 子句的查询如 SELECT LOWER(x) 或 SELECT COUNT(1) 现在在 MySQL 5.7、8.0、8.4 和 TiDB 8.5 上返回 admissible，无物理要求。默认离线、PostgreSQL 和 MCP 行为不变。不是鉴权。',
+            v04500: 'v0.450.0 扩展了在线 MySQL/TiDB Query Access 的字面量操作数覆盖面。在调用方自有的 session、在线 CLI 连接或 HTTP connection_id 上，COUNT(1)、LOWER(x) 等查询现在返回 admissible 并附带精确物理要求，而非 indeterminate。支持的 profile 为 MySQL 5.7、8.0、8.4 和 TiDB 8.5。默认离线行为不变；MCP 无 query-access 工具。不是鉴权。',
             v04400: 'v0.440.0 将 CLI TLS 端到端套件提升为 PR 和推送到 main 的必需 CI 门禁，并将其纳入发布测试门禁。夹具使用动态端口和唯一 Compose 项目，CI 中 Docker 为 fail-closed 策略，清理回归夹具验证拆卸和端口释放。仅涉及测试与发布基础设施；Query Access 语义不变。默认离线行为不变；MCP 无 query-access 工具。',
             v04300: 'v0.430.0 引入安全 CLI TLS 与凭证边界：审计和 query-access analyze 的直接 TLS 支持（含证书链和主机名验证）、替代明文标志的安全密码源，以及 PostgreSQL --database 支持。默认离线行为不变；MCP 无 query-access 工具。不是鉴权。',
             v04200: 'v0.420.0 引入在线查询访问连接注册表：运维管理的命名连接、TLS 模式和有界标量函数。团队可以通过集中注册表注册、检查和轮换命名数据库连接；TLS 模式强制传输层保护；有界标量函数为已注册只读函数提供受限扩展点。默认 SDK/CLI/HTTP 仍 fail-closed；MCP 无 query-access 工具。不是鉴权。',
