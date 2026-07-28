@@ -1,12 +1,14 @@
 //go:build integration
 
 // Package httpapi verifies HTTP query-access online behavior for mixed-literal
-// operands (COALESCE, NULLIF, IFNULL) against real Docker-backed MySQL and TiDB.
+// operands (COALESCE, NULLIF, IFNULL) and relationless (no FROM) literal-only
+// shapes against real Docker-backed MySQL and TiDB.
 // input: real MySQL/TiDB fixtures, the HTTP JSON entrypoint, and a test registry
 // output: end-to-end proof that mixed-literal scalar operands yield
 //
 //	read_only + admissible via the HTTP online path across all four MySQL/TiDB
-//	versions, with exact requirement assertions and no-leak guards
+//	versions, with exact requirement assertions and no-leak guards; relationless
+//	literal-only shapes additionally yield zero requirements/relations/columns
 //
 // pos: HTTP online E2E coverage for the mixed-literal scalar operand feature
 // note: if this file changes, update this header and module README.md.
@@ -21,6 +23,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -96,11 +99,22 @@ func assertAccessLogEntry(t *testing.T, logBuf *syncBuffer, path string) {
 
 func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 	t.Helper()
+	scanned := sanitizeLogForLeakScan(logOutput)
 	for _, marker := range markers {
-		if strings.Contains(logOutput, marker) {
+		if strings.Contains(scanned, marker) {
 			t.Errorf("access log leaked %q: %s", marker, logOutput)
 		}
 	}
+}
+
+// requestIDPattern matches the server-generated request_id field. Its value is
+// random hex with no relationship to SQL, credentials, host, port, or schema,
+// so it must be excluded from no-leak scans to avoid coincidental substring
+// matches (e.g. a port number appearing inside the random id).
+var requestIDPattern = regexp.MustCompile(`"request_id":"[^"]*"`)
+
+func sanitizeLogForLeakScan(logOutput string) string {
+	return requestIDPattern.ReplaceAllString(logOutput, `"request_id":"<redacted>"`)
 }
 
 func writeTempFile(t *testing.T, prefix, content string) string {
@@ -228,6 +242,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		name             string
 		sql              string
 		wantRequirements []map[string]string
+		relationless     bool
 	}{
 		{
 			name: "COALESCE",
@@ -361,6 +376,19 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
 			},
 		},
+		// Relationless (no FROM) literal-only shapes: nothing is read.
+		{name: "relationless_lower", sql: "SELECT LOWER('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
+		{name: "relationless_upper", sql: "SELECT UPPER('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
+		{name: "relationless_length", sql: "SELECT LENGTH('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
+		{name: "relationless_char_length", sql: "SELECT CHAR_LENGTH('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
+		{name: "relationless_abs", sql: "SELECT ABS(42)", wantRequirements: nil, relationless: true},
+		{name: "relationless_ceil", sql: "SELECT CEIL(42)", wantRequirements: nil, relationless: true},
+		{name: "relationless_ceiling", sql: "SELECT CEILING(42)", wantRequirements: nil, relationless: true},
+		{name: "relationless_floor", sql: "SELECT FLOOR(42)", wantRequirements: nil, relationless: true},
+		{name: "relationless_count_literal", sql: "SELECT COUNT(1)", wantRequirements: nil, relationless: true},
+		{name: "relationless_coalesce", sql: "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')", wantRequirements: nil, relationless: true},
+		{name: "relationless_nullif", sql: "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')", wantRequirements: nil, relationless: true},
+		{name: "relationless_ifnull", sql: "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')", wantRequirements: nil, relationless: true},
 	}
 
 	for _, tc := range cases {
@@ -402,21 +430,37 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						t.Errorf("admission: got %q, want admissible", result["admission"])
 					}
 
-					wantReqs := probe.wantRequirements
-					rawReqs, ok := result["requirements"].([]any)
-					if !ok {
-						t.Fatalf("requirements: not a slice; got %T", result["requirements"])
-					}
-					if len(rawReqs) != len(wantReqs) {
-						t.Fatalf("requirements: got %d items, want %d", len(rawReqs), len(wantReqs))
-					}
-					for i, raw := range rawReqs {
-						reqMap, ok := raw.(map[string]any)
-						if !ok {
-							t.Fatalf("requirements[%d]: not a map; got %T", i, raw)
+					if probe.relationless {
+						// Relationless literal-only proves nothing is read:
+						// every scope key is absent or empty.
+						for _, key := range []string{"requirements", "relations", "referenced_columns", "unresolved"} {
+							if v, present := result[key]; present {
+								if arr, ok := v.([]any); ok {
+									if len(arr) != 0 {
+										t.Errorf("relationless %s: got %d items (%v), want 0", key, len(arr), arr)
+									}
+								} else if v != nil {
+									t.Errorf("relationless %s: got non-array %T (%v), want absent/empty", key, v, v)
+								}
+							}
 						}
-						if reqMap["object"] != wantReqs[i]["object"] || reqMap["privilege"] != wantReqs[i]["privilege"] {
-							t.Errorf("requirements[%d]: got %+v, want %+v", i, reqMap, wantReqs[i])
+					} else {
+						wantReqs := probe.wantRequirements
+						rawReqs, ok := result["requirements"].([]any)
+						if !ok {
+							t.Fatalf("requirements: not a slice; got %T", result["requirements"])
+						}
+						if len(rawReqs) != len(wantReqs) {
+							t.Fatalf("requirements: got %d items, want %d", len(rawReqs), len(wantReqs))
+						}
+						for i, raw := range rawReqs {
+							reqMap, ok := raw.(map[string]any)
+							if !ok {
+								t.Fatalf("requirements[%d]: not a map; got %T", i, raw)
+							}
+							if reqMap["object"] != wantReqs[i]["object"] || reqMap["privilege"] != wantReqs[i]["privilege"] {
+								t.Errorf("requirements[%d]: got %+v, want %+v", i, reqMap, wantReqs[i])
+							}
 						}
 					}
 
@@ -616,8 +660,9 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 			// 5) Access log must contain the positive entry AND must not leak.
 			assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
 			logOutput := logBuf.String()
+			scannedLog := sanitizeLogForLeakScan(logOutput)
 			for _, marker := range failMarkers {
-				if strings.Contains(logOutput, marker) {
+				if strings.Contains(scannedLog, marker) {
 					t.Errorf("access log leaked %q: %s; connID=%s", marker, logOutput, fc.connectionID)
 				}
 			}

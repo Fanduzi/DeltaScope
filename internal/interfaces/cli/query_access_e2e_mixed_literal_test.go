@@ -1,12 +1,14 @@
 //go:build integration
 
 // Package cli verifies CLI query-access online behavior for mixed-literal
-// operands (COALESCE, NULLIF, IFNULL) against real Docker-backed MySQL and TiDB.
+// operands (COALESCE, NULLIF, IFNULL) and relationless (no FROM) literal-only
+// shapes against real Docker-backed MySQL and TiDB.
 // input: CLI invocations with connection flags pointing at running Docker containers
 // output: end-to-end proof that mixed-literal scalar operands yield
 //
 //	read_only + admissible via the CLI online path across all four MySQL/TiDB
-//	versions, with exact requirement assertions and no-leak guards
+//	versions, with exact requirement assertions and no-leak guards; relationless
+//	literal-only shapes additionally yield zero requirements/relations/columns
 //
 // pos: CLI online E2E coverage for the mixed-literal scalar operand feature
 // note: if this file changes, update this header and module README.md.
@@ -43,6 +45,7 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 		wantClassification string
 		wantAdmission      string
 		wantRequirements   []string
+		relationless       bool
 	}{
 		// Original mixed-literal shapes (column-first operand).
 		{
@@ -235,6 +238,19 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 				"app.builtin_semantic_facts=read_table",
 			},
 		},
+		// Relationless (no FROM) literal-only shapes: nothing is read.
+		{name: "relationless_lower", sql: "SELECT LOWER('SECRET_LITERAL')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_upper", sql: "SELECT UPPER('SECRET_LITERAL')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_length", sql: "SELECT LENGTH('SECRET_LITERAL')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_char_length", sql: "SELECT CHAR_LENGTH('SECRET_LITERAL')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_abs", sql: "SELECT ABS(42)", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_ceil", sql: "SELECT CEIL(42)", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_ceiling", sql: "SELECT CEILING(42)", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_floor", sql: "SELECT FLOOR(42)", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_count_literal", sql: "SELECT COUNT(1)", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_coalesce", sql: "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_nullif", sql: "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
+		{name: "relationless_ifnull", sql: "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')", wantExitCode: 0, wantClassification: "read_only", wantAdmission: "admissible", wantRequirements: nil, relationless: true},
 	}
 
 	// Online path: connection flags present.
@@ -284,6 +300,19 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 						gotStr := got.Object + "=" + got.Privilege
 						if gotStr != want {
 							t.Errorf("requirements[%d]: got %q, want %q", i, gotStr, want)
+						}
+					}
+
+					// Relationless literal-only proves nothing is read.
+					if probe.relationless {
+						if len(result.Relations) != 0 {
+							t.Errorf("relationless relations: got %d (%v), want 0", len(result.Relations), result.Relations)
+						}
+						if len(result.ReferencedColumns) != 0 {
+							t.Errorf("relationless referenced_columns: got %d (%v), want 0", len(result.ReferencedColumns), result.ReferencedColumns)
+						}
+						if len(result.Unresolved) != 0 {
+							t.Errorf("relationless unresolved: got %d (%v), want 0", len(result.Unresolved), result.Unresolved)
 						}
 					}
 

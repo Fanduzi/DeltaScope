@@ -96,6 +96,7 @@ func TestLiveProfile_AssertsVersionAndAdmitsAggregates(t *testing.T) {
 			assertLiveProfileAdmitsLiteralOnlyShapes(t, ctx, conn, tc)
 			assertLiveProfileAdmitsReversedOperandShapes(t, ctx, conn, tc)
 			assertLiveProfileAdmitsAllConstantShapes(t, ctx, conn, tc)
+			assertLiveProfileAdmitsRelationlessLiteralShapes(t, ctx, conn, tc)
 			assertLiveProfileRejectsMixedLiteralNegatives(t, ctx, conn, tc)
 			if tc.windowSupport {
 				assertLiveProfileAdmitsRankingWindows(t, ctx, conn, tc)
@@ -753,13 +754,74 @@ func assertLiveProfileAdmitsAllConstantShapes(t *testing.T, ctx context.Context,
 	}
 }
 
+func assertLiveProfileAdmitsRelationlessLiteralShapes(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
+	t.Helper()
+	for _, probe := range []struct {
+		name string
+		sql  string
+	}{
+		{"relationless_lower", "SELECT LOWER('SECRET_LITERAL')"},
+		{"relationless_upper", "SELECT UPPER('SECRET_LITERAL')"},
+		{"relationless_length", "SELECT LENGTH('SECRET_LITERAL')"},
+		{"relationless_char_length", "SELECT CHAR_LENGTH('SECRET_LITERAL')"},
+		{"relationless_abs", "SELECT ABS(42)"},
+		{"relationless_ceil", "SELECT CEIL(42)"},
+		{"relationless_ceiling", "SELECT CEILING(42)"},
+		{"relationless_floor", "SELECT FLOOR(42)"},
+		{"relationless_count_literal", "SELECT COUNT(1)"},
+		{"relationless_coalesce", "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+		{"relationless_nullif", "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+		{"relationless_ifnull", "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+	} {
+		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		if err != nil {
+			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
+		}
+		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           probe.sql,
+			Dialect:       tc.dialect,
+			DefaultSchema: "app",
+		})
+		if err != nil {
+			t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
+		}
+		if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+			t.Fatalf("%s %s classification=%q admission=%q, want read_only/admissible", tc.name, probe.name, result.ReadClassification, result.Admission)
+		}
+		// Relationless literal-only proves nothing is read: zero of everything.
+		if len(result.Requirements) != 0 {
+			t.Errorf("%s %s requirements: got %d (%v), want 0", tc.name, probe.name, len(result.Requirements), result.Requirements)
+		}
+		if len(result.Relations) != 0 {
+			t.Errorf("%s %s relations: got %d (%v), want 0", tc.name, probe.name, len(result.Relations), result.Relations)
+		}
+		if len(result.ReferencedColumns) != 0 {
+			t.Errorf("%s %s referenced_columns: got %d (%v), want 0", tc.name, probe.name, len(result.ReferencedColumns), result.ReferencedColumns)
+		}
+		if len(result.Unresolved) != 0 {
+			t.Errorf("%s %s unresolved: got %d (%v), want 0", tc.name, probe.name, len(result.Unresolved), result.Unresolved)
+		}
+		// No-leak: SECRET_LITERAL must not appear in struct dump or JSON
+		dump := fmt.Sprintf("%+v", result)
+		if strings.Contains(dump, "SECRET_LITERAL") {
+			t.Errorf("%s %s leaked SECRET_LITERAL in struct dump", tc.name, probe.name)
+		}
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("%s %s marshal: %v", tc.name, probe.name, err)
+		}
+		if strings.Contains(string(data), "SECRET_LITERAL") {
+			t.Errorf("%s %s leaked SECRET_LITERAL in JSON", tc.name, probe.name)
+		}
+	}
+}
+
 func assertLiveProfileRejectsMixedLiteralNegatives(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
 	for _, probe := range []struct {
 		name string
 		sql  string
 	}{
-		{"relationless", "SELECT COALESCE(0, 1)"},
 		{"coalesce_arity_1", "SELECT COALESCE(amount) FROM app.builtin_semantic_facts"},
 		{"coalesce_arity_3", "SELECT COALESCE('x', 'y', 'z') FROM app.builtin_semantic_facts"},
 		{"nested_expr", "SELECT COALESCE(ABS(amount), name) FROM app.builtin_semantic_facts"},
