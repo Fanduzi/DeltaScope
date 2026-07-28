@@ -4,7 +4,31 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.450.0 Exact Shape Expansion for Online MySQL/TiDB Literal Operands
+## Latest Completed Milestone: v0.460.0 Relationless Literal-Only Query Access
+
+**Goal:** enable relationless literal-only Query Access on online MySQL/TiDB sessions. Exact literal-only manifest entries now admit relationless `SELECT` without `FROM`; empty requirements; supported profiles MySQL 5.7/8.0/8.4, TiDB 8.5; surfaces SDK/CLI/HTTP; existing relation-bearing proof unchanged; candidate-free `SELECT 1` unchanged. See `docs/releases/release-notes-v0.460.0.md` and `docs/decisions/2026-07-28-query-access-relationless-literal-selects.md`.
+
+### Completed Scope
+
+- Exact literal-only manifest entries (`[const]` and `[const,const]` shapes) now admit relationless `SELECT` without `FROM` on online MySQL/TiDB sessions, producing `admissible` results with no requirements, relations, or referenced columns.
+- Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5.
+- Surfaces: SDK, CLI, and HTTP. Default offline SDK, CLI, HTTP, PostgreSQL, and MCP remain fail-closed.
+- Existing relation-bearing proof is unchanged. Candidate-free `SELECT 1` retains existing analyzer behavior.
+- Decision record: `docs/decisions/2026-07-28-query-access-relationless-literal-selects.md` (Accepted; Related milestone/version: v0.460.0).
+
+### Non-Goals
+
+- Not a general pure-function or SELECT admission. Only existing exact literal-only manifest shapes are admitted.
+- Not relation-bearing literal-only `SELECT` changes.
+- Not 3+ operand `COALESCE`/`NULLIF`/`IFNULL`.
+- Not PostgreSQL literal operands or relationless queries.
+- Not nested expressions, casts, parameters, UDFs, quoted/qualified calls, or arbitrary function support.
+- Not SQL execution or data-returning APIs.
+- Not database authorization, grants, roles, RLS, masking, rewrite, or execution-snapshot guarantees.
+- Not an MCP Query Access tool.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.450.0 Exact Shape Expansion for Online MySQL/TiDB Literal Operands
 
 **Goal:** extend online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. On a caller-owned session (SDK), online CLI connection, or HTTP `connection_id`, common queries such as `COUNT(1)`, `LOWER('x')`, or `NULLIF('x', name)` now return `admissible` with precise physical requirements. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. See `docs/releases/release-notes-v0.450.0.md` and `docs/decisions/2026-07-26-query-access-literal-only-and-reversed-operands.md`.
 

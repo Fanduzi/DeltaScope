@@ -2,6 +2,7 @@
 
 - Date: 2026-07-28
 - Status: Accepted
+- Related milestone/version: v0.460.0
 - Baseline: `main@d584084`
 - Related: [literal-only and reversed operands](2026-07-26-query-access-literal-only-and-reversed-operands.md)
 - Spec: `docs/plans/2026-07-28-query-access-relationless-literal-selects-spec.md`
