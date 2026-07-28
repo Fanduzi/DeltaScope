@@ -1,7 +1,7 @@
 # Decision: Relationless Literal-Only Query Access
 
 - Date: 2026-07-28
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@d584084`
 - Related: [literal-only and reversed operands](2026-07-26-query-access-literal-only-and-reversed-operands.md)
 - Spec: `docs/plans/2026-07-28-query-access-relationless-literal-selects-spec.md`
@@ -60,7 +60,44 @@ SQL semantic engine.
 
 ## Acceptance Evidence
 
-Before acceptance, tests must prove exact shape matching, no requirements,
-default offline and PostgreSQL regressions, candidate-free no-change behavior,
-no-leak behavior, and Docker-backed SDK/CLI/HTTP coverage on all supported
-MySQL/TiDB profiles.
+Acceptance is backed by real tests across every layer (parser → gateway →
+service → SDK/CLI/HTTP → Docker live e2e), plus no-leak and no-exec proofs.
+
+- Exact shape matching and rejection: parser
+  `TestQueryAccessRelationlessLiteralAdmittedShapes` and
+  `TestQueryAccessRelationlessRejectedShapes`
+  (`internal/infrastructure/parser/tidb/query_access_relationless_literal_test.go`);
+  predicate `TestRelationlessLiteralRequirementsComplete_AdmitsExactLiteralShape`
+  and `..._FailClosedTable`, gateway
+  `TestBuiltinSemanticGateway_RelationlessLiteralOnlyProven`,
+  `..._RelationlessCountLiteralProven`, `..._RelationlessTwoConstProven`, and
+  `..._RelationlessRejectsMalformedCandidates`
+  (`internal/application/queryaccess/builtin_semantic_gateway_relationless_test.go`).
+- No requirements / relations / referenced columns / unresolved on promotion:
+  asserted in the gateway proven tests above, regression
+  `TestBuiltinSemanticProfileRegression_RelationlessLiteralPositive`
+  (`internal/application/queryaccess/builtin_semantic_profile_regression_test.go`),
+  and SDK `TestMySQLTiDBQueryAccessSession_PromotesRelationlessLiteralShapes`
+  (`pkg/deltascope/query_access_session_mysql_tidb_test.go`).
+- Default offline, PostgreSQL, and cross-dialect regressions stay fail-closed:
+  `TestBuiltinSemanticService_RelationlessDefaultServiceStaysIndeterminate`,
+  `TestBuiltinSemanticGateway_RelationlessPostgreSQLNotProven`,
+  `..._RelationlessEmptyProfileNotProven`,
+  `..._RelationlessRejectsTiDBProfileOnMySQLDialect`, and
+  `TestBuiltinSemanticProfileRegression_BoundariesStayIndeterminate`.
+- Candidate-free no-change behavior (`SELECT 1`):
+  `TestBuiltinSemanticService_RelationlessCandidateFreeSelectOneUnchanged` and
+  parser `TestQueryAccessRelationlessCandidateFreeSelectOneUnchanged`.
+- Relation-bearing proof unaffected:
+  `TestBuiltinSemanticGateway_RelationBearingStillRequiresPhysicalRequirements`
+  and `TestBuiltinSemanticService_RelationBearingMixedConstKeepsRequirements`.
+- No-leak and user-SQL-never-executed:
+  `TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL` (recording driver) and
+  the `SECRET_LITERAL` scans in SDK, CLI
+  (`TestQueryAccessOnline_MixedLiteralScalars`), and HTTP responses/access logs.
+- Docker-backed SDK/CLI/HTTP coverage on all supported MySQL/TiDB profiles:
+  `TestBuiltinSemanticService_RelationlessLiteralShapesAcrossProfiles`, live
+  `TestLiveProfile_AssertsVersionAndAdmitsAggregates`
+  (`pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`), and the
+  integration `TestQueryAccessOnline_MixedLiteralScalars` suites in the CLI and
+  HTTP interfaces across MySQL 5.7/8.0/8.4 and TiDB 8.5.
