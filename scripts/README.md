@@ -28,6 +28,10 @@ Operational scripts for local DeltaScope workflows.
 | test_mcp_metadata_e2e_postgresql.sh | Starts PostgreSQL fixtures and runs tagged MCP metadata-aware PostgreSQL end-to-end tests |
 | test_cli_tls_e2e.sh | Starts Docker TLS fixtures with dynamic ports, builds CLI, runs 12 CLI TLS E2E cases (MySQL 8.4 + PostgreSQL 17 x audit + query-access x trusted/untrusted/hostname-mismatch). Fail-closed cleanup: force-removes and re-verifies absence of containers/networks/volumes/workspace; success path fails on residuals; original nonzero exit preserved. Runs in PR/push CI via `.github/workflows/cli-tls-e2e.yml` and in release gate via `make release-test-gates` |
 | test_cli_tls_e2e_regression.sh | Verifies CLI TLS fixture lifecycle: occupies legacy ports with all PIDs tracked and terminated on exit, verifies ports released after cleanup, asserts no residual Docker resources or workspace files after both normal and intentional-failure runs, validates Docker availability policy |
+| release_from_candidate.sh | Local release orchestrator. Accepts VERSION and --dry-run. Mutating sequence: preflight → release gates → pretag-candidate-gate → annotated tag → posttag-candidate-gate → push main → push tag. Stops on any failure; no automatic deletion, retry, or force push. Dry-run is read-only. |
+| test_release_from_candidate.sh | Temporary-repository tests for the orchestrator: valid dry-run path, missing RC, candidate drift, dirty tree, local/remote tag collision, dry-run no-tag/no-push evidence |
+| test_verify_release_workflow_provenance.py | Release workflow provenance contract checker: parses needs DAG, verifies provenance job exists with read-only permissions, fetches origin/main, runs posttag-candidate-gate with RELEASE_MAIN_REF, and all mutation jobs are transitively downstream |
+| test_verify_release_workflow_provenance_negative.py | Negative tests for the provenance contract checker: missing provenance job, missing dependency, write permissions, missing fetch, missing RELEASE_MAIN_REF, independent publisher bypass |
 
 ## Exports
 
@@ -69,6 +73,12 @@ Operational scripts for local DeltaScope workflows.
 - `VERSION=vX.Y.Z python3 scripts/verify_release_consistency.py`
 - `VERSION=vX.Y.Z python3 scripts/verify_docs_examples.py`
 - `make docs-example-gates VERSION=vX.Y.Z`
+- `bash scripts/release_from_candidate.sh VERSION [--dry-run]`
+- `make release-from-candidate VERSION=vX.Y.Z`
+- `make release-from-candidate-dry-run VERSION=vX.Y.Z`
+- `make release-provenance-contract-test`
+- `make pretag-candidate-test`
+- `make posttag-candidate-test`
 
 ## Dependencies
 - Upstream: local developers, `Makefile`, and release-verification workflows
@@ -84,7 +94,10 @@ Operational scripts for local DeltaScope workflows.
 - The manylinux baseline verifier is the reusable gate for the converged Linux PG-capable binaries and enforces the approved glibc baseline before release packaging.
 - The manylinux verifier and manylinux release packagers inherit host `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` plus Go module env like `GOPROXY` and `GOSUMDB`, so constrained networks can use local proxies or domestic mirrors without patching scripts.
 - `make verify-pg-linux-release-archive-cn` is a local-only convenience wrapper that defaults to `GOPROXY=https://goproxy.cn,direct` and `GOSUMDB=off` before delegating to the normal Linux archive verifier.
-- `verify_docs_examples.py` is a static, release-oriented checker: it scans curated public docs/examples for known drift patterns (stale commands, missing audit output formats, GitHub Actions/GitLab CI workflow shape, version pins, CLI audit metadata flag inventory, SDK `Result` shape tokens, and MCP source-build version literal) and never executes Markdown/YAML snippets or contacts external services. The GitHub/GitLab shape checks use a small stdlib-only YAML structural extractor (no PyYAML dependency) so that `permissions.contents: read` and `artifacts.reports.codequality` are verified in their real block position rather than as loose substrings; findings always carry a 1-based line number anchored to the nearest relevant section (file-level findings use line 1, never 0). The CLI flag, SDK field/sentinel, and MCP version checks are static token-presence guards (not Go AST parsing) read directly from their target files so the generic stale-command/severity scans keep their narrower scope. It runs via `make docs-example-gates VERSION=vX.Y.Z`, is wired into `release-surface-gates`, and is intentionally not part of `make test`. Canonical valid fixtures live under `scripts/testdata/docs_examples/` and are exercised by `scripts/test_verify_docs_examples.py`.
+- The release orchestrator (`release_from_candidate.sh`) is the documented local release path. It runs preflight checks, release gates, the pre-tag candidate gate, creates an annotated tag, runs the post-tag gate, then pushes main and the tag separately. Dry-run executes only read-only preflight and pre-tag verification.
+- The post-tag verifier (`verify_release_tag_candidate.sh`) accepts an explicit trusted main ref via `RELEASE_MAIN_REF` env var (defaults to `main` for local use). In CI, pass `refs/remotes/origin/main` after fetching origin; fail closed if the ref cannot resolve.
+- The provenance contract checker (`test_verify_release_workflow_provenance.py`) parses the release workflow needs DAG and verifies every mutation job (GoReleaser, GitHub Release, npm publish, Homebrew cask push) is transitively downstream of the provenance job.
+- - `verify_docs_examples.py` is a static, release-oriented checker: it scans curated public docs/examples for known drift patterns (stale commands, missing audit output formats, GitHub Actions/GitLab CI workflow shape, version pins, CLI audit metadata flag inventory, SDK `Result` shape tokens, and MCP source-build version literal) and never executes Markdown/YAML snippets or contacts external services. The GitHub/GitLab shape checks use a small stdlib-only YAML structural extractor (no PyYAML dependency) so that `permissions.contents: read` and `artifacts.reports.codequality` are verified in their real block position rather than as loose substrings; findings always carry a 1-based line number anchored to the nearest relevant section (file-level findings use line 1, never 0). The CLI flag, SDK field/sentinel, and MCP version checks are static token-presence guards (not Go AST parsing) read directly from their target files so the generic stale-command/severity scans keep their narrower scope. It runs via `make docs-example-gates VERSION=vX.Y.Z`, is wired into `release-surface-gates`, and is intentionally not part of `make test`. Canonical valid fixtures live under `scripts/testdata/docs_examples/` and are exercised by `scripts/test_verify_docs_examples.py`.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

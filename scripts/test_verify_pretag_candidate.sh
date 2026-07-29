@@ -85,5 +85,28 @@ git tag -d v0.1.0 2>/dev/null || true
 ng "rejects remote tag" bash "$PRETAG" v0.1.0
 rm -rf "$REMOTE"
 
+echo "T13: duplicate version fields"; setup
+p="$(git rev-parse HEAD)"
+printf "version: v0.1.0\ncandidate_sha: %s\nversion: v0.2.0\n" "$p" > .release-candidate
+git add .release-candidate && git commit -q -m "dup version"
+ng "rejects duplicate version" bash "$PRETAG" v0.1.0
+
+echo "T14: duplicate candidate_sha fields"; setup
+p="$(git rev-parse HEAD)"
+printf "version: v0.1.0\ncandidate_sha: %s\ncandidate_sha: 0000000000000000000000000000000000000000\n" "$p" > .release-candidate
+git add .release-candidate && git commit -q -m "dup sha"
+ng "rejects duplicate SHA" bash "$PRETAG" v0.1.0
+
+echo "T15: truncated SHA (not full 40 hex)"; setup
+printf "version: v0.1.0\ncandidate_sha: abc123\n" > .release-candidate
+git add .release-candidate && git commit -q -m "truncated"
+ng "rejects truncated SHA" bash "$PRETAG" v0.1.0
+
+echo "T16: empty version field"; setup
+p="$(git rev-parse HEAD)"
+printf "version:\ncandidate_sha: %s\n" "$p" > .release-candidate
+git add .release-candidate && git commit -q -m "empty version"
+ng "rejects empty version" bash "$PRETAG" v0.1.0
+
 echo ""; echo "Results: $P passed, $F failed"
 [ "$F" -eq 0 ] && echo "All tests passed." || exit 1

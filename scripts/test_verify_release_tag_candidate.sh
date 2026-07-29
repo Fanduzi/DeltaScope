@@ -76,5 +76,52 @@ ok "reads from tag not worktree" bash "$POSTTAG" v0.1.0
 echo "P8: success"; setup; rc_tag v0.1.0
 ok "passes all checks" bash "$POSTTAG" v0.1.0
 
+echo "P9: duplicate version fields in RC"; setup
+echo reviewed > g && git add g && git commit -q -m reviewed
+p="$(git rev-parse HEAD)"
+printf "version: v0.1.0\ncandidate_sha: %s\nversion: v0.2.0\n" "$p" > .release-candidate
+git add .release-candidate && git commit -q -m "dup version"
+git tag -a v0.1.0 -m "Release v0.1.0"
+ng "rejects duplicate version" bash "$POSTTAG" v0.1.0
+
+echo "P10: duplicate candidate_sha fields in RC"; setup
+echo reviewed > g && git add g && git commit -q -m reviewed
+p="$(git rev-parse HEAD)"
+printf "version: v0.1.0\ncandidate_sha: %s\ncandidate_sha: 0000000000000000000000000000000000000000\n" "$p" > .release-candidate
+git add .release-candidate && git commit -q -m "dup sha"
+git tag -a v0.1.0 -m "Release v0.1.0"
+ng "rejects duplicate SHA" bash "$POSTTAG" v0.1.0
+
+echo "P11: truncated SHA (not full 40 hex)"; setup
+echo reviewed > g && git add g && git commit -q -m reviewed
+printf "version: v0.1.0\ncandidate_sha: abc123\n" > .release-candidate
+git add .release-candidate && git commit -q -m "truncated"
+git tag -a v0.1.0 -m "Release v0.1.0"
+ng "rejects truncated SHA" bash "$POSTTAG" v0.1.0
+
+echo "P12: explicit RELEASE_MAIN_REF success"; setup
+# Set up remote for explicit ref testing
+REMOTE="$(mktemp -d)"
+git init --bare -q "$REMOTE"
+git remote add origin "$REMOTE"
+git push -q origin main
+rc_tag v0.1.0
+git push -q origin main --tags 2>/dev/null || true
+# Run with explicit ref — should pass
+ok "passes with explicit main ref" env RELEASE_MAIN_REF=refs/remotes/origin/main bash "$POSTTAG" v0.1.0
+rm -rf "$REMOTE"
+
+echo "P13: explicit RELEASE_MAIN_REF that doesn't exist (fail closed)"; setup
+rc_tag v0.1.0
+ng "rejects unresolvable ref" env RELEASE_MAIN_REF=refs/remotes/origin/nonexistent-branch bash "$POSTTAG" v0.1.0
+
+echo "P14: empty version in RC file"; setup
+echo reviewed > g && git add g && git commit -q -m reviewed
+p="$(git rev-parse HEAD)"
+printf "version:\ncandidate_sha: %s\n" "$p" > .release-candidate
+git add .release-candidate && git commit -q -m "empty version"
+git tag -a v0.1.0 -m "Release v0.1.0"
+ng "rejects empty version" bash "$POSTTAG" v0.1.0
+
 echo ""; echo "Results: $P passed, $F failed"
 [ "$F" -eq 0 ] && echo "All tests passed." || exit 1
