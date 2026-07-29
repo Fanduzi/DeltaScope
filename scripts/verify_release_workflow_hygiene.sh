@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # input: none
-# output: validation that release workflow Homebrew verification avoids noisy tolerated cleanup
+# output: validation that release workflow Homebrew verification avoids noisy tolerated cleanup,
+#         and that the provenance dependency DAG gates all mutation jobs.
 # pos: release contract gate protecting verify-homebrew-cask-install from false GitHub Actions annotations
+#      and enforcing the provenance dependency graph.
 # note: if this file changes, update this header and scripts/README.md.
 
 set -euo pipefail
@@ -45,6 +47,9 @@ main() {
 
   # Run structural Homebrew trust contract checker
   python3 "$(dirname "$0")/verify_release_workflow_hygiene.py" "$(dirname "$0")/.."
+
+  # Run provenance dependency DAG contract checker
+  python3 "$(dirname "$0")/test_verify_release_workflow_provenance.py" "$(dirname "$0")/.."
 }
 
 main "$@"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test_release_from_candidate.sh — Tests for the release orchestrator.
-# Uses temporary repositories to verify valid paths, failure modes, and
-# dry-run safety.
+# Uses temporary repositories to verify valid paths, failure modes,
+# dry-run safety, and the mutating path.
 #
 # The orchestrator calls `make` targets. In temp repos we provide a minimal
 # Makefile stub so the control flow is exercised without the full repo.
@@ -39,7 +39,10 @@ setup() {
   cp "$SCRIPT_DIR/verify_release_tag_candidate.sh" .
   # Create a minimal Makefile stub so the orchestrator's make calls succeed
   cat > Makefile << 'STUB'
-.PHONY: release-contract-gates pretag-candidate-gate posttag-candidate-gate
+.PHONY: release-test-gates release-contract-gates pretag-candidate-gate posttag-candidate-gate
+
+release-test-gates:
+	@echo "stub: release-test-gates PASS"
 
 release-contract-gates:
 	@echo "stub: release-contract-gates PASS"
@@ -157,6 +160,75 @@ ng "rejects missing arg" bash "$ORCHESTRATOR"
 echo "T11: version without v"; setup
 rc v0.1.0
 ng "rejects non-v prefix" bash "$ORCHESTRATOR" 0.1.0 --dry-run
+
+# --- T12: Mutating path — tag created, pushed, main pushed first ---
+echo "T12: mutating path success"; setup
+rc v0.1.0
+bash "$ORCHESTRATOR" v0.1.0 >/dev/null 2>&1
+# Tag must exist locally
+if git rev-parse v0.1.0 >/dev/null 2>&1; then
+  pass "tag created locally"
+else
+  fail "tag not created locally"
+fi
+# Tag must be annotated
+TAG_TYPE="$(git cat-file -t v0.1.0)"
+if [ "$TAG_TYPE" = "tag" ]; then
+  pass "tag is annotated"
+else
+  fail "tag is not annotated (type: $TAG_TYPE)"
+fi
+# Tag must exist on remote
+REMOTE_TAGS="$(git ls-remote --tags origin 2>/dev/null || true)"
+if echo "$REMOTE_TAGS" | grep -q 'refs/tags/v0.1.0'; then
+  pass "tag pushed to remote"
+else
+  fail "tag not pushed to remote"
+fi
+# RC commit must be the tag target
+TAG_TARGET="$(git rev-parse v0.1.0^{})"
+RC_SHA="$(git rev-parse HEAD)"
+if [ "$TAG_TARGET" = "$RC_SHA" ]; then
+  pass "tag points at RC commit"
+else
+  fail "tag target ($TAG_TARGET) != HEAD ($RC_SHA)"
+fi
+
+# --- T13: Mutating path — stop on posttag failure, no tag push ---
+echo "T13: stop on posttag failure"; setup
+rc v0.1.0
+# Replace posttag-candidate-gate stub with one that always fails
+cat > Makefile << 'STUB_FAIL_POSTTAG'
+.PHONY: release-test-gates release-contract-gates pretag-candidate-gate posttag-candidate-gate
+
+release-test-gates:
+	@echo "stub: release-test-gates PASS"
+
+release-contract-gates:
+	@echo "stub: release-contract-gates PASS"
+
+pretag-candidate-gate:
+	@echo "stub: pretag-candidate-gate PASS"
+
+posttag-candidate-gate:
+	@echo "stub: posttag-candidate-gate FAIL" >&2
+	exit 1
+STUB_FAIL_POSTTAG
+# The orchestrator should fail at posttag gate
+ng "fails at posttag gate" bash "$ORCHESTRATOR" v0.1.0
+# Tag was created locally (step 5 happens before step 6)
+if git rev-parse v0.1.0 >/dev/null 2>&1; then
+  pass "tag exists locally after posttag failure"
+else
+  fail "tag missing locally after posttag failure"
+fi
+# Tag must NOT be on remote (push never happened)
+REMOTE_TAGS="$(git ls-remote --tags origin 2>/dev/null || true)"
+if echo "$REMOTE_TAGS" | grep -q 'refs/tags/v0.1.0'; then
+  fail "tag should not be on remote after posttag failure"
+else
+  pass "tag not on remote after posttag failure"
+fi
 
 echo ""
 echo "Results: $P passed, $F failed"

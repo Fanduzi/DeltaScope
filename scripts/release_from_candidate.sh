@@ -4,12 +4,13 @@
 #
 # Mutating sequence (non dry-run):
 #   1. Preflight: on main, clean tree, no existing tag, VERSION provided
-#   2. Full release gates (make release-contract-gates)
-#   3. Pre-tag candidate gate (make pretag-candidate-gate)
-#   4. Create annotated tag at HEAD
-#   5. Post-tag candidate gate (make posttag-candidate-gate)
-#   6. Push main (without tags)
-#   7. Push only the new tag
+#   2. Full release test gates (make release-test-gates)
+#   3. Full release contract gates (make release-contract-gates)
+#   4. Pre-tag candidate gate (make pretag-candidate-gate)
+#   5. Create annotated tag at HEAD
+#   6. Post-tag candidate gate (make posttag-candidate-gate)
+#   7. Push main (without tags)
+#   8. Push only the new tag
 #
 # Any failure stops the process. No automatic tag deletion, retry,
 # force push, or recovery is performed.
@@ -101,9 +102,13 @@ if [ -n "$REMOTE_TAG" ]; then
 fi
 echo "preflight: no tag collision PASS"
 
-echo "--- release gates ---"
+echo "--- release test gates ---"
+make release-test-gates VERSION="$VERSION"
+echo "release test gates: PASS"
+
+echo "--- release contract gates ---"
 make release-contract-gates VERSION="$VERSION"
-echo "release gates: PASS"
+echo "release contract gates: PASS"
 
 echo "--- pretag-candidate-gate ---"
 make pretag-candidate-gate VERSION="$VERSION"
