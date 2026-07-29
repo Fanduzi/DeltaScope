@@ -1,10 +1,10 @@
 # Decision: Release Candidate Provenance Enforcement
 
 Date: 2026-07-29
-Status: Proposed
-Related commits: 0301e0a, f28d584, 0369e25
+Status: Accepted
+Related commits: 14128e1, 55ea429, c42d26a, e117c20, 6bbaffb
 Related decisions: docs/decisions/2026-07-28-release-tag-sha-deviation-v0.460.0.md
-Related tests: scripts/test_verify_pretag_candidate.sh, scripts/test_verify_release_tag_candidate.sh
+Related tests: scripts/test_verify_pretag_candidate.sh, scripts/test_verify_release_tag_candidate.sh, scripts/test_release_from_candidate.sh, scripts/test_verify_release_workflow_provenance.py, scripts/test_verify_release_workflow_provenance_negative.py
 
 ## Context
 
@@ -19,7 +19,7 @@ They validate an RC commit whose only change is provenance metadata recording
 its reviewed parent. The remaining gap is orchestration: the checks are not
 yet a mandatory local release path or an early tag-workflow dependency.
 
-## Proposed Decision
+## Decision
 
 Adopt a two-boundary provenance model for future releases:
 
@@ -76,6 +76,18 @@ artifacts and downstream package state.
 
 ## Acceptance Evidence
 
-This decision remains Proposed until the local orchestrator, early workflow
-gate, adversarial contract tests, dry-run evidence, and independent audit all
-meet the accompanying specification and implementation plan.
+The specification and implementation landed as five focused commits
+(`14128e1`, `55ea429`, `c42d26a`, `e117c20`, `6bbaffb`) that were
+fast-forward merged and pushed to `main`.
+
+- Focused checks: 69 passing — pre-tag gate 16, post-tag gate 14,
+  orchestrator 21, provenance contract 7, adversarial 11.
+- Gates: `release-workflow-hygiene-gates`, `decision-record-gate`,
+  `release-gofmt-gate`, and `git diff --check` all passed.
+- Independent review found no P0/P1/P2 issues.
+- T12 exercised a bare-remote `pre-receive` hook and proved
+  `refs/heads/main` is pushed before `refs/tags/v0.1.0`, confirming the
+  orchestrator's main-then-tag push ordering.
+
+v0.460.0 remains a documented historical exception; nothing above claims it
+satisfies this contract.
