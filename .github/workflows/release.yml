@@ -11,7 +11,30 @@ permissions:
   id-token: write
 
 jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Fetch origin main
+        run: git fetch origin main
+
+      - name: Verify post-tag candidate provenance
+        env:
+          RELEASE_MAIN_REF: refs/remotes/origin/main
+        run: |
+          set -euo pipefail
+          make posttag-candidate-gate VERSION="${GITHUB_REF_NAME}"
+
   release-linux:
+    needs: provenance
     runs-on: ubuntu-latest
     timeout-minutes: 40
 

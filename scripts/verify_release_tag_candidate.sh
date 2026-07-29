@@ -5,13 +5,19 @@
 #
 # Verifies:
 #   1. Tag exists and is annotated
-#   2. Tag target is on main
+#   2. Tag target is on main (respects RELEASE_MAIN_REF if set)
 #   3. Tagged commit contains .release-candidate with correct version
 #   4. candidate_sha == tag_target^ (reviewed commit is the parent)
 #   5. tag_target^..tag_target only changed .release-candidate
 #
+# Environment:
+#   RELEASE_MAIN_REF — explicit trusted main ref (e.g. refs/remotes/origin/main).
+#                      Defaults to "main" for local use. The ref must resolve
+#                      to a valid commit; fail closed if it does not.
+#
 # Usage:
 #   bash scripts/verify_release_tag_candidate.sh v0.460.0
+#   RELEASE_MAIN_REF=refs/remotes/origin/main bash scripts/verify_release_tag_candidate.sh v0.460.0
 #
 # Exit codes:
 #   0 — all checks pass
@@ -21,6 +27,14 @@ set -euo pipefail
 
 TAG="${1:?usage: $0 <tag>}"
 RC_FILE=".release-candidate"
+MAIN_REF="${RELEASE_MAIN_REF:-main}"
+
+# --- Resolve the trusted main ref (fail closed) ---
+MAIN_SHA="$(git rev-parse "$MAIN_REF" 2>/dev/null)" || {
+  echo "::error::Cannot resolve trusted main ref: $MAIN_REF"
+  echo "::error::In CI, pass RELEASE_MAIN_REF=refs/remotes/origin/main after fetching origin."
+  exit 1
+}
 
 # --- Check 1: tag must exist ---
 if ! git rev-parse "$TAG" >/dev/null 2>&1; then
@@ -38,11 +52,11 @@ echo "posttag-candidate: tag type=$TAG_TYPE PASS"
 
 # --- Check 3: peeled tag target must be on main ---
 TAG_TARGET="$(git rev-parse "$TAG^{}")"
-if ! git merge-base --is-ancestor "$TAG_TARGET" main 2>/dev/null; then
-  echo "::error::Tag $TAG target $TAG_TARGET is not an ancestor of main."
+if ! git merge-base --is-ancestor "$TAG_TARGET" "$MAIN_SHA" 2>/dev/null; then
+  echo "::error::Tag $TAG target $TAG_TARGET is not an ancestor of $MAIN_REF ($MAIN_SHA)."
   exit 1
 fi
-echo "posttag-candidate: tag target=$TAG_TARGET on main PASS"
+echo "posttag-candidate: tag target=$TAG_TARGET on $MAIN_REF ($MAIN_SHA) PASS"
 
 # --- Check 4: load .release-candidate FROM THE TAGGED COMMIT ---
 RC_CONTENT="$(git show "${TAG_TARGET}:${RC_FILE}" 2>/dev/null)" || {
@@ -96,4 +110,4 @@ if [ -n "$UNREVIEWED" ]; then
 fi
 echo "posttag-candidate: only .release-candidate changed PASS"
 
-echo "posttag-candidate: all checks PASS for $TAG (reviewed candidate: $FILE_SHA)"
+echo "posttag-candidate: all checks PASS for $TAG (reviewed candidate: $FILE_SHA, main ref: $MAIN_REF)"

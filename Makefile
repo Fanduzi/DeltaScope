@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates query-access-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-upgrade-candidate-evidence-report ddl-coverage-catalog-test parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql test-e2e-cli-tls test-e2e-cli-tls-regression pg-unit-test-gates pg-e2e-gates pg-confidence-gates docs-example-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight release-recovery-contract-test release-tag-annotation-test release-tag-annotation-gate lint lint-fix lint-landing decision-record-gate pretag-candidate-gate pretag-candidate-test posttag-candidate-gate posttag-candidate-test
+.PHONY: test sql-corpus-gates release-from-candidate release-from-candidate-dry-run release-provenance-contract-test release-from-candidate-test query-access-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-upgrade-candidate-evidence-report ddl-coverage-catalog-test parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql test-e2e-cli-tls test-e2e-cli-tls-regression pg-unit-test-gates pg-e2e-gates pg-confidence-gates docs-example-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight release-recovery-contract-test release-tag-annotation-test release-tag-annotation-gate lint lint-fix lint-landing decision-record-gate pretag-candidate-gate pretag-candidate-test posttag-candidate-gate posttag-candidate-test
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -478,3 +478,29 @@ posttag-candidate-gate:
 posttag-candidate-test:
 	bash scripts/test_verify_release_tag_candidate.sh
 
+
+# release-from-candidate: local release orchestrator. Creates annotated tag
+# after full preflight, gates, and pre-tag verification. Pushes main then tag.
+release-from-candidate:
+	@test -n "$(VERSION)" || (echo "VERSION is required (e.g. VERSION=v0.461.0)" >&2; exit 1)
+	bash scripts/release_from_candidate.sh "$(VERSION)"
+
+# release-from-candidate-dry-run: read-only preflight and pre-tag gate.
+# Does not create, delete, or push any Git ref.
+release-from-candidate-dry-run:
+	@test -n "$(VERSION)" || (echo "VERSION is required (e.g. VERSION=v0.461.0)" >&2; exit 1)
+	bash scripts/release_from_candidate.sh "$(VERSION)" --dry-run
+
+# release-provenance-contract-test: verify the release workflow's provenance
+# dependency graph. Parses needs DAG and checks that every mutation job is
+# transitively downstream of provenance.
+release-provenance-contract-test:
+	python3 scripts/test_verify_release_workflow_provenance.py
+
+# release-from-candidate-test: run orchestrator tests in temporary repos.
+release-from-candidate-test:
+	bash scripts/test_release_from_candidate.sh
+
+# release-provenance-negative-test: negative tests for the provenance contract checker.
+release-provenance-negative-test:
+	python3 scripts/test_verify_release_workflow_provenance_negative.py
