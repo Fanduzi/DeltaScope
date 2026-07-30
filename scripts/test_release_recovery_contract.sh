@@ -131,22 +131,47 @@ else
   pass "gate rejects tag not on origin/main; no publish"
 fi
 
-echo "W1: hygiene script wires the recovery provenance checker"
-if grep -q "verify_release_recover_workflow_provenance.py" "$HYGIENE"; then
+echo "W1: hygiene script wires the recovery provenance checker (non-comment line)"
+if grep -Eq '^[^#]*verify_release_recover_workflow_provenance\.py' "$HYGIENE"; then
   pass "hygiene script invokes recovery provenance checker"
 else
   fail "hygiene script invokes recovery provenance checker"
 fi
 
-echo "W2: removing the checker invocation is detected (mutating wiring test)"
-MUTATED="$(mktemp)"
-grep -v "verify_release_recover_workflow_provenance.py" "$HYGIENE" > "$MUTATED"
-if grep -q "verify_release_recover_workflow_provenance.py" "$MUTATED"; then
-  fail "mutated hygiene script without checker invocation is detected"
+echo "W2: checker invocation is load-bearing (mutating wiring test)"
+# Build a fixture repo whose recovery workflow violates the provenance
+# contract (publisher pinned to main instead of the verified SHA). The
+# original hygiene script must FAIL on it; a mutated hygiene script with the
+# recovery checker invocation removed must PASS — proving the invocation is
+# what enforces the contract.
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+FIX="$(mktemp -d)"
+mkdir -p "$FIX/scripts" "$FIX/.github/workflows"
+cp "$SCRIPT_DIR/verify_release_workflow_hygiene.sh" \
+   "$SCRIPT_DIR/verify_release_workflow_hygiene.py" \
+   "$SCRIPT_DIR/verify_release_recover_workflow_provenance.py" \
+   "$SCRIPT_DIR/test_verify_release_workflow_provenance.py" \
+   "$FIX/scripts/"
+cp "$REPO_ROOT/.github/workflows/release.yml" "$FIX/.github/workflows/"
+sed 's|ref: ${{ needs.preflight.outputs.tag_target_sha }}|ref: main|' \
+  "$REPO_ROOT/.github/workflows/release-recover.yml" \
+  > "$FIX/.github/workflows/release-recover.yml"
+
+if (cd "$FIX" && bash scripts/verify_release_workflow_hygiene.sh >/dev/null 2>&1); then
+  fail "original hygiene script fails on contract-violating recovery workflow"
 else
-  pass "mutated hygiene script without checker invocation is detected"
+  pass "original hygiene script fails on contract-violating recovery workflow"
 fi
-rm -f "$MUTATED"
+
+grep -Ev '^[^#]*verify_release_recover_workflow_provenance\.py' \
+  "$SCRIPT_DIR/verify_release_workflow_hygiene.sh" \
+  > "$FIX/scripts/verify_release_workflow_hygiene.sh"
+if (cd "$FIX" && bash scripts/verify_release_workflow_hygiene.sh >/dev/null 2>&1); then
+  pass "mutated hygiene script without checker invocation misses the violation"
+else
+  fail "mutated hygiene script without checker invocation misses the violation"
+fi
+rm -rf "$FIX"
 
 echo ""; echo "Results: $P passed, $F failed"
 [ "$F" -eq 0 ] && echo "All tests passed." || exit 1

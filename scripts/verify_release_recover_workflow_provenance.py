@@ -17,8 +17,9 @@ per-step parser (test_verify_release_workflow_provenance.py) and verifies:
  7. Ordering inside preflight: guard first, then tag checkout, origin/main
     fetch, and the post-tag gate — all before any external release-state work
     (gh release, release-recovery-preflight, npm package state).
- 8. preflight resolves the verified tag's peeled commit SHA AFTER the gate and
-    exports it through the job output tag_target_sha.
+ 8. preflight resolves the verified tag's peeled commit SHA
+    (git rev-parse refs/tags/<version>^{commit}) AFTER the gate and exports
+    it through the job output tag_target_sha.
  9. Every job containing a mutation step (GoReleaser, GitHub Release mutation,
     npm publish, Homebrew push) is transitively downstream of preflight; jobs
     are rediscovered from their commands, not from a hard-coded list.
@@ -27,6 +28,8 @@ per-step parser (test_verify_release_workflow_provenance.py) and verifies:
     the input tag ref, main, or any other movable ref.
 11. The workflow contains no historical-version bypass literal
     (v0.240.0 / v0.460.0).
+12. No run script interpolates workflow inputs inline (${{ inputs.* }});
+    inputs must flow through step env to avoid script injection.
 """
 
 import re
@@ -119,18 +122,28 @@ def _parse_step_ids(block: List[str], job_indent: int) -> List[Optional[str]]:
 
 
 def _is_ref_guard_step(step: Step) -> bool:
-    """A fail-closed dispatch-ref guard: run-only step comparing github.ref /
-    GITHUB_REF to exactly refs/heads/main and exiting non-zero on mismatch."""
+    """A fail-closed dispatch-ref guard: run-only step with a `!=` comparison
+    of github.ref / GITHUB_REF to exactly refs/heads/main, and an `exit 1`
+    inside that mismatch branch (before the closing `fi`)."""
     if step.uses:
         return False
-    has_compare = any(
-        ('GITHUB_REF' in line or 'github.ref' in line)
-        and (f'"{REQUIRED_GUARD_REF}"' in line or f"'{REQUIRED_GUARD_REF}'" in line)
-        and ('!=' in line or '==' in line)
-        for line in step.run_lines
-    )
-    has_exit = any(re.search(r'\bexit\s+1\b', line) for line in step.run_lines)
-    return has_compare and has_exit
+    compare_idx: Optional[int] = None
+    for i, line in enumerate(step.run_lines):
+        if (('GITHUB_REF' in line or 'github.ref' in line)
+                and (f'"{REQUIRED_GUARD_REF}"' in line or f"'{REQUIRED_GUARD_REF}'" in line)
+                and '!=' in line):
+            compare_idx = i
+            break
+    if compare_idx is None:
+        return False
+    if re.search(r'\bexit\s+1\b', step.run_lines[compare_idx]):
+        return True
+    for line in step.run_lines[compare_idx + 1:]:
+        if re.search(r'\bexit\s+1\b', line):
+            return True
+        if line.strip() == 'fi':
+            return False
+    return False
 
 
 def _step_index(steps: List[Step], predicate) -> Optional[int]:
@@ -247,6 +260,15 @@ def check_recover_provenance_contract(workflow_path: Path) -> List[str]:
     else:
         if gate_idx is not None and resolve_idx <= gate_idx:
             violations.append("preflight must resolve tag_target_sha AFTER the post-tag candidate gate")
+        resolves_tag_commit = any(
+            'git rev-parse' in line
+            and 'refs/tags/' in _normalize(line)
+            and '^{commit}' in _normalize(line)
+            for line in pre_steps[resolve_idx].run_lines)
+        if not resolves_tag_commit:
+            violations.append(
+                "preflight tag_target_sha must be resolved from the input tag's peeled commit "
+                "(git rev-parse refs/tags/<version>^{commit}), not another ref")
         outputs = _extract_outputs_from_block(pre_block, pre_indent)
         resolve_id = pre_ids[resolve_idx] if resolve_idx < len(pre_ids) else None
         exported = _normalize(outputs.get('tag_target_sha', ''))
@@ -295,6 +317,18 @@ def check_recover_provenance_contract(workflow_path: Path) -> List[str]:
             if tag in stripped:
                 violations.append(
                     f"workflow must not reference historical tag '{tag}' (no version-based bypass)")
+
+    # 12. no inline workflow-input interpolation inside run scripts
+    # (script-injection sink; inputs must be passed through step env)
+    for job_name in job_names:
+        block, bindent = _find_job_block_lines(yaml_content, job_name, job_names)
+        for step in _parse_steps_from_block(block, bindent):
+            for line in step.run_lines:
+                normalized = _normalize(line)
+                if '${{inputs.' in normalized or '${{github.event.inputs.' in normalized:
+                    violations.append(
+                        f"job '{job_name}' step '{step.name or '<unnamed>'}' interpolates a "
+                        "workflow input directly into a run script; pass it via step env instead")
 
     return violations
 

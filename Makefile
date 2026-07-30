@@ -435,11 +435,13 @@ release-recovery-preflight:
 # Positive path builds a future-valid RC chain in a temporary Git fixture with
 # local publisher stubs; historical non-provenance tags (v0.240.0, v0.460.0)
 # are fail-closed negatives that stop before any publisher stub. Also verifies
-# the recovery workflow provenance contract, hygiene wiring, and dry-run
-# markers. No network, GitHub Release, npm registry, or workflow dispatch.
+# the recovery workflow provenance contract, its adversarial checker tests,
+# hygiene wiring, and dry-run markers. No network, GitHub Release, npm
+# registry, or workflow dispatch.
 release-recovery-contract-test:
 	bash scripts/test_release_recovery_contract.sh
 	python3 scripts/verify_release_recover_workflow_provenance.py .
+	python3 scripts/test_verify_release_recover_workflow_provenance.py
 	@grep -q "dry_run" .github/workflows/release-recover.yml
 	@grep -q "Homebrew cask would be updated" .github/workflows/release-recover.yml
 	@grep -q "npm package would be published" .github/workflows/release-recover.yml

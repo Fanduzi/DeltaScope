@@ -12,6 +12,8 @@ Table-driven static fixtures covering:
 - Mutation job without checkout, independent mutation path, GoReleaser action path
 - Wide / missing / write-capable preflight permissions, publisher secrets in preflight
 - Historical-version bypass literal
+- Inverted / dead-code guard logic, SHA resolved from a non-tag ref,
+  inline workflow-input interpolation in run scripts
 
 Behavior tests execute the REAL workflow's dispatch-ref guard step with
 branch-ref and tag-ref dispatch values and prove it fails closed.
@@ -523,6 +525,55 @@ bypass_hb = VALID_HOMEBREW.replace("""\
 expect_violation("catches historical tag allowlist",
     make_workflow(homebrew=bypass_hb),
     "historical tag")
+
+print("R27: inverted guard logic (== instead of !=)")
+inverted_guard = """\
+      - name: Guard recovery dispatch ref
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
+            echo "::error::bad dispatch ref"
+            exit 1
+          fi
+"""
+expect_violation("catches inverted guard comparison",
+    make_workflow(preflight=PREFLIGHT_HEAD + inverted_guard + PREFLIGHT_TAIL),
+    "missing fail-closed dispatch-ref guard")
+
+print("R28: guard exit 1 only in dead code outside the mismatch branch")
+dead_exit_guard = """\
+      - name: Guard recovery dispatch ref
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::bad dispatch ref"
+          fi
+          if false; then exit 1; fi
+"""
+expect_violation("catches guard without exit in mismatch branch",
+    make_workflow(preflight=PREFLIGHT_HEAD + dead_exit_guard + PREFLIGHT_TAIL),
+    "missing fail-closed dispatch-ref guard")
+
+print("R29: tag_target_sha resolved from origin/main instead of the tag")
+resolve_wrong_ref = VALID_PREFLIGHT.replace(
+    'tag_target_sha="$(git rev-parse "refs/tags/${VERSION}^{commit}")"',
+    'tag_target_sha="$(git rev-parse refs/remotes/origin/main)"')
+expect_violation("catches SHA resolved from a non-tag ref",
+    make_workflow(preflight=resolve_wrong_ref),
+    "peeled commit")
+
+print("R30: inline workflow-input interpolation in a run script")
+hb_inline = VALID_HOMEBREW.replace("""\
+          set -euo pipefail
+          git push origin HEAD:main
+""", """\
+          set -euo pipefail
+          echo "recovering ${{ inputs.version }}"
+          git push origin HEAD:main
+""")
+expect_violation("catches inline input interpolation in run",
+    make_workflow(homebrew=hb_inline),
+    "interpolates a workflow input")
 
 
 # --- Guard behavior tests against the REAL workflow ---
