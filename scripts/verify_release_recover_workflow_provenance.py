@@ -7,9 +7,12 @@ per-step parser (test_verify_release_workflow_provenance.py) and verifies:
  1. A 'preflight' job exists.
  2. preflight declares job-level permissions with contents == 'read' and no
     write-capable permission; it must not reference publisher secrets.
- 3. The FIRST preflight step is a fail-closed dispatch-ref guard: a run-only
-    step comparing github.ref / GITHUB_REF against exactly "refs/heads/main"
-    and exiting non-zero, before checkout or any other work.
+ 3. The FIRST preflight step is a fail-closed dispatch-ref guard in a narrow
+    canonical shape: a run-only step whose `if [ ... GITHUB_REF/github.ref
+    != refs/heads/main ... ]; then` branch reaches a bare top-level `exit 1`
+    before any nested control keyword, subshell, or short-circuit — before
+    checkout or any other work. Inverted (else-branch), nested dead-code, and
+    masked exits are rejected as fail-open.
  4. preflight checks out refs/tags/${{ inputs.version }} with fetch-depth: 0.
  5. preflight explicitly fetches origin main.
  6. preflight runs posttag-candidate-gate WITH
@@ -122,30 +125,55 @@ def _parse_step_ids(block: List[str], job_indent: int) -> List[Optional[str]]:
 
 
 def _is_ref_guard_step(step: Step) -> bool:
-    """A fail-closed dispatch-ref guard: run-only step with a `!=` comparison
-    of github.ref / GITHUB_REF to exactly refs/heads/main, and an `exit 1`
-    inside the THEN branch of that comparison — before any `else`, `elif`,
-    or the closing `fi`. An `exit 1` in an `else` branch is an inverted
-    (fail-open) guard and is rejected."""
+    """A fail-closed dispatch-ref guard in a narrow, statically-verifiable
+    canonical shape: a run-only step with an `if [ ... GITHUB_REF/github.ref
+    != refs/heads/main ... ]; then` opener whose THEN branch — the statements
+    up to its matching `fi`, before any `else`/`elif` — contains a bare,
+    top-level `exit 1` reached before any nested control keyword
+    (`if`/`elif`/`else`/`case`/`while`/`for`/`until`), subshell `(`, or
+    short-circuit `&&`/`||`. This rejects else-branch inversions, nested
+    dead-code exits (`if false; then exit 1; fi`), subshell exits, and
+    `exit 1 || true` masking, while accepting the canonical multi-line and
+    single-line `if ...; then exit 1; fi` forms."""
     if step.uses:
         return False
+
+    # Locate the mismatch comparison and require it to open an `if ...; then`.
     compare_idx: Optional[int] = None
     for i, line in enumerate(step.run_lines):
         if (('GITHUB_REF' in line or 'github.ref' in line)
                 and (f'"{REQUIRED_GUARD_REF}"' in line or f"'{REQUIRED_GUARD_REF}'" in line)
-                and '!=' in line):
+                and '!=' in line
+                and re.search(r'\bif\b', line) and re.search(r';\s*then\b|\bthen\s*$', line)):
             compare_idx = i
             break
     if compare_idx is None:
         return False
-    branch_end = re.compile(r'\belse\b|\belif\b|\bfi\b')
-    for line in step.run_lines[compare_idx:]:
-        boundary = branch_end.search(line)
-        then_part = line[:boundary.start()] if boundary else line
-        if re.search(r'\bexit\s+1\b', then_part):
-            return True
-        if boundary:
+
+    # Flatten the run body from the opener into `;`-separated statements so
+    # single-line and multi-line guards parse identically.
+    tail = list(step.run_lines[compare_idx:])
+    first = tail[0]
+    m = re.search(r';\s*then\b|\bthen\s*$', first)
+    tail[0] = first[m.end():]
+    statements: List[str] = []
+    for line in tail:
+        for part in line.split(';'):
+            statements.append(part.strip())
+
+    control_open = re.compile(r'^\s*(if|elif|else|case|while|for|until|do|then)\b')
+    for stmt in statements:
+        if not stmt or stmt.startswith('#'):
+            continue
+        if stmt in ('fi', 'esac', 'done'):
+            # Guard's own if closed before an unconditional exit was reached.
             return False
+        if control_open.match(stmt) or '(' in stmt or '&&' in stmt or '||' in stmt:
+            # Nested block, subshell, or short-circuit before a bare exit:
+            # the exit is conditional or in another branch — reject.
+            return False
+        if re.fullmatch(r'exit\s+1', stmt):
+            return True
     return False
 
 

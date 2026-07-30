@@ -632,6 +632,36 @@ expect_fixture_guard(
     run_fixture_guard(ELSE_INVERTED_GUARD_BODY, {"GITHUB_REF": "refs/heads/main"}),
     False)
 
+print("R32: nested dead-code exit inside the then-branch (fail-open)")
+NESTED_DEAD_GUARD_BODY = """\
+set -euo pipefail
+if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+  if false; then exit 1; fi
+fi
+"""
+nested_dead_guard = """\
+      - name: Guard recovery dispatch ref
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            if false; then exit 1; fi
+          fi
+"""
+expect_violation("catches nested dead-code exit in then-branch",
+    make_workflow(preflight=PREFLIGHT_HEAD + nested_dead_guard + PREFLIGHT_TAIL),
+    "missing fail-closed dispatch-ref guard")
+
+# The nested dead-code guard does nothing at runtime: the inner `if false`
+# never fires, so BOTH branch and main dispatches exit 0 — fully fail-open.
+expect_fixture_guard(
+    "nested dead-code fixture accepts branch dispatch (fail-open, must be flagged)",
+    run_fixture_guard(NESTED_DEAD_GUARD_BODY, {"GITHUB_REF": "refs/heads/feature-x"}),
+    True)
+expect_fixture_guard(
+    "nested dead-code fixture also accepts main dispatch (no-op, must be flagged)",
+    run_fixture_guard(NESTED_DEAD_GUARD_BODY, {"GITHUB_REF": "refs/heads/main"}),
+    True)
+
 
 # --- Guard behavior tests against the REAL workflow ---
 
