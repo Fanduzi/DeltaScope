@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # input: none
 # output: validation that release workflow Homebrew verification avoids noisy tolerated cleanup,
-#         and that the provenance dependency DAG gates all mutation jobs.
+#         that the provenance dependency DAG gates all mutation jobs, and that the
+#         recovery workflow enforces the provenance admission contract.
 # pos: release contract gate protecting verify-homebrew-cask-install from false GitHub Actions annotations
-#      and enforcing the provenance dependency graph.
+#      and enforcing the provenance dependency graph across release and recovery workflows.
 # note: if this file changes, update this header and scripts/README.md.
 
 set -euo pipefail
@@ -50,6 +51,9 @@ main() {
 
   # Run provenance dependency DAG contract checker
   python3 "$(dirname "$0")/test_verify_release_workflow_provenance.py" "$(dirname "$0")/.."
+
+  # Run release recovery provenance contract checker
+  python3 "$(dirname "$0")/verify_release_recover_workflow_provenance.py" "$(dirname "$0")/.."
 }
 
 main "$@"

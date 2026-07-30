@@ -297,7 +297,7 @@ def _extract_permissions_from_block(block: List[str], job_indent: int) -> Dict[s
             else:
                 in_perms = False
         if in_perms and perms_indent is not None and indent >= perms_indent + 2:
-            m = re.match(r'^(\w+):\s+(.+)$', stripped)
+            m = re.match(r'^([\w-]+):\s+(.+)$', stripped)
             if m:
                 perms[m.group(1)] = m.group(2).strip().strip('"\'')
         elif in_perms:
