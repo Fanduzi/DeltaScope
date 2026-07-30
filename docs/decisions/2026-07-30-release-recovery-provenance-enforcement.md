@@ -1,7 +1,7 @@
 # Decision: Release Recovery Provenance Enforcement
 
 Date: 2026-07-30
-Status: Accepted
+Status: Proposed
 Related decision: docs/decisions/2026-07-29-release-candidate-provenance-enforcement.md
 Related workflows: .github/workflows/release-recover.yml, .github/workflows/release.yml
 
