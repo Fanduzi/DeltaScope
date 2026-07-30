@@ -15,8 +15,10 @@ recovery.
    `release-recovery-contract-test` dependency on
    `RELEASE_RECOVERY_CONTRACT_VERSION ?= v0.240.0`, which the new fail-closed
    rule invalidates as a positive case.
-2. Extend `release-recover.yml` preflight to check out the requested tag with
-   complete history, fetch `origin/main`, and run
+2. Extend `release-recover.yml` preflight so its first step is a fail-closed
+   dispatch-ref guard requiring `github.ref == refs/heads/main`, failing
+   before checkout or any external work. Then check out the requested tag
+   with complete history, fetch `origin/main`, and run
    `posttag-candidate-gate` with `RELEASE_MAIN_REF` on the same step.
    Position this before checksum extraction and all publisher work. After the
    gate succeeds, resolve the verified tag's peeled commit SHA and export it
@@ -31,6 +33,8 @@ recovery.
 4. Add or extend a stdlib-only structural checker for `release-recover.yml`.
    It must verify per-step checkout depth, fetch, environment, command order,
    and graph reachability from preflight to each Homebrew/npm mutation path.
+   It must assert the dispatch-ref guard exists, compares `github.ref` to
+   exactly `refs/heads/main`, and precedes all external work in `preflight`.
    It must also verify that `preflight` produces `tag_target_sha` after gate
    success, that both publisher jobs consume exactly
    `needs.preflight.outputs.tag_target_sha` in their checkout (rejecting
@@ -47,8 +51,10 @@ recovery.
    steps, missing post-tag gate, post-tag gate after preflight work, a
    Homebrew publisher bypass, an npm publisher bypass, a missing or
    unconsumed `tag_target_sha`, a publisher checking out a default branch or
-   input tag ref, and a `preflight` job with write or absent job-level
-   permissions.
+   input tag ref, a `preflight` job with write or absent job-level
+   permissions, and dispatch-ref guard failures: missing guard, wrong guard
+   value, and guard placed after an external command. Include branch-ref and
+   tag-ref dispatch negatives.
 7. Rework `release-recovery-contract-test` into a hermetic/static contract
    gate. Its positive path builds a future-valid RC chain in a temporary Git
    fixture with local publisher stubs; its negative path proves historical
@@ -76,6 +82,10 @@ recovery.
 
 - A static DAG proof that no Homebrew or npm mutation job can run without
   successful recovery preflight provenance.
+- Checker evidence that the dispatch-ref guard requires exactly
+  `refs/heads/main` and precedes all external work, with negative fixtures
+  for a missing guard, a wrong guard value, a guard after an external
+  command, and branch-ref/tag-ref dispatches.
 - Checker evidence that `preflight` emits `tag_target_sha` and that both
   publisher jobs check out exactly `needs.preflight.outputs.tag_target_sha`,
   with negative fixtures for default-branch, input-tag-ref, `main`-ref, and

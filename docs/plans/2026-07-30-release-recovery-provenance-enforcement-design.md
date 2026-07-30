@@ -19,6 +19,7 @@ workflow_dispatch(version)
           |
           v
 release-recover preflight
+  | guard: github.ref == refs/heads/main, else fail
   | checkout refs/tags/version, fetch-depth: 0
   | fetch origin main
   | posttag-candidate-gate(RELEASE_MAIN_REF=origin/main)
@@ -44,13 +45,19 @@ run the verifier against that trusted ref.
 
 The `preflight` job is the single admission boundary. It must:
 
-1. check out `refs/tags/${{ inputs.version }}` with `fetch-depth: 0`;
-2. fetch `origin/main`;
-3. set `RELEASE_MAIN_REF=refs/remotes/origin/main` on the same step that runs
+1. begin with a fail-closed dispatch-ref guard that requires
+   `github.ref == refs/heads/main` and fails before checkout, release
+   preflight, checksum extraction, or any other external work. The
+   workflow-dispatch API accepts branch and tag refs and runs the workflow
+   definition from the dispatched ref, so this guard keeps routine recovery
+   bound to the reviewed workflow definition on `main`;
+2. check out `refs/tags/${{ inputs.version }}` with `fetch-depth: 0`;
+3. fetch `origin/main`;
+4. set `RELEASE_MAIN_REF=refs/remotes/origin/main` on the same step that runs
    `make posttag-candidate-gate VERSION="${{ inputs.version }}"`;
-4. after the gate succeeds, resolve the verified tag to its peeled commit SHA
+5. after the gate succeeds, resolve the verified tag to its peeled commit SHA
    and export it as the job output `tag_target_sha`; and
-5. declare explicit job-level `permissions: contents: read` instead of
+6. declare explicit job-level `permissions: contents: read` instead of
    relying on workflow-level permissions. Preflight only reads repository
    content; it needs no `id-token: write`, publish token, or any external
    mutation permission.
@@ -66,11 +73,14 @@ content from a later `main` commit or a retargeted tag. The recovery
 provenance checker must verify that the output is produced from the verified
 tag, propagated through job outputs, and consumed exactly by both publisher
 checkouts; it rejects a default checkout, an input tag ref, a `main` ref, or
-any non-preflight SHA. The checker must also parse the `needs` graph and
-rediscover publisher jobs from their commands instead of hard-coding a short
-job list, and it must assert the exact job-level `contents: read` permission
-on `preflight`, rejecting write permissions or a missing job-level
-declaration.
+any non-preflight SHA. The checker must also assert the dispatch-ref guard:
+it exists, compares `github.ref` to exactly `refs/heads/main`, and precedes
+all external work in `preflight`; fixtures with a missing guard, a wrong
+guard value, or a guard placed after an external command must fail. The
+checker must also parse the `needs` graph and rediscover publisher jobs from
+their commands instead of hard-coding a short job list, and it must assert
+the exact job-level `contents: read` permission on `preflight`, rejecting
+write permissions or a missing job-level declaration.
 
 The checker must inspect `release-recover.yml` independently from the normal
 release checker. Shared parsing helpers are acceptable only when they preserve
@@ -112,6 +122,7 @@ Resolution:
 
 | Condition | Recovery result |
 | --- | --- |
+| Dispatch on a non-main branch ref or a tag ref | Fail at the ref guard before checkout or any external work |
 | Valid future RC tag on `origin/main` | Continue to existing recovery preflight |
 | Tag lacks `.release-candidate` | Fail before checksums or publishers |
 | Candidate/file/version/parent mismatch | Fail before checksums or publishers |
@@ -129,6 +140,10 @@ for historical recovery.
 
 - `.release-candidate` is provenance metadata, not authorization.
 - `origin/main` is an explicit trust anchor for the workflow run.
+- The dispatch-ref guard binds routine recovery to the workflow definition on
+  `refs/heads/main`. It is enforced by the definition itself, so branch
+  protection on `main` and Actions workflow-dispatch permissions remain
+  operational trust prerequisites; the guard does not replace them.
 - A dispatcher-provided version is untrusted until the tag verifier accepts
   it; it must not select a publisher path independently.
 - No test may dispatch a real workflow or mutate GitHub, npm, Homebrew, tags,

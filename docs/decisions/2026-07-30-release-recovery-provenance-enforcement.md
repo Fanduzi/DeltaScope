@@ -27,6 +27,14 @@ fetch `origin/main`, and pass `refs/remotes/origin/main` as the verifier's
 explicit trusted main reference. All recovery publisher jobs remain
 transitively downstream of that preflight.
 
+Constrain the dispatch execution ref: the first step of `preflight` is a
+fail-closed guard that requires `github.ref` to be exactly
+`refs/heads/main` and fails before checkout, checksum, or any external work.
+GitHub's workflow-dispatch API accepts branch and tag refs and runs the
+workflow definition from the dispatched ref; the guard prevents routine
+recovery from running under a non-main workflow definition that could omit
+the provenance constraints reviewed on `main`.
+
 Bind verification to publication: after the gate succeeds, `preflight`
 resolves the verified tag to its peeled commit SHA and exports it as the
 `tag_target_sha` job output. `publish-homebrew-cask` and
@@ -69,6 +77,14 @@ verify-then-publish gap: without it, preflight could verify tag A while a
 publisher checks out the workflow default branch or a retargeted tag and
 publishes cask or npm content that was never verified.
 
+The dispatch-ref guard closes a definition-substitution gap: a recovery run
+dispatched on a branch or tag ref would execute that ref's copy of
+`release-recover.yml`, which may lack the provenance admission entirely.
+Requiring `refs/heads/main` keeps every routine recovery on the reviewed
+workflow definition. The guard lives in that definition, so branch protection
+on `main` and Actions workflow-dispatch permissions remain operational trust
+prerequisites rather than something this guard replaces.
+
 The contract gate must be hermetic because the fail-closed rule makes
 `v0.240.0` — the current live positive input — correctly fail; keeping it as
 a live positive gate would leave the gate permanently red or force a
@@ -91,6 +107,9 @@ does not satisfy a policy introduced later.
 
 - Routine recovery accepts only future tags that satisfy release-candidate
   provenance and are reachable from `origin/main`.
+- Routine recovery runs only when dispatched on `refs/heads/main`; a
+  branch-ref or tag-ref dispatch fails at the ref guard before any external
+  work.
 - Provenance failure occurs before Homebrew cask mutation or npm publication.
 - Publisher jobs consume only content at the preflight-verified
   `tag_target_sha`; no publisher checks out a default branch, input tag ref,
@@ -120,6 +139,10 @@ does not satisfy a policy introduced later.
 
 - Structural workflow tests prove the recovery provenance step is upstream of
   each external publisher path.
+- Structural tests prove the dispatch-ref guard requires exactly
+  `refs/heads/main` and precedes all external work; missing-guard,
+  wrong-guard, guard-after-external-command, and branch-ref/tag-ref dispatch
+  fixtures fail.
 - Structural tests prove `preflight` produces `tag_target_sha` from the
   verified tag and that both publisher jobs check out exactly
   `needs.preflight.outputs.tag_target_sha`; default-branch, input-tag-ref,
