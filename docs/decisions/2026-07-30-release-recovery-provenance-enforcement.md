@@ -27,6 +27,30 @@ fetch `origin/main`, and pass `refs/remotes/origin/main` as the verifier's
 explicit trusted main reference. All recovery publisher jobs remain
 transitively downstream of that preflight.
 
+Bind verification to publication: after the gate succeeds, `preflight`
+resolves the verified tag to its peeled commit SHA and exports it as the
+`tag_target_sha` job output. `publish-homebrew-cask` and
+`publish-mcp-launcher-package` check out
+`needs.preflight.outputs.tag_target_sha`, never the workflow default branch,
+the input tag name, or any ref that can move during the run.
+
+Make the recovery contract gate hermetic: `release-recovery-contract-test`
+becomes a static/offline gate whose positive path is a future-valid RC chain
+in a temporary Git fixture with local stubs, and whose negative path proves
+historical non-provenance tags such as `v0.240.0` and `v0.460.0` fail before
+any publisher stub. `RELEASE_RECOVERY_CONTRACT_VERSION ?= v0.240.0` stops
+serving as a live positive gate input. `release-recovery-preflight`, if
+retained, is an explicit read-only operator diagnostic, not a default
+dependency of the offline contract gate.
+
+Enforce through existing required gates: the recovery provenance structural
+checker is invoked by `scripts/verify_release_workflow_hygiene.sh` and is
+therefore inherited by `make release-workflow-hygiene-gates` and
+`make release-contract-gates`. A disconnected Make target is not an
+acceptable enforcement point. The checker also asserts that `preflight`
+declares explicit job-level `permissions: contents: read`; preflight needs no
+`id-token: write`, publish token, or external mutation permission.
+
 The routine workflow will fail closed for historical tags without
 `.release-candidate`, including v0.460.0. It will not expose a version-based
 override. A historical recovery is an incident decision outside this routine
@@ -40,6 +64,24 @@ main ref avoids trusting a dispatcher input or an assumed local branch in a
 detached checkout. Requiring the same preflight for dry-run prevents dry-run
 from becoming an undocumented compatibility or discovery bypass.
 
+Pinning publishers to the preflight-resolved SHA closes a
+verify-then-publish gap: without it, preflight could verify tag A while a
+publisher checks out the workflow default branch or a retargeted tag and
+publishes cask or npm content that was never verified.
+
+The contract gate must be hermetic because the fail-closed rule makes
+`v0.240.0` — the current live positive input — correctly fail; keeping it as
+a live positive gate would leave the gate permanently red or force a
+weakening exception, and no provenance-valid release tag exists yet to
+replace it. Fixture-based positives and explicit historical negatives keep
+the gate green, deterministic, and network-free.
+
+Wiring the checker into `scripts/verify_release_workflow_hygiene.sh` makes it
+a real gate: a checker reachable only through a disconnected Make target that
+no required gate runs would enforce nothing. Explicit job-level
+`contents: read` on `preflight` keeps the admission boundary least-privileged
+and independent of workflow-level permission drift.
+
 Keeping historical exceptions outside the routine workflow avoids a permanent
 allowlist that could be expanded accidentally. It also keeps the existing
 v0.460.0 exception accurate: published artifacts remain valid, but that tag
@@ -50,9 +92,18 @@ does not satisfy a policy introduced later.
 - Routine recovery accepts only future tags that satisfy release-candidate
   provenance and are reachable from `origin/main`.
 - Provenance failure occurs before Homebrew cask mutation or npm publication.
+- Publisher jobs consume only content at the preflight-verified
+  `tag_target_sha`; no publisher checks out a default branch, input tag ref,
+  or movable ref.
 - `dry_run` prevents publisher mutation but still requires valid provenance.
 - No workflow input bypasses provenance. Historical recovery needs a separate
   incident decision.
+- `release-recovery-contract-test` is offline and deterministic; historical
+  tags `v0.240.0` and `v0.460.0` are its documented negative cases.
+- The recovery provenance checker runs inside
+  `make release-workflow-hygiene-gates` and `make release-contract-gates`
+  via `scripts/verify_release_workflow_hygiene.sh`.
+- The `preflight` job holds job-level `permissions: contents: read` only.
 - This decision does not alter existing release tags, GitHub Releases, npm
   packages, Homebrew casks, or product behavior.
 
@@ -69,8 +120,22 @@ does not satisfy a policy introduced later.
 
 - Structural workflow tests prove the recovery provenance step is upstream of
   each external publisher path.
+- Structural tests prove `preflight` produces `tag_target_sha` from the
+  verified tag and that both publisher jobs check out exactly
+  `needs.preflight.outputs.tag_target_sha`; default-branch, input-tag-ref,
+  `main`-ref, and non-preflight-SHA checkouts are rejected.
 - Adversarial fixtures prove missing checkout depth, explicit fetch, same-step
   environment, post-tag gate, or dependency edges fail the contract check.
+- The reworked `release-recovery-contract-test` passes offline with a
+  fixture-based future-valid RC chain and proves `v0.240.0` and `v0.460.0`
+  fail before any publisher stub, without network, GitHub Release, or npm
+  registry access.
+- Wiring tests prove the checker runs via
+  `scripts/verify_release_workflow_hygiene.sh` under
+  `make release-workflow-hygiene-gates` and `make release-contract-gates`,
+  and fail when that invocation is removed.
+- Structural tests prove `preflight` declares job-level
+  `permissions: contents: read` and reject write or missing declarations.
 - Focused behavior tests prove invalid and historical tags stop before
   publisher stubs, while a valid future candidate chain passes.
 - Dry-run evidence proves no remote mutation while retaining provenance
