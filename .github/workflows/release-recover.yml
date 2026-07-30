@@ -37,14 +37,56 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     outputs:
       version_no_v: ${{ steps.version.outputs.version_no_v }}
       darwin_amd64_sha256: ${{ steps.checksums.outputs.darwin_amd64_sha256 }}
       darwin_arm64_sha256: ${{ steps.checksums.outputs.darwin_arm64_sha256 }}
+      tag_target_sha: ${{ steps.tag-target.outputs.tag_target_sha }}
 
     steps:
-      - name: Checkout
+      - name: Guard recovery dispatch ref
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::release-recover must be dispatched on refs/heads/main; got ${GITHUB_REF}. A branch or tag dispatch would execute an unreviewed workflow definition."
+            exit 1
+          fi
+          echo "recovery-dispatch-ref: ${GITHUB_REF} PASS"
+          if ! printf '%s' "${VERSION}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::invalid version input; expected vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          echo "recovery-version-input: ${VERSION} PASS"
+
+      - name: Checkout release tag
         uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ inputs.version }}
+          fetch-depth: 0
+
+      - name: Fetch origin main
+        run: git fetch origin main
+
+      - name: Verify post-tag candidate provenance
+        env:
+          RELEASE_MAIN_REF: refs/remotes/origin/main
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          make posttag-candidate-gate VERSION="${VERSION}"
+
+      - name: Resolve verified tag target SHA
+        id: tag-target
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          tag_target_sha="$(git rev-parse "refs/tags/${VERSION}^{commit}")"
+          echo "tag_target_sha=${tag_target_sha}" >> "$GITHUB_OUTPUT"
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -107,8 +149,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout
+      - name: Checkout verified tag target
         uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.preflight.outputs.tag_target_sha }}
 
       - name: Render Homebrew cask
         env:
@@ -192,8 +236,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout
+      - name: Checkout verified tag target
         uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.preflight.outputs.tag_target_sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
