@@ -21,21 +21,35 @@ When a release partially fails, use this guide to determine the correct recovery
 
 ## Dispatching the Recovery Workflow
 
+Recovery dispatch **must use `--ref main`**. The workflow's first preflight step fails closed unless the dispatch ref is exactly `refs/heads/main`, because a branch or tag dispatch would execute an unreviewed workflow definition.
+
 ```bash
 gh workflow run release-recover.yml \
   --repo Fanduzi/DeltaScope \
   --ref main \
-  -f version=v0.230.0 \
+  -f version=v0.461.0 \
   -f recover_homebrew=true \
   -f verify_homebrew=true \
   -f recover_npm=false
 ```
 
+## Provenance Admission
+
+Before any downstream work, the recovery preflight proves the input tag is a legitimate release candidate:
+
+1. Fail-closed dispatch-ref guard (`refs/heads/main` only), before checkout or any network work
+2. Full-history checkout of the input tag; the tag must be annotated
+3. `.release-candidate` is read from the tagged commit and the candidate chain is verified against fetched `origin/main` (`make posttag-candidate-gate` with `RELEASE_MAIN_REF=refs/remotes/origin/main`)
+4. On success, the peeled tag target SHA is exported as `tag_target_sha`; the Homebrew and npm publisher jobs check out exactly that SHA — never the default branch, `main`, the input tag ref, or any other movable ref
+
+**Historical tags predating the candidate provenance contract (for example `v0.240.0` and `v0.460.0`) fail admission by design.** There is no bypass or allowlist. Recovering such a release requires an explicit incident decision (typically a new patch release with a valid candidate chain), not a gate exception. Dry-run dispatches go through the same admission — `dry_run=true` does not skip provenance verification.
+
 ## What the Recovery Workflow Does
 
+- Verifies provenance admission first (dispatch-ref guard, annotated tag, candidate chain against `origin/main`)
 - Downloads existing GitHub Release assets as source of truth
-- Re-renders and re-publishes the Homebrew cask (idempotent: succeeds if already up to date)
-- Re-publishes the npm launcher package (idempotent: skips if version already exists)
+- Re-renders and re-publishes the Homebrew cask from the verified tag target SHA (idempotent: succeeds if already up to date)
+- Re-publishes the npm launcher package from the verified tag target SHA (idempotent: skips if version already exists)
 - Verifies Homebrew cask install on macOS
 
 ## What the Recovery Workflow Does NOT Do
@@ -65,10 +79,10 @@ gh workflow run release-recover.yml \
 Before dispatching recovery, run the preflight locally to verify release asset state:
 
 ```bash
-VERSION=v0.230.0 make release-recovery-preflight
+VERSION=v0.461.0 make release-recovery-preflight
 ```
 
-This validates that the GitHub Release exists, has the expected 9 assets, checksums are consistent, and reports npm package state.
+This validates that the GitHub Release exists, has the expected 9 assets, checksums are consistent, and reports npm package state. This is a read-only operator diagnostic — it is not part of `make release-recovery-contract-test`, which is hermetic and needs no network or existing release.
 
 ### Preflight Auth Wiring
 
@@ -98,7 +112,7 @@ The recovery workflow accepts a `dry_run` input (default: `true`) that exercises
 gh workflow run release-recover.yml \
   --repo Fanduzi/DeltaScope \
   --ref main \
-  -f version=v0.240.0 \
+  -f version=v0.461.0 \
   -f dry_run=true \
   -f recover_homebrew=true \
   -f verify_homebrew=true \
@@ -117,7 +131,7 @@ Real recovery requires explicit `dry_run=false` and should only be used when:
 gh workflow run release-recover.yml \
   --repo Fanduzi/DeltaScope \
   --ref main \
-  -f version=v0.240.0 \
+  -f version=v0.461.0 \
   -f dry_run=false \
   -f recover_homebrew=true \
   -f verify_homebrew=true \

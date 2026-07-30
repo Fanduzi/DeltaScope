@@ -185,12 +185,12 @@ See [release-recovery.md](release-recovery.md) for the failure matrix and recove
 
 ### Release Recovery Contract Gate
 
-`make release-recovery-contract-test` runs the preflight checks against an existing release and statically verifies that `.github/workflows/release-recover.yml` contains the expected dry-run contract markers:
+`make release-recovery-contract-test` is hermetic and static — it needs no GitHub Release, npm registry, network access, or historical repo tags. It runs:
 
-- `dry_run` input is defined
-- Homebrew cask dry-run marker (`Homebrew cask would be updated`)
-- npm dry-run marker (`npm package would be published`)
-- Destructive operations guarded behind `!inputs.dry_run`
-- Preflight step has `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` env wiring
+- `scripts/test_release_recovery_contract.sh`: simulated recovery admission in temporary git repos. A future-valid `.release-candidate` chain passes the post-tag candidate gate and reaches the publisher stub; `v0.240.0` (no candidate provenance) and `v0.460.0` (broken candidate chain) fail closed before any publisher work; lightweight and off-main tags fail closed; the hygiene-script wiring of the recovery provenance checker is verified with a mutating wiring test.
+- `scripts/verify_release_recover_workflow_provenance.py`: static provenance contract checks on `.github/workflows/release-recover.yml` (fail-closed `refs/heads/main` dispatch guard as first step, read-only preflight permissions, full-history tag checkout, `origin/main` fetch, same-step `RELEASE_MAIN_REF` post-tag gate before external release-state work, `tag_target_sha` resolution and export after the gate, publishers pinned to the verified SHA, all mutation jobs transitively downstream of preflight, no historical-tag bypass).
+- Static grep checks for the dry-run contract markers (`dry_run` input, Homebrew/npm dry-run markers, `!inputs.dry_run` guards, `GH_TOKEN` preflight wiring).
 
-This target does not dispatch any workflow. It combines the read-only preflight (`make release-recovery-preflight`) with static grep checks on the workflow file. Defaults to `VERSION=v0.240.0`; override with `RELEASE_RECOVERY_CONTRACT_VERSION=vX.Y.Z`.
+This target does not dispatch any workflow and does not contact GitHub or npm. The read-only operator diagnostic `make release-recovery-preflight VERSION=vX.Y.Z` still exists for inspecting real release asset state, but it is not part of the contract gate.
+
+Run `python3 scripts/test_verify_release_recover_workflow_provenance.py` for the adversarial checker tests (guard tampering, publisher checkout drift, permissions widening, DAG bypasses, historical-tag exceptions).
