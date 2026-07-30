@@ -575,6 +575,63 @@ expect_violation("catches inline input interpolation in run",
     make_workflow(homebrew=hb_inline),
     "interpolates a workflow input")
 
+print("R31: exit 1 only in the else branch (fail-open inversion)")
+ELSE_INVERTED_GUARD_BODY = """\
+set -euo pipefail
+if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+  echo "non-main dispatch accepted"
+else
+  exit 1
+fi
+"""
+else_inverted_guard = """\
+      - name: Guard recovery dispatch ref
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "non-main dispatch accepted"
+          else
+            exit 1
+          fi
+"""
+expect_violation("catches else-branch inverted guard",
+    make_workflow(preflight=PREFLIGHT_HEAD + else_inverted_guard + PREFLIGHT_TAIL),
+    "missing fail-closed dispatch-ref guard")
+
+
+def run_fixture_guard(script: str, env_overrides: dict) -> int:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
+        f.write(script)
+        path = f.name
+    env = dict(os.environ)
+    env.update(env_overrides)
+    proc = subprocess.run(["bash", path], env=env,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return proc.returncode
+
+
+def expect_fixture_guard(name: str, rc: int, expect_ok: bool) -> None:
+    global PASS, FAIL
+    ok = (rc == 0) if expect_ok else (rc != 0)
+    if ok:
+        print(f"  PASS: {name}")
+        PASS += 1
+    else:
+        print(f"  FAIL: {name} — guard exited {rc}")
+        FAIL += 1
+
+
+# Prove the R31 fixture is genuinely fail-open when executed: a branch-ref
+# dispatch passes and main is rejected — exactly why the checker must flag it.
+expect_fixture_guard(
+    "else-inverted fixture accepts branch dispatch (fail-open, must be flagged)",
+    run_fixture_guard(ELSE_INVERTED_GUARD_BODY, {"GITHUB_REF": "refs/heads/feature-x"}),
+    True)
+expect_fixture_guard(
+    "else-inverted fixture rejects main dispatch (inverted, must be flagged)",
+    run_fixture_guard(ELSE_INVERTED_GUARD_BODY, {"GITHUB_REF": "refs/heads/main"}),
+    False)
+
 
 # --- Guard behavior tests against the REAL workflow ---
 

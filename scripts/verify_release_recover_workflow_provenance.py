@@ -124,7 +124,9 @@ def _parse_step_ids(block: List[str], job_indent: int) -> List[Optional[str]]:
 def _is_ref_guard_step(step: Step) -> bool:
     """A fail-closed dispatch-ref guard: run-only step with a `!=` comparison
     of github.ref / GITHUB_REF to exactly refs/heads/main, and an `exit 1`
-    inside that mismatch branch (before the closing `fi`)."""
+    inside the THEN branch of that comparison — before any `else`, `elif`,
+    or the closing `fi`. An `exit 1` in an `else` branch is an inverted
+    (fail-open) guard and is rejected."""
     if step.uses:
         return False
     compare_idx: Optional[int] = None
@@ -136,12 +138,13 @@ def _is_ref_guard_step(step: Step) -> bool:
             break
     if compare_idx is None:
         return False
-    if re.search(r'\bexit\s+1\b', step.run_lines[compare_idx]):
-        return True
-    for line in step.run_lines[compare_idx + 1:]:
-        if re.search(r'\bexit\s+1\b', line):
+    branch_end = re.compile(r'\belse\b|\belif\b|\bfi\b')
+    for line in step.run_lines[compare_idx:]:
+        boundary = branch_end.search(line)
+        then_part = line[:boundary.start()] if boundary else line
+        if re.search(r'\bexit\s+1\b', then_part):
             return True
-        if line.strip() == 'fi':
+        if boundary:
             return False
     return False
 
