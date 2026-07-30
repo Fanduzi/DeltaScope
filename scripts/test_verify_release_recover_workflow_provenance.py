@@ -97,9 +97,7 @@ jobs:
 GUARD_STEP = """\
       - name: Guard recovery dispatch ref
         run: |
-          set -euo pipefail
           if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            echo "::error::bad dispatch ref"
             exit 1
           fi
 """
@@ -662,20 +660,42 @@ expect_fixture_guard(
     run_fixture_guard(NESTED_DEAD_GUARD_BODY, {"GITHUB_REF": "refs/heads/main"}),
     True)
 
+print("R33: EXIT trap masks an otherwise bare guard exit")
+TRAP_MASKED_GUARD_BODY = """\
+trap "exit 0" EXIT
+if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+  exit 1
+fi
+"""
+trap_masked_guard = """\
+      - name: Guard recovery dispatch ref
+        run: |
+          trap "exit 0" EXIT
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            exit 1
+          fi
+"""
+expect_violation("catches EXIT trap before guard",
+    make_workflow(preflight=PREFLIGHT_HEAD + trap_masked_guard + PREFLIGHT_TAIL),
+    "missing fail-closed dispatch-ref guard")
+expect_fixture_guard(
+    "EXIT-trapped fixture accepts branch dispatch (fail-open, must be flagged)",
+    run_fixture_guard(TRAP_MASKED_GUARD_BODY, {"GITHUB_REF": "refs/heads/feature-x"}),
+    True)
+
 
 # --- Guard behavior tests against the REAL workflow ---
 
 print("G: dispatch-ref guard behavior (real workflow, branch/tag dispatch refs)")
 
 
-def run_real_guard(env_overrides: dict) -> int:
+def run_real_preflight_step(step_index: int, env_overrides: dict) -> int:
     workflow = REPO_ROOT / ".github" / "workflows" / "release-recover.yml"
     content = workflow.read_text(encoding="utf-8")
     job_names = _extract_job_names(content)
     block, indent = _find_job_block_lines(content, "preflight", job_names)
     steps = _parse_steps_from_block(block, indent)
-    guard = steps[0]
-    script = "\n".join(guard.run_lines) + "\n"
+    script = "\n".join(steps[step_index].run_lines) + "\n"
     with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as f:
         f.write(script)
         path = f.name
@@ -688,7 +708,7 @@ def run_real_guard(env_overrides: dict) -> int:
 
 def expect_guard(name: str, env_overrides: dict, expect_ok: bool) -> None:
     global PASS, FAIL
-    rc = run_real_guard(env_overrides)
+    rc = run_real_preflight_step(0, env_overrides)
     ok = (rc == 0) if expect_ok else (rc != 0)
     if ok:
         print(f"  PASS: {name}")
@@ -706,8 +726,12 @@ expect_guard("tag-ref dispatch fails closed",
              {"GITHUB_REF": "refs/tags/v0.460.0", "VERSION": "v0.460.0"}, False)
 expect_guard("near-miss branch ref fails closed",
              {"GITHUB_REF": "refs/heads/main2", "VERSION": "v9.9.9"}, False)
-expect_guard("malformed version input fails closed",
-             {"GITHUB_REF": "refs/heads/main", "VERSION": "v9.9.9; rm -rf /"}, False)
+
+print("G2: recovery version input guard behavior (real workflow)")
+expect_fixture_guard(
+    "malformed version input fails closed",
+    run_real_preflight_step(1, {"VERSION": "v9.9.9; rm -rf /"}),
+    False)
 
 print("")
 print(f"Results: {PASS} passed, {FAIL} failed")

@@ -47,15 +47,16 @@ jobs:
 
     steps:
       - name: Guard recovery dispatch ref
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            exit 1
+          fi
+
+      - name: Guard recovery version input
         env:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
-            echo "::error::release-recover must be dispatched on refs/heads/main; got ${GITHUB_REF}. A branch or tag dispatch would execute an unreviewed workflow definition."
-            exit 1
-          fi
-          echo "recovery-dispatch-ref: ${GITHUB_REF} PASS"
           if ! printf '%s' "${VERSION}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::invalid version input; expected vMAJOR.MINOR.PATCH"
             exit 1

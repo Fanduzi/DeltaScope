@@ -125,56 +125,26 @@ def _parse_step_ids(block: List[str], job_indent: int) -> List[Optional[str]]:
 
 
 def _is_ref_guard_step(step: Step) -> bool:
-    """A fail-closed dispatch-ref guard in a narrow, statically-verifiable
-    canonical shape: a run-only step with an `if [ ... GITHUB_REF/github.ref
-    != refs/heads/main ... ]; then` opener whose THEN branch — the statements
-    up to its matching `fi`, before any `else`/`elif` — contains a bare,
-    top-level `exit 1` reached before any nested control keyword
-    (`if`/`elif`/`else`/`case`/`while`/`for`/`until`), subshell `(`, or
-    short-circuit `&&`/`||`. This rejects else-branch inversions, nested
-    dead-code exits (`if false; then exit 1; fi`), subshell exits, and
-    `exit 1 || true` masking, while accepting the canonical multi-line and
-    single-line `if ...; then exit 1; fi` forms."""
+    """Require the isolated, side-effect-free dispatch-ref guard.
+
+    This intentionally accepts only one fixed shell form. Parsing arbitrary
+    shell is not a security boundary: a preceding trap, function, or sourced
+    file can make an apparently bare `exit 1` return success. Keeping the
+    guard as its own first step makes the exact allowlist both auditable and
+    fail closed.
+    """
     if step.uses:
         return False
 
-    # Locate the mismatch comparison and require it to open an `if ...; then`.
-    compare_idx: Optional[int] = None
-    for i, line in enumerate(step.run_lines):
-        if (('GITHUB_REF' in line or 'github.ref' in line)
-                and (f'"{REQUIRED_GUARD_REF}"' in line or f"'{REQUIRED_GUARD_REF}'" in line)
-                and '!=' in line
-                and re.search(r'\bif\b', line) and re.search(r';\s*then\b|\bthen\s*$', line)):
-            compare_idx = i
-            break
-    if compare_idx is None:
-        return False
-
-    # Flatten the run body from the opener into `;`-separated statements so
-    # single-line and multi-line guards parse identically.
-    tail = list(step.run_lines[compare_idx:])
-    first = tail[0]
-    m = re.search(r';\s*then\b|\bthen\s*$', first)
-    tail[0] = first[m.end():]
-    statements: List[str] = []
-    for line in tail:
-        for part in line.split(';'):
-            statements.append(part.strip())
-
-    control_open = re.compile(r'^\s*(if|elif|else|case|while|for|until|do|then)\b')
-    for stmt in statements:
-        if not stmt or stmt.startswith('#'):
-            continue
-        if stmt in ('fi', 'esac', 'done'):
-            # Guard's own if closed before an unconditional exit was reached.
-            return False
-        if control_open.match(stmt) or '(' in stmt or '&&' in stmt or '||' in stmt:
-            # Nested block, subshell, or short-circuit before a bare exit:
-            # the exit is conditional or in another branch — reject.
-            return False
-        if re.fullmatch(r'exit\s+1', stmt):
-            return True
-    return False
+    lines = tuple(
+        line.strip() for line in step.run_lines
+        if line.strip() and not line.lstrip().startswith('#')
+    )
+    return lines == (
+        f'if [ "${{GITHUB_REF}}" != "{REQUIRED_GUARD_REF}" ]; then',
+        'exit 1',
+        'fi',
+    )
 
 
 def _step_index(steps: List[Step], predicate) -> Optional[int]:
