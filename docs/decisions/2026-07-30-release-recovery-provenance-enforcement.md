@@ -27,9 +27,13 @@ fetch `origin/main`, and pass `refs/remotes/origin/main` as the verifier's
 explicit trusted main reference. All recovery publisher jobs remain
 transitively downstream of that preflight.
 
-Constrain the dispatch execution ref: the first step of `preflight` is a
-fail-closed guard that requires `github.ref` to be exactly
+Constrain the dispatch execution ref: the first step of `preflight` is an
+isolated, fail-closed guard that requires `github.ref` to be exactly
 `refs/heads/main` and fails before checkout, checksum, or any external work.
+The step is limited to the canonical comparison, `exit 1`, and `fi`; version
+validation runs in a following step. This avoids treating arbitrary shell
+syntax as a security boundary: traps, functions, or sourced state can mask an
+otherwise apparent `exit 1`.
 GitHub's workflow-dispatch API accepts branch and tag refs and runs the
 workflow definition from the dispatched ref; the guard prevents routine
 recovery from running under a non-main workflow definition that could omit
