@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.470.0] - 2026-07-31
+
+### Added
+
+- Release-recovery provenance enforcement: recovery preflight validates the requested input tag through the existing post-tag candidate gate before checksum extraction or any Homebrew or npm mutation, using `refs/remotes/origin/main` as the explicit trusted main reference. Routine recovery accepts only future provenance-valid annotated tags; historical tags without `.release-candidate` provenance, including `v0.460.0`, fail closed.
+- Main-only dispatch-ref guard: the first step of recovery `preflight` requires `github.ref` to be exactly `refs/heads/main` and fails before checkout or any external work, so routine recovery always runs the reviewed workflow definition from `main`. The structural checker requires the canonical guard shape and rejects nested dead-code exits and else-branch inverted guards.
+- Verified peeled SHA publisher pinning: `preflight` exports the verified tag's peeled commit SHA as `tag_target_sha`, and `publish-homebrew-cask` and `publish-mcp-launcher-package` check out only `needs.preflight.outputs.tag_target_sha` — never a default branch, input tag ref, or movable ref.
+- Hermetic recovery contract gate: `release-recovery-contract-test` is a static, offline, deterministic gate with a fixture-based future-valid release-candidate positive chain and documented fail-closed negatives `v0.240.0` and `v0.460.0`.
+- Structural checker wiring: the recovery provenance checker runs via `scripts/verify_release_workflow_hygiene.sh` inside `make release-workflow-hygiene-gates` and `make release-contract-gates`, and asserts recovery `preflight` declares job-level `permissions: contents: read` only.
+- Decision record: `docs/decisions/2026-07-30-release-recovery-provenance-enforcement.md` (Accepted).
+
+### Non-Goals
+
+- Not historical recovery automation; recovering a historical tag without provenance is a separate incident decision outside the routine workflow.
+- Not a generic emergency bypass mechanism, version-based override, or allowlist. `dry_run` still requires valid provenance.
+- Not cryptographic signing, external approval storage, or automated tag/release/package/cask rollback.
+- Not a product behavior change: no SQL audit, parser, rule, Query Access, SDK, CLI, HTTP, or MCP semantic change.
+- Not a change to existing release tags, GitHub Releases, npm packages, or Homebrew casks.
+- Not a severity field; not a change to the registered audit rule catalog.
+
 ## [v0.460.0] - 2026-07-28
 
 ### Added
