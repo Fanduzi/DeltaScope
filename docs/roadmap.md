@@ -4,7 +4,29 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.460.0 Relationless Literal-Only Query Access
+## Latest Completed Milestone: v0.470.0 Release Recovery Provenance Enforcement
+
+**Goal:** make the manually dispatched release-recovery workflow enforce the same release-candidate provenance contract as the normal tag-triggered release workflow. Routine recovery accepts only future provenance-valid annotated tags reachable from trusted `origin/main`; dispatch runs only on `refs/heads/main`; publishers check out only the verified peeled tag target SHA; the recovery contract gate is hermetic with `v0.240.0` and `v0.460.0` as fail-closed negatives. See `docs/releases/release-notes-v0.470.0.md` and `docs/decisions/2026-07-30-release-recovery-provenance-enforcement.md`.
+
+### Completed Scope
+
+- Recovery preflight validates the requested input tag through the existing post-tag candidate gate before checksum extraction or any Homebrew or npm mutation, with `refs/remotes/origin/main` as the explicit trusted main reference.
+- Main-only dispatch-ref guard: the first `preflight` step requires `github.ref` to be exactly `refs/heads/main` and fails before checkout or any external work. The structural checker requires the canonical guard shape and rejects nested dead-code exits and else-branch inverted guards.
+- Publisher pinning: `publish-homebrew-cask` and `publish-mcp-launcher-package` check out only the preflight-verified `tag_target_sha`, never a default branch, input tag ref, or movable ref.
+- Hermetic contract gate: `release-recovery-contract-test` is static, offline, and deterministic; historical tags `v0.240.0` and `v0.460.0` are documented fail-closed negatives.
+- Checker wiring: the recovery provenance checker runs via `scripts/verify_release_workflow_hygiene.sh` inside `make release-workflow-hygiene-gates` and `make release-contract-gates`; recovery `preflight` declares job-level `permissions: contents: read` only.
+- Decision record: `docs/decisions/2026-07-30-release-recovery-provenance-enforcement.md` (Accepted; Related milestone/version: v0.470.0).
+
+### Non-Goals
+
+- Not historical recovery automation; historical tags without provenance need a separate incident decision.
+- Not a generic emergency bypass mechanism, version-based override, or allowlist. `dry_run` still requires valid provenance.
+- Not cryptographic signing, external approval storage, or automated tag/release/package/cask rollback.
+- Not a product behavior change: no SQL audit, parser, rule, Query Access, SDK, CLI, HTTP, or MCP semantic change.
+- Not a change to existing release tags, GitHub Releases, npm packages, or Homebrew casks.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.460.0 Relationless Literal-Only Query Access
 
 **Goal:** enable relationless literal-only Query Access on online MySQL/TiDB sessions. Exact literal-only manifest entries now admit relationless `SELECT` without `FROM`; empty requirements; supported profiles MySQL 5.7/8.0/8.4, TiDB 8.5; surfaces SDK/CLI/HTTP; existing relation-bearing proof unchanged; candidate-free `SELECT 1` unchanged. See `docs/releases/release-notes-v0.460.0.md` and `docs/decisions/2026-07-28-query-access-relationless-literal-selects.md`.
 
