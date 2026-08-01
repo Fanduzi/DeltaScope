@@ -97,6 +97,7 @@ CREATE TYPE archive.address AS (street TEXT, city TEXT);
 -- Non-default database for --database flag E2E testing.
 -- This database exists only to prove that --database selects a specific database
 -- rather than silently defaulting to 'postgres'.
+CREATE DATABASE query_access_e2e;
 \connect query_access_e2e
 
 CREATE SCHEMA IF NOT EXISTS app;
