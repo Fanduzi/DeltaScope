@@ -56,6 +56,8 @@ func ValidTrustDecision(d TrustDecision) bool {
 type TrustedEffectEntry struct {
 	// Kind is the effect candidate kind (operator, function, cast).
 	Kind EffectCandidateKind
+	// AggregateClass is the catalog prokind fact for aggregate entries.
+	AggregateClass string
 	// ObjectOID is the primary catalog OID (pg_operator.oid / pg_proc.oid).
 	ObjectOID uint32
 	// NamespaceOID is the schema namespace OID (pg_catalog = 11).
@@ -113,10 +115,10 @@ func ComputeManifestHash(entries []TrustedEffectEntry) string {
 	h := sha256.New()
 	for _, e := range sorted {
 		//nolint:errcheck // Hash write never fails; error return is formality.
-		fmt.Fprintf(h, "%s|%d|%d|%v|%d|%d|%s|%s|%s\n",
+		fmt.Fprintf(h, "%s|%d|%d|%v|%d|%d|%s|%s|%s|%s\n",
 			e.Kind, e.ObjectOID, e.NamespaceOID,
 			e.OperandTypeOIDs, e.ResultTypeOID, e.ImplementationOID,
-			e.Volatility, e.CanonicalSignature, e.AuditNotes)
+			e.Volatility, e.AggregateClass, e.CanonicalSignature, e.AuditNotes)
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
@@ -174,6 +176,9 @@ func validateEntry(e TrustedEffectEntry) error {
 	}
 	if e.Volatility != "" && !ValidEffectVolatility(e.Volatility) {
 		return fmt.Errorf("invalid volatility: %s", e.Volatility)
+	}
+	if e.AggregateClass != "" && e.AggregateClass != "a" {
+		return fmt.Errorf("invalid aggregate class: %s", e.AggregateClass)
 	}
 	return nil
 }
@@ -277,6 +282,10 @@ func (p *TrustPolicy) IsTrusted(batch EffectIdentityBatch, serverVersionNum int)
 
 		// Verify complete identity tuple (not just signature + OID).
 		if facts.Kind != entry.Kind {
+			hasUnproven = true
+			continue
+		}
+		if entry.AggregateClass != "" && facts.AggregateClass != entry.AggregateClass {
 			hasUnproven = true
 			continue
 		}

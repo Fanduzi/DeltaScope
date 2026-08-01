@@ -24,11 +24,11 @@ import (
 
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	host := envOr("DELTASCOPE_PG_HOST", "127.0.0.1")
-	port := envOrInt("DELTASCOPE_PG_PORT", 5500)
-	user := envOr("DELTASCOPE_PG_USER", "root")
-	pass := envOr("DELTASCOPE_PG_PASSWORD", "root")
-	database := envOr("DELTASCOPE_PG_DATABASE", "postgres")
+	host := envOrPostgreSQL("DELTASCOPE_PG_HOST", "127.0.0.1")
+	port := envOrIntPostgreSQL("DELTASCOPE_PG_PORT", 5500)
+	user := envOrPostgreSQL("DELTASCOPE_PG_USER", "root")
+	pass := envOrPostgreSQL("DELTASCOPE_PG_PASSWORD", "root")
+	database := envOrPostgreSQL("DELTASCOPE_PG_DATABASE", "postgres")
 
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", user, pass, host, port, database)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -45,14 +45,14 @@ func openTestDB(t *testing.T) *sql.DB {
 	return db
 }
 
-func envOr(key, fallback string) string {
+func envOrPostgreSQL(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return fallback
 }
 
-func envOrInt(key string, fallback int) int {
+func envOrIntPostgreSQL(key string, fallback int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			return n
@@ -227,6 +227,102 @@ func TestTrustedSDK_CountStarAdmissible(t *testing.T) {
 
 	// Verify no leak in success JSON.
 	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_CountIntegerOneAdmissible(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(1) FROM app.orders",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+		t.Fatalf("COUNT(1) must be admissible: classification=%s admission=%s reasons=%v", result.ReadClassification, result.Admission, result.ReasonCodes)
+	}
+	if len(result.Relations) != 1 || result.Relations[0].Schema != "app" || result.Relations[0].Name != "orders" {
+		t.Fatalf("unexpected relations: %+v", result.Relations)
+	}
+	if len(result.ReferencedColumns) != 0 {
+		t.Fatalf("COUNT(1) must not require columns: %+v", result.ReferencedColumns)
+	}
+	if len(result.Requirements) != 1 || result.Requirements[0].Object != "app.orders" || result.Requirements[0].Privilege != "read_table" {
+		t.Fatalf("COUNT(1) requirements: %+v", result.Requirements)
+	}
+	assertNoLeak(t, result)
+}
+
+func TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate(t *testing.T) {
+	db := openTestDB(t)
+	defer db.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+
+	queries := []string{
+		"SELECT COUNT(NULL) FROM app.orders",
+		"SELECT COUNT(2) FROM app.orders",
+		"SELECT COUNT('1') FROM app.orders",
+		"SELECT COUNT(1::integer) FROM app.orders",
+		"SELECT COUNT($1) FROM app.orders",
+		"SELECT COUNT(1 + 0) FROM app.orders",
+		"SELECT COUNT(1) FILTER (WHERE true) FROM app.orders",
+		"SELECT COUNT(1) OVER () FROM app.orders",
+		"SELECT COUNT(1) FROM app.orders WHERE true",
+		"SELECT COUNT(1) FROM app.orders GROUP BY 1",
+		"SELECT COUNT(1) FROM app.orders ORDER BY 1",
+		"SELECT COUNT(1) FROM app.orders LIMIT 1",
+		"SELECT COUNT(1)",
+		"SELECT COUNT(1) FROM app.orders JOIN app.users ON true",
+		"SELECT COUNT(1) FROM app.orders, app.users",
+		"SELECT COUNT(1) FROM app.user_summary",
+		"WITH source AS (SELECT id FROM app.orders) SELECT COUNT(1) FROM source",
+		"SELECT COUNT(1) FROM (SELECT id FROM app.orders) AS source",
+		"SELECT COUNT(1) FROM orders",
+		"SELECT COUNT(1), * FROM app.orders",
+		"SELECT COUNT(1) FROM app.missing_relation",
+		"SELECT COUNT(1) FROM app.orders UNION ALL SELECT COUNT(1) FROM app.orders",
+	}
+	for _, sqlText := range queries {
+		sqlText := sqlText
+		t.Run(sqlText, func(t *testing.T) {
+			result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+				SQL:           sqlText,
+				Dialect:       DialectPostgreSQL,
+				Mode:          QueryAccessModeStrict,
+				DefaultSchema: "app",
+			})
+			if err != nil {
+				t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+			}
+			if result.ReadClassification != QueryAccessIndeterminate || result.Admission != QueryAccessIndeterminateAdmission {
+				t.Fatalf("excluded COUNT(1) shape was promoted: classification=%s admission=%s requirements=%+v reasons=%v", result.ReadClassification, result.Admission, result.Requirements, result.ReasonCodes)
+			}
+			assertNoLeak(t, result)
+		})
+	}
 }
 
 func TestTrustedSDK_RowNumberAdmissible(t *testing.T) {

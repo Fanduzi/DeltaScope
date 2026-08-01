@@ -885,6 +885,106 @@ func TestAdapter_CountColumnUsesUniqueAnyElementCatalogMatch(t *testing.T) {
 	}
 }
 
+func TestAdapter_AtomicCountIntegerOneUsesDedicatedCatalogMode(t *testing.T) {
+	t.Parallel()
+	live := completeLive()
+	fake := &fakeCatalog{
+		live: live,
+		ns:   map[string]uint32{"pg_catalog": 11},
+		countAny: []countAggregateRow{{
+			OID:                   2147,
+			NamespaceOID:          11,
+			ResultType:            20,
+			Volatility:            "i",
+			SchemaName:            "pg_catalog",
+			FuncName:              "count",
+			ArgTypeOIDs:           []uint32{2276},
+			AggregateClass:        "a",
+			PronArgs:              1,
+			PolymorphicTypeOID:    2276,
+			PolymorphicTypeName:   "any",
+			PolymorphicSchemaName: "pg_catalog",
+		}},
+	}
+	candidate := appqa.EffectCandidate{
+		Kind:             appqa.EffectCandidateFunction,
+		Ordinal:          0,
+		NamePath:         []string{"count"},
+		OriginalNamePath: []string{"COUNT"},
+		Canonical:        true,
+		Arity:            1,
+		OperandKinds:     []string{"integer_one"},
+	}
+	batch := appqa.EffectIdentityBatch{Items: []appqa.EffectIdentityItem{resolveOneWithCatalog(context.Background(), fake, appqa.EffectIdentityRequest{
+		Dialect:    "postgresql",
+		Candidates: []appqa.EffectCandidate{candidate},
+		Resolution: live,
+	}, candidate)}}
+	if len(batch.Items) != 1 || batch.Items[0].Status != domain.IdentityStatusResolved || batch.Items[0].Facts == nil {
+		t.Fatalf("atomic count(integer_one) was not resolved: %+v", batch.Items)
+	}
+	facts := batch.Items[0].Facts
+	if facts.ObjectOID != 2147 || facts.NamespaceOID != 11 || facts.AggregateClass != "a" ||
+		!reflect.DeepEqual(facts.OperandTypeOIDs, []uint32{2276}) || facts.CanonicalSignature != "pg_catalog.count(2276)" {
+		t.Fatalf("unexpected count(any) facts: %+v", facts)
+	}
+	if fake.functionCalls != 0 {
+		t.Fatalf("atomic integer_one must not use generic lookupFunctions; calls=%d", fake.functionCalls)
+	}
+}
+
+func TestAdapter_AtomicCountIntegerOneCatalogMismatchesFailClosed(t *testing.T) {
+	t.Parallel()
+	base := countAggregateRow{
+		OID:                   2147,
+		NamespaceOID:          11,
+		ResultType:            20,
+		Volatility:            "i",
+		SchemaName:            "pg_catalog",
+		FuncName:              "count",
+		ArgTypeOIDs:           []uint32{2276},
+		AggregateClass:        "a",
+		PronArgs:              1,
+		PolymorphicTypeOID:    2276,
+		PolymorphicTypeName:   "any",
+		PolymorphicSchemaName: "pg_catalog",
+	}
+	cases := []struct {
+		name string
+		mut  func(*countAggregateRow, *appqa.EffectIdentityResolutionContext)
+	}{
+		{name: "namespace", mut: func(row *countAggregateRow, _ *appqa.EffectIdentityResolutionContext) {
+			row.NamespaceOID = 2200
+			row.SchemaName = "public"
+		}},
+		{name: "aggregate_class", mut: func(row *countAggregateRow, _ *appqa.EffectIdentityResolutionContext) { row.AggregateClass = "f" }},
+		{name: "polymorphic_signature", mut: func(row *countAggregateRow, _ *appqa.EffectIdentityResolutionContext) {
+			row.PolymorphicTypeName = "anyelement"
+		}},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			live := completeLive()
+			row := base
+			requestContext := live
+			tc.mut(&row, &requestContext)
+			fake := &fakeCatalog{live: live, ns: map[string]uint32{"pg_catalog": 11}, countAny: []countAggregateRow{row}}
+			candidate := appqa.EffectCandidate{
+				Kind: appqa.EffectCandidateFunction, Ordinal: 0, NamePath: []string{"count"}, OriginalNamePath: []string{"COUNT"},
+				Canonical: true, Arity: 1, OperandKinds: []string{"integer_one"},
+			}
+			batch := appqa.EffectIdentityBatch{Items: []appqa.EffectIdentityItem{resolveOneWithCatalog(context.Background(), fake, appqa.EffectIdentityRequest{
+				Dialect: "postgresql", Candidates: []appqa.EffectCandidate{candidate}, Resolution: requestContext,
+			}, candidate)}}
+			if len(batch.Items) != 1 || batch.Items[0].Status == domain.IdentityStatusResolved || batch.Items[0].Facts != nil {
+				t.Fatalf("mismatch must fail closed: %+v", batch.Items)
+			}
+		})
+	}
+}
+
 // --- fake catalog ---
 
 type opKey struct {
@@ -908,19 +1008,21 @@ type colKey struct {
 }
 
 type fakeCatalog struct {
-	live         appqa.EffectIdentityResolutionContext
-	liveSecond   *appqa.EffectIdentityResolutionContext
-	captureErr   error
-	captureCount int
-	ns           map[string]uint32
-	types        map[string]uint32
-	ops          map[opKey][]operatorRow
-	fns          map[fnKey][]functionRow
-	casts        map[castKey][]castRow
-	opErr        error
-	forceOp      bool
-	cols         map[colKey]uint32
-	colErr       error
+	live          appqa.EffectIdentityResolutionContext
+	liveSecond    *appqa.EffectIdentityResolutionContext
+	captureErr    error
+	captureCount  int
+	ns            map[string]uint32
+	types         map[string]uint32
+	ops           map[opKey][]operatorRow
+	fns           map[fnKey][]functionRow
+	countAny      []countAggregateRow
+	functionCalls int
+	casts         map[castKey][]castRow
+	opErr         error
+	forceOp       bool
+	cols          map[colKey]uint32
+	colErr        error
 }
 
 func (f *fakeCatalog) CaptureLiveContext(ctx context.Context) (appqa.EffectIdentityResolutionContext, error) {
@@ -960,6 +1062,7 @@ func (f *fakeCatalog) lookupOperators(_ context.Context, nsOID uint32, name stri
 }
 
 func (f *fakeCatalog) lookupFunctions(_ context.Context, nsOID uint32, name string, argOIDs []uint32) ([]functionRow, error) {
+	f.functionCalls++
 	key := fnKey{ns: nsOID, name: name, args: oidVectorLiteral(argOIDs)}
 	rows := f.fns[key]
 	if len(rows) == 0 && len(argOIDs) == 1 {
@@ -978,6 +1081,10 @@ func (f *fakeCatalog) lookupFunctions(_ context.Context, nsOID uint32, name stri
 		rows = f.fns[fnKey{ns: nsOID, name: name, args: oidVectorLiteral(polyArgs)}]
 	}
 	return append([]functionRow(nil), rows...), nil
+}
+
+func (f *fakeCatalog) lookupCountIntegerOneAggregate(_ context.Context, _ uint32) ([]countAggregateRow, error) {
+	return append([]countAggregateRow(nil), f.countAny...), nil
 }
 
 func (f *fakeCatalog) lookupCasts(_ context.Context, sourceOID, targetOID uint32) ([]castRow, error) {

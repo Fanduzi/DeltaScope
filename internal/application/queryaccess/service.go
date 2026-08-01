@@ -185,9 +185,11 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	var proofResult *trustProofResult
 	var builtinProof *builtinSemanticProofResult
 	if !hasUnqualified && !hasView && req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
-		proofResult = s.resolveAndProveEffects(ctx, req, extracted)
-		if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
-			extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
+		if !hasExactCountIntegerOneCandidate(extracted.EffectCandidates) {
+			proofResult = s.resolveAndProveEffects(ctx, req, extracted)
+			if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
+				extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
+			}
 		}
 	}
 
@@ -218,6 +220,38 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	}
 	extracted.DomainResult.Requirements = reqs
 	extracted.DomainResult.Warnings = append(extracted.DomainResult.Warnings, warnings...)
+
+	if !hasUnqualified && !hasView && req.Dialect == "postgresql" && s != nil && s.trusted != nil &&
+		hasExactCountIntegerOneCandidate(extracted.EffectCandidates) {
+		if countIntegerOneRequirementsComplete(
+			extracted.DomainResult,
+			extracted.DomainResult.Requirements,
+			extracted.EffectCandidates,
+			extracted.ExactCountIntegerOneStatement,
+		) {
+			proofResult = s.resolveAndProveEffects(ctx, req, extracted)
+			if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
+				extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
+			}
+		} else {
+			proofResult = &trustProofResult{decision: TrustDecisionHasUnproven}
+		}
+		extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
+		extracted.DomainResult.ReadClassification = reclassifyAfterResolution(
+			extracted.DomainResult.ReadClassification,
+			extracted.DomainResult.ReasonCodes,
+			extracted.DomainResult.Unresolved,
+			hasResolver,
+			req.Dialect,
+			proofResult,
+		)
+		extracted.DomainResult.Admission = recomputeAdmission(
+			extracted.DomainResult.ReadClassification,
+			extracted.DomainResult.Admission,
+			extracted.DomainResult.Unresolved,
+			hasResolver,
+		)
+	}
 
 	if s != nil && s.builtinSemantic != nil && !hasView && (req.Dialect == "mysql" || req.Dialect == "tidb") && len(extracted.EffectCandidates) > 0 {
 		proof := proveBuiltinSemantics(

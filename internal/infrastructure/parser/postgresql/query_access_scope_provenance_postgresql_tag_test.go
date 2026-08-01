@@ -235,8 +235,8 @@ func TestExtractQueryAccess_ScopeProvenance_ExistingCandidatesUnchanged(t *testi
 	if c.OperandKinds[0] != OperandKindColumn {
 		t.Errorf("left operand kind: got %q, want column", c.OperandKinds[0])
 	}
-	if c.OperandKinds[1] != OperandKindConst {
-		t.Errorf("right operand kind: got %q, want const", c.OperandKinds[1])
+	if c.OperandKinds[1] != OperandKindIntegerOne {
+		t.Errorf("right operand kind: got %q, want integer_one", c.OperandKinds[1])
 	}
 	if len(c.OperandColumnRefs) != 1 {
 		t.Fatalf("expected 1 operand column ref, got %d", len(c.OperandColumnRefs))

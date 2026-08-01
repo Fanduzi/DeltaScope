@@ -282,6 +282,21 @@ type functionRow struct {
 	ArgTypeOIDs  []uint32
 }
 
+type countAggregateRow struct {
+	OID                   uint32
+	NamespaceOID          uint32
+	ResultType            uint32
+	Volatility            string
+	SchemaName            string
+	FuncName              string
+	ArgTypeOIDs           []uint32
+	AggregateClass        string
+	PronArgs              int
+	PolymorphicTypeOID    uint32
+	PolymorphicTypeName   string
+	PolymorphicSchemaName string
+}
+
 func (s *PinnedSession) lookupFunctions(ctx context.Context, nsOID uint32, name string, argOIDs []uint32) ([]functionRow, error) {
 	conn, err := s.requireConn()
 	if err != nil {
@@ -373,6 +388,62 @@ func (s *PinnedSession) lookupFunctions(ctx context.Context, nsOID uint32, name 
 		return scanFunctionRows(rows)
 	}
 	return out, nil
+}
+
+func (s *PinnedSession) lookupCountIntegerOneAggregate(ctx context.Context, pgCatalogOID uint32) ([]countAggregateRow, error) {
+	conn, err := s.requireConn()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := conn.QueryContext(ctx, `
+		with any_type as (
+			select t.oid, t.typname, n.nspname
+			from pg_catalog.pg_type t
+			join pg_catalog.pg_namespace n on n.oid = t.typnamespace
+			where n.nspname = 'pg_catalog' and t.typname = 'any'
+		), search_path as (
+			select n.oid, s.ord
+			from unnest(pg_catalog.current_schemas(true)) with ordinality as s(nspname, ord)
+			join pg_catalog.pg_namespace n on n.nspname = s.nspname
+		)
+		select p.oid, p.pronamespace, p.prorettype, p.provolatile,
+		       n.nspname, p.proname, p.proargtypes::text, p.prokind, p.pronargs,
+		       any_type.oid, any_type.typname, any_type.nspname
+		from pg_catalog.pg_proc p
+		join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+		join any_type on p.proargtypes = format('%s', any_type.oid)::pg_catalog.oidvector
+		join search_path on search_path.oid = p.pronamespace
+		where p.pronamespace = $1
+		  and p.proname = 'count'
+		  and p.prokind = 'a'
+		  and p.pronargs = 1
+		  and not exists (
+			select 1
+			from pg_catalog.pg_proc shadow
+			join search_path shadow_path on shadow_path.oid = shadow.pronamespace
+			where shadow_path.ord < search_path.ord
+			  and shadow.proname = 'count'
+			  and shadow.pronargs = 1
+			  and shadow.prokind in ('f', 'a', 'p', 'w')
+		  )
+	`, pgCatalogOID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []countAggregateRow
+	for rows.Next() {
+		var row countAggregateRow
+		var argText string
+		if err := rows.Scan(&row.OID, &row.NamespaceOID, &row.ResultType, &row.Volatility, &row.SchemaName,
+			&row.FuncName, &argText, &row.AggregateClass, &row.PronArgs, &row.PolymorphicTypeOID,
+			&row.PolymorphicTypeName, &row.PolymorphicSchemaName); err != nil {
+			return nil, err
+		}
+		row.ArgTypeOIDs = parseOIDVectorText(argText)
+		out = append(out, row)
+	}
+	return out, rows.Err()
 }
 
 type castRow struct {

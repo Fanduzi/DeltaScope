@@ -13,6 +13,8 @@ Application-level contracts for query access analysis, defining the schema resol
 | builtin_semantic_gateway.go | Proves exact candidate closure and strict physical requirement completeness |
 | identity_resolver.go | EffectIdentityResolver facts-only contract, resolution context, identity batch helpers, bounded volatility/cast enums |
 | phase1_effect_eligibility.go | Fail-closed Phase-1 pure-effect candidate eligibility before identity promotion |
+| count_integer_one_proof.go | Narrow PostgreSQL COUNT(integer_one) single-table requirements proof predicate |
+| count_integer_one_proof_test.go | Verifies exact COUNT(integer_one) proof boundaries and fail-closed requirements |
 | identity_resolver_test.go | Contract tests: ordinal uniqueness, status enum, fail-closed mapping, cancellation, no Trusted field |
 | identity_resolver_context_test.go | Execution-context policy: unqualified unbound, shadowing, overload, TOCTOU, no public leak |
 | identity_resolver_no_invoke_test.go | Freezes Analyze: no identity resolver invocation or public leak in T6 |
@@ -51,6 +53,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - `EffectVolatility` / `EffectCastMethod`
 - `ValidateEffectIdentityRequest()` / `NormalizeEffectIdentityBatch()` / `CompleteEffectIdentityBatch()`
 - `ValidatePhase1PureEffectCandidates()`
+- `IsExactCountIntegerOneCandidate()`
 - `ValidateCandidateFactBinding()` / `ValidateFactOperandTypeBinding()`
 - `CandidateExplicitlyQualified()` / `CandidateExplicitPgCatalog()` / `ClassifyCandidateResolutionMode()`
 - `ResolutionContextSessionComplete()` / `ResolutionContextUsableForUnqualified()`
@@ -98,6 +101,7 @@ Application-level contracts for query access analysis, defining the schema resol
 - The PostgreSQL parser resolves aliases to table names, so `SELECT p.id FROM public.users p JOIN users u` produces both columns with `Table: "users"`. The unbound check uses `resolveRelationRef` → `nameMap` to distinguish: if `nameMap` has a qualified entry, resolution proceeds; if not (all entries unbound), resolution is skipped.
 - **Same-connection metadata resolver (T15):** `QueryAccessConnResolver` in `internal/infrastructure/metadata/postgresql` wraps a single `*sql.Conn` directly (no `*sql.DB` field). It satisfies `SchemaResolver` and ensures metadata queries run on the same backend as the identity adapter. The public SDK wrapper (`PostgreSQLQueryAccessSession` in `pkg/deltascope`) creates all resolvers from the same caller-owned `*sql.Conn`. The assembly helper `newTrustedServiceFromSession` lives in `pkg/deltascope` (postgresql-tagged) to avoid import cycles.
 - MySQL/TiDB builtin semantic proof is independent from PostgreSQL catalog trust. Its production registry is populated for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`; only the explicit same-connection SDK session can construct the private capability. Default SDK/CLI/HTTP remain offline and fail-closed for function-bearing MySQL/TiDB queries. Test-owned manifests may also exercise the gateway without mutating the production registry.
+- COUNT(integer_one) proof is narrower than generic physical requirements: only a single schema-qualified base table, one exact `read_table` requirement, no columns/unresolved references, and the parser's complete unqualified `COUNT(1)` statement envelope may enter the dedicated `pg_catalog.count(any)` proof path. Other literals, modifiers, joins, relationless queries, views, CTEs, derived tables, and unresolved relations remain indeterminate.
 
 ## Dependencies
 - Upstream: `internal/interfaces/*`

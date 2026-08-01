@@ -27,6 +27,7 @@ type effectIdentityCatalog interface {
 	typeOIDByName(ctx context.Context, schema, typname string, path []uint32) (uint32, error)
 	lookupOperators(ctx context.Context, nsOID uint32, name string, left, right uint32) ([]operatorRow, error)
 	lookupFunctions(ctx context.Context, nsOID uint32, name string, argOIDs []uint32) ([]functionRow, error)
+	lookupCountIntegerOneAggregate(ctx context.Context, pgCatalogOID uint32) ([]countAggregateRow, error)
 	lookupCasts(ctx context.Context, sourceOID, targetOID uint32) ([]castRow, error)
 	columnTypeOID(ctx context.Context, schema, table, column string) (uint32, error)
 	resolveColumnTypeOIDBySearchPath(ctx context.Context, table, column string, searchPathOIDs []uint32) (uint32, error)
@@ -185,6 +186,11 @@ func hasUnresolvedTypeKind(cand appqa.EffectCandidate) bool {
 	// Arity-0 functions (e.g. count(*)) need no type resolution regardless
 	// of OperandKinds (star is a structural hint, not a type-bearing operand).
 	if cand.Kind == appqa.EffectCandidateFunction && cand.Arity == 0 {
+		return false
+	}
+	// Integer_one operands (e.g. COUNT(1)) are resolved via catalog fallback,
+	// not column type inference. They do not require exact type OIDs.
+	if appqa.IsExactCountIntegerOneCandidate(cand) {
 		return false
 	}
 	for _, k := range cand.OperandKinds {
@@ -661,6 +667,58 @@ func (t *txCatalog) lookupFunctions(ctx context.Context, nsOID uint32, name stri
 	return out, nil
 }
 
+func (t *txCatalog) lookupCountIntegerOneAggregate(ctx context.Context, pgCatalogOID uint32) ([]countAggregateRow, error) {
+	rows, err := t.tx.QueryContext(ctx, `
+		with any_type as (
+			select t.oid, t.typname, n.nspname
+			from pg_catalog.pg_type t
+			join pg_catalog.pg_namespace n on n.oid = t.typnamespace
+			where n.nspname = 'pg_catalog' and t.typname = 'any'
+		), search_path as (
+			select n.oid, s.ord
+			from unnest(pg_catalog.current_schemas(true)) with ordinality as s(nspname, ord)
+			join pg_catalog.pg_namespace n on n.nspname = s.nspname
+		)
+		select p.oid, p.pronamespace, p.prorettype, p.provolatile,
+		       n.nspname, p.proname, p.proargtypes::text, p.prokind, p.pronargs,
+		       any_type.oid, any_type.typname, any_type.nspname
+		from pg_catalog.pg_proc p
+		join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+		join any_type on p.proargtypes = format('%s', any_type.oid)::pg_catalog.oidvector
+		join search_path on search_path.oid = p.pronamespace
+		where p.pronamespace = $1
+		  and p.proname = 'count'
+		  and p.prokind = 'a'
+		  and p.pronargs = 1
+		  and not exists (
+			select 1
+			from pg_catalog.pg_proc shadow
+			join search_path shadow_path on shadow_path.oid = shadow.pronamespace
+			where shadow_path.ord < search_path.ord
+			  and shadow.proname = 'count'
+			  and shadow.pronargs = 1
+			  and shadow.prokind in ('f', 'a', 'p', 'w')
+		  )
+	`, pgCatalogOID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []countAggregateRow
+	for rows.Next() {
+		var row countAggregateRow
+		var argText string
+		if err := rows.Scan(&row.OID, &row.NamespaceOID, &row.ResultType, &row.Volatility, &row.SchemaName,
+			&row.FuncName, &argText, &row.AggregateClass, &row.PronArgs, &row.PolymorphicTypeOID,
+			&row.PolymorphicTypeName, &row.PolymorphicSchemaName); err != nil {
+			return nil, err
+		}
+		row.ArgTypeOIDs = parseOIDVectorText(argText)
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
 func scanFunctionRows(rows *sql.Rows) ([]functionRow, error) {
 	defer rows.Close()
 	var out []functionRow
@@ -949,6 +1007,9 @@ func resolveOperatorWithCatalog(ctx context.Context, cat effectIdentityCatalog, 
 
 func resolveFunctionWithCatalog(ctx context.Context, cat effectIdentityCatalog, req appqa.EffectIdentityRequest, cand appqa.EffectCandidate) appqa.EffectIdentityItem {
 	item := appqa.EffectIdentityItem{Ordinal: cand.Ordinal}
+	if appqa.IsExactCountIntegerOneCandidate(cand) {
+		return resolveCountIntegerOneWithCatalog(ctx, cat, req, cand)
+	}
 	name, schema, ok := candidateName(cand)
 	if !ok || name == "" {
 		item.Status = domain.IdentityStatusUnknown
@@ -994,6 +1055,63 @@ func resolveFunctionWithCatalog(ctx context.Context, cat effectIdentityCatalog, 
 			CanonicalSignature: fmt.Sprintf("%s.%s(%s)", r.SchemaName, r.FuncName, joinOIDs(r.ArgTypeOIDs)),
 			ResolvedSchemaName: r.SchemaName,
 			ResolvedObjectName: r.FuncName,
+		}
+		appqa.StampFactsFromResolution(facts, req.Resolution)
+		item.Status = domain.IdentityStatusResolved
+		item.Facts = facts
+		return item
+	default:
+		item.Status = domain.IdentityStatusAmbiguous
+		return item
+	}
+}
+
+func resolveCountIntegerOneWithCatalog(ctx context.Context, cat effectIdentityCatalog, req appqa.EffectIdentityRequest, cand appqa.EffectCandidate) appqa.EffectIdentityItem {
+	item := appqa.EffectIdentityItem{Ordinal: cand.Ordinal}
+	if !appqa.IsExactCountIntegerOneCandidate(cand) {
+		item.Status = domain.IdentityStatusCoercionGap
+		return item
+	}
+
+	pgCatalogOID, err := cat.namespaceOIDByName(ctx, appqa.PgCatalogNamespaceName)
+	if err != nil || pgCatalogOID == 0 {
+		if err != nil {
+			item.Status = appqa.MapCatalogErrorToStatus(err)
+		} else {
+			item.Status = domain.IdentityStatusUnknown
+		}
+		return item
+	}
+	rows, err := cat.lookupCountIntegerOneAggregate(ctx, pgCatalogOID)
+	if err != nil {
+		item.Status = appqa.MapCatalogErrorToStatus(err)
+		return item
+	}
+	switch len(rows) {
+	case 0:
+		item.Status = domain.IdentityStatusUnknown
+		return item
+	case 1:
+		row := rows[0]
+		if row.OID == 0 || row.NamespaceOID != pgCatalogOID || row.SchemaName != appqa.PgCatalogNamespaceName ||
+			row.FuncName != "count" || row.AggregateClass != "a" || row.PronArgs != 1 ||
+			len(row.ArgTypeOIDs) != 1 || row.ArgTypeOIDs[0] == 0 || row.PolymorphicTypeOID == 0 ||
+			row.ArgTypeOIDs[0] != row.PolymorphicTypeOID || row.PolymorphicTypeName != "any" ||
+			row.PolymorphicSchemaName != appqa.PgCatalogNamespaceName {
+			item.Status = domain.IdentityStatusLookupFailed
+			return item
+		}
+		facts := &appqa.EffectIdentityFacts{
+			Kind:               appqa.EffectCandidateFunction,
+			AggregateClass:     row.AggregateClass,
+			ObjectOID:          row.OID,
+			NamespaceOID:       row.NamespaceOID,
+			OperandTypeOIDs:    append([]uint32(nil), row.ArgTypeOIDs...),
+			ResultTypeOID:      row.ResultType,
+			Volatility:         appqa.EffectVolatility(row.Volatility),
+			CanonicalSignature: fmt.Sprintf("%s.%s(%s)", row.SchemaName, row.FuncName, joinOIDs(row.ArgTypeOIDs)),
+			ResolvedSchemaName: row.SchemaName,
+			ResolvedObjectName: row.FuncName,
 		}
 		appqa.StampFactsFromResolution(facts, req.Resolution)
 		item.Status = domain.IdentityStatusResolved

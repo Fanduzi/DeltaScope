@@ -2,6 +2,7 @@
 // input: scalar candidate shapes and manifest entries
 // output: deterministic eligibility and matching decisions
 // pos: application-layer scalar candidate proof boundary tests
+// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (
@@ -442,5 +443,135 @@ func TestBuiltinSemanticGateway_ScalarQualifiedNotProven(t *testing.T) {
 	proof := proveBuiltinSemantics(AnalysisProfileMySQL57, "mysql", []EffectCandidate{candidate}, result, result.Requirements, registry)
 	if proof.decision == builtinSemanticAllProven {
 		t.Fatal("qualified scalar was proven")
+	}
+}
+
+func TestPhase1Eligibility_CountIntegerOneEligible(t *testing.T) {
+	t.Parallel()
+
+	cand := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"count"},
+		OriginalNamePath:     []string{"COUNT"},
+		Canonical:            true,
+		ParserClassification: "aggregate",
+		Arity:                1,
+		OperandKinds:         []string{"integer_one"},
+	}
+	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if !ok {
+		t.Errorf("expected eligible for COUNT(integer_one), got reason: %s", reason)
+	}
+}
+
+func TestPhase1Eligibility_CountIntegerOneWithModifiersNotEligible(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		mut  func(*EffectCandidate)
+	}{
+		{name: "window", mut: func(c *EffectCandidate) { c.HasWindow = true }},
+		{name: "filter", mut: func(c *EffectCandidate) { c.HasFilter = true }},
+		{name: "distinct", mut: func(c *EffectCandidate) { c.HasDistinct = true }},
+		{name: "agg_order", mut: func(c *EffectCandidate) { c.HasAggOrder = true }},
+		{name: "within_group", mut: func(c *EffectCandidate) { c.HasWithinGroup = true }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cand := EffectCandidate{
+				Kind:                 EffectCandidateFunction,
+				Ordinal:              0,
+				NamePath:             []string{"count"},
+				OriginalNamePath:     []string{"COUNT"},
+				Canonical:            true,
+				ParserClassification: "aggregate",
+				Arity:                1,
+				OperandKinds:         []string{"integer_one"},
+			}
+			tc.mut(&cand)
+			ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+			if ok {
+				t.Errorf("expected NOT eligible for COUNT(integer_one) with %s modifier", tc.name)
+			}
+		})
+	}
+}
+
+func TestPhase1Eligibility_CountIntegerOneExplicitSchemaNotEligible(t *testing.T) {
+	t.Parallel()
+
+	cand := EffectCandidate{
+		Kind:                 EffectCandidateFunction,
+		Ordinal:              0,
+		NamePath:             []string{"pg_catalog", "count"},
+		OriginalNamePath:     []string{"pg_catalog", "COUNT"},
+		Canonical:            true,
+		ExplicitSchema:       true,
+		ParserClassification: "aggregate",
+		Arity:                1,
+		OperandKinds:         []string{"integer_one"},
+	}
+	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	if ok {
+		t.Error("expected NOT eligible for schema-qualified COUNT(integer_one)")
+	}
+}
+
+func TestPhase1Eligibility_GeneralConstStillRejected(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		cand EffectCandidate
+	}{
+		{
+			name: "lower_const",
+			cand: EffectCandidate{
+				Kind:                 EffectCandidateFunction,
+				Ordinal:              0,
+				NamePath:             []string{"lower"},
+				OriginalNamePath:     []string{"LOWER"},
+				Canonical:            true,
+				ParserClassification: "generic",
+				Arity:                1,
+				OperandKinds:         []string{"const"},
+			},
+		},
+		{
+			name: "abs_const",
+			cand: EffectCandidate{
+				Kind:                 EffectCandidateFunction,
+				Ordinal:              0,
+				NamePath:             []string{"abs"},
+				OriginalNamePath:     []string{"ABS"},
+				Canonical:            true,
+				ParserClassification: "generic",
+				Arity:                1,
+				OperandKinds:         []string{"const"},
+			},
+		},
+		{
+			name: "count_null",
+			cand: EffectCandidate{
+				Kind:                 EffectCandidateFunction,
+				Ordinal:              0,
+				NamePath:             []string{"count"},
+				OriginalNamePath:     []string{"COUNT"},
+				Canonical:            true,
+				ParserClassification: "aggregate",
+				Arity:                1,
+				OperandKinds:         []string{"const"},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{tc.cand})
+			if ok {
+				t.Errorf("expected NOT eligible for general const operand (%s)", tc.name)
+			}
+		})
 	}
 }

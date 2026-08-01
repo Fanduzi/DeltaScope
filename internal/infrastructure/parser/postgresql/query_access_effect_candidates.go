@@ -8,6 +8,8 @@
 package postgresql
 
 import (
+	"strings"
+
 	pg_query "github.com/pganalyze/pg_query_go/v6"
 )
 
@@ -29,13 +31,14 @@ const (
 type OperandKindHint string
 
 const (
-	OperandKindColumn   OperandKindHint = "column"
-	OperandKindConst    OperandKindHint = "const"
-	OperandKindParam    OperandKindHint = "param"
-	OperandKindStar     OperandKindHint = "star"
-	OperandKindExpr     OperandKindHint = "expr"
-	OperandKindSubquery OperandKindHint = "subquery"
-	OperandKindUnknown  OperandKindHint = "unknown"
+	OperandKindColumn     OperandKindHint = "column"
+	OperandKindConst      OperandKindHint = "const"
+	OperandKindIntegerOne OperandKindHint = "integer_one"
+	OperandKindParam      OperandKindHint = "param"
+	OperandKindStar       OperandKindHint = "star"
+	OperandKindExpr       OperandKindHint = "expr"
+	OperandKindSubquery   OperandKindHint = "subquery"
+	OperandKindUnknown    OperandKindHint = "unknown"
 )
 
 // OperandColumnRef records the provenance of a resolved column operand.
@@ -160,11 +163,11 @@ func operandKindHint(node *pg_query.Node) OperandKindHint {
 	if node == nil {
 		return OperandKindUnknown
 	}
-	switch node.GetNode().(type) {
+	switch n := node.GetNode().(type) {
 	case *pg_query.Node_ColumnRef:
 		return OperandKindColumn
 	case *pg_query.Node_AConst:
-		return OperandKindConst
+		return aConstOperandKind(n.AConst)
 	case *pg_query.Node_ParamRef:
 		return OperandKindParam
 	case *pg_query.Node_AStar:
@@ -180,6 +183,66 @@ func operandKindHint(node *pg_query.Node) OperandKindHint {
 	default:
 		return OperandKindUnknown
 	}
+}
+
+// aConstOperandKind classifies an AST constant node. An uncast AST integer
+// constant whose parsed value is exactly 1 is classified as integer_one.
+// Every other constant (NULL, strings, floats, other integers, booleans,
+// bit-strings) remains const. The literal text is never retained.
+func aConstOperandKind(c *pg_query.A_Const) OperandKindHint {
+	if c == nil {
+		return OperandKindConst
+	}
+	if c.GetIsnull() {
+		return OperandKindConst
+	}
+	if iv := c.GetIval(); iv != nil {
+		if iv.GetIval() == 1 {
+			return OperandKindIntegerOne
+		}
+		return OperandKindConst
+	}
+	return OperandKindConst
+}
+
+func exactCountIntegerOneStatement(node *pg_query.Node) bool {
+	if node == nil {
+		return false
+	}
+	sel := node.GetSelectStmt()
+	if sel == nil || sel.GetOp() != pg_query.SetOperation_SETOP_NONE || sel.GetWithClause() != nil {
+		return false
+	}
+	if len(sel.GetTargetList()) != 1 || len(sel.GetFromClause()) != 1 {
+		return false
+	}
+	if len(sel.GetDistinctClause()) != 0 || len(sel.GetGroupClause()) != 0 || sel.GetHavingClause() != nil ||
+		len(sel.GetSortClause()) != 0 || sel.GetLimitOffset() != nil || sel.GetLimitCount() != nil ||
+		len(sel.GetWindowClause()) != 0 || len(sel.GetLockingClause()) != 0 || sel.GetIntoClause() != nil ||
+		len(sel.GetValuesLists()) != 0 || sel.GetWhereClause() != nil {
+		return false
+	}
+
+	rangeVar := sel.GetFromClause()[0].GetRangeVar()
+	if rangeVar == nil || strings.TrimSpace(rangeVar.GetSchemaname()) == "" {
+		return false
+	}
+	resTarget := sel.GetTargetList()[0].GetResTarget()
+	if resTarget == nil {
+		return false
+	}
+	funcCall := resTarget.GetVal().GetFuncCall()
+	if funcCall == nil || funcCall.GetAggStar() || len(funcCall.GetFuncname()) != 1 ||
+		len(funcCall.GetArgs()) != 1 || funcCall.GetAggFilter() != nil || funcCall.GetAggDistinct() ||
+		len(funcCall.GetAggOrder()) != 0 || funcCall.GetAggWithinGroup() || funcCall.GetOver() != nil {
+		return false
+	}
+	name := funcCall.GetFuncname()[0].GetString_()
+	if name == nil || name.GetSval() != strings.ToLower(name.GetSval()) || !strings.EqualFold(name.GetSval(), "count") {
+		return false
+	}
+	constant := funcCall.GetArgs()[0].GetAConst()
+	return constant != nil && !constant.GetIsnull() && constant.GetIval() != nil && constant.GetIval().GetIval() == 1
 }
 
 func operandColumnRef(node *pg_query.Node, scope *selectScope) (OperandColumnRef, bool) {

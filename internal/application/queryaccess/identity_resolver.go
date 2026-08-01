@@ -273,7 +273,8 @@ type EffectIdentityRequest struct {
 // CanonicalSignature is an internal manifest-matching key for T8; it must never
 // be copied into domain.Result, SDK/CLI/HTTP JSON, or reason codes.
 type EffectIdentityFacts struct {
-	Kind EffectCandidateKind
+	Kind           EffectCandidateKind
+	AggregateClass string
 
 	// ObjectOID is the primary catalog OID (pg_operator.oid / pg_proc.oid / cast identity).
 	ObjectOID uint32

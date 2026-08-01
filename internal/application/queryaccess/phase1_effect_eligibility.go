@@ -2,6 +2,7 @@
 // input: internal effect candidates collected from PostgreSQL query extraction
 // output: bounded eligibility decision and reason code
 // pos: application proof boundary before catalog identity promotion
+// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (
@@ -61,6 +62,9 @@ func phase1FunctionEligible(candidate EffectCandidate) bool {
 		if kind == "const" {
 			return false // literal-only has no column dependency
 		}
+		if kind == "integer_one" {
+			return IsExactCountIntegerOneCandidate(candidate)
+		}
 		return false
 	default:
 		if candidate.HasWindow {
@@ -96,6 +100,29 @@ func isCountStar(candidate EffectCandidate) bool {
 	return strings.EqualFold(candidateCanonicalName(candidate), "count") &&
 		len(candidate.OperandKinds) == 1 && candidate.OperandKinds[0] == "star" &&
 		len(candidate.OperandColumnRefs) == 0
+}
+
+func phase1CountIntegerOneEligible(candidate EffectCandidate) bool {
+	return IsExactCountIntegerOneCandidate(candidate)
+}
+
+func IsExactCountIntegerOneCandidate(candidate EffectCandidate) bool {
+	if candidate.Kind != EffectCandidateFunction || candidate.ExplicitSchema || candidate.IsQuoted ||
+		candidate.Ambiguous || !candidate.Canonical || candidate.UnqualifiedRelation ||
+		len(candidate.NamePath) != 1 || len(candidate.OriginalNamePath) != 1 ||
+		candidate.NamePath[0] != strings.ToLower(candidate.NamePath[0]) ||
+		!strings.EqualFold(candidate.NamePath[0], "count") ||
+		!strings.EqualFold(candidate.OriginalNamePath[0], "count") {
+		return false
+	}
+	if candidate.Arity != 1 || len(candidate.OperandKinds) != 1 || candidate.OperandKinds[0] != "integer_one" ||
+		len(candidate.OperandColumnRefs) != 0 || len(candidate.TargetTypePath) != 0 {
+		return false
+	}
+	return !candidate.HasWindow && !candidate.HasFilter && !candidate.HasDistinct && !candidate.HasAggOrder &&
+		!candidate.HasWithinGroup && !candidate.HasFrame && !candidate.HasNamedWindow &&
+		!candidate.HasWindowPartition && !candidate.HasWindowOrder && len(candidate.WindowPartitionKinds) == 0 &&
+		len(candidate.WindowOrderKinds) == 0 && len(candidate.WindowFrameKinds) == 0
 }
 
 func isWindowRankingFunction(candidate EffectCandidate) bool {

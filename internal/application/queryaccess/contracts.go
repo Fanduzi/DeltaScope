@@ -110,6 +110,7 @@ type EffectCandidate struct {
 // QueryAccessResult wraps the domain result for application-layer consumption.
 // EffectCandidates are internal-only (untrusted, non-public).
 type QueryAccessResult struct {
-	DomainResult     domain.Result
-	EffectCandidates []EffectCandidate `json:"-"` // internal only; never public transport fields
+	DomainResult                  domain.Result
+	EffectCandidates              []EffectCandidate `json:"-"` // internal only; never public transport fields
+	ExactCountIntegerOneStatement bool              `json:"-"`
 }

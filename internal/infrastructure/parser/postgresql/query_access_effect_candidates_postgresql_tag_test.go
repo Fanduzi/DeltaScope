@@ -705,3 +705,131 @@ func TestExtractQueryAccess_EffectCandidates_AggregateRegression(t *testing.T) {
 		t.Fatalf("missing count candidate: %+v", facts.EffectCandidates)
 	}
 }
+
+func TestExtractQueryAccess_EffectCandidates_CountIntegerOneClassification(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	cases := []struct {
+		name      string
+		sql       string
+		wantKind  OperandKindHint
+		wantName  string
+		wantArity int
+		wantAgg   bool
+	}{
+		{name: "count_int4_one", sql: "SELECT COUNT(1) FROM app.orders", wantKind: OperandKindIntegerOne, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_null", sql: "SELECT COUNT(NULL) FROM app.orders", wantKind: OperandKindConst, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_int4_two", sql: "SELECT COUNT(2) FROM app.orders", wantKind: OperandKindConst, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_string_one", sql: "SELECT COUNT('1') FROM app.orders", wantKind: OperandKindConst, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_cast_int", sql: "SELECT COUNT('1'::int) FROM app.orders", wantKind: OperandKindExpr, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_expr_add", sql: "SELECT COUNT(1 + 0) FROM app.orders", wantKind: OperandKindExpr, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_float", sql: "SELECT COUNT(1.0) FROM app.orders", wantKind: OperandKindConst, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_bool", sql: "SELECT COUNT(true) FROM app.orders", wantKind: OperandKindConst, wantName: "count", wantArity: 1, wantAgg: false},
+		{name: "count_param", sql: "SELECT COUNT($1) FROM app.orders", wantKind: OperandKindParam, wantName: "count", wantArity: 1, wantAgg: false},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := e.ExtractQueryAccess(context.Background(), tc.sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			var got *EffectCandidate
+			for i := range facts.EffectCandidates {
+				c := &facts.EffectCandidates[i]
+				if c.Kind == EffectCandidateFunction && len(c.NamePath) > 0 && strings.EqualFold(c.NamePath[0], tc.wantName) {
+					got = c
+					break
+				}
+			}
+			if got == nil {
+				t.Fatalf("missing %s candidate: %+v", tc.wantName, facts.EffectCandidates)
+			}
+			if got.Arity != tc.wantArity {
+				t.Errorf("arity: got %d, want %d", got.Arity, tc.wantArity)
+			}
+			if len(got.OperandKinds) != 1 || got.OperandKinds[0] != tc.wantKind {
+				t.Errorf("operand kind: got %v, want %v", got.OperandKinds, tc.wantKind)
+			}
+			// integer_one must never leak literal text.
+			for _, k := range got.OperandKinds {
+				if string(k) == "1" || string(k) == "'1'" || strings.Contains(string(k), "1.0") {
+					t.Errorf("operand kind leaked literal text: %q", k)
+				}
+			}
+		})
+	}
+}
+
+func TestExtractQueryAccess_EffectCandidates_CountIntegerOneNoLiteralStorage(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+	facts, err := e.ExtractQueryAccess(context.Background(),
+		"SELECT COUNT(1) FROM app.orders", "postgresql", "public")
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	blob := fmt.Sprintf("%+v", facts.EffectCandidates)
+	for _, bad := range []string{"'1'", "\"1\"", "literal", "value"} {
+		if strings.Contains(blob, bad) {
+			t.Errorf("candidate dump must not contain %q; got %s", bad, blob)
+		}
+	}
+	for _, c := range facts.EffectCandidates {
+		for _, k := range c.OperandKinds {
+			if string(k) == "1" || string(k) == "'1'" {
+				t.Errorf("operand kind must not be literal text: %q", k)
+			}
+		}
+	}
+}
+
+func TestExtractQueryAccess_CountIntegerOneStatementEnvelope(t *testing.T) {
+	t.Parallel()
+	e := &QueryAccessExtractor{}
+
+	cases := []struct {
+		name string
+		sql  string
+		want bool
+	}{
+		{name: "exact", sql: "SELECT COUNT(1) FROM app.orders", want: true},
+		{name: "null", sql: "SELECT COUNT(NULL) FROM app.orders", want: false},
+		{name: "other_integer", sql: "SELECT COUNT(2) FROM app.orders", want: false},
+		{name: "signed_integer", sql: "SELECT COUNT(-1) FROM app.orders", want: false},
+		{name: "float", sql: "SELECT COUNT(1.0) FROM app.orders", want: false},
+		{name: "boolean", sql: "SELECT COUNT(true) FROM app.orders", want: false},
+		{name: "cast", sql: "SELECT COUNT(1::integer) FROM app.orders", want: false},
+		{name: "parameter", sql: "SELECT COUNT($1) FROM app.orders", want: false},
+		{name: "nested_expression", sql: "SELECT COUNT(abs(1)) FROM app.orders", want: false},
+		{name: "where", sql: "SELECT COUNT(1) FROM app.orders WHERE true", want: false},
+		{name: "group", sql: "SELECT COUNT(1) FROM app.orders GROUP BY 1", want: false},
+		{name: "order", sql: "SELECT COUNT(1) FROM app.orders ORDER BY 1", want: false},
+		{name: "limit", sql: "SELECT COUNT(1) FROM app.orders LIMIT 1", want: false},
+		{name: "window", sql: "SELECT COUNT(1) OVER () FROM app.orders", want: false},
+		{name: "join", sql: "SELECT COUNT(1) FROM app.orders JOIN app.users ON true", want: false},
+		{name: "comma_join", sql: "SELECT COUNT(1) FROM app.orders, app.users", want: false},
+		{name: "relationless", sql: "SELECT COUNT(1)", want: false},
+		{name: "schema_qualified_function", sql: "SELECT pg_catalog.COUNT(1) FROM app.orders", want: false},
+		{name: "multiple_targets", sql: "SELECT COUNT(1), 1 FROM app.orders", want: false},
+		{name: "cte", sql: "WITH source AS (SELECT 1) SELECT COUNT(1) FROM app.orders", want: false},
+		{name: "set_operation", sql: "SELECT COUNT(1) FROM app.orders UNION ALL SELECT COUNT(1) FROM app.orders", want: false},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			facts, err := e.ExtractQueryAccess(context.Background(), tc.sql, "postgresql", "public")
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if facts.ExactCountIntegerOneStatement != tc.want {
+				t.Errorf("exact count(1) envelope: got %v, want %v; candidates=%+v relations=%+v", facts.ExactCountIntegerOneStatement, tc.want, facts.EffectCandidates, facts.Relations)
+			}
+		})
+	}
+}

@@ -15,7 +15,7 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | query_access_resolver.go | Implements SchemaResolver for PostgreSQL by querying pg_catalog.pg_class, pg_namespace, and pg_attribute for relation kind and column listing |
 | query_access_resolver_stub.go | Empty QueryAccessResolver struct for non-postgresql builds |
 | effect_identity_session.go | Session-pinned `*sql.Conn` wrapper; live resolution context capture (db/role/version/backend/search_path OIDs) |
-| effect_identity_resolver.go | Facts-only `EffectIdentityResolver` adapter (operator/function/cast exact catalog lookup + TOCTOU gate) |
+| effect_identity_resolver.go | Facts-only `EffectIdentityResolver` adapter (operator/function/cast exact catalog lookup + dedicated COUNT(integer_one) catalog proof + TOCTOU gate) |
 | effect_identity_resolver_test.go | Unit tests with fake pinned catalog (no live PG claim) |
 | effect_identity_resolver_integration_test.go | Optional PG17 Docker integration (`-tags postgresql,integration`) |
 | query_access_conn_resolver.go | `*sql.Conn`-backed SchemaResolver for same-connection metadata resolution |
@@ -51,6 +51,7 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 - Unqualified names walk ordered `NamespaceSearchOIDs`; never invent `pg_catalog.<name>` without path/context.
 - Explicit schema skips search_path ranking only; still requires full session/db/role/server binding via gates.
 - Arity-0 functions (e.g. count(*)) bypass `hasUnresolvedTypeKind` star check — no type OIDs needed.
+- Exact `COUNT(1)` uses a dedicated session-bound `pg_proc`/`pg_type` catalog lookup for the `count(any)` aggregate; it never fabricates an operand OID or falls back to generic function overload resolution.
 - T8 owns version-scoped manifest proof and admission promotion. Runtime integration is validated against the repo's **PostgreSQL 17** compose image; T2 research covered 14–17 for the closed manifest set, not as a multi-version CI claim for this adapter.
 
 ## Dependencies

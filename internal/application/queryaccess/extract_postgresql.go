@@ -10,6 +10,7 @@ package queryaccess
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 	pgparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql"
@@ -83,8 +84,9 @@ func AnalyzePostgreSQL(ctx context.Context, req QueryAccessRequest) (QueryAccess
 	// Internal candidates only: not copied onto domain.Result (public contract).
 	// Names/paths stay application-internal for future resolver input.
 	return QueryAccessResult{
-		DomainResult:     result,
-		EffectCandidates: mapEffectCandidates(facts.EffectCandidates),
+		DomainResult:                  result,
+		EffectCandidates:              mapEffectCandidates(facts.EffectCandidates),
+		ExactCountIntegerOneStatement: facts.ExactCountIntegerOneStatement,
 	}, nil
 }
 
@@ -110,11 +112,14 @@ func mapEffectCandidates(in []pgparser.EffectCandidate) []EffectCandidate {
 			}
 		}
 
+		canonical := len(c.NamePath) == 1 && c.NamePath[0] == strings.ToLower(c.NamePath[0])
 		out = append(out, EffectCandidate{
 			Kind:                 EffectCandidateKind(c.Kind),
 			Ordinal:              c.Ordinal,
 			NamePath:             append([]string(nil), c.NamePath...),
+			OriginalNamePath:     append([]string(nil), c.NamePath...),
 			ExplicitSchema:       c.ExplicitSchema,
+			Canonical:            canonical,
 			Arity:                c.Arity,
 			OperandKinds:         kinds,
 			IsAggregate:          c.IsAggregate,

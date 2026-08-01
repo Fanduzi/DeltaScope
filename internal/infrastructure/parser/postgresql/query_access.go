@@ -18,11 +18,12 @@ import (
 // QueryAccessFacts is the intermediate result from PostgreSQL query access extraction.
 // The application layer converts this to the domain Result.
 type QueryAccessFacts struct {
-	ReadClassification string
-	Relations          []RelationFacts
-	ColumnReferences   []ColumnRefFacts
-	Outputs            []OutputFacts
-	Unresolved         []UnresolvedFacts
+	ReadClassification            string
+	Relations                     []RelationFacts
+	ColumnReferences              []ColumnRefFacts
+	Outputs                       []OutputFacts
+	Unresolved                    []UnresolvedFacts
+	ExactCountIntegerOneStatement bool
 	// ReasonCodes are bounded machine identifiers for unproven effects.
 	// Never SQL text, operator/function/cast names, OIDs, or literals.
 	ReasonCodes []string
@@ -124,6 +125,9 @@ func (e *QueryAccessExtractor) ExtractQueryAccess(ctx context.Context, sql strin
 	reasonCodes = append(reasonCodes, extraReasons...)
 	facts.ReasonCodes = reasonCodes
 	facts.EffectCandidates = collector.candidates
+	if len(stmts) == 1 {
+		facts.ExactCountIntegerOneStatement = exactCountIntegerOneStatement(stmts[0].GetStmt())
+	}
 
 	if hasUnresolvedWildcard(columnRefs) && defaultSchema == "" {
 		facts.Unresolved = append(facts.Unresolved, UnresolvedFacts{
