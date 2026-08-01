@@ -1,7 +1,7 @@
 # Decision: PG17 Query Access `COUNT(1)` Proof
 
 - Date: 2026-07-31
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@d7852b8`
 - Related: [common pure-effect admissibility](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB literal-only and reversed operands](2026-07-26-query-access-literal-only-and-reversed-operands.md)
 - Spec: `docs/plans/2026-07-31-query-access-pg17-count-literal-proof-spec.md`
@@ -11,17 +11,16 @@
 ## Context
 
 The trusted PG17 Query Access SDK already proves bounded aggregates through a
-caller-owned session. `COUNT(1)` remains indeterminate because its argument is
-a literal, even though the query has a physical base-relation read. MySQL/TiDB
+caller-owned session. `COUNT(1)` required a separate proof because its argument
+is a literal, even though the query has a physical base-relation read. MySQL/TiDB
 support for literal operands does not establish PostgreSQL aggregate identity,
 argument coercion, or session-bound catalog proof.
 
-## Proposed Decision
+## Decision
 
-Evaluate, and implement only if the evidence is sufficient, a single PG17
-statement envelope: `COUNT(1)` over exactly one schema-qualified resolved
-physical base relation, with no referenced columns or additional clauses, on
-the existing caller-owned trusted SDK session.
+Support a single PG17 statement envelope: `COUNT(1)` over exactly one
+schema-qualified resolved physical base relation, with no referenced columns or
+additional clauses, on the existing caller-owned online SDK session.
 
 The parser may contribute only a non-serialized `integer_one` syntax fact for
 an uncast AST integer constant whose parsed value is `1`; it must not retain
@@ -72,13 +71,29 @@ profile/name allowlist would weaken that model.
 Retained if catalog evidence cannot prove the exact shape. The milestone must
 defer rather than approximate.
 
-## Acceptance Evidence
+## Verification Evidence
 
-This record may become Accepted only after parser tests prove the bounded
-`integer_one` fact, catalog/session tests prove `pg_catalog.count(any)`, Phase
-1 tests prove the exception cannot admit another literal, strict requirements
-tests reject every multi-relation shape, and corpus, SDK Docker, no-execution,
-no-leak, and fail-closed regressions pass. All affected default and
-PostgreSQL-tagged gates must pass, and an independent review must find no
-P0/P1/P2 issue. Until then, `COUNT(1)` remains indeterminate on PostgreSQL and
-this decision remains Proposed.
+- The repository `docker/pg-e2e-compose.yaml` and
+  `docker/postgresql/init.sql` provide a reproducible PostgreSQL 17 fixture.
+- Parser, Phase-1, catalog/session, requirements, and caller-owned SDK
+  integration tests prove the exact envelope and excluded shapes.
+- The session-bound dedicated `pg_catalog.count(any)` lookup uses an atomic
+  catalog snapshot and does not execute user SQL.
+- Recording-driver tests prove no-execution and no-leak behavior for both
+  successful proof and dedicated catalog lookup failure, including JSON,
+  struct, and driver boundaries.
+- Independent read-only audit found no P0, P1, or P2 issues.
+
+## Deferred Scope
+
+- PostgreSQL support remains limited to the exact
+  `SELECT COUNT(1) FROM <single schema-qualified physical table>` shape on a
+  caller-owned online PostgreSQL 17 SDK session.
+- Other PostgreSQL literal/count shapes remain indeterminate, including
+  `COUNT(NULL)`, other literals, casts, parameters, modifiers, joins, CTEs,
+  derived relations, views, unqualified or relationless forms, and additional
+  clauses.
+- Default offline SDK behavior and CLI, HTTP, and MCP surfaces are not
+  expanded.
+- This is static requirement analysis, not an authorization, SQL execution,
+  result retrieval, RLS, grant, or masking decision.
