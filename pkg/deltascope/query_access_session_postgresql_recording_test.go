@@ -11,6 +11,8 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -53,9 +55,116 @@ func TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL(t *testing.T) {
 			t.Fatalf("analysis SQL reached driver: %q", query)
 		}
 	}
-	if strings.Contains(fmt.Sprintf("%+v", result), marker) {
-		t.Fatal("marker leaked into SDK struct dump")
+	assertPostgreSQLRecordingProbes(t, recorder.recorded())
+	assertPostgreSQLRecordingNoLeak(t, result, marker)
+}
+
+func TestTrustedSDK_CountIntegerOneCatalogLookupFailureNoLeak(t *testing.T) {
+	const marker = "SQLNOTEXEC_MARKER_7f3a"
+	const driverError = "catalog lookup driver error oid=987654321 database_oid=876543210 backend_pid=765432109 dsn=postgres://leak_user:leak_password@leak-host:6543/leak_db"
+	recorder := &postgresqlRecordingDriver{countLookupErr: errors.New(driverError)}
+	db := openPostgreSQLRecordingDB(t, recorder)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
 	}
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(1) /* " + marker + " */ FROM app.orders",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessIndeterminate || result.Admission != QueryAccessIndeterminateAdmission {
+		t.Fatalf("catalog failure must remain indeterminate: classification=%s admission=%s reasons=%v", result.ReadClassification, result.Admission, result.ReasonCodes)
+	}
+	if !containsPostgreSQLReasonCode(result.ReasonCodes, "unproven_function_effect") {
+		t.Fatalf("expected bounded unproven function reason, got %v", result.ReasonCodes)
+	}
+	if containsPostgreSQLReasonCode(result.ReasonCodes, "identity_lookup_failed") {
+		t.Fatalf("internal identity failure detail leaked into public reasons: %v", result.ReasonCodes)
+	}
+	for _, query := range recorder.recorded() {
+		if strings.Contains(query, marker) {
+			t.Fatalf("analysis SQL reached driver: %q", query)
+		}
+	}
+	assertPostgreSQLRecordingProbes(t, recorder.recorded())
+	assertPostgreSQLRecordingNoLeak(t, result, marker, driverError, "987654321", "876543210", "765432109", "leak_user", "leak_password", "leak-host", "6543", "leak_db")
+}
+
+func assertPostgreSQLRecordingProbes(t *testing.T, queries []string) {
+	t.Helper()
+	if len(queries) == 0 {
+		t.Fatal("expected safe session/catalog probes")
+	}
+	for _, pattern := range []string{
+		"SELECT VERSION()",
+		"current_database()",
+		"current_schemas(true)",
+		"pg_namespace n where n.nspname = $1",
+		"select c.relkind",
+		"select a.attname",
+		"with any_type as",
+	} {
+		found := false
+		for _, query := range queries {
+			if strings.Contains(query, pattern) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("missing safe probe %q in %v", pattern, queries)
+		}
+	}
+}
+
+func assertPostgreSQLRecordingNoLeak(t *testing.T, result *QueryAccessResult, forbidden ...string) {
+	t.Helper()
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("json.Marshal: %v", err)
+	}
+	for name, representation := range map[string]string{
+		"QueryAccessResult JSON":        string(data),
+		"QueryAccessResult struct dump": fmt.Sprintf("%+v", result),
+	} {
+		for _, needle := range append([]string{
+			"oid",
+			"backend_pid",
+			"session_binding",
+			"search_path",
+			"catalog_sql",
+			"raw_sql",
+			"dsn",
+			"password",
+			"credential",
+			"canonical_signature",
+		}, forbidden...) {
+			if strings.Contains(strings.ToLower(representation), strings.ToLower(needle)) {
+				t.Errorf("%s must not contain %q: %s", name, needle, representation)
+			}
+		}
+	}
+}
+
+func containsPostgreSQLReasonCode(codes []string, want string) bool {
+	for _, code := range codes {
+		if code == want {
+			return true
+		}
+	}
+	return false
 }
 
 var postgresqlRecordingDriverSequence struct {
@@ -64,8 +173,9 @@ var postgresqlRecordingDriverSequence struct {
 }
 
 type postgresqlRecordingDriver struct {
-	mu      sync.Mutex
-	queries []string
+	mu             sync.Mutex
+	queries        []string
+	countLookupErr error
 }
 
 func openPostgreSQLRecordingDB(t *testing.T, recorder *postgresqlRecordingDriver) *sql.DB {
@@ -129,6 +239,9 @@ func (c postgresqlRecordingConn) QueryContext(_ context.Context, query string, _
 	case strings.Contains(query, "select a.attname"):
 		return newPostgreSQLRecordingRows([]string{"column_name", "ordinal_position"}, [][]driver.Value{{"id", int64(1)}}), nil
 	case strings.Contains(query, "with any_type as"):
+		if c.recorder.countLookupErr != nil {
+			return nil, c.recorder.countLookupErr
+		}
 		return newPostgreSQLRecordingRows(
 			[]string{"oid", "namespace_oid", "result_type", "volatility", "schema_name", "func_name", "arg_types", "prokind", "pronargs", "poly_oid", "poly_name", "poly_schema"},
 			[][]driver.Value{{int64(2147), int64(11), int64(20), "i", "pg_catalog", "count", "2276", "a", int64(1), int64(2276), "any", "pg_catalog"}},
