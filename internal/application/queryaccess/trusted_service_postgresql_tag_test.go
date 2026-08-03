@@ -93,6 +93,48 @@ func TestTrustedService_CountStarAdmissible(t *testing.T) {
 	}
 }
 
+func TestTrustedService_CountColumnAdmissibleWithPG17Manifest(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	resolver := &mockControlledResolver{
+		ctx:     testResolutionContext(),
+		typeMap: map[int][]uint32{0: {23}},
+		batch: EffectIdentityBatch{Items: []EffectIdentityItem{{
+			Ordinal: 0,
+			Status:  domain.IdentityStatusResolved,
+			Facts: &EffectIdentityFacts{
+				Kind:               EffectCandidateFunction,
+				ObjectOID:          2147,
+				NamespaceOID:       11,
+				OperandTypeOIDs:    []uint32{2276},
+				ResultTypeOID:      20,
+				Volatility:         EffectVolatilityImmutable,
+				CanonicalSignature: "pg_catalog.count(2276)",
+				DatabaseOID:        1,
+				ServerVersionNum:   170000,
+			},
+		}}},
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockSchemaResolver{})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT count(id) FROM public.users", Dialect: "postgresql", Mode: "strict", DefaultSchema: "public",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	if res.DomainResult.ReadClassification != domain.ReadOnly || res.DomainResult.Admission != domain.Admissible {
+		t.Fatalf("count(id) was not promoted: classification=%q admission=%q reasons=%v",
+			res.DomainResult.ReadClassification, res.DomainResult.Admission, res.DomainResult.ReasonCodes)
+	}
+}
+
 func TestTrustedService_UnqualifiedRelationRejected(t *testing.T) {
 	policy, err := NewTrustPolicy(PG17Manifest)
 	if err != nil {

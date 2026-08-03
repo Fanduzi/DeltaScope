@@ -238,7 +238,6 @@ var pg17Entries = []TrustedEffectEntry{
 		ImplementationOID:  0,
 		Volatility:         EffectVolatilityImmutable,
 		CanonicalSignature: "pg_catalog.count(2276)",
-		AggregateClass:     "a",
 		AuditNotes:         "count(any) aggregate; catalog arg = any OID 2276; unique data dep = query row sources",
 	},
 

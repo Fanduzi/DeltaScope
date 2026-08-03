@@ -883,6 +883,9 @@ func TestAdapter_CountColumnUsesUniqueAnyElementCatalogMatch(t *testing.T) {
 	if got := batch.Items[0].Facts.OperandTypeOIDs; !reflect.DeepEqual(got, []uint32{2276}) {
 		t.Fatalf("expected catalog polymorphic operand OID, got %v", got)
 	}
+	if got := batch.Items[0].Facts.AggregateClass; got != "" {
+		t.Fatalf("generic count(column) must not infer aggregate class, got %q", got)
+	}
 }
 
 func TestAdapter_AtomicCountIntegerOneUsesDedicatedCatalogMode(t *testing.T) {
@@ -958,6 +961,7 @@ func TestAdapter_AtomicCountIntegerOneCatalogMismatchesFailClosed(t *testing.T) 
 			row.SchemaName = "public"
 		}},
 		{name: "aggregate_class", mut: func(row *countAggregateRow, _ *appqa.EffectIdentityResolutionContext) { row.AggregateClass = "f" }},
+		{name: "arity", mut: func(row *countAggregateRow, _ *appqa.EffectIdentityResolutionContext) { row.PronArgs = 2 }},
 		{name: "polymorphic_signature", mut: func(row *countAggregateRow, _ *appqa.EffectIdentityResolutionContext) {
 			row.PolymorphicTypeName = "anyelement"
 		}},

@@ -102,10 +102,6 @@ func isCountStar(candidate EffectCandidate) bool {
 		len(candidate.OperandColumnRefs) == 0
 }
 
-func phase1CountIntegerOneEligible(candidate EffectCandidate) bool {
-	return IsExactCountIntegerOneCandidate(candidate)
-}
-
 func IsExactCountIntegerOneCandidate(candidate EffectCandidate) bool {
 	if candidate.Kind != EffectCandidateFunction || candidate.ExplicitSchema || candidate.IsQuoted ||
 		candidate.Ambiguous || !candidate.Canonical || candidate.UnqualifiedRelation ||

@@ -440,6 +440,22 @@ func TestPG17Manifest_PureAggregateAndWindowEntries(t *testing.T) {
 	}
 }
 
+func TestPG17Manifest_CountColumnDoesNotRequireAggregateClass(t *testing.T) {
+	manifest := NewPG17Manifest()
+	for _, entry := range manifest.Entries {
+		if entry.ObjectOID == 2147 {
+			if entry.CanonicalSignature != "pg_catalog.count(2276)" {
+				t.Fatalf("count(column) signature: got %q", entry.CanonicalSignature)
+			}
+			if entry.AggregateClass != "" {
+				t.Fatalf("count(column) must not require aggregate class in generic proof: got %q", entry.AggregateClass)
+			}
+			return
+		}
+	}
+	t.Fatal("missing pg_catalog.count(2276) manifest entry")
+}
+
 func TestPG17Manifest_ScalarCatalogEntries(t *testing.T) {
 	manifest := NewPG17Manifest()
 	want := map[uint32]struct {
