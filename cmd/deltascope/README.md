@@ -7,6 +7,7 @@ Process entrypoint for the `deltascope` CLI.
 | File | Responsibility |
 |------|---------------|
 | main.go | Starts the Cobra-based CLI adapter package |
+| main_e2e_postgresql_query_access_test.go | Verifies Docker-backed PG17 COUNT(1) query-access behavior through the CLI surface |
 
 ## Exports
 
