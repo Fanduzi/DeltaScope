@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var openOnlineSession = online.OpenSession
+
 const (
 	exitQueryAccessAdmissible    = 0
 	exitQueryAccessRejected      = 1
@@ -191,7 +193,7 @@ func buildOnlineSessionConfig(connection auditConnectionOptions, dialect spec.Di
 func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, accessMode deltascope.QueryAccessMode, defaultSchema string, connection auditConnectionOptions, exitCode *int) error {
 	sessionCfg := buildOnlineSessionConfig(connection, dialect)
 
-	session, err := online.OpenSession(cmd.Context(), sessionCfg)
+	session, err := openOnlineSession(cmd.Context(), sessionCfg)
 	if err != nil {
 		*exitCode = exitQueryAccessUsageError
 		return mapOnlineCLIBoundaryError(err)
