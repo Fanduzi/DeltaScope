@@ -1,7 +1,7 @@
 # Decision: PG17 `COUNT(1)` Online Surface Contract
 
 - Date: 2026-08-03
-- Status: Proposed
+- Status: Accepted
 - Baseline: `main@dd861f8`
 - Related: [PG17 `COUNT(1)` proof](2026-07-31-query-access-pg17-count-literal-proof.md), [online connection registry](2026-07-20-query-access-online-connection-registry.md)
 - Spec: `docs/plans/2026-08-03-query-access-pg17-count-online-surface-contract-spec.md`
@@ -10,23 +10,20 @@
 
 ## Context
 
-The accepted PG17 decision proves exact `COUNT(1)` only through a caller-owned
-SDK session. The current online CLI and HTTP code paths appear to pass a pinned
-PostgreSQL connection to that same session API, but that fact has not yet been
-validated as a public transport contract for this literal shape. In particular,
-CLI uses direct local credentials while HTTP selects an operator-managed,
-authorized connection. Their lifecycle, error, and logging boundaries need
-live evidence before the project promises equivalent behavior.
+The accepted PG17 decision proves exact `COUNT(1)` through a caller-owned SDK
+session. The online CLI and HTTP paths now have transport-level evidence that
+they pass a pinned PostgreSQL connection to that same session API. The CLI uses
+its existing direct local connection options; HTTP selects an operator-managed,
+authorized `connection_id`. Their lifecycle, error, and logging boundaries are
+bounded by the evidence recorded below.
 
-## Proposed Decision
+## Decision
 
-Treat CLI and HTTP as candidate online surfaces for the already-accepted exact
-PG17 `COUNT(1)` proof. Promote neither until task-owned PostgreSQL 17 E2E,
-no-execution, no-leak, default-path, and independent-review evidence confirms
-that both delegate to the same catalog-bound session proof without creating a
-new trust path.
+Accept online CLI and HTTP as surfaces for the already-accepted exact PG17
+`COUNT(1)` proof. Both delegate to the same catalog-bound session proof without
+creating a new trust path.
 
-If accepted, the supported SQL envelope on each listed online surface is only:
+The supported SQL envelope on each listed online surface is only:
 
 ```sql
 SELECT COUNT(1) FROM app.orders
@@ -41,17 +38,16 @@ an operator-configured, authorized PostgreSQL 17 `connection_id` for the
 ## Rationale
 
 The session-bound catalog proof, not a transport-specific function switch, is
-the trust boundary. Reusing that proof avoids a second parser or catalog path,
-but reuse must be demonstrated under each transport's ownership and privacy
-model. Source inspection cannot establish live version identity, HTTP
-authorization-before-dial behavior, connection cleanup, or absence of output
-and log leakage.
+the trust boundary. Reusing that proof avoids a second parser or catalog path.
+The recording-driver and live transport evidence demonstrates version identity,
+authorization-before-dial behavior, connection cleanup, and bounded output and
+log privacy under each transport's ownership model.
 
 Keeping default CLI and HTTP analysis offline preserves the fail-closed policy:
 function-bearing `COUNT(1)` remains indeterminate until an operator or local
 user intentionally establishes an online PG17 session.
 
-## Public Contract If Accepted
+## Public Contract
 
 - SDK, online CLI, and HTTP with authorized `connection_id` share the same
   exact PG17 `COUNT(1)` proof and table-only requirement result.
@@ -93,25 +89,51 @@ bounded SQL envelope. Parser and catalog scope remain unchanged.
   Access, SQL execution, authorization/grant/RLS/masking evaluation, or query
   data retrieval.
 
-## Acceptance Evidence
+## Consequences
 
-This record remains Proposed until live PG17 SDK/CLI/HTTP evidence proves the
-shared session chain, positive requirements, deferred-shape indeterminacy,
-offline/default boundaries, authorization-before-dial, non-vacuous
-no-execution, no-leak outputs/logs, and cleanup. The shared-session
-recording-driver proof remains required, but it cannot substitute for
-adapter-level evidence: CLI online and HTTP `connection_id` each need an
-observable transport-level test seam. The seam may be a test-only injected
-opener/dialer, recording driver, or controlled proxy chosen by the
-implementation, provided it observes database operations before and after the
-shared session boundary without defining a new production API contract.
+- An operator or local user must intentionally establish the supported online
+  session; default and offline paths remain indeterminate for this query.
+- Future PostgreSQL literal shapes or transport surfaces require separate
+  evidence and a separate decision; this record does not widen the SDK proof.
+- The contract remains static requirement analysis. It does not execute SQL,
+  retrieve query results, or decide authorization, grants, RLS, or masking.
 
-For each successful online path, that seam must observe at least one expected
-fixed identity/catalog probe and prove that the submitted SQL's unique marker,
-`EXPLAIN`, and prepare operations never reach the driver or proxy. For HTTP
-rejected or unauthorized `connection_id` paths, it must assert zero
-dial/open-session operations and no leakage of connection configuration or
-credentials. These adapter-level CLI and HTTP proofs, together with the
-shared-session proof, are mandatory before this ADR may change from Proposed
-to Accepted. The final review must find no P0/P1/P2 issues. If any condition
-fails, the current SDK-only decision remains the published boundary.
+## Verification Evidence
+
+- The shared session recording-driver proof passes in
+  `pkg/deltascope/query_access_session_postgresql_recording_test.go`. It
+  observes fixed identity/catalog probes and proves that the submitted SQL
+  marker does not reach the driver or public result.
+- The CLI adapter recording-driver proof passes in
+  `internal/interfaces/cli/query_access_postgresql_online_recording_test.go`.
+  It observes fixed probes, closes the CLI-owned session, and proves that
+  submitted SQL, `EXPLAIN`, and prepare operations do not reach the driver.
+- The HTTP adapter recording-driver proof passes in
+  `internal/interfaces/http/query_access_postgresql_online_recording_test.go`.
+  It observes fixed probes and proves that submitted SQL, `EXPLAIN`, and
+  prepare operations do not reach the driver.
+- The no-leak proofs pass for normal, connection-failure, and catalog-failure
+  paths in the CLI and HTTP adapter tests. HTTP unauthorized and unknown
+  `connection_id` cases assert zero opener operations. HTTP access-log capture
+  uses a synchronized sink and asserts a request entry exists before checking
+  it; the real HTTP E2E also asserts the request entry and request ID.
+- The real CLI binary E2E passes in
+  `cmd/deltascope/main_e2e_postgresql_query_access_test.go`, including the
+  online positive case, excluded shapes, default/offline regression, bounded
+  no-leak output, and the deterministic RST failure listener. The real HTTP
+  server E2E passes in
+  `cmd/deltascope-server/main_e2e_postgresql_query_access_test.go`, including
+  the authorized `connection_id`, excluded shapes, no-connection default,
+  authorization boundary, and bounded response/log output.
+- The direct tagged evidence commands passed against the PG17 fixture:
+  `CGO_ENABLED=1 go test -tags='postgresql' -count=1 ./pkg/deltascope -run
+  TestTrustedSDK_CountIntegerOne`, the corresponding CLI and HTTP
+  `postgresql,integration` adapter tests, and the CLI and HTTP
+  `e2e,postgresql` binary tests. `make decision-record-gate`,
+  `make release-gofmt-gate`, and `git diff --check main...HEAD` also pass.
+
+These proofs establish only PG17 online CLI and authorized HTTP
+`connection_id` support for the exact statement envelope above. They do not
+claim SQL execution, an authorization decision, or broader PostgreSQL literal
+support. Default/offline, MCP, and every other deferred shape remain outside
+the contract.
