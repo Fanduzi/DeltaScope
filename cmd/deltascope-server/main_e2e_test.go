@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -137,10 +138,39 @@ func buildHTTPServerBinary(t *testing.T) string {
 
 type httpServerHarness struct {
 	cmd     *exec.Cmd
-	stdout  bytes.Buffer
-	stderr  bytes.Buffer
+	stdout  processOutputSink
+	stderr  processOutputSink
 	done    chan struct{}
 	waitErr error
+}
+
+type processOutputSink struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (s *processOutputSink) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *processOutputSink) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
+
+func (s *processOutputSink) WaitFor(t *testing.T, substr string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if strings.Contains(s.String(), substr) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatalf("process output missing %q within %s: %s", substr, timeout, s.String())
 }
 
 func stopHTTPServer(t *testing.T, h *httpServerHarness) {
