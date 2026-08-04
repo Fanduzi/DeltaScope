@@ -10,6 +10,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net"
 	"os"
 	"os/exec"
@@ -17,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	deltascope "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -78,12 +80,22 @@ func TestCLIQueryAccess_PG17_ConnectionFailureNoLeak(t *testing.T) {
 	marker := "CLI_PG17_REAL_CONNECTION_FAILURE_MARKER"
 	password := "CLI_PG17_REAL_CONNECTION_FAILURE_PASSWORD"
 	t.Setenv("DELTASCOPE_PG17_E2E_PASSWORD", password)
-	port := unreachablePG17Port(t)
-	stdout, stderr, _ := runCLIQueryAccessPG17ProcessAtPort(t, "SELECT COUNT(1) /* "+marker+" */ FROM app.orders", true, port, 3)
+	failureListener := startPG17ConnectionFailureListener(t)
+	stdout, stderr, exitCode := runCLIQueryAccessPG17ProcessAtPort(t, "SELECT COUNT(1) /* "+marker+" */ FROM app.orders", true, failureListener.port, 3)
+	failureListener.waitForConnectionFailure(t)
+	if exitCode != 3 {
+		t.Fatalf("CLI connection failure exit code: got %d, want 3", exitCode)
+	}
+	if stdout != "" {
+		t.Fatalf("CLI connection failure wrote stdout: %q", stdout)
+	}
+	if stderr != "connection failed\n" {
+		t.Fatalf("CLI connection failure output: got %q, want %q", stderr, "connection failed\n")
+	}
 	if len(stdout) > 2048 || len(stderr) > 2048 {
 		t.Fatalf("CLI failure output exceeded bound: stdout=%d stderr=%d", len(stdout), len(stderr))
 	}
-	assertCLIQueryAccessPG17NoLeak(t, stdout, stderr, marker, password, "127.0.0.1", "root", "app")
+	assertCLIQueryAccessPG17NoLeak(t, stdout, stderr, marker, password, "127.0.0.1", strconv.Itoa(failureListener.port), "root", "postgres", "app")
 }
 
 func runCLIQueryAccessPG17(t *testing.T, sqlText string, online bool, expectedExitCodes ...int) (deltascope.QueryAccessResult, string, string) {
@@ -108,7 +120,7 @@ func runCLIQueryAccessPG17ProcessAtPort(t *testing.T, sqlText string, online boo
 		if os.Getenv("DELTASCOPE_PG17_E2E_PASSWORD") == "" {
 			t.Setenv("DELTASCOPE_PG17_E2E_PASSWORD", "root")
 		}
-		args = append(args, "--host", "127.0.0.1", "--port", strconv.Itoa(port), "--user", "root", "--password-env", "DELTASCOPE_PG17_E2E_PASSWORD", "--schema", "app")
+		args = append(args, "--host", "127.0.0.1", "--port", strconv.Itoa(port), "--user", "root", "--password-env", "DELTASCOPE_PG17_E2E_PASSWORD", "--database", "postgres", "--schema", "app")
 	}
 	var stdout, stderr bytes.Buffer
 	cmd := exec.CommandContext(t.Context(), binaryPath, args...)
@@ -170,17 +182,79 @@ func findCLIQueryAccessPG17ModuleRoot(t *testing.T) string {
 	}
 }
 
-func unreachablePG17Port(t *testing.T) int {
+type pg17ConnectionFailureListener struct {
+	listener net.Listener
+	port     int
+	accepted chan struct{}
+	result   chan error
+	done     chan struct{}
+}
+
+func startPG17ConnectionFailureListener(t *testing.T) *pg17ConnectionFailureListener {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("allocate unreachable port: %v", err)
+		t.Fatalf("start PG17 connection failure listener: %v", err)
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
-	if err := listener.Close(); err != nil {
-		t.Fatalf("release unreachable port: %v", err)
+	failureListener := &pg17ConnectionFailureListener{
+		listener: listener,
+		port:     port,
+		accepted: make(chan struct{}),
+		result:   make(chan error, 1),
+		done:     make(chan struct{}),
 	}
-	return port
+	go failureListener.acceptAndReset()
+	t.Cleanup(func() {
+		if err := listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			t.Errorf("close PG17 connection failure listener: %v", err)
+		}
+		select {
+		case <-failureListener.done:
+		case <-time.After(5 * time.Second):
+			t.Errorf("PG17 connection failure listener goroutine did not exit")
+		}
+	})
+	return failureListener
+}
+
+func (l *pg17ConnectionFailureListener) acceptAndReset() {
+	defer close(l.done)
+	conn, err := l.listener.Accept()
+	if err != nil {
+		l.result <- err
+		return
+	}
+	close(l.accepted)
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		_ = conn.Close()
+		l.result <- errors.New("PG17 connection failure listener accepted a non-TCP connection")
+		return
+	}
+	if err := tcpConn.SetLinger(0); err != nil {
+		_ = tcpConn.Close()
+		l.result <- err
+		return
+	}
+	l.result <- tcpConn.Close()
+}
+
+func (l *pg17ConnectionFailureListener) waitForConnectionFailure(t *testing.T) {
+	t.Helper()
+	select {
+	case <-l.done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("PG17 failure listener did not accept the CLI connection")
+	}
+	select {
+	case <-l.accepted:
+	default:
+		t.Fatal("PG17 failure listener did not accept the CLI connection")
+	}
+	if err := <-l.result; err != nil {
+		t.Fatalf("PG17 failure listener reset connection: %v", err)
+	}
 }
 
 func assertCLIQueryAccessPG17Positive(t *testing.T, result deltascope.QueryAccessResult) {
