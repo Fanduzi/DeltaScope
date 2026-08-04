@@ -46,11 +46,25 @@ evidence establishes that the existing transport delegation is safe.
   a request entry exists before checking it for markers; verify response and
   log disclosure boundaries independently.
 
-## 5. Prove Shared Safety Properties
+## 5. Prove Shared and Adapter Safety Properties
 
-- Extend recording-driver tests only at the shared session boundary when they
-  can cover all surfaces. Record expected fixed probes before asserting absence
-  of user SQL, `EXPLAIN`, or prepare operations.
+- Keep the shared-session recording-driver proof, but do not use it as a
+  substitute for adapter-level evidence. Add one observable transport-level
+  test seam for CLI online and one for HTTP `connection_id`; the seam may be a
+  test-only injected opener/dialer, recording driver, or controlled proxy
+  selected by the implementation. It must observe database operations before
+  and after the shared session boundary without requiring a new production API
+  contract.
+- For each successful online path, observe at least one expected fixed
+  identity/catalog probe, then prove that the submitted SQL's unique marker,
+  `EXPLAIN`, and prepare operations never reach the driver or proxy. The fixed
+  probe makes the no-execution assertion non-vacuous.
+- For HTTP rejected or unauthorized `connection_id` paths, assert zero
+  dial/open-session operations and no leakage of connection configuration or
+  credentials.
+- Treat these CLI and HTTP adapter-level proofs, together with the shared
+  proof, as mandatory evidence before changing the ADR from Proposed to
+  Accepted.
 - Retain dedicated `COUNT(1)` catalog checks and generic `COUNT(column)`
   regression coverage. Do not add `AggregateClass` back to the shared
   `count(anyelement)` manifest entry.

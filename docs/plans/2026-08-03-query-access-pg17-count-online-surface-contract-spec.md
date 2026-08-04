@@ -86,9 +86,23 @@ The successor ADR may change from Proposed to Accepted only after:
 - Docker-backed HTTP E2E invokes the real handler/server with an
   operator-managed `connection_id` and proves the same result, authorization
   boundary, excluded-shape indeterminacy, and no-connection default.
-- SDK, CLI, and HTTP tests prove the submitted SQL never reaches the driver.
-  The test must establish that expected fixed identity/catalog probes did reach
-  the driver so a no-execution assertion cannot pass vacuously.
+- The shared-session recording-driver proof remains required, but it cannot
+  substitute for adapter-level evidence. CLI online and HTTP
+  `connection_id` paths each require an observable transport-level test seam.
+  The seam may be a test-only injected opener/dialer, recording driver, or
+  controlled proxy chosen by the implementation, provided it observes database
+  operations before and after the shared session boundary without defining a
+  new production API contract.
+- For each successful online path, the transport-level test must observe at
+  least one expected fixed identity/catalog probe and must prove that the
+  submitted SQL's unique marker, `EXPLAIN`, and prepare operations never reach
+  the driver or proxy. The fixed-probe observation prevents a no-execution
+  assertion from passing vacuously.
+- For HTTP rejected or unauthorized `connection_id` paths, the transport-level
+  test must assert zero dial/open-session operations and no leakage of
+  connection configuration or credentials.
+- These adapter-level CLI and HTTP proofs, together with the shared-session
+  proof, are mandatory before this ADR may change from Proposed to Accepted.
 - Marker-based no-leak tests cover normal and reachable connection/catalog
   failure paths across CLI stdout/stderr, HTTP response/access log, and public
   result serialization.

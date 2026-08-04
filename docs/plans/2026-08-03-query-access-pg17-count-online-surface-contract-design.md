@@ -74,8 +74,23 @@ Then prove:
 - HTTP rejects a `profile` together with `connection_id` and continues to
   reject direct endpoint/credential input.
 - HTTP authorization failures do not dial and do not disclose configuration.
-- A recording driver observes at least one known fixed probe but never the SQL
-  marker, `EXPLAIN`, or a prepare operation for the submitted query.
+- The shared-session recording-driver proof remains required, but it cannot
+  substitute for adapter-level evidence. CLI online and HTTP
+  `connection_id` paths each require an observable transport-level test seam.
+  The seam may be a test-only injected opener/dialer, recording driver, or
+  controlled proxy chosen by the implementation, provided it observes database
+  operations before and after the shared session boundary without defining a
+  new production API contract.
+- For each successful online path, the transport-level test observes at least
+  one known fixed identity/catalog probe and proves that the submitted SQL's
+  unique marker, `EXPLAIN`, and prepare operations never reach the driver or
+  proxy. The fixed-probe observation prevents a no-execution assertion from
+  passing vacuously.
+- For HTTP rejected or unauthorized `connection_id` paths, the
+  transport-level test asserts zero dial/open-session operations and no
+  leakage of connection configuration or credentials.
+- These adapter-level CLI and HTTP proofs, together with the shared-session
+  proof, are mandatory before this ADR may change from Proposed to Accepted.
 - Marker values are absent from output and diagnostics; HTTP access-log tests
   additionally assert a matching request log exists before scanning it.
 

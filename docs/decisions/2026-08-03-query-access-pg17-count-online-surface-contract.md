@@ -98,6 +98,20 @@ bounded SQL envelope. Parser and catalog scope remain unchanged.
 This record remains Proposed until live PG17 SDK/CLI/HTTP evidence proves the
 shared session chain, positive requirements, deferred-shape indeterminacy,
 offline/default boundaries, authorization-before-dial, non-vacuous
-no-execution, no-leak outputs/logs, and cleanup. The final review must find no
-P0/P1/P2 issues. If any condition fails, the current SDK-only decision remains
-the published boundary.
+no-execution, no-leak outputs/logs, and cleanup. The shared-session
+recording-driver proof remains required, but it cannot substitute for
+adapter-level evidence: CLI online and HTTP `connection_id` each need an
+observable transport-level test seam. The seam may be a test-only injected
+opener/dialer, recording driver, or controlled proxy chosen by the
+implementation, provided it observes database operations before and after the
+shared session boundary without defining a new production API contract.
+
+For each successful online path, that seam must observe at least one expected
+fixed identity/catalog probe and prove that the submitted SQL's unique marker,
+`EXPLAIN`, and prepare operations never reach the driver or proxy. For HTTP
+rejected or unauthorized `connection_id` paths, it must assert zero
+dial/open-session operations and no leakage of connection configuration or
+credentials. These adapter-level CLI and HTTP proofs, together with the
+shared-session proof, are mandatory before this ADR may change from Proposed
+to Accepted. The final review must find no P0/P1/P2 issues. If any condition
+fails, the current SDK-only decision remains the published boundary.
