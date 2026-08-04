@@ -29,6 +29,7 @@ type queryAccessRequest struct {
 }
 
 var analyzeQueryAccess = deltascope.AnalyzeQueryAccess
+var openOnlineSession = online.OpenSession
 
 func handleQueryAccess(w http.ResponseWriter, r *http.Request, registry *runtimeconfig.Registry) {
 	defer r.Body.Close()
@@ -144,7 +145,7 @@ func handleQueryAccessOnline(
 		CACert:         conn.ResolvedCACert(),
 	}
 
-	session, err := online.OpenSession(r.Context(), sessionCfg)
+	session, err := openOnlineSession(r.Context(), sessionCfg)
 	if err != nil {
 		status, code := mapOnlineSessionError(err)
 		writeError(w, status, code, mapOnlineSessionErrorMessage(err))
