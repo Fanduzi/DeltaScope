@@ -21,3 +21,4 @@ docs/plans_zh/
 /.omo/
 /skills-lock.json
 /docker/tls-e2e/certs/
+.codegraph/
