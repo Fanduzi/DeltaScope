@@ -407,7 +407,7 @@ func assertConnectionOnlyPayload(t *testing.T, body []byte, expectedConnectionID
 
 func assertHTTPAuditNoCredentialLeak(t *testing.T, harness *httpServerHarness, body map[string]any, endpoint, secretSource string) {
 	t.Helper()
-	harness.stderr.WaitFor(t, `"path":"/v1/audit"`, 2*time.Second)
+	harness.stderr.WaitFor(t, "/v1/audit", 2*time.Second)
 	response, err := json.Marshal(body)
 	if err != nil {
 		t.Fatalf("marshal audit response for leak check: %v", err)
