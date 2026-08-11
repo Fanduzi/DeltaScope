@@ -84,6 +84,14 @@ CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 CREATE SERVER fs_test FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'dummy-host', port '5432', dbname 'remote');
 CREATE USER MAPPING FOR root SERVER fs_test OPTIONS (user 'remote_user', password 'secret_should_not_leak');
 
+-- Confirmed: foreign table for Query Access fail-closed evidence (relkind f).
+-- Never promoted to physical base table for COUNT(1) admission.
+CREATE FOREIGN TABLE app.remote_orders (
+  id BIGINT,
+  user_id BIGINT,
+  amount NUMERIC
+) SERVER fs_test OPTIONS (schema_name 'public', table_name 'orders');
+
 -- Confirmed: publication (PostgreSQL 17 supports FOR ALL TABLES without superuser).
 CREATE PUBLICATION e2e_test_pub FOR ALL TABLES;
 

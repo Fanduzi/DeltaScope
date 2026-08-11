@@ -9,12 +9,13 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 | main.go | Parses process flags, loads runtime config, merges logging settings, and starts the HTTP service |
 | main_test.go | Verifies CLI flag parsing, logging config from flags, and runtime config merge helpers |
 | main_e2e_test.go | Runs Docker-backed metadata-aware HTTP e2e coverage against the real server binary |
-| main_e2e_postgresql_query_access_test.go | Verifies Docker-backed PG17 COUNT(1) query-access behavior through the HTTP connection_id surface |
+| main_e2e_postgresql_test.go | Runs Docker-backed PostgreSQL metadata-aware HTTP audit e2e via registry-backed authorized `connection_id` |
+| main_e2e_postgresql_query_access_test.go | Verifies Docker-backed PG17 COUNT(1) query-access behavior through the HTTP connection_id surface, including foreign-table fail-closed |
 
 ## Notes
 
 - This command is intentionally thin and delegates HTTP wiring to `internal/interfaces/http`.
-- `POST /v1/audit` accepts offline requests and direct metadata-aware connection inputs.
+- `POST /v1/audit` accepts offline requests and metadata-aware requests that select a registry-backed, authorized `connection_id`. Clients never supply direct database endpoints, credentials, secret sources, or TLS settings on the request.
 - `GET /v1/rules`, `GET /v1/rules/{rule_id}`, and `GET /v1/capabilities` expose rule discovery and HTTP contract metadata.
 - `-auth-enabled`, `-auth-keys`, and `-auth-allow-paths` configure optional `X-API-Key` protection.
 - `-rate-limit-enabled`, `-rate-limit-rps`, `-rate-limit-burst`, and `-rate-limit-key` configure optional request throttling.

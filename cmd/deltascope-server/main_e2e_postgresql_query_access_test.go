@@ -45,6 +45,7 @@ func TestHTTPQueryAccess_PG17_ExcludedShapes(t *testing.T) {
 		"SELECT COUNT(1) FROM app.orders WHERE true",
 		"SELECT COUNT(1) FROM app.orders JOIN app.users ON true",
 		"SELECT COUNT(1) FROM app.user_summary",
+		"SELECT COUNT(1) FROM app.remote_orders",
 		"WITH source AS (SELECT id FROM app.orders) SELECT COUNT(1) FROM source",
 		"SELECT COUNT(1) FROM (SELECT id FROM app.orders) AS source",
 		"SELECT COUNT(1) FROM orders",

@@ -1,8 +1,8 @@
 //go:build e2e && postgresql
 
 // Package main verifies Docker-backed HTTP metadata-aware end-to-end behavior for PostgreSQL.
-// input: real PostgreSQL fixtures, named connection runtime config, and a PG-capable server binary
-// output: end-to-end proof that deltascope-server serves metadata-aware PG audit results over HTTP
+// input: real PostgreSQL fixtures, registry-backed authorized connection_id runtime config, and a PG-capable server binary
+// output: end-to-end proof that deltascope-server serves metadata-aware PG audit results over HTTP via connection_id only
 // pos: slower external e2e verification kept outside the default go test loop
 // note: if this file changes, update this header and module README.md.
 package main

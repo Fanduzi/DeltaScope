@@ -2,6 +2,7 @@
 # input: docker compose PostgreSQL service, fixture SQL, and deltascope CLI invocations with --dialect postgresql
 # output: repeatable metadata-aware CLI e2e execution for PostgreSQL with JSON assertion helpers
 # pos: shell-based end-to-end harness for live metadata PG CLI validation
+# contract: ALTER INDEX ... RENAME emits ddl.pg.alter_index.rename.notice and exits 0
 # note: if this file changes, update this header and module README.md.
 
 set -euo pipefail
