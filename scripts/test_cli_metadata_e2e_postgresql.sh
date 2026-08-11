@@ -306,7 +306,7 @@ run_pg_suite() {
   assert_exit_code "${exit_code}" 1 "case7-rename-col"
   assert_json_rule_present "${stdout_file}" "ddl.alter.rename_column.exists.require"
 
-  # Case 8: rename index fires forbid rule for an existing index
+  # Case 8: PostgreSQL ALTER INDEX ... RENAME maps to the PG-specific notice rule
   stdout_file="$(mktemp "${TMP_DIR}/pg-rename-idx.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-rename-idx.XXXXXX.stderr")"
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter index idx_accounts_email rename to idx_new" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --schema app --format json; then
@@ -314,8 +314,8 @@ run_pg_suite() {
   else
     exit_code=$?
   fi
-  assert_exit_code "${exit_code}" 1 "case8-rename-idx"
-  assert_json_rule_present "${stdout_file}" "ddl.alter.rename_index.forbid"
+  assert_exit_code "${exit_code}" 0 "case8-rename-idx"
+  assert_json_rule_present "${stdout_file}" "ddl.pg.alter_index.rename.notice"
 
   # Case 9: drop column existence check — column does not exist
   stdout_file="$(mktemp "${TMP_DIR}/pg-drop-col.XXXXXX.json")"
