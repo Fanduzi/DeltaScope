@@ -131,4 +131,3 @@ Implemented and verified on branch `refactor/postgresql-query-access-resolver-co
 - Final impact inspection confirmed no MySQL/TiDB, parser, admission, transport, public API, output, or release-surface changes. Independent Standards and Spec review reported no P0, P1, or P2 findings after the final fixes.
 
 Only the PostgreSQL resolver-core implementation and its required tests and module metadata changed; all existing observable behavior and trusted same-session ownership contracts remain frozen.
-
