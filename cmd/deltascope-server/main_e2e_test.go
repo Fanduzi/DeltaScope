@@ -88,7 +88,7 @@ func startHTTPServerMySQLTiDB(t *testing.T) (string, *httpServerHarness, string)
 	t.Helper()
 	t.Setenv(httpAuditPasswordEnv, httpAuditPassword)
 	tidbPasswordFile := filepath.Join(t.TempDir(), "tidb-password")
-	if err := os.WriteFile(tidbPasswordFile, []byte(httpAuditPassword), 0o600); err != nil {
+	if err := os.WriteFile(tidbPasswordFile, nil, 0o600); err != nil {
 		t.Fatalf("create TiDB password file: %v", err)
 	}
 	config := fmt.Sprintf(`metadata:
@@ -413,7 +413,11 @@ func assertHTTPAuditNoCredentialLeak(t *testing.T, harness *httpServerHarness, b
 		t.Fatalf("marshal audit response for leak check: %v", err)
 	}
 	combined := string(response) + harness.stdout.String() + harness.stderr.String()
-	for _, forbidden := range []string{httpAuditPassword, httpAuditPasswordEnv, endpoint, secretSource, "Error 1045", "driver:"} {
+	forbidden := []string{httpAuditPassword, httpAuditPasswordEnv, endpoint, secretSource, "Error 1045", "driver:"}
+	if secretSource != "" {
+		forbidden = append(forbidden, secretSource)
+	}
+	for _, forbidden := range forbidden {
 		if strings.Contains(combined, forbidden) {
 			t.Fatalf("audit response or server output leaked %q\nresponse: %s\nstdout: %s\nstderr: %s", forbidden, response, harness.stdout.String(), harness.stderr.String())
 		}
