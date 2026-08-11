@@ -4,7 +4,28 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.470.0 Release Recovery Provenance Enforcement
+## Latest Completed Milestone: v0.480.0 PG17 COUNT(1) Online Query Access
+
+**Goal:** prove and surface one exact PostgreSQL 17 Query Access envelope — `SELECT COUNT(1) FROM <one schema-qualified physical base table>` — on a caller-owned online session, with the same catalog-bound proof available through the trusted SDK, online CLI PostgreSQL connection options, and HTTP with an operator-authorized PostgreSQL 17 `connection_id`. See `docs/releases/release-notes-v0.480.0.md`, `docs/decisions/2026-07-31-query-access-pg17-count-literal-proof.md`, and `docs/decisions/2026-08-03-query-access-pg17-count-online-surface-contract.md`.
+
+### Completed Scope
+
+- Exact envelope only: uncast integer constant `1`, session-bound `pg_catalog.count(any)` identity, exactly one schema-qualified resolved physical base table, no extra clauses or select-list items.
+- Success result: `read_only` + `admissible` with exactly one `read_table` requirement and no referenced columns.
+- Online surfaces: trusted SDK caller-owned `*sql.Conn`, CLI existing online PostgreSQL options, HTTP authorized `connection_id` for `query_access`. Default/offline paths stay fail-closed.
+- No-execution / no-leak evidence for positive, excluded, connection-failure, catalog-failure, and HTTP unauthorized/unknown `connection_id` paths. Submitted SQL is never executed, prepared, or explained.
+- Decision records: `docs/decisions/2026-07-31-query-access-pg17-count-literal-proof.md` and `docs/decisions/2026-08-03-query-access-pg17-count-online-surface-contract.md` (Accepted; Related milestone/version: v0.480.0).
+
+### Non-Goals
+
+- Not general PostgreSQL literal, pure-function, or aggregate support beyond the exact envelope.
+- Not authorization, grants, RLS, masking, rewrite, SQL execution, or data-returning APIs.
+- Not default/offline SDK, CLI, or HTTP expansion; not an MCP Query Access tool.
+- Not relationless PostgreSQL `COUNT(1)`, other literals, casts, parameters, modifiers, joins, CTEs, views, derived tables, or unqualified sources.
+- Not reuse of the MySQL/TiDB profile/manifest model as PostgreSQL proof.
+- Not a severity field; not a change to the registered audit rule catalog.
+
+## Previous Completed Milestone: v0.470.0 Release Recovery Provenance Enforcement
 
 **Goal:** make the manually dispatched release-recovery workflow enforce the same release-candidate provenance contract as the normal tag-triggered release workflow. Routine recovery accepts only future provenance-valid annotated tags reachable from trusted `origin/main`; dispatch runs only on `refs/heads/main`; publishers check out only the verified peeled tag target SHA; the recovery contract gate is hermetic with `v0.240.0` and `v0.460.0` as fail-closed negatives. See `docs/releases/release-notes-v0.470.0.md` and `docs/decisions/2026-07-30-release-recovery-provenance-enforcement.md`.
 

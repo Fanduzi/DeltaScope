@@ -2,6 +2,7 @@
 
 - Date: 2026-08-03
 - Status: Accepted
+- Related milestone/version: v0.480.0
 - Baseline: `main@dd861f8`
 - Related: [PG17 `COUNT(1)` proof](2026-07-31-query-access-pg17-count-literal-proof.md), [online connection registry](2026-07-20-query-access-online-connection-registry.md)
 - Spec: `docs/plans/2026-08-03-query-access-pg17-count-online-surface-contract-spec.md`

@@ -2,6 +2,7 @@
 
 - Date: 2026-07-31
 - Status: Accepted
+- Related milestone/version: v0.480.0
 - Baseline: `main@d7852b8`
 - Related: [common pure-effect admissibility](2026-07-16-query-access-common-pure-effects.md), [MySQL/TiDB literal-only and reversed operands](2026-07-26-query-access-literal-only-and-reversed-operands.md)
 - Spec: `docs/plans/2026-07-31-query-access-pg17-count-literal-proof-spec.md`
