@@ -53,7 +53,6 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 		name         string
 		results      map[string]testQueryResult
 		want         appqa.RelationSchema
-		wantErr      string
 		wantErrExact string
 		wantLogs     []string
 	}{

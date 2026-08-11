@@ -17,14 +17,13 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | query_access_resolver_core.go | Private stateless PostgreSQL catalog core: relation/column SQL, scanning, lookup errors, relkind mapping, and foreign-table fail-closed policy |
 | query_access_resolver_test.go | Parameterized DB/Conn behavior contract plus foreign-table, ordering, lifecycle, and concrete-field coverage |
 | query_access_resolver_stub.go | Empty QueryAccessResolver struct for non-postgresql builds |
+| query_access_conn_resolver_stub.go | Empty QueryAccessConnResolver struct for non-postgresql builds |
+| query_access_conn_resolver_test.go | Adapter-specific conn lifecycle and concrete-field tests |
+| query_access_conn_resolver_integration_test.go | PG17 Docker integration: same-backend-PID proof |
 | effect_identity_session.go | Session-pinned `*sql.Conn` wrapper; live resolution context capture (db/role/version/backend/search_path OIDs) |
 | effect_identity_resolver.go | Facts-only `EffectIdentityResolver` adapter (operator/function/cast exact catalog lookup + dedicated COUNT(integer_one) catalog proof + TOCTOU gate) |
 | effect_identity_resolver_test.go | Unit tests with fake pinned catalog (no live PG claim) |
 | effect_identity_resolver_integration_test.go | Optional PG17 Docker integration (`-tags postgresql,integration`) |
-| query_access_conn_resolver.go | `*sql.Conn`-backed SchemaResolver for same-connection metadata resolution; rejects foreign tables (relkind f) before the column probe and trusted COUNT(1) catalog proof |
-| query_access_conn_resolver_stub.go | Empty QueryAccessConnResolver struct for non-postgresql builds |
-| query_access_conn_resolver_test.go | Unit tests for conn-backed resolver |
-| query_access_conn_resolver_integration_test.go | PG17 Docker integration: same-backend-PID proof |
 
 ## Exports
 
