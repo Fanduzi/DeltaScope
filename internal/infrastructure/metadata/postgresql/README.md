@@ -12,13 +12,14 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |
 | resolve_object_test.go | Verifies object resolver behavior for all supported lookup types, statuses, sensitive attribute exclusion, and annotation target verification |
-| query_access_resolver.go | Implements SchemaResolver for PostgreSQL by querying pg_catalog.pg_class, pg_namespace, and pg_attribute for relation kind and column listing |
+| query_access_resolver.go | Implements SchemaResolver for PostgreSQL by querying pg_catalog.pg_class, pg_namespace, and pg_attribute for relation kind and column listing; foreign tables (relkind f) fail closed |
+| query_access_resolver_test.go | Unit coverage for base/partitioned/view kinds and foreign-table rejection on DB-backed and conn-backed resolvers |
 | query_access_resolver_stub.go | Empty QueryAccessResolver struct for non-postgresql builds |
 | effect_identity_session.go | Session-pinned `*sql.Conn` wrapper; live resolution context capture (db/role/version/backend/search_path OIDs) |
 | effect_identity_resolver.go | Facts-only `EffectIdentityResolver` adapter (operator/function/cast exact catalog lookup + dedicated COUNT(integer_one) catalog proof + TOCTOU gate) |
 | effect_identity_resolver_test.go | Unit tests with fake pinned catalog (no live PG claim) |
 | effect_identity_resolver_integration_test.go | Optional PG17 Docker integration (`-tags postgresql,integration`) |
-| query_access_conn_resolver.go | `*sql.Conn`-backed SchemaResolver for same-connection metadata resolution |
+| query_access_conn_resolver.go | `*sql.Conn`-backed SchemaResolver for same-connection metadata resolution; foreign tables fail closed |
 | query_access_conn_resolver_stub.go | Empty QueryAccessConnResolver struct for non-postgresql builds |
 | query_access_conn_resolver_test.go | Unit tests for conn-backed resolver |
 | query_access_conn_resolver_integration_test.go | PG17 Docker integration: same-backend-PID proof |

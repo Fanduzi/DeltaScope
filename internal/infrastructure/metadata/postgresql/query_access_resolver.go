@@ -42,6 +42,9 @@ func (r *QueryAccessResolver) ResolveRelation(ctx context.Context, dialect strin
 	if err != nil {
 		return appqa.RelationSchema{}, err
 	}
+	if err := rejectUnsupportedRelkind(relkind, schema, name); err != nil {
+		return appqa.RelationSchema{}, err
+	}
 
 	rs.Kind = relkindToKind(relkind)
 	rs.IsView = relkind == "v" || relkind == "m"
@@ -104,7 +107,21 @@ func relkindToKind(relkind string) string {
 	switch relkind {
 	case "v", "m":
 		return "view"
-	default:
+	case "r", "p":
 		return "table"
+	default:
+		// Foreign tables (relkind f) and any other kind must never reach here.
+		return ""
 	}
+}
+
+// rejectUnsupportedRelkind fail-closes relation kinds that must not be promoted
+// to physical base tables for query access (notably foreign tables, relkind f).
+// The error matches the missing-relation shape so callers stay fail-closed without
+// expanding public result contracts or leaking catalog details.
+func rejectUnsupportedRelkind(relkind, schema, name string) error {
+	if relkind == "f" {
+		return fmt.Errorf("relation %s.%s not found", schema, name)
+	}
+	return nil
 }

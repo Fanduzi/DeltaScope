@@ -135,6 +135,70 @@ func TestTrustedService_CountColumnAdmissibleWithPG17Manifest(t *testing.T) {
 	}
 }
 
+// TestTrustedService_CountIntegerOneForeignTableFailClosed proves that a schema
+// resolver error for the target relation (the fail-closed shape used for foreign
+// tables) cannot be promoted to read_only + admissible even when identity proof
+// would otherwise succeed for COUNT(1).
+func TestTrustedService_CountIntegerOneForeignTableFailClosed(t *testing.T) {
+	policy, err := NewTrustPolicy(PG17Manifest)
+	if err != nil {
+		t.Fatalf("NewTrustPolicy: %v", err)
+	}
+
+	resolver := &mockControlledResolver{
+		ctx: testResolutionContext(),
+		batch: EffectIdentityBatch{Items: []EffectIdentityItem{{
+			Ordinal: 0,
+			Status:  domain.IdentityStatusResolved,
+			Facts: &EffectIdentityFacts{
+				Kind:               EffectCandidateFunction,
+				ObjectOID:          2147,
+				NamespaceOID:       11,
+				OperandTypeOIDs:    []uint32{2276},
+				ResultTypeOID:      20,
+				Volatility:         EffectVolatilityImmutable,
+				CanonicalSignature: "pg_catalog.count(2276)",
+				DatabaseOID:        1,
+				ServerVersionNum:   170000,
+			},
+		}}},
+	}
+
+	svc, err := NewTrustedService(resolver, policy, &mockFailingSchemaResolver{err: fmt.Errorf("relation app.remote_orders not found")})
+	if err != nil {
+		t.Fatalf("NewTrustedService: %v", err)
+	}
+	res, err := svc.Analyze(context.Background(), QueryAccessRequest{
+		SQL: "SELECT COUNT(1) FROM app.remote_orders", Dialect: "postgresql", Mode: "strict", DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	if res.DomainResult.ReadClassification != domain.Indeterminate || res.DomainResult.Admission != domain.IndeterminateAdmission {
+		t.Fatalf("foreign-table fail-closed path was promoted: classification=%q admission=%q reasons=%v unresolved=%+v",
+			res.DomainResult.ReadClassification, res.DomainResult.Admission, res.DomainResult.ReasonCodes, res.DomainResult.Unresolved)
+	}
+	hasRelationNotFound := false
+	for _, u := range res.DomainResult.Unresolved {
+		if u.Reason == ReasonRelationNotFound {
+			hasRelationNotFound = true
+			break
+		}
+	}
+	if !hasRelationNotFound {
+		t.Fatalf("expected relation_not_found unresolved entry, got %+v", res.DomainResult.Unresolved)
+	}
+	data, err := json.Marshal(res.DomainResult)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	for _, needle := range []string{"foreign", "relkind", "oid", "2147", "canonical_signature", "not found", "pg_catalog", "driver"} {
+		if strings.Contains(strings.ToLower(string(data)), strings.ToLower(needle)) {
+			t.Errorf("domain result leaked %q: %s", needle, data)
+		}
+	}
+}
+
 func TestTrustedService_UnqualifiedRelationRejected(t *testing.T) {
 	policy, err := NewTrustPolicy(PG17Manifest)
 	if err != nil {

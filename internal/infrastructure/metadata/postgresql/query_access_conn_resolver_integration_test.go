@@ -160,6 +160,12 @@ func TestConnResolver_PG17Metadata(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for non-existent table")
 	}
+
+	// Foreign tables must fail closed and never surface as physical base tables.
+	_, err = resolver.ResolveRelation(ctx, "postgresql", "app", "remote_orders")
+	if err == nil {
+		t.Fatal("foreign table was accepted as a physical relation")
+	}
 }
 
 func TestSession_CallerConnSurvivesAnalysis(t *testing.T) {

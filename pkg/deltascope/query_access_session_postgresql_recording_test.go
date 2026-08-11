@@ -59,6 +59,62 @@ func TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL(t *testing.T) {
 	assertPostgreSQLRecordingNoLeak(t, result, marker)
 }
 
+func TestTrustedSDK_CountIntegerOneForeignTableNoExecNoLeak(t *testing.T) {
+	const marker = "SQLNOTEXEC_FOREIGN_MARKER_9c2b"
+	recorder := &postgresqlRecordingDriver{relkind: "f"}
+	db := openPostgreSQLRecordingDB(t, recorder)
+	defer db.Close()
+
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
+	}
+	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(1) /* " + marker + " */ FROM app.remote_orders",
+		Dialect:       DialectPostgreSQL,
+		Mode:          QueryAccessModeStrict,
+		DefaultSchema: "app",
+	})
+	if err != nil {
+		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessIndeterminate || result.Admission != QueryAccessIndeterminateAdmission {
+		t.Fatalf("foreign table must remain indeterminate: classification=%s admission=%s reasons=%v requirements=%+v",
+			result.ReadClassification, result.Admission, result.ReasonCodes, result.Requirements)
+	}
+	for _, query := range recorder.recorded() {
+		if strings.Contains(query, marker) || strings.Contains(strings.ToLower(query), "remote_orders") {
+			t.Fatalf("analysis SQL reached driver: %q", query)
+		}
+		if strings.Contains(query, "with any_type as") {
+			t.Fatalf("foreign-table fail-closed must not reach COUNT catalog proof: %q", query)
+		}
+	}
+	// Identity/session capture is skipped when relation resolution fail-closes
+	// before the COUNT(1) proof path; only construction + relkind probes remain.
+	for _, pattern := range []string{
+		"SELECT VERSION()",
+		"select c.relkind",
+	} {
+		found := false
+		for _, query := range recorder.recorded() {
+			if strings.Contains(query, pattern) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("missing safe probe %q in %v", pattern, recorder.recorded())
+		}
+	}
+	assertPostgreSQLRecordingNoLeak(t, result, marker, "foreign", "relkind", "pg_foreign")
+}
+
 func TestTrustedSDK_CountIntegerOneCatalogLookupFailureNoLeak(t *testing.T) {
 	const marker = "SQLNOTEXEC_MARKER_7f3a"
 	const driverError = "catalog lookup driver error oid=987654321 database_oid=876543210 backend_pid=765432109 dsn=postgres://leak_user:leak_password@leak-host:6543/leak_db"
@@ -176,6 +232,7 @@ type postgresqlRecordingDriver struct {
 	mu             sync.Mutex
 	queries        []string
 	countLookupErr error
+	relkind        string
 }
 
 func openPostgreSQLRecordingDB(t *testing.T, recorder *postgresqlRecordingDriver) *sql.DB {
@@ -235,7 +292,11 @@ func (c postgresqlRecordingConn) QueryContext(_ context.Context, query string, _
 	case strings.Contains(query, "pg_namespace n where n.nspname = $1"):
 		return newPostgreSQLRecordingRows([]string{"oid"}, [][]driver.Value{{int64(11)}}), nil
 	case strings.Contains(query, "select c.relkind"):
-		return newPostgreSQLRecordingRows([]string{"relkind"}, [][]driver.Value{{"r"}}), nil
+		relkind := c.recorder.relkind
+		if relkind == "" {
+			relkind = "r"
+		}
+		return newPostgreSQLRecordingRows([]string{"relkind"}, [][]driver.Value{{relkind}}), nil
 	case strings.Contains(query, "select a.attname"):
 		return newPostgreSQLRecordingRows([]string{"column_name", "ordinal_position"}, [][]driver.Value{{"id", int64(1)}}), nil
 	case strings.Contains(query, "with any_type as"):

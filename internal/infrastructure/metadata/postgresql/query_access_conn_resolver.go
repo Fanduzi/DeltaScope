@@ -52,6 +52,9 @@ func (r *QueryAccessConnResolver) ResolveRelation(ctx context.Context, dialect s
 	if err != nil {
 		return appqa.RelationSchema{}, err
 	}
+	if err := rejectUnsupportedRelkind(relkind, schema, name); err != nil {
+		return appqa.RelationSchema{}, err
+	}
 
 	rs.Kind = relkindToKind(relkind)
 	rs.IsView = relkind == "v" || relkind == "m"
