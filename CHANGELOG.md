@@ -6,6 +6,26 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.480.0] - 2026-08-11
+
+### Added
+
+- PostgreSQL 17 Query Access now admits the exact envelope `SELECT COUNT(1) FROM <one schema-qualified physical base table>` on a caller-owned online session. Success returns `read_only` + `admissible` with exactly one `read_table` requirement for that base relation and no referenced columns.
+- Shared catalog-bound proof of `pg_catalog.count(any)` for the uncast integer constant `1` only. The parser may contribute an internal non-serialized `integer_one` syntax fact; literal text is not retained or exposed.
+- Online surfaces for the same proof: trusted SDK caller-owned `*sql.Conn`, CLI existing online PostgreSQL connection options, and HTTP with an operator-authorized PostgreSQL 17 `connection_id` for the `query_access` purpose.
+- No-execution / no-leak evidence on the positive path, excluded shapes, connection failure, catalog lookup failure, and HTTP unauthorized/unknown `connection_id` cases. Submitted SQL is never executed, prepared, or explained.
+- Decision records: `docs/decisions/2026-07-31-query-access-pg17-count-literal-proof.md` and `docs/decisions/2026-08-03-query-access-pg17-count-online-surface-contract.md` (Accepted; Related milestone/version: v0.480.0).
+
+### Non-Goals
+
+- Not general PostgreSQL literal, pure-function, or aggregate support beyond the exact `COUNT(1)` envelope above.
+- Not authorization, grants, roles, RLS, masking, rewrite, SQL execution, or data-returning APIs.
+- Not default/offline SDK, CLI, or HTTP expansion; those paths remain fail-closed / indeterminate for this query.
+- Not an MCP Query Access tool; MCP tools remain unchanged.
+- Not relationless PostgreSQL `COUNT(1)`, other literals, casts, parameters, modifiers, joins, CTEs, views, derived tables, or unqualified sources.
+- Not reuse of the MySQL/TiDB profile/manifest model as PostgreSQL proof.
+- Not a severity field; not a change to the registered audit rule catalog or existing published artifacts.
+
 ## [v0.470.0] - 2026-07-31
 
 ### Added
