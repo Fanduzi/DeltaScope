@@ -299,6 +299,8 @@ func TestParseExplainEstimatedRowsUsesLargestMatch(t *testing.T) {
 type testQueryResult struct {
 	columns []string
 	rows    [][]driver.Value
+	err     error
+	rowErr  error
 }
 
 type testDriver struct{}
@@ -312,6 +314,7 @@ type testRows struct {
 	columns []string
 	rows    [][]driver.Value
 	index   int
+	rowErr  error
 }
 
 type testQueryLog struct {
@@ -368,6 +371,8 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 		cloned[key] = testQueryResult{
 			columns: append([]string(nil), result.columns...),
 			rows:    rows,
+			err:     result.err,
+			rowErr:  result.rowErr,
 		}
 	}
 	testDriverResults.Store(name, cloned)
@@ -395,9 +400,13 @@ func (c testConn) QueryContext(_ context.Context, query string, _ []driver.Named
 	}
 	for fragment, result := range c.results {
 		if strings.Contains(query, fragment) {
+			if result.err != nil {
+				return nil, result.err
+			}
 			return &testRows{
 				columns: append([]string(nil), result.columns...),
 				rows:    append([][]driver.Value(nil), result.rows...),
+				rowErr:  result.rowErr,
 			}, nil
 		}
 	}
@@ -412,6 +421,11 @@ func (r *testRows) Close() error { return nil }
 
 func (r *testRows) Next(dest []driver.Value) error {
 	if r.index >= len(r.rows) {
+		if r.rowErr != nil {
+			err := r.rowErr
+			r.rowErr = nil
+			return err
+		}
 		return io.EOF
 	}
 	copy(dest, r.rows[r.index])

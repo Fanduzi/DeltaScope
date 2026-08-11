@@ -1,9 +1,9 @@
 //go:build postgresql
 
-// Package postgresqlmeta provides a *sql.Conn-backed SchemaResolver for query access.
-// input: a single caller-owned *sql.Conn (not a *sql.DB pool)
-// output: RelationSchema with table/view kind and column listing via pg_catalog; relkind='f' is rejected before the column probe
-// pos: infrastructure same-connection metadata resolver for trusted SDK path; foreign tables fail closed before trusted COUNT(1) catalog proof
+// Package postgresqlmeta provides the conn-backed PostgreSQL query access adapter.
+// input: caller-owned *sql.Conn, context, dialect, and schema-qualified relation name
+// output: same-session RelationSchema or the existing PostgreSQL catalog resolution error
+// pos: session-pinned ownership adapter delegating catalog behavior to the private core
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
@@ -42,73 +42,5 @@ func (r *QueryAccessConnResolver) ResolveRelation(ctx context.Context, dialect s
 	if r == nil || r.conn == nil {
 		return appqa.RelationSchema{}, ErrSessionClosed
 	}
-
-	rs := appqa.RelationSchema{
-		Schema: schema,
-		Name:   name,
-	}
-
-	relkind, err := r.resolveRelkind(ctx, schema, name)
-	if err != nil {
-		return appqa.RelationSchema{}, err
-	}
-	if err := rejectUnsupportedRelkind(relkind, schema, name); err != nil {
-		return appqa.RelationSchema{}, err
-	}
-
-	rs.Kind = relkindToKind(relkind)
-	rs.IsView = relkind == "v" || relkind == "m"
-
-	columns, err := r.resolveColumns(ctx, schema, name)
-	if err != nil {
-		return appqa.RelationSchema{}, err
-	}
-	rs.Columns = columns
-
-	return rs, nil
-}
-
-func (r *QueryAccessConnResolver) resolveRelkind(ctx context.Context, schema, name string) (string, error) {
-	var relkind string
-	err := r.conn.QueryRowContext(ctx, `
-		select c.relkind
-		from pg_catalog.pg_class c
-		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-		where n.nspname = $1 and c.relname = $2 and c.relkind in ('r','p','v','m','f')
-	`, schema, name).Scan(&relkind)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("relation %s.%s not found", schema, name)
-		}
-		return "", fmt.Errorf("query relation type for %s.%s: %w", schema, name, err)
-	}
-	return relkind, nil
-}
-
-func (r *QueryAccessConnResolver) resolveColumns(ctx context.Context, schema, name string) ([]appqa.ColumnSchema, error) {
-	rows, err := r.conn.QueryContext(ctx, `
-		select a.attname as column_name, a.attnum as ordinal_position
-		from pg_catalog.pg_attribute a
-		join pg_catalog.pg_class c on c.oid = a.attrelid
-		join pg_catalog.pg_namespace n on n.oid = c.relnamespace
-		where n.nspname = $1 and c.relname = $2 and a.attnum > 0 and not a.attisdropped
-		order by a.attnum
-	`, schema, name)
-	if err != nil {
-		return nil, fmt.Errorf("query columns for %s.%s: %w", schema, name, err)
-	}
-	defer rows.Close()
-
-	var columns []appqa.ColumnSchema
-	for rows.Next() {
-		var col appqa.ColumnSchema
-		if err := rows.Scan(&col.Name, &col.Ordinal); err != nil {
-			return nil, fmt.Errorf("scan column for %s.%s: %w", schema, name, err)
-		}
-		columns = append(columns, col)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate columns for %s.%s: %w", schema, name, err)
-	}
-	return columns, nil
+	return resolvePostgreSQLRelation(ctx, r.conn, schema, name)
 }

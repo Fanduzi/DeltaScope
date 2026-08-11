@@ -12,8 +12,10 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |
 | resolve_object_test.go | Verifies object resolver behavior for all supported lookup types, statuses, sensitive attribute exclusion, and annotation target verification |
-| query_access_resolver.go | Implements SchemaResolver for PostgreSQL by querying pg_catalog.pg_class, pg_namespace, and pg_attribute for relation kind and column listing; rejects foreign tables (relkind f) before the column probe and trusted COUNT(1) catalog proof |
-| query_access_resolver_test.go | Unit coverage for base/partitioned/view kinds and foreign-table rejection on DB-backed and conn-backed resolvers |
+| query_access_resolver.go | Thin `*sql.DB`-backed SchemaResolver adapter delegating PostgreSQL catalog resolution to the private core |
+| query_access_conn_resolver.go | Thin caller-owned `*sql.Conn`-backed SchemaResolver adapter for same-session metadata resolution; no pool fallback |
+| query_access_resolver_core.go | Private stateless PostgreSQL catalog core: relation/column SQL, scanning, lookup errors, relkind mapping, and foreign-table fail-closed policy |
+| query_access_resolver_test.go | Parameterized DB/Conn behavior contract plus foreign-table, ordering, lifecycle, and concrete-field coverage |
 | query_access_resolver_stub.go | Empty QueryAccessResolver struct for non-postgresql builds |
 | effect_identity_session.go | Session-pinned `*sql.Conn` wrapper; live resolution context capture (db/role/version/backend/search_path OIDs) |
 | effect_identity_resolver.go | Facts-only `EffectIdentityResolver` adapter (operator/function/cast exact catalog lookup + dedicated COUNT(integer_one) catalog proof + TOCTOU gate) |
