@@ -21,7 +21,7 @@ where `app.orders` is one schema-qualified resolved physical base table. Require
 - Dialect and server identity: PostgreSQL 17 on a caller-owned online session.
 - Aggregate identity: session-bound catalog proof of `pg_catalog.count(any)`.
 - Argument: the uncast integer constant `1` only. The parser may record an internal non-serialized `integer_one` syntax fact; it does not retain or expose the literal text.
-- Relation: exactly one schema-qualified physical base table. No joins, comma joins, CTEs, views, derived tables, or unqualified names.
+- Relation: exactly one schema-qualified physical base table. No joins, comma joins, CTEs, views, foreign tables, derived tables, or unqualified names. Foreign tables (`relkind = 'f'`) are deferred and fail closed on both DB-backed and caller-owned resolvers.
 - Clauses: no `WHERE`, `GROUP BY`, `ORDER BY`, `LIMIT`, `DISTINCT`, `FILTER`, window, nested call, extra select-list items, set operations, or parameters/casts/expressions.
 
 Success result: `read_only` + `admissible`, with the sole base relation's `read_table` requirement and no referenced columns.
@@ -41,7 +41,7 @@ CLI and HTTP reuse the same session-bound catalog proof. They do not add a trans
 
 - Submitted SQL is never executed, prepared, or explained.
 - Public results and logs do not expose SQL/literal markers, connection data, credentials, catalog data, or raw driver errors.
-- Recording-driver and live transport evidence cover the positive path, excluded shapes, connection failure, catalog lookup failure, and HTTP unauthorized/unknown `connection_id` cases.
+- Recording-driver and live transport evidence cover the positive path, excluded shapes (including foreign tables), connection failure, catalog lookup failure, and HTTP unauthorized/unknown `connection_id` cases.
 
 ### Fail-Closed Exclusions
 
@@ -49,7 +49,7 @@ These remain `indeterminate` (not admitted):
 
 - `COUNT(NULL)`, `COUNT(2)`, `COUNT('1')`, parameters, casts, expressions, nested calls, and arbitrary arity
 - Relationless `SELECT COUNT(1)`
-- Unqualified `FROM orders`, views, derived tables, CTEs, joins, and multi-relation forms
+- Unqualified `FROM orders`, views, foreign tables, derived tables, CTEs, joins, and multi-relation forms
 - `FILTER`, windows, `DISTINCT`, ordering, grouping, limits, extra select-list items, and set operations
 - Default/offline SDK, CLI, and HTTP
 - MCP on every path
@@ -73,7 +73,7 @@ MySQL/TiDB online literal-only and relationless shapes from earlier releases are
 - Not SQL execution, prepare/explain of user SQL, or data-returning APIs.
 - Not default/offline SDK, CLI, or HTTP expansion for this query.
 - Not an MCP Query Access tool.
-- Not relationless PostgreSQL `COUNT(1)`, other literals, casts, parameters, modifiers, joins, CTEs, views, derived tables, or unqualified sources.
+- Not relationless PostgreSQL `COUNT(1)`, other literals, casts, parameters, modifiers, joins, CTEs, views, foreign tables, derived tables, or unqualified sources.
 - Not a reuse of the MySQL/TiDB profile/manifest model as PostgreSQL proof.
 - Not a severity field; not a change to the registered audit rule catalog.
 - Not a change to any previously published artifact or existing tag.

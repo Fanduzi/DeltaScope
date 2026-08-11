@@ -42,6 +42,10 @@ execution decision.
   functions, `COUNT(NULL)`, `COUNT(2)`, `COUNT('1')`, parameters, casts,
   expressions, joins, comma joins, DISTINCT, FILTER, ordering, windows, nested
   calls, or arbitrary arity.
+- Foreign tables (`relkind = 'f'`) are deferred and fail closed. Both the
+  DB-backed and caller-owned `*sql.Conn` resolvers reject them instead of mapping
+  them to ordinary `table`, so `SELECT COUNT(1) FROM app.<foreign_table>` cannot
+  become `read_only` + `admissible`.
 - No default/offline SDK, CLI, HTTP, MCP, MySQL, or TiDB behavior change.
 - No public result field, authorization/grant/RLS/masking decision, SQL
   execution, result retrieval, or disclosure of SQL literals, catalog data,
@@ -83,6 +87,10 @@ defer rather than approximate.
 - Recording-driver tests prove no-execution and no-leak behavior for both
   successful proof and dedicated catalog lookup failure, including JSON,
   struct, and driver boundaries.
+- Foreign-table fail-closed evidence covers resolver unit tests (DB-backed and
+  conn-backed), application-layer negative promotion, recording-driver
+  no-execution/no-leak, Docker PG17 fixture `app.remote_orders`, and SDK/CLI/HTTP
+  online negative E2E paths.
 - Independent read-only audit found no P0, P1, or P2 issues.
 
 ## Deferred Scope
@@ -92,8 +100,8 @@ defer rather than approximate.
   caller-owned online PostgreSQL 17 SDK session.
 - Other PostgreSQL literal/count shapes remain indeterminate, including
   `COUNT(NULL)`, other literals, casts, parameters, modifiers, joins, CTEs,
-  derived relations, views, unqualified or relationless forms, and additional
-  clauses.
+  derived relations, views, foreign tables, unqualified or relationless forms,
+  and additional clauses.
 - Default offline SDK behavior and CLI, HTTP, and MCP surfaces are not
   expanded.
 - This is static requirement analysis, not an authorization, SQL execution,

@@ -21,7 +21,7 @@ SELECT COUNT(1) FROM app.orders
 - 方言与服务器身份：调用方持有的在线 PostgreSQL 17 session。
 - 聚合身份：会话绑定的 `pg_catalog.count(any)` 目录证明。
 - 参数：仅未加 cast 的整数常量 `1`。解析器可记录内部、不序列化的 `integer_one` 语法事实；不保留、不暴露字面量原文。
-- 关系：恰好一个 schema 限定的物理基表。不允许 join、逗号 join、CTE、视图、派生表或未限定名。
+- 关系：恰好一个 schema 限定的物理基表。不允许 join、逗号 join、CTE、视图、外部表（foreign table）、派生表或未限定名。外部表（`relkind = 'f'`）在 DB-backed 与调用方持有的 resolver 上均延期且 fail-closed。
 - 子句：不允许 `WHERE`、`GROUP BY`、`ORDER BY`、`LIMIT`、`DISTINCT`、`FILTER`、窗口、嵌套调用、额外选择列表项、集合运算，以及参数/cast/表达式。
 
 成功结果：`read_only` + `admissible`，仅含该基表的 `read_table` 要求，无引用列。
@@ -41,7 +41,7 @@ CLI 与 HTTP 复用同一条会话绑定的目录证明，不新增传输层特�
 
 - 提交的 SQL 不会被执行、prepare 或 explain。
 - 公开结果与日志不暴露 SQL/字面量标记、连接信息、凭据、目录数据或原始驱动错误。
-- 录制驱动与真实传输证据覆盖正例、排除形态、连接失败、目录查找失败，以及 HTTP 未授权/未知 `connection_id` 路径。
+- 录制驱动与真实传输证据覆盖正例、排除形态（含外部表）、连接失败、目录查找失败，以及 HTTP 未授权/未知 `connection_id` 路径。
 
 ### Fail-closed 排除项
 
@@ -49,7 +49,7 @@ CLI 与 HTTP 复用同一条会话绑定的目录证明，不新增传输层特�
 
 - `COUNT(NULL)`、`COUNT(2)`、`COUNT('1')`、参数、cast、表达式、嵌套调用与任意元数
 - 无关系 `SELECT COUNT(1)`
-- 未限定 `FROM orders`、视图、派生表、CTE、join 与多关系形态
+- 未限定 `FROM orders`、视图、外部表、派生表、CTE、join 与多关系形态
 - `FILTER`、窗口、`DISTINCT`、排序、分组、limit、额外选择列表项与集合运算
 - 默认/离线 SDK、CLI、HTTP
 - 任意路径上的 MCP
@@ -73,7 +73,7 @@ CLI 与 HTTP 复用同一条会话绑定的目录证明，不新增传输层特�
 - 不是 SQL 执行、对用户 SQL 的 prepare/explain，或返回数据的 API。
 - 不是把默认/离线 SDK、CLI、HTTP 扩展到该查询。
 - 不是 MCP Query Access 工具。
-- 不是无关系 PostgreSQL `COUNT(1)`，也不是其他字面量、cast、参数、修饰符、join、CTE、视图、派生表或未限定来源。
+- 不是无关系 PostgreSQL `COUNT(1)`，也不是其他字面量、cast、参数、修饰符、join、CTE、视图、外部表、派生表或未限定来源。
 - 不是把 MySQL/TiDB 的 profile/manifest 模型复用为 PostgreSQL 证明。
 - 不是 severity 字段；不是已注册审核规则目录变更。
 - 不是改动任何既有已发布产物或既有 tag。

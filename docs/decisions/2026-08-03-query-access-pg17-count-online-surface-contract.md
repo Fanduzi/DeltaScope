@@ -84,8 +84,10 @@ bounded SQL envelope. Parser and catalog scope remain unchanged.
 - Any expansion beyond exact `COUNT(1)` over one schema-qualified physical
   table.
 - Relationless queries, non-`1` literals, casts, parameters, modifiers, joins,
-  CTEs, views, derived tables, unqualified sources, scalar or binary literal
-  functions, and arbitrary aggregates.
+  CTEs, views, foreign tables, derived tables, unqualified sources, scalar or
+  binary literal functions, and arbitrary aggregates. Foreign tables remain
+  deferred and fail closed on every online surface; they are never promoted to
+  ordinary physical base tables for the COUNT(1) envelope.
 - New CLI flags, HTTP request/result fields, direct HTTP credentials, MCP Query
   Access, SQL execution, authorization/grant/RLS/masking evaluation, or query
   data retrieval.
@@ -120,12 +122,16 @@ bounded SQL envelope. Parser and catalog scope remain unchanged.
   it; the real HTTP E2E also asserts the request entry and request ID.
 - The real CLI binary E2E passes in
   `cmd/deltascope/main_e2e_postgresql_query_access_test.go`, including the
-  online positive case, excluded shapes, default/offline regression, bounded
-  no-leak output, and the deterministic RST failure listener. The real HTTP
-  server E2E passes in
+  online positive case, excluded shapes (including foreign table
+  `app.remote_orders`), default/offline regression, bounded no-leak output, and
+  the deterministic RST failure listener. The real HTTP server E2E passes in
   `cmd/deltascope-server/main_e2e_postgresql_query_access_test.go`, including
-  the authorized `connection_id`, excluded shapes, no-connection default,
-  authorization boundary, and bounded response/log output.
+  the authorized `connection_id`, excluded shapes (including foreign table),
+  no-connection default, authorization boundary, and bounded response/log
+  output.
+- Foreign-table fail-closed evidence is shared with the proof ADR: resolver unit
+  tests, application negative promotion, recording-driver no-execution/no-leak,
+  Docker fixture `app.remote_orders`, and SDK/CLI/HTTP online negatives.
 - The direct tagged evidence commands passed against the PG17 fixture:
   `CGO_ENABLED=1 go test -tags='postgresql' -count=1 ./pkg/deltascope -run
   TestTrustedSDK_CountIntegerOne`, the corresponding CLI and HTTP
