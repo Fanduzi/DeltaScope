@@ -1,8 +1,8 @@
 //go:build e2e
 
-// Package main verifies Docker-backed HTTP metadata-aware end-to-end behavior.
-// input: real MySQL/TiDB fixtures, the HTTP JSON entrypoint, and the test binary as a server process
-// output: end-to-end proof that deltascope-server serves metadata-aware audit results over HTTP
+// Package main verifies Docker-backed HTTP metadata-aware end-to-end behavior via registry-backed connection_id selection.
+// input: real MySQL/TiDB fixtures, registry-backed authorized connection_id runtime config, and the test binary as a server process
+// output: end-to-end proof that deltascope-server serves metadata-aware audit results over HTTP without inline connection details
 // pos: slower external e2e verification kept outside the default go test loop
 // note: if this file changes, update this header and module README.md.
 package main
@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -22,20 +23,22 @@ import (
 	"time"
 )
 
+const (
+	mysqlHTTPAuditConnectionID = "mysql-http-audit"
+	tidbHTTPAuditConnectionID  = "tidb-http-audit"
+	httpAuditPasswordEnv       = "DELTASCOPE_MYSQL_TIDB_HTTP_PASSWORD"
+	httpAuditPassword          = "root"
+)
+
 func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	ctx := context.Background()
-	baseURL := startHTTPServer(t)
+	baseURL, harness := startHTTPServerMySQLTiDB(t)
 
-	payload := map[string]any{
-		"sql": "create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'",
-		"connection": map[string]any{
-			"host":     "127.0.0.1",
-			"port":     3406,
-			"user":     "root",
-			"password": "root",
-		},
-	}
-	body := postAuditRequest(t, ctx, baseURL, payload)
+	body := postAuditConnectionRequest(t, ctx, baseURL,
+		"create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'",
+		mysqlHTTPAuditConnectionID,
+	)
+	assertHTTPAuditNoCredentialLeak(t, harness, body, "127.0.0.1:3406")
 
 	contextValue := mustContext(t, body)
 	if got := contextValue["mode"]; got != "metadata-aware" {
@@ -47,7 +50,7 @@ func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	if got := contextValue["schema"]; got != "app" {
 		t.Fatalf("unexpected schema: %#v", got)
 	}
-	if got := contextValue["metadata_source"]; got != "direct" {
+	if got := contextValue["metadata_source"]; got != "registry" {
 		t.Fatalf("unexpected metadata source: %#v", got)
 	}
 	assertFindingPresent(t, body, "ddl.table.exists.create.forbid")
@@ -55,17 +58,10 @@ func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 
 func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	ctx := context.Background()
-	baseURL := startHTTPServer(t)
+	baseURL, harness := startHTTPServerMySQLTiDB(t)
 
-	payload := map[string]any{
-		"sql": "delete from orders where id = 1",
-		"connection": map[string]any{
-			"host": "127.0.0.1",
-			"port": 4400,
-			"user": "root",
-		},
-	}
-	body := postAuditRequest(t, ctx, baseURL, payload)
+	body := postAuditConnectionRequest(t, ctx, baseURL, "delete from orders where id = 1", tidbHTTPAuditConnectionID)
+	assertHTTPAuditNoCredentialLeak(t, harness, body, "127.0.0.1:4400")
 
 	contextValue := mustContext(t, body)
 	if got := contextValue["mode"]; got != "metadata-aware" {
@@ -77,16 +73,55 @@ func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	if got := contextValue["schema"]; got != "app" {
 		t.Fatalf("unexpected schema: %#v", got)
 	}
-	if got := contextValue["metadata_source"]; got != "direct" {
+	if got := contextValue["metadata_source"]; got != "registry" {
 		t.Fatalf("unexpected metadata source: %#v", got)
 	}
 }
 
 func startHTTPServer(t *testing.T) string {
 	t.Helper()
+	baseURL, _ := startHTTPServerWithRuntimeConfig(t, "")
+	return baseURL
+}
 
+func startHTTPServerMySQLTiDB(t *testing.T) (string, *httpServerHarness) {
+	t.Helper()
+	t.Setenv(httpAuditPasswordEnv, httpAuditPassword)
+	tidbPasswordFile := filepath.Join(t.TempDir(), "tidb-password")
+	if err := os.WriteFile(tidbPasswordFile, nil, 0o600); err != nil {
+		t.Fatalf("create TiDB password file: %v", err)
+	}
+	config := fmt.Sprintf(`metadata:
+  connections:
+    - id: %s
+      dialect: mysql
+      host: 127.0.0.1
+      port: 3406
+      user: root
+      password_env: %s
+      schema: app
+      purposes: [audit]
+    - id: %s
+      dialect: tidb
+      host: 127.0.0.1
+      port: 4400
+      user: root
+      password_file: %s
+      schema: app
+      purposes: [audit]
+`, mysqlHTTPAuditConnectionID, httpAuditPasswordEnv, tidbHTTPAuditConnectionID, tidbPasswordFile)
+	return startHTTPServerWithRuntimeConfig(t, config)
+}
+
+func startHTTPServerWithRuntimeConfig(t *testing.T, config string, buildTags ...string) (string, *httpServerHarness) {
+	t.Helper()
+
+	configPath := ""
+	if strings.TrimSpace(config) != "" {
+		configPath = writeHTTPRuntimeConfigTempFile(t, config)
+	}
 	listenAddr := freeTCPAddr(t)
-	cmd := createHTTPServerCommand(t, listenAddr)
+	cmd := createHTTPServerCommandWithConfig(t, listenAddr, configPath, buildTags...)
 	harness := &httpServerHarness{
 		cmd:  cmd,
 		done: make(chan struct{}),
@@ -107,33 +142,66 @@ func startHTTPServer(t *testing.T) string {
 
 	baseURL := "http://" + listenAddr
 	waitForHealthz(t, baseURL, harness)
-	return baseURL
+	return baseURL, harness
 }
 
 func createHTTPServerCommand(t *testing.T, listenAddr string) *exec.Cmd {
 	t.Helper()
+	return createHTTPServerCommandWithConfig(t, listenAddr, "")
+}
 
-	binaryPath := buildHTTPServerBinary(t)
-	cmd := exec.Command(binaryPath, "-listen", listenAddr)
+func createHTTPServerCommandWithConfig(t *testing.T, listenAddr, configPath string, buildTags ...string) *exec.Cmd {
+	t.Helper()
+
+	binaryPath := buildHTTPServerBinary(t, buildTags...)
+	args := []string{"-listen", listenAddr}
+	if configPath != "" {
+		args = append(args, "-runtime-config", configPath)
+	}
+	cmd := exec.Command(binaryPath, args...)
 	cmd.Env = os.Environ()
 	return cmd
 }
 
-func buildHTTPServerBinary(t *testing.T) string {
+func buildHTTPServerBinary(t *testing.T, buildTags ...string) string {
 	t.Helper()
 
 	moduleRoot := findModuleRoot(t)
 	outDir := t.TempDir()
 	binaryPath := filepath.Join(outDir, "deltascope-server")
 
-	cmd := exec.Command("go", "build", "-o", binaryPath, "./cmd/deltascope-server")
+	args := []string{"build"}
+	if len(buildTags) > 0 {
+		args = append(args, "-tags", strings.Join(buildTags, ","))
+	}
+	args = append(args, "-o", binaryPath, "./cmd/deltascope-server")
+	cmd := exec.Command("go", args...)
 	cmd.Dir = moduleRoot
 	cmd.Env = os.Environ()
+	if len(buildTags) > 0 {
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=1")
+	}
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("build http server binary: %v\n%s", err, string(output))
 	}
 	return binaryPath
+}
+
+func writeHTTPRuntimeConfigTempFile(t *testing.T, content string) string {
+	t.Helper()
+	file, err := os.CreateTemp(t.TempDir(), "http-audit-runtime-*.yaml")
+	if err != nil {
+		t.Fatalf("create runtime config: %v", err)
+	}
+	if _, err := file.WriteString(content); err != nil {
+		_ = file.Close()
+		t.Fatalf("write runtime config: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatalf("close runtime config: %v", err)
+	}
+	return file.Name()
 }
 
 type httpServerHarness struct {
@@ -269,12 +337,23 @@ func waitForHealthz(t *testing.T, baseURL string, h *httpServerHarness) {
 	t.Fatalf("server at %s did not become healthy\nstdout:\n%s\nstderr:\n%s", baseURL, h.stdout.String(), h.stderr.String())
 }
 
-func postAuditRequest(t *testing.T, ctx context.Context, baseURL string, payload map[string]any) map[string]any {
+func postAuditConnectionRequest(t *testing.T, ctx context.Context, baseURL, sql, connectionID string) map[string]any {
+	t.Helper()
+	return postAuditRequest(t, ctx, baseURL, map[string]any{
+		"sql":           sql,
+		"connection_id": connectionID,
+	}, connectionID)
+}
+
+func postAuditRequest(t *testing.T, ctx context.Context, baseURL string, payload map[string]any, expectedConnectionID ...string) map[string]any {
 	t.Helper()
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		t.Fatalf("marshal audit payload: %v", err)
+	}
+	if len(expectedConnectionID) > 0 {
+		assertConnectionOnlyPayload(t, body, expectedConnectionID[0])
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/v1/audit", strings.NewReader(string(body)))
@@ -301,6 +380,42 @@ func postAuditRequest(t *testing.T, ctx context.Context, baseURL string, payload
 		t.Fatalf("decode audit response: %v", err)
 	}
 	return decoded
+}
+
+func assertConnectionOnlyPayload(t *testing.T, body []byte, expectedConnectionID string) {
+	t.Helper()
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		t.Fatalf("decode audit payload: %v", err)
+	}
+	if len(payload) != 2 {
+		t.Fatalf("expected payload to contain only sql and connection_id, got %s", body)
+	}
+	if got := payload["connection_id"]; got != expectedConnectionID {
+		t.Fatalf("expected connection_id %q, got %#v", expectedConnectionID, got)
+	}
+	if _, ok := payload["sql"].(string); !ok {
+		t.Fatalf("expected SQL string in payload, got %#v", payload["sql"])
+	}
+	for _, forbidden := range []string{"connection", "host", "port", "user", "password", "secret", "tls"} {
+		if _, ok := payload[forbidden]; ok {
+			t.Fatalf("forbidden connection detail %q in payload: %s", forbidden, body)
+		}
+	}
+}
+
+func assertHTTPAuditNoCredentialLeak(t *testing.T, harness *httpServerHarness, body map[string]any, endpoint string) {
+	t.Helper()
+	response, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("marshal audit response for leak check: %v", err)
+	}
+	combined := string(response) + harness.stdout.String() + harness.stderr.String()
+	for _, forbidden := range []string{httpAuditPassword, httpAuditPasswordEnv, endpoint, "Error 1045", "driver:"} {
+		if strings.Contains(combined, forbidden) {
+			t.Fatalf("audit response or server output leaked %q\nresponse: %s\nstdout: %s\nstderr: %s", forbidden, response, harness.stdout.String(), harness.stderr.String())
+		}
+	}
 }
 
 func mustContext(t *testing.T, body map[string]any) map[string]any {

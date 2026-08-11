@@ -10,9 +10,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 )
 
@@ -166,72 +163,14 @@ func startHTTPServerPG(t *testing.T) string {
       purposes: [audit]
 `, pgHTTPAuditAppConnectionID, pgHTTPAuditArchiveConnectionID)
 
-	configPath := writePGHTTPAuditTempFile(t, config)
-	listenAddr := freeTCPAddr(t)
-	cmd := createHTTPServerCommandPG(t, listenAddr, configPath)
-	harness := &httpServerHarness{
-		cmd:  cmd,
-		done: make(chan struct{}),
-	}
-	cmd.Stdout = &harness.stdout
-	cmd.Stderr = &harness.stderr
-
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("start http server: %v\nstdout:\n%s\nstderr:\n%s", err, harness.stdout.String(), harness.stderr.String())
-	}
-	go func() {
-		harness.waitErr = cmd.Wait()
-		close(harness.done)
-	}()
-	t.Cleanup(func() {
-		stopHTTPServer(t, harness)
-	})
-
-	baseURL := "http://" + listenAddr
-	waitForHealthz(t, baseURL, harness)
+	baseURL, _ := startHTTPServerWithRuntimeConfig(t, config, "postgresql")
 	return baseURL
 }
 
-func createHTTPServerCommandPG(t *testing.T, listenAddr, configPath string) *exec.Cmd {
-	t.Helper()
-
-	binaryPath := buildHTTPServerBinaryPG(t)
-	cmd := exec.Command(binaryPath, "-listen", listenAddr, "-runtime-config", configPath)
-	cmd.Env = os.Environ()
-	return cmd
-}
-
+// buildHTTPServerBinaryPG keeps the PG17 query-access e2e on the shared server builder.
 func buildHTTPServerBinaryPG(t *testing.T) string {
 	t.Helper()
-
-	moduleRoot := findModuleRoot(t)
-	outDir := t.TempDir()
-	binaryPath := filepath.Join(outDir, "deltascope-server")
-
-	cmd := exec.Command("go", "build", "-tags", "postgresql", "-o", binaryPath, "./cmd/deltascope-server")
-	cmd.Dir = moduleRoot
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=1")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("build pg-capable http server binary: %v\n%s", err, string(output))
-	}
-	return binaryPath
-}
-
-func writePGHTTPAuditTempFile(t *testing.T, content string) string {
-	t.Helper()
-	file, err := os.CreateTemp(t.TempDir(), "pg-http-audit-*.yaml")
-	if err != nil {
-		t.Fatalf("create runtime config: %v", err)
-	}
-	if _, err := file.WriteString(content); err != nil {
-		file.Close()
-		t.Fatalf("write runtime config: %v", err)
-	}
-	if err := file.Close(); err != nil {
-		t.Fatalf("close runtime config: %v", err)
-	}
-	return file.Name()
+	return buildHTTPServerBinary(t, "postgresql")
 }
 
 func assertStatementImpactSource(t *testing.T, body map[string]any, expectedSource string) {
