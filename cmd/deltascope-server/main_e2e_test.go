@@ -32,13 +32,13 @@ const (
 
 func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	ctx := context.Background()
-	baseURL, harness := startHTTPServerMySQLTiDB(t)
+	baseURL, harness, passwordFile := startHTTPServerMySQLTiDB(t)
 
 	body := postAuditConnectionRequest(t, ctx, baseURL,
 		"create table app.users (id bigint unsigned not null auto_increment comment 'id', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) comment='dup users'",
 		mysqlHTTPAuditConnectionID,
 	)
-	assertHTTPAuditNoCredentialLeak(t, harness, body, "127.0.0.1:3406")
+	assertHTTPAuditNoCredentialLeak(t, harness, body, "127.0.0.1:3406", passwordFile)
 
 	contextValue := mustContext(t, body)
 	if got := contextValue["mode"]; got != "metadata-aware" {
@@ -58,10 +58,10 @@ func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 
 func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	ctx := context.Background()
-	baseURL, harness := startHTTPServerMySQLTiDB(t)
+	baseURL, harness, passwordFile := startHTTPServerMySQLTiDB(t)
 
 	body := postAuditConnectionRequest(t, ctx, baseURL, "delete from orders where id = 1", tidbHTTPAuditConnectionID)
-	assertHTTPAuditNoCredentialLeak(t, harness, body, "127.0.0.1:4400")
+	assertHTTPAuditNoCredentialLeak(t, harness, body, "127.0.0.1:4400", passwordFile)
 
 	contextValue := mustContext(t, body)
 	if got := contextValue["mode"]; got != "metadata-aware" {
@@ -84,11 +84,11 @@ func startHTTPServer(t *testing.T) string {
 	return baseURL
 }
 
-func startHTTPServerMySQLTiDB(t *testing.T) (string, *httpServerHarness) {
+func startHTTPServerMySQLTiDB(t *testing.T) (string, *httpServerHarness, string) {
 	t.Helper()
 	t.Setenv(httpAuditPasswordEnv, httpAuditPassword)
 	tidbPasswordFile := filepath.Join(t.TempDir(), "tidb-password")
-	if err := os.WriteFile(tidbPasswordFile, nil, 0o600); err != nil {
+	if err := os.WriteFile(tidbPasswordFile, []byte(httpAuditPassword), 0o600); err != nil {
 		t.Fatalf("create TiDB password file: %v", err)
 	}
 	config := fmt.Sprintf(`metadata:
@@ -110,7 +110,8 @@ func startHTTPServerMySQLTiDB(t *testing.T) (string, *httpServerHarness) {
       schema: app
       purposes: [audit]
 `, mysqlHTTPAuditConnectionID, httpAuditPasswordEnv, tidbHTTPAuditConnectionID, tidbPasswordFile)
-	return startHTTPServerWithRuntimeConfig(t, config)
+	baseURL, harness := startHTTPServerWithRuntimeConfig(t, config)
+	return baseURL, harness, tidbPasswordFile
 }
 
 func startHTTPServerWithRuntimeConfig(t *testing.T, config string, buildTags ...string) (string, *httpServerHarness) {
@@ -404,14 +405,15 @@ func assertConnectionOnlyPayload(t *testing.T, body []byte, expectedConnectionID
 	}
 }
 
-func assertHTTPAuditNoCredentialLeak(t *testing.T, harness *httpServerHarness, body map[string]any, endpoint string) {
+func assertHTTPAuditNoCredentialLeak(t *testing.T, harness *httpServerHarness, body map[string]any, endpoint, secretSource string) {
 	t.Helper()
+	harness.stderr.WaitFor(t, `"path":"/v1/audit"`, 2*time.Second)
 	response, err := json.Marshal(body)
 	if err != nil {
 		t.Fatalf("marshal audit response for leak check: %v", err)
 	}
 	combined := string(response) + harness.stdout.String() + harness.stderr.String()
-	for _, forbidden := range []string{httpAuditPassword, httpAuditPasswordEnv, endpoint, "Error 1045", "driver:"} {
+	for _, forbidden := range []string{httpAuditPassword, httpAuditPasswordEnv, endpoint, secretSource, "Error 1045", "driver:"} {
 		if strings.Contains(combined, forbidden) {
 			t.Fatalf("audit response or server output leaked %q\nresponse: %s\nstdout: %s\nstderr: %s", forbidden, response, harness.stdout.String(), harness.stderr.String())
 		}
