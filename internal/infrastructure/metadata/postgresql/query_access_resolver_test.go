@@ -50,11 +50,12 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 	}
 
 	cases := []struct {
-		name     string
-		results  map[string]testQueryResult
-		want     appqa.RelationSchema
-		wantErr  string
-		wantLogs []string
+		name         string
+		results      map[string]testQueryResult
+		want         appqa.RelationSchema
+		wantErr      string
+		wantErrExact string
+		wantLogs     []string
 	}{
 		{
 			name:    "base table",
@@ -97,38 +98,38 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 			results: map[string]testQueryResult{
 				"select c.relkind": {columns: []string{"relkind"}, rows: nil},
 			},
-			wantErr:  "relation app.missing not found",
-			wantLogs: []string{"select c.relkind"},
+			wantErrExact: "relation app.missing not found",
+			wantLogs:     []string{"select c.relkind"},
 		},
 		{
-			name:     "foreign table fails closed",
-			results:  relationResults("f", [][]driver.Value{{"id", int64(1)}}),
-			wantErr:  "relation app.remote_orders not found",
-			wantLogs: []string{"select c.relkind"},
+			name:         "foreign table fails closed",
+			results:      relationResults("f", [][]driver.Value{{"id", int64(1)}}),
+			wantErrExact: "relation app.remote_orders not found",
+			wantLogs:     []string{"select c.relkind"},
 		},
 		{
 			name: "relation query error",
 			results: map[string]testQueryResult{
 				"select c.relkind": {err: errors.New("relation query failed")},
 			},
-			wantErr:  "query relation type for app.relation_error",
-			wantLogs: []string{"select c.relkind"},
+			wantErrExact: "query relation type for app.relation_error: relation query failed",
+			wantLogs:     []string{"select c.relkind"},
 		},
 		{
 			name: "relation scan error",
 			results: map[string]testQueryResult{
 				"select c.relkind": {columns: []string{}, rows: [][]driver.Value{{int64(7)}}},
 			},
-			wantErr:  "query relation type for app.relation_scan_error",
-			wantLogs: []string{"select c.relkind"},
+			wantErrExact: "query relation type for app.relation_scan_error: sql: expected 0 destination arguments in Scan, not 1",
+			wantLogs:     []string{"select c.relkind"},
 		},
 		{
 			name: "relation iteration error",
 			results: map[string]testQueryResult{
 				"select c.relkind": {columns: []string{"relkind"}, rowErr: errors.New("relation iteration failed")},
 			},
-			wantErr:  "query relation type for app.relation_iteration_error",
-			wantLogs: []string{"select c.relkind"},
+			wantErrExact: "query relation type for app.relation_iteration_error: relation iteration failed",
+			wantLogs:     []string{"select c.relkind"},
 		},
 
 		{
@@ -136,23 +137,23 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 			results: map[string]testQueryResult{
 				"select c.relkind": {columns: []string{"relkind"}, rows: [][]driver.Value{{"r"}}},
 			},
-			wantErr:  "resolve cancelled",
-			wantLogs: nil,
+			wantErrExact: "resolve cancelled: context canceled",
+			wantLogs:     nil,
 		}, {
 			name: "column query error",
 			results: map[string]testQueryResult{
 				"select c.relkind": {columns: []string{"relkind"}, rows: [][]driver.Value{{"r"}}},
 				"select a.attname": {err: errors.New("column query failed")},
 			},
-			wantErr:  "query columns for app.orders",
-			wantLogs: []string{"select c.relkind", "select a.attname"},
+			wantErrExact: "query columns for app.orders: column query failed",
+			wantLogs:     []string{"select c.relkind", "select a.attname"},
 		},
 
 		{
-			name:     "column scan error",
-			results:  relationResults("r", [][]driver.Value{{"id", "not-an-integer"}}),
-			wantErr:  "scan column for app.orders",
-			wantLogs: []string{"select c.relkind", "select a.attname"},
+			name:         "column scan error",
+			results:      relationResults("r", [][]driver.Value{{"id", "not-an-integer"}}),
+			wantErrExact: "scan column for app.orders: sql: Scan error on column index 1, name \"ordinal_position\": converting driver.Value type string (\"not-an-integer\") to a int: invalid syntax",
+			wantLogs:     []string{"select c.relkind", "select a.attname"},
 		},
 		{
 			name: "column iteration error",
@@ -160,8 +161,8 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 				"select c.relkind": {columns: []string{"relkind"}, rows: [][]driver.Value{{"r"}}},
 				"select a.attname": {columns: []string{"column_name", "ordinal_position"}, rowErr: errors.New("column iteration failed")},
 			},
-			wantErr:  "iterate columns for app.orders",
-			wantLogs: []string{"select c.relkind", "select a.attname"},
+			wantErrExact: "iterate columns for app.orders: column iteration failed",
+			wantLogs:     []string{"select c.relkind", "select a.attname"},
 		},
 	}
 
@@ -180,9 +181,9 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 						cancel()
 					}
 					got, err := resolver.ResolveRelation(ctx, "postgresql", "app", relationName(tc.name))
-					if tc.wantErr != "" {
-						if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
-							t.Fatalf("error=%v, want substring %q", err, tc.wantErr)
+					if tc.wantErrExact != "" {
+						if err == nil || err.Error() != tc.wantErrExact {
+							t.Fatalf("error=%v, want exact %q", err, tc.wantErrExact)
 						}
 					} else if err != nil {
 						t.Fatalf("ResolveRelation: %v", err)
