@@ -1,8 +1,8 @@
 //go:build postgresql && integration
 
 // Package deltascope verifies the PostgreSQL session API with real connections.
-// input: real PostgreSQL connection from Docker PG17
-// output: regression coverage for session construction, caller ownership, close semantics, and same-connection proof
+// input: real PostgreSQL connection from Docker PG17, including foreign-table metadata
+// output: regression coverage for session construction, caller ownership, close semantics, same-connection proof, and foreign-table fail-closed behavior
 // pos: integration test coverage for PostgreSQLQueryAccessSession
 // note: if this file changes, update this header and module README.md.
 package deltascope

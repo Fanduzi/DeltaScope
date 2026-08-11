@@ -1,8 +1,8 @@
 //go:build postgresql
 
 // Package deltascope verifies the PostgreSQL trusted session does not execute analysis SQL.
-// input: caller-owned connection backed by a recording database/sql driver
-// output: safe session/catalog queries only; no marker or catalog/session detail in public results
+// input: caller-owned connection backed by a recording database/sql driver, including relkind='f' responses
+// output: safe session/catalog queries only; foreign tables fail closed before COUNT catalog proof, with no marker or catalog/session detail in public results
 // pos: no-execution and no-leak boundary test for the PostgreSQL SDK session
 // note: if this file changes, update this header and module README.md.
 package deltascope

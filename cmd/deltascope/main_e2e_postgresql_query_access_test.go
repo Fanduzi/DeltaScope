@@ -1,8 +1,8 @@
 //go:build e2e && postgresql
 
 // Package main verifies Docker-backed CLI PostgreSQL query-access behavior.
-// input: the PG17 Docker fixture and CLI query-access arguments
-// output: end-to-end proof of the PostgreSQL COUNT(1) online surface contract
+// input: the PG17 Docker fixture, including a foreign table, and CLI query-access arguments
+// output: end-to-end proof of the PostgreSQL COUNT(1) online surface contract and foreign-table fail-closed behavior
 // pos: slower external verification kept outside the default go test loop
 // note: if this file changes, update this header and module README.md.
 package main

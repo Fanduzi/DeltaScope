@@ -2,8 +2,8 @@
 
 // Package postgresqlmeta provides the SchemaResolver implementation for PostgreSQL.
 // input: database/sql handle and relation metadata queries via pg_catalog
-// output: RelationSchema with table/view kind and column listing ordered by attnum
-// pos: infrastructure metadata adapter for query access resolution
+// output: RelationSchema with table/view kind and column listing ordered by attnum; relkind='f' is rejected before the column probe
+// pos: infrastructure metadata adapter for query access resolution; foreign tables fail closed before trusted COUNT(1) catalog proof
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 

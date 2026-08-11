@@ -2,8 +2,8 @@
 
 // Package postgresqlmeta provides a *sql.Conn-backed SchemaResolver for query access.
 // input: a single caller-owned *sql.Conn (not a *sql.DB pool)
-// output: RelationSchema with table/view kind and column listing via pg_catalog
-// pos: infrastructure same-connection metadata resolver for trusted SDK path
+// output: RelationSchema with table/view kind and column listing via pg_catalog; relkind='f' is rejected before the column probe
+// pos: infrastructure same-connection metadata resolver for trusted SDK path; foreign tables fail closed before trusted COUNT(1) catalog proof
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 

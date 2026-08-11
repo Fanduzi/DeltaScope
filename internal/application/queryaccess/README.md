@@ -18,6 +18,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | identity_resolver_test.go | Contract tests: ordinal uniqueness, status enum, fail-closed mapping, cancellation, no Trusted field |
 | identity_resolver_context_test.go | Execution-context policy: unqualified unbound, shadowing, overload, TOCTOU, no public leak |
 | identity_resolver_no_invoke_test.go | Freezes Analyze: no identity resolver invocation or public leak in T6 |
+| trusted_service_postgresql_tag_test.go | Verifies trusted PostgreSQL Service.Analyze promotion and the foreign-table negative path, which must remain indeterminate |
 | extract_tidb.go | Bridges TiDB infrastructure query access facts to domain types with admission computation |
 | extract_tidb_test.go | Verifies TiDB extraction bridging: classification, admission, CTE permissions, mode normalization, and column usages |
 | extract_postgresql.go | Bridges PostgreSQL infrastructure query access facts to domain types with admission computation |
