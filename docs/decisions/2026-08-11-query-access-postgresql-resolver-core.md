@@ -1,7 +1,7 @@
 # Decision: Preserve PostgreSQL Resolver Ownership While Sharing Its Core
 
 - Date: 2026-08-11
-- Status: Proposed
+- Status: Accepted
 - Related: [Query Access pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [PG17 `COUNT(1)` proof](2026-07-31-query-access-pg17-count-literal-proof.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [follow-up issue #2](https://github.com/Fanduzi/DeltaScope/issues/2)
 - Spec: `docs/plans/2026-08-11-query-access-postgresql-resolver-core-spec.md`
 - Design: `docs/plans/2026-08-11-query-access-postgresql-resolver-core-design.md`
@@ -119,22 +119,16 @@ Costs and limitations:
 - Public online-analysis API consolidation, proof-engine extraction, and
   transport test-matrix restructuring.
 
-## Acceptance Evidence Required
+## Acceptance Evidence
 
-This decision remains Proposed until implementation provides:
+Implemented and verified on branch `refactor/postgresql-query-access-resolver-core`:
 
-- one neutral production implementation of the shared catalog algorithm, with
-  evidence distinguishing newly deduplicated query behavior from the mapping
-  and foreign-table helpers that were already shared;
-- parameterized DB/Conn behavior-contract coverage;
-- adapter-specific ownership and lifecycle coverage for nil constructor, nil
-  receiver/field, already-closed connection, and cancellation precedence, plus
-  the conn adapter's exact concrete field shape;
-- real PG17 same-backend-PID and foreign-table fail-closed evidence;
-- complete required Go, PostgreSQL, race, build, vet, lint, formatting,
-  module-tidy, decision-record, and three-level documentation gates;
-- final scope evidence showing no MySQL/TiDB or public-contract change;
-- an independent read-only review with no P0, P1, or P2 finding.
+- Private neutral production owner: `internal/infrastructure/metadata/postgresql/query_access_resolver_core.go` owns the relation and column SQL, scanning, lookup errors, relkind mapping, and foreign-table fail-closed policy. The mapping and foreign-table helpers were already shared before this milestone; the extraction newly deduplicates the catalog queries, scans, and error construction.
+- Parameterized DB/Conn contract and exact error/query-order coverage: commit `53c6fcc`; production extraction and adapters: `bc633f6`; module metadata synchronization: `27d02f6`.
+- `QueryAccessResolver{db *sql.DB}` and `QueryAccessConnResolver{conn *sql.Conn}` remain distinct concrete adapters. The conn contract covers `ErrSessionNotPinned`, context-first nil receiver/field handling, closed-connection query-path errors, exact field shape, and no pool fallback.
+- Same-session and foreign-table fail-closed evidence remains covered by the PG17 integration tests in `query_access_conn_resolver_integration_test.go` and the trusted session recording/integration tests. `make pg-confidence-gates` passed, including the Docker-backed PG17 CLI, HTTP, and MCP paths.
+- Verification passed: `go test ./...`, `go test -tags postgresql ./...`, `make pg-unit-test-gates`, `make pg-confidence-gates`, `go test -race -tags postgresql ./internal/infrastructure/metadata/postgresql`, `go vet ./...`, `go vet -tags postgresql ./...`, `make build`, `make lint`, `go mod tidy`, `git diff --check`, and the three-level documentation and decision-record checks.
+- Final impact inspection confirmed no MySQL/TiDB, parser, admission, transport, public API, output, or release-surface changes. Independent Standards and Spec review reported no P0, P1, or P2 findings after the final fixes.
 
-Only after that evidence exists may a focused documentation commit change the
-status to Accepted and record concrete test and commit references.
+Only the PostgreSQL resolver-core implementation and its required tests and module metadata changed; all existing observable behavior and trusted same-session ownership contracts remain frozen.
+
