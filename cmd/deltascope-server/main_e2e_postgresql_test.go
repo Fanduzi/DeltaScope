@@ -1,7 +1,7 @@
 //go:build e2e && postgresql
 
 // Package main verifies Docker-backed HTTP metadata-aware end-to-end behavior for PostgreSQL.
-// input: real PostgreSQL fixtures, the HTTP JSON entrypoint, and a PG-capable server binary
+// input: real PostgreSQL fixtures, named connection runtime config, and a PG-capable server binary
 // output: end-to-end proof that deltascope-server serves metadata-aware PG audit results over HTTP
 // pos: slower external e2e verification kept outside the default go test loop
 // note: if this file changes, update this header and module README.md.
@@ -9,10 +9,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+)
+
+const (
+	pgHTTPAuditAppConnectionID     = "pg-audit-app"
+	pgHTTPAuditArchiveConnectionID = "pg-audit-archive"
 )
 
 func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
@@ -22,14 +28,8 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 1: qualified schema detection from SQL
 	t.Run("qualified_schema", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "delete from app.users where id = 1",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "delete from app.users where id = 1",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -43,24 +43,16 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		if got := contextValue["schema"]; got != "app" {
 			t.Fatalf("unexpected schema: %#v", got)
 		}
-		if got := contextValue["metadata_source"]; got != "direct" {
+		if got := contextValue["metadata_source"]; got != "registry" {
 			t.Fatalf("unexpected metadata source: %#v", got)
 		}
 	})
 
-	// Case 2: explicit schema in connection block
+	// Case 2: explicit schema from the named connection
 	t.Run("explicit_schema", func(t *testing.T) {
 		payload := map[string]any{
-			"sql":     "delete from users where id = 1",
-			"dialect": "postgresql",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"schema":   "archive",
-				"dialect":  "postgresql",
-			},
+			"sql":           "delete from users where id = 1",
+			"connection_id": pgHTTPAuditArchiveConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -73,14 +65,8 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 3: table existence check — create table that already exists
 	t.Run("table_exists", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "create table app.users (id bigserial primary key)",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "create table app.users (id bigserial primary key)",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -90,14 +76,8 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 4: DELETE with plan estimation
 	t.Run("plan_delete", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "delete from app.orders where user_id = 1",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "delete from app.orders where user_id = 1",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -107,14 +87,8 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 5: UPDATE with plan estimation
 	t.Run("plan_update", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "update app.users set name = 'x' where id = 1",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "update app.users set name = 'x' where id = 1",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -124,14 +98,8 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 6: DROP CONSTRAINT → primary key mapping
 	t.Run("drop_pk", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "alter table app.accounts drop constraint accounts_pkey",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "alter table app.accounts drop constraint accounts_pkey",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -141,33 +109,19 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 7: rename column — column does not exist
 	t.Run("rename_col_missing", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "alter table app.users rename column missing_col to email",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "alter table app.users rename column missing_col to email",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
 		assertFindingPresent(t, body, "ddl.alter.rename_column.exists.require")
 	})
 
-	// Case 8: rename index forbid for existing index
-	t.Run("rename_idx_forbid", func(t *testing.T) {
+	// Case 8: PostgreSQL ALTER INDEX ... RENAME maps to the PG-specific notice rule
+	t.Run("rename_idx_notice", func(t *testing.T) {
 		payload := map[string]any{
-			"sql":     "alter index idx_accounts_email rename to idx_new",
-			"dialect": "postgresql",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"schema":   "app",
-				"dialect":  "postgresql",
-			},
+			"sql":           "alter index idx_accounts_email rename to idx_new",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -177,14 +131,8 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 	// Case 9: drop column — column does not exist
 	t.Run("drop_col_missing", func(t *testing.T) {
 		payload := map[string]any{
-			"sql": "alter table app.users drop column missing_col",
-			"connection": map[string]any{
-				"host":     "127.0.0.1",
-				"port":     5500,
-				"user":     "root",
-				"password": "root",
-				"dialect":  "postgresql",
-			},
+			"sql":           "alter table app.users drop column missing_col",
+			"connection_id": pgHTTPAuditAppConnectionID,
 		}
 		body := postAuditRequest(t, ctx, baseURL, payload)
 
@@ -195,8 +143,32 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 func startHTTPServerPG(t *testing.T) string {
 	t.Helper()
 
+	t.Setenv("DELTASCOPE_PG_HTTP_PASSWORD", "root")
+	config := fmt.Sprintf(`metadata:
+  connections:
+    - id: %s
+      dialect: postgresql
+      host: 127.0.0.1
+      port: 5500
+      user: root
+      password_env: DELTASCOPE_PG_HTTP_PASSWORD
+      database: postgres
+      schema: app
+      purposes: [audit]
+    - id: %s
+      dialect: postgresql
+      host: 127.0.0.1
+      port: 5500
+      user: root
+      password_env: DELTASCOPE_PG_HTTP_PASSWORD
+      database: postgres
+      schema: archive
+      purposes: [audit]
+`, pgHTTPAuditAppConnectionID, pgHTTPAuditArchiveConnectionID)
+
+	configPath := writePGHTTPAuditTempFile(t, config)
 	listenAddr := freeTCPAddr(t)
-	cmd := createHTTPServerCommandPG(t, listenAddr)
+	cmd := createHTTPServerCommandPG(t, listenAddr, configPath)
 	harness := &httpServerHarness{
 		cmd:  cmd,
 		done: make(chan struct{}),
@@ -220,11 +192,11 @@ func startHTTPServerPG(t *testing.T) string {
 	return baseURL
 }
 
-func createHTTPServerCommandPG(t *testing.T, listenAddr string) *exec.Cmd {
+func createHTTPServerCommandPG(t *testing.T, listenAddr, configPath string) *exec.Cmd {
 	t.Helper()
 
 	binaryPath := buildHTTPServerBinaryPG(t)
-	cmd := exec.Command(binaryPath, "-listen", listenAddr)
+	cmd := exec.Command(binaryPath, "-listen", listenAddr, "-runtime-config", configPath)
 	cmd.Env = os.Environ()
 	return cmd
 }
@@ -244,6 +216,22 @@ func buildHTTPServerBinaryPG(t *testing.T) string {
 		t.Fatalf("build pg-capable http server binary: %v\n%s", err, string(output))
 	}
 	return binaryPath
+}
+
+func writePGHTTPAuditTempFile(t *testing.T, content string) string {
+	t.Helper()
+	file, err := os.CreateTemp(t.TempDir(), "pg-http-audit-*.yaml")
+	if err != nil {
+		t.Fatalf("create runtime config: %v", err)
+	}
+	if _, err := file.WriteString(content); err != nil {
+		file.Close()
+		t.Fatalf("write runtime config: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatalf("close runtime config: %v", err)
+	}
+	return file.Name()
 }
 
 func assertStatementImpactSource(t *testing.T, body map[string]any, expectedSource string) {
