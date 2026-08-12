@@ -222,16 +222,18 @@ func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 }
 
 // TestOnlineQueryAccessSession_ConstructorDoesNotLeak proves constructor
-// failures never expose identity, version, endpoint, credential, or driver text.
+// failures never expose identity, version, endpoint, credential, or driver text
+// and that each failure class maps to its bounded sentinel.
 func TestOnlineQueryAccessSession_ConstructorDoesNotLeak(t *testing.T) {
 	cases := []struct {
 		name    string
 		version string
 		pingErr error
+		wantErr error
 	}{
-		{"pg17_unsupported", "PostgreSQL 17.4", nil},
-		{"garbage_identity", "some random junk version", nil},
-		{"ping_failure", "8.4.10", errors.New("dial tcp 127.0.0.1:3306: connect: connection refused")},
+		{"pg17_unsupported", "PostgreSQL 17.4", nil, ErrOnlineQueryAccessCapabilityUnsupported},
+		{"garbage_identity", "some random junk version", nil, ErrOnlineQueryAccessSessionUnavailable},
+		{"ping_failure", "8.4.10", errors.New("dial tcp 127.0.0.1:3306: connect: connection refused"), ErrOnlineQueryAccessSessionUnavailable},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -244,8 +246,8 @@ func TestOnlineQueryAccessSession_ConstructorDoesNotLeak(t *testing.T) {
 			defer conn.Close()
 
 			_, err = NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
-			if err == nil {
-				t.Fatalf("expected error for %s", tc.name)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("want %v, got %v", tc.wantErr, err)
 			}
 			text := err.Error()
 			for _, forbidden := range []string{
