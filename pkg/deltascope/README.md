@@ -9,11 +9,13 @@ Stable public package surface for library consumers.
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
+| query_access_online_session.go | Exposes the opaque unified online query access session, generic analysis entry, and five bounded sentinel errors for MySQL/TiDB routing (PostgreSQL routing lands in issue #6) |
 | query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access (postgresql build tag) |
-| query_access_session_mysql_tidb.go | Exposes the opaque MySQL/TiDB session boundary for same-connection metadata resolution |
+| query_access_session_mysql_tidb.go | Exposes the opaque MySQL/TiDB session boundary for same-connection metadata resolution plus the shared private MySQL/TiDB proof core used by the unified entry |
 | query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
 | query_access_session_integration_test.go | PG17 Docker integration for caller-owned trusted query access, including exact COUNT(1) boundaries and the foreign-table negative path |
 | query_access_session_postgresql_recording_test.go | Recording-driver proof that trusted COUNT(1) analysis never sends user SQL to the database and foreign tables fail closed before COUNT catalog proof |
+| query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, MySQL/TiDB equivalence, and recording-driver no-execution/no-leak evidence |
 | version.go | Publishes the default semantic version and canonical ASCII logo |
 | audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement input, PostgreSQL request routing, and metadata-aware request plumbing |
 | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
@@ -82,6 +84,22 @@ Stable public package surface for library consumers.
   Creates an opaque MySQL/TiDB session after a liveness check
 - `AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, req)`
   Resolves relation metadata through the session connection, rejects external schema resolvers, and is the only SDK boundary that can use the private MySQL/TiDB semantic capability. The production builtin semantic registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. Each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition and order columns. Default `AnalyzeQueryAccess`, CLI, and HTTP remain offline and fail-closed.
+- `OnlineQueryAccessSession`
+  Opaque unified wrapper for a caller-owned `*sql.Conn`; construction pings and identifies the server and derives a private routing target. Exposes no identity, product, profile, capability, connection state, exported field, or getter, and marshals as `{}`
+- `NewOnlineQueryAccessSessionFromConn(ctx, conn)`
+  Creates a unified online session from a caller-owned `*sql.Conn`; never opens, pools, closes, or retries the connection. Nil context/connection, failed liveness, and identity failure map to `ErrOnlineQueryAccessSessionUnavailable`; a recognized but unsupported capability maps to `ErrOnlineQueryAccessCapabilityUnsupported`
+- `AnalyzeOnlineQueryAccessWithSession(ctx, session, req)`
+  Unified online analysis entry with a fixed validation priority (session/context; dialect mismatch; profile; resolver; linked capability; existing request validation). Empty request dialect uses observed identity; a non-empty dialect is a constraint that must match. Routes MySQL 5.7/8.0/8.4 and TiDB 8.5 through the existing proof core; PostgreSQL fails closed until its unified routing lands in issue #6
+- `ErrOnlineQueryAccessSessionUnavailable`
+  Bounded sentinel: context/session unusable (nil input, failed liveness, failed identity)
+- `ErrOnlineQueryAccessDialectMismatch`
+  Bounded sentinel: non-empty request dialect did not match observed identity
+- `ErrOnlineQueryAccessProfileNotAllowed`
+  Bounded sentinel: caller analysis profile rejected; capability derives from observed identity
+- `ErrOnlineQueryAccessSchemaResolverNotAllowed`
+  Bounded sentinel: external schema resolver rejected; online proof uses the same-connection resolver
+- `ErrOnlineQueryAccessCapabilityUnsupported`
+  Bounded sentinel: recognized but unsupported capability (for example PostgreSQL before issue #6 routing)
 
 ## Notes
 

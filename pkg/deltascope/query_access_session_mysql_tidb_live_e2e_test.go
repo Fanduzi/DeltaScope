@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -844,6 +845,72 @@ func assertLiveProfileRejectsMixedLiteralNegatives(t *testing.T, ctx context.Con
 		if result.ReadClassification == QueryAccessReadOnly && result.Admission == QueryAccessAdmissible {
 			t.Errorf("%s %s was promoted but should not be: classification=%q admission=%q", tc.name, probe.name, result.ReadClassification, result.Admission)
 		}
+	}
+}
+
+// TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles proves the
+// unified online entry (empty request dialect = observed identity) produces
+// results identical to the existing dialect-specific API on real MySQL
+// 5.7/8.0/8.4 and TiDB 8.5 servers across admitted, indeterminate, rejected,
+// and relationless shapes.
+func TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles(t *testing.T) {
+	probes := []struct {
+		name string
+		sql  string
+	}{
+		{"count_star", "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
+		{"direct_aggregate", "SELECT SUM(amount) FROM app.builtin_semantic_facts"},
+		{"literal_only", "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts"},
+		{"relationless_literal", "SELECT LOWER('SECRET_LITERAL')"},
+		{"unknown_function", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts"},
+		{"unqualified", "SELECT COUNT(*) FROM builtin_semantic_facts"},
+	}
+	for _, tc := range liveProfileCases() {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			conn, db := openLiveProfileConn(t, ctx, tc)
+			defer conn.Close()
+			defer db.Close()
+
+			for _, probe := range probes {
+				t.Run(probe.name, func(t *testing.T) {
+					unifiedSession, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
+					if err != nil {
+						t.Fatalf("%s %s unified new session: %v", tc.name, probe.name, err)
+					}
+					legacySession, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+					if err != nil {
+						t.Fatalf("%s %s legacy new session: %v", tc.name, probe.name, err)
+					}
+
+					unifiedResult, unifiedErr := AnalyzeOnlineQueryAccessWithSession(ctx, unifiedSession, QueryAccessRequest{
+						SQL:           probe.sql,
+						DefaultSchema: "app",
+					})
+					legacyResult, legacyErr := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, legacySession, QueryAccessRequest{
+						SQL:           probe.sql,
+						Dialect:       tc.dialect,
+						DefaultSchema: "app",
+					})
+					if unifiedErr != nil || legacyErr != nil {
+						t.Fatalf("%s %s analyze errors: unified=%v legacy=%v", tc.name, probe.name, unifiedErr, legacyErr)
+					}
+					if !reflect.DeepEqual(unifiedResult, legacyResult) {
+						t.Fatalf("%s %s results differ:\nunified=%+v\nlegacy =%+v", tc.name, probe.name, unifiedResult, legacyResult)
+					}
+					// No-leak: marker literals must never surface in unified results.
+					data, err := json.Marshal(unifiedResult)
+					if err != nil {
+						t.Fatalf("%s %s marshal: %v", tc.name, probe.name, err)
+					}
+					if strings.Contains(string(data), "SECRET_LITERAL") {
+						t.Errorf("%s %s leaked SECRET_LITERAL in unified JSON", tc.name, probe.name)
+					}
+				})
+			}
+		})
 	}
 }
 
