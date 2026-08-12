@@ -225,13 +225,20 @@ func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 // failures never expose identity, version, endpoint, credential, or driver text
 // and that each failure class maps to its bounded sentinel.
 func TestOnlineQueryAccessSession_ConstructorDoesNotLeak(t *testing.T) {
+	// PG17 constructor behavior follows the linked capability seam: it fails
+	// with the capability sentinel in the no-tag build and routes (constructs
+	// a usable session) in the postgresql-tagged build.
+	pg17WantErr := error(ErrOnlineQueryAccessCapabilityUnsupported)
+	if queryAccessOnlineCapabilityLinked(online.TargetPG17) {
+		pg17WantErr = nil
+	}
 	cases := []struct {
 		name    string
 		version string
 		pingErr error
 		wantErr error
 	}{
-		{"pg17_unsupported", "PostgreSQL 17.4", nil, ErrOnlineQueryAccessCapabilityUnsupported},
+		{"pg17", "PostgreSQL 17.4", nil, pg17WantErr},
 		{"garbage_identity", "some random junk version", nil, ErrOnlineQueryAccessSessionUnavailable},
 		{"ping_failure", "8.4.10", errors.New("dial tcp 127.0.0.1:3306: connect: connection refused"), ErrOnlineQueryAccessSessionUnavailable},
 	}
@@ -246,6 +253,12 @@ func TestOnlineQueryAccessSession_ConstructorDoesNotLeak(t *testing.T) {
 			defer conn.Close()
 
 			_, err = NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+			if tc.wantErr == nil {
+				if err != nil {
+					t.Fatalf("want success, got %v", err)
+				}
+				return
+			}
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("want %v, got %v", tc.wantErr, err)
 			}
@@ -263,10 +276,11 @@ func TestOnlineQueryAccessSession_ConstructorDoesNotLeak(t *testing.T) {
 	}
 }
 
-// TestOnlineQueryAccessSession_PostgreSQLTargetFailsClosed proves a recognized
-// but not-yet-integrated PostgreSQL target fails with the capability sentinel
-// in both default and PostgreSQL-tagged builds (routing lands in issue #6).
-func TestOnlineQueryAccessSession_PostgreSQLTargetFailsClosed(t *testing.T) {
+// TestOnlineQueryAccessSession_PostgreSQLTargetCapabilityBoundary proves the
+// unified constructor follows the linked capability seam for an observed
+// PostgreSQL 17 target: capability sentinel in the no-tag build, usable
+// session in the postgresql-tagged build.
+func TestOnlineQueryAccessSession_PostgreSQLTargetCapabilityBoundary(t *testing.T) {
 	db := openOnlineStubDB(t, onlineStubConfig{version: "PostgreSQL 17.4"})
 	defer db.Close()
 	conn, err := db.Conn(t.Context())
@@ -276,6 +290,15 @@ func TestOnlineQueryAccessSession_PostgreSQLTargetFailsClosed(t *testing.T) {
 	defer conn.Close()
 
 	session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+	if queryAccessOnlineCapabilityLinked(online.TargetPG17) {
+		if err != nil {
+			t.Fatalf("tagged build must route PG17, got %v", err)
+		}
+		if session == nil {
+			t.Fatal("expected non-nil session in tagged build")
+		}
+		return
+	}
 	if !errors.Is(err, ErrOnlineQueryAccessCapabilityUnsupported) {
 		t.Fatalf("want ErrOnlineQueryAccessCapabilityUnsupported, got session=%v err=%v", session, err)
 	}
@@ -389,10 +412,11 @@ func TestOnlineQueryAccessSession_ValidationPriority(t *testing.T) {
 		t.Fatalf("new session: %v", err)
 	}
 
-	// A PG17-target session simulates a recognized-but-unsupported capability;
-	// the package-internal test builds it directly because the constructor
-	// already fails closed for it.
-	pg17Session := &OnlineQueryAccessSession{conn: conn, target: online.TargetPG17}
+	// A never-linked capability target pins the capability-beats-mode row in
+	// both builds. PostgreSQL 17 is linked in the postgresql-tagged build since
+	// issue #6, so it can no longer serve as the unsupported example here; the
+	// package-internal test builds the session directly.
+	unsupportedSession := &OnlineQueryAccessSession{conn: conn, target: online.CapabilityTarget("future-unsupported")}
 
 	invalidMode := QueryAccessMode("bogus_mode")
 	profile := QueryAccessAnalysisProfileMySQL57
@@ -449,7 +473,7 @@ func TestOnlineQueryAccessSession_ValidationPriority(t *testing.T) {
 		},
 		{
 			name:    "capability_beats_mode",
-			session: pg17Session,
+			session: unsupportedSession,
 			req: QueryAccessRequest{
 				Mode: invalidMode,
 			},
