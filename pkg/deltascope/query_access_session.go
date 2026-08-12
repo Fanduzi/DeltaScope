@@ -2,8 +2,8 @@
 
 // Package deltascope exposes the public library surface for consumers.
 // input: caller-owned *sql.Conn for PostgreSQL trusted query access
-// output: opaque session wrapper for manifest-gated analysis
-// pos: public trusted query access session API
+// output: opaque session wrapper for manifest-gated analysis plus the shared private PG17 proof core used by the unified online entry
+// pos: public trusted query access session API and shared PG proof execution core (postgresql build tag)
 // note: if this file changes, update this header and module README.md.
 package deltascope
 
@@ -77,7 +77,23 @@ func AnalyzePostgreSQLQueryAccessWithSession(
 		return nil, errSchemaResolverNotAllowed
 	}
 
-	svc, err := newTrustedServiceFromSession(session)
+	return analyzePostgreSQLOnline(ctx, session.conn, req)
+}
+
+// analyzePostgreSQLOnline is the shared private execution core for trusted
+// PostgreSQL 17 proof. It binds the same-connection pinned session, effect
+// identity adapter, and schema resolver, runs the exact PG17 manifest and
+// trust policy with the COUNT(1) envelope, and never executes user SQL. Both
+// the existing PostgreSQL session API and the unified online session entry
+// route through this core; public validation policy stays in each public
+// function. The connection remains caller-owned: it is never closed, pooled,
+// or retried here.
+func analyzePostgreSQLOnline(
+	ctx context.Context,
+	conn *sql.Conn,
+	req QueryAccessRequest,
+) (*QueryAccessResult, error) {
+	svc, err := newTrustedServiceFromConn(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +127,17 @@ func newTrustedServiceFromSession(session *PostgreSQLQueryAccessSession) (*appqa
 	if session == nil || session.conn == nil {
 		return nil, errNilConnection
 	}
+	return newTrustedServiceFromConn(session.conn)
+}
 
-	conn := session.conn
+// newTrustedServiceFromConn creates a trusted application Service from a
+// caller-owned *sql.Conn. All resolvers use the same connection, ensuring
+// same-backend catalog access for identity, relation, column, and function
+// proof.
+func newTrustedServiceFromConn(conn *sql.Conn) (*appqa.Service, error) {
+	if conn == nil {
+		return nil, errNilConnection
+	}
 
 	pinned, err := pgmeta.NewPinnedSessionFromConn(conn)
 	if err != nil {

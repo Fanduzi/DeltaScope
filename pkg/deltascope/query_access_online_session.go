@@ -1,6 +1,6 @@
 // Package deltascope exposes the unified online query access session boundary.
 // input: caller-owned *sql.Conn, context, and a query access request with optional dialect constraint
-// output: opaque unified session, generic online analysis entry, and five bounded sentinel errors
+// output: opaque unified session, generic online analysis entry, five bounded sentinel errors, and MySQL/TiDB/PG17 routing
 // pos: public unified online query access session API above dialect-specific entries
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -57,8 +57,8 @@ type OnlineQueryAccessSession struct {
 // acquisition (unknown product, malformed version, failed version query) map
 // to ErrOnlineQueryAccessSessionUnavailable. A recognized product whose
 // version series is outside the supported set (for example MySQL 8.1, TiDB
-// 7.x, PostgreSQL 16) and PostgreSQL 17 until its unified routing lands in
-// issue #6 map to ErrOnlineQueryAccessCapabilityUnsupported.
+// 7.x, PostgreSQL 16) and an observed PostgreSQL target in a source build
+// without the postgresql tag map to ErrOnlineQueryAccessCapabilityUnsupported.
 func NewOnlineQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*OnlineQueryAccessSession, error) {
 	if ctx == nil || conn == nil {
 		return nil, ErrOnlineQueryAccessSessionUnavailable
@@ -130,25 +130,17 @@ func AnalyzeOnlineQueryAccessWithSession(
 			toDomainQADialect(observedDialectFromTarget(session.target)),
 			req,
 		)
+	case online.TargetPG17:
+		return analyzePostgreSQLOnline(ctx, session.conn, req)
 	default:
 		// Fail closed: no other capability is routed in this milestone.
 		return nil, ErrOnlineQueryAccessCapabilityUnsupported
 	}
 }
 
-// queryAccessOnlineCapabilityLinked reports whether the observed capability is
-// linked and routable in this build. MySQL 5.7/8.0/8.4 and TiDB 8.5 route to
-// their existing proof core. PostgreSQL 17 is recognized but its unified
-// routing lands in issue #6, so it fails closed in both default and
-// PostgreSQL-tagged builds until then.
-func queryAccessOnlineCapabilityLinked(target online.CapabilityTarget) bool {
-	switch target {
-	case online.TargetMySQL57, online.TargetMySQL80, online.TargetMySQL84, online.TargetTiDB85:
-		return true
-	default:
-		return false
-	}
-}
+// queryAccessOnlineCapabilityLinked is defined in query_access_online_capability.go
+// as the single private routing definition shared by the constructor and the
+// analysis entry.
 
 // observedDialectFromTarget maps an identity-derived capability target to the
 // public dialect of the observed server.

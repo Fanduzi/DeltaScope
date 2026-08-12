@@ -9,13 +9,19 @@ Stable public package surface for library consumers.
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
-| query_access_online_session.go | Exposes the opaque unified online query access session, generic analysis entry, and five bounded sentinel errors for MySQL/TiDB routing (PostgreSQL routing lands in issue #6) |
-| query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access (postgresql build tag) |
+| query_access_online_session.go | Exposes the opaque unified online query access session, generic analysis entry, five bounded sentinel errors, and MySQL/TiDB/PG17 routing through shared private proof cores |
+| query_access_online_capability.go | Holds the single private capability-target routing definition for the unified online entry (MySQL/TiDB always linked; PG17 delegated to the build-tag leaf) |
+| query_access_online_capability_postgresql.go | Reports PostgreSQL capability as linked when built with the postgresql tag (postgresql build tag) |
+| query_access_online_capability_notag.go | Reports PostgreSQL capability as not linked when built without the postgresql tag; unified PG17 fails closed with the capability sentinel |
+| query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access plus the shared private PG17 proof core used by the unified entry (postgresql build tag) |
 | query_access_session_mysql_tidb.go | Exposes the opaque MySQL/TiDB session boundary for same-connection metadata resolution plus the shared private MySQL/TiDB proof core used by the unified entry |
 | query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
 | query_access_session_integration_test.go | PG17 Docker integration for caller-owned trusted query access, including exact COUNT(1) boundaries and the foreign-table negative path |
 | query_access_session_postgresql_recording_test.go | Recording-driver proof that trusted COUNT(1) analysis never sends user SQL to the database and foreign tables fail closed before COUNT catalog proof |
 | query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, MySQL/TiDB equivalence, and recording-driver no-execution/no-leak evidence |
+| query_access_online_session_postgresql_tag_test.go | Verifies PostgreSQL 17 routing through the unified entry: exact COUNT(1) admission, excluded-shape fail-closed, foreign-table rejection, no-execution/no-leak, and legacy API equivalence (postgresql build tag) |
+| query_access_online_session_postgresql_notag_test.go | Verifies the no-tag build keeps the unified symbols, fails an observed PostgreSQL target closed, and preserves legacy PostgreSQL stubs |
+| query_access_online_session_postgresql_integration_test.go | Real PG17 same-backend-session proof, COUNT(1)/excluded-shape/foreign-table evidence, and unified-versus-legacy equivalence for the unified online entry (postgresql + integration build tags) |
 | version.go | Publishes the default semantic version and canonical ASCII logo |
 | audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement input, PostgreSQL request routing, and metadata-aware request plumbing |
 | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
@@ -73,7 +79,7 @@ Stable public package surface for library consumers.
 - `QueryAccessColumnReference`
   Column reference with `Unbound` field indicating the column could not be resolved to a qualified schema.table.column
 - `PostgreSQLQueryAccessSession`
-  Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only)
+  Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only); the unified `OnlineQueryAccessSession` routes PG17 through the same private proof core
 - `NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)`
   Creates an opaque session from a caller-owned `*sql.Conn` with context for liveness check; the session does not close the connection (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
 - `AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)`
@@ -87,9 +93,9 @@ Stable public package surface for library consumers.
 - `OnlineQueryAccessSession`
   Opaque unified wrapper for a caller-owned `*sql.Conn`; construction pings and identifies the server and derives a private routing target. Exposes no identity, product, profile, capability, connection state, exported field, or getter, and marshals as `{}`
 - `NewOnlineQueryAccessSessionFromConn(ctx, conn)`
-  Creates a unified online session from a caller-owned `*sql.Conn`; never opens, pools, closes, or retries the connection. Nil context/connection, failed liveness, and identity failure map to `ErrOnlineQueryAccessSessionUnavailable`; a recognized but unsupported capability maps to `ErrOnlineQueryAccessCapabilityUnsupported`
+  Creates a unified online session from a caller-owned `*sql.Conn`; never opens, pools, closes, or retries the connection. Nil context/connection, failed liveness, and identity failure map to `ErrOnlineQueryAccessSessionUnavailable`; a recognized but unsupported capability (including PostgreSQL 17 in a no-postgresql-tag source build) maps to `ErrOnlineQueryAccessCapabilityUnsupported`. Official DeltaScope binaries are built with the postgresql tag and route PostgreSQL 17 through the same-connection trusted proof
 - `AnalyzeOnlineQueryAccessWithSession(ctx, session, req)`
-  Unified online analysis entry with a fixed validation priority (session/context; dialect mismatch; profile; resolver; linked capability; existing request validation). Empty request dialect uses observed identity; a non-empty dialect is a constraint that must match. Routes MySQL 5.7/8.0/8.4 and TiDB 8.5 through the existing proof core; PostgreSQL fails closed until its unified routing lands in issue #6
+  Unified online analysis entry with a fixed validation priority (session/context; dialect mismatch; profile; resolver; linked capability; existing request validation). Empty request dialect uses observed identity; a non-empty dialect is a constraint that must match. Routes MySQL 5.7/8.0/8.4, TiDB 8.5, and PostgreSQL 17 (postgresql build tag) through their existing private proof cores; the no-tag source build keeps PostgreSQL fail-closed with the capability sentinel
 - `ErrOnlineQueryAccessSessionUnavailable`
   Bounded sentinel: context/session unusable (nil input, failed liveness, failed identity)
 - `ErrOnlineQueryAccessDialectMismatch`
@@ -99,7 +105,7 @@ Stable public package surface for library consumers.
 - `ErrOnlineQueryAccessSchemaResolverNotAllowed`
   Bounded sentinel: external schema resolver rejected; online proof uses the same-connection resolver
 - `ErrOnlineQueryAccessCapabilityUnsupported`
-  Bounded sentinel: recognized but unsupported capability (for example PostgreSQL before issue #6 routing)
+  Bounded sentinel: recognized but unsupported capability (for example PostgreSQL 16, or PostgreSQL 17 in a no-postgresql-tag source build)
 
 ## Notes
 

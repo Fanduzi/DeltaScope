@@ -8,7 +8,6 @@
 package deltascope
 
 import (
-	"context"
 	"errors"
 	"reflect"
 	"strings"
@@ -433,26 +432,47 @@ func TestOnlineQueryAccessSession_PostgreSQLConstructorFailures(t *testing.T) {
 			t.Fatal("expected nil session")
 		}
 	})
+}
 
-	t.Run("canceled_context", func(t *testing.T) {
-		recorder := &postgresqlRecordingDriver{}
-		db := openPostgreSQLRecordingDB(t, recorder)
-		defer db.Close()
+// TestOnlineQueryAccessSession_PostgreSQLDoesNotExecuteUserSQL proves the
+// unified PG17 path never sends caller-submitted analysis SQL to the database
+// and only runs the bounded identity/catalog probes.
+func TestOnlineQueryAccessSession_PostgreSQLDoesNotExecuteUserSQL(t *testing.T) {
+	const marker = "SQLNOTEXEC_MARKER_7f3a"
+	recorder := &postgresqlRecordingDriver{}
+	db := openPostgreSQLRecordingDB(t, recorder)
+	defer db.Close()
 
-		conn, err := db.Conn(context.Background())
-		if err != nil {
-			t.Fatalf("conn: %v", err)
-		}
-		defer conn.Close()
+	ctx := t.Context()
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		t.Fatalf("conn: %v", err)
+	}
+	defer conn.Close()
 
-		cancelled, cancel := context.WithCancel(context.Background())
-		cancel()
-		session, err := NewOnlineQueryAccessSessionFromConn(cancelled, conn)
-		if !errors.Is(err, ErrOnlineQueryAccessSessionUnavailable) {
-			t.Fatalf("want ErrOnlineQueryAccessSessionUnavailable, got session=%v err=%v", session, err)
-		}
-		if session != nil {
-			t.Fatal("expected nil session")
-		}
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
+	if err != nil {
+		t.Fatalf("NewOnlineQueryAccessSessionFromConn: %v", err)
+	}
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(1) /* " + marker + " */ FROM app.orders",
+		DefaultSchema: "app",
 	})
+	if err != nil {
+		t.Fatalf("AnalyzeOnlineQueryAccessWithSession: %v", err)
+	}
+	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
+		t.Fatalf("expected admitted result: classification=%s admission=%s requirements=%+v unresolved=%+v reasons=%v queries=%v",
+			result.ReadClassification, result.Admission, result.Requirements, result.Unresolved, result.ReasonCodes, recorder.recorded())
+	}
+	if len(recorder.recorded()) == 0 {
+		t.Fatal("expected safe session/catalog probes")
+	}
+	for _, query := range recorder.recorded() {
+		if strings.Contains(query, marker) {
+			t.Fatalf("analysis SQL reached driver: %q", query)
+		}
+	}
+	assertPostgreSQLRecordingProbes(t, recorder.recorded())
+	assertPostgreSQLRecordingNoLeak(t, result, marker)
 }
