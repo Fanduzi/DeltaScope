@@ -228,7 +228,7 @@ func TestOnlineQueryAccessSession_ConstructorDoesNotLeak(t *testing.T) {
 	// PG17 constructor behavior follows the linked capability seam: it fails
 	// with the capability sentinel in the no-tag build and routes (constructs
 	// a usable session) in the postgresql-tagged build.
-	pg17WantErr := error(ErrOnlineQueryAccessCapabilityUnsupported)
+	pg17WantErr := ErrOnlineQueryAccessCapabilityUnsupported
 	if queryAccessOnlineCapabilityLinked(online.TargetPG17) {
 		pg17WantErr = nil
 	}
