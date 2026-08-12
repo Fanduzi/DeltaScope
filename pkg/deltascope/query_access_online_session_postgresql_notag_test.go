@@ -71,7 +71,7 @@ func TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed(t *testing.T) {
 		req  QueryAccessRequest
 	}{
 		{"valid_request", QueryAccessRequest{SQL: "SELECT COUNT(1) FROM app.orders", DefaultSchema: "app"}},
-		{"invalid_mode_beats", QueryAccessRequest{Mode: QueryAccessMode("bogus")}},
+		{"capability_sentinel_beats_invalid_mode", QueryAccessRequest{Mode: QueryAccessMode("bogus")}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

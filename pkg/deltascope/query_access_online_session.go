@@ -138,10 +138,6 @@ func AnalyzeOnlineQueryAccessWithSession(
 	}
 }
 
-// queryAccessOnlineCapabilityLinked is defined in query_access_online_capability.go
-// as the single private routing definition shared by the constructor and the
-// analysis entry.
-
 // observedDialectFromTarget maps an identity-derived capability target to the
 // public dialect of the observed server.
 func observedDialectFromTarget(target online.CapabilityTarget) Dialect {
