@@ -66,9 +66,6 @@ func TestOnlineQueryAccessSession_GenericSentinels(t *testing.T) {
 // no exported field, no JSON tag, no exported method (getter) surface.
 func TestOnlineQueryAccessSession_NoExportedState(t *testing.T) {
 	typ := reflect.TypeOf(OnlineQueryAccessSession{})
-	if typ.NumField() != 0 && !reflect.ValueOf(OnlineQueryAccessSession{}).IsZero() {
-		t.Fatal("OnlineQueryAccessSession must not expose zero-value struct equality through fields")
-	}
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 		if field.IsExported() {
@@ -127,13 +124,11 @@ func TestOnlineQueryAccessSession_JSONOpaque(t *testing.T) {
 func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 	cases := []struct {
 		name  string
-		cfg   onlineStubConfig
 		ctxFn func() context.Context
 		conn  func(t *testing.T) *sql.Conn
 	}{
 		{
 			name: "nil_context",
-			cfg:  onlineStubConfig{version: "8.4.10"},
 			ctxFn: func() context.Context {
 				return nil
 			},
@@ -149,7 +144,6 @@ func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 		},
 		{
 			name: "nil_connection",
-			cfg:  onlineStubConfig{version: "8.4.10"},
 			ctxFn: func() context.Context {
 				return context.Background()
 			},
@@ -159,7 +153,6 @@ func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 		},
 		{
 			name: "ping_failure",
-			cfg:  onlineStubConfig{version: "8.4.10", pingErr: errors.New("backend down")},
 			ctxFn: func() context.Context {
 				return context.Background()
 			},
@@ -175,7 +168,6 @@ func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 		},
 		{
 			name: "identity_failure",
-			cfg:  onlineStubConfig{version: "mariadb 10.11.2"},
 			ctxFn: func() context.Context {
 				return context.Background()
 			},
