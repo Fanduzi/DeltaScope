@@ -53,10 +53,12 @@ type OnlineQueryAccessSession struct {
 // derives the routing target from observed server identity; callers cannot
 // supply a product, dialect, profile, version, or capability target.
 //
-// Nil context or connection, failed liveness, and identity acquisition failure
-// map to ErrOnlineQueryAccessSessionUnavailable. A recognized but unsupported
-// product/version (including PostgreSQL until its unified routing lands in
-// issue #6) maps to ErrOnlineQueryAccessCapabilityUnsupported.
+// Nil context or connection, failed liveness, and untrustworthy identity
+// acquisition (unknown product, malformed version, failed version query) map
+// to ErrOnlineQueryAccessSessionUnavailable. A recognized product whose
+// version series is outside the supported set (for example MySQL 8.1, TiDB
+// 7.x, PostgreSQL 16) and PostgreSQL 17 until its unified routing lands in
+// issue #6 map to ErrOnlineQueryAccessCapabilityUnsupported.
 func NewOnlineQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*OnlineQueryAccessSession, error) {
 	if ctx == nil || conn == nil {
 		return nil, ErrOnlineQueryAccessSessionUnavailable
@@ -67,6 +69,9 @@ func NewOnlineQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*
 
 	identity, err := online.IdentifyFromConn(ctx, conn, "")
 	if err != nil {
+		if errors.Is(err, online.ErrIdentityUnsupported) {
+			return nil, ErrOnlineQueryAccessCapabilityUnsupported
+		}
 		return nil, ErrOnlineQueryAccessSessionUnavailable
 	}
 

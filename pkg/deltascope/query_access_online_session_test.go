@@ -75,8 +75,15 @@ func TestOnlineQueryAccessSession_NoExportedState(t *testing.T) {
 			t.Errorf("field %s must not have json tag (except '-'), found: %q", field.Name, tag)
 		}
 	}
-	for i := 0; i < typ.NumMethod(); i++ {
-		t.Errorf("OnlineQueryAccessSession must not expose methods (getters), found: %s", typ.Method(i).Name)
+	// The constructor returns a pointer, so both the value and the pointer
+	// type method sets must stay empty (no getter surface on either).
+	for _, sessionType := range []reflect.Type{
+		typ,
+		reflect.TypeOf((*OnlineQueryAccessSession)(nil)),
+	} {
+		for i := 0; i < sessionType.NumMethod(); i++ {
+			t.Errorf("%v must not expose methods (getters), found: %s", sessionType, sessionType.Method(i).Name)
+		}
 	}
 }
 
@@ -173,6 +180,21 @@ func TestOnlineQueryAccessSession_ConstructorUnavailableInputs(t *testing.T) {
 			},
 			conn: func(t *testing.T) *sql.Conn {
 				db := openOnlineStubDB(t, onlineStubConfig{version: "mariadb 10.11.2"})
+				t.Cleanup(func() { db.Close() })
+				c, err := db.Conn(context.Background())
+				if err != nil {
+					t.Fatalf("conn: %v", err)
+				}
+				return c
+			},
+		},
+		{
+			name: "version_query_failure",
+			ctxFn: func() context.Context {
+				return context.Background()
+			},
+			conn: func(t *testing.T) *sql.Conn {
+				db := openOnlineStubDB(t, onlineStubConfig{version: "8.4.10", versionErr: errors.New("dial tcp 127.0.0.1:3306: connection reset")})
 				t.Cleanup(func() { db.Close() })
 				c, err := db.Conn(context.Background())
 				if err != nil {
@@ -291,6 +313,49 @@ func TestOnlineQueryAccessSession_CallerOwnsConnection(t *testing.T) {
 	}
 	if err := conn.Close(); err != nil {
 		t.Fatalf("caller close: %v", err)
+	}
+}
+
+// TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion proves a
+// recognized product with an unsupported version series (MySQL 8.1, TiDB 7.5,
+// PostgreSQL 16) maps to the capability sentinel, never leaking the raw
+// version, while untrustworthy identities stay unavailable.
+func TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion(t *testing.T) {
+	cases := []struct {
+		name    string
+		version string
+	}{
+		{"mysql81", "8.1.0"},
+		{"tidb75", "8.0.11-TiDB-v7.5.4"},
+		{"pg16", "PostgreSQL 16.3"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openOnlineStubDB(t, onlineStubConfig{version: tc.version})
+			defer db.Close()
+			conn, err := db.Conn(t.Context())
+			if err != nil {
+				t.Fatalf("conn: %v", err)
+			}
+			defer conn.Close()
+
+			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+			if !errors.Is(err, ErrOnlineQueryAccessCapabilityUnsupported) {
+				t.Fatalf("want ErrOnlineQueryAccessCapabilityUnsupported, got session=%v err=%v", session, err)
+			}
+			if session != nil {
+				t.Fatal("expected nil session for unsupported version")
+			}
+			text := err.Error()
+			for _, forbidden := range []string{
+				"8.1", "7.5", "16.3", "TiDB", "PostgreSQL", "mysql",
+				"password", "dsn", "host=", "user=", "127.0.0.1",
+			} {
+				if strings.Contains(strings.ToLower(text), strings.ToLower(forbidden)) {
+					t.Errorf("error text must not contain %q, got %q", forbidden, text)
+				}
+			}
+		})
 	}
 }
 
@@ -712,6 +777,7 @@ func TestOnlineQueryAccessSession_NoLeak(t *testing.T) {
 
 type onlineStubConfig struct {
 	version    string
+	versionErr error
 	pingErr    error
 	catalogErr error
 }
@@ -772,6 +838,9 @@ func (c onlineStubConn) QueryContext(_ context.Context, query string, _ []driver
 			{"name", int64(4)},
 		}), nil
 	case strings.Contains(query, "SELECT VERSION()"):
+		if c.cfg.versionErr != nil {
+			return nil, c.cfg.versionErr
+		}
 		return newOnlineStubRows([]string{"version"}, [][]driver.Value{{c.cfg.version}}), nil
 	case strings.Contains(query, "SELECT 1"):
 		return newOnlineStubRows([]string{"value"}, [][]driver.Value{{int64(1)}}), nil
