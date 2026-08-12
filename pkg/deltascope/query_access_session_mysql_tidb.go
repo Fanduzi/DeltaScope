@@ -1,7 +1,7 @@
 // Package deltascope exposes the explicit MySQL/TiDB query access session boundary.
 // input: caller-owned *sql.Conn and a validated MySQL/TiDB query access request
 // output: query access results with same-connection relation metadata resolution
-// pos: public opt-in session API for same-connection semantic promotion
+// pos: public opt-in session API and shared private proof core for same-connection semantic promotion
 // note: if this file changes, update this header and module README.md.
 package deltascope
 
@@ -77,9 +77,25 @@ func AnalyzeMySQLTiDBQueryAccessWithSession(
 		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
 	}
 
-	profile := capabilityTargetToAnalysisProfile(session.target)
+	return analyzeMySQLTiDBOnline(ctx, session.conn, session.target, toDomainQADialect(req.Dialect), req)
+}
 
-	resolver, err := mysqlmeta.NewQueryAccessConnResolver(session.conn)
+// analyzeMySQLTiDBOnline is the shared private execution core for MySQL/TiDB
+// online proof. It derives the analysis profile from the identity-derived
+// capability target, binds the same-connection resolver, and runs the private
+// builtin semantic service. Both the dialect-specific session API and the
+// unified online session entry route through this helper; public validation
+// policy stays in each public function.
+func analyzeMySQLTiDBOnline(
+	ctx context.Context,
+	conn *sql.Conn,
+	target online.CapabilityTarget,
+	dialect string,
+	req QueryAccessRequest,
+) (*QueryAccessResult, error) {
+	profile := capabilityTargetToAnalysisProfile(target)
+
+	resolver, err := mysqlmeta.NewQueryAccessConnResolver(conn)
 	if err != nil {
 		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
 	}
@@ -94,7 +110,7 @@ func AnalyzeMySQLTiDBQueryAccessWithSession(
 	}
 	appResult, err := service.Analyze(ctx, appqa.QueryAccessRequest{
 		SQL:             req.SQL,
-		Dialect:         toDomainQADialect(req.Dialect),
+		Dialect:         dialect,
 		Mode:            string(mode),
 		DefaultSchema:   req.DefaultSchema,
 		AnalysisProfile: profile,
