@@ -18,11 +18,74 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	deltascope "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
+
+func TestQueryAccessOnline_BuiltBinarySupportedProfiles(t *testing.T) {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	root := filepath.Clean(filepath.Join(filepath.Dir(filename), "../../.."))
+	binary := filepath.Join(t.TempDir(), "deltascope")
+	build := exec.CommandContext(t.Context(), "go", "build", "-o", binary, "./cmd/deltascope")
+	build.Dir = root
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build CLI: %v\n%s", err, output)
+	}
+
+	cases := []struct {
+		name, port, dialect string
+		password            bool
+	}{
+		{name: "mysql57", port: "3507", dialect: "mysql", password: true},
+		{name: "mysql80", port: "3800", dialect: "mysql", password: true},
+		{name: "mysql84", port: "3840", dialect: "mysql", password: true},
+		{name: "tidb85", port: "4850", dialect: "tidb"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			marker := "CLI_BUILT_BINARY_" + strings.ToUpper(tc.name) + "_MARKER"
+			args := []string{
+				"query-access", "analyze",
+				"--sql", "SELECT COUNT(1) /* " + marker + " */ FROM app.builtin_semantic_facts",
+				"--host", "127.0.0.1",
+				"--port", tc.port,
+				"--user", "root",
+				"--schema", "app",
+				"--dialect", tc.dialect,
+			}
+			command := exec.CommandContext(t.Context(), binary, args...)
+			if tc.password {
+				command.Env = append(os.Environ(), "CLI_BUILT_BINARY_PASSWORD=root")
+				command.Args = append(command.Args, "--password-env", "CLI_BUILT_BINARY_PASSWORD")
+			}
+			var stdout, stderr bytes.Buffer
+			command.Stdout = &stdout
+			command.Stderr = &stderr
+			if err := command.Run(); err != nil {
+				t.Fatalf("built CLI failed: %v; stdout=%s stderr=%s", err, stdout.String(), stderr.String())
+			}
+			var result deltascope.QueryAccessResult
+			if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+				t.Fatalf("decode built CLI output: %v; stdout=%s", err, stdout.String())
+			}
+			if result.ReadClassification != deltascope.QueryAccessReadOnly || result.Admission != deltascope.QueryAccessAdmissible {
+				t.Fatalf("unexpected result: classification=%s admission=%s", result.ReadClassification, result.Admission)
+			}
+			if strings.Contains(stdout.String()+stderr.String(), marker) {
+				t.Fatalf("built CLI leaked SQL marker: stdout=%s stderr=%s", stdout.String(), stderr.String())
+			}
+		})
+	}
+}
 
 func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	cases := []struct {

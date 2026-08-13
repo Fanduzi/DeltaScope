@@ -2,8 +2,8 @@
 
 // Package cli verifies the PostgreSQL online query-access transport boundary.
 // input: CLI query-access invocation and a recording database/sql driver
-// output: PG17 COUNT(1) admission with fixed probes only; no submitted SQL or sensitive data leakage
-// pos: adapter-level proof that the CLI delegates to the shared trusted session contract
+// output: PG17 COUNT(1) admission and bounded constructor cancellation/closed-session failures with fixed probes only; no submitted SQL or sensitive data leakage
+// pos: adapter-level proof that the CLI delegates to the unified online session contract
 // note: if this file changes, update this header and module README.md.
 package cli
 
@@ -23,6 +23,93 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
+
+func TestCLIOnlinePG17_UnifiedCancellation_NoLeak(t *testing.T) {
+	marker := "CLI_PG17_CONSTRUCTOR_CANCEL_MARKER"
+	password := "CLI_PG17_CONSTRUCTOR_CANCEL_PASSWORD"
+	recorder := &cliOnlinePG17RecordingDriver{}
+	db := openCLIOnlinePG17RecordingDB(t, recorder)
+	ctx, cancel := context.WithCancel(t.Context())
+	previousOpener := installCLIOnlinePG17RecordingOpener(db, "cli_cancel_user", password, "cli_cancel_database", "app")
+	configuredOpener := openOnlineSession
+	openOnlineSession = func(ctx context.Context, cfg online.SessionConfig) (*online.Session, error) {
+		session, err := configuredOpener(ctx, cfg)
+		cancel()
+		return session, err
+	}
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		_ = db.Close()
+	})
+	t.Setenv("CLI_PG17_CANCEL_PASSWORD", password)
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(ctx, []string{
+		"query-access", "analyze",
+		"--sql", "SELECT COUNT(1) /* " + marker + " */ FROM app.orders",
+		"--dialect", "postgresql",
+		"--host", "cancel.invalid",
+		"--port", "55434",
+		"--user", "cli_cancel_user",
+		"--password-env", "CLI_PG17_CANCEL_PASSWORD",
+		"--database", "cli_cancel_database",
+		"--schema", "app",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+
+	if exitCode != exitQueryAccessUsageError || stderr.String() != "query access analysis: analyze cancelled: context canceled\n" {
+		t.Fatalf("unexpected cancellation result: exit=%d stdout=%q stderr=%q", exitCode, stdout.String(), stderr.String())
+	}
+	operations := recorder.operationsSnapshot()
+	if !containsCLIOnlinePG17Operation(operations, "query:SELECT VERSION()") {
+		t.Fatalf("expected opened-session identity probe before cancellation: %v", operations)
+	}
+	assertCLIOnlinePG17BoundedNoLeak(t, stdout.String(), stderr.String(), marker, password, "cancel.invalid", "55434", "cli_cancel_user", "cli_cancel_database")
+}
+
+func TestCLIOnlinePG17_UnifiedConstructorClosedSession_NoLeak(t *testing.T) {
+	marker := "CLI_PG17_CLOSED_SESSION_MARKER"
+	password := "CLI_PG17_CLOSED_SESSION_PASSWORD"
+	recorder := &cliOnlinePG17RecordingDriver{}
+	db := openCLIOnlinePG17RecordingDB(t, recorder)
+	previousOpener := installCLIOnlinePG17RecordingOpener(db, "cli_closed_user", password, "cli_closed_database", "app")
+	configuredOpener := openOnlineSession
+	var intendedSessionClosed bool
+	openOnlineSession = func(ctx context.Context, cfg online.SessionConfig) (*online.Session, error) {
+		session, err := configuredOpener(ctx, cfg)
+		if err == nil {
+			_ = session.Conn.Close()
+			intendedSessionClosed = true
+		}
+		return session, err
+	}
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		_ = db.Close()
+	})
+	t.Setenv("CLI_PG17_CLOSED_PASSWORD", password)
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze",
+		"--sql", "SELECT COUNT(1) /* " + marker + " */ FROM app.orders",
+		"--dialect", "postgresql",
+		"--host", "closed.invalid",
+		"--port", "55435",
+		"--user", "cli_closed_user",
+		"--password-env", "CLI_PG17_CLOSED_PASSWORD",
+		"--database", "cli_closed_database",
+		"--schema", "app",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+
+	if exitCode != exitQueryAccessUsageError || stderr.String() != "connection failed\n" {
+		t.Fatalf("unexpected closed-session result: exit=%d stdout=%q stderr=%q", exitCode, stdout.String(), stderr.String())
+	}
+	operations := recorder.operationsSnapshot()
+	if !intendedSessionClosed || !containsCLIOnlinePG17Operation(operations, "query:SELECT VERSION()") {
+		t.Fatalf("expected opened and closed intended session before assertion: closed=%t operations=%v", intendedSessionClosed, operations)
+	}
+	assertCLIOnlinePG17BoundedNoLeak(t, stdout.String(), stderr.String(), marker, password, "closed.invalid", "55435", "cli_closed_user", "cli_closed_database")
+}
 
 func TestCLIOnlinePG17_CountIntegerOne_Recording(t *testing.T) {
 	marker := fmt.Sprintf("CLI_PG17_COUNT_MARKER_%d", atomic.AddUint64(&cliOnlinePG17TestSequence, 1))
