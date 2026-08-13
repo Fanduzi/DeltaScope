@@ -101,7 +101,7 @@ func TestCLIOnlinePG17_UnifiedConstructorClosedSession_NoLeak(t *testing.T) {
 		"--schema", "app",
 	}, &bytes.Buffer{}, &stdout, &stderr)
 
-	if exitCode != exitQueryAccessUsageError || stderr.String() != "connection failed\n" {
+	if exitCode != exitQueryAccessUsageError || stderr.String() != "postgresql session: connection is not alive\n" {
 		t.Fatalf("unexpected closed-session result: exit=%d stdout=%q stderr=%q", exitCode, stdout.String(), stderr.String())
 	}
 	operations := recorder.operationsSnapshot()

@@ -7,6 +7,7 @@ package cli
 
 import (
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"os"
@@ -44,7 +45,9 @@ func TestRunQueryAccessOnlineUsesUnifiedQueryAccessEntry(t *testing.T) {
 	}
 
 	var body strings.Builder
-	ast.Fprint(&body, token.NewFileSet(), onlineFunction.Body, nil)
+	if err := format.Node(&body, token.NewFileSet(), onlineFunction.Body); err != nil {
+		t.Fatalf("format runQueryAccessOnline: %v", err)
+	}
 	bodyText := body.String()
 	for _, forbidden := range []string{
 		"Identity.Product",
@@ -58,11 +61,11 @@ func TestRunQueryAccessOnlineUsesUnifiedQueryAccessEntry(t *testing.T) {
 		}
 	}
 	for _, required := range []string{
-		"NewOnlineQueryAccessSessionFromConn",
-		"AnalyzeOnlineQueryAccessWithSession",
+		"newOnlineQueryAccessSessionFromConn",
+		"analyzeOnlineQueryAccessWithSession",
 	} {
 		if !strings.Contains(bodyText, required) {
-			t.Errorf("runQueryAccessOnline must use unified entry symbol: %s", required)
+			t.Errorf("runQueryAccessOnline must use unified entry seam: %s", required)
 		}
 	}
 }
