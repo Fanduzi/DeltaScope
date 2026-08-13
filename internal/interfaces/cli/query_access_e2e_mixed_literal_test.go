@@ -1,16 +1,10 @@
 //go:build integration
 
-// Package cli verifies CLI query-access online behavior for mixed-literal
-// operands (COALESCE, NULLIF, IFNULL) and relationless (no FROM) literal-only
-// shapes against real Docker-backed MySQL and TiDB.
-// input: CLI invocations with connection flags pointing at running Docker containers
-// output: end-to-end proof that mixed-literal scalar operands yield
-//
-//	read_only + admissible via the CLI online path across all four MySQL/TiDB
-//	versions, with exact requirement assertions and no-leak guards; relationless
-//	literal-only shapes additionally yield zero requirements/relations/columns
-//
-// pos: CLI online E2E coverage for the mixed-literal scalar operand feature
+// Package cli verifies online Query Access through both the in-process CLI
+// adapter and a built real binary across Docker-backed MySQL and TiDB profiles.
+// input: CLI invocations and a built deltascope binary pointed at MySQL 5.7/8.0/8.4 and TiDB 8.5 containers
+// output: supported-profile routing, mixed/literal admission, exact requirements, offline regression, and marker no-leak evidence
+// pos: Docker-backed CLI adapter and real-binary Query Access compatibility coverage
 // note: if this file changes, update this header and module README.md.
 package cli
 
