@@ -20,15 +20,11 @@ import (
 )
 
 func TestQueryAccessOnlineMapsUnifiedConstructorFailures(t *testing.T) {
-	for _, testCase := range []struct {
-		constructorError error
-		dialect          string
-		wantStderr       string
-	}{
-		{constructorError: deltascope.ErrOnlineQueryAccessSessionUnavailable, dialect: "mysql", wantStderr: "mysql/tidb query access session is unavailable\n"},
-		{constructorError: deltascope.ErrOnlineQueryAccessCapabilityUnsupported, dialect: "postgresql", wantStderr: "server identity is not PostgreSQL 17\n"},
+	for _, constructorError := range []error{
+		deltascope.ErrOnlineQueryAccessSessionUnavailable,
+		deltascope.ErrOnlineQueryAccessCapabilityUnsupported,
 	} {
-		t.Run(testCase.constructorError.Error(), func(t *testing.T) {
+		t.Run(constructorError.Error(), func(t *testing.T) {
 			previousOpener := openOnlineSession
 			previousConstructor := newOnlineQueryAccessSessionFromConn
 			t.Cleanup(func() {
@@ -49,14 +45,14 @@ func TestQueryAccessOnlineMapsUnifiedConstructorFailures(t *testing.T) {
 			}
 			newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
 				constructorCalls++
-				return nil, testCase.constructorError
+				return nil, constructorError
 			}
 
 			var stdout, stderr bytes.Buffer
 			exitCode := Execute(t.Context(), []string{
 				"query-access", "analyze",
 				"--sql", "SELECT 1",
-				"--dialect", testCase.dialect,
+				"--dialect", "mysql",
 				"--host", "recording.invalid",
 				"--user", "cli_user",
 				"--password-env", "CLI_UNIFIED_ENTRY_PASSWORD",
@@ -65,7 +61,7 @@ func TestQueryAccessOnlineMapsUnifiedConstructorFailures(t *testing.T) {
 			if exitCode != exitQueryAccessUsageError {
 				t.Fatalf("exit code = %d, want %d", exitCode, exitQueryAccessUsageError)
 			}
-			if stdout.Len() != 0 || stderr.String() != testCase.wantStderr {
+			if stdout.Len() != 0 || stderr.String() != "connection failed\n" {
 				t.Fatalf("unexpected output: stdout=%q stderr=%q", stdout.String(), stderr.String())
 			}
 			if constructorCalls != 1 || closeCalls != 1 {

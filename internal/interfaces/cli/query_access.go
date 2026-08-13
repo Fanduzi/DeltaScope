@@ -7,9 +7,7 @@ package cli
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -209,7 +207,7 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(cmd.Context(), session.Conn)
 	if err != nil {
 		*exitCode = exitQueryAccessUsageError
-		return mapQueryAccessSessionConstructorError(cmd.Context(), dialect, session.Conn, err)
+		return mapOnlineCLIBoundaryError(err)
 	}
 
 	result, err := analyzeOnlineQueryAccessWithSession(cmd.Context(), queryAccessSession, deltascope.QueryAccessRequest{
@@ -223,19 +221,6 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 	}
 
 	return writeQueryAccessResult(cmd, result, exitCode)
-}
-
-func mapQueryAccessSessionConstructorError(ctx context.Context, dialect spec.Dialect, conn *sql.Conn, err error) error {
-	if dialect != spec.DialectPostgreSQL {
-		return deltascope.ErrMySQLTiDBQueryAccessSessionUnavailable
-	}
-	if errors.Is(err, deltascope.ErrOnlineQueryAccessCapabilityUnsupported) {
-		return errors.New("server identity is not PostgreSQL 17")
-	}
-	if conn == nil || conn.PingContext(ctx) != nil {
-		return errors.New("postgresql session: connection is not alive")
-	}
-	return errors.New("server identity is not PostgreSQL 17")
 }
 
 func writeQueryAccessResult(cmd *cobra.Command, result *deltascope.QueryAccessResult, exitCode *int) error {
