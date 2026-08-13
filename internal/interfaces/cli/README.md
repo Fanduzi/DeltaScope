@@ -10,8 +10,9 @@ CLI adapter layer for the DeltaScope application.
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
 | audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, quiet/normal/github-summary rendering, and fail-threshold logic |
 | audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout) into the shared metadata-preparation flow and MySQL-compatible client opener |
-| query_access.go | Implements the `query-access analyze` subcommand with SQL input loading, mode/dialect/schema flags, JSON output, and admission-based exit codes |
-| query_access_test.go | Verifies query-access command JSON output, exit codes, field names, mode handling, and no-audit-field-leakage |
+| query_access.go | Implements the `query-access analyze` subcommand with SQL input loading, mode/dialect/schema flags, JSON output, admission-based exit codes, and identity-routed online analysis through the opaque unified SDK session |
+| query_access_test.go | Verifies query-access command JSON output, exit codes, field names, mode handling, unified online entry wiring with an empty analysis dialect, bounded constructor/capability failures, close ownership, and no-audit-field-leakage |
+| query_access_unified_entry_test.go | Structurally verifies `runQueryAccessOnline` contains no product inspection or dialect-specific Query Access constructor/analysis calls and uses both unified SDK entry symbols |
 | query_access_postgresql_online_recording_test.go | Recording-driver proof that the CLI PostgreSQL online path delegates COUNT(1) analysis without sending user SQL, EXPLAIN, or prepare operations |
 | query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary on the CLI surface: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from stdout/stderr/JSON |
 | query_access_postgresql_no_leak_test.go | PostgreSQL 17 integration no-leak coverage for online `COUNT(1)`, excluded shapes, and default-offline CLI paths |
@@ -41,6 +42,7 @@ CLI adapter layer for the DeltaScope application.
 - Downstream: `bufio`, `database/sql`, `encoding/json`, `internal/application/audit`, `internal/application/auditmeta`, `internal/application/configlint`, `internal/application/configstatus`, `internal/domain/policy`, `internal/domain/report`, `internal/domain/rule/catalog`, `internal/domain/spec`, `internal/infrastructure/config/viper`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/output/githubsummary`, `internal/infrastructure/output/json`, `internal/infrastructure/output/markdown`, `internal/interfaces/metadata`, `pkg/deltascope`, `github.com/spf13/cobra`, `golang.org/x/term`
 
 ## Notes
+- Online `query-access analyze` keeps connection/TLS/credential lifecycle in the CLI, then passes the caller-owned pinned connection to the opaque unified SDK session without inspecting observed product or constraining the analysis request dialect.
 - `deltascope --version` prints the build version plus compiled dialect surface.
 - `deltascope version` prints the ASCII logo plus the build version and compiled dialect surface.
 

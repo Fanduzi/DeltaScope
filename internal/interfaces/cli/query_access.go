@@ -1,7 +1,7 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including connection flags, SQL text from flags/files/stdin, and the public query access API
-// output: rendered query access results in JSON format, exit-code mapping for CI integration
-// pos: CLI query-access command implementation above the public DeltaScope query access API
+// input: query-access command flags including connection flags, SQL text from flags/files/stdin, and the unified public online query access API
+// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping for CI integration
+// pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
 
@@ -19,7 +19,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var openOnlineSession = online.OpenSession
+var (
+	openOnlineSession                   = online.OpenSession
+	newOnlineQueryAccessSessionFromConn = deltascope.NewOnlineQueryAccessSessionFromConn
+	analyzeOnlineQueryAccessWithSession = deltascope.AnalyzeOnlineQueryAccessWithSession
+)
 
 const (
 	exitQueryAccessAdmissible    = 0
@@ -200,42 +204,17 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 	}
 	defer session.Close()
 
-	req := deltascope.QueryAccessRequest{
+	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(cmd.Context(), session.Conn)
+	if err != nil {
+		*exitCode = exitQueryAccessUsageError
+		return mapOnlineCLIBoundaryError(err)
+	}
+
+	result, err := analyzeOnlineQueryAccessWithSession(cmd.Context(), queryAccessSession, deltascope.QueryAccessRequest{
 		SQL:           sql,
 		Mode:          accessMode,
 		DefaultSchema: strings.TrimSpace(defaultSchema),
-	}
-
-	var result *deltascope.QueryAccessResult
-	switch session.Identity.Product {
-	case online.ProductPostgreSQL:
-		req.Dialect = deltascope.DialectPostgreSQL
-		pgSession, sessErr := deltascope.NewPostgreSQLQueryAccessSessionFromConn(cmd.Context(), session.Conn)
-		if sessErr != nil {
-			*exitCode = exitQueryAccessUsageError
-			return sessErr
-		}
-		result, err = deltascope.AnalyzePostgreSQLQueryAccessWithSession(cmd.Context(), pgSession, req)
-	case online.ProductMySQL:
-		req.Dialect = deltascope.DialectMySQL
-		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(cmd.Context(), session.Conn)
-		if sessErr != nil {
-			*exitCode = exitQueryAccessUsageError
-			return sessErr
-		}
-		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(cmd.Context(), mySession, req)
-	case online.ProductTiDB:
-		req.Dialect = deltascope.DialectTiDB
-		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(cmd.Context(), session.Conn)
-		if sessErr != nil {
-			*exitCode = exitQueryAccessUsageError
-			return sessErr
-		}
-		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(cmd.Context(), mySession, req)
-	default:
-		*exitCode = exitQueryAccessUsageError
-		return fmt.Errorf("unsupported server product")
-	}
+	})
 	if err != nil {
 		*exitCode = exitQueryAccessUsageError
 		return err

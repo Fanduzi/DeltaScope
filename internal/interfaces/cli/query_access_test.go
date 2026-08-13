@@ -1,19 +1,129 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations for query access analysis
-// output: coverage for query access command JSON output, exit codes, and input validation
-// pos: CLI adapter test coverage for query access surface
+// input: synthetic CLI invocations for offline analysis and unified online-session routing
+// output: coverage for query access JSON output, exit codes, input validation, unified entry use, bounded failures, and close ownership
+// pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package cli
 
 import (
 	"bytes"
+	"context"
 	"crypto/x509"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
+
+func TestQueryAccessOnlineMapsUnifiedConstructorFailures(t *testing.T) {
+	for _, constructorError := range []error{
+		deltascope.ErrOnlineQueryAccessSessionUnavailable,
+		deltascope.ErrOnlineQueryAccessCapabilityUnsupported,
+	} {
+		t.Run(constructorError.Error(), func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousConstructor := newOnlineQueryAccessSessionFromConn
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				newOnlineQueryAccessSessionFromConn = previousConstructor
+			})
+			t.Setenv("CLI_UNIFIED_ENTRY_PASSWORD", "secret")
+
+			var closeCalls, constructorCalls int
+			openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+				return &online.Session{
+					Conn: &sql.Conn{},
+					Close: func() error {
+						closeCalls++
+						return nil
+					},
+				}, nil
+			}
+			newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+				constructorCalls++
+				return nil, constructorError
+			}
+
+			var stdout, stderr bytes.Buffer
+			exitCode := Execute(t.Context(), []string{
+				"query-access", "analyze",
+				"--sql", "SELECT 1",
+				"--dialect", "mysql",
+				"--host", "recording.invalid",
+				"--user", "cli_user",
+				"--password-env", "CLI_UNIFIED_ENTRY_PASSWORD",
+			}, &bytes.Buffer{}, &stdout, &stderr)
+
+			if exitCode != exitQueryAccessUsageError {
+				t.Fatalf("exit code = %d, want %d", exitCode, exitQueryAccessUsageError)
+			}
+			if stdout.Len() != 0 || stderr.String() != "connection failed\n" {
+				t.Fatalf("unexpected output: stdout=%q stderr=%q", stdout.String(), stderr.String())
+			}
+			if constructorCalls != 1 || closeCalls != 1 {
+				t.Fatalf("calls = constructor:%d close:%d, want 1 each", constructorCalls, closeCalls)
+			}
+		})
+	}
+}
+
+func TestQueryAccessOnlineUsesUnifiedEntryWithEmptyRequestDialect(t *testing.T) {
+	previousOpener := openOnlineSession
+	previousConstructor := newOnlineQueryAccessSessionFromConn
+	previousAnalyzer := analyzeOnlineQueryAccessWithSession
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		newOnlineQueryAccessSessionFromConn = previousConstructor
+		analyzeOnlineQueryAccessWithSession = previousAnalyzer
+	})
+
+	t.Setenv("CLI_UNIFIED_ENTRY_PASSWORD", "secret")
+
+	var constructorCalls, analysisCalls int
+	openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+		return &online.Session{Conn: &sql.Conn{}, Close: func() error { return nil }}, nil
+	}
+	newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+		constructorCalls++
+		return nil, nil
+	}
+	analyzeOnlineQueryAccessWithSession = func(_ context.Context, session *deltascope.OnlineQueryAccessSession, request deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		analysisCalls++
+		if session != nil {
+			return nil, errors.New("unexpected opaque session")
+		}
+		if request.Dialect != "" {
+			return nil, errors.New("online request dialect must remain empty")
+		}
+		return &deltascope.QueryAccessResult{
+			Dialect:            "mysql",
+			Mode:               deltascope.QueryAccessModeStrict,
+			ReadClassification: deltascope.QueryAccessReadOnly,
+			Admission:          deltascope.QueryAccessAdmissible,
+		}, nil
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze",
+		"--sql", "SELECT 1",
+		"--dialect", "mysql",
+		"--host", "recording.invalid",
+		"--user", "cli_user",
+		"--password-env", "CLI_UNIFIED_ENTRY_PASSWORD",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+
+	if exitCode != exitQueryAccessAdmissible {
+		t.Fatalf("exit code = %d, want %d; stderr=%s", exitCode, exitQueryAccessAdmissible, stderr.String())
+	}
+	if constructorCalls != 1 || analysisCalls != 1 {
+		t.Fatalf("unified calls = constructor:%d analysis:%d, want 1 each", constructorCalls, analysisCalls)
+	}
+}
 
 func TestQueryAccessAnalyzeMySQLSelect(t *testing.T) {
 	var stdout, stderr bytes.Buffer
