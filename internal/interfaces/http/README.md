@@ -10,8 +10,9 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
 | handler.go | Binds Gin HTTP requests to the public audit/rule/capability/query-access APIs, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
 | handler_test.go | Verifies HTTP request binding, error mapping, and JSON response shape |
-| query_access.go | Handles HTTP query access analysis requests, validates input, calls the public query access API, and returns JSON results |
-| query_access_test.go | Verifies HTTP query access request binding, response shape, default values, error handling, and capability discovery |
+| query_access.go | Handles HTTP query access analysis requests, preserves registry/authorization/connection/error/log ownership, and routes online analysis through the opaque unified SDK session |
+| query_access_test.go | Verifies HTTP query access request binding, response shape, defaults, unified online entry wiring with an empty analysis dialect, bounded constructor/capability failures, zero-open authorization paths, and close ownership |
+| query_access_unified_entry_test.go | Structurally verifies `handleQueryAccessOnline` contains no product inspection or dialect-specific Query Access constructor/analysis calls and uses both unified SDK entry symbols |
 | query_access_postgresql_online_recording_test.go | Verifies the PostgreSQL online HTTP connection_id path uses shared session probes without executing submitted SQL |
 | query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary on the HTTP surface: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from the response body (including the error boundary) |
 | query_access_postgresql_no_leak_test.go | PostgreSQL 17 integration no-leak coverage for online `COUNT(1)`, excluded shapes, missing `connection_id`, and unauthorized HTTP paths |
@@ -29,6 +30,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 
 ## Notes
 
+- Online Query Access keeps registry lookup, authorization, TLS/credential resolution, cancellation, connection close, HTTP errors, request IDs, and access logs in HTTP, then passes the caller-owned pinned connection to the opaque unified SDK session without inspecting observed product or constraining the analysis request dialect.
 - The HTTP layer is adapter-only: it reuses the shared public audit API and metadata-preparation helpers instead of reimplementing dialect or schema logic.
 - Routing uses Gin while keeping the public JSON API contract unchanged.
 - API-key auth is optional and configured through adapter options.

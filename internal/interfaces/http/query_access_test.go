@@ -1,13 +1,14 @@
 // Package httpapi verifies HTTP query access request binding and response mapping.
-// input: synthetic HTTP requests against the DeltaScope HTTP adapter for query access analysis
-// output: focused coverage for query access analysis success, error handling, and JSON response shape
-// pos: interface adapter test coverage for the HTTP query access surface
+// input: synthetic HTTP requests against offline analysis and unified online-session routing
+// output: focused coverage for JSON behavior, unified entry use, bounded failures, zero-open authorization, and close ownership
+// pos: HTTP adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,9 +16,267 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
+
+func TestHandlerQueryAccessOnlineUsesUnifiedEntryWithEmptyDialectAndOneClose(t *testing.T) {
+	previousOpener := openOnlineSession
+	previousConstructor := newOnlineQueryAccessSessionFromConn
+	previousAnalyzer := analyzeOnlineQueryAccessWithSession
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		newOnlineQueryAccessSessionFromConn = previousConstructor
+		analyzeOnlineQueryAccessWithSession = previousAnalyzer
+	})
+
+	var constructorCalls, analysisCalls, closeCalls int
+	conn := &sql.Conn{}
+	openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+		return &online.Session{
+			Conn: conn,
+			Close: func() error {
+				closeCalls++
+				return nil
+			},
+		}, nil
+	}
+	newOnlineQueryAccessSessionFromConn = func(_ context.Context, gotConn *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+		constructorCalls++
+		if gotConn != conn {
+			t.Fatalf("constructor connection = %p, want %p", gotConn, conn)
+		}
+		return nil, nil
+	}
+	analyzeOnlineQueryAccessWithSession = func(_ context.Context, session *deltascope.OnlineQueryAccessSession, request deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		analysisCalls++
+		if session != nil {
+			t.Fatal("handler inspected or replaced the opaque session")
+		}
+		if request.Dialect != "" {
+			t.Fatalf("online request dialect = %q, want empty", request.Dialect)
+		}
+		return &deltascope.QueryAccessResult{
+			Dialect:            "mysql",
+			Mode:               deltascope.QueryAccessModeStrict,
+			ReadClassification: deltascope.QueryAccessReadOnly,
+			Admission:          deltascope.QueryAccessAdmissible,
+		}, nil
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistry(t, "test-conn")))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if constructorCalls != 1 || analysisCalls != 1 || closeCalls != 1 {
+		t.Fatalf("calls = constructor:%d analysis:%d close:%d, want 1 each", constructorCalls, analysisCalls, closeCalls)
+	}
+}
+
+func TestHandlerQueryAccessOnlineMapsUnifiedConstructorFailures(t *testing.T) {
+	for _, constructorError := range []error{
+		deltascope.ErrOnlineQueryAccessSessionUnavailable,
+		deltascope.ErrOnlineQueryAccessCapabilityUnsupported,
+	} {
+		t.Run(constructorError.Error(), func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousConstructor := newOnlineQueryAccessSessionFromConn
+			previousAnalyzer := analyzeOnlineQueryAccessWithSession
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				newOnlineQueryAccessSessionFromConn = previousConstructor
+				analyzeOnlineQueryAccessWithSession = previousAnalyzer
+			})
+
+			var constructorCalls, analysisCalls, closeCalls int
+			openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+				return &online.Session{
+					Conn: &sql.Conn{},
+					Close: func() error {
+						closeCalls++
+						return nil
+					},
+				}, nil
+			}
+			newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+				constructorCalls++
+				return nil, constructorError
+			}
+			analyzeOnlineQueryAccessWithSession = func(context.Context, *deltascope.OnlineQueryAccessSession, deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+				analysisCalls++
+				return nil, nil
+			}
+
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistry(t, "test-conn")))
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn"}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-API-Key", "test-key-value")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), `"code":"connection_failed"`) || !strings.Contains(rec.Body.String(), `"message":"connection failed"`) {
+				t.Fatalf("unexpected bounded failure: status=%d body=%s", rec.Code, rec.Body.String())
+			}
+			if constructorCalls != 1 || analysisCalls != 0 || closeCalls != 1 {
+				t.Fatalf("calls = constructor:%d analysis:%d close:%d, want 1, 0, 1", constructorCalls, analysisCalls, closeCalls)
+			}
+		})
+	}
+}
+
+func TestHandlerQueryAccessOnlineMapsUnifiedAnalysisCancellation(t *testing.T) {
+	for _, testCase := range []struct {
+		name        string
+		analysisErr error
+		wantStatus  int
+		wantCode    string
+	}{
+		{name: "canceled", analysisErr: context.Canceled, wantStatus: http.StatusRequestTimeout, wantCode: "request_canceled"},
+		{name: "deadline", analysisErr: context.DeadlineExceeded, wantStatus: http.StatusGatewayTimeout, wantCode: "request_timeout"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousConstructor := newOnlineQueryAccessSessionFromConn
+			previousAnalyzer := analyzeOnlineQueryAccessWithSession
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				newOnlineQueryAccessSessionFromConn = previousConstructor
+				analyzeOnlineQueryAccessWithSession = previousAnalyzer
+			})
+
+			var closeCalls int
+			openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+				return &online.Session{Conn: &sql.Conn{}, Close: func() error {
+					closeCalls++
+					return nil
+				}}, nil
+			}
+			newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+				return nil, nil
+			}
+			analyzeOnlineQueryAccessWithSession = func(context.Context, *deltascope.OnlineQueryAccessSession, deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+				return nil, testCase.analysisErr
+			}
+
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistry(t, "test-conn")))
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1","connection_id":"test-conn"}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-API-Key", "test-key-value")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != testCase.wantStatus || !strings.Contains(rec.Body.String(), `"code":"`+testCase.wantCode+`"`) {
+				t.Fatalf("unexpected cancellation mapping: status=%d body=%s", rec.Code, rec.Body.String())
+			}
+			if closeCalls != 1 {
+				t.Fatalf("close calls = %d, want 1", closeCalls)
+			}
+		})
+	}
+}
+
+func TestHandlerQueryAccessOnlineGuardPathsOpenNothing(t *testing.T) {
+	previousAnalyzer := analyzeQueryAccess
+	previousOpener := openOnlineSession
+	previousConstructor := newOnlineQueryAccessSessionFromConn
+	t.Cleanup(func() {
+		analyzeQueryAccess = previousAnalyzer
+		openOnlineSession = previousOpener
+		newOnlineQueryAccessSessionFromConn = previousConstructor
+	})
+
+	analyzeQueryAccess = func(_ context.Context, request deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		return &deltascope.QueryAccessResult{
+			Dialect:            string(request.Dialect),
+			Mode:               request.Mode,
+			ReadClassification: deltascope.QueryAccessIndeterminate,
+			Admission:          deltascope.QueryAccessIndeterminateAdmission,
+		}, nil
+	}
+	var openCalls, constructorCalls int
+	openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+		openCalls++
+		return nil, fmt.Errorf("unexpected session open")
+	}
+	newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+		constructorCalls++
+		return nil, deltascope.ErrOnlineQueryAccessSessionUnavailable
+	}
+
+	for _, testCase := range []struct {
+		name       string
+		registry   *runtimeconfig.Registry
+		payload    string
+		apiKey     string
+		wantStatus int
+	}{
+		{
+			name:       "missing_connection_id",
+			registry:   newQueryAccessTestRegistry(t, "test-conn"),
+			payload:    `{"sql":"SELECT 1"}`,
+			apiKey:     "test-key-value",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "unknown_connection",
+			registry:   newQueryAccessTestRegistry(t, "test-conn"),
+			payload:    `{"sql":"SELECT 1","connection_id":"unknown"}`,
+			apiKey:     "test-key-value",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "unauthorized_principal",
+			registry:   newQueryAccessTestRegistryWithAuth(t, "test-conn", "key-1", []string{"other-key"}),
+			payload:    `{"sql":"SELECT 1","connection_id":"test-conn"}`,
+			apiKey:     "test-key-value",
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name:       "disallowed_purpose",
+			registry:   newQueryAccessTestRegistry(t, "test-conn", "audit"),
+			payload:    `{"sql":"SELECT 1","connection_id":"test-conn"}`,
+			apiKey:     "test-key-value",
+			wantStatus: http.StatusForbidden,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			handler, err := NewHandler("", "test-build", WithRegistry(testCase.registry))
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(testCase.payload))
+			req.Header.Set("Content-Type", "application/json")
+			if testCase.apiKey != "" {
+				req.Header.Set("X-API-Key", testCase.apiKey)
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			if rec.Code != testCase.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, testCase.wantStatus, rec.Body.String())
+			}
+		})
+	}
+
+	if openCalls != 0 || constructorCalls != 0 {
+		t.Fatalf("guard paths called opener %d times and constructor %d times, want zero", openCalls, constructorCalls)
+	}
+}
 
 func TestHandlerQueryAccessReturnsJSONResult(t *testing.T) {
 	handler, err := NewHandler("", "test-build")
@@ -509,10 +768,13 @@ func TestHandleQueryAccessOnlineProfileAndConnectionIDRejected(t *testing.T) {
 	}
 }
 
-func newQueryAccessTestRegistry(t *testing.T, connID string) *runtimeconfig.Registry {
+func newQueryAccessTestRegistry(t *testing.T, connID string, purposes ...string) *runtimeconfig.Registry {
 	t.Helper()
 	t.Setenv("TEST_QA_DB_PASSWORD", "secret")
 	t.Setenv("TEST_QA_API_KEY_SECRET", "test-key-value")
+	if len(purposes) == 0 {
+		purposes = []string{"query_access"}
+	}
 
 	cfg := runtimeconfig.Config{
 		HTTP: runtimeconfig.HTTPConfig{
@@ -531,7 +793,7 @@ func newQueryAccessTestRegistry(t *testing.T, connID string) *runtimeconfig.Regi
 					User:             "root",
 					PasswordEnv:      "TEST_QA_DB_PASSWORD",
 					Schema:           "app",
-					Purposes:         []string{"query_access"},
+					Purposes:         purposes,
 					AllowedAPIKeyIDs: []string{"default-key"},
 				},
 			},

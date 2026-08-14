@@ -1,7 +1,7 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: HTTP query-access analysis requests carrying SQL text, dialect, mode, profile, connection_id, and optional schema context
-// output: JSON query access analysis results for the HTTP adapter
-// pos: HTTP adapter glue between request-scoped inputs and the public DeltaScope query access API
+// input: query-access JSON requests, authorized runtime connection configuration, and the unified public online query access API
+// output: bounded offline or identity-routed online query-access JSON responses with unchanged HTTP status and logging contracts
+// pos: HTTP query-access adapter above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
@@ -28,8 +28,12 @@ type queryAccessRequest struct {
 	ConnectionID    string                                `json:"connection_id,omitempty"`
 }
 
-var analyzeQueryAccess = deltascope.AnalyzeQueryAccess
-var openOnlineSession = online.OpenSession
+var (
+	analyzeQueryAccess                  = deltascope.AnalyzeQueryAccess
+	openOnlineSession                   = online.OpenSession
+	newOnlineQueryAccessSessionFromConn = deltascope.NewOnlineQueryAccessSessionFromConn
+	analyzeOnlineQueryAccessWithSession = deltascope.AnalyzeOnlineQueryAccessWithSession
+)
 
 func handleQueryAccess(w http.ResponseWriter, r *http.Request, registry *runtimeconfig.Registry) {
 	defer r.Body.Close()
@@ -153,42 +157,16 @@ func handleQueryAccessOnline(
 	}
 	defer session.Close()
 
-	req := deltascope.QueryAccessRequest{
-		SQL:           request.SQL,
-		Mode:          mode,
-		DefaultSchema: schema,
-	}
-
-	var result *deltascope.QueryAccessResult
-	switch session.Identity.Product {
-	case online.ProductPostgreSQL:
-		req.Dialect = deltascope.DialectPostgreSQL
-		pgSession, sessErr := deltascope.NewPostgreSQLQueryAccessSessionFromConn(r.Context(), session.Conn)
-		if sessErr != nil {
-			writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
-			return
-		}
-		result, err = deltascope.AnalyzePostgreSQLQueryAccessWithSession(r.Context(), pgSession, req)
-	case online.ProductMySQL:
-		req.Dialect = deltascope.DialectMySQL
-		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(r.Context(), session.Conn)
-		if sessErr != nil {
-			writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
-			return
-		}
-		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(r.Context(), mySession, req)
-	case online.ProductTiDB:
-		req.Dialect = deltascope.DialectTiDB
-		mySession, sessErr := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(r.Context(), session.Conn)
-		if sessErr != nil {
-			writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
-			return
-		}
-		result, err = deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(r.Context(), mySession, req)
-	default:
+	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(r.Context(), session.Conn)
+	if err != nil {
 		writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
 		return
 	}
+	result, err := analyzeOnlineQueryAccessWithSession(r.Context(), queryAccessSession, deltascope.QueryAccessRequest{
+		SQL:           request.SQL,
+		Mode:          mode,
+		DefaultSchema: schema,
+	})
 	if err != nil {
 		status, code := mapQueryAccessError(err)
 		writeError(w, status, code, mapQueryAccessErrorMessage(err))
