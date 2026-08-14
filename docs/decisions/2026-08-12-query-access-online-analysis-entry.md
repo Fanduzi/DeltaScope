@@ -1,7 +1,7 @@
 # Decision: Route Online Query Access Through One Public Session Entry
 
 - Date: 2026-08-12
-- Status: Proposed
+- Status: Accepted
 - Related: [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [PostgreSQL resolver core](2026-08-11-query-access-postgresql-resolver-core.md), [API lifecycle issue #3](https://github.com/Fanduzi/DeltaScope/issues/3), [test ownership issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-12-query-access-online-analysis-entry-spec.md`
 - Design: `docs/plans/2026-08-12-query-access-online-analysis-entry-design.md`
@@ -24,7 +24,7 @@ separate no-`postgresql`-tag Go source build remains useful for compile-time
 compatibility and testing, but is not an official PostgreSQL-disabled product
 edition.
 
-## Proposed Decision
+## Decision
 
 Add an opaque `OnlineQueryAccessSession` constructed only from a caller-owned
 `*sql.Conn`, plus `AnalyzeOnlineQueryAccessWithSession`. Construction pings and
@@ -100,7 +100,7 @@ Costs and limitations:
 - The SDK needs a small tagged/untagged private capability boundary.
 - Generic error mapping adds a second compatibility contract alongside old API
   errors.
-- Transport test duplication remains pending issue #4.
+- Transport test duplication remains deferred to issue #4.
 
 ## Alternatives Rejected
 
@@ -112,10 +112,10 @@ Costs and limitations:
   authorization, TLS, and lifecycle belong to callers/transports.
 - Expose session getters: rejected because they create an unnecessary public
   identity/capability surface.
-- Immediately deprecate old APIs: rejected pending issue #3 and compatibility
-  evidence.
-- Delete repeated tests during migration: rejected pending issue #4 and an
-  explicit ownership matrix.
+- Immediately deprecate old APIs: rejected; issue #3 owns the compatibility
+  decision.
+- Delete repeated tests during migration: rejected; issue #4 owns the coverage
+  equivalence review.
 
 ## Deferred Scope
 
@@ -130,16 +130,40 @@ Costs and limitations:
 
 ## Acceptance Evidence
 
-This section must be completed before changing the status to Accepted:
+Accepted after verification of implementation candidate
+`07a58681971d8da7a6d99d60ca9c2655b0f1928e` on the isolated milestone
+worktree.
 
-- exact public API, opacity, ownership, validation-priority, and build-boundary
-  tests;
-- unified-versus-dialect API equivalence across every supported product;
-- recording-driver no-execution/no-leak and real same-connection integration
-  evidence;
-- CLI and HTTP external compatibility with product switches removed;
-- unchanged old APIs, MCP absence, supported SQL boundaries, and repeated test
-  matrices;
-- complete default, PostgreSQL-tagged, race, build, vet, lint, corpus, Docker,
-  documentation, formatting, tidy, and diff gates;
-- independent review with no remaining P0, P1, or P2 finding.
+- Commits `c448689` through `43aeb86` introduced the decision, shared proof
+  cores, unified SDK session, PG17 tagged/no-tag routing, and CLI/HTTP
+  migrations. Commit `07a5868` closed the final documentation and direct
+  recording-equivalence review findings.
+- Public contract, opacity, validation priority, caller ownership, reuse,
+  no-tag fail-closed, tagged PG17, legacy API/stub retention, no-execution,
+  no-leak, and unified-versus-dialect behavior are pinned in
+  `pkg/deltascope/query_access_online_session*_test.go` and the retained legacy
+  session suites.
+- CLI and HTTP structural, adapter, recording, authorization, lifecycle,
+  bounded-error, and access-log tests pass with no product-specific proof
+  switch. `TestQueryAccessPureEffectSurfaceContract` confirms MCP still has no
+  Query Access tool; issues #3 and #4 remained open at acceptance.
+- Final candidate gates passed: default and `postgresql`-tagged full tests;
+  affected default/tagged race tests; official tagged and no-tag builds; vet;
+  `golangci-lint`; Query Access corpus; PostgreSQL unit and confidence gates;
+  npm launcher tests; documentation, release-surface, decision-record, gofmt,
+  three-level documentation, module-tidy, and diff checks.
+- Docker-backed SDK/CLI/HTTP evidence passed for MySQL 5.7/8.0/8.4, TiDB 8.5,
+  and PostgreSQL 17, including same-connection and foreign-table fail-closed
+  cases. CLI and HTTP TLS suites plus CLI TLS lifecycle regression passed. All
+  task-created Compose containers, networks, and volumes were removed; existing
+  Docker resources were preserved.
+- CodeGraph inspection was attempted, but the available index was bound to the
+  root worktree at the milestone base rather than this candidate. The final
+  28-file milestone scope and public/transport symbols were therefore
+  reconciled manually against `0e4439c...07a5868`.
+- Independent `/code-review` workflow
+  `71a1ef52-1f64-430c-ad22-3781775c9723` reported zero unresolved P0, P1, or
+  P2 findings on both axes: Standards run `a2a25f8d` and Spec run `3ce5972a`.
+  Remaining P3 observations are the intentionally deferred repeated behavior
+  matrices and bounded future synchronization cost when adding capability
+  targets.
