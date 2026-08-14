@@ -205,7 +205,7 @@ echoing the profile or SQL.
 
 ## Confirming MySQL/TiDB Function Queries via a Same-Connection Session
 
-If your Go program is already connected to MySQL or TiDB, you can hand that connection to the SDK. The SDK can then confirm the real tables and columns, and — within the supported function set — produce a usable permission list. This is the only path that can promote a MySQL/TiDB function-bearing query from `indeterminate` to `admissible`. CLI, HTTP, and the default SDK cannot do this, because they do not open a database connection.
+If your Go program is already connected to MySQL or TiDB, you can hand that connection to the SDK. The SDK can then confirm the real tables and columns, and — within the supported function set — produce a usable permission list. This is the only path that can promote a MySQL/TiDB function-bearing query from `indeterminate` to `admissible` in the SDK. The default SDK, CLI, and HTTP paths do not open a database connection and cannot do this; CLI and HTTP gain promotion only in online mode when connection flags are present.
 
 Two things must be distinguished: the connection you pass in is used to identify the server and to resolve real relations and column metadata; the function semantics themselves come from the built-in, immutable semantic manifest selected by the observed server identity. The connection is not used to verify the server version or SQL mode, and it is not used to prove function semantics — the manifest supplies those, and the connection only grounds table and column names onto real objects.
 
