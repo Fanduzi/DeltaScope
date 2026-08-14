@@ -1,7 +1,7 @@
 # Decision: Deprecate Dialect-Specific Query Access Session APIs
 
 - Date: 2026-08-14
-- Status: Accepted
+- Status: Proposed
 - Related: [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md), [API lifecycle issue #3](https://github.com/Fanduzi/DeltaScope/issues/3), [test ownership issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-14-query-access-dialect-session-api-deprecation-spec.md`
 - Design: `docs/plans/2026-08-14-query-access-dialect-session-api-deprecation-design.md`
@@ -123,22 +123,20 @@ Costs and limitations:
 
 ## Acceptance Evidence
 
-Accepted on 2026-08-14 after implementation, repository gates, and independent
-review on branch `feat/query-access-soft-deprecation-issue-3-20260814`
-(base `bc4836a`, commits `335dff7` and `d6cceb6`):
+This record remains Proposed until implementation and independent review prove:
 
-- all six identifiers and both PostgreSQL build variants carry canonical Go
-  `Deprecated:` notices naming their direct replacements, pinned by the focused
-  contract test `TestDialectSessionAPI_DeprecationNotices`;
-- current EN/ZH SDK README, reference, and recipe guidance is
-  unified-entry-first with one concise migration section each;
+- all six identifiers and both PostgreSQL build variants carry correct native
+  Go deprecation notices;
+- current EN/ZH guidance is unified-entry-first and migration instructions are
+  accurate;
 - exported signatures and all old runtime/error/privacy contracts are
-  unchanged (comment-only source diff; default/tagged tests, affected race
-  tests, builds, vet, and lint pass);
-- default/tagged tests, Query Access corpus, PostgreSQL unit/confidence gates,
-  decision-record, gofmt, three-level-doc, module-tidy, docs-example, and diff
-  checks pass with no API, transport, capability, or release-surface
-  expansion; and
-- independent read-only Standards and Spec reviews reported no unresolved
-  P0, P1, or P2 finding; the P2 doc-accuracy notes from the Spec review were
-  fixed before this commit.
+  unchanged;
+- default/tagged tests and repository gates pass with no API, transport,
+  capability, or release-surface expansion; and
+- no unresolved P0, P1, or P2 finding remains.
+
+A focused re-review after the initial acceptance found two real P2
+doc-accuracy defects in scoped current guidance (the reference "Default Path"
+subsection and the recipe promotion-path sentence understated CLI/HTTP online
+mode); acceptance was reverted to Proposed until those are fixed and
+re-verified.
