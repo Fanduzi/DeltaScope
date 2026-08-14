@@ -303,7 +303,7 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 
 ### Default Path
 
-The default `AnalyzeQueryAccess` function (no session) remains fail-closed for PostgreSQL. CLI, HTTP, and MCP surfaces continue to use the default path and do not gain trusted promotion.
+The default `AnalyzeQueryAccess` function (no session) remains fail-closed for PostgreSQL. CLI and HTTP use the default path unless connection flags are present, in which case online mode routes through the unified online entry and gains trusted promotion; MCP has no query-access tool.
 
 ### Phase 1 Pure-Effect Matrix
 

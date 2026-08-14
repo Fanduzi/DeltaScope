@@ -276,7 +276,7 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 
 ### 默认路径
 
-默认的 `AnalyzeQueryAccess`（不带会话）对 PostgreSQL 保持“无法确认”的保守行为。CLI、HTTP 和 MCP 表面继续走默认路径，不会获得可信提升。
+默认的 `AnalyzeQueryAccess`（不带会话）对 PostgreSQL 保持“无法确认”的保守行为。CLI 和 HTTP 在未提供连接参数时走默认路径；提供连接参数时在线模式走统一在线入口并获得可信提升；MCP 没有 query-access 工具。
 
 ### Phase 1 纯效果矩阵
 

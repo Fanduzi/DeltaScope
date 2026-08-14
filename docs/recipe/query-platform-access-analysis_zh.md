@@ -182,7 +182,7 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 | TiDB | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
 | TiDB | 统一在线会话（身份推导的 `tidb-8.5` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 ranking window 可为 `admissible` |
 
-不要把仅表征的函数形状称为受支持。提升路径仅限 SDK，不新增 CLI/HTTP 数据库连接，也不新增 MCP 工具。
+不要把仅表征的函数形状称为受支持。提升需要真实的数据库连接：SDK 调用方使用统一在线会话，CLI/HTTP 在线模式（提供连接参数时）走同一统一入口；MCP 没有 query-access 工具。
 
 ## 此功能不做的事情
 

@@ -181,8 +181,7 @@ This matrix describes the default behavior of each surface for function-bearing 
 | TiDB | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
 | TiDB | Unified online session (identity-derived `tidb-8.5` profile) | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and ranking windows with direct partition+order columns |
 
-Do not call characterized-only function shapes supported. The promotion path is
-SDK-only and does not add CLI/HTTP database connections or an MCP tool.
+Do not call characterized-only function shapes supported. Promotion requires a real database connection: SDK callers use the unified online session, CLI/HTTP online mode (connection flags present) routes through the same unified entry, and MCP has no query-access tool.
 
 ## What This Does NOT Do
 
