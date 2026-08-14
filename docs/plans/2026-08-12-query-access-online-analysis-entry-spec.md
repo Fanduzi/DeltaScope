@@ -118,9 +118,12 @@ Exact error text is part of implementation review. Public callers must use
     the online session, cancellation, and transport-specific error mapping.
     They stop switching on product only after the unified SDK entry owns that
     routing.
-12. CLI exit codes and stderr, HTTP status/error codes/messages/access logs,
-    authorization behavior, `connection_id` contract, timeout/cancellation
-    behavior, and no-leak guarantees remain unchanged.
+12. CLI exit codes and established bounded stderr categories, HTTP
+    status/error codes/messages/access logs, authorization behavior,
+    `connection_id` contract, timeout/cancellation behavior, and no-leak
+    guarantees remain unchanged. Unified constructor/capability failures map
+    to the CLI's bounded `connection failed` category rather than exposing
+    dialect-specific SDK identity or liveness strings.
 13. SDK, CLI, and HTTP are the only milestone surfaces. MCP continues to have
     no Query Access capability and its no-surface contract remains enforced.
 14. Existing repeated SDK/CLI/HTTP behavior matrices remain in this milestone.

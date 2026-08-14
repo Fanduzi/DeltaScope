@@ -716,6 +716,91 @@ func TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure(t *testing.T) 
 // Recording-driver: user SQL never executed; no marker or fact leaks
 // ---------------------------------------------------------------------------
 
+// TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB
+// compares the unified and dialect-specific APIs directly across every
+// supported MySQL/TiDB profile, including their exact recording-driver query
+// sequence and bounded public result.
+func TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB(t *testing.T) {
+	cases := []struct {
+		name    string
+		version string
+		dialect Dialect
+	}{
+		{name: "mysql57", version: "5.7.44", dialect: DialectMySQL},
+		{name: "mysql80", version: "8.0.46", dialect: DialectMySQL},
+		{name: "mysql84", version: "8.4.10", dialect: DialectMySQL},
+		{name: "tidb85", version: "8.0.11-TiDB-v8.5.7", dialect: DialectTiDB},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			marker := "NO_EXEC_NO_LEAK_" + strings.ToUpper(tc.name)
+			sqlText := "SELECT COUNT(*) /* " + marker + " */ FROM app.users"
+			run := func(unified bool) (*QueryAccessResult, []string) {
+				t.Helper()
+				recorder := &onlineRecordingDriver{version: tc.version}
+				db := openOnlineRecordingDB(t, recorder)
+				defer db.Close()
+				conn, err := db.Conn(t.Context())
+				if err != nil {
+					t.Fatalf("conn: %v", err)
+				}
+				defer conn.Close()
+
+				var result *QueryAccessResult
+				if unified {
+					session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+					if err != nil {
+						t.Fatalf("unified new session: %v", err)
+					}
+					result, err = AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
+						SQL: sqlText, DefaultSchema: "app",
+					})
+					if err != nil {
+						t.Fatalf("unified analyze: %v", err)
+					}
+				} else {
+					session, err := NewMySQLTiDBQueryAccessSessionFromConn(t.Context(), conn)
+					if err != nil {
+						t.Fatalf("legacy new session: %v", err)
+					}
+					result, err = AnalyzeMySQLTiDBQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
+						SQL: sqlText, Dialect: tc.dialect, DefaultSchema: "app",
+					})
+					if err != nil {
+						t.Fatalf("legacy analyze: %v", err)
+					}
+				}
+				return result, recorder.recorded()
+			}
+
+			unifiedResult, unifiedQueries := run(true)
+			legacyResult, legacyQueries := run(false)
+			if !reflect.DeepEqual(unifiedResult, legacyResult) {
+				t.Fatalf("results differ:\nunified=%+v\nlegacy =%+v", unifiedResult, legacyResult)
+			}
+			if !reflect.DeepEqual(unifiedQueries, legacyQueries) {
+				t.Fatalf("recording queries differ:\nunified=%v\nlegacy =%v", unifiedQueries, legacyQueries)
+			}
+			for _, query := range append(unifiedQueries, legacyQueries...) {
+				if strings.Contains(query, marker) {
+					t.Fatalf("submitted SQL reached driver: %q", query)
+				}
+			}
+			for _, result := range []*QueryAccessResult{unifiedResult, legacyResult} {
+				data, err := json.Marshal(result)
+				if err != nil {
+					t.Fatalf("marshal result: %v", err)
+				}
+				for _, forbidden := range []string{marker, tc.version, "information_schema", "password", "dsn", "host=", "user="} {
+					if strings.Contains(strings.ToLower(string(data)), strings.ToLower(forbidden)) {
+						t.Errorf("result JSON leaked %q: %s", forbidden, data)
+					}
+				}
+			}
+		})
+	}
+}
+
 // TestOnlineQueryAccessSession_DoesNotExecuteUserSQL proves the unified entry
 // never sends caller-submitted analysis SQL to the database and only runs the
 // bounded identity/catalog probes.
@@ -903,6 +988,7 @@ func (r *onlineStubRows) Next(dest []driver.Value) error {
 type onlineRecordingDriver struct {
 	mu      sync.Mutex
 	queries []string
+	version string
 }
 
 func (d *onlineRecordingDriver) record(query string) {
@@ -960,7 +1046,11 @@ func (c onlineRecordingConn) QueryContext(_ context.Context, query string, _ []d
 			{"name", int64(4)},
 		}), nil
 	case strings.Contains(query, "SELECT VERSION()"):
-		return newOnlineStubRows([]string{"version"}, [][]driver.Value{{"8.4.10"}}), nil
+		version := c.rec.version
+		if version == "" {
+			version = "8.4.10"
+		}
+		return newOnlineStubRows([]string{"version"}, [][]driver.Value{{version}}), nil
 	case strings.Contains(query, "SELECT 1"):
 		return newOnlineStubRows([]string{"value"}, [][]driver.Value{{int64(1)}}), nil
 	default:

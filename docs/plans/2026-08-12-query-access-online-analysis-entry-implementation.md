@@ -92,8 +92,10 @@ milestone is additive and behavior-preserving.
 - Replace the product switch in `runQueryAccessOnline` with the unified
   constructor and analysis function.
 - Keep CLI flag parsing, online session configuration/open/close, dialect
-  expectations at the connection layer, exit codes, stdout/stderr, and error
-  text unchanged.
+  expectations at the connection layer, exit codes, stdout/stderr categories,
+  and bounded error presentation unchanged. Map unified constructor/capability
+  failures to the existing bounded connection-failure category rather than
+  exposing dialect-specific SDK identity or liveness strings.
 - Leave request dialect empty at the unified analysis boundary unless an
   existing externally visible contract requires a constraint; do not derive it
   by inspecting the unified wrapper.

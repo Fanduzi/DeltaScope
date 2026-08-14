@@ -18,6 +18,7 @@ Stable public package surface for library consumers.
 | query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
 | query_access_session_integration_test.go | PG17 Docker integration for caller-owned trusted query access, including exact COUNT(1) boundaries and the foreign-table negative path |
 | query_access_session_postgresql_recording_test.go | Recording-driver proof that trusted COUNT(1) analysis never sends user SQL to the database and foreign tables fail closed before COUNT catalog proof |
+| query_access_session_mysql_tidb_live_e2e_test.go | Docker-backed MySQL 5.7/8.0/8.4 and TiDB 8.5 profile coverage, including unified-versus-legacy result equivalence |
 | query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, MySQL/TiDB equivalence, and recording-driver no-execution/no-leak evidence |
 | query_access_online_session_postgresql_tag_test.go | Verifies PostgreSQL 17 routing through the unified entry: exact COUNT(1) admission, excluded-shape fail-closed, foreign-table rejection, no-execution/no-leak, and legacy API equivalence (postgresql build tag) |
 | query_access_online_session_postgresql_notag_test.go | Verifies the no-tag build keeps the unified symbols, fails an observed PostgreSQL target closed, and preserves legacy PostgreSQL stubs |
@@ -89,7 +90,7 @@ Stable public package surface for library consumers.
 - `NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)`
   Creates an opaque MySQL/TiDB session after a liveness check
 - `AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, req)`
-  Resolves relation metadata through the session connection, rejects external schema resolvers, and is the only SDK boundary that can use the private MySQL/TiDB semantic capability. The production builtin semantic registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. Each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition and order columns. Default `AnalyzeQueryAccess`, CLI, and HTTP remain offline and fail-closed.
+  Resolves relation metadata through the session connection, rejects external schema resolvers, and remains the dialect-specific SDK boundary for the private MySQL/TiDB semantic capability. The production builtin semantic registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. Each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition and order columns. Default `AnalyzeQueryAccess` remains offline and fail-closed; CLI and HTTP online mode route the same capability through `AnalyzeOnlineQueryAccessWithSession`.
 - `OnlineQueryAccessSession`
   Opaque unified wrapper for a caller-owned `*sql.Conn`; construction pings and identifies the server and derives a private routing target. Exposes no identity, product, profile, capability, connection state, exported field, or getter, and marshals as `{}`
 - `NewOnlineQueryAccessSessionFromConn(ctx, conn)`

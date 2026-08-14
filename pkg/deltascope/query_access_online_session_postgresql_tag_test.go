@@ -238,6 +238,7 @@ func TestOnlineQueryAccessSession_PostgreSQLCountLookupFailureNoLeak(t *testing.
 // entry returns results equivalent to the existing PostgreSQL session API for
 // supported and excluded shapes and failure cases.
 func TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI(t *testing.T) {
+	const marker = "PG_NO_EXEC_NO_LEAK_EQUIV_MARKER"
 	queries := []string{
 		"SELECT COUNT(1) FROM app.orders",
 		"SELECT COUNT(*) FROM app.users",
@@ -251,7 +252,7 @@ func TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI(t *testing.T) {
 		"SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id",
 	}
 	for _, sqlText := range queries {
-		sqlText := sqlText
+		sqlText := sqlText + " /* " + marker + " */"
 		t.Run(sqlText, func(t *testing.T) {
 			recorder := &postgresqlRecordingDriver{}
 			db := openPostgreSQLRecordingDB(t, recorder)
@@ -273,16 +274,29 @@ func TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI(t *testing.T) {
 				t.Fatalf("legacy new session: %v", err)
 			}
 
+			analysisStart := len(recorder.recorded())
 			unifiedResult, unifiedErr := AnalyzeOnlineQueryAccessWithSession(ctx, unifiedSession, QueryAccessRequest{
 				SQL:           sqlText,
 				DefaultSchema: "app",
 			})
+			unifiedEnd := len(recorder.recorded())
 			legacyResult, legacyErr := AnalyzePostgreSQLQueryAccessWithSession(ctx, legacySession, QueryAccessRequest{
 				SQL:           sqlText,
 				Dialect:       DialectPostgreSQL,
 				Mode:          QueryAccessModeStrict,
 				DefaultSchema: "app",
 			})
+			recorded := recorder.recorded()
+			unifiedQueries := recorded[analysisStart:unifiedEnd]
+			legacyQueries := recorded[unifiedEnd:]
+			if !reflect.DeepEqual(unifiedQueries, legacyQueries) {
+				t.Fatalf("recording queries differ:\nunified=%v\nlegacy =%v", unifiedQueries, legacyQueries)
+			}
+			for _, query := range append(unifiedQueries, legacyQueries...) {
+				if strings.Contains(query, marker) {
+					t.Fatalf("submitted SQL reached driver: %q", query)
+				}
+			}
 			if (unifiedErr == nil) != (legacyErr == nil) {
 				t.Fatalf("error mismatch: unified=%v legacy=%v", unifiedErr, legacyErr)
 			}
@@ -290,11 +304,16 @@ func TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI(t *testing.T) {
 				if unifiedErr.Error() != legacyErr.Error() {
 					t.Fatalf("error text mismatch: unified=%q legacy=%q", unifiedErr.Error(), legacyErr.Error())
 				}
+				if strings.Contains(unifiedErr.Error(), marker) {
+					t.Fatalf("error leaked submitted SQL marker: %q", unifiedErr)
+				}
 				return
 			}
 			if !reflect.DeepEqual(unifiedResult, legacyResult) {
 				t.Fatalf("results differ:\nunified=%+v\nlegacy =%+v", unifiedResult, legacyResult)
 			}
+			assertPostgreSQLRecordingNoLeak(t, unifiedResult, marker)
+			assertPostgreSQLRecordingNoLeak(t, legacyResult, marker)
 		})
 	}
 }
