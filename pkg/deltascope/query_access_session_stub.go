@@ -13,11 +13,15 @@ import (
 )
 
 // NewPostgreSQLQueryAccessSessionFromConn returns ErrPostgreSQLSessionNotAvailable when built without the postgresql tag.
+//
+// Deprecated: Use NewOnlineQueryAccessSessionFromConn.
 func NewPostgreSQLQueryAccessSessionFromConn(_ context.Context, _ *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
 	return nil, ErrPostgreSQLSessionNotAvailable
 }
 
 // AnalyzePostgreSQLQueryAccessWithSession returns ErrPostgreSQLSessionNotAvailable when built without the postgresql tag.
+//
+// Deprecated: Use AnalyzeOnlineQueryAccessWithSession.
 func AnalyzePostgreSQLQueryAccessWithSession(_ context.Context, _ *PostgreSQLQueryAccessSession, _ QueryAccessRequest) (*QueryAccessResult, error) {
 	return nil, ErrPostgreSQLSessionNotAvailable
 }

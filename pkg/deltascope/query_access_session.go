@@ -29,6 +29,8 @@ var (
 // NewPostgreSQLQueryAccessSessionFromConn creates an opaque session from a
 // caller-owned *sql.Conn. The connection must be non-nil and alive.
 // Server identity is validated at construction time.
+//
+// Deprecated: Use NewOnlineQueryAccessSessionFromConn.
 func NewPostgreSQLQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*PostgreSQLQueryAccessSession, error) {
 	if conn == nil {
 		return nil, errNilConnection
@@ -56,6 +58,8 @@ func NewPostgreSQLQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn
 // AnalyzePostgreSQLQueryAccessWithSession performs trusted PostgreSQL query
 // access analysis using a caller-owned connection session.
 // Rejects a non-empty caller AnalysisProfile; PostgreSQL always uses PG17 manifest.
+//
+// Deprecated: Use AnalyzeOnlineQueryAccessWithSession.
 func AnalyzePostgreSQLQueryAccessWithSession(
 	ctx context.Context,
 	session *PostgreSQLQueryAccessSession,

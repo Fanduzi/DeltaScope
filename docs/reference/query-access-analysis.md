@@ -53,7 +53,7 @@ A profile also does not change the default path. DeltaScope's default path does
 not create a database connection on its own: the default SDK may accept a
 caller-supplied `SchemaResolver` to resolve table names or expand wildcards,
 but this does not enable MySQL/TiDB function-effect promotion; CLI and HTTP
-have no session promotion path. The production semantic registry is enabled
+use the unified online entry only when connection flags are present. The production semantic registry is enabled
 for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`; each profile
 supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and the
 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct
@@ -61,7 +61,7 @@ partition and order columns. However, profiled function-bearing MySQL/TiDB
 queries remain `indeterminate` on the default offline surface because the
 default path does not connect to a database and does not enable function
 semantic promotion. Promotion is available only through the explicit
-same-connection SDK session (`AnalyzeMySQLTiDBQueryAccessWithSession`). The
+same-connection SDK session (`AnalyzeOnlineQueryAccessWithSession`). The
 profile is not included in result JSON.
 
 ### Inference Risk
@@ -207,17 +207,16 @@ echoing the profile or SQL.
 
 If your Go program is already connected to MySQL or TiDB, you can hand that connection to the SDK. The SDK can then confirm the real tables and columns, and — within the supported function set — produce a usable permission list. This is the only path that can promote a MySQL/TiDB function-bearing query from `indeterminate` to `admissible`. CLI, HTTP, and the default SDK cannot do this, because they do not open a database connection.
 
-Two things must be distinguished: the connection you pass in is used only to resolve real relations and column metadata; the function semantics themselves come from the compatibility profile you select explicitly (`AnalysisProfile`), i.e. the built-in, immutable semantic manifest. The connection is not used to verify the server version or SQL mode, and it is not used to prove function semantics — the profile supplies those, and the connection only grounds table and column names onto real objects.
+Two things must be distinguished: the connection you pass in is used to identify the server and to resolve real relations and column metadata; the function semantics themselves come from the built-in, immutable semantic manifest selected by the observed server identity. The connection is not used to verify the server version or SQL mode, and it is not used to prove function semantics — the manifest supplies those, and the connection only grounds table and column names onto real objects.
 
-Minimal example:
+Minimal example (the unified online entry; leave `Dialect` empty so observed identity selects the route):
 
 ```go
-session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
-result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
-    SQL:             "SELECT COUNT(*) FROM app.orders",
-    Dialect:         deltascope.DialectMySQL,
-    AnalysisProfile: deltascope.QueryAccessAnalysisProfileMySQL84,
-    DefaultSchema:   "app",
+session, err := deltascope.NewOnlineQueryAccessSessionFromConn(ctx, conn)
+result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
+    SQL:           "SELECT COUNT(*) FROM app.orders",
+    Mode:          deltascope.QueryAccessModeStrict,
+    DefaultSchema: "app",
 })
 ```
 
@@ -249,13 +248,13 @@ Even with a session connection, the following remain `indeterminate`:
 
 ### `admissible` Is Not Authorization
 
-A session analysis returning `admissible` only means static analysis obtained the complete known requirements: table and column names were resolved to real physical objects through your connection, and every function effect in the query is within the supported set of the profile you selected. It does **not**:
+A session analysis returning `admissible` only means static analysis obtained the complete known requirements: table and column names were resolved to real physical objects through your connection, and every function effect in the query is within the supported set of the identity-derived profile. It does **not**:
 
 - Authorize execution of the query.
 - Evaluate grants or permissions.
 - Guarantee a later execution snapshot matches the current database state.
 - Account for row-level security, masking, or SQL rewrite.
-- Prove that the actual server's version or SQL mode matches the profile you selected (that is the caller's responsibility).
+- Prove that the server's SQL mode matches the semantic manifest selected from the observed version (SQL mode is not verified).
 
 In other words, `admissible` means "I can fully enumerate what this query reads," not "the caller is permitted to read it," and not "the query is safe."
 
@@ -274,24 +273,24 @@ The trusted PostgreSQL SDK path enables manifest-gated admission promotion for P
 ### Session Construction
 
 ```go
-session, err := deltascope.NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+session, err := deltascope.NewOnlineQueryAccessSessionFromConn(ctx, conn)
 ```
 
 - Accepts a caller-owned `*sql.Conn` (not `*sql.DB`)
-- Validates connection liveness via `PingContext`
+- Validates connection liveness via `PingContext` and identifies the server
 - Does not take ownership of the connection; caller must close it
-- Returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds
+- Returns `ErrOnlineQueryAccessCapabilityUnsupported` in non-postgresql builds
 
 ### Trusted Analysis
 
 ```go
-result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)
+result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 ```
 
-- Rejects nil context, nil session, non-PostgreSQL dialect, or non-nil `SchemaResolver`
+- Rejects nil context, nil session, mismatched non-empty request dialect, or non-nil `SchemaResolver`
 - Creates all metadata, type, and effect-identity resolvers from the session's single `*sql.Conn`
 - May return `read_only + admissible` when every effect is catalog-resolved and listed in the PG17 manifest
-- Returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds
+- Returns `ErrOnlineQueryAccessCapabilityUnsupported` in non-postgresql builds
 
 ### Admission Semantics
 
@@ -315,11 +314,11 @@ allowlist.
 | Dialect | Surface | Phase 1 aggregates/windows |
 |---|---|---|
 | PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
-| PostgreSQL | Trusted SDK session only | `admissible` for proven `count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` with complete requirements |
+| PostgreSQL | Unified online session only | `admissible` for proven `count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` with complete requirements |
 | MySQL | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
-| MySQL | Explicit SDK session (`AnalyzeMySQLTiDBQueryAccessWithSession`) with `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; 8.x profiles also `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |
+| MySQL | Unified online session (identity-derived `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile) | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; 8.x profiles also `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |
 | TiDB | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
-| TiDB | Explicit SDK session with `tidb-8.5` profile | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |
+| TiDB | Unified online session (identity-derived `tidb-8.5` profile) | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |
 
 The trusted PostgreSQL subset requires exact catalog identity, session and
 database context, complete strict-mode dependencies, and a PG17 manifest proof.
@@ -332,6 +331,29 @@ catalog resolves object identity); MySQL/TiDB uses the built-in, profile-bound
 semantic manifest, where the connection only grounds schema-qualified table and
 column names onto real physical objects and the function semantics come from the
 profile, not from catalog identity. The two paths do not affect each other.
+
+## Migrating from the Dialect-Specific Session APIs
+
+The dialect-specific session types, constructors, and analyzers are deprecated
+but remain exported and behavior-compatible:
+
+| Deprecated | Replacement |
+|---|---|
+| `PostgreSQLQueryAccessSession` | `OnlineQueryAccessSession` |
+| `MySQLTiDBQueryAccessSession` | `OnlineQueryAccessSession` |
+| `NewPostgreSQLQueryAccessSessionFromConn` | `NewOnlineQueryAccessSessionFromConn` |
+| `NewMySQLTiDBQueryAccessSessionFromConn` | `NewOnlineQueryAccessSessionFromConn` |
+| `AnalyzePostgreSQLQueryAccessWithSession` | `AnalyzeOnlineQueryAccessWithSession` |
+| `AnalyzeMySQLTiDBQueryAccessWithSession` | `AnalyzeOnlineQueryAccessWithSession` |
+
+Leave `QueryAccessRequest.Dialect` empty so the observed server identity selects
+the MySQL, TiDB, or PostgreSQL route; a non-empty dialect is only an optional
+matching constraint. The connection remains caller-owned in both APIs. The
+unified entry returns its own bounded `ErrOnlineQueryAccess...` sentinels, which
+are not aliases of the dialect-specific errors — migrate `errors.Is` branches
+to the generic sentinels (for example `ErrOnlineQueryAccessSessionUnavailable`,
+`ErrOnlineQueryAccessDialectMismatch`, and
+`ErrOnlineQueryAccessCapabilityUnsupported`).
 
 ## Defense in Depth
 

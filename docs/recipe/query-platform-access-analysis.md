@@ -15,7 +15,7 @@ You want to enforce column-level access control without executing the query.
 
 Use the `queryaccess.Service.Analyze()` API to inspect the query and produce a structured access result.
 
-> Note: This recipe uses the default offline path `appqa.Service.Analyze()`, which does not connect to a database. Function-bearing MySQL/TiDB queries remain `indeterminate` on this path. To have the SDK actually confirm MySQL/TiDB function queries (e.g. `COUNT(*)`), use the same-connection session API; see the "Confirming MySQL/TiDB Function Queries via a Same-Connection Session" section in the [Query Access Analysis Reference](../reference/query-access-analysis.md).
+> Note: This recipe uses the default offline path `appqa.Service.Analyze()`, which does not connect to a database. Function-bearing MySQL/TiDB queries remain `indeterminate` on this path. To have the SDK actually confirm MySQL/TiDB function queries (e.g. `COUNT(*)`), use the unified same-connection online session API (`NewOnlineQueryAccessSessionFromConn` and `AnalyzeOnlineQueryAccessWithSession`); see the "Confirming MySQL/TiDB Function Queries via a Same-Connection Session" section in the [Query Access Analysis Reference](../reference/query-access-analysis.md).
 
 ### Step 1: Analyze a Simple Query
 
@@ -164,8 +164,8 @@ The `projection_only_inference_risk` warning indicates that `salary` is used in 
 - Empty mode defaults to `strict`.
 - Without metadata, wildcards produce `indeterminate` classification.
 - The default SDK/CLI/HTTP path does not connect to a database; function-bearing PostgreSQL, MySQL, and TiDB queries stay `indeterminate` on this default path.
-- To promote a function-bearing query from `indeterminate` to `admissible`, you must use an explicit same-connection session SDK: `AnalyzePostgreSQLQueryAccessWithSession` for PostgreSQL, `AnalyzeMySQLTiDBQueryAccessWithSession` for MySQL/TiDB. Promotion is SDK-only; CLI, HTTP, and MCP do not open database connections.
-- MySQL/TiDB session promotion requires the referenced base table to be schema-qualified (e.g. `app.orders`). An unqualified table name stays `indeterminate` even when the request carries `DefaultSchema`. The profile is a caller-declared compatibility target; it does not verify the actual server version or SQL mode, so the caller must ensure the chosen profile matches the real version.
+- To promote a function-bearing query from `indeterminate` to `admissible`, you must use the unified same-connection online session API: `NewOnlineQueryAccessSessionFromConn` and `AnalyzeOnlineQueryAccessWithSession`. The dialect-specific session APIs (`NewPostgreSQLQueryAccessSessionFromConn` / `AnalyzePostgreSQLQueryAccessWithSession`, `NewMySQLTiDBQueryAccessSessionFromConn` / `AnalyzeMySQLTiDBQueryAccessWithSession`) are deprecated; see the migration section in the [Query Access Analysis Reference](../reference/query-access-analysis.md) to switch. Promotion requires a real database connection; the default offline SDK/CLI/HTTP path does not open one.
+- MySQL/TiDB session promotion requires the referenced base table to be schema-qualified (e.g. `app.orders`). An unqualified table name stays `indeterminate` even when the request carries `DefaultSchema`. The semantic manifest is selected from the observed server version series; SQL mode is not verified, so a server running a non-default SQL mode may diverge from the analyzed semantics.
 - Treat `indeterminate` as denied in your authorization layer.
 
 ### Phase 1 Surface Matrix
@@ -175,11 +175,11 @@ This matrix describes the default behavior of each surface for function-bearing 
 | Dialect | Surface | Phase 1 aggregates/windows |
 |---|---|---|
 | PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
-| PostgreSQL | Trusted SDK session only | `admissible` for proven count/sum/avg/min/max/row_number/rank/dense_rank with complete requirements |
+| PostgreSQL | Unified online session only | `admissible` for proven count/sum/avg/min/max/row_number/rank/dense_rank with complete requirements |
 | MySQL | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
-| MySQL | Explicit SDK session with `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; 8.x profiles also support ranking windows with direct partition+order columns |
+| MySQL | Unified online session (identity-derived `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile) | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; 8.x profiles also support ranking windows with direct partition+order columns |
 | TiDB | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
-| TiDB | Explicit SDK session with `tidb-8.5` profile | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and ranking windows with direct partition+order columns |
+| TiDB | Unified online session (identity-derived `tidb-8.5` profile) | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`, and ranking windows with direct partition+order columns |
 
 Do not call characterized-only function shapes supported. The promotion path is
 SDK-only and does not add CLI/HTTP database connections or an MCP tool.

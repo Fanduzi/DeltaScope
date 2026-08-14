@@ -39,7 +39,7 @@
 
 配置是一个兼容性目标，告诉分析器“按哪个引擎/版本的语义来看这条 SQL”。它不是服务器身份验证：当前实现不会去查询实际服务器的 `VERSION()` 或 SQL mode，也不会校验连接实际指向哪个版本。调用方要自己保证所选 profile 与实际 MySQL/TiDB 版本以及相关 SQL mode 匹配；选错 profile，分析仍会按那个 profile 的语义来判断，结果可能与真实服务器行为不一致。
 
-profile 也不改变默认行为。DeltaScope 的默认路径不会自行创建数据库连接：默认 SDK 可以接受调用方提供的 `SchemaResolver` 来解析表名或展开通配符，但这不会启用 MySQL/TiDB 函数效果提升；CLI 和 HTTP 没有 session 提升路径。生产语义 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 还支持带直接分区和排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK`。
+profile 也不改变默认行为。DeltaScope 的默认路径不会自行创建数据库连接：默认 SDK 可以接受调用方提供的 `SchemaResolver` 来解析表名或展开通配符，但这不会启用 MySQL/TiDB 函数效果提升；CLI 和 HTTP 只在提供连接参数时走统一在线入口。生产语义 registry 已为 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5` 启用；每个 profile 支持 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，8.x profile 还支持带直接分区和排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK`。
 
 但要注意一条边界：带了配置、又含函数的 MySQL/TiDB 查询，在默认离线表面上仍然是 `indeterminate`。原因是默认 `Service` 走的是离线路径，不会连数据库、也不会启用函数语义提升，无法确认这些函数会读取什么。配置不会出现在结果 JSON 里。
 
@@ -189,17 +189,16 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
 
 如果你的 Go 程序已经连上了 MySQL 或 TiDB，可以把这条连接交给 SDK，SDK 才能确认真实的表和列，并在支持的函数范围内给出可用的权限清单。这是唯一能让 MySQL/TiDB 函数查询从“无法确认”提升为“可准入”的路径。CLI、HTTP 和默认 SDK 都做不到这一点，因为它们不会打开数据库连接。
 
-这里要分清两件事：你传入的连接只用于解析真实的关系和列元数据；函数本身的语义来自你显式选择的兼容性 profile（`AnalysisProfile`），也就是内置的不可变语义 manifest。当前连接不会被用来验证服务器版本或 SQL mode，也不会被用来证明函数语义——函数语义由 profile 决定，连接只负责把表名、列名落到真实对象上。
+这里要分清两件事：你传入的连接用于识别服务器并解析真实的关系和列元数据；函数本身的语义来自由观察到的服务器身份选定的内置、不可变语义 manifest。当前连接不会被用来验证服务器版本或 SQL mode，也不会被用来证明函数语义——语义由 manifest 决定，连接只负责把表名、列名落到真实对象上。
 
-最小示例：
+最小示例（统一在线入口；`Dialect` 留空，由观察到的身份选择路由）：
 
 ```go
-session, err := deltascope.NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
-result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
-    SQL:             "SELECT COUNT(*) FROM app.orders",
-    Dialect:         deltascope.DialectMySQL,
-    AnalysisProfile: deltascope.QueryAccessAnalysisProfileMySQL84,
-    DefaultSchema:   "app",
+session, err := deltascope.NewOnlineQueryAccessSessionFromConn(ctx, conn)
+result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, deltascope.QueryAccessRequest{
+    SQL:           "SELECT COUNT(*) FROM app.orders",
+    Mode:          deltascope.QueryAccessModeStrict,
+    DefaultSchema: "app",
 })
 ```
 
@@ -231,13 +230,13 @@ result, err := deltascope.AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, d
 
 ### `admissible` 不是授权
 
-会话分析返回 `admissible`，只表示静态分析拿到了完整的已知要求：表名和列名通过你的连接解析到了真实物理对象，且查询里的每个函数效果都在你选择的 profile 的支持清单内。它**不**：
+会话分析返回 `admissible`，只表示静态分析拿到了完整的已知要求：表名和列名通过你的连接解析到了真实物理对象，且查询里的每个函数效果都在身份推导的 profile 的支持清单内。它**不**：
 
 - 授权执行这条查询。
 - 评估 grant 或权限。
 - 保证稍后真正执行时数据库状态和现在一致。
 - 考虑行级安全、脱敏或 SQL 重写。
-- 证明当前服务器的真实版本或 SQL mode 与你选的 profile 一致（这由调用方负责保证）。
+- 证明服务器的 SQL mode 与从观察到的版本选定的语义 manifest 一致（SQL mode 不会被验证）。
 
 换句话说，`admissible` 是“我能完整列出它会读取什么”，不是“调用者被允许读取”，也不是“查询安全”或“只读执行结果保证”。
 
@@ -256,24 +255,24 @@ PostgreSQL 也有类似的同连接会话路径，支持 manifest 门控的准�
 ### 会话构建
 
 ```go
-session, err := deltascope.NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
+session, err := deltascope.NewOnlineQueryAccessSessionFromConn(ctx, conn)
 ```
 
 - 接受调用者拥有的 `*sql.Conn`（不是 `*sql.DB`）
-- 通过 `PingContext` 验证连接活性
+- 通过 `PingContext` 验证连接活性并识别服务器
 - 不获取连接的所有权；连接由调用者关闭
-- 在非 postgresql 构建中返回 `ErrPostgreSQLSessionNotAvailable`
+- 在非 postgresql 构建中返回 `ErrOnlineQueryAccessCapabilityUnsupported`
 
 ### 可信分析
 
 ```go
-result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)
+result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 ```
 
-- 拒绝 nil 上下文、nil 会话、非 PostgreSQL 方言或非 nil `SchemaResolver`
+- 拒绝 nil 上下文、nil 会话、不匹配的非空请求方言或非 nil `SchemaResolver`
 - 从会话的单个 `*sql.Conn` 创建所有元数据、类型和效果标识解析器
 - 当每个效果都已目录解析并列在 PG17 manifest 中时，可能返回 `read_only + admissible`
-- 在非 postgresql 构建中返回 `ErrPostgreSQLSessionNotAvailable`
+- 在非 postgresql 构建中返回 `ErrOnlineQueryAccessCapabilityUnsupported`
 
 ### 默认路径
 
@@ -286,15 +285,30 @@ result, err := deltascope.AnalyzePostgreSQLQueryAccessWithSession(ctx, session, 
 | 方言 | 表面 | Phase 1 聚合/窗口 |
 |---|---|---|
 | PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
-| PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
+| PostgreSQL | 仅统一在线会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
 | MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
-| MySQL | 显式 SDK 会话（`AnalyzeMySQLTiDBQueryAccessWithSession`）配合 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` |
+| MySQL | 统一在线会话（身份推导的 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` |
 | TiDB | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
-| TiDB | 显式 SDK 会话配合 `tidb-8.5` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` 可为 `admissible` |
+| TiDB | 统一在线会话（身份推导的 `tidb-8.5` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` 可为 `admissible` |
 
 可信 PostgreSQL 子集要求精确目录身份、会话和数据库上下文、完整的 strict 依赖，以及 PG17 manifest 证明。`DISTINCT`、`FILTER`、嵌套参数、cast、窗口 frame、命名窗口和不完整元数据仍为 `indeterminate`。MySQL/TiDB 不会仅因语法或函数名称而获得提升。
 
 两种证明根不同：PostgreSQL 走 catalog identity（用连接的目录解析对象身份）；MySQL/TiDB 走内置的、与 profile 绑定的语义 manifest，连接只负责把 schema-qualified 表名和列名解析到真实物理对象，函数语义本身来自 profile，不依赖 catalog 身份。两者互不影响。
+
+## 从方言专用会话 API 迁移
+
+方言专用的会话类型、构造函数和分析函数已弃用，但仍保持导出且行为兼容：
+
+| 已弃用 | 替代 |
+|---|---|
+| `PostgreSQLQueryAccessSession` | `OnlineQueryAccessSession` |
+| `MySQLTiDBQueryAccessSession` | `OnlineQueryAccessSession` |
+| `NewPostgreSQLQueryAccessSessionFromConn` | `NewOnlineQueryAccessSessionFromConn` |
+| `NewMySQLTiDBQueryAccessSessionFromConn` | `NewOnlineQueryAccessSessionFromConn` |
+| `AnalyzePostgreSQLQueryAccessWithSession` | `AnalyzeOnlineQueryAccessWithSession` |
+| `AnalyzeMySQLTiDBQueryAccessWithSession` | `AnalyzeOnlineQueryAccessWithSession` |
+
+让 `QueryAccessRequest.Dialect` 留空，由观察到的服务器身份选择 MySQL、TiDB 或 PostgreSQL 路由；非空方言只是一个可选的匹配约束。两种 API 中连接都由调用者拥有。统一入口返回自己的一组有界 `ErrOnlineQueryAccess...` 哨兵错误，它们不是方言专用错误的别名——请把 `errors.Is` 分支迁移到通用哨兵（例如 `ErrOnlineQueryAccessSessionUnavailable`、`ErrOnlineQueryAccessDialectMismatch`、`ErrOnlineQueryAccessCapabilityUnsupported`）。
 
 ## 纵深防御
 

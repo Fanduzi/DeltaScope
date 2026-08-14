@@ -16,7 +16,7 @@
 
 用 `queryaccess.Service.Analyze()` 检查查询，产出一份结构化的访问结果。
 
-> 注意：本指南用的是默认离线路径 `appqa.Service.Analyze()`，它不连数据库。带函数的 MySQL/TiDB 查询在这条路径上仍是 `indeterminate`。如果你想让 SDK 真正确认 MySQL/TiDB 的函数查询（例如 `COUNT(*)`），需要用同连接会话 API；详见[查询访问分析参考](../reference/query-access-analysis_zh.md)中“让 SDK 真正确认 MySQL/TiDB 的函数查询”一节。
+> 注意：本指南用的是默认离线路径 `appqa.Service.Analyze()`，它不连数据库。带函数的 MySQL/TiDB 查询在这条路径上仍是 `indeterminate`。如果你想让 SDK 真正确认 MySQL/TiDB 的函数查询（例如 `COUNT(*)`），需要用统一的同连接在线会话 API（`NewOnlineQueryAccessSessionFromConn` 和 `AnalyzeOnlineQueryAccessWithSession`）；详见[查询访问分析参考](../reference/query-access-analysis_zh.md)中“让 SDK 真正确认 MySQL/TiDB 的函数查询”一节。
 
 ### 步骤 1：分析简单查询
 
@@ -165,8 +165,8 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 - 空模式默认为 `strict`。
 - 没有元数据时，通配符产生 `indeterminate` 分类。
 - 默认 SDK/CLI/HTTP 在默认离线路径上不连数据库；带函数的 PostgreSQL、MySQL、TiDB 查询在这条路径上都保持 `indeterminate`。
-- 要让带函数的查询从 `indeterminate` 提升为 `admissible`，必须用显式同连接会话 SDK：PostgreSQL 走 `AnalyzePostgreSQLQueryAccessWithSession`，MySQL/TiDB 走 `AnalyzeMySQLTiDBQueryAccessWithSession`。提升仅限 SDK，CLI、HTTP、MCP 都不会打开数据库连接。
-- MySQL/TiDB 会话提升要求被引用的基表是 schema-qualified（例如 `app.orders`）。未限定表名即使请求携带 `DefaultSchema` 也保持 `indeterminate`。profile 是调用方声明的兼容性目标，不验证实际服务器版本或 SQL mode；调用方必须确保所选 profile 与实际版本匹配。
+- 要让带函数的查询从 `indeterminate` 提升为 `admissible`，必须用统一的同连接在线会话 API：`NewOnlineQueryAccessSessionFromConn` 和 `AnalyzeOnlineQueryAccessWithSession`。方言专用会话 API（`NewPostgreSQLQueryAccessSessionFromConn` / `AnalyzePostgreSQLQueryAccessWithSession`、`NewMySQLTiDBQueryAccessSessionFromConn` / `AnalyzeMySQLTiDBQueryAccessWithSession`）已弃用，迁移方式见[查询访问分析参考](../reference/query-access-analysis_zh.md)的迁移一节。提升需要真实的数据库连接；默认离线 SDK/CLI/HTTP 路径不会打开连接。
+- MySQL/TiDB 会话提升要求被引用的基表是 schema-qualified（例如 `app.orders`）。未限定表名即使请求携带 `DefaultSchema` 也保持 `indeterminate`。语义 manifest 由观察到的服务器版本系列选定；SQL mode 不会被验证，因此运行非默认 SQL mode 的服务器可能与分析语义有差异。
 - 在授权层里把 `indeterminate` 当作拒绝处理。
 
 ### Phase 1 表面矩阵
@@ -176,11 +176,11 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 | 方言 | 表面 | Phase 1 聚合/窗口 |
 |---|---|---|
 | PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
-| PostgreSQL | 仅可信 SDK 会话 | 在要求完整且证明通过时，count/sum/avg/min/max/row_number/rank/dense_rank 为 `admissible` |
+| PostgreSQL | 仅统一在线会话 | 在要求完整且证明通过时，count/sum/avg/min/max/row_number/rank/dense_rank 为 `admissible` |
 | MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
-| MySQL | 显式 SDK 会话配合 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 ranking window |
+| MySQL | 统一在线会话（身份推导的 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 ranking window |
 | TiDB | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
-| TiDB | 显式 SDK 会话配合 `tidb-8.5` profile | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 ranking window 可为 `admissible` |
+| TiDB | 统一在线会话（身份推导的 `tidb-8.5` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`，以及带直接分区+排序列的 ranking window 可为 `admissible` |
 
 不要把仅表征的函数形状称为受支持。提升路径仅限 SDK，不新增 CLI/HTTP 数据库连接，也不新增 MCP 工具。
 

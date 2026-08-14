@@ -29,6 +29,8 @@ var ErrPostgreSQLQueryAccessProfileNotAllowed = errors.New("postgresql session r
 //
 // The wrapper exposes no OIDs, manifest entries, catalog SQL, credentials,
 // session binding, or Trusted flag. It has no JSON-marshalable fields.
+//
+// Deprecated: Use OnlineQueryAccessSession.
 type PostgreSQLQueryAccessSession struct {
 	conn   *sql.Conn
 	target online.CapabilityTarget

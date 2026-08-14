@@ -79,23 +79,11 @@ Stable public package surface for library consumers.
   Relation reference with `Unbound` field marking relations that must not produce physical requirements
 - `QueryAccessColumnReference`
   Column reference with `Unbound` field indicating the column could not be resolved to a qualified schema.table.column
-- `PostgreSQLQueryAccessSession`
-  Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only); the unified `OnlineQueryAccessSession` routes PG17 through the same private proof core
-- `NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)`
-  Creates an opaque session from a caller-owned `*sql.Conn` with context for liveness check; the session does not close the connection (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
-- `AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)`
-  Performs trusted PostgreSQL query access analysis using a caller-owned connection session; may return `read_only + admissible` when all effects are manifest-proven (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
-- `MySQLTiDBQueryAccessSession`
-  Opaque wrapper for a caller-owned MySQL/TiDB `*sql.Conn`; the connection remains caller-owned
-- `NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)`
-  Creates an opaque MySQL/TiDB session after a liveness check
-- `AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, req)`
-  Resolves relation metadata through the session connection, rejects external schema resolvers, and remains the dialect-specific SDK boundary for the private MySQL/TiDB semantic capability. The production builtin semantic registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. Each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition and order columns. Default `AnalyzeQueryAccess` remains offline and fail-closed; CLI and HTTP online mode route the same capability through `AnalyzeOnlineQueryAccessWithSession`.
-- `OnlineQueryAccessSession`
+- `OnlineQueryAccessSession` (canonical)
   Opaque unified wrapper for a caller-owned `*sql.Conn`; construction pings and identifies the server and derives a private routing target. Exposes no identity, product, profile, capability, connection state, exported field, or getter, and marshals as `{}`
-- `NewOnlineQueryAccessSessionFromConn(ctx, conn)`
+- `NewOnlineQueryAccessSessionFromConn(ctx, conn)` (canonical)
   Creates a unified online session from a caller-owned `*sql.Conn`; never opens, pools, closes, or retries the connection. Nil context/connection, failed liveness, and identity failure map to `ErrOnlineQueryAccessSessionUnavailable`; a recognized but unsupported capability (including PostgreSQL 17 in a no-postgresql-tag source build) maps to `ErrOnlineQueryAccessCapabilityUnsupported`. Official DeltaScope binaries are built with the postgresql tag and route PostgreSQL 17 through the same-connection trusted proof
-- `AnalyzeOnlineQueryAccessWithSession(ctx, session, req)`
+- `AnalyzeOnlineQueryAccessWithSession(ctx, session, req)` (canonical)
   Unified online analysis entry with a fixed validation priority (session/context; dialect mismatch; profile; resolver; linked capability; existing request validation). Empty request dialect uses observed identity; a non-empty dialect is a constraint that must match. Routes MySQL 5.7/8.0/8.4, TiDB 8.5, and PostgreSQL 17 (postgresql build tag) through their existing private proof cores; the no-tag source build keeps PostgreSQL fail-closed with the capability sentinel
 - `ErrOnlineQueryAccessSessionUnavailable`
   Bounded sentinel: context/session unusable (nil input, failed liveness, failed identity)
@@ -107,6 +95,42 @@ Stable public package surface for library consumers.
   Bounded sentinel: external schema resolver rejected; online proof uses the same-connection resolver
 - `ErrOnlineQueryAccessCapabilityUnsupported`
   Bounded sentinel: recognized but unsupported capability (for example PostgreSQL 16, or PostgreSQL 17 in a no-postgresql-tag source build)
+- `PostgreSQLQueryAccessSession` (deprecated; use `OnlineQueryAccessSession`)
+  Opaque wrapper for a caller-owned `*sql.Conn` for trusted PostgreSQL query access analysis (postgresql build tag only); the unified `OnlineQueryAccessSession` routes PG17 through the same private proof core
+- `NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)` (deprecated; use `NewOnlineQueryAccessSessionFromConn`)
+  Creates an opaque session from a caller-owned `*sql.Conn` with context for liveness check; the session does not close the connection (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
+- `AnalyzePostgreSQLQueryAccessWithSession(ctx, session, req)` (deprecated; use `AnalyzeOnlineQueryAccessWithSession`)
+  Performs trusted PostgreSQL query access analysis using a caller-owned connection session; may return `read_only + admissible` when all effects are manifest-proven (postgresql build tag; stub returns `ErrPostgreSQLSessionNotAvailable` in non-postgresql builds)
+- `MySQLTiDBQueryAccessSession` (deprecated; use `OnlineQueryAccessSession`)
+  Opaque wrapper for a caller-owned MySQL/TiDB `*sql.Conn`; the connection remains caller-owned
+- `NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)` (deprecated; use `NewOnlineQueryAccessSessionFromConn`)
+  Creates an opaque MySQL/TiDB session after a liveness check
+- `AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, req)` (deprecated; use `AnalyzeOnlineQueryAccessWithSession`)
+  Resolves relation metadata through the session connection, rejects external schema resolvers, and remains the dialect-specific SDK boundary for the private MySQL/TiDB semantic capability. The production builtin semantic registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`. Each profile supports `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; the 8.x profiles additionally support `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition and order columns. Default `AnalyzeQueryAccess` remains offline and fail-closed; CLI and HTTP online mode route the same capability through `AnalyzeOnlineQueryAccessWithSession`.
+
+## Migrating from the Dialect-Specific Session APIs
+
+The six dialect-specific compatibility identifiers are deprecated. Use the
+unified online entry instead:
+
+| Deprecated | Replacement |
+|---|---|
+| `PostgreSQLQueryAccessSession` | `OnlineQueryAccessSession` |
+| `MySQLTiDBQueryAccessSession` | `OnlineQueryAccessSession` |
+| `NewPostgreSQLQueryAccessSessionFromConn` | `NewOnlineQueryAccessSessionFromConn` |
+| `NewMySQLTiDBQueryAccessSessionFromConn` | `NewOnlineQueryAccessSessionFromConn` |
+| `AnalyzePostgreSQLQueryAccessWithSession` | `AnalyzeOnlineQueryAccessWithSession` |
+| `AnalyzeMySQLTiDBQueryAccessWithSession` | `AnalyzeOnlineQueryAccessWithSession` |
+
+The unified session is constructed from the same caller-owned `*sql.Conn`;
+construction pings and identifies the server, and the caller keeps full
+connection lifecycle control. Leave `QueryAccessRequest.Dialect` empty so the
+observed server identity selects the MySQL, TiDB, or PostgreSQL route; a
+non-empty dialect is only an optional matching constraint. The unified entry
+returns its own bounded `ErrOnlineQueryAccess...` sentinels, so migrate
+`errors.Is` checks from the dialect-specific sentinels (for example
+`ErrMySQLTiDBQueryAccessSessionUnavailable`) to the generic ones rather than
+expecting one-to-one error aliases.
 
 ## Notes
 

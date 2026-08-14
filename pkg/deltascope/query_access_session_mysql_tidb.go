@@ -25,6 +25,8 @@ var (
 
 // MySQLTiDBQueryAccessSession is an opaque wrapper around a caller-owned *sql.Conn.
 // The session derives its capability target from server identity at construction time.
+//
+// Deprecated: Use OnlineQueryAccessSession.
 type MySQLTiDBQueryAccessSession struct {
 	conn   *sql.Conn
 	target online.CapabilityTarget
@@ -32,6 +34,8 @@ type MySQLTiDBQueryAccessSession struct {
 
 // NewMySQLTiDBQueryAccessSessionFromConn creates a session after a context-controlled
 // liveness check and server identity validation.
+//
+// Deprecated: Use NewOnlineQueryAccessSessionFromConn.
 func NewMySQLTiDBQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*MySQLTiDBQueryAccessSession, error) {
 	if ctx == nil || conn == nil {
 		return nil, ErrMySQLTiDBQueryAccessSessionUnavailable
@@ -56,6 +60,8 @@ func NewMySQLTiDBQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn)
 // AnalyzeMySQLTiDBQueryAccessWithSession resolves relation metadata on the caller's connection and
 // enables the private application semantic capability for the session-owned resolver.
 // Rejects a non-empty caller AnalysisProfile; the capability is derived from server identity.
+//
+// Deprecated: Use AnalyzeOnlineQueryAccessWithSession.
 func AnalyzeMySQLTiDBQueryAccessWithSession(
 	ctx context.Context,
 	session *MySQLTiDBQueryAccessSession,
