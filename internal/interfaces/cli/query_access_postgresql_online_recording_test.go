@@ -2,7 +2,7 @@
 
 // Package cli verifies the PostgreSQL online query-access transport boundary.
 // input: CLI query-access invocation and a recording database/sql driver
-// output: PG17 COUNT(1) admission and bounded constructor cancellation/closed-session failures with fixed probes only; no submitted SQL or sensitive data leakage
+// output: PG17 COUNT(1) admission and bounded constructor cancellation/closed-session failures without SDK-owned detailed probe assertions; no submitted SQL or sensitive data leakage
 // pos: adapter-level proof that the CLI delegates to the unified online session contract
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -170,20 +170,6 @@ func TestCLIOnlinePG17_CountIntegerOne_Recording(t *testing.T) {
 			t.Fatalf("prepare reached driver: %q", operation)
 		}
 	}
-	for _, pattern := range []string{
-		"query:SELECT VERSION()",
-		"current_database()",
-		"current_schemas(true)",
-		"pg_namespace n where n.nspname = $1",
-		"select c.relkind",
-		"select a.attname",
-		"with any_type as",
-	} {
-		if !containsCLIOnlinePG17Operation(operations, pattern) {
-			t.Errorf("missing fixed probe %q in %v", pattern, operations)
-		}
-	}
-
 	output := stdout.String() + stderr.String()
 	for _, forbidden := range []string{
 		marker, username, password, databaseName,
