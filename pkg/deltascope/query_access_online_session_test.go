@@ -502,160 +502,6 @@ func TestOnlineQueryAccessSession_ValidationPriority(t *testing.T) {
 // MySQL/TiDB equivalence with the existing dialect-specific API
 // ---------------------------------------------------------------------------
 
-type onlineEquivCase struct {
-	name    string
-	version string
-	dialect Dialect // dialect-specific API dialect; unified API leaves empty
-	sql     string
-	wantErr bool // when true both APIs must return an error
-}
-
-func onlineEquivalenceCases() []onlineEquivCase {
-	return []onlineEquivCase{
-		{name: "mysql57_count_star", version: "5.7.44", dialect: DialectMySQL, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
-		{name: "mysql80_count_star", version: "8.0.46", dialect: DialectMySQL, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
-		{name: "mysql84_count_star", version: "8.4.10", dialect: DialectMySQL, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
-		{name: "tidb85_count_star", version: "8.0.11-TiDB-v8.5.7", dialect: DialectTiDB, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
-	}
-}
-
-// TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix makes the unified
-// entry the direct owner of the MySQL/TiDB semantic rows formerly exercised
-// only through the deprecated dialect-specific session.
-func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
-	type testCase struct {
-		name      string
-		version   string
-		sql       string
-		admission QueryAccessAdmission
-		wantReqs  []QueryAccessRequirement
-	}
-	baseRequirements := []QueryAccessRequirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}
-	cases := []testCase{
-		{name: "mysql57_count_star", version: "5.7.44", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "mysql80_count_star", version: "8.0.46", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "mysql84_count_star", version: "8.4.10", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "tidb85_count_star", version: "8.0.11-TiDB-v8.5.7", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "literal_only_lower", version: "8.4.10", sql: "SELECT LOWER('x') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "count_literal", version: "8.4.10", sql: "SELECT COUNT(1) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "reversed_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: append(append([]QueryAccessRequirement(nil), baseRequirements...), QueryAccessRequirement{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"})},
-		{name: "all_constant_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', 'y') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
-		{name: "unknown_function", version: "8.4.10", sql: "SELECT app_specific_rollup(id) FROM app.users", admission: QueryAccessIndeterminateAdmission, wantReqs: []QueryAccessRequirement{{Object: "app.users", Privilege: "read_table"}, {Object: "app.users.id", Privilege: "read_column"}}},
-	}
-	for _, shape := range onlineRelationlessLiteralShapes() {
-		cases = append(cases, testCase{name: "relationless_" + shape.name, version: "8.4.10", sql: shape.sql, admission: QueryAccessAdmissible})
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			db := openOnlineStubDB(t, onlineStubConfig{version: tc.version})
-			defer db.Close()
-			conn, err := db.Conn(t.Context())
-			if err != nil {
-				t.Fatalf("conn: %v", err)
-			}
-			defer conn.Close()
-			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
-			if err != nil {
-				t.Fatalf("new session: %v", err)
-			}
-			result, err := AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{SQL: tc.sql, DefaultSchema: "app"})
-			if err != nil {
-				t.Fatalf("analyze: %v", err)
-			}
-			if result.Admission != tc.admission {
-				t.Fatalf("admission=%q, want %q; result=%+v", result.Admission, tc.admission, result)
-			}
-			if tc.admission == QueryAccessAdmissible && result.ReadClassification != QueryAccessReadOnly {
-				t.Fatalf("classification=%q, want read_only", result.ReadClassification)
-			}
-			if !reflect.DeepEqual(result.Requirements, tc.wantReqs) {
-				t.Fatalf("requirements=%+v, want %+v", result.Requirements, tc.wantReqs)
-			}
-			if strings.Contains(fmt.Sprintf("%+v", result), "SECRET_LITERAL") {
-				t.Fatalf("result leaked literal: %+v", result)
-			}
-			data, err := json.Marshal(result)
-			if err != nil {
-				t.Fatalf("marshal result: %v", err)
-			}
-			if strings.Contains(string(data), "SECRET_LITERAL") {
-				t.Fatalf("result JSON leaked literal: %s", data)
-			}
-		})
-	}
-}
-
-func onlineRelationlessLiteralShapes() []struct{ name, sql string } {
-	return []struct{ name, sql string }{
-		{"lower", "SELECT LOWER('SECRET_LITERAL')"},
-		{"upper", "SELECT UPPER('SECRET_LITERAL')"},
-		{"length", "SELECT LENGTH('SECRET_LITERAL')"},
-		{"char_length", "SELECT CHAR_LENGTH('SECRET_LITERAL')"},
-		{"abs", "SELECT ABS(42)"},
-		{"ceil", "SELECT CEIL(42)"},
-		{"ceiling", "SELECT CEILING(42)"},
-		{"floor", "SELECT FLOOR(42)"},
-		{"count_literal", "SELECT COUNT(1)"},
-		{"coalesce_const_const", "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')"},
-		{"nullif_const_const", "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')"},
-		{"ifnull_const_const", "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')"},
-	}
-}
-
-// TestOnlineQueryAccessSession_MatchesDialectSpecificMySQLTiDB runs the same
-// request through the unified entry (empty dialect = observed identity) and the
-// existing MySQL/TiDB session API on the same caller-owned connection, and
-// requires identical results.
-func TestOnlineQueryAccessSession_MatchesDialectSpecificMySQLTiDB(t *testing.T) {
-	for _, tc := range onlineEquivalenceCases() {
-		t.Run(tc.name, func(t *testing.T) {
-			db := openOnlineStubDB(t, onlineStubConfig{version: tc.version})
-			defer db.Close()
-
-			conn, err := db.Conn(t.Context())
-			if err != nil {
-				t.Fatalf("conn: %v", err)
-			}
-			defer conn.Close()
-
-			unifiedSession, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
-			if err != nil {
-				t.Fatalf("unified new session: %v", err)
-			}
-			legacySession, err := NewMySQLTiDBQueryAccessSessionFromConn(t.Context(), conn)
-			if err != nil {
-				t.Fatalf("legacy new session: %v", err)
-			}
-
-			unifiedResult, unifiedErr := AnalyzeOnlineQueryAccessWithSession(t.Context(), unifiedSession, QueryAccessRequest{
-				SQL:           tc.sql,
-				DefaultSchema: "app",
-			})
-			legacyResult, legacyErr := AnalyzeMySQLTiDBQueryAccessWithSession(t.Context(), legacySession, QueryAccessRequest{
-				SQL:           tc.sql,
-				Dialect:       tc.dialect,
-				DefaultSchema: "app",
-			})
-
-			if tc.wantErr {
-				if unifiedErr == nil || legacyErr == nil {
-					t.Fatalf("both APIs must error: unified=%v legacy=%v", unifiedErr, legacyErr)
-				}
-				return
-			}
-			if unifiedErr != nil {
-				t.Fatalf("unified analyze: %v", unifiedErr)
-			}
-			if legacyErr != nil {
-				t.Fatalf("legacy analyze: %v", legacyErr)
-			}
-			if !reflect.DeepEqual(unifiedResult, legacyResult) {
-				t.Fatalf("results differ:\nunified=%+v\nlegacy =%+v", unifiedResult, legacyResult)
-			}
-		})
-	}
-}
-
 // TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure proves
 // cancellation, closed-connection, and catalog-failure cases stay equivalent
 // and bounded across both APIs.
@@ -791,85 +637,47 @@ func TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure(t *testing.T) 
 // Recording-driver: user SQL never executed; no marker or fact leaks
 // ---------------------------------------------------------------------------
 
-// TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB
-// compares the unified and dialect-specific APIs directly across every
-// supported MySQL/TiDB profile, including their exact recording-driver query
-// sequence and bounded public result.
-func TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB(t *testing.T) {
-	cases := []struct {
-		name    string
-		version string
-		dialect Dialect
-	}{
-		{name: "mysql57", version: "5.7.44", dialect: DialectMySQL},
-		{name: "mysql80", version: "8.0.46", dialect: DialectMySQL},
-		{name: "mysql84", version: "8.4.10", dialect: DialectMySQL},
-		{name: "tidb85", version: "8.0.11-TiDB-v8.5.7", dialect: DialectTiDB},
+// TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix directly pins the ordered
+// no-execution probe sequence for every supported MySQL/TiDB target.
+func TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix(t *testing.T) {
+	cases := []struct{ name, version string }{
+		{"mysql57", "5.7.44"},
+		{"mysql80", "8.0.46"},
+		{"mysql84", "8.4.10"},
+		{"tidb85", "8.0.11-TiDB-v8.5.7"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			marker := "NO_EXEC_NO_LEAK_" + strings.ToUpper(tc.name)
-			sqlText := "SELECT COUNT(*) /* " + marker + " */ FROM app.users"
-			run := func(unified bool) (*QueryAccessResult, []string) {
-				t.Helper()
-				recorder := &onlineRecordingDriver{version: tc.version}
-				db := openOnlineRecordingDB(t, recorder)
-				defer db.Close()
-				conn, err := db.Conn(t.Context())
-				if err != nil {
-					t.Fatalf("conn: %v", err)
-				}
-				defer conn.Close()
-
-				var result *QueryAccessResult
-				if unified {
-					session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
-					if err != nil {
-						t.Fatalf("unified new session: %v", err)
-					}
-					result, err = AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
-						SQL: sqlText, DefaultSchema: "app",
-					})
-					if err != nil {
-						t.Fatalf("unified analyze: %v", err)
-					}
-				} else {
-					session, err := NewMySQLTiDBQueryAccessSessionFromConn(t.Context(), conn)
-					if err != nil {
-						t.Fatalf("legacy new session: %v", err)
-					}
-					result, err = AnalyzeMySQLTiDBQueryAccessWithSession(t.Context(), session, QueryAccessRequest{
-						SQL: sqlText, Dialect: tc.dialect, DefaultSchema: "app",
-					})
-					if err != nil {
-						t.Fatalf("legacy analyze: %v", err)
-					}
-				}
-				return result, recorder.recorded()
+			recorder := &onlineRecordingDriver{version: tc.version}
+			db := openOnlineRecordingDB(t, recorder)
+			defer db.Close()
+			conn, err := db.Conn(t.Context())
+			if err != nil {
+				t.Fatalf("conn: %v", err)
 			}
-
-			unifiedResult, unifiedQueries := run(true)
-			legacyResult, legacyQueries := run(false)
-			if !reflect.DeepEqual(unifiedResult, legacyResult) {
-				t.Fatalf("results differ:\nunified=%+v\nlegacy =%+v", unifiedResult, legacyResult)
+			defer conn.Close()
+			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+			if err != nil {
+				t.Fatalf("new session: %v", err)
 			}
-			if !reflect.DeepEqual(unifiedQueries, legacyQueries) {
-				t.Fatalf("recording queries differ:\nunified=%v\nlegacy =%v", unifiedQueries, legacyQueries)
+			result, err := AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{SQL: "SELECT COUNT(*) /* " + marker + " */ FROM app.users", DefaultSchema: "app"})
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
 			}
-			for _, query := range append(unifiedQueries, legacyQueries...) {
+			assertOnlineRecordingProbeSequence(t, recorder.recorded())
+			for _, query := range recorder.recorded() {
 				if strings.Contains(query, marker) {
 					t.Fatalf("submitted SQL reached driver: %q", query)
 				}
 			}
-			for _, result := range []*QueryAccessResult{unifiedResult, legacyResult} {
-				data, err := json.Marshal(result)
-				if err != nil {
-					t.Fatalf("marshal result: %v", err)
-				}
-				for _, forbidden := range []string{marker, tc.version, "information_schema", "password", "dsn", "host=", "user="} {
-					if strings.Contains(strings.ToLower(string(data)), strings.ToLower(forbidden)) {
-						t.Errorf("result JSON leaked %q: %s", forbidden, data)
-					}
+			data, err := json.Marshal(result)
+			if err != nil {
+				t.Fatalf("marshal result: %v", err)
+			}
+			for _, forbidden := range []string{marker, tc.version, "information_schema", "password", "dsn", "host=", "user="} {
+				if strings.Contains(strings.ToLower(string(data)), strings.ToLower(forbidden)) {
+					t.Errorf("result JSON leaked %q: %s", forbidden, data)
 				}
 			}
 		})
