@@ -12,11 +12,9 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | provider_test.go | Verifies catalog-backed schema discovery, reltuples/statistics loading, PK constraint truth, and plain-`EXPLAIN` estimation without a live database |
 | resolve_object.go | Resolves non-table database object metadata from PostgreSQL catalogs with schema-qualified ambiguity detection and privacy-safe attribute projection |
 | resolve_object_test.go | Verifies object resolver behavior for all supported lookup types, statuses, sensitive attribute exclusion, and annotation target verification |
-| query_access_resolver.go | Thin `*sql.DB`-backed SchemaResolver adapter delegating PostgreSQL catalog resolution to the private core |
 | query_access_conn_resolver.go | Thin caller-owned `*sql.Conn`-backed SchemaResolver adapter for same-session metadata resolution; no pool fallback |
-| query_access_resolver_core.go | Private stateless PostgreSQL catalog core: relation/column SQL, scanning, lookup errors, relkind mapping, and foreign-table fail-closed policy |
-| query_access_resolver_test.go | Parameterized DB/Conn behavior contract plus foreign-table, ordering, lifecycle, and concrete-field coverage |
-| query_access_resolver_stub.go | Empty QueryAccessResolver struct for non-postgresql builds |
+| query_access_resolver_core.go | Private stateless PostgreSQL catalog core behind the conn adapter: relation/column SQL, scanning, lookup errors, relkind mapping, and foreign-table fail-closed policy |
+| query_access_resolver_test.go | Conn-backed behavior contract plus foreign-table, ordering, lifecycle, and concrete-field coverage |
 | query_access_conn_resolver_stub.go | Empty QueryAccessConnResolver struct for non-postgresql builds |
 | query_access_conn_resolver_test.go | Adapter-specific conn lifecycle and concrete-field tests |
 | query_access_conn_resolver_integration_test.go | PG17 Docker integration: same-backend-PID proof |
@@ -37,12 +35,10 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 - `Provider.FindSchemasForTable(ctx, table)`
 - `Provider.LoadPlanEstimate(ctx, statement)`
 - `Provider.ResolveObject(ctx, dialect, request)`
-- `QueryAccessResolver`
-- `NewQueryAccessResolver(db *sql.DB)`
-- `QueryAccessResolver.ResolveRelation(ctx, dialect, schema, name)`
 - `PinnedSession` / `NewPinnedSessionFromConn` / `PinSession` / `ErrSessionNotPinned`
 - `EffectIdentityAdapter` / `NewEffectIdentityAdapter` (facts only; implements `ControlledEffectIdentityResolver`)
 - `QueryAccessConnResolver` / `NewQueryAccessConnResolver` (conn-backed SchemaResolver; no `*sql.DB` field)
+- `QueryAccessConnResolver.ResolveRelation(ctx, dialect, schema, name)`
 
 ## Effect identity (T7)
 

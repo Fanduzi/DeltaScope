@@ -3,7 +3,7 @@
 // Package postgresqlmeta provides the private PostgreSQL relation catalog core.
 // input: context, minimal SQL query capability, and schema-qualified relation name
 // output: RelationSchema with exact PostgreSQL catalog errors and fail-closed relation policy
-// pos: neutral stateless core shared by DB-backed and session-pinned adapters
+// pos: neutral stateless core used by the session-pinned conn adapter
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 

@@ -27,12 +27,6 @@ type queryAccessResolverFactory struct {
 func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 	factories := []queryAccessResolverFactory{
 		{
-			name: "db",
-			new: func(t *testing.T, handle any) appqa.SchemaResolver {
-				return NewQueryAccessResolver(handle.(*sql.DB))
-			},
-		},
-		{
 			name: "conn",
 			new: func(t *testing.T, handle any) appqa.SchemaResolver {
 				conn, err := handle.(*sql.DB).Conn(context.Background())

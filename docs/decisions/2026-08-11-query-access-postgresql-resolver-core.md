@@ -2,7 +2,7 @@
 
 - Date: 2026-08-11
 - Status: Accepted
-- Related: [Query Access pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [PG17 `COUNT(1)` proof](2026-07-31-query-access-pg17-count-literal-proof.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [follow-up issue #2](https://github.com/Fanduzi/DeltaScope/issues/2)
+- Related: [Query Access pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [PG17 `COUNT(1)` proof](2026-07-31-query-access-pg17-count-literal-proof.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [follow-up issue #2](https://github.com/Fanduzi/DeltaScope/issues/2), [Remove DB-backed resolvers](2026-08-16-query-access-remove-db-backed-resolvers.md)
 - Spec: `docs/plans/2026-08-11-query-access-postgresql-resolver-core-spec.md`
 - Design: `docs/plans/2026-08-11-query-access-postgresql-resolver-core-design.md`
 - Implementation: `docs/plans/2026-08-11-query-access-postgresql-resolver-core-implementation.md`

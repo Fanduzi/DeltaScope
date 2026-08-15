@@ -450,6 +450,12 @@ Task 1 characterization tests confirm the following.
 or `pg_catalog` (PostgreSQL) for relation existence, kind (table/view), and
 column listing ordered by ordinal position.
 
+> Evidence maintenance (2026-08-16): the DB-backed `QueryAccessResolver` types
+> above were removed by [issue #2](2026-08-16-query-access-remove-db-backed-resolvers.md);
+> relation metadata now resolves exclusively through the caller-owned conn
+> resolvers (`QueryAccessConnResolver`) so identity, catalog lookup, and proof
+> stay on one session.
+
 **Resolution behavior verified by `resolve_test.go`:**
 
 | Scenario | Test | Outcome |
@@ -496,6 +502,12 @@ column listing ordered by ordinal position.
 | Missing table | `TestQueryAccessResolver_MissingTable` | Error with "not found" |
 | Empty columns | `TestQueryAccessResolver_MissingColumn` | Empty slice returned |
 | Cancellation | `TestQueryAccessResolver_Cancellation` | Context error respected |
+
+> Evidence maintenance (2026-08-16): the `TestQueryAccessResolver_*` unit tests
+> above were removed by [issue #2](2026-08-16-query-access-remove-db-backed-resolvers.md);
+> the same obligations now run against the conn-backed resolver as
+> `TestQueryAccessConnResolver_TableKindAndColumns`, `_ColumnOrderPreserved`,
+> `_ViewKind`, `_MissingRelation`, `_EmptyColumns`, and `_Cancellation`.
 
 **Bounded unresolved reasons:**
 
