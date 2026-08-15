@@ -814,22 +814,14 @@ func assertLiveProfileRejectsMixedLiteralNegatives(t *testing.T, ctx context.Con
 	}
 }
 
-// TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles proves the
-// unified online entry (empty request dialect = observed identity) produces
-// results identical to the existing dialect-specific API on real MySQL
-// 5.7/8.0/8.4 and TiDB 8.5 servers across admitted, indeterminate, rejected,
-// and relationless shapes.
+// TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles proves one
+// routing case per target remains identical to the deprecated session API.
 func TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles(t *testing.T) {
 	probes := []struct {
 		name string
 		sql  string
 	}{
 		{"count_star", "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
-		{"direct_aggregate", "SELECT SUM(amount) FROM app.builtin_semantic_facts"},
-		{"literal_only", "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts"},
-		{"relationless_literal", "SELECT LOWER('SECRET_LITERAL')"},
-		{"unknown_function", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts"},
-		{"unqualified", "SELECT COUNT(*) FROM builtin_semantic_facts"},
 	}
 	for _, tc := range liveProfileCases() {
 		t.Run(tc.name, func(t *testing.T) {

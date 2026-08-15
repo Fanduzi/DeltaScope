@@ -1,6 +1,6 @@
 // Package deltascope verifies the unified online query access session contract.
 // input: caller-owned *sql.Conn backed by configurable stub and recording drivers
-// output: contract evidence for signatures, opacity, ownership, validation priority, generic sentinels, and MySQL/TiDB equivalence
+// output: contract evidence for signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantics, compatibility equivalence, and recording-driver no-execution/no-leak
 // pos: public unified online session contract tests (default and PostgreSQL-tagged builds)
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -512,18 +512,10 @@ type onlineEquivCase struct {
 
 func onlineEquivalenceCases() []onlineEquivCase {
 	return []onlineEquivCase{
-		// Admitted: identity-derived proof paths.
 		{name: "mysql57_count_star", version: "5.7.44", dialect: DialectMySQL, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
 		{name: "mysql80_count_star", version: "8.0.46", dialect: DialectMySQL, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
 		{name: "mysql84_count_star", version: "8.4.10", dialect: DialectMySQL, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
 		{name: "tidb85_count_star", version: "8.0.11-TiDB-v8.5.7", dialect: DialectTiDB, sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts"},
-		{name: "mysql84_sum", version: "8.4.10", dialect: DialectMySQL, sql: "SELECT SUM(amount) FROM app.builtin_semantic_facts"},
-		{name: "mysql84_literal", version: "8.4.10", dialect: DialectMySQL, sql: "SELECT LOWER('x') FROM app.builtin_semantic_facts"},
-		{name: "mysql84_relationless", version: "8.4.10", dialect: DialectMySQL, sql: "SELECT LOWER('SECRET_LITERAL')"},
-		// Indeterminate: unknown function stays fail-closed.
-		{name: "mysql84_unknown_function", version: "8.4.10", dialect: DialectMySQL, sql: "SELECT app_specific_rollup(id) FROM app.users"},
-		// Rejected: write statement.
-		{name: "mysql84_insert", version: "8.4.10", dialect: DialectMySQL, sql: "INSERT INTO app.users (id) VALUES (1)"},
 	}
 }
 
@@ -538,16 +530,16 @@ func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
 		admission QueryAccessAdmission
 		wantReqs  []QueryAccessRequirement
 	}
-	baseTable := []QueryAccessRequirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}
+	baseRequirements := []QueryAccessRequirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}
 	cases := []testCase{
-		{name: "mysql57_count_star", version: "5.7.44", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
-		{name: "mysql80_count_star", version: "8.0.46", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
-		{name: "mysql84_count_star", version: "8.4.10", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
-		{name: "tidb85_count_star", version: "8.0.11-TiDB-v8.5.7", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
-		{name: "literal_only_lower", version: "8.4.10", sql: "SELECT LOWER('x') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
-		{name: "count_literal", version: "8.4.10", sql: "SELECT COUNT(1) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
-		{name: "reversed_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: append(append([]QueryAccessRequirement(nil), baseTable...), QueryAccessRequirement{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"})},
-		{name: "all_constant_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', 'y') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "mysql57_count_star", version: "5.7.44", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
+		{name: "mysql80_count_star", version: "8.0.46", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
+		{name: "mysql84_count_star", version: "8.4.10", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
+		{name: "tidb85_count_star", version: "8.0.11-TiDB-v8.5.7", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
+		{name: "literal_only_lower", version: "8.4.10", sql: "SELECT LOWER('x') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
+		{name: "count_literal", version: "8.4.10", sql: "SELECT COUNT(1) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
+		{name: "reversed_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: append(append([]QueryAccessRequirement(nil), baseRequirements...), QueryAccessRequirement{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"})},
+		{name: "all_constant_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', 'y') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseRequirements},
 		{name: "unknown_function", version: "8.4.10", sql: "SELECT app_specific_rollup(id) FROM app.users", admission: QueryAccessIndeterminateAdmission, wantReqs: []QueryAccessRequirement{{Object: "app.users", Privilege: "read_table"}, {Object: "app.users.id", Privilege: "read_column"}}},
 	}
 	for _, shape := range onlineRelationlessLiteralShapes() {
@@ -915,12 +907,23 @@ func TestOnlineQueryAccessSession_DoesNotExecuteUserSQL(t *testing.T) {
 	}
 
 	queries := rec.recorded()
-	if len(queries) == 0 {
-		t.Fatal("expected bounded identity/catalog probes")
-	}
+	assertOnlineRecordingProbeSequence(t, queries)
 	for _, q := range queries {
 		if strings.Contains(q, marker) {
 			t.Fatalf("executed user SQL against the database: %q", q)
+		}
+	}
+}
+
+func assertOnlineRecordingProbeSequence(t *testing.T, queries []string) {
+	t.Helper()
+	patterns := []string{"SELECT VERSION()", "information_schema.tables", "information_schema.columns"}
+	if len(queries) != len(patterns) {
+		t.Fatalf("probe count=%d, want %d; queries=%v", len(queries), len(patterns), queries)
+	}
+	for i, pattern := range patterns {
+		if !strings.Contains(queries[i], pattern) {
+			t.Fatalf("probe[%d]=%q, want containing %q", i, queries[i], pattern)
 		}
 	}
 }

@@ -134,7 +134,7 @@ expecting one-to-one error aliases.
 
 ## Query Access Test Ownership
 
-The unified online-session suite owns exhaustive semantic and detailed-probe evidence. Deprecated API tests retain only source, stub, exact-error, validation-order, caller-ownership, privacy, and per-target equivalence contracts. The committed ownership ledger in `docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md` names every authorized deletion and its focused green evidence.
+The unified online-session suite owns exhaustive semantic and detailed-probe evidence, including ordered recording-driver probes. Deprecated API tests retain only source, stub, exact-error, validation-order, caller-ownership, privacy, and one per-target equivalence contract. The committed ownership ledger in `docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md` names every authorized deletion and its focused green evidence.
 
 ## Notes
 

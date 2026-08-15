@@ -119,6 +119,31 @@ func TestTrustedSDK_CountIntegerOneCatalogLookupFailureNoLeak(t *testing.T) {
 	assertPostgreSQLRecordingNoLeak(t, result, marker, driverError, "987654321", "876543210", "765432109", "leak_user", "leak_password", "leak-host", "6543", "leak_db")
 }
 
+func assertPostgreSQLRecordingSequence(t *testing.T, queries []string) {
+	t.Helper()
+	patterns := []string{
+		"SELECT VERSION()",
+		"select c.relkind",
+		"select a.attname",
+		"current_database()",
+		"current_schemas(true)",
+		"current_database()",
+		"current_schemas(true)",
+		"pg_namespace n where n.nspname = $1",
+		"with any_type as",
+		"current_database()",
+		"current_schemas(true)",
+	}
+	if len(queries) != len(patterns) {
+		t.Fatalf("probe count=%d, want %d; queries=%v", len(queries), len(patterns), queries)
+	}
+	for i, pattern := range patterns {
+		if !strings.Contains(queries[i], pattern) {
+			t.Fatalf("probe[%d]=%q, want containing %q", i, queries[i], pattern)
+		}
+	}
+}
+
 func assertPostgreSQLRecordingProbes(t *testing.T, queries []string) {
 	t.Helper()
 	if len(queries) == 0 {

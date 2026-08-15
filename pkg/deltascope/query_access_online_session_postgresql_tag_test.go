@@ -68,6 +68,7 @@ func TestOnlineQueryAccessSession_PostgreSQLRoutesThroughUnifiedEntry(t *testing
 			t.Fatalf("analysis SQL reached driver: %q", query)
 		}
 	}
+	assertPostgreSQLRecordingSequence(t, recorder.recorded())
 	assertPostgreSQLRecordingProbes(t, recorder.recorded())
 	assertPostgreSQLRecordingNoLeak(t, result, marker)
 }
@@ -234,23 +235,11 @@ func TestOnlineQueryAccessSession_PostgreSQLCountLookupFailureNoLeak(t *testing.
 	assertPostgreSQLRecordingNoLeak(t, result, marker, driverError, "987654321", "876543210", "765432109", "leak_user", "leak_password", "leak-host", "6543", "leak_db")
 }
 
-// TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI proves the unified
-// entry returns results equivalent to the existing PostgreSQL session API for
-// supported and excluded shapes and failure cases.
+// TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI proves one routing
+// case keeps the unified entry equivalent to the existing PostgreSQL session API.
 func TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI(t *testing.T) {
 	const marker = "PG_NO_EXEC_NO_LEAK_EQUIV_MARKER"
-	queries := []string{
-		"SELECT COUNT(1) FROM app.orders",
-		"SELECT COUNT(*) FROM app.users",
-		"SELECT COUNT(NULL) FROM app.orders",
-		"SELECT COUNT(1) FILTER (WHERE true) FROM app.orders",
-		"SELECT COUNT(1)",
-		"SELECT COUNT(1) FROM app.orders JOIN app.users ON true",
-		"SELECT COUNT(1) FROM app.remote_orders",
-		"SELECT count(amount), sum(amount), avg(amount), min(amount), max(amount) FROM app.orders",
-		"SELECT row_number() OVER (PARTITION BY user_id ORDER BY amount) FROM app.orders",
-		"SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id",
-	}
+	queries := []string{"SELECT COUNT(1) FROM app.orders"}
 	for _, sqlText := range queries {
 		sqlText := sqlText + " /* " + marker + " */"
 		t.Run(sqlText, func(t *testing.T) {
