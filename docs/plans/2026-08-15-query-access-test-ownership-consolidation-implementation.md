@@ -193,11 +193,11 @@ Issue #11 and #12 recorded those replacements on the rows they deleted.
 | `main_e2e_postgresql_query_access_test.go` CLI: `CountIntegerOne` | real CLI PG17 admissible route | S4 | T1 | Non-substitutable real-route smoke |
 | `main_e2e_postgresql_query_access_test.go` CLI: syntax-envelope exclusions other than `app.remote_orders`, default, no-leak, and connection-failure rows | CLI syntax, offline, sink privacy, and bounded failure | S3, S4 | T1 | Non-substitutable transport |
 | `main_e2e_postgresql_query_access_test.go` CLI: `SELECT COUNT(1) FROM app.remote_orders` | PostgreSQL foreign-table relation-kind trust | S3, S4 | T1 | Non-substitutable foreign-table evidence |
-| `query_access_e2e_mixed_literal_test.go` HTTP profile table rows | repeated MySQL/TiDB product/profile/shape results | U1 | T2 real-route smoke per family | Blocked: retain for Issue #13 HTTP transport scope |
-| `query_access_e2e_mixed_literal_test.go` HTTP default row | HTTP default/offline behavior | S1, S6 | T2 | Non-substitutable transport |
+| `query_access_e2e_mixed_literal_test.go`: deleted `TestQueryAccessOnline_MixedLiteralScalars` online MySQL 5.7/8.0/8.4 and TiDB 8.5 product/profile/shape rows | repeated MySQL/TiDB product/profile/shape results | U1 | T2: `TestQueryAccessOnline_TransportSmoke/{mysql84_admissible,mysql84_unknown_function,tidb85_admissible,tidb85_unknown_function}` retains one real HTTP route per supported family with admitted/fail-closed status/body, key requirement/reason, request ID/access-log synchronization, and no-leak checks | Deleted by Issue #13 after focused HTTP authorization/zero-dial mutation RED-GREEN and MySQL/TiDB real-route GREEN evidence |
+| `query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_DefaultOffline` | HTTP default/offline behavior | S1, S6 | T2 | Non-substitutable transport; retained by Issue #13 with indeterminate HTTP result and response/access-log no-leak assertions |
 | `query_access_test.go` HTTP offline request/result rows | HTTP parsing, status, body, and defaults | S1, S6 | T2 | Non-substitutable transport |
 | `query_access_test.go` HTTP `connection_id`, registry, authorization, and zero-open rows | authorization-before-dial and registry boundary | -- | T2 | Non-substitutable authorization-before-dial |
-| `query_access_postgresql_online_recording_test.go`: `TestHTTPOnlinePG17_CountIntegerOne_Recording` fixed-probe assertions | duplicated adapter probe sequence | U3 | T2 | Blocked: retain for Issue #13 HTTP transport scope |
+| `query_access_postgresql_online_recording_test.go`: `TestHTTPOnlinePG17_CountIntegerOne_Recording` fixed-probe assertions | duplicated adapter probe sequence | U3 | T2: the same focused adapter test retains pinned-session delegation, one close, no user SQL/`EXPLAIN`/prepare, and bounded HTTP response; catalog-failure behavior remains below | Deleted by Issue #13 after focused tagged recording GREEN evidence |
 | `query_access_postgresql_online_recording_test.go` catalog-failure row | HTTP bounded error and access-log behavior | S3, S5 | T2 | Non-substitutable transport |
 | `query_access_postgresql_no_leak_test.go`: Count, excluded, no-connection, unauthorized, and failure rows | HTTP body/log sink privacy | S3 | T2 | Non-substitutable per-sink no-leak |
 | `query_access_postgresql_no_leak_test.go`: unauthorized and unknown zero-dial rows | HTTP authorization-before-dial | -- | T2 | Non-substitutable authorization-before-dial |
@@ -212,6 +212,12 @@ The ledger does not authorize a deletion by SQL-text similarity. A later change
 must name the exact test or table row, cite this table, preserve its listed
 non-substitutable boundary where applicable, and add a row before deleting an
 unlisted candidate.
+
+### Issue #13 Focused Green Evidence
+
+- `go test ./internal/interfaces/http -run '^TestHandlerQueryAccessOnlineGuardPathsOpenNothing$' -count=1` failed while the authorization guard was temporarily bypassed: the unauthorized subtest returned 500 after one opener call and the zero-open assertion failed; it passed after the original guard was restored.
+- `go test -tags integration ./internal/interfaces/http -run '^TestQueryAccessOnline_(TransportSmoke|DefaultOffline|ConnectionFailureNoLeak)$' -count=1` covers the retained MySQL 8.4/TiDB 8.5 admitted/fail-closed real routes, HTTP default/offline boundary, bounded real MySQL credential failures, response/access-log no-leak, and synchronized log entry.
+- `CGO_ENABLED=1 go test -tags 'postgresql integration' ./internal/interfaces/http -run 'TestHTTPOnlinePG17_(CountIntegerOne_Recording|CatalogFailure_NoLeak|CountIntegerOne_NoLeak|ExcludedShapes_NoLeak|NoConnectionID_NoLeak|Unauthorized_ZeroDial|UnknownConnection_ZeroDial|ConnectionFailure_NoLeak)' -count=1` covers the focused PG17 recording adapter, catalog failure, syntax-envelope, offline/default, authorization-before-dial, bounded error, and per-sink no-leak boundaries.
 
 ### Issue #11 Focused Green Evidence
 

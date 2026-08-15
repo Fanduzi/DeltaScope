@@ -2,8 +2,8 @@
 
 // Package httpapi verifies the PostgreSQL online query-access transport boundary.
 // input: HTTP query-access requests with connection_id and a recording database/sql driver
-// output: verified PG17 COUNT(1) response, safe probes, and no user-SQL or sensitive-data leakage
-// pos: adapter-level proof that HTTP uses the shared PostgreSQL session contract without executing submitted SQL
+// output: bounded PG17 adapter delegation, close, error, and no-execution/no-leak evidence
+// pos: focused adapter proof; unified SDK tests own detailed probe sequencing
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
@@ -93,10 +93,9 @@ func TestHTTPOnlinePG17_CountIntegerOne_Recording(t *testing.T) {
 		t.Fatalf("expected one session close, got %d", got)
 	}
 
-	queries := recorder.recordedQueries()
 	operations := recorder.recordedOperations()
-	if len(queries) == 0 {
-		t.Fatal("expected identity and catalog probes")
+	if len(operations) == 0 {
+		t.Fatal("expected adapter delegation through the recording session")
 	}
 	for _, operation := range operations {
 		if strings.Contains(operation, marker) {
@@ -109,12 +108,6 @@ func TestHTTPOnlinePG17_CountIntegerOne_Recording(t *testing.T) {
 	if recorder.preparedCount() != 0 {
 		t.Fatalf("prepare operation reached driver: %v", recorder.preparedQueries())
 	}
-	for _, expected := range []string{"SELECT VERSION()", "current_database()", "current_schemas(true)", "with any_type as"} {
-		if !containsHTTPRecordingQuery(queries, expected) {
-			t.Errorf("missing expected probe %q in %v", expected, queries)
-		}
-	}
-
 	body := strings.ToLower(rec.Body.String())
 	for _, forbidden := range []string{
 		marker,
@@ -382,13 +375,4 @@ func (r *httpPostgreSQLRecordingRows) Next(dest []driver.Value) error {
 	copy(dest, r.rows[r.index])
 	r.index++
 	return nil
-}
-
-func containsHTTPRecordingQuery(queries []string, expected string) bool {
-	for _, query := range queries {
-		if strings.Contains(query, expected) {
-			return true
-		}
-	}
-	return false
 }

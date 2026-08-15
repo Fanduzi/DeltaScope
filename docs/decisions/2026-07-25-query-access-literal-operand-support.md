@@ -378,6 +378,18 @@ Connection failure no-leak verified for two independent credential sources on th
 
 **Test file:** `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`
 
+### Evidence Maintenance (2026-08-15)
+
+The Docker matrix above records the accepted all-profile evidence for this
+feature. Issue #12 later moved the duplicate CLI product/profile/shape matrix
+to the unified SDK owner. Issue #13 likewise removed the duplicate HTTP
+MySQL/TiDB product/profile/shape rows while retaining
+`TestQueryAccessOnline_TransportSmoke` for MySQL 8.4 and TiDB 8.5 admitted and
+fail-closed routes, `TestQueryAccessOnline_DefaultOffline`, and the two real
+MySQL credential-failure no-leak cases in the cited HTTP file. The unified SDK
+remains the exhaustive semantic owner; this does not revise the original
+acceptance evidence.
+
 ## Consequences
 
 ### For Future Work

@@ -127,6 +127,18 @@ Costs and limitations:
 
 ## Acceptance Evidence
 
+### Issue #13 HTTP evidence note
+
+Issue #13 removes only the ledger-authorized HTTP MySQL/TiDB online
+product/profile/shape matrix rows and the HTTP adapter's fixed PG17 probe
+assertions. It retains real MySQL 8.4/TiDB 8.5 admitted and fail-closed HTTP
+smoke, PG17 syntax-envelope and foreign-table evidence, offline/default,
+registry/authorization-before-dial, lifecycle, bounded errors, synchronized
+request-ID access logs, and response/log no-leak tests. The unified SDK remains
+the detailed semantic and probe-sequence owner. A temporary authorization
+bypass made `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` fail before the
+original guard was restored; the mutation is not committed.
+
 This record remains Proposed until the ownership/deletion ledger, retained
 tests, temporary mutation probes, full required gates, before/after inventory,
 ADR evidence reconciliation, and independent review demonstrate that no

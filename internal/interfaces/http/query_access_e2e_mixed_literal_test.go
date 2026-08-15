@@ -1,16 +1,10 @@
 //go:build integration
 
-// Package httpapi verifies HTTP query-access online behavior for mixed-literal
-// operands (COALESCE, NULLIF, IFNULL) and relationless (no FROM) literal-only
-// shapes against real Docker-backed MySQL and TiDB.
-// input: real MySQL/TiDB fixtures, the HTTP JSON entrypoint, and a test registry
-// output: end-to-end proof that mixed-literal scalar operands yield
-//
-//	read_only + admissible via the HTTP online path across all four MySQL/TiDB
-//	versions, with exact requirement assertions and no-leak guards; relationless
-//	literal-only shapes additionally yield zero requirements/relations/columns
-//
-// pos: HTTP online E2E coverage for the mixed-literal scalar operand feature
+// Package httpapi verifies HTTP Query Access transport smoke and error boundaries
+// against real Docker-backed MySQL 8.4 and TiDB 8.5.
+// input: real MySQL/TiDB fixtures, HTTP JSON requests, and configured registries
+// output: admitted and fail-closed transport results, bounded failures, and no-leak logs
+// pos: HTTP online Query Access real-route smoke and credential-error coverage
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
@@ -80,9 +74,6 @@ func noLeakMarkers() []string {
 
 func assertAccessLogEntry(t *testing.T, logBuf *syncBuffer, path string) {
 	t.Helper()
-	// Gin's access-log middleware writes after c.Next() returns but before
-	// the response is flushed to the client. A bounded poll avoids a flaky
-	// race while keeping the test fast.
 	deadline := time.After(2 * time.Second)
 	for {
 		output := logBuf.String()
@@ -107,10 +98,17 @@ func assertNoLogLeaks(t *testing.T, logOutput string, markers []string) {
 	}
 }
 
-// requestIDPattern matches the server-generated request_id field. Its value is
-// random hex with no relationship to SQL, credentials, host, port, or schema,
-// so it must be excluded from no-leak scans to avoid coincidental substring
-// matches (e.g. a port number appearing inside the random id).
+func assertRequestIDLogged(t *testing.T, logBuf *syncBuffer, requestID string) {
+	t.Helper()
+	if requestID == "" {
+		t.Fatal("response omitted X-Request-ID")
+	}
+	assertAccessLogEntry(t, logBuf, "/v1/query-access/analyze")
+	if !strings.Contains(logBuf.String(), `"request_id":"`+requestID+`"`) {
+		t.Fatalf("access log omitted response request ID %q: %s", requestID, logBuf.String())
+	}
+}
+
 var requestIDPattern = regexp.MustCompile(`"request_id":"[^"]*"`)
 
 func sanitizeLogForLeakScan(logOutput string) string {
@@ -124,105 +122,36 @@ func writeTempFile(t *testing.T, prefix, content string) string {
 		t.Fatalf("create temp file: %v", err)
 	}
 	if _, err := f.WriteString(content); err != nil {
-		f.Close()
+		_ = f.Close()
 		t.Fatalf("write temp file: %v", err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		t.Fatalf("close temp file: %v", err)
+	}
 	return f.Name()
 }
 
-func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
+func TestQueryAccessOnline_TransportSmoke(t *testing.T) {
 	t.Setenv("E2E_MYSQL_PASSWORD", "root")
-	t.Setenv("E2E_FAIL_ENV_PASSWORD", "FAIL_SECRET_ENV_pw_9f3b2a1c")
-
 	emptyPWFile := writeTempFile(t, "empty-pw-*", "")
-	failPWContent := "FAIL_SECRET_FILE_pw_4d5e6f7a"
-	failPWFile := writeTempFile(t, "fail-pw-*", failPWContent)
-
-	cfg := runtimeconfig.Config{
-		Metadata: runtimeconfig.MetadataConfig{
-			Connections: []runtimeconfig.ConnectionConfig{
-				{
-					ID:          "mysql57",
-					Dialect:     "mysql",
-					Host:        "127.0.0.1",
-					Port:        3507,
-					User:        "root",
-					PasswordEnv: "E2E_MYSQL_PASSWORD",
-					Schema:      "app",
-					Purposes:    []string{"query_access"},
-				},
-				{
-					ID:          "mysql80",
-					Dialect:     "mysql",
-					Host:        "127.0.0.1",
-					Port:        3800,
-					User:        "root",
-					PasswordEnv: "E2E_MYSQL_PASSWORD",
-					Schema:      "app",
-					Purposes:    []string{"query_access"},
-				},
-				{
-					ID:          "mysql84",
-					Dialect:     "mysql",
-					Host:        "127.0.0.1",
-					Port:        3840,
-					User:        "root",
-					PasswordEnv: "E2E_MYSQL_PASSWORD",
-					Schema:      "app",
-					Purposes:    []string{"query_access"},
-				},
-				{
-					ID:           "tidb85",
-					Dialect:      "tidb",
-					Host:         "127.0.0.1",
-					Port:         4850,
-					User:         "root",
-					PasswordFile: emptyPWFile,
-					Schema:       "app",
-					Purposes:     []string{"query_access"},
-				},
-				// Failure connections use the real MySQL 8.4 fixture
-				// (host:port) with valid user 'root' but invalid passwords.
-				// This proves the failure comes from MySQL auth error 1045
-				// (Access denied), not port simulation or input validation.
-				{
-					ID:          "fail_env_conn",
-					Dialect:     "mysql",
-					Host:        "127.0.0.1",
-					Port:        3840,
-					User:        "root",
-					PasswordEnv: "E2E_FAIL_ENV_PASSWORD",
-					Schema:      "app",
-					Purposes:    []string{"query_access"},
-				},
-				{
-					ID:           "fail_file_conn",
-					Dialect:      "mysql",
-					Host:         "127.0.0.1",
-					Port:         3840,
-					User:         "root",
-					PasswordFile: failPWFile,
-					Schema:       "app",
-					Purposes:     []string{"query_access"},
-				},
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(runtimeconfig.Config{
+		Metadata: runtimeconfig.MetadataConfig{Connections: []runtimeconfig.ConnectionConfig{
+			{
+				ID: "mysql84", Dialect: "mysql", Host: "127.0.0.1", Port: 3840, User: "root",
+				PasswordEnv: "E2E_MYSQL_PASSWORD", Schema: "app", Purposes: []string{"query_access"},
 			},
-		},
-	}
-	reg, err := runtimeconfig.ValidateAndBuildRegistry(cfg)
+			{
+				ID: "tidb85", Dialect: "tidb", Host: "127.0.0.1", Port: 4850, User: "root",
+				PasswordFile: emptyPWFile, Schema: "app", Purposes: []string{"query_access"},
+			},
+		}},
+	})
 	if err != nil {
 		t.Fatalf("build registry: %v", err)
 	}
 
 	var logBuf syncBuffer
-	captureLogger := log.New(&logBuf, "", 0)
-
-	handler, err := NewHandler("", "test-build",
-		WithRegistry(reg),
-		WithMiddlewareConfig(MiddlewareConfig{
-			Logger: captureLogger,
-		}),
-	)
+	handler, err := NewHandler("", "test-build", WithRegistry(reg), WithMiddlewareConfig(MiddlewareConfig{Logger: log.New(&logBuf, "", 0)}))
 	if err != nil {
 		t.Fatalf("new handler: %v", err)
 	}
@@ -230,442 +159,185 @@ func TestQueryAccessOnline_MixedLiteralScalars(t *testing.T) {
 	defer ts.Close()
 
 	cases := []struct {
-		name         string
-		connectionID string
+		name, connectionID, sql, requirement, reason, classification, admission string
 	}{
-		{"mysql57", "mysql57"},
-		{"mysql80", "mysql80"},
-		{"mysql84", "mysql84"},
-		{"tidb85", "tidb85"},
+		{"mysql84_admissible", "mysql84", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible"},
+		{"mysql84_unknown_function", "mysql84", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate"},
+		{"tidb85_admissible", "tidb85", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible"},
+		{"tidb85_unknown_function", "tidb85", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate"},
 	}
-	probes := []struct {
-		name             string
-		sql              string
-		wantRequirements []map[string]string
-		relationless     bool
-	}{
-		{
-			name: "COALESCE",
-			sql:  "SELECT COALESCE(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-			},
-		},
-		{
-			name: "NULLIF",
-			sql:  "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-			},
-		},
-		{
-			name: "IFNULL",
-			sql:  "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-			},
-		},
-		{
-			name: "LOWER_literal",
-			sql:  "SELECT LOWER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "UPPER_literal",
-			sql:  "SELECT UPPER('SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "LENGTH_literal",
-			sql:  "SELECT LENGTH('SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "CHAR_LENGTH_literal",
-			sql:  "SELECT CHAR_LENGTH('SECRET_LITERAL') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "ABS_literal",
-			sql:  "SELECT ABS(42) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "CEIL_literal",
-			sql:  "SELECT CEIL(42) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "CEILING_literal",
-			sql:  "SELECT CEILING(42) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "FLOOR_literal",
-			sql:  "SELECT FLOOR(42) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "COUNT_literal",
-			sql:  "SELECT COUNT(1) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "COALESCE_reversed",
-			sql:  "SELECT COALESCE('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-			},
-		},
-		{
-			name: "NULLIF_reversed",
-			sql:  "SELECT NULLIF('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-			},
-		},
-		{
-			name: "IFNULL_reversed",
-			sql:  "SELECT IFNULL('SECRET_LITERAL', name) FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-				{"object": "app.builtin_semantic_facts.name", "privilege": "read_column"},
-			},
-		},
-		{
-			name: "COALESCE_all_constant",
-			sql:  "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "NULLIF_all_constant",
-			sql:  "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		{
-			name: "IFNULL_all_constant",
-			sql:  "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2') FROM app.builtin_semantic_facts",
-			wantRequirements: []map[string]string{
-				{"object": "app.builtin_semantic_facts", "privilege": "read_table"},
-			},
-		},
-		// Relationless (no FROM) literal-only shapes: nothing is read.
-		{name: "relationless_lower", sql: "SELECT LOWER('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
-		{name: "relationless_upper", sql: "SELECT UPPER('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
-		{name: "relationless_length", sql: "SELECT LENGTH('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
-		{name: "relationless_char_length", sql: "SELECT CHAR_LENGTH('SECRET_LITERAL')", wantRequirements: nil, relationless: true},
-		{name: "relationless_abs", sql: "SELECT ABS(42)", wantRequirements: nil, relationless: true},
-		{name: "relationless_ceil", sql: "SELECT CEIL(42)", wantRequirements: nil, relationless: true},
-		{name: "relationless_ceiling", sql: "SELECT CEILING(42)", wantRequirements: nil, relationless: true},
-		{name: "relationless_floor", sql: "SELECT FLOOR(42)", wantRequirements: nil, relationless: true},
-		{name: "relationless_count_literal", sql: "SELECT COUNT(1)", wantRequirements: nil, relationless: true},
-		{name: "relationless_coalesce", sql: "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')", wantRequirements: nil, relationless: true},
-		{name: "relationless_nullif", sql: "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')", wantRequirements: nil, relationless: true},
-		{name: "relationless_ifnull", sql: "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')", wantRequirements: nil, relationless: true},
-	}
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, probe := range probes {
-				t.Run(probe.name, func(t *testing.T) {
-					logBuf.Reset()
-
-					payload := fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, probe.sql, tc.connectionID)
-					req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
-					if err != nil {
-						t.Fatalf("create request: %v", err)
-					}
-					req.Header.Set("Content-Type", "application/json")
-
-					resp, err := http.DefaultClient.Do(req)
-					if err != nil {
-						t.Fatalf("send request: %v", err)
-					}
-					defer resp.Body.Close()
-
-					var body bytes.Buffer
-					if _, err := body.ReadFrom(resp.Body); err != nil {
-						t.Fatalf("read response: %v", err)
-					}
-
-					if resp.StatusCode != http.StatusOK {
-						t.Fatalf("status: got %d, want 200; body: %s", resp.StatusCode, body.String())
-					}
-
-					var result map[string]any
-					if err := json.Unmarshal(body.Bytes(), &result); err != nil {
-						t.Fatalf("unmarshal: %v", err)
-					}
-					if result["read_classification"] != "read_only" {
-						t.Errorf("classification: got %q, want read_only", result["read_classification"])
-					}
-					if result["admission"] != "admissible" {
-						t.Errorf("admission: got %q, want admissible", result["admission"])
-					}
-
-					if probe.relationless {
-						// Relationless literal-only proves nothing is read:
-						// every scope key is absent or empty.
-						for _, key := range []string{"requirements", "relations", "referenced_columns", "unresolved"} {
-							if v, present := result[key]; present {
-								if arr, ok := v.([]any); ok {
-									if len(arr) != 0 {
-										t.Errorf("relationless %s: got %d items (%v), want 0", key, len(arr), arr)
-									}
-								} else if v != nil {
-									t.Errorf("relationless %s: got non-array %T (%v), want absent/empty", key, v, v)
-								}
-							}
-						}
-					} else {
-						wantReqs := probe.wantRequirements
-						rawReqs, ok := result["requirements"].([]any)
-						if !ok {
-							t.Fatalf("requirements: not a slice; got %T", result["requirements"])
-						}
-						if len(rawReqs) != len(wantReqs) {
-							t.Fatalf("requirements: got %d items, want %d", len(rawReqs), len(wantReqs))
-						}
-						for i, raw := range rawReqs {
-							reqMap, ok := raw.(map[string]any)
-							if !ok {
-								t.Fatalf("requirements[%d]: not a map; got %T", i, raw)
-							}
-							if reqMap["object"] != wantReqs[i]["object"] || reqMap["privilege"] != wantReqs[i]["privilege"] {
-								t.Errorf("requirements[%d]: got %+v, want %+v", i, reqMap, wantReqs[i])
-							}
-						}
-					}
-
-					bodyStr := body.String()
-					for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2", "root", "E2E_MYSQL_PASSWORD"} {
-						if strings.Contains(bodyStr, marker) {
-							t.Errorf("response leaked %q: %s", marker, bodyStr)
-						}
-					}
-					raw, _ := json.Marshal(result)
-					for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2"} {
-						if strings.Contains(string(raw), marker) {
-							t.Errorf("deserialized result leaked %s", marker)
-						}
-					}
-
-					assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
-					logOutput := logBuf.String()
-					assertNoLogLeaks(t, logOutput, noLeakMarkers())
-				})
-			}
-		})
-	}
-
-	t.Run("default_path_indeterminate", func(t *testing.T) {
-		for _, probe := range probes {
-			t.Run(probe.name, func(t *testing.T) {
-				logBuf.Reset()
-
-				payload := fmt.Sprintf(`{"sql":%q}`, probe.sql)
-				req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
-				if err != nil {
-					t.Fatalf("create request: %v", err)
-				}
-				req.Header.Set("Content-Type", "application/json")
-
-				resp, err := http.DefaultClient.Do(req)
-				if err != nil {
-					t.Fatalf("send request: %v", err)
-				}
-				defer resp.Body.Close()
-
-				var body bytes.Buffer
-				if _, err := body.ReadFrom(resp.Body); err != nil {
-					t.Fatalf("read response: %v", err)
-				}
-
-				if resp.StatusCode != http.StatusOK {
-					t.Fatalf("status: got %d, want 200; body: %s", resp.StatusCode, body.String())
-				}
-
-				var result map[string]any
-				if err := json.Unmarshal(body.Bytes(), &result); err != nil {
-					t.Fatalf("unmarshal: %v", err)
-				}
-				if result["read_classification"] != "indeterminate" {
-					t.Errorf("classification: got %q, want indeterminate", result["read_classification"])
-				}
-				if result["admission"] != "indeterminate" {
-					t.Errorf("admission: got %q, want indeterminate", result["admission"])
-				}
-
-				bodyStr := body.String()
-				for _, marker := range []string{"SECRET_LITERAL", "SECRET_LITERAL2"} {
-					if strings.Contains(bodyStr, marker) {
-						t.Errorf("response leaked %s: %s", marker, bodyStr)
-					}
-				}
-
-				assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
-				logOutput := logBuf.String()
-				assertNoLogLeaks(t, logOutput, noLeakMarkers())
-			})
-		}
-	})
-
-	// failPWBase is the basename of the temp password file; it must not leak
-	// in any HTTP response, JSON body, or access log entry.
-	failPWBase := filepath.Base(failPWFile)
-
-	failureCases := []struct {
-		name         string
-		connectionID string
-		password     string
-		user         string
-		sqlLiteral   string // unique per sub-case; proves request content doesn't leak on auth failure
-		extraMarkers []string
-	}{
-		{
-			name:         "env_credential_failure",
-			connectionID: "fail_env_conn",
-			password:     "FAIL_SECRET_ENV_pw_9f3b2a1c",
-			user:         "root",
-			sqlLiteral:   "FAIL_SQL_LITERAL_env_a1b2c3d4",
-			extraMarkers: []string{"E2E_FAIL_ENV_PASSWORD"},
-		},
-		{
-			name:         "file_credential_failure",
-			connectionID: "fail_file_conn",
-			password:     failPWContent,
-			user:         "root",
-			sqlLiteral:   "FAIL_SQL_LITERAL_file_e5f6a7b8",
-			extraMarkers: []string{failPWFile, failPWBase, "fail-pw-"},
-		},
-	}
-
-	for _, fc := range failureCases {
-		t.Run(fc.name, func(t *testing.T) {
 			logBuf.Reset()
-
-			// Build the full set of markers from the current sub-case's real
-			// configuration values. Every marker must originate from this
-			// sub-case's actual config or request — never from a shared constant.
-			failMarkers := []string{
-				// host, port, and schema (real MySQL 8.4 fixture)
-				"127.0.0.1",
-				"3840",
-				"app",
-				// credential identity
-				fc.user,
-				fc.connectionID,
-				fc.password,
-				// SQL literal marker unique to this sub-case
-				fc.sqlLiteral,
-				// SQL structural fragments
-				"COALESCE(",
-				"builtin_semantic_facts",
-				// driver/connection error substrings
-				"dial tcp",
-				"connection refused",
-				"Access denied",
-				"driver:",
-				"Error 1",
-			}
-			failMarkers = append(failMarkers, fc.extraMarkers...)
-
-			// Build SQL with the unique literal marker so the test can prove
-			// request content doesn't leak to response or access log on auth failure.
-			sql := fmt.Sprintf(
-				"SELECT COALESCE(name, '%s') FROM app.builtin_semantic_facts",
-				fc.sqlLiteral,
-			)
-			payload := fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, sql, fc.connectionID)
-			req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(payload))
+			marker := "HTTP_TRANSPORT_" + strings.ToUpper(tc.name) + "_MARKER"
+			req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, tc.sql+" /* "+marker+" */", tc.connectionID)))
 			if err != nil {
-				t.Fatalf("create request: %v; connID=%s", err, fc.connectionID)
+				t.Fatalf("create request: %v", err)
 			}
 			req.Header.Set("Content-Type", "application/json")
-
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				t.Fatalf("send request: %v; connID=%s", err, fc.connectionID)
+				t.Fatalf("send request: %v", err)
 			}
 			defer resp.Body.Close()
 
 			var body bytes.Buffer
 			if _, err := body.ReadFrom(resp.Body); err != nil {
-				t.Fatalf("read response: %v; connID=%s", err, fc.connectionID)
+				t.Fatalf("read response: %v", err)
 			}
-
-			// 1) HTTP status must be 502 Bad Gateway — proves the request
-			//    reached the real MySQL 8.4 fixture and was rejected by auth.
-			if resp.StatusCode != http.StatusBadGateway {
-				t.Fatalf("status: got %d, want 502; body: %s; connID=%s", resp.StatusCode, body.String(), fc.connectionID)
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("status: got %d, want 200; body: %s", resp.StatusCode, body.String())
 			}
-
-			// 2) JSON error code must be exactly "connection_failed".
+			requestID := resp.Header.Get("X-Request-ID")
 			var result map[string]any
 			if err := json.Unmarshal(body.Bytes(), &result); err != nil {
-				t.Fatalf("unmarshal: %v; connID=%s", err, fc.connectionID)
+				t.Fatalf("decode response: %v", err)
 			}
-			errObj, ok := result["error"].(map[string]any)
-			if !ok {
-				t.Fatalf("error: not a map; got %T; connID=%s", result["error"], fc.connectionID)
+			if result["read_classification"] != tc.classification || result["admission"] != tc.admission {
+				t.Fatalf("result: got %q/%q, want %q/%q", result["read_classification"], result["admission"], tc.classification, tc.admission)
 			}
-			if errObj["code"] != "connection_failed" {
-				t.Errorf("error.code: got %q, want connection_failed; connID=%s", errObj["code"], fc.connectionID)
-			}
-
-			// 3) Raw HTTP response body must not leak any marker.
-			bodyStr := body.String()
-			for _, marker := range failMarkers {
-				if strings.Contains(bodyStr, marker) {
-					t.Errorf("response body leaked %q: %s; connID=%s", marker, bodyStr, fc.connectionID)
+			if tc.requirement != "" {
+				requirements, ok := result["requirements"].([]any)
+				if !ok || len(requirements) != 1 {
+					t.Fatalf("requirements: got %#v, want %q", result["requirements"], tc.requirement)
+				}
+				requirement, ok := requirements[0].(map[string]any)
+				if !ok || requirement["object"].(string)+"="+requirement["privilege"].(string) != tc.requirement {
+					t.Fatalf("requirements: got %#v, want %q", requirements, tc.requirement)
 				}
 			}
-
-			// 4) Deserialized JSON must not leak any marker.
-			raw, _ := json.Marshal(result)
-			jsonStr := string(raw)
-			for _, marker := range failMarkers {
-				if strings.Contains(jsonStr, marker) {
-					t.Errorf("deserialized JSON leaked %q: %s; connID=%s", marker, jsonStr, fc.connectionID)
+			if tc.reason != "" {
+				found := false
+				for _, reason := range result["reason_codes"].([]any) {
+					if reason == tc.reason {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("reason_codes: got %#v, want %q", result["reason_codes"], tc.reason)
 				}
 			}
-
-			// 5) Access log must contain the positive entry AND must not leak.
-			assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
-			logOutput := logBuf.String()
-			scannedLog := sanitizeLogForLeakScan(logOutput)
-			for _, marker := range failMarkers {
-				if strings.Contains(scannedLog, marker) {
-					t.Errorf("access log leaked %q: %s; connID=%s", marker, logOutput, fc.connectionID)
-				}
+			if strings.Contains(body.String(), marker) {
+				t.Fatalf("response leaked SQL marker: %s", body.String())
 			}
+			assertRequestIDLogged(t, &logBuf, requestID)
+			assertNoLogLeaks(t, logBuf.String(), append(noLeakMarkers(), marker))
 		})
 	}
+}
+
+func TestQueryAccessOnline_DefaultOffline(t *testing.T) {
+	var logBuf syncBuffer
+	handler, err := NewHandler("", "test-build", WithMiddlewareConfig(MiddlewareConfig{Logger: log.New(&logBuf, "", 0)}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	marker := "HTTP_DEFAULT_OFFLINE_MARKER"
+	status, body := postHTTPQueryAccess(t, handler, fmt.Sprintf(`{"sql":%q}`, "SELECT COUNT(1) /* "+marker+" */"))
+	if status != http.StatusOK {
+		t.Fatalf("status: got %d, want 200; body: %s", status, body)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(body), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result["read_classification"] != "indeterminate" || result["admission"] != "indeterminate" {
+		t.Fatalf("offline result: %#v", result)
+	}
+	if strings.Contains(body, marker) {
+		t.Fatalf("response leaked SQL marker: %s", body)
+	}
+	assertAccessLogEntry(t, &logBuf, "/v1/query-access/analyze")
+	assertNoLogLeaks(t, logBuf.String(), append(noLeakMarkers(), marker))
+}
+
+func TestQueryAccessOnline_ConnectionFailureNoLeak(t *testing.T) {
+	t.Setenv("E2E_FAIL_ENV_PASSWORD", "FAIL_SECRET_ENV_pw_9f3b2a1c")
+	failPWContent := "FAIL_SECRET_FILE_pw_4d5e6f7a"
+	failPWFile := writeTempFile(t, "fail-pw-*", failPWContent)
+	reg, err := runtimeconfig.ValidateAndBuildRegistry(runtimeconfig.Config{
+		Metadata: runtimeconfig.MetadataConfig{Connections: []runtimeconfig.ConnectionConfig{
+			{
+				ID: "fail_env_conn", Dialect: "mysql", Host: "127.0.0.1", Port: 3840, User: "root",
+				PasswordEnv: "E2E_FAIL_ENV_PASSWORD", Schema: "app", Purposes: []string{"query_access"},
+			},
+			{
+				ID: "fail_file_conn", Dialect: "mysql", Host: "127.0.0.1", Port: 3840, User: "root",
+				PasswordFile: failPWFile, Schema: "app", Purposes: []string{"query_access"},
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("build registry: %v", err)
+	}
+
+	var logBuf syncBuffer
+	handler, err := NewHandler("", "test-build", WithRegistry(reg), WithMiddlewareConfig(MiddlewareConfig{Logger: log.New(&logBuf, "", 0)}))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	cases := []struct {
+		name, connectionID, password, sqlMarker string
+		extraMarkers                            []string
+	}{
+		{"env_credential_failure", "fail_env_conn", "FAIL_SECRET_ENV_pw_9f3b2a1c", "FAIL_SQL_LITERAL_env_a1b2c3d4", []string{"E2E_FAIL_ENV_PASSWORD"}},
+		{"file_credential_failure", "fail_file_conn", failPWContent, "FAIL_SQL_LITERAL_file_e5f6a7b8", []string{failPWFile, filepath.Base(failPWFile), "fail-pw-"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			logBuf.Reset()
+			sql := fmt.Sprintf("SELECT COALESCE(name, '%s') FROM app.builtin_semantic_facts", tc.sqlMarker)
+			req, err := http.NewRequest(http.MethodPost, ts.URL+"/v1/query-access/analyze", strings.NewReader(fmt.Sprintf(`{"sql":%q,"connection_id":%q}`, sql, tc.connectionID)))
+			if err != nil {
+				t.Fatalf("create request: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatalf("send request: %v", err)
+			}
+			defer resp.Body.Close()
+
+			var body bytes.Buffer
+			if _, err := body.ReadFrom(resp.Body); err != nil {
+				t.Fatalf("read response: %v", err)
+			}
+			if resp.StatusCode != http.StatusBadGateway {
+				t.Fatalf("status: got %d, want 502; body: %s", resp.StatusCode, body.String())
+			}
+			requestID := resp.Header.Get("X-Request-ID")
+			var result map[string]any
+			if err := json.Unmarshal(body.Bytes(), &result); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			errorBody, ok := result["error"].(map[string]any)
+			if !ok || errorBody["code"] != "connection_failed" {
+				t.Fatalf("error: got %#v, want connection_failed", result["error"])
+			}
+			markers := append([]string{
+				"127.0.0.1", "3840", "app", "root", tc.connectionID, tc.password, tc.sqlMarker,
+				"COALESCE(", "builtin_semantic_facts", "dial tcp", "connection refused", "Access denied", "driver:", "Error 1",
+			}, tc.extraMarkers...)
+			for _, marker := range markers {
+				if strings.Contains(body.String(), marker) {
+					t.Errorf("response leaked %q: %s", marker, body.String())
+				}
+			}
+			assertRequestIDLogged(t, &logBuf, requestID)
+			assertNoLogLeaks(t, logBuf.String(), markers)
+		})
+	}
+}
+
+func postHTTPQueryAccess(t *testing.T, handler http.Handler, payload string) (int, string) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(payload))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	return rec.Code, rec.Body.String()
 }

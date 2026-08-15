@@ -112,4 +112,11 @@ Issue #12 removed the CLI `TestQueryAccessOnline_MixedLiteralScalars` matrix
 because the unified SDK owns its product/profile/shape semantics. The retained
 CLI evidence is `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for MySQL 8.4
 and TiDB 8.5 real-route admitted/fail-closed behavior plus
-`TestQueryAccessOnline_DefaultOffline`; the HTTP matrix remains unchanged.
+`TestQueryAccessOnline_DefaultOffline`; at that time the HTTP matrix remained
+unchanged.
+
+Issue #13 then removed the duplicate HTTP matrix from the cited HTTP file.
+`TestQueryAccessOnline_TransportSmoke` retains MySQL 8.4 and TiDB 8.5 real-route
+admitted/fail-closed status/body, requirement/reason, request-ID/access-log, and
+no-leak evidence; `TestQueryAccessOnline_DefaultOffline` retains the HTTP
+offline boundary. The unified SDK remains the exhaustive semantic owner.
