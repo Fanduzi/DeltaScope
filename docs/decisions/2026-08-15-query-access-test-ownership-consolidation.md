@@ -127,7 +127,10 @@ Costs and limitations:
 
 ## Acceptance Evidence
 
-### Issue #13 HTTP evidence note
+### Historical Issue #13 HTTP evidence note
+
+This retained historical evidence is not acceptance of the current proposed
+remediation.
 
 Issue #13 removes only the ledger-authorized HTTP MySQL/TiDB online
 product/profile/shape matrix rows and the HTTP adapter's fixed PG17 probe
