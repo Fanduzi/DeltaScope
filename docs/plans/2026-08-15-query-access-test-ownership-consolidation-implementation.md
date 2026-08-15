@@ -103,11 +103,13 @@ changed.
 | Key | Retained evidence |
 |---|---|
 | S1 | `pkg/deltascope/query_access_online_session_test.go`: unified MySQL/TiDB construction, validation, per-target legacy equivalence, no-execution, and no-leak tests |
-| S2 | `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` and the unified live profile matrix |
+| S2 | `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`: legacy live profile matrix and six-probe per-target unified-versus-legacy equivalence; it is not an exhaustive unified owner |
 | S3 | `pkg/deltascope/query_access_online_session_postgresql_tag_test.go`: tagged PG17 route, excluded-shape, foreign-table, failure, ownership, and no-execution tests |
 | S4 | `pkg/deltascope/query_access_online_session_postgresql_integration_test.go`: live PG17 admissible, excluded-shape, foreign-table, same-session, and legacy equivalence tests |
 | S5 | `pkg/deltascope/query_access_session_postgresql_recording_test.go`: complete PG17 identity/catalog probes, no-execution, foreign-table, and bounded-failure tests |
 | S6 | `internal/application/queryaccess/{corpus_test.go,corpus_pg_test.go}` and `testdata/query-access`: offline semantic corpus |
+| U1 | Missing at the Issue #10 baseline: a complete unified MySQL/TiDB live semantic matrix for every legacy profile/shape row. Issue #11 must establish it before any row currently mapped to U1 can be deleted. |
+| U2 | Missing at the Issue #10 baseline: complete unified PG17 evidence for legacy aggregate/comparison shapes beyond the current exact `COUNT(1)` envelope. Issue #11 must establish it before those legacy rows can be deleted. |
 | C1 | `pkg/deltascope/query_access_deprecation_test.go`, `query_access_online_session*_test.go`, and the legacy session tests: deprecated API source, stub, exact-error, validation-order, and caller-ownership contract |
 | C2 | Unified-versus-legacy equivalence in S1/S2 for MySQL 5.7/8.0/8.4 and TiDB 8.5, and S3/S4 for PostgreSQL 17 |
 | T1 | CLI adapter and real-binary tests: flags, TLS/session construction, exit code, streams, close, bounded failures, no-leak, and real routing |
@@ -123,15 +125,15 @@ at its observed boundary even if its SQL text also appears elsewhere.
 
 | Current row or table | Current behavior | Unified semantic evidence | Boundary / compatibility evidence | Status |
 |---|---|---|---|---|
-| `query_access_session_mysql_tidb_test.go`: `PromotesProvenMySQL84CountStar` | MySQL 8.4 aggregate promotion | S1, S2 | C1, C2 | Candidate after owner gate |
-| `query_access_session_mysql_tidb_test.go`: `PromotesLiteralAndReversedOperands` | MySQL/TiDB literal and reversed operands | S1, S2, S6 | C1, C2 | Candidate after owner gate |
-| `query_access_session_mysql_tidb_test.go`: `RemainsFailClosedForUnknownFunction` | unknown-function fail-closed | S1, S2, S6 | C1, C2 | Candidate after owner gate |
-| `query_access_session_mysql_tidb_test.go`: `PromotesRelationlessLiteralShapes` | relationless literal promotion | S1, S2, S6 | C1, C2 | Candidate after owner gate |
+| `query_access_session_mysql_tidb_test.go`: `PromotesProvenMySQL84CountStar` | MySQL 8.4 aggregate promotion | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
+| `query_access_session_mysql_tidb_test.go`: `PromotesLiteralAndReversedOperands` | MySQL/TiDB literal and reversed operands | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
+| `query_access_session_mysql_tidb_test.go`: `RemainsFailClosedForUnknownFunction` | unknown-function fail-closed | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
+| `query_access_session_mysql_tidb_test.go`: `PromotesRelationlessLiteralShapes` | relationless literal promotion | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
 | `query_access_session_mysql_tidb_test.go`: `DoesNotExecuteUserSQL` | legacy no execution | S1 | C1, C2 | Non-substitutable compatibility |
-| `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveProfile_AssertsVersionAndAdmitsAggregates` table rows | MySQL 5.7/8.0/8.4 and TiDB 8.5 live shape/profile matrix | S2 | C2 | Candidate after owner gate |
+| `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveProfile_AssertsVersionAndAdmitsAggregates` table rows | MySQL 5.7/8.0/8.4 and TiDB 8.5 live shape/profile matrix | U1 (missing) | C2 | Blocked: retain until Issue #11 |
 | `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` table rows | per-target routing equivalence | S2 | C2 | Non-substitutable compatibility |
-| `query_access_session_integration_test.go`: `TestTrustedSDK_CountStarAdmissible` through `TestTrustedSDK_ComparisonAdmissible` | legacy PG17 admitted aggregate and comparison shapes | S3, S4, S6 | C1, C2 | Candidate after owner gate |
-| `query_access_session_integration_test.go`: `TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate`, `FilterDistinctRemainIndeterminate`, `UnqualifiedRelationIndeterminate`, and `LiteralComparisonIndeterminate` | legacy PG17 excluded-shape boundaries | S3, S4, S6 | C1, C2 | Candidate after owner gate |
+| `query_access_session_integration_test.go`: `TestTrustedSDK_CountStarAdmissible` through `TestTrustedSDK_ComparisonAdmissible` | legacy PG17 admitted aggregate and comparison shapes | U2 (missing) | C1, C2 | Blocked: retain until Issue #11 |
+| `query_access_session_integration_test.go`: `TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate`, `FilterDistinctRemainIndeterminate`, `UnqualifiedRelationIndeterminate`, and `LiteralComparisonIndeterminate` | legacy PG17 excluded-shape boundaries | U2 (missing) | C1, C2 | Blocked: retain until Issue #11 |
 | `query_access_session_integration_test.go`: session creation, closed/cancelled input, close, resolver, dialect, nil, and same-connection rows | old session lifecycle and validation contract | S3, S4 | C1 | Non-substitutable compatibility |
 | `query_access_session_postgresql_recording_test.go`: identity/catalog probe rows | detailed PG17 probe sequence | S5 | C1 | Candidate after owner gate; preserve one legacy compatibility proof |
 | `query_access_session_postgresql_recording_test.go`: foreign-table and catalog-failure rows | relation-kind trust and bounded failure/no-leak | S5 | C1 | Non-substitutable trust/compatibility |
@@ -141,7 +143,7 @@ at its observed boundary even if its SQL text also appears elsewhere.
 | `query_access_online_session_postgresql_integration_test.go`: all five rows | live PG17 route, foreign-table, same-session, and equivalence | S4 | C2 | Retained unified owner |
 | `query_access_online_session_postgresql_notag_test.go` | no-tag capability and legacy stub contract | S1 | C1 | Non-substitutable compatibility |
 | `query_access_deprecation_test.go` | six deprecation notices | -- | C1 | Non-substitutable compatibility |
-| `query_access_e2e_mixed_literal_test.go` CLI profile table rows | repeated MySQL/TiDB product/profile/shape results | S1, S2, S6 | T1 real-route smoke per family | Candidate after owner gate |
+| `query_access_e2e_mixed_literal_test.go` CLI profile table rows | repeated MySQL/TiDB product/profile/shape results | U1 (missing) | T1 real-route smoke per family | Blocked: retain until Issue #11 |
 | `query_access_e2e_mixed_literal_test.go` CLI offline row | CLI default/offline behavior | S1, S6 | T1 | Non-substitutable transport |
 | `query_access_test.go` CLI admitted/rejected/mode/JSON result rows | CLI command serialization and exit mapping | S1, S6 | T1 | Non-substitutable transport |
 | `query_access_test.go` CLI flags, removed-password, TLS, and constructor rows | CLI input/session/error contract | -- | T1 | Non-substitutable transport |
@@ -150,8 +152,9 @@ at its observed boundary even if its SQL text also appears elsewhere.
 | `query_access_postgresql_no_leak_test.go`: `CountIntegerOne`, `ExcludedShapes`, and `DefaultOffline` | CLI stdout/stderr sink privacy | S3 | T1 | Non-substitutable per-sink no-leak and offline |
 | `query_access_probe_boundary_no_leak_test.go` CLI rows | CLI MySQL/TiDB identity-boundary privacy | S1 | T1 | Non-substitutable per-sink no-leak |
 | `main_e2e_postgresql_query_access_test.go` CLI: `CountIntegerOne` | real CLI PG17 admissible route | S4 | T1 | Non-substitutable real-route smoke |
-| `main_e2e_postgresql_query_access_test.go` CLI: excluded, default, no-leak, and connection-failure rows | CLI syntax, offline, sink privacy, and bounded failure | S3, S4 | T1 | Non-substitutable transport |
-| `query_access_e2e_mixed_literal_test.go` HTTP profile table rows | repeated MySQL/TiDB product/profile/shape results | S1, S2, S6 | T2 real-route smoke per family | Candidate after owner gate |
+| `main_e2e_postgresql_query_access_test.go` CLI: syntax-envelope exclusions other than `app.remote_orders`, default, no-leak, and connection-failure rows | CLI syntax, offline, sink privacy, and bounded failure | S3, S4 | T1 | Non-substitutable transport |
+| `main_e2e_postgresql_query_access_test.go` CLI: `SELECT COUNT(1) FROM app.remote_orders` | PostgreSQL foreign-table relation-kind trust | S3, S4 | T1 | Non-substitutable foreign-table evidence |
+| `query_access_e2e_mixed_literal_test.go` HTTP profile table rows | repeated MySQL/TiDB product/profile/shape results | U1 (missing) | T2 real-route smoke per family | Blocked: retain until Issue #11 |
 | `query_access_e2e_mixed_literal_test.go` HTTP default row | HTTP default/offline behavior | S1, S6 | T2 | Non-substitutable transport |
 | `query_access_test.go` HTTP offline request/result rows | HTTP parsing, status, body, and defaults | S1, S6 | T2 | Non-substitutable transport |
 | `query_access_test.go` HTTP `connection_id`, registry, authorization, and zero-open rows | authorization-before-dial and registry boundary | -- | T2 | Non-substitutable authorization-before-dial |
@@ -161,7 +164,8 @@ at its observed boundary even if its SQL text also appears elsewhere.
 | `query_access_postgresql_no_leak_test.go`: unauthorized and unknown zero-dial rows | HTTP authorization-before-dial | -- | T2 | Non-substitutable authorization-before-dial |
 | `query_access_probe_boundary_no_leak_test.go` HTTP rows | HTTP MySQL/TiDB identity-boundary privacy | S1 | T2 | Non-substitutable per-sink no-leak |
 | `main_e2e_postgresql_query_access_test.go` HTTP: `CountIntegerOne` | real HTTP PG17 admissible route | S4 | T2 | Non-substitutable real-route smoke |
-| `main_e2e_postgresql_query_access_test.go` HTTP: excluded, no-connection, unauthorized, and no-leak rows | HTTP syntax, registry/auth, and body/log privacy | S3, S4 | T2 | Non-substitutable transport |
+| `main_e2e_postgresql_query_access_test.go` HTTP: syntax-envelope exclusions other than `app.remote_orders`, no-connection, unauthorized, and no-leak rows | HTTP syntax, registry/auth, and body/log privacy | S3, S4 | T2 | Non-substitutable transport |
+| `main_e2e_postgresql_query_access_test.go` HTTP: `SELECT COUNT(1) FROM app.remote_orders` | PostgreSQL foreign-table relation-kind trust | S3, S4 | T2 | Non-substitutable foreign-table evidence |
 | `query_access_surface_contract_test.go` | MCP has no Query Access tool | -- | M1 | Non-substitutable MCP contract |
 | `corpus_test.go`, `corpus_pg_test.go`, and all `testdata/query-access` pairs | offline corpus semantic classes | S6 | -- | Retained unified/offline semantic owner |
 

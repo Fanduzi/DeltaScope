@@ -21,10 +21,12 @@ Local `make build` now produces PostgreSQL-capable `deltascope`, `deltascope-ser
 
 ## Query Access Test Ownership
 
-The unified SDK session is the exhaustive semantic owner for MySQL 5.7/8.0/8.4,
-TiDB 8.5, and PostgreSQL 17. Add a new SQL shape, capability profile, exact
-admission/result, detailed identity/catalog probe, or user-SQL no-execution
-case there once. The Query Access corpus remains the offline semantic owner.
+The unified SDK session is the intended exhaustive semantic owner for MySQL 5.7/8.0/8.4,
+TiDB 8.5, and PostgreSQL 17. Until the milestone ledger identifies complete
+unified replacement evidence, existing semantic rows remain retained. Add a new
+SQL shape, capability profile, exact admission/result, detailed identity/catalog
+probe, or user-SQL no-execution case at the unified SDK seam. The Query Access
+corpus remains the offline semantic owner.
 
 | Evidence | Owner | Do not replace with |
 |---|---|---|
@@ -36,10 +38,11 @@ case there once. The Query Access corpus remains the offline semantic owner.
 | PostgreSQL syntax-envelope, foreign-table, and default/offline failures | SDK, CLI, and HTTP at their distinct boundaries | Another PostgreSQL negative |
 | Absence of a Query Access tool | MCP surface contract | Any SDK or transport test |
 
-Future changes add semantic breadth at the unified SDK seam. Add a transport
-case only when it observes a transport-owned sink, lifecycle, configuration,
-authorization, or routing boundary. A new server version in an existing
-transport configuration family needs SDK coverage, not copied transport
+Future changes add semantic breadth at the unified SDK seam. Do not delete an
+existing semantic row until the ledger identifies its complete unified owner.
+Add a transport case only when it observes a transport-owned sink, lifecycle,
+configuration, authorization, or routing boundary. A new server version in an
+existing transport configuration family needs SDK coverage, not copied transport
 matrices. A new family or configuration needs one smoke per supported transport.
 
 Before deleting a test or table row, update the milestone ledger in
