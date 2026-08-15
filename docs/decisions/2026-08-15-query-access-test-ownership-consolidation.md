@@ -1,7 +1,7 @@
 # Decision: Assign Query Access Tests to One Evidence Owner
 
 - Date: 2026-08-15
-- Status: Proposed
+- Status: Accepted
 - Related: [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md), [Dialect session API deprecation](2026-08-14-query-access-dialect-session-api-deprecation.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [test consolidation issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-spec.md`
 - Design: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-design.md`
@@ -139,19 +139,15 @@ the detailed semantic and probe-sequence owner. A temporary authorization
 bypass made `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` fail before the
 original guard was restored; the mutation is not committed.
 
-### Final reconciliation evidence
+### Final remediation acceptance
 
-The complete row-by-row deletion ledger, post-consolidation inventory, and
-measured gate evidence are recorded in the implementation plan's Issue #14
-final reconciliation. Each required temporary mutation made its retained owner
-RED, then was restored byte-clean without committing mutation code. The full
-required default/tagged/race/corpus/Docker/TLS/build/vet/lint/npm/docs/decision/
-gofmt/tidy/diff matrix passed.
+The fixed review candidate is `0a0b8e242528a7cf5778e6ffa0b7e48302b35b89`; the
+review range is `db4e73a19233d0475a480f2f333784d85f2d616a...0a0b8e242528a7cf5778e6ffa0b7e48302b35b89`.
+Fresh independent Standards and Spec/security reviews both passed with no
+unresolved P0, P1, or P2.
 
-The independent Standards and Spec/security reviews examined the fixed review
-candidate `51e548ecf234e8ecf84cbb81dfcddd19650c9dd8` against the fixed milestone
-range `db4e73a19233d0475a480f2f333784d85f2d616a...51e548ecf234e8ecf84cbb81dfcddd19650c9dd8`.
-They found no unresolved P0, P1, or P2 and confirmed retained semantic,
-compatibility, authorization, privacy, lifecycle, foreign-table,
-offline/default, and MCP-absence evidence; production behavior and restricted
-delivery surfaces remain unchanged.
+Focused RED→GREEN evidence covered the restored rejected-write, aggregate, and
+unknown-function SDK rows; the admitted HTTP response scanner; and the renamed
+live-owner ledger mapping. The required default/tagged/race/corpus/Docker/TLS/
+build/vet/lint/npm/docs/decision/gofmt/tidy/diff matrix passed. No production,
+public API, Makefile, workflow, fixture, version, or release surface changed.
