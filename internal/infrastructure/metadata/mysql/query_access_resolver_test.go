@@ -96,12 +96,18 @@ func TestQueryAccessConnResolver_ColumnOrderPreserved(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveRelation: %v", err)
 	}
-	// Driver row order must be preserved; ordering is delegated to the catalog query.
+	// Driver row order must be preserved in full; ordering is delegated to the catalog query.
 	if len(rs.Columns) != 3 {
 		t.Fatalf("columns: got %d, want 3", len(rs.Columns))
 	}
 	if rs.Columns[0].Name != "z_col" || rs.Columns[0].Ordinal != 26 {
-		t.Errorf("column[0]: got %q@%d", rs.Columns[0].Name, rs.Columns[0].Ordinal)
+		t.Errorf("column[0]: got %q@%d, want z_col@26", rs.Columns[0].Name, rs.Columns[0].Ordinal)
+	}
+	if rs.Columns[1].Name != "a_col" || rs.Columns[1].Ordinal != 1 {
+		t.Errorf("column[1]: got %q@%d, want a_col@1", rs.Columns[1].Name, rs.Columns[1].Ordinal)
+	}
+	if rs.Columns[2].Name != "m_col" || rs.Columns[2].Ordinal != 13 {
+		t.Errorf("column[2]: got %q@%d, want m_col@13", rs.Columns[2].Name, rs.Columns[2].Ordinal)
 	}
 }
 

@@ -46,6 +46,10 @@ execution decision.
   DB-backed and caller-owned `*sql.Conn` resolvers reject them instead of mapping
   them to ordinary `table`, so `SELECT COUNT(1) FROM app.<foreign_table>` cannot
   become `read_only` + `admissible`.
+  > Evidence maintenance (2026-08-16): the DB-backed resolver was removed by
+  > [issue #2](2026-08-16-query-access-remove-db-backed-resolvers.md); the
+  > fail-closed claim now rests solely on the caller-owned `*sql.Conn` resolver
+  > and its shared catalog core.
 - No default/offline SDK, CLI, HTTP, MCP, MySQL, or TiDB behavior change.
 - No public result field, authorization/grant/RLS/masking decision, SQL
   execution, result retrieval, or disclosure of SQL literals, catalog data,
@@ -91,6 +95,11 @@ defer rather than approximate.
   conn-backed), application-layer negative promotion, recording-driver
   no-execution/no-leak, Docker PG17 fixture `app.remote_orders`, and SDK/CLI/HTTP
   online negative E2E paths.
+  > Evidence maintenance (2026-08-16): the DB-backed resolver unit tests were
+  > removed by [issue #2](2026-08-16-query-access-remove-db-backed-resolvers.md);
+  > foreign-table fail-closed is now evidenced by the conn-backed resolver
+  > contract test, the same-session integration test, and the unchanged
+  > application-layer, recording-driver, and SDK/CLI/HTTP E2E paths.
 - Independent read-only audit found no P0, P1, or P2 issues.
 
 ## Deferred Scope

@@ -160,7 +160,11 @@ commit follows this section.
   (tags `postgresql,integration`) fails identically on clean `main` —
   `coalesce` is outside the closed PG17 manifest, so the query resolves as
   `unproven_function_effect`. The test is not part of any Makefile/CI gate.
-- Independent review: fresh read-only Standards and Spec reviews of
-  `main...52731a8` report no unresolved P0/P1/P2. Standards noted two
-  non-blocking judgement calls (ADR link/evidence sections — resolved by the
-  acceptance commit; single-factory parameterized harness — accepted).
+- Independent review: fresh read-only Standards and Spec reviews of the fixed
+  candidate — base `d7ce52b782f99f0cb17e790a8a53873a418fb08b` (local `main` at
+  review time) through candidate `52731a88b644abb35e8f9512d42d810eb64a284d` —
+  report no unresolved P0/P1/P2. A follow-up independent review flagged four
+  P2 and one P3 findings (stale L3 header wording, vestigial single-factory
+  harness, partial column-order assertion, missing PG17 ADR maintenance notes,
+  and a movable `main...SHA` review reference); all were fixed in the follow-up
+  commit and re-reviewed against a fixed-SHA candidate.

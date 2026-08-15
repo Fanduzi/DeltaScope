@@ -10,7 +10,7 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 | provider_test.go | Verifies provider connection, dialect, normalization helpers, and index-cardinality accumulation behavior without a live database |
 | provider_integration_test.go | Verifies provider connection pool configuration and connection-leak behavior against a live MySQL service (build tag `integration`) |
 | query_access_conn_resolver.go | Implements SchemaResolver for a caller-owned MySQL/TiDB `*sql.Conn` |
-| query_access_resolver_test.go | Verifies conn resolver behavior for table/view kind, column listing and order, missing relation, empty columns, cancellation, and unsupported relation kind using a custom test driver |
+| query_access_resolver_test.go | Verifies conn resolver behavior for table/view kind, full column order, missing relation, empty columns, cancellation, and unsupported relation kind using a custom test driver |
 | pure_effect_feasibility_test.go | Locks the STATIC Phase-1 pure-effect feasibility assumption for MySQL/TiDB; superseded by live probes in `builtin_effect_identity_live_probes_test.go` |
 | pure_effect_defer_test.go | Locks the STATIC Phase-1 pure-effect deferral assumption; superseded by live probes which established the final DEFER dispositions |
 | builtin_effect_identity_live_probes_test.go | Runs REAL Docker-backed MySQL 8.4 and TiDB 8.5 builtin-effect identity feasibility probes over a caller-owned `*sql.Conn`; locks independent live server evidence and the final DEFER dispositions (build tag `integration`) |

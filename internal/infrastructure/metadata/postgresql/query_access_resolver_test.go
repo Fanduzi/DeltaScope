@@ -1,9 +1,9 @@
 //go:build postgresql
 
-// Package postgresqlmeta verifies PostgreSQL Query Access resolver behavior.
+// Package postgresqlmeta verifies the conn-backed PostgreSQL Query Access resolver.
 // input: synthetic pg_catalog rows via the package test driver
-// output: equivalent DB/Conn relation metadata, errors, ordering, and fail-closed behavior
-// pos: parameterized contract and adapter-specific unit coverage
+// output: conn-backed relation metadata, errors, ordering, and fail-closed behavior
+// pos: conn contract and adapter-specific unit coverage
 // note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
@@ -19,29 +19,21 @@ import (
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 )
 
-type queryAccessResolverFactory struct {
-	name string
-	new  func(t *testing.T, db any) appqa.SchemaResolver
+func newConnResolver(t *testing.T, db *sql.DB) *QueryAccessConnResolver {
+	t.Helper()
+	conn, err := db.Conn(context.Background())
+	if err != nil {
+		t.Fatalf("db.Conn: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+	resolver, err := NewQueryAccessConnResolver(conn)
+	if err != nil {
+		t.Fatalf("NewQueryAccessConnResolver: %v", err)
+	}
+	return resolver
 }
 
-func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
-	factories := []queryAccessResolverFactory{
-		{
-			name: "conn",
-			new: func(t *testing.T, handle any) appqa.SchemaResolver {
-				conn, err := handle.(*sql.DB).Conn(context.Background())
-				if err != nil {
-					t.Fatalf("db.Conn: %v", err)
-				}
-				t.Cleanup(func() { _ = conn.Close() })
-				resolver, err := NewQueryAccessConnResolver(conn)
-				if err != nil {
-					t.Fatalf("NewQueryAccessConnResolver: %v", err)
-				}
-				return resolver
-			},
-		},
-	}
+func TestQueryAccessConnResolver_ResolveRelationContract(t *testing.T) {
 
 	cases := []struct {
 		name         string
@@ -161,31 +153,27 @@ func TestQueryAccessResolvers_ResolveRelationContract(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, factory := range factories {
-				t.Run(factory.name, func(t *testing.T) {
-					db, queryLog := openTestDB(t, tc.results)
-					defer db.Close()
-					resolver := factory.new(t, db)
+			db, queryLog := openTestDB(t, tc.results)
+			defer db.Close()
+			resolver := newConnResolver(t, db)
 
-					ctx := context.Background()
-					if tc.name == "cancellation" {
-						var cancel context.CancelFunc
-						ctx, cancel = context.WithCancel(ctx)
-						cancel()
-					}
-					got, err := resolver.ResolveRelation(ctx, "postgresql", "app", relationName(tc.name))
-					if tc.wantErrExact != "" {
-						if err == nil || err.Error() != tc.wantErrExact {
-							t.Fatalf("error=%v, want exact %q", err, tc.wantErrExact)
-						}
-					} else if err != nil {
-						t.Fatalf("ResolveRelation: %v", err)
-					} else if !reflect.DeepEqual(got, tc.want) {
-						t.Fatalf("result=%+v, want %+v", got, tc.want)
-					}
-					assertQueryOrder(t, queryLog.Queries(), tc.wantLogs)
-				})
+			ctx := context.Background()
+			if tc.name == "cancellation" {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
 			}
+			got, err := resolver.ResolveRelation(ctx, "postgresql", "app", relationName(tc.name))
+			if tc.wantErrExact != "" {
+				if err == nil || err.Error() != tc.wantErrExact {
+					t.Fatalf("error=%v, want exact %q", err, tc.wantErrExact)
+				}
+			} else if err != nil {
+				t.Fatalf("ResolveRelation: %v", err)
+			} else if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("result=%+v, want %+v", got, tc.want)
+			}
+			assertQueryOrder(t, queryLog.Queries(), tc.wantLogs)
 		})
 	}
 }

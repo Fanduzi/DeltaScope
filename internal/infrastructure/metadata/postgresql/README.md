@@ -14,7 +14,7 @@ PostgreSQL metadata provider used for optional metadata-aware DeltaScope audits 
 | resolve_object_test.go | Verifies object resolver behavior for all supported lookup types, statuses, sensitive attribute exclusion, and annotation target verification |
 | query_access_conn_resolver.go | Thin caller-owned `*sql.Conn`-backed SchemaResolver adapter for same-session metadata resolution; no pool fallback |
 | query_access_resolver_core.go | Private stateless PostgreSQL catalog core behind the conn adapter: relation/column SQL, scanning, lookup errors, relkind mapping, and foreign-table fail-closed policy |
-| query_access_resolver_test.go | Conn-backed behavior contract plus foreign-table, ordering, lifecycle, and concrete-field coverage |
+| query_access_resolver_test.go | Conn-only behavior contract (relation kinds, errors, query order, foreign-table fail-closed) plus lifecycle and concrete-field coverage |
 | query_access_conn_resolver_stub.go | Empty QueryAccessConnResolver struct for non-postgresql builds |
 | query_access_conn_resolver_test.go | Adapter-specific conn lifecycle and concrete-field tests |
 | query_access_conn_resolver_integration_test.go | PG17 Docker integration: same-backend-PID proof |
