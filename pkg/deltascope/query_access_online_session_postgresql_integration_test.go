@@ -60,16 +60,17 @@ func TestUnifiedSession_PostgreSQLCountOneAdmissible(t *testing.T) {
 // remain separately covered by the deprecated API only for compatibility.
 func TestUnifiedSession_PostgreSQLSemanticMatrix(t *testing.T) {
 	type testCase struct {
-		name      string
-		sql       string
-		admission QueryAccessAdmission
+		name         string
+		sql          string
+		admission    QueryAccessAdmission
+		requirements []QueryAccessRequirement
 	}
 	cases := []testCase{
 		{name: "count_star", sql: "SELECT count(*) FROM app.users", admission: QueryAccessAdmissible},
 		{name: "typed_aggregates", sql: "SELECT count(amount), sum(amount), avg(amount), min(amount), max(amount) FROM app.orders", admission: QueryAccessAdmissible},
 		{name: "row_number", sql: "SELECT row_number() OVER (PARTITION BY user_id ORDER BY amount) FROM app.orders", admission: QueryAccessAdmissible},
 		{name: "rank_dense_rank", sql: "SELECT rank() OVER (ORDER BY amount), dense_rank() OVER (ORDER BY amount) FROM app.orders", admission: QueryAccessAdmissible},
-		{name: "comparison", sql: "SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id", admission: QueryAccessAdmissible},
+		{name: "comparison", sql: "SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id", admission: QueryAccessAdmissible, requirements: []QueryAccessRequirement{{Object: "app.orders", Privilege: "read_table"}, {Object: "app.orders.user_id", Privilege: "read_column"}, {Object: "app.users", Privilege: "read_table"}, {Object: "app.users.id", Privilege: "read_column"}}},
 		{name: "sum_filter", sql: "SELECT sum(amount) FILTER (WHERE amount > 0) FROM app.orders", admission: QueryAccessIndeterminateAdmission},
 		{name: "sum_distinct", sql: "SELECT sum(DISTINCT amount) FROM app.orders", admission: QueryAccessIndeterminateAdmission},
 		{name: "unqualified_relation", sql: "SELECT id FROM users WHERE id = 1", admission: QueryAccessIndeterminateAdmission},
@@ -100,6 +101,9 @@ func TestUnifiedSession_PostgreSQLSemanticMatrix(t *testing.T) {
 			}
 			if tc.admission == QueryAccessIndeterminateAdmission && result.ReadClassification != QueryAccessIndeterminate {
 				t.Fatalf("classification=%s, want indeterminate", result.ReadClassification)
+			}
+			if tc.requirements != nil && !reflect.DeepEqual(result.Requirements, tc.requirements) {
+				t.Fatalf("requirements=%+v, want %+v", result.Requirements, tc.requirements)
 			}
 			assertNoLeak(t, result)
 		})

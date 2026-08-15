@@ -2,7 +2,7 @@
 
 // Package deltascope verifies the live MySQL/TiDB SDK profile and unified-entry E2E boundary.
 // input: caller-owned *sql.Conn against running MySQL 5.7/8.0/8.4 and TiDB 8.5
-// output: unified profile semantics plus deprecated dialect-specific result equivalence across all four targets
+// output: unified profile semantics plus deprecated identity-target and result equivalence across all four targets
 // pos: live SDK compatibility E2E for the four production builtin semantic profiles
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	online "github.com/Fanduzi/DeltaScope/internal/application/online"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -34,6 +35,7 @@ type liveProfileCase struct {
 	exactVersion  string
 	versionMatch  func(string, string) bool
 	windowSupport bool
+	target        online.CapabilityTarget
 }
 
 func liveProfileCases() []liveProfileCase {
@@ -45,6 +47,7 @@ func liveProfileCases() []liveProfileCase {
 			defaultPort: 3507, exactVersion: "5.7.44",
 			versionMatch:  func(observed, want string) bool { return observed == want },
 			windowSupport: false,
+			target:        online.TargetMySQL57,
 		},
 		{
 			name: "mysql80", dialect: DialectMySQL, profile: QueryAccessAnalysisProfileMySQL80,
@@ -53,6 +56,7 @@ func liveProfileCases() []liveProfileCase {
 			defaultPort: 3800, exactVersion: "8.0.46",
 			versionMatch:  func(observed, want string) bool { return observed == want },
 			windowSupport: true,
+			target:        online.TargetMySQL80,
 		},
 		{
 			name: "mysql84", dialect: DialectMySQL, profile: QueryAccessAnalysisProfileMySQL84,
@@ -61,6 +65,7 @@ func liveProfileCases() []liveProfileCase {
 			defaultPort: 3840, exactVersion: "8.4.10",
 			versionMatch:  func(observed, want string) bool { return observed == want },
 			windowSupport: true,
+			target:        online.TargetMySQL84,
 		},
 		{
 			name: "tidb85", dialect: DialectTiDB, profile: QueryAccessAnalysisProfileTiDB85,
@@ -69,6 +74,7 @@ func liveProfileCases() []liveProfileCase {
 			defaultPort: 4850, exactVersion: "8.0.11-TiDB-v8.5.7",
 			versionMatch:  func(observed, want string) bool { return observed == want },
 			windowSupport: true,
+			target:        online.TargetTiDB85,
 		},
 	}
 }
@@ -841,6 +847,9 @@ func TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles(t *testing.T) {
 					legacySession, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
 					if err != nil {
 						t.Fatalf("%s %s legacy new session: %v", tc.name, probe.name, err)
+					}
+					if legacySession.target != tc.target {
+						t.Fatalf("%s legacy target=%q, want %q", tc.name, legacySession.target, tc.target)
 					}
 
 					unifiedResult, unifiedErr := AnalyzeOnlineQueryAccessWithSession(ctx, unifiedSession, QueryAccessRequest{
