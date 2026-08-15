@@ -139,7 +139,7 @@ the detailed semantic and probe-sequence owner. A temporary authorization
 bypass made `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` fail before the
 original guard was restored; the mutation is not committed.
 
-## Acceptance Evidence
+### Final reconciliation evidence
 
 The complete row-by-row deletion ledger, post-consolidation inventory, and
 measured gate evidence are recorded in the implementation plan's Issue #14
@@ -148,8 +148,10 @@ RED, then was restored byte-clean without committing mutation code. The full
 required default/tagged/race/corpus/Docker/TLS/build/vet/lint/npm/docs/decision/
 gofmt/tidy/diff matrix passed.
 
-Fresh independent Standards and Spec/security reviews of
-`db4e73a19233d0475a480f2f333784d85f2d616a...HEAD` found no unresolved P0,
-P1, or P2. They confirmed retained semantic, compatibility, authorization,
-privacy, lifecycle, foreign-table, offline/default, and MCP-absence evidence;
-production behavior and restricted delivery surfaces remain unchanged.
+The independent Standards and Spec/security reviews examined the fixed review
+candidate `51e548ecf234e8ecf84cbb81dfcddd19650c9dd8` against the fixed milestone
+range `db4e73a19233d0475a480f2f333784d85f2d616a...51e548ecf234e8ecf84cbb81dfcddd19650c9dd8`.
+They found no unresolved P0, P1, or P2 and confirmed retained semantic,
+compatibility, authorization, privacy, lifecycle, foreign-table,
+offline/default, and MCP-absence evidence; production behavior and restricted
+delivery surfaces remain unchanged.
