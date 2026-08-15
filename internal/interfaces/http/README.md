@@ -31,6 +31,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 ## Notes
 
 - Online Query Access keeps registry lookup, authorization, TLS/credential resolution, cancellation, connection close, HTTP errors, request IDs, and access logs in HTTP, then passes the caller-owned pinned connection to the opaque unified SDK session without inspecting observed product or constraining the analysis request dialect.
+- Query Access semantic breadth and detailed probe tests live in the unified SDK suite; this module retains only HTTP-owned transport, registry, authorization, sink, lifecycle, and real-route evidence.
 - The HTTP layer is adapter-only: it reuses the shared public audit API and metadata-preparation helpers instead of reimplementing dialect or schema logic.
 - Routing uses Gin while keeping the public JSON API contract unchanged.
 - API-key auth is optional and configured through adapter options.

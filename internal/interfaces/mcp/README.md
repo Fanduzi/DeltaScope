@@ -26,6 +26,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 ## Notes
 
 - The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, metadata-preparation, and direct-connection helper logic.
+- `query_access_surface_contract_test.go` is the sole MCP proof that Query Access remains absent; no Query Access MCP tool is introduced.
 - The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances and PostgreSQL on the PG-capable builds.
 - Connection-backed PostgreSQL MCP audit requests follow the same shared metadata-preparation path as the other transports and should preserve explicit metadata-aware context rather than downgrading silently.
 - `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, audit modes, dialect support, top-level and connection inputs, audit result fields, context fields, metadata features, and the stable structured error codes the server advertises (`bad_request`, `connection_invalid`, `connection_failed`, `config_invalid`).

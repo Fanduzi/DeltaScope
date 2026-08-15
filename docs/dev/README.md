@@ -7,7 +7,7 @@ Implementation-oriented documentation for contributors who need the code structu
 | Doc | Purpose |
 | --- | --- |
 | [architecture.md](architecture.md) | Implementation-layer architecture with package boundaries |
-| [testing.md](testing.md) | Local verification entrypoints and Makefile targets |
+| [testing.md](testing.md) | Local verification entrypoints, Makefile targets, and Query Access test ownership rules |
 
 ## Audience
 

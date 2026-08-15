@@ -44,6 +44,7 @@ CLI adapter layer for the DeltaScope application.
 
 ## Notes
 - Online `query-access analyze` keeps connection/TLS/credential lifecycle in the CLI, then passes the caller-owned pinned connection to the opaque unified SDK session without inspecting observed product or constraining the analysis request dialect.
+- Query Access semantic breadth and detailed probe tests live in the unified SDK suite; this module retains only CLI-owned transport, sink, lifecycle, and real-route evidence.
 - `deltascope --version` prints the build version plus compiled dialect surface.
 - `deltascope version` prints the ASCII logo plus the build version and compiled dialect surface.
 

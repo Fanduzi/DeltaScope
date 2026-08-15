@@ -19,6 +19,36 @@ make build-mcp
 Local `make build` now produces PostgreSQL-capable `deltascope`, `deltascope-server`, and `deltascope-mcp` binaries by building with `CGO_ENABLED=1` and `-tags postgresql`.
 `make build-linux` remains on the portable `CGO_ENABLED=0` path until the public release matrix converges on unified PostgreSQL-capable artifacts.
 
+## Query Access Test Ownership
+
+The unified SDK session is the exhaustive semantic owner for MySQL 5.7/8.0/8.4,
+TiDB 8.5, and PostgreSQL 17. Add a new SQL shape, capability profile, exact
+admission/result, detailed identity/catalog probe, or user-SQL no-execution
+case there once. The Query Access corpus remains the offline semantic owner.
+
+| Evidence | Owner | Do not replace with |
+|---|---|---|
+| Product/profile/SQL-shape semantics and detailed recording probes | Unified SDK | CLI or HTTP copies |
+| Deprecated API notices, stubs, exact errors, validation priority, caller ownership, and per-target equivalence | Deprecated SDK compatibility tests | Unified-only assertions |
+| Flags, TLS/session lifecycle, exit code, stdout/stderr, bounded CLI errors, and CLI no-leak | CLI | SDK result assertions |
+| Request/status/body, registry, `connection_id`, authorization-before-dial, access logs, lifecycle, and HTTP no-leak | HTTP | SDK result assertions |
+| One real route smoke per MySQL 8.4, TiDB 8.5, and PostgreSQL 17 family on each transport | CLI and HTTP real-binary/adapter tests | Recording tests alone |
+| PostgreSQL syntax-envelope, foreign-table, and default/offline failures | SDK, CLI, and HTTP at their distinct boundaries | Another PostgreSQL negative |
+| Absence of a Query Access tool | MCP surface contract | Any SDK or transport test |
+
+Future changes add semantic breadth at the unified SDK seam. Add a transport
+case only when it observes a transport-owned sink, lifecycle, configuration,
+authorization, or routing boundary. A new server version in an existing
+transport configuration family needs SDK coverage, not copied transport
+matrices. A new family or configuration needs one smoke per supported transport.
+
+Before deleting a test or table row, update the milestone ledger in
+`docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md`,
+run its listed owner gates, and obtain read-only review. Similar SQL is never
+sufficient: foreign-table, offline/default, per-sink no-leak,
+authorization-before-dial, and per-target deprecated-API evidence are
+non-substitutable.
+
 ## Metadata E2E
 
 ```bash
