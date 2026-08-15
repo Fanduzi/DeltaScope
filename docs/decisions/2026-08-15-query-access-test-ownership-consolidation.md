@@ -121,7 +121,7 @@ Costs and limitations:
 
 - Production refactors, public API changes, new Query Access capabilities, and
   removal of deprecated APIs.
-- New test framework, matrix generator, static checker, or mutation dependency.
+- New test framework, matrix generator, permanent CI-enforced static checker, or mutation dependency. The focused static documentation regression check is retained only to guard this reconciliation.
 - Makefile/workflow/fixture/gate changes.
 - Version bump, release notes, tag, release, or publication.
 

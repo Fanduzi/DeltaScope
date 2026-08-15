@@ -692,8 +692,11 @@ func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
 			if strings.Contains(string(data), "SECRET_LITERAL") {
 				t.Fatalf("result JSON leaked literal: %s", data)
 			}
-			if tc.name == "mysql84_parse_failure" && (strings.Contains(string(data), "MALFORMED_SQL_MARKER_7f3a") || strings.Contains(string(data), tc.sql)) {
-				t.Fatalf("result JSON leaked malformed SQL or marker: %s", data)
+			if tc.name == "mysql84_parse_failure" {
+				dump := fmt.Sprintf("%+v", result)
+				if strings.Contains(dump, "MALFORMED_SQL_MARKER_7f3a") || strings.Contains(dump, tc.sql) || strings.Contains(string(data), "MALFORMED_SQL_MARKER_7f3a") || strings.Contains(string(data), tc.sql) {
+					t.Fatalf("result leaked malformed SQL or marker: dump=%s json=%s", dump, data)
+				}
 			}
 		})
 	}

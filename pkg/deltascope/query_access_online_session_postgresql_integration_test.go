@@ -10,6 +10,7 @@ package deltascope
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -118,8 +119,9 @@ func TestUnifiedSession_PostgreSQLSemanticMatrix(t *testing.T) {
 				if err != nil {
 					t.Fatalf("marshal: %v", err)
 				}
-				if strings.Contains(string(data), tc.sql) || strings.Contains(string(data), "MALFORMED_SQL_MARKER_7f3a") {
-					t.Fatalf("result JSON leaked malformed SQL or marker: %s", data)
+				dump := fmt.Sprintf("%+v", result)
+				if strings.Contains(dump, tc.sql) || strings.Contains(dump, "MALFORMED_SQL_MARKER_7f3a") || strings.Contains(string(data), tc.sql) || strings.Contains(string(data), "MALFORMED_SQL_MARKER_7f3a") {
+					t.Fatalf("result leaked malformed SQL or marker: dump=%s json=%s", dump, data)
 				}
 			}
 			assertNoLeak(t, result)
