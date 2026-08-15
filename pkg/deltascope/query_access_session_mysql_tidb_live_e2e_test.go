@@ -2,7 +2,7 @@
 
 // Package deltascope verifies the live MySQL/TiDB SDK profile and unified-entry E2E boundary.
 // input: caller-owned *sql.Conn against running MySQL 5.7/8.0/8.4 and TiDB 8.5
-// output: profile behavior plus unified-versus-dialect-specific result equivalence across all four targets
+// output: unified profile semantics plus deprecated dialect-specific result equivalence across all four targets
 // pos: live SDK compatibility E2E for the four production builtin semantic profiles
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -73,7 +73,7 @@ func liveProfileCases() []liveProfileCase {
 	}
 }
 
-func TestLiveProfile_AssertsVersionAndAdmitsAggregates(t *testing.T) {
+func TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix(t *testing.T) {
 	for _, tc := range liveProfileCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -155,15 +155,13 @@ func assertLiveProfileVersion(t *testing.T, ctx context.Context, conn *sql.Conn,
 
 func assertLiveProfileAdmitsCountStar(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT COUNT(*) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(*) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s COUNT(*) analyze: %v", tc.name, err)
@@ -185,15 +183,13 @@ func assertLiveProfileAdmitsDirectColumnAggregates(t *testing.T, ctx context.Con
 		{"MIN", "SELECT MIN(amount) FROM app.builtin_semantic_facts"},
 		{"MAX", "SELECT MAX(amount) FROM app.builtin_semantic_facts"},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-			SQL:             probe.sql,
-			Dialect:         tc.dialect,
-			AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-			DefaultSchema:   "app",
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           probe.sql,
+			DefaultSchema: "app",
 		})
 		if err != nil {
 			t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
@@ -206,15 +202,13 @@ func assertLiveProfileAdmitsDirectColumnAggregates(t *testing.T, ctx context.Con
 
 func assertLiveProfileRejectsUnqualified(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT COUNT(*) FROM builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(*) FROM builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s unqualified analyze: %v", tc.name, err)
@@ -226,15 +220,13 @@ func assertLiveProfileRejectsUnqualified(t *testing.T, ctx context.Context, conn
 
 func assertLiveProfileRejectsQualifiedCall(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT app.COUNT(*) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT app.COUNT(*) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s qualified call analyze: %v", tc.name, err)
@@ -246,15 +238,13 @@ func assertLiveProfileRejectsQualifiedCall(t *testing.T, ctx context.Context, co
 
 func assertLiveProfileRejectsQuotedCall(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT `COUNT`(*) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT `COUNT`(*) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s quoted call analyze: %v", tc.name, err)
@@ -266,15 +256,13 @@ func assertLiveProfileRejectsQuotedCall(t *testing.T, ctx context.Context, conn 
 
 func assertLiveProfileRejectsNoncanonicalSpacing(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT COUNT (id) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT (id) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s spacing analyze: %v", tc.name, err)
@@ -286,15 +274,13 @@ func assertLiveProfileRejectsNoncanonicalSpacing(t *testing.T, ctx context.Conte
 
 func assertLiveProfileRejectsDistinct(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT COUNT(DISTINCT amount) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(DISTINCT amount) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s distinct analyze: %v", tc.name, err)
@@ -306,15 +292,13 @@ func assertLiveProfileRejectsDistinct(t *testing.T, ctx context.Context, conn *s
 
 func assertLiveProfileRejectsNestedOperand(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT COUNT(ABS(amount)) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT COUNT(ABS(amount)) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s nested analyze: %v", tc.name, err)
@@ -326,15 +310,13 @@ func assertLiveProfileRejectsNestedOperand(t *testing.T, ctx context.Context, co
 
 func assertLiveProfileRejectsUnknownFunction(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s unknown analyze: %v", tc.name, err)
@@ -354,15 +336,13 @@ func assertLiveProfileAdmitsRankingWindows(t *testing.T, ctx context.Context, co
 		{"RANK", "SELECT RANK() OVER (PARTITION BY dept ORDER BY amount DESC) FROM app.builtin_semantic_facts"},
 		{"DENSE_RANK", "SELECT DENSE_RANK() OVER (PARTITION BY dept ORDER BY amount DESC) FROM app.builtin_semantic_facts"},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-			SQL:             probe.sql,
-			Dialect:         tc.dialect,
-			AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-			DefaultSchema:   "app",
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+			SQL:           probe.sql,
+			DefaultSchema: "app",
 		})
 		if err != nil {
 			t.Fatalf("%s %s analyze: %v", tc.name, probe.name, err)
@@ -375,15 +355,13 @@ func assertLiveProfileAdmitsRankingWindows(t *testing.T, ctx context.Context, co
 
 func assertLiveProfileRejectsRankingWindows(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount DESC) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount DESC) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s deferred window analyze: %v", tc.name, err)
@@ -395,15 +373,13 @@ func assertLiveProfileRejectsRankingWindows(t *testing.T, ctx context.Context, c
 
 func assertLiveProfileRejectsExplicitFrame(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY amount ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s frame analyze: %v", tc.name, err)
@@ -415,15 +391,13 @@ func assertLiveProfileRejectsExplicitFrame(t *testing.T, ctx context.Context, co
 
 func assertLiveProfileRejectsNamedWindow(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT ROW_NUMBER() OVER w FROM app.builtin_semantic_facts WINDOW w AS (PARTITION BY dept ORDER BY amount)",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT ROW_NUMBER() OVER w FROM app.builtin_semantic_facts WINDOW w AS (PARTITION BY dept ORDER BY amount)",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s named window analyze: %v", tc.name, err)
@@ -435,15 +409,13 @@ func assertLiveProfileRejectsNamedWindow(t *testing.T, ctx context.Context, conn
 
 func assertLiveProfileRejectsMissingOrder(t *testing.T, ctx context.Context, conn *sql.Conn, tc liveProfileCase) {
 	t.Helper()
-	session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+	session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 	if err != nil {
 		t.Fatalf("%s new session: %v", tc.name, err)
 	}
-	result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:             "SELECT ROW_NUMBER() OVER (PARTITION BY dept) FROM app.builtin_semantic_facts",
-		Dialect:         tc.dialect,
-		AnalysisProfile: QueryAccessAnalysisProfileEmpty,
-		DefaultSchema:   "app",
+	result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		SQL:           "SELECT ROW_NUMBER() OVER (PARTITION BY dept) FROM app.builtin_semantic_facts",
+		DefaultSchema: "app",
 	})
 	if err != nil {
 		t.Fatalf("%s missing order analyze: %v", tc.name, err)
@@ -463,13 +435,12 @@ func assertLiveProfileAdmitsMixedLiteralScalars(t *testing.T, ctx context.Contex
 		{"NULLIF", "SELECT NULLIF(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
 		{"IFNULL", "SELECT IFNULL(name, 'SECRET_LITERAL') FROM app.builtin_semantic_facts"},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:           probe.sql,
-			Dialect:       tc.dialect,
 			DefaultSchema: "app",
 		})
 		if err != nil {
@@ -577,13 +548,12 @@ func assertLiveProfileAdmitsLiteralOnlyShapes(t *testing.T, ctx context.Context,
 			},
 		},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:           probe.sql,
-			Dialect:       tc.dialect,
 			DefaultSchema: "app",
 		})
 		if err != nil {
@@ -648,13 +618,12 @@ func assertLiveProfileAdmitsReversedOperandShapes(t *testing.T, ctx context.Cont
 			},
 		},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:           probe.sql,
-			Dialect:       tc.dialect,
 			DefaultSchema: "app",
 		})
 		if err != nil {
@@ -716,13 +685,12 @@ func assertLiveProfileAdmitsAllConstantShapes(t *testing.T, ctx context.Context,
 			},
 		},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:           probe.sql,
-			Dialect:       tc.dialect,
 			DefaultSchema: "app",
 		})
 		if err != nil {
@@ -774,13 +742,12 @@ func assertLiveProfileAdmitsRelationlessLiteralShapes(t *testing.T, ctx context.
 		{"relationless_nullif", "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')"},
 		{"relationless_ifnull", "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')"},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:           probe.sql,
-			Dialect:       tc.dialect,
 			DefaultSchema: "app",
 		})
 		if err != nil {
@@ -830,13 +797,12 @@ func assertLiveProfileRejectsMixedLiteralNegatives(t *testing.T, ctx context.Con
 		{"parameter", "SELECT COALESCE(?, name) FROM app.builtin_semantic_facts"},
 		{"unknown_func", "SELECT UNKNOWN_FUNC(amount) FROM app.builtin_semantic_facts"},
 	} {
-		session, err := NewMySQLTiDBQueryAccessSessionFromConn(ctx, conn)
+		session, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
 		if err != nil {
 			t.Fatalf("%s %s new session: %v", tc.name, probe.name, err)
 		}
-		result, err := AnalyzeMySQLTiDBQueryAccessWithSession(ctx, session, QueryAccessRequest{
+		result, err := AnalyzeOnlineQueryAccessWithSession(ctx, session, QueryAccessRequest{
 			SQL:           probe.sql,
-			Dialect:       tc.dialect,
 			DefaultSchema: "app",
 		})
 		if err != nil {

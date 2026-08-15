@@ -16,10 +16,10 @@ Stable public package surface for library consumers.
 | query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access plus the shared private PG17 proof core used by the unified entry (postgresql build tag) |
 | query_access_session_mysql_tidb.go | Exposes the opaque MySQL/TiDB session boundary for same-connection metadata resolution plus the shared private MySQL/TiDB proof core used by the unified entry |
 | query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
-| query_access_session_integration_test.go | PG17 Docker integration for caller-owned trusted query access, including exact COUNT(1) boundaries and the foreign-table negative path |
-| query_access_session_postgresql_recording_test.go | Recording-driver proof that trusted COUNT(1) analysis never sends user SQL to the database and foreign tables fail closed before COUNT catalog proof |
-| query_access_session_mysql_tidb_live_e2e_test.go | Docker-backed MySQL 5.7/8.0/8.4 and TiDB 8.5 profile coverage, including unified-versus-legacy result equivalence |
-| query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, MySQL/TiDB equivalence, and recording-driver no-execution/no-leak evidence |
+| query_access_session_integration_test.go | Deprecated PG17 session construction, validation, caller ownership, and same-connection compatibility against Docker |
+| query_access_session_postgresql_recording_test.go | Recording driver shared by unified tagged tests, plus deprecated PG17 foreign-table and bounded-failure no-leak compatibility |
+| query_access_session_mysql_tidb_live_e2e_test.go | Docker-backed unified MySQL 5.7/8.0/8.4 and TiDB 8.5 semantic matrix, plus per-target unified-versus-legacy equivalence |
+| query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantic matrix, per-target legacy equivalence, and recording-driver no-execution/no-leak evidence |
 | query_access_online_session_postgresql_tag_test.go | Verifies PostgreSQL 17 routing through the unified entry: exact COUNT(1) admission, excluded-shape fail-closed, foreign-table rejection, no-execution/no-leak, and legacy API equivalence (postgresql build tag) |
 | query_access_online_session_postgresql_notag_test.go | Verifies the no-tag build keeps the unified symbols, fails an observed PostgreSQL target closed, and preserves legacy PostgreSQL stubs |
 | query_access_online_session_postgresql_integration_test.go | Real PG17 same-backend-session proof, COUNT(1)/excluded-shape/foreign-table evidence, and unified-versus-legacy equivalence for the unified online entry (postgresql + integration build tags) |
@@ -134,13 +134,7 @@ expecting one-to-one error aliases.
 
 ## Query Access Test Ownership
 
-The unified online-session suite is the intended exhaustive semantic and
-detailed-probe owner. Until the milestone ledger identifies complete unified
-replacement evidence, legacy SDK rows remain retained. This package keeps the
-deprecated API's source, stub, exact-error, validation-order, caller-ownership,
-and per-target equivalence evidence. See
-`docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md`
-before deleting a Query Access test row.
+The unified online-session suite owns exhaustive semantic and detailed-probe evidence. Deprecated API tests retain only source, stub, exact-error, validation-order, caller-ownership, privacy, and per-target equivalence contracts. The committed ownership ledger in `docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md` names every authorized deletion and its focused green evidence.
 
 ## Notes
 

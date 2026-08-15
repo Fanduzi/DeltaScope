@@ -137,14 +137,14 @@ fixture, script, or Makefile changed.
 | Key | Retained evidence |
 |---|---|
 | S1 | `pkg/deltascope/query_access_online_session_test.go`: unified MySQL/TiDB construction, validation, per-target legacy equivalence, no-execution, and no-leak tests |
-| S2 | `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`: legacy live profile matrix and six-probe per-target unified-versus-legacy equivalence; it is not an exhaustive unified owner |
+| S2 | `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` is the live per-target unified-versus-legacy compatibility owner; it is not the exhaustive unified semantic owner. |
 | S3 | `pkg/deltascope/query_access_online_session_postgresql_tag_test.go`: tagged PG17 route, excluded-shape, foreign-table, failure, ownership, and no-execution tests |
 | S4 | `pkg/deltascope/query_access_online_session_postgresql_integration_test.go`: live PG17 admissible, excluded-shape, foreign-table, same-session, and legacy equivalence tests |
-| S5 | `pkg/deltascope/query_access_session_postgresql_recording_test.go`: legacy PG17 detailed identity/catalog probe, no-execution, foreign-table, and bounded-failure evidence; it is not a unified replacement |
+| S5 | `pkg/deltascope/query_access_session_postgresql_recording_test.go`: deprecated PG17 foreign-table and bounded-failure no-leak compatibility, plus the recording driver shared by unified tagged tests; it is not a unified semantic owner. |
 | S6 | `internal/application/queryaccess/{corpus_test.go,corpus_pg_test.go}` and `testdata/query-access`: offline semantic corpus |
-| U1 | Missing at the Issue #10 baseline: a complete unified MySQL/TiDB live semantic matrix for every legacy profile/shape row. Issue #11 must establish it before any row currently mapped to U1 can be deleted. |
-| U2 | Missing at the Issue #10 baseline: complete unified PG17 evidence for legacy aggregate/comparison shapes beyond the current exact `COUNT(1)` envelope. Issue #11 must establish it before those legacy rows can be deleted. |
-| U3 | Missing at the Issue #10 baseline: a complete unified PG17 detailed recording-probe sequence. Issue #11 must establish it before detailed legacy or adapter probe assertions can be deleted. |
+| U1 | `pkg/deltascope/query_access_online_session_test.go`: `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix`, plus `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`, own the complete unified MySQL 5.7/8.0/8.4 and TiDB 8.5 semantic matrix; focused default and Docker gates are recorded in Issue #11 evidence. |
+| U2 | `pkg/deltascope/query_access_online_session_postgresql_integration_test.go`: `TestUnifiedSession_PostgreSQLCountOneAdmissible`, `TestUnifiedSession_PostgreSQLSemanticMatrix`, `TestUnifiedSession_PostgreSQLExcludedShapesRemainIndeterminate`, and `TestUnifiedSession_PostgreSQLForeignTableFailClosed` own the unified PG17 semantic matrix; focused PostgreSQL Docker evidence is recorded in Issue #11. |
+| U3 | `pkg/deltascope/query_access_online_session_postgresql_tag_test.go`: `TestOnlineQueryAccessSession_PostgreSQLRoutesThroughUnifiedEntry` owns the complete unified PG17 recording-driver probe sequence and no-execution assertion; focused tagged evidence is recorded in Issue #11. |
 | C1 | `pkg/deltascope/query_access_deprecation_test.go`, `query_access_online_session*_test.go`, and the legacy session tests: deprecated API source, stub, exact-error, validation-order, and caller-ownership contract |
 | C2 | Unified-versus-legacy equivalence in S1/S2 for MySQL 5.7/8.0/8.4 and TiDB 8.5, and S3/S4 for PostgreSQL 17 |
 | T1 | CLI adapter and real-binary tests: flags, TLS/session construction, exit code, streams, close, bounded failures, no-leak, and real routing |
@@ -161,17 +161,13 @@ with exact test/subtest identifiers and focused green evidence before deletion.
 
 | Current row or table | Current behavior | Unified semantic evidence | Boundary / compatibility evidence | Status |
 |---|---|---|---|---|
-| `query_access_session_mysql_tidb_test.go`: `PromotesProvenMySQL84CountStar` | MySQL 8.4 aggregate promotion | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
-| `query_access_session_mysql_tidb_test.go`: `PromotesLiteralAndReversedOperands` | MySQL/TiDB literal and reversed operands | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
-| `query_access_session_mysql_tidb_test.go`: `RemainsFailClosedForUnknownFunction` | unknown-function fail-closed | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
-| `query_access_session_mysql_tidb_test.go`: `PromotesRelationlessLiteralShapes` | relationless literal promotion | U1 (missing) | C1, C2 | Blocked: retain until Issue #11 |
+| `query_access_session_mysql_tidb_test.go`: `PromotesProvenMySQL84CountStar`, `PromotesLiteralAndReversedOperands`, `RemainsFailClosedForUnknownFunction`, and `PromotesRelationlessLiteralShapes` | MySQL/TiDB promotion, requirements, fail-closed, and relationless shapes | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` | C1, C2 | Deleted by Issue #11 after focused default SDK green evidence |
 | `query_access_session_mysql_tidb_test.go`: `DoesNotExecuteUserSQL` | legacy no execution | S1 | C1, C2 | Non-substitutable compatibility |
-| `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveProfile_AssertsVersionAndAdmitsAggregates` table rows | MySQL 5.7/8.0/8.4 and TiDB 8.5 live shape/profile matrix | U1 (missing) | C2 | Blocked: retain until Issue #11 |
+| `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` table rows | MySQL 5.7/8.0/8.4 and TiDB 8.5 live shape/profile matrix | This retained unified owner | C2: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` | Retained unified owner; Issue #11 moved direct semantic assertions to the unified API |
 | `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` table rows | per-target routing equivalence | S2 | C2 | Non-substitutable compatibility |
-| `query_access_session_integration_test.go`: `TestTrustedSDK_CountStarAdmissible` through `TestTrustedSDK_ComparisonAdmissible` | legacy PG17 admitted aggregate and comparison shapes | U2 (missing) | C1, C2 | Blocked: retain until Issue #11 |
-| `query_access_session_integration_test.go`: `TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate`, `FilterDistinctRemainIndeterminate`, `UnqualifiedRelationIndeterminate`, and `LiteralComparisonIndeterminate` | legacy PG17 excluded-shape boundaries | U2 (missing) | C1, C2 | Blocked: retain until Issue #11 |
+| `query_access_session_integration_test.go`: `TestTrustedSDK_CountStarAdmissible` through `TestTrustedSDK_ComparisonAdmissible`, `TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate`, `FilterDistinctRemainIndeterminate`, `UnqualifiedRelationIndeterminate`, and `LiteralComparisonIndeterminate` | legacy PG17 admitted aggregate/comparison and excluded-shape boundaries | `TestUnifiedSession_PostgreSQLCountOneAdmissible`, `TestUnifiedSession_PostgreSQLSemanticMatrix`, and `TestUnifiedSession_PostgreSQLExcludedShapesRemainIndeterminate` | C1, C2 | Deleted by Issue #11 after focused PostgreSQL Docker green evidence |
 | `query_access_session_integration_test.go`: session creation, closed/cancelled input, close, resolver, dialect, nil, and same-connection rows | old session lifecycle and validation contract | S3, S4 | C1 | Non-substitutable compatibility |
-| `query_access_session_postgresql_recording_test.go`: `TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL` fixed identity/catalog probe assertions | legacy detailed PG17 probe sequence | U3 (missing) | C1 | Blocked: retain until Issue #11 |
+| `query_access_session_postgresql_recording_test.go`: `TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL` fixed identity/catalog probe assertions | legacy detailed PG17 probe sequence | `TestOnlineQueryAccessSession_PostgreSQLRoutesThroughUnifiedEntry` | C1; retained `TestTrustedSDK_CountIntegerOneForeignTableNoExecNoLeak` and `TestTrustedSDK_CountIntegerOneCatalogLookupFailureNoLeak` | Deleted by Issue #11 after focused tagged SDK green evidence |
 | `query_access_session_postgresql_recording_test.go`: `TestTrustedSDK_CountIntegerOneForeignTableNoExecNoLeak` and `TestTrustedSDK_CountIntegerOneCatalogLookupFailureNoLeak` | relation-kind trust and bounded failure/no-leak | S5 | C1 | Non-substitutable trust/compatibility |
 | `query_access_online_session_test.go`: per-target rows in `MatchesDialectSpecificMySQLTiDB` and `NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB` | unified semantic and equivalence matrices | S1 | C2 | Retained unified owner |
 | `query_access_online_session_postgresql_tag_test.go`: route/excluded-shape rows | tagged PG17 semantic matrix | S3 | C2 | Retained unified owner |
@@ -209,6 +205,13 @@ The ledger does not authorize a deletion by SQL-text similarity. A later change
 must name the exact test or table row, cite this table, preserve its listed
 non-substitutable boundary where applicable, and add a row before deleting an
 unlisted candidate.
+
+### Issue #11 Focused Green Evidence
+
+- `go test ./pkg/deltascope -run 'Test(OnlineQueryAccessSession_MySQLTiDBSemanticMatrix|MySQLTiDBQueryAccessSession_)' -count=1` passed after the default unified MySQL/TiDB matrix was added and the four authorized deprecated semantic rows were removed.
+- `CGO_ENABLED=1 go test -tags postgresql ./pkg/deltascope -run 'TestOnlineQueryAccessSession_(MySQLTiDBSemanticMatrix|PostgreSQLRoutesThroughUnifiedEntry|PostgreSQLDoesNotExecuteUserSQL)|TestTrustedSDK_CountIntegerOne(ForeignTableNoExecNoLeak|CatalogLookupFailureNoLeak)' -count=1` passed after the unified PG17 recording owner replaced the authorized legacy detailed-probe row.
+- `go test -tags integration ./pkg/deltascope -run 'TestLiveUnifiedSession_(AssertsVersionAndSemanticMatrix|MatchesDialectSpecificForAllProfiles)' -count=1` passed against the existing MySQL 5.7/8.0/8.4 and TiDB 8.5 Docker fixtures.
+- `CGO_ENABLED=1 go test -tags 'postgresql integration' ./pkg/deltascope -run 'TestUnifiedSession_(PostgreSQLCountOneAdmissible|PostgreSQLSemanticMatrix|PostgreSQLExcludedShapesRemainIndeterminate|PostgreSQLForeignTableFailClosed|MatchesLegacyPG17)' -count=1` passed against the existing PG17 Docker fixture.
 
 ## 3. Make Unified SDK Evidence Complete
 

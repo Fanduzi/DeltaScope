@@ -527,6 +527,89 @@ func onlineEquivalenceCases() []onlineEquivCase {
 	}
 }
 
+// TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix makes the unified
+// entry the direct owner of the MySQL/TiDB semantic rows formerly exercised
+// only through the deprecated dialect-specific session.
+func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
+	type testCase struct {
+		name      string
+		version   string
+		sql       string
+		admission QueryAccessAdmission
+		wantReqs  []QueryAccessRequirement
+	}
+	baseTable := []QueryAccessRequirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}}
+	cases := []testCase{
+		{name: "mysql57_count_star", version: "5.7.44", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "mysql80_count_star", version: "8.0.46", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "mysql84_count_star", version: "8.4.10", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "tidb85_count_star", version: "8.0.11-TiDB-v8.5.7", sql: "SELECT COUNT(*) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "literal_only_lower", version: "8.4.10", sql: "SELECT LOWER('x') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "count_literal", version: "8.4.10", sql: "SELECT COUNT(1) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "reversed_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: append(append([]QueryAccessRequirement(nil), baseTable...), QueryAccessRequirement{Object: "app.builtin_semantic_facts.name", Privilege: "read_column"})},
+		{name: "all_constant_coalesce", version: "8.4.10", sql: "SELECT COALESCE('x', 'y') FROM app.builtin_semantic_facts", admission: QueryAccessAdmissible, wantReqs: baseTable},
+		{name: "unknown_function", version: "8.4.10", sql: "SELECT app_specific_rollup(id) FROM app.users", admission: QueryAccessIndeterminateAdmission, wantReqs: []QueryAccessRequirement{{Object: "app.users", Privilege: "read_table"}, {Object: "app.users.id", Privilege: "read_column"}}},
+	}
+	for _, shape := range onlineRelationlessLiteralShapes() {
+		cases = append(cases, testCase{name: "relationless_" + shape.name, version: "8.4.10", sql: shape.sql, admission: QueryAccessAdmissible})
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openOnlineStubDB(t, onlineStubConfig{version: tc.version})
+			defer db.Close()
+			conn, err := db.Conn(t.Context())
+			if err != nil {
+				t.Fatalf("conn: %v", err)
+			}
+			defer conn.Close()
+			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+			if err != nil {
+				t.Fatalf("new session: %v", err)
+			}
+			result, err := AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{SQL: tc.sql, DefaultSchema: "app"})
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
+			}
+			if result.Admission != tc.admission {
+				t.Fatalf("admission=%q, want %q; result=%+v", result.Admission, tc.admission, result)
+			}
+			if tc.admission == QueryAccessAdmissible && result.ReadClassification != QueryAccessReadOnly {
+				t.Fatalf("classification=%q, want read_only", result.ReadClassification)
+			}
+			if !reflect.DeepEqual(result.Requirements, tc.wantReqs) {
+				t.Fatalf("requirements=%+v, want %+v", result.Requirements, tc.wantReqs)
+			}
+			if strings.Contains(fmt.Sprintf("%+v", result), "SECRET_LITERAL") {
+				t.Fatalf("result leaked literal: %+v", result)
+			}
+			data, err := json.Marshal(result)
+			if err != nil {
+				t.Fatalf("marshal result: %v", err)
+			}
+			if strings.Contains(string(data), "SECRET_LITERAL") {
+				t.Fatalf("result JSON leaked literal: %s", data)
+			}
+		})
+	}
+}
+
+func onlineRelationlessLiteralShapes() []struct{ name, sql string } {
+	return []struct{ name, sql string }{
+		{"lower", "SELECT LOWER('SECRET_LITERAL')"},
+		{"upper", "SELECT UPPER('SECRET_LITERAL')"},
+		{"length", "SELECT LENGTH('SECRET_LITERAL')"},
+		{"char_length", "SELECT CHAR_LENGTH('SECRET_LITERAL')"},
+		{"abs", "SELECT ABS(42)"},
+		{"ceil", "SELECT CEIL(42)"},
+		{"ceiling", "SELECT CEILING(42)"},
+		{"floor", "SELECT FLOOR(42)"},
+		{"count_literal", "SELECT COUNT(1)"},
+		{"coalesce_const_const", "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+		{"nullif_const_const", "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+		{"ifnull_const_const", "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+	}
+}
+
 // TestOnlineQueryAccessSession_MatchesDialectSpecificMySQLTiDB runs the same
 // request through the unified entry (empty dialect = observed identity) and the
 // existing MySQL/TiDB session API on the same caller-owned connection, and

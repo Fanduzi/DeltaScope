@@ -2,8 +2,8 @@
 
 // Package deltascope verifies the PostgreSQL trusted session does not execute analysis SQL.
 // input: caller-owned connection backed by a recording database/sql driver, including relkind='f' responses
-// output: safe session/catalog queries only; foreign tables fail closed before COUNT catalog proof, with no marker or catalog/session detail in public results
-// pos: no-execution and no-leak boundary test for the PostgreSQL SDK session
+// output: deprecated-session foreign-table and bounded-failure no-leak compatibility
+// pos: PostgreSQL deprecated-session trust and privacy compatibility tests
 // note: if this file changes, update this header and module README.md.
 package deltascope
 
@@ -19,45 +19,6 @@ import (
 	"sync"
 	"testing"
 )
-
-func TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL(t *testing.T) {
-	const marker = "SQLNOTEXEC_MARKER_7f3a"
-	recorder := &postgresqlRecordingDriver{}
-	db := openPostgreSQLRecordingDB(t, recorder)
-	defer db.Close()
-
-	ctx := t.Context()
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		t.Fatalf("conn: %v", err)
-	}
-	session, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
-	if err != nil {
-		t.Fatalf("NewPostgreSQLQueryAccessSessionFromConn: %v", err)
-	}
-	result, err := AnalyzePostgreSQLQueryAccessWithSession(ctx, session, QueryAccessRequest{
-		SQL:           "SELECT COUNT(1) /* " + marker + " */ FROM app.orders",
-		Dialect:       DialectPostgreSQL,
-		Mode:          QueryAccessModeStrict,
-		DefaultSchema: "app",
-	})
-	if err != nil {
-		t.Fatalf("AnalyzePostgreSQLQueryAccessWithSession: %v", err)
-	}
-	if result.ReadClassification != QueryAccessReadOnly || result.Admission != QueryAccessAdmissible {
-		t.Fatalf("expected admitted result: classification=%s admission=%s requirements=%+v unresolved=%+v reasons=%v queries=%v", result.ReadClassification, result.Admission, result.Requirements, result.Unresolved, result.ReasonCodes, recorder.recorded())
-	}
-	if len(recorder.recorded()) == 0 {
-		t.Fatal("expected safe session/catalog probes")
-	}
-	for _, query := range recorder.recorded() {
-		if strings.Contains(query, marker) {
-			t.Fatalf("analysis SQL reached driver: %q", query)
-		}
-	}
-	assertPostgreSQLRecordingProbes(t, recorder.recorded())
-	assertPostgreSQLRecordingNoLeak(t, result, marker)
-}
 
 func TestTrustedSDK_CountIntegerOneForeignTableNoExecNoLeak(t *testing.T) {
 	const marker = "SQLNOTEXEC_FOREIGN_MARKER_9c2b"

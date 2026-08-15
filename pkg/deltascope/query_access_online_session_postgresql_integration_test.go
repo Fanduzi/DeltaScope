@@ -55,6 +55,57 @@ func TestUnifiedSession_PostgreSQLCountOneAdmissible(t *testing.T) {
 	assertNoLeak(t, result)
 }
 
+// TestUnifiedSession_PostgreSQLSemanticMatrix makes the unified entry the
+// direct owner of the PG17 aggregate, comparison, and fail-closed rows that
+// remain separately covered by the deprecated API only for compatibility.
+func TestUnifiedSession_PostgreSQLSemanticMatrix(t *testing.T) {
+	type testCase struct {
+		name      string
+		sql       string
+		admission QueryAccessAdmission
+	}
+	cases := []testCase{
+		{name: "count_star", sql: "SELECT count(*) FROM app.users", admission: QueryAccessAdmissible},
+		{name: "typed_aggregates", sql: "SELECT count(amount), sum(amount), avg(amount), min(amount), max(amount) FROM app.orders", admission: QueryAccessAdmissible},
+		{name: "row_number", sql: "SELECT row_number() OVER (PARTITION BY user_id ORDER BY amount) FROM app.orders", admission: QueryAccessAdmissible},
+		{name: "rank_dense_rank", sql: "SELECT rank() OVER (ORDER BY amount), dense_rank() OVER (ORDER BY amount) FROM app.orders", admission: QueryAccessAdmissible},
+		{name: "comparison", sql: "SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id", admission: QueryAccessAdmissible},
+		{name: "sum_filter", sql: "SELECT sum(amount) FILTER (WHERE amount > 0) FROM app.orders", admission: QueryAccessIndeterminateAdmission},
+		{name: "sum_distinct", sql: "SELECT sum(DISTINCT amount) FROM app.orders", admission: QueryAccessIndeterminateAdmission},
+		{name: "unqualified_relation", sql: "SELECT id FROM users WHERE id = 1", admission: QueryAccessIndeterminateAdmission},
+		{name: "literal_comparison", sql: "SELECT id FROM app.users WHERE id = 1", admission: QueryAccessIndeterminateAdmission},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openTestDB(t)
+			defer db.Close()
+			conn, err := db.Conn(t.Context())
+			if err != nil {
+				t.Fatalf("conn: %v", err)
+			}
+			defer conn.Close()
+			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+			if err != nil {
+				t.Fatalf("NewOnlineQueryAccessSessionFromConn: %v", err)
+			}
+			result, err := AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{SQL: tc.sql, DefaultSchema: "app"})
+			if err != nil {
+				t.Fatalf("AnalyzeOnlineQueryAccessWithSession: %v", err)
+			}
+			if result.Admission != tc.admission {
+				t.Fatalf("admission=%s, want %s; classification=%s reasons=%v", result.Admission, tc.admission, result.ReadClassification, result.ReasonCodes)
+			}
+			if tc.admission == QueryAccessAdmissible && result.ReadClassification != QueryAccessReadOnly {
+				t.Fatalf("classification=%s, want read_only", result.ReadClassification)
+			}
+			if tc.admission == QueryAccessIndeterminateAdmission && result.ReadClassification != QueryAccessIndeterminate {
+				t.Fatalf("classification=%s, want indeterminate", result.ReadClassification)
+			}
+			assertNoLeak(t, result)
+		})
+	}
+}
+
 // TestUnifiedSession_PostgreSQLExcludedShapesRemainIndeterminate proves the
 // unified entry keeps excluded COUNT variants fail-closed against a real PG17
 // backend, including casts, parameters, modifiers, relationless queries,
