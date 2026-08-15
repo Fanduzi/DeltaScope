@@ -137,8 +137,8 @@ base `d7ce52b` (local `main`). Commits: `2eae1db` (docs propose),
 commit follows this section.
 
 - Source checks: `rg NewQueryAccessResolver --type go` → no matches;
-  `rg QueryAccessResolver --type go` → only the `TestQueryAccessResolvers_*`
-  test-function name and `QueryAccessConnResolver` types. CodeGraph confirms no
+  `rg QueryAccessResolver --type go` → only the `TestQueryAccessConnResolver_*`
+  test names and `QueryAccessConnResolver` types. CodeGraph confirms no
   DB-backed resolver symbol remains.
 - Ownership reconciliation: table in §2 above; every deleted PostgreSQL contract
   row remains covered by the conn factory of the same parameterized test, and
