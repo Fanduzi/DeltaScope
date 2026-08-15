@@ -638,20 +638,24 @@ func TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure(t *testing.T) 
 func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
 	type testCase struct {
 		name, version, sql string
+		classification     QueryAccessReadClassification
 		admission          QueryAccessAdmission
-		requirements       int
+		requirements       []QueryAccessRequirement
+		reasonCodes        []string
 	}
 	cases := []testCase{
-		{"mysql57_count", "5.7.44", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
-		{"mysql80_count", "8.0.46", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
-		{"mysql84_count", "8.4.10", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
-		{"tidb85_count", "8.0.11-TiDB-v8.5.7", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
-		{"literal", "8.4.10", "SELECT LOWER('x') FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
-		{"reversed", "8.4.10", "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 2},
-		{"unknown", "8.4.10", "SELECT app_specific_rollup(id) FROM app.users", QueryAccessIndeterminateAdmission, 2},
+		{"mysql57_count", "5.7.44", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil},
+		{"mysql80_count", "8.0.46", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil},
+		{"mysql84_count", "8.4.10", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil},
+		{"tidb85_count", "8.0.11-TiDB-v8.5.7", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil},
+		{"mysql84_sum", "8.4.10", "SELECT SUM(amount) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, []QueryAccessRequirement{{Object: "app.builtin_semantic_facts", Privilege: "read_table"}, {Object: "app.builtin_semantic_facts.amount", Privilege: "read_column"}}, nil},
+		{"literal", "8.4.10", "SELECT LOWER('x') FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil},
+		{"reversed", "8.4.10", "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil},
+		{"unknown", "8.4.10", "SELECT app_specific_rollup(id) FROM app.users", QueryAccessIndeterminate, QueryAccessIndeterminateAdmission, []QueryAccessRequirement{{Object: "app.users", Privilege: "read_table"}, {Object: "app.users.id", Privilege: "read_column"}}, []string{"function_call", "unknown_function_effect"}},
+		{"mysql84_insert", "8.4.10", "INSERT INTO app.users (id) VALUES (1)", QueryAccessNotReadOnly, QueryAccessRejected, nil, nil},
 	}
 	for _, shape := range onlineRelationlessLiteralShapes() {
-		cases = append(cases, testCase{"relationless_" + shape.name, "8.4.10", shape.sql, QueryAccessAdmissible, 0})
+		cases = append(cases, testCase{"relationless_" + shape.name, "8.4.10", shape.sql, QueryAccessReadOnly, QueryAccessAdmissible, nil, nil})
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -670,11 +674,14 @@ func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
 			if err != nil {
 				t.Fatalf("analyze: %v", err)
 			}
-			if result.Admission != tc.admission || len(result.Requirements) != tc.requirements {
-				t.Fatalf("admission=%q requirements=%+v, want %q/%d", result.Admission, result.Requirements, tc.admission, tc.requirements)
+			if result.ReadClassification != tc.classification || result.Admission != tc.admission {
+				t.Fatalf("classification=%q admission=%q, want %q/%q", result.ReadClassification, result.Admission, tc.classification, tc.admission)
 			}
-			if tc.admission == QueryAccessAdmissible && result.ReadClassification != QueryAccessReadOnly {
-				t.Fatalf("classification=%q, want read_only", result.ReadClassification)
+			if tc.requirements != nil && !reflect.DeepEqual(result.Requirements, tc.requirements) {
+				t.Fatalf("requirements=%+v, want %+v", result.Requirements, tc.requirements)
+			}
+			if tc.reasonCodes != nil && !reflect.DeepEqual(result.ReasonCodes, tc.reasonCodes) {
+				t.Fatalf("reason_codes=%v, want %v", result.ReasonCodes, tc.reasonCodes)
 			}
 			data, err := json.Marshal(result)
 			if err != nil {

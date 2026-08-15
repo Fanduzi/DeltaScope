@@ -120,3 +120,9 @@ Issue #13 then removed the duplicate HTTP matrix from the cited HTTP file.
 admitted/fail-closed status/body, requirement/reason, request-ID/access-log, and
 no-leak evidence; `TestQueryAccessOnline_DefaultOffline` retains the HTTP
 offline boundary. The unified SDK remains the exhaustive semantic owner.
+
+Issue #14 clarifies that the earlier live test name
+`TestLiveProfile_AssertsVersionAndAdmitsAggregates` was renamed and retained as
+`TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`; the removed CLI and
+HTTP `TestQueryAccessOnline_MixedLiteralScalars` matrices are not retained.
+The authoritative deleted-declaration mapping is the [ownership ledger](2026-08-15-query-access-test-ownership-consolidation.md).

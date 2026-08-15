@@ -124,6 +124,14 @@ Regression test: `TestBuiltinSemanticManifest_RejectsInvalidEntries` covers both
 - Each probe verified with HTTP 200, classification, admission, exact requirements, and no-leak
 - Same 18 probes also run through `default_path_indeterminate` path asserting indeterminate classification
 
+### Evidence Maintenance (2026-08-15)
+
+The test names above record the original matrix, not current retention. Issue #14
+maps every removed declaration in the [ownership ledger](2026-08-15-query-access-test-ownership-consolidation.md):
+`TestLiveProfile_AssertsVersionAndAdmitsAggregates` was renamed and retained as
+`TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`; the removed CLI and
+HTTP `TestQueryAccessOnline_MixedLiteralScalars` matrices are not retained.
+
 ### Verification Commands
 
 ```bash

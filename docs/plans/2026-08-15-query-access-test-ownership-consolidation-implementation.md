@@ -162,7 +162,7 @@ Issue #11 and #12 recorded those replacements on the rows they deleted.
 
 | Current row or table | Current behavior | Unified semantic evidence | Boundary / compatibility evidence | Status |
 |---|---|---|---|---|
-| `query_access_session_mysql_tidb_test.go`: `PromotesProvenMySQL84CountStar`, `PromotesLiteralAndReversedOperands`, `RemainsFailClosedForUnknownFunction`, and `PromotesRelationlessLiteralShapes` | MySQL/TiDB promotion, requirements, fail-closed, and relationless shapes | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` plus `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` for exact requirement and relationless-state assertions | C1, C2 | Deleted by Issue #11 after focused default and live SDK green evidence |
+| `query_access_session_mysql_tidb_test.go`: `PromotesProvenMySQL84CountStar`, `PromotesLiteralAndReversedOperands`, `RemainsFailClosedForUnknownFunction`, and `PromotesRelationlessLiteralShapes` | MySQL/TiDB promotion, requirements, fail-closed, and relationless shapes | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix`; the exact declaration mapping is below | C1, C2 | Deleted by Issue #11 after focused default and live SDK green evidence |
 | `query_access_session_mysql_tidb_test.go`: `DoesNotExecuteUserSQL` | legacy no execution | S1 | C1, C2 | Non-substitutable compatibility |
 | `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` table rows | MySQL 5.7/8.0/8.4 and TiDB 8.5 live shape/profile matrix | This retained unified owner | C2: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` | Retained unified owner; Issue #11 moved direct semantic assertions to the unified API |
 | `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles/{mysql57,count_star}`, `{mysql80,count_star}`, `{mysql84,count_star}`, and `{tidb85,count_star}` | per-target routing, deprecated-session derived-target, and result equivalence | S2 | C2 | Non-substitutable compatibility; each subtest asserts `legacySession.target` equals its exact identity-derived `online.Target…` value |
@@ -174,7 +174,7 @@ Issue #11 and #12 recorded those replacements on the rows they deleted.
 | `query_access_online_session_test.go`: `TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB/{mysql57,mysql80,mysql84,tidb85}` | duplicate default unified-versus-deprecated recording/result equivalence | `TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/{mysql57,mysql80,mysql84,tidb85}` | C2 retains `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles/{mysql57,count_star}`, `{mysql80,count_star}`, `{mysql84,count_star}`, and `{tidb85,count_star}` | Deleted by Issue #11 after focused default and live SDK green evidence |
 | `query_access_online_session_test.go`: `onlineEquivalenceCases` `mysql84_sum`, `mysql84_literal`, `mysql84_relationless`, `mysql84_unknown_function`, and `mysql84_insert` rows | duplicate MySQL 8.4 semantic equivalence | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` | C2 retains one `COUNT(*)` routing row per MySQL/TiDB target | Deleted by Issue #11 after focused default SDK green evidence |
 | `query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` `direct_aggregate`, `literal_only`, `relationless_literal`, `unknown_function`, and `unqualified` rows for every target | duplicate live semantic equivalence | `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` | C2 retains one `count_star` routing row per target | Deleted by Issue #11 after focused live SDK green evidence |
-| `query_access_online_session_postgresql_tag_test.go`: all ten `TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI` table rows, including `SELECT COUNT(1) FROM app.orders` | duplicate tagged PG17 semantic and routing equivalence | S3 | C2 retains the live `TestUnifiedSession_MatchesLegacyPG17` `COUNT(1)` routing row | Deleted by Issue #11 after focused tagged SDK green evidence |
+| `query_access_online_session_postgresql_tag_test.go`: all ten `TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI` table rows, including `SELECT COUNT(1) FROM app.orders` | duplicate tagged PG17 semantic and routing equivalence | U2/U3 | C2 retains the live `TestUnifiedSession_MatchesLegacyPG17` `COUNT(1)` routing row | Deleted by Issue #11 after focused tagged SDK green evidence |
 | `query_access_online_session_postgresql_integration_test.go`: `TestUnifiedSession_MatchesLegacyPG17` table rows `SELECT count(*) FROM app.users`, `SELECT COUNT(1) FILTER (WHERE true) FROM app.orders`, `SELECT COUNT(1) FROM app.remote_orders`, `SELECT count(amount), sum(amount), avg(amount), min(amount), max(amount) FROM app.orders`, and `SELECT u.id FROM app.users u JOIN app.orders o ON u.id = o.user_id` | duplicate live PG17 semantic equivalence | U2 | C2 retains one `COUNT(1)` routing row | Deleted by Issue #11 after focused PostgreSQL Docker green evidence |
 | `query_access_online_session_test.go`: `TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix` per-target rows | direct ordered MySQL/TiDB recording probes, no-execution, and no-leak | U1 | C1 | Retained unified owner |
 | `query_access_online_session_postgresql_tag_test.go`: route/excluded-shape rows | tagged PG17 semantic matrix | S3 | C2 | Retained unified owner |
@@ -212,6 +212,38 @@ The ledger does not authorize a deletion by SQL-text similarity. A later change
 must name the exact test or table row, cite this table, preserve its listed
 non-substitutable boundary where applicable, and add a row before deleting an
 unlisted candidate.
+
+### Deleted Declaration Reconciliation
+
+This table is the authoritative mapping for every `func Test...` declaration
+removed in `db4e73a...a0f3756`. It distinguishes deleted declarations from
+retained tests and from deleted table rows; it supersedes any aggregated owner
+wording above.
+
+| Deleted declaration | Retained owner |
+|---|---|
+| `internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_BuiltBinarySupportedProfiles` | `TestQueryAccessOnline_BuiltBinaryTransportSmoke` |
+| `internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_MixedLiteralScalars` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` for semantics; `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for CLI routing |
+| `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_MixedLiteralScalars` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` for semantics; `TestQueryAccessOnline_TransportSmoke` for HTTP routing, response, and access-log no-leak |
+| `pkg/deltascope/query_access_online_session_postgresql_tag_test.go`: `TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI` | `TestUnifiedSession_PostgreSQLSemanticMatrix`, `TestOnlineQueryAccessSession_PostgreSQLRoutesThroughUnifiedEntry`, and `TestUnifiedSession_MatchesLegacyPG17` |
+| `pkg/deltascope/query_access_online_session_test.go`: `TestOnlineQueryAccessSession_MatchesDialectSpecificMySQLTiDB` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` and `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` |
+| `pkg/deltascope/query_access_online_session_test.go`: `TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB` | `TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_CountStarAdmissible` | `TestUnifiedSession_PostgreSQLSemanticMatrix/count_star` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_CountIntegerOneAdmissible` | `TestUnifiedSession_PostgreSQLCountOneAdmissible` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate` | `TestUnifiedSession_PostgreSQLExcludedShapesRemainIndeterminate` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_RowNumberAdmissible` | `TestUnifiedSession_PostgreSQLSemanticMatrix/row_number` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_RankDenseRankAdmissible` | `TestUnifiedSession_PostgreSQLSemanticMatrix/rank_dense_rank` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_SumAvgMinMaxAdmissible` | `TestUnifiedSession_PostgreSQLSemanticMatrix/typed_aggregates` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_ComparisonAdmissible` | `TestUnifiedSession_PostgreSQLSemanticMatrix/comparison` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_FilterDistinctRemainIndeterminate` | `TestUnifiedSession_PostgreSQLSemanticMatrix/{sum_filter,sum_distinct}` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_UnqualifiedRelationIndeterminate` | `TestUnifiedSession_PostgreSQLSemanticMatrix/unqualified_relation` |
+| `pkg/deltascope/query_access_session_integration_test.go`: `TestTrustedSDK_LiteralComparisonIndeterminate` | `TestUnifiedSession_PostgreSQLSemanticMatrix/literal_comparison` |
+| `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`: `TestLiveProfile_AssertsVersionAndAdmitsAggregates` | Renamed retained owner: `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` |
+| `pkg/deltascope/query_access_session_mysql_tidb_test.go`: `TestMySQLTiDBQueryAccessSession_PromotesProvenMySQL84CountStar` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_count` |
+| `pkg/deltascope/query_access_session_mysql_tidb_test.go`: `TestMySQLTiDBQueryAccessSession_PromotesLiteralAndReversedOperands` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/{literal,reversed}` |
+| `pkg/deltascope/query_access_session_mysql_tidb_test.go`: `TestMySQLTiDBQueryAccessSession_RemainsFailClosedForUnknownFunction` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/unknown` |
+| `pkg/deltascope/query_access_session_mysql_tidb_test.go`: `TestMySQLTiDBQueryAccessSession_PromotesRelationlessLiteralShapes` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_*` |
+| `pkg/deltascope/query_access_session_postgresql_recording_test.go`: `TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL` | `TestOnlineQueryAccessSession_PostgreSQLRoutesThroughUnifiedEntry` |
 
 ### Issue #13 Focused Green Evidence
 

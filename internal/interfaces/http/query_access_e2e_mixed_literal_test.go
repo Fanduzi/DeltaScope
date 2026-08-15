@@ -3,7 +3,7 @@
 // Package httpapi verifies HTTP Query Access transport smoke and error boundaries
 // against real Docker-backed MySQL 8.4 and TiDB 8.5.
 // input: real MySQL/TiDB fixtures, HTTP JSON requests, and configured registries
-// output: admitted and fail-closed transport results, bounded failures, and no-leak logs
+// output: admitted and fail-closed transport results, bounded failures, and no-leak responses and logs
 // pos: HTTP online Query Access real-route smoke and credential-error coverage
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -218,8 +218,10 @@ func TestQueryAccessOnline_TransportSmoke(t *testing.T) {
 					t.Fatalf("reason_codes: got %#v, want %q", result["reason_codes"], tc.reason)
 				}
 			}
-			if strings.Contains(body.String(), marker) {
-				t.Fatalf("response leaked SQL marker: %s", body.String())
+			for _, forbidden := range append([]string{"root", "E2E_MYSQL_PASSWORD"}, marker) {
+				if strings.Contains(body.String(), forbidden) {
+					t.Fatalf("response leaked %q: %s", forbidden, body.String())
+				}
 			}
 			assertRequestIDLogged(t, &logBuf, requestID)
 			assertNoLogLeaks(t, logBuf.String(), append(noLeakMarkers(), marker))
