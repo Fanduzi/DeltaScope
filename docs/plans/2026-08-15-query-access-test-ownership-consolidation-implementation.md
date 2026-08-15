@@ -269,6 +269,26 @@ owned semantically by `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix`
 and the four-target live `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`;
 their CLI and HTTP smoke owners remain transport-only. No production, public
 API, Makefile, workflow, fixture, version, or release file appears in that diff.
+
+Review-only documentation reconciliation evidence used the following uncommitted
+one-off command. It was RED before the two owner rows named the live semantic
+matrix and before the duplicate evidence-maintenance heading was merged, then
+GREEN afterward. It is not committed as a script, test framework, or gate.
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+ledger = Path("docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md").read_text()
+for surface, transport in (("cli", "TestQueryAccessOnline_BuiltBinaryTransportSmoke"), ("http", "TestQueryAccessOnline_TransportSmoke")):
+    row = next(line for line in ledger.splitlines() if f"internal/interfaces/{surface}/query_access_e2e_mixed_literal_test.go" in line and "TestQueryAccessOnline_MixedLiteralScalars` |" in line)
+    assert "TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix" in row
+    assert "TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix" in row
+    assert transport in row
+adr = Path("docs/decisions/2026-07-26-query-access-literal-only-and-reversed-operands.md").read_text()
+assert adr.count("### Evidence Maintenance (2026-08-15)") == 1
+PY
+```
+
 The offline corpus remains 208 files / 2,568 lines (104 SQL fixtures).
 
 The following descriptive inventory uses the same static measure as the

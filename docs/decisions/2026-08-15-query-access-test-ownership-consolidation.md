@@ -121,7 +121,7 @@ Costs and limitations:
 
 - Production refactors, public API changes, new Query Access capabilities, and
   removal of deprecated APIs.
-- New test framework, matrix generator, permanent CI-enforced static checker, or mutation dependency. The focused static documentation regression check is retained only to guard this reconciliation.
+- New test framework, matrix generator, static checker, or mutation dependency.
 - Makefile/workflow/fixture/gate changes.
 - Version bump, release notes, tag, release, or publication.
 
@@ -150,7 +150,7 @@ remains.
 
 The PG17 malformed parser-path assertion was RED for a parsed FILTER shape,
 then GREEN with a malformed parser-failure shape; the MySQL/TiDB shared-path
-case and focused documentation checks were GREEN. Default/tagged suites,
+case was GREEN. Default/tagged suites,
 focused default/tagged/race/live checks, corpus, Docker, TLS, build, vet, lint,
 npm, docs, decision, formatting, tidy, and diff gates passed. No production,
 public API, Makefile, workflow, fixture, version, or release surface changed.
