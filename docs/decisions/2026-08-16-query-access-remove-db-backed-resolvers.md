@@ -1,7 +1,7 @@
 # Decision: Remove DB-Backed Query Access Resolvers
 
 - Date: 2026-08-16
-- Status: Proposed
+- Status: Accepted
 - Related: [Issue #2](https://github.com/Fanduzi/DeltaScope/issues/2), [PostgreSQL resolver core](2026-08-11-query-access-postgresql-resolver-core.md), [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md)
 - Spec: `docs/plans/2026-08-16-query-access-remove-db-backed-resolvers-spec.md`
 - Design: `docs/plans/2026-08-16-query-access-remove-db-backed-resolvers-design.md`
@@ -93,7 +93,45 @@ Costs:
 
 ## Acceptance Evidence
 
-This section remains intentionally incomplete while the decision is Proposed.
-Acceptance requires the fixed implementation candidate, ownership
-reconciliation, full specified gates, real PostgreSQL and MySQL/TiDB evidence,
-and independent Standards/Spec review with no unresolved P0/P1/P2.
+Implemented and reviewed on branch
+`feat/query-access-remove-db-backed-resolvers-20260816`; fixed reviewed
+candidate is `main...52731a8` (commits `2eae1db`, `2a64b8a`, `52731a8`):
+
+- No DB-backed Query Access resolver type, constructor, stub, or caller remains:
+  PostgreSQL `query_access_resolver.go` and its no-tag stub and MySQL
+  `query_access_resolver.go` were deleted; `rg NewQueryAccessResolver --type go`
+  returns nothing and CodeGraph shows no remaining symbol.
+- Ownership reconciliation in the implementation plan (§2) maps every deleted
+  PostgreSQL contract row and every deleted MySQL unit test to an exact
+  retained conn/core/live owner or a migrated conn test; PostgreSQL
+  trusted-service integration tests now build their schema resolver from the
+  pinned `session.Conn()` via `NewQueryAccessConnResolver`.
+- Conn-backed constructors, validation priority, errors, catalog queries,
+  relation classification, caller ownership, no-execution, no-leak, and public
+  result contracts are unchanged; the PostgreSQL core changed only its L3
+  header comment. No MySQL/TiDB and PostgreSQL error parity was forced.
+- Gates passed: default and PostgreSQL-tagged full tests, affected race tests
+  (metadata packages and `pkg/deltascope`), build, `go vet` (both tags),
+  `make lint`, `make query-access-corpus-gates`, `make pg-unit-test-gates`,
+  `make pg-confidence-gates` (Docker CLI/HTTP/MCP PG17 e2e), and the unified
+  SDK live matrix for MySQL 5.7/8.0/8.4 plus TiDB 8.5; decision-record,
+  gofmt, three-level-doc, tidy, and diff checks pass.
+- Independent read-only Standards and Spec reviews of the fixed candidate
+  report no unresolved P0/P1/P2. A pre-existing `postgresql,integration`
+  manifest-boundary failure (`TestScalarLive_PG17CatalogBoundQueriesPromote`,
+  `coalesce` outside the closed PG17 manifest) reproduces identically on clean
+  `main` and is not part of any gate; it is outside this decision's scope.
+
+## Links
+
+- Commits: `2eae1db` docs proposal, `2a64b8a` test reconciliation, `52731a8`
+  refactor removal, acceptance commit following this record.
+- Tests: `internal/infrastructure/metadata/mysql/query_access_resolver_test.go`
+  (migrated conn tests), `internal/infrastructure/metadata/postgresql/query_access_resolver_test.go`
+  (conn contract + lifecycle), `query_access_conn_resolver_integration_test.go`
+  (same-session proof), `effect_identity_resolver_integration_test.go`
+  (pinned trusted-service path).
+- Docs: both metadata READMEs, this decision's spec/design/implementation,
+  evidence-maintenance notes in
+  `2026-07-11-query-access-analysis-foundation.md`, follow-up link in
+  `2026-08-11-query-access-postgresql-resolver-core.md`.

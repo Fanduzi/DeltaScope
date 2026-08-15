@@ -128,3 +128,39 @@ being deleted, not characterized.
 2. `test(queryaccess): reconcile resolver evidence ownership`
 3. `refactor(queryaccess): remove DB-backed metadata resolvers`
 4. `docs(queryaccess): accept conn-only metadata resolver ownership`
+
+## Milestone Evidence (2026-08-16)
+
+Executed on branch `feat/query-access-remove-db-backed-resolvers-20260816` from
+base `d7ce52b` (local `main`). Commits: `2eae1db` (docs propose),
+`2a64b8a` (test reconcile), `52731a8` (refactor remove); the acceptance
+commit follows this section.
+
+- Source checks: `rg NewQueryAccessResolver --type go` → no matches;
+  `rg QueryAccessResolver --type go` → only the `TestQueryAccessResolvers_*`
+  test-function name and `QueryAccessConnResolver` types. CodeGraph confirms no
+  DB-backed resolver symbol remains.
+- Ownership reconciliation: table in §2 above; every deleted PostgreSQL contract
+  row remains covered by the conn factory of the same parameterized test, and
+  every deleted MySQL unit test maps to a migrated conn test or retained owner.
+- Gates (all pass): `go test ./...` (4182), `go test -tags postgresql ./...`
+  (4843), `go test -race` on `./pkg/deltascope` and both metadata packages,
+  `go vet ./...` and `-tags postgresql`, `make lint` (0 issues),
+  `make query-access-corpus-gates`, `make pg-unit-test-gates`,
+  `make pg-confidence-gates` (incl. Docker CLI/HTTP/MCP PG e2e),
+  unified SDK live matrix `go test -tags integration ./pkg/deltascope/ -run
+  'TestLiveUnifiedSession'` (14) against MySQL 5.7/8.0/8.4 and TiDB 8.5,
+  `go mod tidy` (no change), `git diff --check`, gofmt,
+  `scripts/check_three_level_doc.sh`, `scripts/check_decision_record.sh`.
+- Scope: `git diff --name-only main...HEAD` is confined to the two metadata
+  packages and docs; no `pkg/`, `cmd/`, `internal/interfaces`, application,
+  fixture, workflow, version, or release file changed. v0.480.0 release notes
+  untouched.
+- Pre-existing, out of scope: `TestScalarLive_PG17CatalogBoundQueriesPromote`
+  (tags `postgresql,integration`) fails identically on clean `main` —
+  `coalesce` is outside the closed PG17 manifest, so the query resolves as
+  `unproven_function_effect`. The test is not part of any Makefile/CI gate.
+- Independent review: fresh read-only Standards and Spec reviews of
+  `main...52731a8` report no unresolved P0/P1/P2. Standards noted two
+  non-blocking judgement calls (ADR link/evidence sections — resolved by the
+  acceptance commit; single-factory parameterized harness — accepted).
