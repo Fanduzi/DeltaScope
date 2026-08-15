@@ -132,6 +132,16 @@ returns its own bounded `ErrOnlineQueryAccess...` sentinels, so migrate
 `ErrMySQLTiDBQueryAccessSessionUnavailable`) to the generic ones rather than
 expecting one-to-one error aliases.
 
+## Query Access Test Ownership
+
+The unified online-session suite is the intended exhaustive semantic and
+detailed-probe owner. Until the milestone ledger identifies complete unified
+replacement evidence, legacy SDK rows remain retained. This package keeps the
+deprecated API's source, stub, exact-error, validation-order, caller-ownership,
+and per-target equivalence evidence. See
+`docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md`
+before deleting a Query Access test row.
+
 ## Notes
 
 - `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.

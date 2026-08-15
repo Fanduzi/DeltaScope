@@ -56,6 +56,29 @@ use their existing TLS scripts. Gate wall-clock measurements are recorded below
 when the unchanged baseline gates are run. There is no line, case, Docker, or
 runtime reduction target.
 
+### Ownership-Focused File Manifest
+
+This manifest separately inventories every file that can supply or lose an
+ownership row. Each parenthesized tuple is `lines; named tests; subtest sites`;
+the aggregate table above inventories the remaining application, domain,
+metadata, and parser Query Access tests by directory.
+
+| Category | Files |
+|---|---|
+| Unified/deprecated SDK | `query_access_deprecation_test.go` (74;1;1), `query_access_online_session_test.go` (1059;15;9), `query_access_online_session_postgresql_tag_test.go` (497;9;4), `query_access_online_session_postgresql_notag_test.go` (108;4;1), `query_access_online_session_postgresql_integration_test.go` (272;5;2), `query_access_session_mysql_tidb_test.go` (454;6;3), `query_access_session_mysql_tidb_live_e2e_test.go` (934;2;3), `query_access_session_integration_test.go` (809;22;1), `query_access_session_postgresql_recording_test.go` (340;3;0), `query_access_session_postgresql_test.go` (83;5;0), `query_access_session_test.go` (90;4;0), `query_access_test.go` (331;11;2), `query_access_profile_test.go` (196;8;3), `query_access_probe_boundary_no_leak_test.go` (316;2;2), `query_access_postgresql_tag_test.go` (31;1;0), `query_access_pure_effect_surface_contract_postgresql_test.go` (69;1;1), `query_access_unproven_reasons_postgresql_tag_test.go` (218;4;1) |
+| CLI adapter, recording, and no-leak | `query_access_test.go` (333;14;1), `query_access_unified_entry_test.go` (71;1;0), `query_access_e2e_mixed_literal_test.go` (433;2;5), `query_access_postgresql_online_recording_test.go` (449;5;0), `query_access_postgresql_no_leak_test.go` (156;3;1), `query_access_probe_boundary_no_leak_test.go` (190;2;2), `query_access_unproven_reasons_postgresql_tag_test.go` (91;1;1) |
+| HTTP adapter, recording, and no-leak | `query_access_test.go` (846;23;3), `query_access_unified_entry_test.go` (71;1;0), `query_access_e2e_mixed_literal_test.go` (671;1;5), `query_access_postgresql_online_recording_test.go` (394;2;0), `query_access_postgresql_no_leak_test.go` (294;7;1), `query_access_probe_boundary_no_leak_test.go` (236;3;2), `query_access_unproven_reasons_postgresql_tag_test.go` (98;1;1) |
+| MCP | `internal/interfaces/mcp/query_access_surface_contract_test.go` (33;1;1) |
+| Real binaries | `cmd/deltascope/main_e2e_postgresql_query_access_test.go` (295;5;1), `cmd/deltascope-server/main_e2e_postgresql_query_access_test.go` (249;5;1) |
+| Corpus | `internal/application/queryaccess/corpus_test.go` (395;1;1), `corpus_pg_test.go` (29;1;1), `corpus_session_test.go` (135;0;0), and 104 SQL/expected pairs under `testdata/query-access` |
+
+The remaining source-semantic inventory is 36 application files, 2 domain
+files, 4 metadata-resolver files, and 15 parser files, as counted above. It is
+not a deletion target in this milestone. Dynamic table expansion is recorded in
+the ledger by its owning test and named table rows; the `subtest sites` count is
+the reproducible static count of `t.Run` declarations rather than an unstable
+runtime expansion count.
+
 ### Baseline Gate Measurements
 
 Measured once in this isolated worktree; timings are descriptive only.
@@ -67,9 +90,10 @@ Measured once in this isolated worktree; timings are descriptive only.
 | affected default and tagged race tests | pass | 7s / 11s |
 | `make query-access-corpus-gates` | pass | 2s |
 | `make pg-unit-test-gates` | pass | 4s |
+| `go test -tags integration -count=1 ./pkg/deltascope -run 'TestLiveProfile_AssertsVersionAndAdmitsAggregates\|TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles'` | pass | 14s |
 | `make test-e2e-cli` | pass | 35s |
-| MySQL/TiDB MCP metadata E2E | pass | 29s |
-| MySQL/TiDB HTTP metadata E2E | pass | 39s |
+| `make test-e2e-mcp-mysql test-e2e-mcp-tidb` | pass | 29s |
+| `make test-e2e-http-mysql test-e2e-http-tidb` | pass | 39s |
 | `make pg-confidence-gates` | pass | 71s |
 | `make test-e2e-cli-tls` | pass | 17s |
 | `make test-e2e-http-tls` | pass | 28s |
@@ -78,13 +102,14 @@ Measured once in this isolated worktree; timings are descriptive only.
 | default and tagged `go vet` | pass | 1s / <1s |
 | `make lint`, npm launcher, docs, decision-record, tidy, three-level-doc, and diff checks | pass | 2s / 1s / <1s / 1s / <1s / <1s / <1s |
 
-The first HTTP TLS attempt stopped while Docker used a stale local amd64
-`mysql:8.4` image on an arm64 host. Pulling the tag explicitly for `linux/arm64`
-changed only the local Docker cache; the unchanged gate then passed. Docker gate
-invocations were exactly `make test-e2e-cli`, both MySQL/TiDB MCP and HTTP
-metadata targets, `make pg-confidence-gates`, and the CLI/HTTP TLS targets plus
-its CLI lifecycle regression. No Docker target, fixture, script, or Makefile
-changed.
+The successful baseline performed 14 existing Docker stack lifecycles (28
+compose `up`/`down` operations): one SDK builtin fixture; two CLI metadata;
+two MCP metadata; two HTTP metadata; three PostgreSQL confidence; one CLI TLS;
+one HTTP TLS; and two CLI TLS regression. The first HTTP TLS attempt stopped
+before readiness because Docker used a stale local amd64 `mysql:8.4` image on an
+arm64 host. Pulling the tag explicitly for `linux/arm64` changed only the local
+Docker cache; the unchanged gate then passed. No Docker target, fixture, script,
+or Makefile changed.
 
 ## 2. Commit the Ownership Ledger First
 
@@ -106,10 +131,11 @@ changed.
 | S2 | `pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`: legacy live profile matrix and six-probe per-target unified-versus-legacy equivalence; it is not an exhaustive unified owner |
 | S3 | `pkg/deltascope/query_access_online_session_postgresql_tag_test.go`: tagged PG17 route, excluded-shape, foreign-table, failure, ownership, and no-execution tests |
 | S4 | `pkg/deltascope/query_access_online_session_postgresql_integration_test.go`: live PG17 admissible, excluded-shape, foreign-table, same-session, and legacy equivalence tests |
-| S5 | `pkg/deltascope/query_access_session_postgresql_recording_test.go`: complete PG17 identity/catalog probes, no-execution, foreign-table, and bounded-failure tests |
+| S5 | `pkg/deltascope/query_access_session_postgresql_recording_test.go`: legacy PG17 detailed identity/catalog probe, no-execution, foreign-table, and bounded-failure evidence; it is not a unified replacement |
 | S6 | `internal/application/queryaccess/{corpus_test.go,corpus_pg_test.go}` and `testdata/query-access`: offline semantic corpus |
 | U1 | Missing at the Issue #10 baseline: a complete unified MySQL/TiDB live semantic matrix for every legacy profile/shape row. Issue #11 must establish it before any row currently mapped to U1 can be deleted. |
 | U2 | Missing at the Issue #10 baseline: complete unified PG17 evidence for legacy aggregate/comparison shapes beyond the current exact `COUNT(1)` envelope. Issue #11 must establish it before those legacy rows can be deleted. |
+| U3 | Missing at the Issue #10 baseline: a complete unified PG17 detailed recording-probe sequence. Issue #11 must establish it before detailed legacy or adapter probe assertions can be deleted. |
 | C1 | `pkg/deltascope/query_access_deprecation_test.go`, `query_access_online_session*_test.go`, and the legacy session tests: deprecated API source, stub, exact-error, validation-order, and caller-ownership contract |
 | C2 | Unified-versus-legacy equivalence in S1/S2 for MySQL 5.7/8.0/8.4 and TiDB 8.5, and S3/S4 for PostgreSQL 17 |
 | T1 | CLI adapter and real-binary tests: flags, TLS/session construction, exit code, streams, close, bounded failures, no-leak, and real routing |
@@ -135,8 +161,8 @@ at its observed boundary even if its SQL text also appears elsewhere.
 | `query_access_session_integration_test.go`: `TestTrustedSDK_CountStarAdmissible` through `TestTrustedSDK_ComparisonAdmissible` | legacy PG17 admitted aggregate and comparison shapes | U2 (missing) | C1, C2 | Blocked: retain until Issue #11 |
 | `query_access_session_integration_test.go`: `TestTrustedSDK_CountIntegerOneExcludedShapesRemainIndeterminate`, `FilterDistinctRemainIndeterminate`, `UnqualifiedRelationIndeterminate`, and `LiteralComparisonIndeterminate` | legacy PG17 excluded-shape boundaries | U2 (missing) | C1, C2 | Blocked: retain until Issue #11 |
 | `query_access_session_integration_test.go`: session creation, closed/cancelled input, close, resolver, dialect, nil, and same-connection rows | old session lifecycle and validation contract | S3, S4 | C1 | Non-substitutable compatibility |
-| `query_access_session_postgresql_recording_test.go`: identity/catalog probe rows | detailed PG17 probe sequence | S5 | C1 | Candidate after owner gate; preserve one legacy compatibility proof |
-| `query_access_session_postgresql_recording_test.go`: foreign-table and catalog-failure rows | relation-kind trust and bounded failure/no-leak | S5 | C1 | Non-substitutable trust/compatibility |
+| `query_access_session_postgresql_recording_test.go`: `TestTrustedSDK_CountIntegerOneDoesNotExecuteUserSQL` fixed identity/catalog probe assertions | legacy detailed PG17 probe sequence | U3 (missing) | C1 | Blocked: retain until Issue #11 |
+| `query_access_session_postgresql_recording_test.go`: `TestTrustedSDK_CountIntegerOneForeignTableNoExecNoLeak` and `TestTrustedSDK_CountIntegerOneCatalogLookupFailureNoLeak` | relation-kind trust and bounded failure/no-leak | S5 | C1 | Non-substitutable trust/compatibility |
 | `query_access_online_session_test.go`: per-target rows in `MatchesDialectSpecificMySQLTiDB` and `NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB` | unified semantic and equivalence matrices | S1 | C2 | Retained unified owner |
 | `query_access_online_session_postgresql_tag_test.go`: route/excluded-shape rows | tagged PG17 semantic matrix | S3 | C2 | Retained unified owner |
 | `query_access_online_session_postgresql_tag_test.go`: foreign-table, lookup failure, ownership, validation, constructor, and no-execution rows | PG17 trust, lifecycle, and bounded failure | S3 | C1, C2 | Retained unified owner |
@@ -147,7 +173,7 @@ at its observed boundary even if its SQL text also appears elsewhere.
 | `query_access_e2e_mixed_literal_test.go` CLI offline row | CLI default/offline behavior | S1, S6 | T1 | Non-substitutable transport |
 | `query_access_test.go` CLI admitted/rejected/mode/JSON result rows | CLI command serialization and exit mapping | S1, S6 | T1 | Non-substitutable transport |
 | `query_access_test.go` CLI flags, removed-password, TLS, and constructor rows | CLI input/session/error contract | -- | T1 | Non-substitutable transport |
-| `query_access_postgresql_online_recording_test.go` detailed fixed-probe assertions | duplicated adapter probe sequence | S5 | T1 | Candidate after owner gate; retain one adapter no-execution/close/error test |
+| `query_access_postgresql_online_recording_test.go`: `TestCLIOnlinePG17_CountIntegerOne_Recording` fixed-probe assertions | duplicated adapter probe sequence | U3 (missing) | T1 | Blocked: retain until Issue #11 |
 | `query_access_postgresql_online_recording_test.go` cancellation, closed-session, connection-failure, and catalog-failure rows | CLI lifecycle and bounded errors | S3, S5 | T1 | Non-substitutable transport |
 | `query_access_postgresql_no_leak_test.go`: `CountIntegerOne`, `ExcludedShapes`, and `DefaultOffline` | CLI stdout/stderr sink privacy | S3 | T1 | Non-substitutable per-sink no-leak and offline |
 | `query_access_probe_boundary_no_leak_test.go` CLI rows | CLI MySQL/TiDB identity-boundary privacy | S1 | T1 | Non-substitutable per-sink no-leak |
@@ -158,7 +184,7 @@ at its observed boundary even if its SQL text also appears elsewhere.
 | `query_access_e2e_mixed_literal_test.go` HTTP default row | HTTP default/offline behavior | S1, S6 | T2 | Non-substitutable transport |
 | `query_access_test.go` HTTP offline request/result rows | HTTP parsing, status, body, and defaults | S1, S6 | T2 | Non-substitutable transport |
 | `query_access_test.go` HTTP `connection_id`, registry, authorization, and zero-open rows | authorization-before-dial and registry boundary | -- | T2 | Non-substitutable authorization-before-dial |
-| `query_access_postgresql_online_recording_test.go` detailed fixed-probe assertions | duplicated adapter probe sequence | S5 | T2 | Candidate after owner gate; retain one adapter no-execution/close/error test |
+| `query_access_postgresql_online_recording_test.go`: `TestHTTPOnlinePG17_CountIntegerOne_Recording` fixed-probe assertions | duplicated adapter probe sequence | U3 (missing) | T2 | Blocked: retain until Issue #11 |
 | `query_access_postgresql_online_recording_test.go` catalog-failure row | HTTP bounded error and access-log behavior | S3, S5 | T2 | Non-substitutable transport |
 | `query_access_postgresql_no_leak_test.go`: Count, excluded, no-connection, unauthorized, and failure rows | HTTP body/log sink privacy | S3 | T2 | Non-substitutable per-sink no-leak |
 | `query_access_postgresql_no_leak_test.go`: unauthorized and unknown zero-dial rows | HTTP authorization-before-dial | -- | T2 | Non-substitutable authorization-before-dial |
