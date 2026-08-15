@@ -1,7 +1,7 @@
 # Decision: Assign Query Access Tests to One Evidence Owner
 
 - Date: 2026-08-15
-- Status: Proposed
+- Status: Accepted
 - Related: [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md), [Dialect session API deprecation](2026-08-14-query-access-dialect-session-api-deprecation.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [test consolidation issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-spec.md`
 - Design: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-design.md`
@@ -139,8 +139,17 @@ the detailed semantic and probe-sequence owner. A temporary authorization
 bypass made `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` fail before the
 original guard was restored; the mutation is not committed.
 
-This record remains Proposed until the ownership/deletion ledger, retained
-tests, temporary mutation probes, full required gates, before/after inventory,
-ADR evidence reconciliation, and independent review demonstrate that no
-semantic, compatibility, security, privacy, lifecycle, or transport contract
-lost its owner and no unresolved P0, P1, or P2 remains.
+## Acceptance Evidence
+
+The complete row-by-row deletion ledger, post-consolidation inventory, and
+measured gate evidence are recorded in the implementation plan's Issue #14
+final reconciliation. Each required temporary mutation made its retained owner
+RED, then was restored byte-clean without committing mutation code. The full
+required default/tagged/race/corpus/Docker/TLS/build/vet/lint/npm/docs/decision/
+gofmt/tidy/diff matrix passed.
+
+Fresh independent Standards and Spec/security reviews of
+`db4e73a19233d0475a480f2f333784d85f2d616a...HEAD` found no unresolved P0,
+P1, or P2. They confirmed retained semantic, compatibility, authorization,
+privacy, lifecycle, foreign-table, offline/default, and MCP-absence evidence;
+production behavior and restricted delivery surfaces remain unchanged.
