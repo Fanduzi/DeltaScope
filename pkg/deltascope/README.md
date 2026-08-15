@@ -16,7 +16,7 @@ Stable public package surface for library consumers.
 | query_access_session.go | Exposes the opaque PostgreSQL session wrapper for trusted query access plus the shared private PG17 proof core used by the unified entry (postgresql build tag) |
 | query_access_session_mysql_tidb.go | Exposes the opaque MySQL/TiDB session boundary for same-connection metadata resolution plus the shared private MySQL/TiDB proof core used by the unified entry |
 | query_access_session_stub.go | Provides PostgreSQL session stub when built without postgresql tag |
-| query_access_session_integration_test.go | Deprecated PG17 session construction, validation, caller ownership, and same-connection compatibility against Docker |
+| query_access_session_integration_test.go | Deprecated PG17 session construction, validation, caller ownership, offline/default behavior, and same-connection compatibility against Docker |
 | query_access_session_postgresql_recording_test.go | Recording driver shared by unified tagged tests, plus deprecated PG17 foreign-table and bounded-failure no-leak compatibility |
 | query_access_session_mysql_tidb_live_e2e_test.go | Docker-backed unified MySQL 5.7/8.0/8.4 and TiDB 8.5 semantic matrix, plus per-target unified-versus-legacy equivalence |
 | query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantic matrix, per-target legacy equivalence, and recording-driver no-execution/no-leak evidence |

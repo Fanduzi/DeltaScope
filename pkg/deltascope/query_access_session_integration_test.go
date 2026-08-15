@@ -2,7 +2,7 @@
 
 // Package deltascope verifies the PostgreSQL session API with real connections.
 // input: real PostgreSQL connection from Docker PG17, including foreign-table metadata
-// output: deprecated-session construction, validation, ownership, and same-connection compatibility
+// output: deprecated-session construction, validation, ownership, offline/default, and same-connection compatibility
 // pos: PostgreSQL deprecated-session compatibility integration tests
 // note: if this file changes, update this header and module README.md.
 package deltascope
