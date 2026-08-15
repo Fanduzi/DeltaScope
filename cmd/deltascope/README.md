@@ -18,6 +18,7 @@ Process entrypoint for the `deltascope` CLI.
 - `deltascope --version` prints only the semantic version for scripts.
 - `deltascope version` prints the ASCII logo plus the semantic version for humans.
 - The command surface now includes `audit`, `rules list/show/search`, `config init/lint/show-default`, `capabilities`, and `version`.
+- `deltascope audit` supports both offline and metadata-aware runs with MySQL-style connection flags.
 - `main_e2e_postgresql_query_access_test.go` is retained as CLI real-route evidence; semantic shape breadth belongs to the unified SDK suite.
 
 ## Dependencies

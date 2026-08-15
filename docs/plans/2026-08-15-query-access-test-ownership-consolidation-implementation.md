@@ -87,7 +87,8 @@ Measured once in this isolated worktree; timings are descriptive only.
 |---|---|---:|
 | `make test` | pass | 18s |
 | `CGO_ENABLED=1 go test -tags postgresql ./...` | pass | 20s |
-| affected default and tagged race tests | pass | 7s / 11s |
+| `go test -race ./pkg/deltascope ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp` | pass | 7s |
+| `CGO_ENABLED=1 go test -race -tags postgresql ./pkg/deltascope ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp` | pass | 11s |
 | `make query-access-corpus-gates` | pass | 2s |
 | `make pg-unit-test-gates` | pass | 4s |
 | `go test -tags integration -count=1 ./pkg/deltascope -run 'TestLiveProfile_AssertsVersionAndAdmitsAggregates\|TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles'` | pass | 14s |
@@ -99,17 +100,25 @@ Measured once in this isolated worktree; timings are descriptive only.
 | `make test-e2e-http-tls` | pass | 28s |
 | `make test-e2e-cli-tls-regression` | pass | 34s |
 | `make build` | pass | 8s |
-| default and tagged `go vet` | pass | 1s / <1s |
-| `make lint`, npm launcher, docs, decision-record, tidy, three-level-doc, and diff checks | pass | 2s / 1s / <1s / 1s / <1s / <1s / <1s |
+| `go vet ./...` | pass | 1s |
+| `CGO_ENABLED=1 go vet -tags postgresql ./...` | pass | <1s |
+| `make lint` | pass | 2s |
+| `npm test --prefix packages/deltascope-mcp` | pass | 1s |
+| `make docs-example-gates` | pass | <1s |
+| `make decision-record-gate` | pass | 1s |
+| `go mod tidy` | pass | <1s |
+| `/Users/fan/.agents/skills/check-three-level-doc/scripts/check_three_level_doc.sh` | pass | <1s |
+| `git diff --check db4e73a19233d0475a480f2f333784d85f2d616a...HEAD` | pass | <1s |
 
-The successful baseline performed 14 existing Docker stack lifecycles (28
-compose `up`/`down` operations): one SDK builtin fixture; two CLI metadata;
-two MCP metadata; two HTTP metadata; three PostgreSQL confidence; one CLI TLS;
-one HTTP TLS; and two CLI TLS regression. The first HTTP TLS attempt stopped
-before readiness because Docker used a stale local amd64 `mysql:8.4` image on an
-arm64 host. Pulling the tag explicitly for `linux/arm64` changed only the local
-Docker cache; the unchanged gate then passed. No Docker target, fixture, script,
-or Makefile changed.
+The baseline performed 14 successful existing Docker stack lifecycles (28 compose
+`up`/`down` operations): one SDK builtin fixture; two CLI metadata; two MCP
+metadata; two HTTP metadata; three PostgreSQL confidence; one CLI TLS; one HTTP
+TLS; and two CLI TLS regression. One additional HTTP TLS lifecycle failed before
+readiness (two compose operations) because Docker used a stale local amd64
+`mysql:8.4` image on an arm64 host. Pulling the tag explicitly for `linux/arm64`
+changed only the local Docker cache; the unchanged retry passed. Total observed
+Docker accounting was 15 lifecycles and 30 compose operations. No Docker target,
+fixture, script, or Makefile changed.
 
 ## 2. Commit the Ownership Ledger First
 
@@ -144,10 +153,11 @@ or Makefile changed.
 
 ### Row-by-Row Deletion Ledger
 
-All rows are **retain** during Issue #10. `Candidate after owner gate` means a
-later issue may remove only the named semantic rows after the listed replacement
-evidence and its focused gates pass. `Non-substitutable` means the row remains
-at its observed boundary even if its SQL text also appears elsewhere.
+All rows are **retain** during Issue #10; no row currently authorizes a
+deletion. `Blocked` identifies a missing unified owner. `Non-substitutable`
+identifies boundary evidence that must remain. Retained-owner rows are baseline
+inventory only, not replacement authorization: a later issue must replace each
+with exact test/subtest identifiers and focused green evidence before deletion.
 
 | Current row or table | Current behavior | Unified semantic evidence | Boundary / compatibility evidence | Status |
 |---|---|---|---|---|

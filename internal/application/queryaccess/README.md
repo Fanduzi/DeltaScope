@@ -15,6 +15,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | phase1_effect_eligibility.go | Fail-closed Phase-1 pure-effect candidate eligibility before identity promotion |
 | count_integer_one_proof.go | Narrow PostgreSQL COUNT(integer_one) single-table requirements proof predicate |
 | count_integer_one_proof_test.go | Verifies exact COUNT(integer_one) proof boundaries and fail-closed requirements |
+| corpus_test.go / corpus_pg_test.go / corpus_session_test.go | Own the offline Query Access corpus contract and fixture/session coverage; transport suites do not replace this semantic evidence |
 | identity_resolver_test.go | Contract tests: ordinal uniqueness, status enum, fail-closed mapping, cancellation, no Trusted field |
 | identity_resolver_context_test.go | Execution-context policy: unqualified unbound, shadowing, overload, TOCTOU, no public leak |
 | identity_resolver_no_invoke_test.go | Freezes Analyze: no identity resolver invocation or public leak in T6 |
@@ -74,7 +75,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 ## Notes
 
-- `SchemaResolver` is an optional interface; callers may pass `nil` when schema metadata is unavailable.
+- The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth only after the ledger records complete replacement evidence.
 - `QueryAccessResult` wraps the domain `Result` for application-layer consumption.
 - `QueryAccessRequest.Mode` is a string that the domain layer normalizes via `NormalizeMode`.
 - `ExtractTiDBQueryAccess` computes admission from read classification: read_only → admissible, not_read_only → rejected, indeterminate → indeterminate.
