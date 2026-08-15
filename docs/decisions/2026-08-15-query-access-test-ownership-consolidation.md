@@ -1,7 +1,7 @@
 # Decision: Assign Query Access Tests to One Evidence Owner
 
 - Date: 2026-08-15
-- Status: Proposed
+- Status: Accepted
 - Related: [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md), [Dialect session API deprecation](2026-08-14-query-access-dialect-session-api-deprecation.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [test consolidation issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-spec.md`
 - Design: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-design.md`
@@ -141,13 +141,16 @@ original guard was restored; the mutation is not committed.
 
 ### Final remediation acceptance
 
-The fixed review candidate is `0a0b8e242528a7cf5778e6ffa0b7e48302b35b89`; the
-review range is `db4e73a19233d0475a480f2f333784d85f2d616a...0a0b8e242528a7cf5778e6ffa0b7e48302b35b89`.
-Fresh independent Standards and Spec/security reviews both passed with no
-unresolved P0, P1, or P2.
+**Acceptance Evidence.** The fixed review candidate is
+`d1d678e389dfac77d7f4b75be4c4439d3583d83a`; the review range is
+`db4e73a19233d0475a480f2f333784d85f2d616a...d1d678e389dfac77d7f4b75be4c4439d3583d83a`.
+Fresh independent Standards review passed. Spec/security review identified the
+stale predecessor candidate field, resolved by this entry; no P0, P1, or P2
+remains.
 
-Focused RED→GREEN evidence covered the restored rejected-write, aggregate, and
-unknown-function SDK rows; the admitted HTTP response scanner; and the renamed
-live-owner ledger mapping. The required default/tagged/race/corpus/Docker/TLS/
-build/vet/lint/npm/docs/decision/gofmt/tidy/diff matrix passed. No production,
+The PG17 malformed parser-path assertion was RED for a parsed FILTER shape,
+then GREEN with a malformed parser-failure shape; the MySQL/TiDB shared-path
+case and focused documentation checks were GREEN. Default/tagged suites,
+focused default/tagged/race/live checks, corpus, Docker, TLS, build, vet, lint,
+npm, docs, decision, formatting, tidy, and diff gates passed. No production,
 public API, Makefile, workflow, fixture, version, or release surface changed.
