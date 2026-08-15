@@ -3,13 +3,15 @@
 // Package deltascope verifies the unified online session entry against a real
 // PostgreSQL 17 backend.
 // input: real PostgreSQL connection from Docker PG17, including foreign-table metadata
-// output: unified PG17 routing, aggregate/comparison/fail-closed semantics, equivalence, same-backend-session proof, foreign-table fail-closed, caller ownership
+// output: unified PG17 routing, aggregate/comparison/parse-failure/fail-closed semantics, equivalence, same-backend-session proof, foreign-table fail-closed, caller ownership
 // pos: integration test coverage for the unified online PG17 entry
 // note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -75,6 +77,7 @@ func TestUnifiedSession_PostgreSQLSemanticMatrix(t *testing.T) {
 		{name: "sum_distinct", sql: "SELECT sum(DISTINCT amount) FROM app.orders", admission: QueryAccessIndeterminateAdmission},
 		{name: "unqualified_relation", sql: "SELECT id FROM users WHERE id = 1", admission: QueryAccessIndeterminateAdmission},
 		{name: "literal_comparison", sql: "SELECT id FROM app.users WHERE id = 1", admission: QueryAccessIndeterminateAdmission},
+		{name: "parse_failure", sql: "SELECT * FROM WHERE MALFORMED_SQL_MARKER_7f3a", admission: QueryAccessIndeterminateAdmission},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -104,6 +107,20 @@ func TestUnifiedSession_PostgreSQLSemanticMatrix(t *testing.T) {
 			}
 			if tc.requirements != nil && !reflect.DeepEqual(result.Requirements, tc.requirements) {
 				t.Fatalf("requirements=%+v, want %+v", result.Requirements, tc.requirements)
+			}
+			if tc.name == "parse_failure" {
+				// A PostgreSQL parser failure has no extracted candidate, requirement,
+				// or public reason code; it must remain bounded and opaque.
+				if result.ReadClassification != QueryAccessIndeterminate || len(result.Requirements) != 0 || len(result.ReasonCodes) != 0 {
+					t.Fatalf("parse failure must stay bounded: classification=%s requirements=%+v reasons=%v", result.ReadClassification, result.Requirements, result.ReasonCodes)
+				}
+				data, err := json.Marshal(result)
+				if err != nil {
+					t.Fatalf("marshal: %v", err)
+				}
+				if strings.Contains(string(data), tc.sql) || strings.Contains(string(data), "MALFORMED_SQL_MARKER_7f3a") {
+					t.Fatalf("result JSON leaked malformed SQL or marker: %s", data)
+				}
 			}
 			assertNoLeak(t, result)
 		})

@@ -126,11 +126,26 @@ Regression test: `TestBuiltinSemanticManifest_RejectsInvalidEntries` covers both
 
 ### Evidence Maintenance (2026-08-15)
 
-The test names above record the original matrix, not current retention. Issue #14
-maps every removed declaration in the [ownership ledger](2026-08-15-query-access-test-ownership-consolidation.md):
+The test names above record the original matrix, not current retention. Issue
+#12 removed the CLI `TestQueryAccessOnline_MixedLiteralScalars` matrix because
+the unified SDK owns its product/profile/shape semantics. The retained CLI
+transport evidence is `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for
+MySQL 8.4 and TiDB 8.5 real-route admitted/fail-closed behavior plus
+`TestQueryAccessOnline_DefaultOffline`; at that point the HTTP matrix remained
+unchanged.
+
+Issue #13 then removed the duplicate HTTP matrix. `TestQueryAccessOnline_TransportSmoke`
+retains MySQL 8.4 and TiDB 8.5 real-route admitted/fail-closed status/body,
+requirement/reason, request-ID/access-log, and no-leak evidence;
+`TestQueryAccessOnline_DefaultOffline` retains the HTTP offline boundary.
+
+Issue #14 records the authoritative deleted-declaration reconciliation in the
+[implementation ledger](../plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md):
 `TestLiveProfile_AssertsVersionAndAdmitsAggregates` was renamed and retained as
-`TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`; the removed CLI and
-HTTP `TestQueryAccessOnline_MixedLiteralScalars` matrices are not retained.
+`TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`; the deleted CLI and
+HTTP matrices remain semantically owned by the unified default and four-target
+live SDK matrices, with the named CLI and HTTP tests retained only as transport
+smoke owners.
 
 ### Verification Commands
 
@@ -167,18 +182,3 @@ go mod tidy && git diff --exit-code go.mod go.sum
 - `COALESCE` with 3+ operands
 - PostgreSQL literal operands
 - Nested expressions, casts, parameters, UDFs, quoted/qualified calls
-
-### Evidence Maintenance (2026-08-15)
-
-Issue #12 removed the CLI `TestQueryAccessOnline_MixedLiteralScalars` matrix
-because the unified SDK owns its product/profile/shape semantics. The retained
-CLI evidence is `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for MySQL 8.4
-and TiDB 8.5 real-route admitted/fail-closed behavior plus
-`TestQueryAccessOnline_DefaultOffline`; at that time the HTTP matrix remained
-unchanged.
-
-Issue #13 then removed the duplicate HTTP matrix from the cited HTTP file.
-`TestQueryAccessOnline_TransportSmoke` retains MySQL 8.4 and TiDB 8.5 real-route
-admitted/fail-closed status/body, requirement/reason, request-ID/access-log, and
-no-leak evidence; `TestQueryAccessOnline_DefaultOffline` retains the HTTP
-offline boundary. The unified SDK remains the exhaustive semantic owner.

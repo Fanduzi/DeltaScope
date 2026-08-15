@@ -223,8 +223,8 @@ wording above.
 | Deleted declaration | Retained owner |
 |---|---|
 | `internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_BuiltBinarySupportedProfiles` | `TestQueryAccessOnline_BuiltBinaryTransportSmoke` |
-| `internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_MixedLiteralScalars` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` for semantics; `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for CLI routing |
-| `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_MixedLiteralScalars` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` for semantics; `TestQueryAccessOnline_TransportSmoke` for HTTP routing, response, and access-log no-leak |
+| `internal/interfaces/cli/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_MixedLiteralScalars` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` and `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` for semantics; `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for CLI routing |
+| `internal/interfaces/http/query_access_e2e_mixed_literal_test.go`: `TestQueryAccessOnline_MixedLiteralScalars` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` and `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix` for semantics; `TestQueryAccessOnline_TransportSmoke` for HTTP routing, response, and access-log no-leak |
 | `pkg/deltascope/query_access_online_session_postgresql_tag_test.go`: `TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI` | `TestUnifiedSession_PostgreSQLSemanticMatrix`, `TestOnlineQueryAccessSession_PostgreSQLRoutesThroughUnifiedEntry`, and `TestUnifiedSession_MatchesLegacyPG17` |
 | `pkg/deltascope/query_access_online_session_test.go`: `TestOnlineQueryAccessSession_MatchesDialectSpecificMySQLTiDB` | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix` and `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` |
 | `pkg/deltascope/query_access_online_session_test.go`: `TestOnlineQueryAccessSession_NoExecutionNoLeakMatchesDialectSpecificMySQLTiDB` | `TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix` |
@@ -262,9 +262,13 @@ wording above.
 
 The final `db4e73a...HEAD` diff was reconciled against every row in the
 row-by-row ledger above. Every removed test/table row has its named retained
-unified semantic owner and, where the row observes an external boundary, its
-named CLI, HTTP, deprecated-API, or MCP owner. No production, public API,
-Makefile, workflow, fixture, version, or release file appears in that diff.
+unified semantic owner or owners and, where the row observes an external
+boundary, its named CLI, HTTP, deprecated-API, or MCP owner. The deleted CLI
+and HTTP `TestQueryAccessOnline_MixedLiteralScalars` declarations are jointly
+owned semantically by `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix`
+and the four-target live `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`;
+their CLI and HTTP smoke owners remain transport-only. No production, public
+API, Makefile, workflow, fixture, version, or release file appears in that diff.
 The offline corpus remains 208 files / 2,568 lines (104 SQL fixtures).
 
 The following descriptive inventory uses the same static measure as the

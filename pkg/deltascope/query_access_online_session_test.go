@@ -1,6 +1,6 @@
 // Package deltascope verifies the unified online query access session contract.
 // input: caller-owned *sql.Conn backed by configurable stub and recording drivers
-// output: contract evidence for signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantics, compatibility equivalence, and recording-driver no-execution/no-leak
+// output: contract evidence for signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantics including parse-failure, compatibility equivalence, and recording-driver no-execution/no-leak
 // pos: public unified online session contract tests (default and PostgreSQL-tagged builds)
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -654,6 +654,7 @@ func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
 		{"reversed", "8.4.10", "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", QueryAccessReadOnly, QueryAccessAdmissible, nil, nil, false},
 		{"unknown", "8.4.10", "SELECT app_specific_rollup(id) FROM app.users", QueryAccessIndeterminate, QueryAccessIndeterminateAdmission, []QueryAccessRequirement{{Object: "app.users", Privilege: "read_table"}, {Object: "app.users.id", Privilege: "read_column"}}, []string{"function_call", "unknown_function_effect"}, true},
 		{"mysql84_insert", "8.4.10", "INSERT INTO app.users (id) VALUES (1)", QueryAccessNotReadOnly, QueryAccessRejected, nil, []string{"write_operation"}, true},
+		{"mysql84_parse_failure", "8.4.10", "SELECT SUM(amount) FILTER (WHERE marker = 'MALFORMED_SQL_MARKER_7f3a') FROM app.builtin_semantic_facts", QueryAccessIndeterminate, QueryAccessIndeterminateAdmission, nil, []string{"parse_failure"}, true},
 	}
 	for _, shape := range onlineRelationlessLiteralShapes() {
 		cases = append(cases, testCase{"relationless_" + shape.name, "8.4.10", shape.sql, QueryAccessReadOnly, QueryAccessAdmissible, nil, nil, false})
@@ -690,6 +691,9 @@ func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
 			}
 			if strings.Contains(string(data), "SECRET_LITERAL") {
 				t.Fatalf("result JSON leaked literal: %s", data)
+			}
+			if tc.name == "mysql84_parse_failure" && (strings.Contains(string(data), "MALFORMED_SQL_MARKER_7f3a") || strings.Contains(string(data), tc.sql)) {
+				t.Fatalf("result JSON leaked malformed SQL or marker: %s", data)
 			}
 		})
 	}
