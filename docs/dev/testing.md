@@ -34,7 +34,7 @@ corpus remains the offline semantic owner.
 | Deprecated API notices, stubs, exact errors, validation priority, caller ownership, and per-target equivalence | Deprecated SDK compatibility tests | Unified-only assertions |
 | Flags, TLS/session lifecycle, exit code, stdout/stderr, bounded CLI errors, and CLI no-leak | CLI | SDK result assertions |
 | Request/status/body, registry, `connection_id`, authorization-before-dial, access logs, lifecycle, and HTTP no-leak | HTTP | SDK result assertions |
-| One real route smoke per MySQL 8.4, TiDB 8.5, and PostgreSQL 17 family on each transport | CLI and HTTP real-binary/adapter tests | Recording tests alone |
+| One real route smoke per MySQL 8.4, TiDB 8.5, and PostgreSQL 17 family on each transport, with admitted and fail-closed results | CLI and HTTP real-binary/adapter tests | Recording tests alone |
 | PostgreSQL syntax-envelope, foreign-table, and default/offline failures | SDK, CLI, and HTTP at their distinct boundaries | Another PostgreSQL negative |
 | Absence of a Query Access tool | MCP surface contract | Any SDK or transport test |
 
@@ -43,7 +43,7 @@ existing semantic row until the ledger identifies its complete unified owner.
 Add a transport case only when it observes a transport-owned sink, lifecycle,
 configuration, authorization, or routing boundary. A new server version in an
 existing transport configuration family needs SDK coverage, not copied transport
-matrices. A new family or configuration needs one smoke per supported transport.
+matrices. A new family or configuration needs one admitted and one fail-closed smoke per supported transport.
 
 Before deleting a test or table row, update the milestone ledger in
 `docs/plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md`,
