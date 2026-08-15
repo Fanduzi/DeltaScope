@@ -2,14 +2,13 @@
 
 // Package deltascope verifies PostgreSQL 17 routing through the unified online session entry.
 // input: caller-owned *sql.Conn backed by the recording driver, including relkind='f' responses and count-lookup failures
-// output: unified PG17 constructor/analysis routing, exact COUNT(1) admission, excluded-shape fail-closed, no-execution/no-leak, and legacy API equivalence
+// output: unified PG17 constructor/analysis routing, exact COUNT(1) admission, excluded-shape fail-closed, ordered no-execution/no-leak evidence
 // pos: postgresql-tagged unified online PG17 routing contract tests
 // note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
 	"errors"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -233,78 +232,6 @@ func TestOnlineQueryAccessSession_PostgreSQLCountLookupFailureNoLeak(t *testing.
 	}
 	assertPostgreSQLRecordingProbes(t, recorder.recorded())
 	assertPostgreSQLRecordingNoLeak(t, result, marker, driverError, "987654321", "876543210", "765432109", "leak_user", "leak_password", "leak-host", "6543", "leak_db")
-}
-
-// TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI proves one routing
-// case keeps the unified entry equivalent to the existing PostgreSQL session API.
-func TestOnlineQueryAccessSession_PostgreSQLMatchesLegacyAPI(t *testing.T) {
-	const marker = "PG_NO_EXEC_NO_LEAK_EQUIV_MARKER"
-	queries := []string{"SELECT COUNT(1) FROM app.orders"}
-	for _, sqlText := range queries {
-		sqlText := sqlText + " /* " + marker + " */"
-		t.Run(sqlText, func(t *testing.T) {
-			recorder := &postgresqlRecordingDriver{}
-			db := openPostgreSQLRecordingDB(t, recorder)
-			defer db.Close()
-
-			ctx := t.Context()
-			conn, err := db.Conn(ctx)
-			if err != nil {
-				t.Fatalf("conn: %v", err)
-			}
-			defer conn.Close()
-
-			unifiedSession, err := NewOnlineQueryAccessSessionFromConn(ctx, conn)
-			if err != nil {
-				t.Fatalf("unified new session: %v", err)
-			}
-			legacySession, err := NewPostgreSQLQueryAccessSessionFromConn(ctx, conn)
-			if err != nil {
-				t.Fatalf("legacy new session: %v", err)
-			}
-
-			analysisStart := len(recorder.recorded())
-			unifiedResult, unifiedErr := AnalyzeOnlineQueryAccessWithSession(ctx, unifiedSession, QueryAccessRequest{
-				SQL:           sqlText,
-				DefaultSchema: "app",
-			})
-			unifiedEnd := len(recorder.recorded())
-			legacyResult, legacyErr := AnalyzePostgreSQLQueryAccessWithSession(ctx, legacySession, QueryAccessRequest{
-				SQL:           sqlText,
-				Dialect:       DialectPostgreSQL,
-				Mode:          QueryAccessModeStrict,
-				DefaultSchema: "app",
-			})
-			recorded := recorder.recorded()
-			unifiedQueries := recorded[analysisStart:unifiedEnd]
-			legacyQueries := recorded[unifiedEnd:]
-			if !reflect.DeepEqual(unifiedQueries, legacyQueries) {
-				t.Fatalf("recording queries differ:\nunified=%v\nlegacy =%v", unifiedQueries, legacyQueries)
-			}
-			for _, query := range append(unifiedQueries, legacyQueries...) {
-				if strings.Contains(query, marker) {
-					t.Fatalf("submitted SQL reached driver: %q", query)
-				}
-			}
-			if (unifiedErr == nil) != (legacyErr == nil) {
-				t.Fatalf("error mismatch: unified=%v legacy=%v", unifiedErr, legacyErr)
-			}
-			if unifiedErr != nil {
-				if unifiedErr.Error() != legacyErr.Error() {
-					t.Fatalf("error text mismatch: unified=%q legacy=%q", unifiedErr.Error(), legacyErr.Error())
-				}
-				if strings.Contains(unifiedErr.Error(), marker) {
-					t.Fatalf("error leaked submitted SQL marker: %q", unifiedErr)
-				}
-				return
-			}
-			if !reflect.DeepEqual(unifiedResult, legacyResult) {
-				t.Fatalf("results differ:\nunified=%+v\nlegacy =%+v", unifiedResult, legacyResult)
-			}
-			assertPostgreSQLRecordingNoLeak(t, unifiedResult, marker)
-			assertPostgreSQLRecordingNoLeak(t, legacyResult, marker)
-		})
-	}
 }
 
 // TestOnlineQueryAccessSession_PostgreSQLValidationPriorityTagged proves the

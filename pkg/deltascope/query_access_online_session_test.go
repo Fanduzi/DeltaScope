@@ -633,6 +633,68 @@ func TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure(t *testing.T) 
 	})
 }
 
+// TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix directly owns default
+// semantic admission, requirements, fail-closed, and relationless evidence.
+func TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix(t *testing.T) {
+	type testCase struct {
+		name, version, sql string
+		admission          QueryAccessAdmission
+		requirements       int
+	}
+	cases := []testCase{
+		{"mysql57_count", "5.7.44", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
+		{"mysql80_count", "8.0.46", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
+		{"mysql84_count", "8.4.10", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
+		{"tidb85_count", "8.0.11-TiDB-v8.5.7", "SELECT COUNT(*) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
+		{"literal", "8.4.10", "SELECT LOWER('x') FROM app.builtin_semantic_facts", QueryAccessAdmissible, 1},
+		{"reversed", "8.4.10", "SELECT COALESCE('x', name) FROM app.builtin_semantic_facts", QueryAccessAdmissible, 2},
+		{"unknown", "8.4.10", "SELECT app_specific_rollup(id) FROM app.users", QueryAccessIndeterminateAdmission, 2},
+	}
+	for _, shape := range onlineRelationlessLiteralShapes() {
+		cases = append(cases, testCase{"relationless_" + shape.name, "8.4.10", shape.sql, QueryAccessAdmissible, 0})
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openOnlineStubDB(t, onlineStubConfig{version: tc.version})
+			defer db.Close()
+			conn, err := db.Conn(t.Context())
+			if err != nil {
+				t.Fatalf("conn: %v", err)
+			}
+			defer conn.Close()
+			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
+			if err != nil {
+				t.Fatalf("new session: %v", err)
+			}
+			result, err := AnalyzeOnlineQueryAccessWithSession(t.Context(), session, QueryAccessRequest{SQL: tc.sql, DefaultSchema: "app"})
+			if err != nil {
+				t.Fatalf("analyze: %v", err)
+			}
+			if result.Admission != tc.admission || len(result.Requirements) != tc.requirements {
+				t.Fatalf("admission=%q requirements=%+v, want %q/%d", result.Admission, result.Requirements, tc.admission, tc.requirements)
+			}
+			if tc.admission == QueryAccessAdmissible && result.ReadClassification != QueryAccessReadOnly {
+				t.Fatalf("classification=%q, want read_only", result.ReadClassification)
+			}
+			data, err := json.Marshal(result)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			if strings.Contains(string(data), "SECRET_LITERAL") {
+				t.Fatalf("result JSON leaked literal: %s", data)
+			}
+		})
+	}
+}
+
+func onlineRelationlessLiteralShapes() []struct{ name, sql string } {
+	return []struct{ name, sql string }{
+		{"lower", "SELECT LOWER('SECRET_LITERAL')"}, {"upper", "SELECT UPPER('SECRET_LITERAL')"}, {"length", "SELECT LENGTH('SECRET_LITERAL')"}, {"char_length", "SELECT CHAR_LENGTH('SECRET_LITERAL')"},
+		{"abs", "SELECT ABS(42)"}, {"ceil", "SELECT CEIL(42)"}, {"ceiling", "SELECT CEILING(42)"}, {"floor", "SELECT FLOOR(42)"}, {"count_literal", "SELECT COUNT(1)"},
+		{"coalesce", "SELECT COALESCE('SECRET_LITERAL', 'SECRET_LITERAL2')"}, {"nullif", "SELECT NULLIF('SECRET_LITERAL', 'SECRET_LITERAL2')"}, {"ifnull", "SELECT IFNULL('SECRET_LITERAL', 'SECRET_LITERAL2')"},
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Recording-driver: user SQL never executed; no marker or fact leaks
 // ---------------------------------------------------------------------------

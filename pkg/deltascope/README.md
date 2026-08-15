@@ -20,7 +20,7 @@ Stable public package surface for library consumers.
 | query_access_session_postgresql_recording_test.go | Recording driver shared by unified tagged tests, plus deprecated PG17 foreign-table and bounded-failure no-leak compatibility |
 | query_access_session_mysql_tidb_live_e2e_test.go | Docker-backed unified MySQL 5.7/8.0/8.4 and TiDB 8.5 semantic matrix, plus per-target unified-versus-legacy equivalence |
 | query_access_online_session_test.go | Verifies the unified online session contract: signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantic and ordered recording matrices, and no-execution/no-leak evidence |
-| query_access_online_session_postgresql_tag_test.go | Verifies PostgreSQL 17 routing through the unified entry: exact COUNT(1) admission, excluded-shape fail-closed, foreign-table rejection, no-execution/no-leak, and legacy API equivalence (postgresql build tag) |
+| query_access_online_session_postgresql_tag_test.go | Verifies PostgreSQL 17 routing through the unified entry: exact COUNT(1) admission, excluded-shape and foreign-table fail-closed behavior, ordered recording-driver no-execution/no-leak, ownership, validation, and bounded failures (postgresql build tag) |
 | query_access_online_session_postgresql_notag_test.go | Verifies the no-tag build keeps the unified symbols, fails an observed PostgreSQL target closed, and preserves legacy PostgreSQL stubs |
 | query_access_online_session_postgresql_integration_test.go | Real PG17 same-backend-session proof, COUNT(1)/excluded-shape/foreign-table evidence, and unified-versus-legacy equivalence for the unified online entry (postgresql + integration build tags) |
 | version.go | Publishes the default semantic version and canonical ASCII logo |
