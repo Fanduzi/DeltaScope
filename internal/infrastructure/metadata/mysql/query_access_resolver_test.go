@@ -1,7 +1,7 @@
-// Package mysqlmeta verifies the QueryAccessResolver for MySQL/TiDB.
-// input: synthetic information_schema results via custom test driver
-// output: stable resolver behavior without requiring a live database
-// pos: infrastructure metadata adapter test coverage for query access resolution
+// Package mysqlmeta verifies the caller-owned conn-backed MySQL/TiDB query access resolver.
+// input: synthetic information_schema results via custom test driver on a *sql.Conn
+// output: stable conn resolver behavior without requiring a live database
+// pos: infrastructure metadata adapter test coverage for the conn-backed resolver
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
@@ -15,7 +15,21 @@ import (
 	"testing"
 )
 
-func TestQueryAccessResolver_TableExists(t *testing.T) {
+func newQAResolver(t *testing.T, db *sql.DB) *QueryAccessConnResolver {
+	t.Helper()
+	conn, err := db.Conn(context.Background())
+	if err != nil {
+		t.Fatalf("db.Conn: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+	resolver, err := NewQueryAccessConnResolver(conn)
+	if err != nil {
+		t.Fatalf("NewQueryAccessConnResolver: %v", err)
+	}
+	return resolver
+}
+
+func TestQueryAccessConnResolver_TableKindAndColumns(t *testing.T) {
 	db := openQATestDB(t, map[string]testQueryResult{
 		"from information_schema.tables": {
 			columns: []string{"table_type"},
@@ -32,7 +46,7 @@ func TestQueryAccessResolver_TableExists(t *testing.T) {
 	})
 	defer db.Close()
 
-	resolver := NewQueryAccessResolver(db)
+	resolver := newQAResolver(t, db)
 	rs, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "users")
 	if err != nil {
 		t.Fatalf("ResolveRelation: %v", err)
@@ -60,39 +74,7 @@ func TestQueryAccessResolver_TableExists(t *testing.T) {
 	}
 }
 
-func TestQueryAccessResolver_ViewExists(t *testing.T) {
-	db := openQATestDB(t, map[string]testQueryResult{
-		"from information_schema.tables": {
-			columns: []string{"table_type"},
-			rows:    [][]driver.Value{{"VIEW"}},
-		},
-		"from information_schema.columns": {
-			columns: []string{"column_name", "ordinal_position"},
-			rows: [][]driver.Value{
-				{"id", int64(1)},
-				{"display_name", int64(2)},
-			},
-		},
-	})
-	defer db.Close()
-
-	resolver := NewQueryAccessResolver(db)
-	rs, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "user_view")
-	if err != nil {
-		t.Fatalf("ResolveRelation: %v", err)
-	}
-	if rs.Kind != "view" {
-		t.Errorf("kind: got %q, want %q", rs.Kind, "view")
-	}
-	if !rs.IsView {
-		t.Error("IsView should be true for view")
-	}
-	if len(rs.Columns) != 2 {
-		t.Fatalf("columns: got %d, want 2", len(rs.Columns))
-	}
-}
-
-func TestQueryAccessResolver_ColumnListing(t *testing.T) {
+func TestQueryAccessConnResolver_ColumnOrderPreserved(t *testing.T) {
 	db := openQATestDB(t, map[string]testQueryResult{
 		"from information_schema.tables": {
 			columns: []string{"table_type"},
@@ -109,12 +91,12 @@ func TestQueryAccessResolver_ColumnListing(t *testing.T) {
 	})
 	defer db.Close()
 
-	resolver := NewQueryAccessResolver(db)
+	resolver := newQAResolver(t, db)
 	rs, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "t")
 	if err != nil {
 		t.Fatalf("ResolveRelation: %v", err)
 	}
-	// Columns should be ordered by ordinal_position from the query
+	// Driver row order must be preserved; ordering is delegated to the catalog query.
 	if len(rs.Columns) != 3 {
 		t.Fatalf("columns: got %d, want 3", len(rs.Columns))
 	}
@@ -123,21 +105,53 @@ func TestQueryAccessResolver_ColumnListing(t *testing.T) {
 	}
 }
 
-func TestQueryAccessResolver_MissingTable(t *testing.T) {
+func TestQueryAccessConnResolver_ViewKind(t *testing.T) {
+	db := openQATestDB(t, map[string]testQueryResult{
+		"from information_schema.tables": {
+			columns: []string{"table_type"},
+			rows:    [][]driver.Value{{"VIEW"}},
+		},
+		"from information_schema.columns": {
+			columns: []string{"column_name", "ordinal_position"},
+			rows: [][]driver.Value{
+				{"id", int64(1)},
+				{"display_name", int64(2)},
+			},
+		},
+	})
+	defer db.Close()
+
+	resolver := newQAResolver(t, db)
+	rs, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "user_view")
+	if err != nil {
+		t.Fatalf("ResolveRelation: %v", err)
+	}
+	if rs.Kind != "view" {
+		t.Errorf("kind: got %q, want %q", rs.Kind, "view")
+	}
+	if !rs.IsView {
+		t.Error("IsView should be true for view")
+	}
+	if len(rs.Columns) != 2 {
+		t.Fatalf("columns: got %d, want 2", len(rs.Columns))
+	}
+}
+
+func TestQueryAccessConnResolver_MissingRelation(t *testing.T) {
 	db := openQATestDB(t, map[string]testQueryResult{})
 	defer db.Close()
 
-	resolver := NewQueryAccessResolver(db)
+	resolver := newQAResolver(t, db)
 	_, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "nonexistent")
 	if err == nil {
 		t.Fatal("expected error for missing table")
 	}
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("error should mention 'not found', got: %v", err)
+	if err.Error() != "relation not found" {
+		t.Errorf("error=%q, want exact conn text %q", err, "relation not found")
 	}
 }
 
-func TestQueryAccessResolver_MissingColumn(t *testing.T) {
+func TestQueryAccessConnResolver_EmptyColumns(t *testing.T) {
 	db := openQATestDB(t, map[string]testQueryResult{
 		"from information_schema.tables": {
 			columns: []string{"table_type"},
@@ -150,7 +164,7 @@ func TestQueryAccessResolver_MissingColumn(t *testing.T) {
 	})
 	defer db.Close()
 
-	resolver := NewQueryAccessResolver(db)
+	resolver := newQAResolver(t, db)
 	rs, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "empty_table")
 	if err != nil {
 		t.Fatalf("ResolveRelation: %v", err)
@@ -160,17 +174,20 @@ func TestQueryAccessResolver_MissingColumn(t *testing.T) {
 	}
 }
 
-func TestQueryAccessResolver_Cancellation(t *testing.T) {
+func TestQueryAccessConnResolver_Cancellation(t *testing.T) {
 	db := openQATestDB(t, map[string]testQueryResult{})
 	defer db.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	resolver := NewQueryAccessResolver(db)
+	resolver := newQAResolver(t, db)
 	_, err := resolver.ResolveRelation(ctx, "mysql", "app", "users")
 	if err == nil {
 		t.Fatal("expected error for canceled context")
+	}
+	if err.Error() != "resolve cancelled: context canceled" {
+		t.Errorf("error=%q, want exact conn text %q", err, "resolve cancelled: context canceled")
 	}
 }
 
@@ -180,21 +197,22 @@ func TestQueryAccessConnResolver_RejectsSystemView(t *testing.T) {
 			columns: []string{"table_type"},
 			rows:    [][]driver.Value{{"SYSTEM VIEW"}},
 		},
+		"from information_schema.columns": {
+			columns: []string{"column_name", "ordinal_position"},
+			rows: [][]driver.Value{
+				{"id", int64(1)},
+			},
+		},
 	})
 	defer db.Close()
 
-	conn, err := db.Conn(context.Background())
-	if err != nil {
-		t.Fatalf("db.Conn: %v", err)
-	}
-	defer conn.Close()
-
-	resolver, err := NewQueryAccessConnResolver(conn)
-	if err != nil {
-		t.Fatalf("NewQueryAccessConnResolver: %v", err)
-	}
-	if _, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "system_view"); err == nil {
+	resolver := newQAResolver(t, db)
+	_, err := resolver.ResolveRelation(context.Background(), "mysql", "app", "system_view")
+	if err == nil {
 		t.Fatal("system view was accepted as a physical relation")
+	}
+	if err.Error() != "unsupported relation type" {
+		t.Errorf("error=%q, want exact conn text %q", err, "unsupported relation type")
 	}
 }
 

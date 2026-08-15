@@ -24,6 +24,38 @@ issue closure by itself.
 - Map each row to an existing conn/core/live test or mark it genuinely unowned.
 - Review the table before deletion. Do not use a permanent custom checker.
 
+### Ownership Reconciliation (2026-08-16)
+
+PostgreSQL DB-backed adapter obligations (all cases in
+`TestQueryAccessResolvers_ResolveRelationContract` ran under a `db` factory):
+
+| Obligation | Retained owner after deletion |
+|---|---|
+| Base/partitioned/view/materialized-view kind mapping | Conn factory run of the same parameterized contract (`query_access_resolver_test.go`) |
+| Missing relation, foreign-table fail-closed | Conn factory run of the same contract |
+| Relation/column query, scan, iteration errors | Conn factory run of the same contract |
+| Cancellation (context checked before nil/closed handling) | `TestQueryAccessConnResolver_LifecycleContract` + cancellation row of the contract |
+| Nil constructor (`ErrSessionNotPinned`), nil receiver/closed conn (`ErrSessionClosed`), closed-conn query path | `TestQueryAccessConnResolver_LifecycleContract` |
+| Concrete `conn *sql.Conn` field, no `*sql.DB` field | `TestQueryAccessConnResolver_RetainsConcreteConnField` / `TestConnResolver_NoDBField` |
+| Same-session metadata + backend-PID proof | `query_access_conn_resolver_integration_test.go` (`TestSameConnectionPID_Proof`) |
+| Trusted-service promotion | `effect_identity_resolver_integration_test.go` migrated to pinned `session.Conn()` |
+
+MySQL/TiDB DB-backed adapter obligations (`query_access_resolver_test.go`):
+
+| Obligation | Deleted DB test | Retained/migrated owner |
+|---|---|---|
+| BASE TABLE kind + ordered columns | `TestQueryAccessResolver_TableExists`, `TestQueryAccessResolver_ColumnListing` | Migrated `TestQueryAccessConnResolver_TableKindAndColumns` |
+| VIEW kind + `IsView` | `TestQueryAccessResolver_ViewExists` | Migrated `TestQueryAccessConnResolver_ViewKind` |
+| Missing relation bounded error | `TestQueryAccessResolver_MissingTable` | Migrated `TestQueryAccessConnResolver_MissingRelation` (exact conn text `relation not found`) |
+| Empty column listing | `TestQueryAccessResolver_MissingColumn` | Migrated `TestQueryAccessConnResolver_EmptyColumns` |
+| Cancellation | `TestQueryAccessResolver_Cancellation` | Migrated `TestQueryAccessConnResolver_Cancellation` |
+| Unsupported relation kind fail-closed | (DB adapter returned `table` for unknown types) | Retained `TestQueryAccessConnResolver_RejectsSystemView` (`unsupported relation type`) |
+
+No MySQL DB-backed test asserted query/scan/iteration failure injection; the
+MySQL test driver has no error-injection path, so no such obligation exists to
+reconcile. No test asserted DB nil/pool-lifecycle behavior; those paths are
+being deleted, not characterized.
+
 ## 3. Establish RED Evidence
 
 - For each unowned durable obligation, add the smallest conn/core test and

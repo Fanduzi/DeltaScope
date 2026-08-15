@@ -50,8 +50,11 @@ func TestTrustedService_PG17CountStarE2E(t *testing.T) {
 		t.Fatalf("adapter: %v", err)
 	}
 
-	// 3) Build schema resolver from the same DB.
-	schemaResolver := NewQueryAccessResolver(db)
+	// 3) Build schema resolver from the pinned session connection.
+	schemaResolver, err := NewQueryAccessConnResolver(session.Conn())
+	if err != nil {
+		t.Fatalf("NewQueryAccessConnResolver: %v", err)
+	}
 
 	// 4) Build trust policy with PG17 manifest.
 	policy, err := appqa.NewTrustPolicy(appqa.NewPG17Manifest())
@@ -136,8 +139,11 @@ func TestTrustedService_PG17JoinComparisonE2E(t *testing.T) {
 		t.Fatalf("adapter: %v", err)
 	}
 
-	// 3) Build schema resolver from the same DB.
-	schemaResolver := NewQueryAccessResolver(db)
+	// 3) Build schema resolver from the pinned session connection.
+	schemaResolver, err := NewQueryAccessConnResolver(session.Conn())
+	if err != nil {
+		t.Fatalf("NewQueryAccessConnResolver: %v", err)
+	}
 
 	// 4) Build trust policy with PG17 manifest.
 	policy, err := appqa.NewTrustPolicy(appqa.NewPG17Manifest())
