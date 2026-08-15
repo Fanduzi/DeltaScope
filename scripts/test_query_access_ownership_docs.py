@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# input: current Query Access ownership implementation ledger and literal-operand ADR
+# output: static pass/fail evidence for semantic-owner reconciliation and ADR section consolidation
+# pos: focused documentation regression check for Query Access ownership remediation
+# note: if this file changes, update this header and scripts/README.md.
 """Static regression checks for Query Access ownership documentation."""
 
 import unittest
