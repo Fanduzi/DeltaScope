@@ -1,7 +1,7 @@
 # Decision: Assign Query Access Tests to One Evidence Owner
 
 - Date: 2026-08-15
-- Status: Proposed
+- Status: Accepted
 - Related: [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md), [Dialect session API deprecation](2026-08-14-query-access-dialect-session-api-deprecation.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [test consolidation issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-spec.md`
 - Design: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-design.md`
@@ -141,3 +141,18 @@ request-ID access logs, and response/log no-leak tests. The unified SDK remains
 the detailed semantic and probe-sequence owner. A temporary authorization
 bypass made `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` fail before the
 original guard was restored; the mutation is not committed.
+
+### Final remediation acceptance
+
+**Acceptance Evidence.** The fixed review candidate is
+`d50852b623b931316af5a6c77336944357a9be41`; the review range is
+`db4e73a19233d0475a480f2f333784d85f2d616a...d50852b623b931316af5a6c77336944357a9be41`.
+Fresh independent Standards and Spec reviews passed with no P0, P1, or P2.
+
+The forbidden custom checker and its README entry are absent; no checker,
+framework, or generator was added. The corrected ledger rows and single
+Evidence Maintenance section remain. The documentation RED→GREEN assertion is
+review-only uncommitted evidence in the implementation plan. Focused
+MySQL/TiDB and PG17 malformed tests plus decision, docs, three-level, tidy, and
+diff checks passed. No production, API, Makefile, workflow, fixture, version,
+or release surface changed.
