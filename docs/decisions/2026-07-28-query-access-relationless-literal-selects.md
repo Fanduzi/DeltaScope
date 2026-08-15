@@ -125,4 +125,4 @@ Issue #14 clarifies that the earlier live test name
 `TestLiveProfile_AssertsVersionAndAdmitsAggregates` was renamed and retained as
 `TestLiveUnifiedSession_AssertsVersionAndSemanticMatrix`; the removed CLI and
 HTTP `TestQueryAccessOnline_MixedLiteralScalars` matrices are not retained.
-The authoritative deleted-declaration mapping is the [ownership ledger](2026-08-15-query-access-test-ownership-consolidation.md).
+The authoritative deleted-declaration mapping is the [implementation ledger](../plans/2026-08-15-query-access-test-ownership-consolidation-implementation.md).

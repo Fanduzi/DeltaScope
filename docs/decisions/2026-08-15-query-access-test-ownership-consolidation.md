@@ -138,19 +138,3 @@ request-ID access logs, and response/log no-leak tests. The unified SDK remains
 the detailed semantic and probe-sequence owner. A temporary authorization
 bypass made `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` fail before the
 original guard was restored; the mutation is not committed.
-
-### Final remediation acceptance
-
-**Acceptance Evidence.** The fixed review candidate is
-`d1d678e389dfac77d7f4b75be4c4439d3583d83a`; the review range is
-`db4e73a19233d0475a480f2f333784d85f2d616a...d1d678e389dfac77d7f4b75be4c4439d3583d83a`.
-Fresh independent Standards review passed. Spec/security review identified the
-stale predecessor candidate field, resolved by this entry; no P0, P1, or P2
-remains.
-
-The PG17 malformed parser-path assertion was RED for a parsed FILTER shape,
-then GREEN with a malformed parser-failure shape; the MySQL/TiDB shared-path
-case was GREEN. Default/tagged suites,
-focused default/tagged/race/live checks, corpus, Docker, TLS, build, vet, lint,
-npm, docs, decision, formatting, tidy, and diff gates passed. No production,
-public API, Makefile, workflow, fixture, version, or release surface changed.
