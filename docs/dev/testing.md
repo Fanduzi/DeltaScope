@@ -21,12 +21,12 @@ Local `make build` now produces PostgreSQL-capable `deltascope`, `deltascope-ser
 
 ## Query Access Test Ownership
 
-The unified SDK session is the intended exhaustive semantic owner for MySQL 5.7/8.0/8.4,
-TiDB 8.5, and PostgreSQL 17. Until the milestone ledger identifies complete
-unified replacement evidence, existing semantic rows remain retained. Add a new
-SQL shape, capability profile, exact admission/result, detailed identity/catalog
-probe, or user-SQL no-execution case at the unified SDK seam. The Query Access
-corpus remains the offline semantic owner.
+The unified SDK session is the exhaustive semantic owner for MySQL 5.7/8.0/8.4,
+TiDB 8.5, and PostgreSQL 17. The accepted milestone ledger records the complete
+replacement evidence for its authorized deletions. Add a new SQL shape,
+capability profile, exact admission/result, detailed identity/catalog probe, or
+user-SQL no-execution case at the unified SDK seam. The Query Access corpus
+remains the offline semantic owner.
 
 | Evidence | Owner | Do not replace with |
 |---|---|---|

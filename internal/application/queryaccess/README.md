@@ -75,7 +75,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 ## Notes
 
-- The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth only after the ledger records complete replacement evidence.
+- The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth, with complete replacement evidence recorded in the accepted milestone ledger.
 - `QueryAccessResult` wraps the domain `Result` for application-layer consumption.
 - `QueryAccessRequest.Mode` is a string that the domain layer normalizes via `NormalizeMode`.
 - `ExtractTiDBQueryAccess` computes admission from read classification: read_only → admissible, not_read_only → rejected, indeterminate → indeterminate.
