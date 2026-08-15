@@ -105,3 +105,11 @@ service → SDK/CLI/HTTP → Docker live e2e), plus no-leak and no-exec proofs.
   (`pkg/deltascope/query_access_session_mysql_tidb_live_e2e_test.go`), and the
   integration `TestQueryAccessOnline_MixedLiteralScalars` suites in the CLI and
   HTTP interfaces across MySQL 5.7/8.0/8.4 and TiDB 8.5.
+
+### Evidence Maintenance (2026-08-15)
+
+Issue #12 removed the CLI `TestQueryAccessOnline_MixedLiteralScalars` matrix
+because the unified SDK owns its product/profile/shape semantics. The retained
+CLI evidence is `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for MySQL 8.4
+and TiDB 8.5 real-route admitted/fail-closed behavior plus
+`TestQueryAccessOnline_DefaultOffline`; the HTTP matrix remains unchanged.

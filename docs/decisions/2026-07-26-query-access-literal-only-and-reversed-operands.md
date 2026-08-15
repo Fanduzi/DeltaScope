@@ -159,3 +159,12 @@ go mod tidy && git diff --exit-code go.mod go.sum
 - `COALESCE` with 3+ operands
 - PostgreSQL literal operands
 - Nested expressions, casts, parameters, UDFs, quoted/qualified calls
+
+### Evidence Maintenance (2026-08-15)
+
+Issue #12 removed the CLI `TestQueryAccessOnline_MixedLiteralScalars` matrix
+because the unified SDK owns its product/profile/shape semantics. The retained
+CLI evidence is `TestQueryAccessOnline_BuiltBinaryTransportSmoke` for MySQL 8.4
+and TiDB 8.5 real-route admitted/fail-closed behavior plus
+`TestQueryAccessOnline_DefaultOffline`; the HTTP matrix remains unchanged.
+
