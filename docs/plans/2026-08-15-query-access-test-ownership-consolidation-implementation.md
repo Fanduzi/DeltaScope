@@ -226,6 +226,61 @@ unlisted candidate.
 - `go test -tags integration ./pkg/deltascope -run 'TestLiveUnifiedSession_(AssertsVersionAndSemanticMatrix|MatchesDialectSpecificForAllProfiles)' -count=1` passed against the existing MySQL 5.7/8.0/8.4 and TiDB 8.5 Docker fixtures.
 - `CGO_ENABLED=1 go test -tags 'postgresql integration' ./pkg/deltascope -run 'TestUnifiedSession_(PostgreSQLCountOneAdmissible|PostgreSQLSemanticMatrix|PostgreSQLExcludedShapesRemainIndeterminate|PostgreSQLForeignTableFailClosed|MatchesLegacyPG17)' -count=1` passed against the existing PG17 Docker fixture.
 
+### Issue #14 Final Reconciliation
+
+The final `db4e73a...HEAD` diff was reconciled against every row in the
+row-by-row ledger above. Every removed test/table row has its named retained
+unified semantic owner and, where the row observes an external boundary, its
+named CLI, HTTP, deprecated-API, or MCP owner. No production, public API,
+Makefile, workflow, fixture, version, or release file appears in that diff.
+The offline corpus remains 208 files / 2,568 lines (104 SQL fixtures).
+
+The following descriptive inventory uses the same static measure as the
+baseline: test-file lines, named `Test...` declarations, and `t.Run` sites.
+It records evidence movement only; it is not a deletion or runtime KPI.
+
+| Focused evidence area | Baseline (files / lines / named / `t.Run`) | Final (files / lines / named / `t.Run`) |
+|---|---:|---:|
+| Unified and deprecated SDK | 17 / 5,881 / 103 / 37 | 17 / 5,186 / 88 / 30 |
+| CLI adapter | 7 / 1,723 / 28 / 16 | 7 / 1,428 / 28 / 6 |
+| HTTP adapter | 7 / 2,610 / 38 / 18 | 7 / 2,266 / 40 / 9 |
+| MCP no-surface, CLI real binary, HTTP real binary, and corpus | unchanged ownership | unchanged ownership |
+
+Five sequential, uncommitted production mutations each made its retained owner
+RED; each source file was restored immediately and `git diff --exit-code` for
+the mutated path passed before the next probe. No mutation code, helper,
+dependency, or report is committed.
+
+| Probe | Temporary mutation | RED retained owner |
+|---|---|---|
+| Unified SDK shape admission | Marked the MySQL/TiDB unknown-function shape admissible | `TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/unknown` |
+| CLI exit mapping | Returned the rejected exit code for indeterminate admission | `TestQueryAccessOnline_DefaultOffline` |
+| HTTP authorization/zero-dial | Bypassed the `query_access` registry authorization branch | `TestHandlerQueryAccessOnlineGuardPathsOpenNothing` |
+| PG foreign-table fail-closed | Allowed relkind `f` past the PostgreSQL relation-kind guard | `TestOnlineQueryAccessSession_PostgreSQLForeignTableFailClosed` |
+| Deprecated wrapper stored target | Overwrote only `NewMySQLTiDBQueryAccessSessionFromConn`'s derived stored target; the unified route and shared mapper were unchanged | `TestLiveUnifiedSession_MatchesDialectSpecificForAllProfiles` |
+
+After restoration, all five focused owners passed; the fifth used the existing
+`docker/query-access-builtin-compose.yaml` fixture. The unchanged required
+matrix then passed with these one-run wall-clock measurements (descriptive
+only):
+
+| Gate | Result / wall clock |
+|---|---:|
+| `make test`; `CGO_ENABLED=1 go test -tags postgresql ./...` | pass / 4s; pass / 3s |
+| Default and PostgreSQL-tagged focused race suites | pass / 4s; pass / 5s |
+| `make query-access-corpus-gates`; `make pg-unit-test-gates` | pass / 2s; pass / 6s |
+| `make test-e2e-cli`; HTTP MySQL/TiDB; MCP MySQL/TiDB | pass / 28s; pass / 33s; pass / 23s |
+| `make pg-confidence-gates` | pass / 67s |
+| CLI TLS; HTTP TLS; CLI TLS lifecycle regression | pass / 16s; pass / 46s; pass / 33s |
+| `make build`; default/tagged `go vet`; `make lint` | pass / 1s; pass / 1s each; pass / 5s |
+| `npm test --prefix packages/deltascope-mcp` | pass / 1s |
+| Docs examples; decision record; gofmt; `go mod tidy`; tidy diff; three-level-doc; `git diff --check db4e73a...HEAD` | all pass / under 1s each |
+
+The required Docker matrix exercised the existing 14 standard stack lifecycles:
+one builtin SDK fixture, two each for CLI/HTTP/MCP MySQL/TiDB metadata, three
+PostgreSQL confidence surfaces, CLI TLS, HTTP TLS, and two CLI TLS lifecycle
+runs. No target, fixture, script, or Docker invocation was changed.
+
 ## 3. Make Unified SDK Evidence Complete
 
 - Fill only gaps identified by the ledger; do not copy transport helpers or add
