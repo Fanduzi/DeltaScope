@@ -1,10 +1,10 @@
 //go:build integration
 
 // Package cli verifies online Query Access through a built deltascope binary
-// against MySQL 8.4 and TiDB 8.5 containers.
-// input: built CLI invocations pointed at MySQL 8.4 and TiDB 8.5 containers
-// output: real-route admitted and fail-closed CLI result, exit-code, and no-leak evidence
-// pos: Docker-backed CLI real-route Query Access smoke coverage
+// against MySQL 8.4 and TiDB 8.5 containers, plus the CLI default/offline path.
+// input: built CLI invocations pointed at MySQL 8.4 and TiDB 8.5 containers, and offline query-access invocations without connection flags
+// output: real-route admitted and fail-closed CLI result, exit-code, and no-leak evidence; offline indeterminate exit/result and no-leak evidence
+// pos: Docker-backed CLI real-route Query Access smoke and default/offline transport coverage
 // note: if this file changes, update this header and module README.md.
 package cli
 

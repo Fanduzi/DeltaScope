@@ -153,11 +153,12 @@ fixture, script, or Makefile changed.
 
 ### Row-by-Row Deletion Ledger
 
-All rows are **retain** during Issue #10; no row currently authorizes a
+All rows were **retain** during Issue #10; no row then authorized a
 deletion. `Blocked` identifies a missing unified owner. `Non-substitutable`
-identifies boundary evidence that must remain. Retained-owner rows are baseline
+identifies boundary evidence that must remain. Retained-owner rows were baseline
 inventory only, not replacement authorization: a later issue must replace each
 with exact test/subtest identifiers and focused green evidence before deletion.
+Issue #11 and #12 recorded those replacements on the rows they deleted.
 
 | Current row or table | Current behavior | Unified semantic evidence | Boundary / compatibility evidence | Status |
 |---|---|---|---|---|
