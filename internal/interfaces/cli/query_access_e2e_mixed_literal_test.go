@@ -126,3 +126,27 @@ func TestQueryAccessOnline_BuiltBinaryTransportSmoke(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryAccessOnline_DefaultOffline(t *testing.T) {
+	const marker = "CLI_DEFAULT_OFFLINE_MARKER"
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze",
+		"--sql", "SELECT COUNT(1) /* " + marker + " */ FROM app.builtin_semantic_facts",
+		"--dialect", "mysql",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+	if exitCode != exitQueryAccessIndeterminate {
+		t.Fatalf("offline exit code: got %d, want %d; stdout=%s stderr=%s", exitCode, exitQueryAccessIndeterminate, stdout.String(), stderr.String())
+	}
+
+	var result deltascope.QueryAccessResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatalf("decode offline CLI output: %v; stdout=%s", err, stdout.String())
+	}
+	if result.ReadClassification != deltascope.QueryAccessIndeterminate || result.Admission != deltascope.QueryAccessIndeterminateAdmission {
+		t.Fatalf("offline result: classification=%s admission=%s, want indeterminate/indeterminate", result.ReadClassification, result.Admission)
+	}
+	if strings.Contains(stdout.String()+stderr.String(), marker) {
+		t.Fatalf("offline CLI leaked SQL marker: stdout=%s stderr=%s", stdout.String(), stderr.String())
+	}
+}

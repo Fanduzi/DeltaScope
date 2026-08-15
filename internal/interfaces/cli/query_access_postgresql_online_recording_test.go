@@ -2,7 +2,7 @@
 
 // Package cli verifies the PostgreSQL online query-access transport boundary.
 // input: CLI query-access invocation and a recording database/sql driver
-// output: PG17 COUNT(1) admission and bounded constructor cancellation/closed-session failures without SDK-owned detailed probe assertions; no submitted SQL or sensitive data leakage
+// output: PG17 COUNT(1) admission, one-close no-execution/no-leak adapter evidence, and bounded cancellation/closed-session/connection/catalog failures without SDK-owned detailed probe assertions
 // pos: adapter-level proof that the CLI delegates to the unified online session contract
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -160,7 +160,7 @@ func TestCLIOnlinePG17_CountIntegerOne_Recording(t *testing.T) {
 		t.Fatal("expected recording driver operations")
 	}
 	for _, operation := range operations {
-		if strings.Contains(operation, marker) {
+		if strings.Contains(operation, marker) || strings.Contains(strings.ToLower(operation), "select count(1)") {
 			t.Fatalf("submitted SQL reached driver: %q", operation)
 		}
 		if strings.Contains(strings.ToUpper(operation), "EXPLAIN") {
