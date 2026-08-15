@@ -1,7 +1,7 @@
 # Decision: Assign Query Access Tests to One Evidence Owner
 
 - Date: 2026-08-15
-- Status: Proposed
+- Status: Accepted
 - Related: [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md), [Dialect session API deprecation](2026-08-14-query-access-dialect-session-api-deprecation.md), [PG17 online surface contract](2026-08-03-query-access-pg17-count-online-surface-contract.md), [test consolidation issue #4](https://github.com/Fanduzi/DeltaScope/issues/4)
 - Spec: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-spec.md`
 - Design: `docs/plans/2026-08-15-query-access-test-ownership-consolidation-design.md`
