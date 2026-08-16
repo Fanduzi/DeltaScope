@@ -1,3 +1,8 @@
+// Package queryaccess tests the builtin semantic gateway proof and its reason ownership.
+// input: MySQL/TiDB effect candidates and fixture semantic manifests
+// output: all_proven only for exact candidate closure with complete physical requirements; residual reasons preserved
+// pos: builtin semantic proof gateway unit coverage
+// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (
