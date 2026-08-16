@@ -168,7 +168,6 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 
 	pgUnproven := []domain.ReasonCode{domain.ReasonUnprovenFunctionEffect, domain.ReasonUnprovenOperatorEffect}
 	mysqlUnproven := []domain.ReasonCode{"function_call", domain.ReasonFunctionEffect}
-	mysqlOwned := []domain.ReasonCode{"function_call", domain.ReasonFunctionEffect}
 	residual := []domain.ReasonCode{"residual_reason"}
 
 	pgResult := func(candidates []EffectCandidate, codes []domain.ReasonCode, requirements []domain.Requirement, exactCountOne bool, relations ...domain.RelationReference) QueryAccessResult {
@@ -222,7 +221,6 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 		extracted      QueryAccessResult
 		probe          *mockControlledResolver
 		wantAllows     bool
-		wantRemoved    []domain.ReasonCode
 		wantKept       []domain.ReasonCode
 		wantProbeCalls int
 	}{
@@ -231,35 +229,35 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 			service: trusted, probe: proven,
 			req:        QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted:  pgResult([]EffectCandidate{orchestrationCountStarCandidate()}, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), nil, false),
-			wantAllows: true, wantRemoved: pgUnproven, wantKept: residual, wantProbeCalls: 1,
+			wantAllows: true, wantKept: residual, wantProbeCalls: 1,
 		},
 		{
 			name:    "pg_exact_count_one_requirements_complete",
 			service: trustedCountOne, probe: provenCountOne,
 			req:        QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted:  pgResult([]EffectCandidate{orchestrationCountOneCandidate()}, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), oneRequirement, true),
-			wantAllows: true, wantRemoved: pgUnproven, wantKept: residual, wantProbeCalls: 1,
+			wantAllows: true, wantKept: residual, wantProbeCalls: 1,
 		},
 		{
 			name:    "pg_exact_count_one_requirements_missing_fail_closed_no_probe",
 			service: trustedCountOne, probe: provenCountOne,
 			req:        QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted:  pgResult([]EffectCandidate{orchestrationCountOneCandidate()}, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), nil, true),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
 		},
 		{
 			name:    "pg_proof_unproven_removes_none",
 			service: trustedUnproven, probe: unprovenResolver,
 			req:        QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted:  pgResult([]EffectCandidate{orchestrationCountStarCandidate()}, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), nil, false),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 1,
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 1,
 		},
 		{
 			name:    "pg_no_candidates_never_vacuous",
 			service: trusted, probe: proven,
 			req:        QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted:  pgResult(nil, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), nil, false),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
 		},
 		{
 			name:    "pg_unqualified_barrier_fail_closed_no_probe",
@@ -267,7 +265,7 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 			req: QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted: pgResult([]EffectCandidate{orchestrationCountStarCandidate()}, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), nil, false,
 				[]domain.RelationReference{{Name: "users", Kind: domain.RelationTable, PermissionRequired: true}}...),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
 		},
 		{
 			name:    "pg_view_barrier_fail_closed_no_probe",
@@ -275,28 +273,28 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 			req: QueryAccessRequest{Dialect: "postgresql", AnalysisProfile: AnalysisProfileEmpty},
 			extracted: pgResult([]EffectCandidate{orchestrationCountStarCandidate()}, append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), nil, false,
 				[]domain.RelationReference{{Schema: "public", Name: "users", Kind: domain.RelationView, PermissionRequired: true}}...),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), pgUnproven...), residual...), wantProbeCalls: 0,
 		},
 		{
 			name:       "mysql_candidates_all_proven_removes_only_owned",
 			service:    fixture,
 			req:        QueryAccessRequest{Dialect: "mysql", AnalysisProfile: AnalysisProfileMySQL57},
 			extracted:  mysqlResult([]EffectCandidate{builtinTestCandidate()}, append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...), mysqlRequirement),
-			wantAllows: true, wantRemoved: mysqlOwned, wantKept: residual,
+			wantAllows: true, wantKept: residual,
 		},
 		{
 			name:       "mysql_candidates_unproven_removes_none",
 			service:    fixture,
 			req:        QueryAccessRequest{Dialect: "mysql", AnalysisProfile: AnalysisProfileMySQL57},
 			extracted:  mysqlResult([]EffectCandidate{distinctCount()}, append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...), mysqlRequirement),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...),
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...),
 		},
 		{
 			name:       "mysql_no_candidates_proof_not_required",
 			service:    fixture,
 			req:        QueryAccessRequest{Dialect: "mysql", AnalysisProfile: AnalysisProfileMySQL57},
 			extracted:  mysqlResult(nil, append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...), mysqlRequirement),
-			wantAllows: true, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...),
+			wantAllows: true, wantKept: append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...),
 		},
 		{
 			name:    "mysql_view_barrier_fail_closed",
@@ -304,7 +302,7 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 			req:     QueryAccessRequest{Dialect: "mysql", AnalysisProfile: AnalysisProfileMySQL57},
 			extracted: mysqlResult([]EffectCandidate{builtinTestCandidate()}, append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...), mysqlRequirement,
 				[]domain.RelationReference{{Schema: "app", Name: "users", Kind: domain.RelationView, PermissionRequired: true}}...),
-			wantAllows: false, wantRemoved: nil, wantKept: append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...),
+			wantAllows: false, wantKept: append(append([]domain.ReasonCode(nil), mysqlUnproven...), residual...),
 		},
 	}
 	for _, tt := range tests {
@@ -317,11 +315,8 @@ func TestProofOrchestrationContract_OrchestrationOwned(t *testing.T) {
 			if got.allowsPromotion != tt.wantAllows {
 				t.Errorf("allowsPromotion = %v, want %v", got.allowsPromotion, tt.wantAllows)
 			}
-			if !slices.Equal(got.reasonCodes, tt.wantRemoved) {
-				t.Errorf("removed = %v, want %v", got.reasonCodes, tt.wantRemoved)
-			}
 			if !slices.Equal(tt.extracted.DomainResult.ReasonCodes, tt.wantKept) {
-				t.Errorf("kept = %v, want %v", tt.extracted.DomainResult.ReasonCodes, tt.wantKept)
+				t.Errorf("kept reasons = %v, want %v (owned removal must leave exactly the residual set)", tt.extracted.DomainResult.ReasonCodes, tt.wantKept)
 			}
 			if tt.probe != nil && tt.probe.ctxCalled-before != tt.wantProbeCalls {
 				t.Errorf("CaptureExecutionBoundContext delta = %d, want %d", tt.probe.ctxCalled-before, tt.wantProbeCalls)

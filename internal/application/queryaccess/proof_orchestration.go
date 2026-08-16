@@ -11,16 +11,13 @@ import (
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
 
-// promotionProof carries only what the common pipeline needs after proof
-// orchestration: whether proof permits the common promotion checks to
-// continue, and the bounded set of owned reason codes a successful proof
-// removed. reasonCodes exists for the reason-ownership audit (successful
-// proof removes only its owned codes; failed or inapplicable proof removes
-// none); the pipeline consumes only allowsPromotion. It is not public, not
-// serialized, and not an extensibility point.
+// promotionProof carries the single fact the common pipeline needs after
+// proof orchestration: whether proof permits the common promotion checks to
+// continue. It is not public, not serialized, and not an extensibility point.
+// Proof-specific reason removal happens inside orchestration; the common
+// pipeline and tests observe only the resulting kept reason set.
 type promotionProof struct {
 	allowsPromotion bool
-	reasonCodes     []domain.ReasonCode
 }
 
 // orchestratePromotionProof is the single application sequencing point for
@@ -66,10 +63,8 @@ func (s *Service) orchestratePromotionProof(ctx context.Context, req QueryAccess
 		if proof == nil || proof.decision != TrustDecisionAllProven {
 			return result
 		}
-		kept, removed := removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
-		extracted.DomainResult.ReasonCodes = kept
+		extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
 		result.allowsPromotion = true
-		result.reasonCodes = removed
 		return result
 	case "mysql", "tidb":
 		if len(candidates) == 0 {
@@ -93,10 +88,8 @@ func (s *Service) orchestratePromotionProof(ctx context.Context, req QueryAccess
 		if proof.decision != builtinSemanticAllProven {
 			return result
 		}
-		kept, removed := removeBuiltinSemanticReason(extracted.DomainResult.ReasonCodes)
-		extracted.DomainResult.ReasonCodes = kept
+		extracted.DomainResult.ReasonCodes = removeBuiltinSemanticReason(extracted.DomainResult.ReasonCodes)
 		result.allowsPromotion = true
-		result.reasonCodes = removed
 		return result
 	default:
 		return result

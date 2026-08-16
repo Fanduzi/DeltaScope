@@ -227,7 +227,6 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	extracted.DomainResult.Requirements = domain.SortRequirements(extracted.DomainResult.Requirements)
 	// Outputs preserve SELECT declaration order — do NOT sort.
 	extracted.DomainResult.Unresolved = domain.SortUnresolved(extracted.DomainResult.Unresolved)
-	extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
 	extracted.DomainResult.Warnings = domain.SortWarningCodes(extracted.DomainResult.Warnings)
 
 	if err := domain.ValidateResult(&extracted.DomainResult); err != nil {
@@ -353,34 +352,32 @@ func extractServerVersionFromBatch(batch EffectIdentityBatch) int {
 
 // removeUnprovenEffectReasons removes unproven effect reason codes when
 // manifest proof succeeds. These codes are no longer needed because the
-// effects are now proven. It reports the bounded set actually removed.
-func removeUnprovenEffectReasons(codes []domain.ReasonCode) (kept []domain.ReasonCode, removed []domain.ReasonCode) {
-	kept = make([]domain.ReasonCode, 0, len(codes))
-	removed = make([]domain.ReasonCode, 0, 3)
+// effects are now proven.
+func removeUnprovenEffectReasons(codes []domain.ReasonCode) []domain.ReasonCode {
+	kept := make([]domain.ReasonCode, 0, len(codes))
 	for _, code := range codes {
 		switch code {
 		case domain.ReasonUnprovenOperatorEffect, domain.ReasonUnprovenFunctionEffect, domain.ReasonUnprovenCastEffect:
 			// Skip unproven reasons when proof succeeds.
-			removed = append(removed, code)
+			continue
 		default:
 			kept = append(kept, code)
 		}
 	}
-	return kept, removed
+	return kept
 }
 
-func removeBuiltinSemanticReason(codes []domain.ReasonCode) (kept []domain.ReasonCode, removed []domain.ReasonCode) {
-	kept = make([]domain.ReasonCode, 0, len(codes))
-	removed = make([]domain.ReasonCode, 0, 2)
+func removeBuiltinSemanticReason(codes []domain.ReasonCode) []domain.ReasonCode {
+	kept := make([]domain.ReasonCode, 0, len(codes))
 	for _, code := range codes {
 		switch code {
 		case domain.ReasonFunctionEffect, domain.ReasonCode("function_call"):
-			removed = append(removed, code)
+			continue
 		default:
 			kept = append(kept, code)
 		}
 	}
-	return kept, removed
+	return kept
 }
 
 func extractByDialect(ctx context.Context, req QueryAccessRequest) (QueryAccessResult, error) {
