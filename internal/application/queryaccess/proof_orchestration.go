@@ -13,8 +13,11 @@ import (
 
 // promotionProof carries only what the common pipeline needs after proof
 // orchestration: whether proof permits the common promotion checks to
-// continue, and the bounded set of reason codes a successful proof removed.
-// It is not public, not serialized, and not an extensibility point.
+// continue, and the bounded set of owned reason codes a successful proof
+// removed. reasonCodes exists for the reason-ownership audit (successful
+// proof removes only its owned codes; failed or inapplicable proof removes
+// none); the pipeline consumes only allowsPromotion. It is not public, not
+// serialized, and not an extensibility point.
 type promotionProof struct {
 	allowsPromotion bool
 	reasonCodes     []domain.ReasonCode
