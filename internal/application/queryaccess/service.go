@@ -182,32 +182,8 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		extracted.DomainResult.ReasonCodes = append(extracted.DomainResult.ReasonCodes, domain.ReasonFunctionEffect)
 	}
 
-	var proofResult *trustProofResult
-	var builtinProof *builtinSemanticProofResult
-	if !hasUnqualified && !hasView && req.Dialect == "postgresql" && s != nil && s.trusted != nil && len(extracted.EffectCandidates) > 0 {
-		if !hasExactCountIntegerOneCandidate(extracted.EffectCandidates) {
-			proofResult = s.resolveAndProveEffects(ctx, req, extracted)
-			if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
-				extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
-			}
-		}
-	}
-
-	extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
-
-	hasResolver := schemaResolver != nil
-	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, hasResolver)
-	extracted.DomainResult.ReadClassification = reclassifyAfterResolution(
-		extracted.DomainResult.ReadClassification,
-		extracted.DomainResult.ReasonCodes,
-		extracted.DomainResult.Unresolved,
-		hasResolver,
-		req.Dialect,
-		proofResult,
-	)
-	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Admission, extracted.DomainResult.Unresolved, hasResolver)
-
-	// Build requirements based on mode
+	// Build requirements before every Effect Proof: physical requirement
+	// completeness precedes any proof-based promotion.
 	reqs, warnings, _, reqErr := buildRequirements(
 		extracted.DomainResult.Mode,
 		extracted.DomainResult.Relations,
@@ -221,67 +197,30 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	extracted.DomainResult.Requirements = reqs
 	extracted.DomainResult.Warnings = append(extracted.DomainResult.Warnings, warnings...)
 
-	if !hasUnqualified && !hasView && req.Dialect == "postgresql" && s != nil && s.trusted != nil &&
-		hasExactCountIntegerOneCandidate(extracted.EffectCandidates) {
-		if countIntegerOneRequirementsComplete(
-			extracted.DomainResult,
-			extracted.DomainResult.Requirements,
-			extracted.EffectCandidates,
-			extracted.ExactCountIntegerOneStatement,
-		) {
-			proofResult = s.resolveAndProveEffects(ctx, req, extracted)
-			if proofResult != nil && proofResult.decision == TrustDecisionAllProven {
-				extracted.DomainResult.ReasonCodes = removeUnprovenEffectReasons(extracted.DomainResult.ReasonCodes)
-			}
-		} else {
-			proofResult = &trustProofResult{decision: TrustDecisionHasUnproven}
-		}
-		extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
-		extracted.DomainResult.ReadClassification = reclassifyAfterResolution(
-			extracted.DomainResult.ReadClassification,
-			extracted.DomainResult.ReasonCodes,
-			extracted.DomainResult.Unresolved,
-			hasResolver,
-			req.Dialect,
-			proofResult,
-		)
-		extracted.DomainResult.Admission = recomputeAdmission(
-			extracted.DomainResult.ReadClassification,
-			extracted.DomainResult.Admission,
-			extracted.DomainResult.Unresolved,
-			hasResolver,
-		)
-	}
+	// One orchestration point for ordinary PostgreSQL manifest proof, exact
+	// PostgreSQL COUNT(1) proof, MySQL/TiDB builtin proof, and the no-effect
+	// applicability rule. Proof-specific reason removal happens here; the
+	// common pipeline consumes only the permission fact.
+	proof := s.orchestratePromotionProof(ctx, req, &extracted)
 
-	if s != nil && s.builtinSemantic != nil && !hasView && (req.Dialect == "mysql" || req.Dialect == "tidb") && len(extracted.EffectCandidates) > 0 {
-		proof := proveBuiltinSemantics(
-			req.AnalysisProfile,
-			req.Dialect,
-			extracted.EffectCandidates,
-			extracted.DomainResult,
-			extracted.DomainResult.Requirements,
-			s.builtinSemantic.registry,
-		)
-		builtinProof = &proof
-		if proof.decision == builtinSemanticAllProven {
-			extracted.DomainResult.ReasonCodes = removeBuiltinSemanticReason(extracted.DomainResult.ReasonCodes)
-		}
-		extracted.DomainResult.ReadClassification = reclassifyAfterResolution(
-			extracted.DomainResult.ReadClassification,
-			extracted.DomainResult.ReasonCodes,
-			extracted.DomainResult.Unresolved,
-			hasResolver,
-			req.Dialect,
-			proofResult,
-			builtinProof,
-		)
-		extracted.DomainResult.Admission = recomputeAdmission(
-			extracted.DomainResult.ReadClassification,
-			extracted.DomainResult.Admission,
-			extracted.DomainResult.Unresolved,
-			hasResolver,
-		)
-	}
+	// Final state: normalize reasons, reclassify reads, and recompute
+	// admission once each.
+	extracted.DomainResult.ReasonCodes = domain.NormalizeReasonCodes(extracted.DomainResult.ReasonCodes)
+
+	hasResolver := schemaResolver != nil
+	extracted.DomainResult.ReadClassification = reclassifyAfterResolution(
+		extracted.DomainResult.ReadClassification,
+		extracted.DomainResult.ReasonCodes,
+		extracted.DomainResult.Unresolved,
+		hasResolver,
+		proof.allowsPromotion,
+	)
+	extracted.DomainResult.Admission = recomputeAdmission(
+		extracted.DomainResult.ReadClassification,
+		extracted.DomainResult.Admission,
+		extracted.DomainResult.Unresolved,
+		hasResolver,
+	)
 
 	extracted.DomainResult.Relations = domain.SortRelations(extracted.DomainResult.Relations)
 	extracted.DomainResult.ReferencedColumns = domain.SortColumns(extracted.DomainResult.ReferencedColumns)
@@ -414,32 +353,34 @@ func extractServerVersionFromBatch(batch EffectIdentityBatch) int {
 
 // removeUnprovenEffectReasons removes unproven effect reason codes when
 // manifest proof succeeds. These codes are no longer needed because the
-// effects are now proven.
-func removeUnprovenEffectReasons(codes []domain.ReasonCode) []domain.ReasonCode {
-	result := make([]domain.ReasonCode, 0, len(codes))
+// effects are now proven. It reports the bounded set actually removed.
+func removeUnprovenEffectReasons(codes []domain.ReasonCode) (kept []domain.ReasonCode, removed []domain.ReasonCode) {
+	kept = make([]domain.ReasonCode, 0, len(codes))
+	removed = make([]domain.ReasonCode, 0, 3)
 	for _, code := range codes {
 		switch code {
 		case domain.ReasonUnprovenOperatorEffect, domain.ReasonUnprovenFunctionEffect, domain.ReasonUnprovenCastEffect:
 			// Skip unproven reasons when proof succeeds.
-			continue
+			removed = append(removed, code)
 		default:
-			result = append(result, code)
+			kept = append(kept, code)
 		}
 	}
-	return result
+	return kept, removed
 }
 
-func removeBuiltinSemanticReason(codes []domain.ReasonCode) []domain.ReasonCode {
-	result := make([]domain.ReasonCode, 0, len(codes))
+func removeBuiltinSemanticReason(codes []domain.ReasonCode) (kept []domain.ReasonCode, removed []domain.ReasonCode) {
+	kept = make([]domain.ReasonCode, 0, len(codes))
+	removed = make([]domain.ReasonCode, 0, 2)
 	for _, code := range codes {
 		switch code {
 		case domain.ReasonFunctionEffect, domain.ReasonCode("function_call"):
-			continue
+			removed = append(removed, code)
 		default:
-			result = append(result, code)
+			kept = append(kept, code)
 		}
 	}
-	return result
+	return kept, removed
 }
 
 func extractByDialect(ctx context.Context, req QueryAccessRequest) (QueryAccessResult, error) {
@@ -481,7 +422,13 @@ func recomputeAdmission(classification domain.ReadClassification, current domain
 	return domain.IndeterminateAdmission
 }
 
-func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool, dialect string, proof *trustProofResult, builtinProof ...*builtinSemanticProofResult) domain.ReadClassification {
+// reclassifyAfterResolution applies the common promotion checks to an
+// indeterminate classification. allowsPromotion is the single fact produced by
+// proof orchestration: PostgreSQL requires an applicable all_proven manifest
+// proof, MySQL/TiDB with effect candidates require successful builtin proof,
+// and MySQL/TiDB without candidates require no proof. Remaining reasons,
+// wildcard unresolved facts, or a missing resolver still fail closed.
+func reclassifyAfterResolution(classification domain.ReadClassification, reasonCodes []domain.ReasonCode, unresolved []domain.Unresolved, hasResolver bool, allowsPromotion bool) domain.ReadClassification {
 	if classification != domain.Indeterminate {
 		return classification
 	}
@@ -490,18 +437,7 @@ func reclassifyAfterResolution(classification domain.ReadClassification, reasonC
 		return classification
 	}
 
-	// PostgreSQL: promote only if manifest proof is all_proven.
-	if dialect == "postgresql" {
-		if proof == nil {
-			return domain.Indeterminate
-		}
-		if proof.decision != TrustDecisionAllProven {
-			return domain.Indeterminate
-		}
-		// All effects manifest-proven; check other preconditions.
-		// Fall through to common checks below.
-	}
-	if (dialect == "mysql" || dialect == "tidb") && len(builtinProof) > 0 && (builtinProof[0] == nil || builtinProof[0].decision != builtinSemanticAllProven) {
+	if !allowsPromotion {
 		return domain.Indeterminate
 	}
 

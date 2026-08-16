@@ -435,15 +435,12 @@ func TestBuiltinSemanticGateway_RejectsMalformedFrameFacts(t *testing.T) {
 }
 
 func TestBuiltinSemanticGateway_PreservesResidualReasonAfterProof(t *testing.T) {
-	manifest := &builtinSemanticProofResult{decision: builtinSemanticAllProven}
 	got := reclassifyAfterResolution(
 		domain.Indeterminate,
 		[]domain.ReasonCode{"residual_reason"},
 		nil,
 		true,
-		"mysql",
-		nil,
-		manifest,
+		true, // builtin proof succeeded, but residual reasons still fail closed
 	)
 	if got != domain.Indeterminate {
 		t.Fatalf("classification = %q, want indeterminate", got)

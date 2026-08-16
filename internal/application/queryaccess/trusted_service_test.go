@@ -158,26 +158,19 @@ func TestNewServiceBasic(t *testing.T) {
 }
 
 func TestReclassifyAfterResolutionPGHardStopRemoved(t *testing.T) {
-	got := reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "postgresql", nil)
+	got := reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, false)
 	if got != domain.Indeterminate {
-		t.Errorf("nil proof: got %v, want indeterminate", got)
+		t.Errorf("no promotion permission: got %v, want indeterminate", got)
 	}
 
-	proof := &trustProofResult{decision: TrustDecisionAllProven}
-	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "postgresql", proof)
+	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, true)
 	if got != domain.ReadOnly {
-		t.Errorf("all_proven: got %v, want read_only", got)
+		t.Errorf("allowsPromotion: got %v, want read_only", got)
 	}
 
-	proof = &trustProofResult{decision: TrustDecisionHasUnproven}
-	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "postgresql", proof)
+	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, false)
 	if got != domain.Indeterminate {
-		t.Errorf("has_unproven: got %v, want indeterminate", got)
-	}
-
-	got = reclassifyAfterResolution(domain.Indeterminate, nil, nil, true, "mysql", nil)
-	if got != domain.ReadOnly {
-		t.Errorf("mysql: got %v, want read_only", got)
+		t.Errorf("no permission: got %v, want indeterminate", got)
 	}
 }
 
