@@ -25,6 +25,8 @@ Application-level contracts for query access analysis, defining the schema resol
 | extract_postgresql.go | Bridges PostgreSQL infrastructure query access facts to domain types with admission computation |
 | extract_postgresql_stub.go | Returns ErrPostgreSQLNotAvailable when built without the `postgresql` tag |
 | service.go | Orchestrates query access analysis: extraction by dialect, optional metadata resolution, requirement generation, sorting, and validation |
+| proof_orchestration_contract_test.go | Locks the application proof-orchestration contract at the Service.Analyze seam for MySQL/TiDB builtin, no-effect, and barrier applicability |
+| proof_orchestration_contract_postgresql_tag_test.go | Locks the PostgreSQL ordinary/exact COUNT(1) proof-orchestration contract, probe counts, and cancellation at the Service.Analyze seam |
 | resolve.go | Implements metadata-backed resolution: request-scoped caching, wildcard expansion, alias resolution, column disambiguation, view detection, and output lineage enrichment |
 | resolve_test.go | Verifies resolution logic with a fake resolver: schema defaulting, cache deduplication, qualified/unqualified columns, missing metadata, cancellation, star expansion, views, CTEs, derived tables, aliases, output lineage |
 | requirements.go | Generates access requirements based on mode: strict requires all columns, projection-only requires only output-contributing columns with inference risk warning |
