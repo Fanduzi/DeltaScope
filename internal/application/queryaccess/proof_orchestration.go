@@ -1,6 +1,6 @@
 // Package queryaccess owns the single proof-orchestration point between requirements and final state.
 // input: service capability, request, and extracted result with requirements already attached
-// output: promotion permission fact plus the bounded set of owned reason codes removed by successful proof
+// output: promotion permission fact for the common promotion checks; proof-specific reason removal mutates the kept reason set
 // pos: application proof sequencing before the final normalize/reclassify/admission computation
 // note: if this file changes, update this header and module README.md.
 package queryaccess

@@ -25,7 +25,8 @@ before proof may permit promotion.
 Build requirements before every Effect Proof. Route ordinary PostgreSQL, exact
 PostgreSQL `COUNT(1)`, MySQL/TiDB builtin, and no-effect applicability through
 one private orchestration function. The function returns only whether proof
-permits common promotion checks and the resulting bounded reason set.
+permits the common promotion checks to continue; proof-specific reason
+removal happens inside the function on the kept reason set.
 
 After orchestration, normalize reasons, reclassify reads, and recompute
 admission once. Promotion Barriers, unresolved facts, remaining reasons,

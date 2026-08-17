@@ -51,8 +51,11 @@ result and the orchestration function. The intended shape is equivalent to:
 ```go
 type promotionProof struct {
 	allowsPromotion bool
-	reasonCodes     []domain.ReasonCode
 }
+```
+
+Proof-specific reason removal is an internal mutation of the extracted
+result, not part of the return value.
 ```
 
 The exact names and signature may follow existing package style. The important
