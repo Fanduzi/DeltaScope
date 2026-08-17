@@ -15,7 +15,25 @@
 Offline SQL audit for MySQL, TiDB, and PostgreSQL. Catch a `DELETE` without `WHERE` before it hits the database.
 
 <div align="center">
-  <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; returns Verdict reject and blocker dml.where.require">
+<table>
+  <tr>
+    <td align="center" valign="top" width="33%">
+      <p><strong>DML</strong></p>
+      <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; returns Verdict reject and blocker dml.where.require">
+      <p><code>delete from users</code></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <p><strong>DDL</strong></p>
+      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;drop table users&quot; returns Verdict reject and blocker ddl.table.drop.forbid">
+      <p><code>drop table users</code></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <p><strong>PostgreSQL</strong></p>
+      <img src="docs/assets/deltascope-audit-pg.gif" alt="deltascope audit --dialect postgresql --sql &quot;alter table users drop column email&quot; returns Verdict review and warning ddl.pg.alter.drop_column.advisory">
+      <p><code>--dialect postgresql</code></p>
+    </td>
+  </tr>
+</table>
 </div>
 
 ## Install

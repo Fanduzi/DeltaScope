@@ -15,7 +15,25 @@
 面向 MySQL、TiDB、PostgreSQL 的离线 SQL 审核。在没有 `WHERE` 的 `DELETE` 落库之前拦下来。
 
 <div align="center">
-  <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; 返回 Verdict reject，以及 blocker dml.where.require">
+<table>
+  <tr>
+    <td align="center" valign="top" width="33%">
+      <p><strong>DML</strong></p>
+      <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; 返回 Verdict reject，以及 blocker dml.where.require">
+      <p><code>delete from users</code></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <p><strong>DDL</strong></p>
+      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;drop table users&quot; 返回 Verdict reject，以及 blocker ddl.table.drop.forbid">
+      <p><code>drop table users</code></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <p><strong>PostgreSQL</strong></p>
+      <img src="docs/assets/deltascope-audit-pg.gif" alt="deltascope audit --dialect postgresql --sql &quot;alter table users drop column email&quot; 返回 Verdict review，以及 warning ddl.pg.alter.drop_column.advisory">
+      <p><code>--dialect postgresql</code></p>
+    </td>
+  </tr>
+</table>
 </div>
 
 ## 安装
