@@ -12,12 +12,11 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-DeltaScope is an offline-first SQL audit and migration risk checker for MySQL, TiDB, and PostgreSQL DDL/DML changes. The main product surfaces are `deltascope`, `deltascope-server`, and `deltascope-mcp`; PostgreSQL offline support is converged on the main archives for supported macOS and Linux platforms. It gives DBAs, application engineers, CI pipelines, and AI agents one consistent way to review DDL and DML before they reach a database.
+Offline SQL audit for MySQL, TiDB, and PostgreSQL. Catch a `DELETE` without `WHERE` before it hits the database.
 
-**Search-focused pages:**
-- [MySQL DDL audit tool](https://deltascope.pages.dev/en/mysql-ddl-audit-tool) — catch risky MySQL schema changes
-- [PostgreSQL DDL audit tool](https://deltascope.pages.dev/en/postgresql-ddl-audit-tool) — review PostgreSQL schema changes and DCL
-- [SQL migration risk checker](https://deltascope.pages.dev/en/sql-migration-risk-checker) — CI and AI workflow integration
+<div align="center">
+  <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; returns Verdict reject and blocker dml.where.require">
+</div>
 
 ## Install
 
@@ -43,9 +42,33 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
   DELTASCOPE_VERSION=v0.480.0 sh
 ```
 
-### Dialects & Release Archives
+## Cursor / MCP
 
-Every tag publishes archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing `deltascope`, `deltascope-server`, and `deltascope-mcp`. All archives support MySQL, TiDB, and PostgreSQL offline audit via `--dialect mysql|tidb|postgresql`. The installer script, Homebrew Cask, and npm MCP launcher all resolve platform-specific archives from GitHub Release assets. See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for per-dialect coverage and [release notes](docs/releases/README.md) for version-by-version changes.
+No CLI install required for editor use. The launcher is `npx -y @fanduzi/deltascope-mcp`.
+
+Cursor `mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "deltascope": {
+      "command": "npx",
+      "args": ["-y", "@fanduzi/deltascope-mcp"]
+    }
+  }
+}
+```
+
+Claude Code and Codex one-liners, native `deltascope-mcp`, and connection setup: [MCP Quick Start](#mcp-quick-start).
+
+## Compared with
+
+| Project | What it is |
+|---------|------------|
+| [Yearning](https://github.com/cookieY/Yearning) / [SQLE](https://github.com/actiontech/sqle) | Work-order / pre-approval platforms with a UI |
+| [sqlfluff](https://github.com/sqlfluff/sqlfluff) | SQL linter and formatter |
+| [goInception](https://github.com/hanchuanchuan/goInception) | Chinese audit engine, often used behind [Archery](https://github.com/hhyo/Archery) |
+| **DeltaScope** | Offline CLI + CI + MCP. No ticket UI. No database required for the default path. |
 
 ## Quick Start
 
@@ -177,6 +200,16 @@ deltascope config lint --file ./deltascope.yaml --strict
 ```
 
 Follow up with `deltascope config status` to inspect a single rule's effective ON/OFF state.
+
+## Search-focused pages
+
+- [MySQL DDL audit tool](https://deltascope.pages.dev/en/mysql-ddl-audit-tool) — catch risky MySQL schema changes
+- [PostgreSQL DDL audit tool](https://deltascope.pages.dev/en/postgresql-ddl-audit-tool) — review PostgreSQL schema changes and DCL
+- [SQL migration risk checker](https://deltascope.pages.dev/en/sql-migration-risk-checker) — CI and AI workflow integration
+
+## Dialects & Release Archives
+
+Every tag publishes archives named `deltascope_<version>_<os>_<arch>.tar.gz` containing `deltascope`, `deltascope-server`, and `deltascope-mcp`. All archives support MySQL, TiDB, and PostgreSQL offline audit via `--dialect mysql|tidb|postgresql`. The installer script, Homebrew Cask, and npm MCP launcher all resolve platform-specific archives from GitHub Release assets. See the [audit capability matrix](docs/reference/audit-capability-matrix.md) for per-dialect coverage and [release notes](docs/releases/README.md) for version-by-version changes.
 
 ## DML Impact Estimation
 
