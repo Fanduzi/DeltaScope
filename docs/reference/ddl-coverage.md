@@ -113,7 +113,7 @@ A URL pointing to public documentation about the classification. For parser-upgr
 
 ## Querying the Catalog (v0.280.0)
 
-Starting with `v0.280.0`, the `deltascope ddl-coverage` CLI command queries the generated catalog directly. This is a catalog lookup tool — it does not execute audits, parse SQL, or call the audit service.
+The `deltascope ddl-coverage` CLI command (added in `v0.280.0`) queries the generated catalog. Current binaries compile that catalog into the command, so it works from an empty working directory and does not need `docs/reference/ddl-coverage-catalog.json` next to the process. This is a catalog lookup tool — it does not execute audits, parse SQL, or call the audit service.
 
 ### Synopsis
 

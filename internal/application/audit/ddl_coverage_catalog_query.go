@@ -1,11 +1,20 @@
+// Package audit orchestrates audit use cases at the application layer.
+// input: generated DDL coverage catalog JSON (embedded at compile time) and optional filesystem catalog paths
+// output: catalog entries, catalog version, and filtered query results
+// pos: application catalog query core for the CLI ddl-coverage command
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 )
+
+//go:embed catalogdata/ddl-coverage-catalog.json
+var embeddedCatalogJSON []byte
 
 // CatalogEntry represents a single DDL coverage catalog entry returned by
 // QueryCatalog. Fields mirror the v0.270.0 catalog JSON schema.
@@ -73,23 +82,40 @@ func (q CatalogQuery) Validate() error {
 	return nil
 }
 
-// catalogFile is the top-level JSON structure of the checked-in catalog.
+// catalogFile is the top-level JSON structure of the generated catalog.
 type catalogFile struct {
+	Version string         `json:"version"`
 	Entries []CatalogEntry `json:"entries"`
+}
+
+// LoadEmbeddedCatalog returns the generated catalog compiled into the binary.
+func LoadEmbeddedCatalog() (string, []CatalogEntry, error) {
+	return parseCatalog(embeddedCatalogJSON)
+}
+
+// LoadCatalogFile reads the generated catalog from path and returns its
+// version plus entries in their canonical (deterministic) order.
+func LoadCatalogFile(path string) (string, []CatalogEntry, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", nil, fmt.Errorf("read catalog: %w", err)
+	}
+	return parseCatalog(raw)
 }
 
 // LoadCatalog reads the DDL coverage catalog from the given file path and
 // returns entries in their canonical (deterministic) order.
 func LoadCatalog(path string) ([]CatalogEntry, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read catalog: %w", err)
-	}
+	_, entries, err := LoadCatalogFile(path)
+	return entries, err
+}
+
+func parseCatalog(raw []byte) (string, []CatalogEntry, error) {
 	var f catalogFile
 	if err := json.Unmarshal(raw, &f); err != nil {
-		return nil, fmt.Errorf("parse catalog: %w", err)
+		return "", nil, fmt.Errorf("parse catalog: %w", err)
 	}
-	return f.Entries, nil
+	return f.Version, f.Entries, nil
 }
 
 // QueryCatalog filters entries according to the query parameters. It returns

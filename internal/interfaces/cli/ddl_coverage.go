@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: ddl-coverage command flags and the checked-in DDL coverage catalog JSON
+// input: ddl-coverage command flags, LoadEmbeddedCatalog, and optional LoadCatalogFile path override
 // output: filtered catalog entries rendered as human-readable text or machine-readable JSON
 // pos: CLI ddl-coverage command for querying the generated DDL coverage catalog
 // note: if this file changes, update this header and module README.md.
@@ -8,19 +8,11 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/spf13/cobra"
 )
-
-const defaultCatalogPath = "docs/reference/ddl-coverage-catalog.json"
-
-type ddlCoverageFile struct {
-	Version string                  `json:"version"`
-	Entries []appaudit.CatalogEntry `json:"entries"`
-}
 
 type ddlCoverageJSONOutput struct {
 	Version string                  `json:"version"`
@@ -42,7 +34,7 @@ func newDDLCoverageCmd(exitCode *int) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ddl-coverage",
 		Short: "Query the DDL coverage catalog",
-		Long:  "Query the generated DDL coverage catalog for verified DeltaScope entries.\nDoes not execute audits, parse SQL, or call the audit service.",
+		Long:  "Query the generated DDL coverage catalog for verified DeltaScope entries.\nThe catalog is compiled into the binary and does not require a source checkout.\nDoes not execute audits, parse SQL, or call the audit service.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateDDLCoverageFlags(format, limit); err != nil {
@@ -66,6 +58,10 @@ func newDDLCoverageCmd(exitCode *int) *cobra.Command {
 
 			version, entries, err := loadDDLCoverageCatalog(catalogPath)
 			if err != nil {
+				if catalogPath != "" {
+					*exitCode = exitUser
+					return newUserError(fmt.Sprintf("catalog unavailable: %v", err))
+				}
 				*exitCode = exitInternal
 				return fmt.Errorf("load catalog: %w", err)
 			}
@@ -96,7 +92,7 @@ func newDDLCoverageCmd(exitCode *int) *cobra.Command {
 	cmd.Flags().StringVar(&search, "search", "", "search across fields (case-insensitive substring)")
 	cmd.Flags().StringVar(&format, "format", "text", "output format: text or json")
 	cmd.Flags().IntVar(&limit, "limit", 0, "limit result count; 0 means no limit")
-	cmd.Flags().StringVar(&catalogPath, "catalog", defaultCatalogPath, "path to catalog JSON file")
+	cmd.Flags().StringVar(&catalogPath, "catalog", "", "path to catalog JSON file; default is the catalog compiled into the binary")
 	_ = cmd.Flags().MarkHidden("catalog")
 
 	return cmd
@@ -113,15 +109,10 @@ func validateDDLCoverageFlags(format string, limit int) error {
 }
 
 func loadDDLCoverageCatalog(path string) (string, []appaudit.CatalogEntry, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return "", nil, fmt.Errorf("read catalog: %w", err)
+	if path == "" {
+		return appaudit.LoadEmbeddedCatalog()
 	}
-	var f ddlCoverageFile
-	if err := json.Unmarshal(raw, &f); err != nil {
-		return "", nil, fmt.Errorf("parse catalog: %w", err)
-	}
-	return f.Version, f.Entries, nil
+	return appaudit.LoadCatalogFile(path)
 }
 
 func renderDDLCoverageJSON(version string, result appaudit.CatalogResult, q appaudit.CatalogQuery) string {

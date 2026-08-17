@@ -1,3 +1,8 @@
+// Package audit verifies DDL coverage catalog query behavior.
+// input: the embedded generated catalog and the checked-in docs/reference catalog JSON
+// output: coverage for LoadEmbeddedCatalog, LoadCatalog, QueryCatalog, and Validate
+// pos: application catalog query tests
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -7,6 +12,27 @@ import (
 )
 
 const testCatalogPath = "../../../docs/reference/ddl-coverage-catalog.json"
+
+func TestLoadEmbeddedCatalogMatchesCheckedInCatalog(t *testing.T) {
+	version, entries, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog: %v", err)
+	}
+	if version != "v0.270.0" {
+		t.Errorf("embedded catalog version = %q, want v0.270.0", version)
+	}
+	if len(entries) != 400 {
+		t.Errorf("embedded catalog entries = %d, want 400", len(entries))
+	}
+
+	disk, err := LoadCatalog(testCatalogPath)
+	if err != nil {
+		t.Fatalf("LoadCatalog(%s): %v", testCatalogPath, err)
+	}
+	if !reflect.DeepEqual(entries, disk) {
+		t.Error("embedded catalog entries differ from the generated docs/reference catalog")
+	}
+}
 
 func loadTestCatalog(t *testing.T) []CatalogEntry {
 	t.Helper()

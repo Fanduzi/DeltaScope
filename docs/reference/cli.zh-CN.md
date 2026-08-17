@@ -1290,7 +1290,7 @@ deltascope capabilities
 
 ## deltascope ddl-coverage
 
-查询已生成的 DDL 覆盖目录中的 DeltaScope 已验证条目。这是目录查询命令——它不执行审计、不解析 SQL、不调用审计服务。
+查询已生成的 DDL 覆盖目录中的 DeltaScope 已验证条目。目录编译进二进制，因此可在任意工作目录运行，不需要源码检出。这是目录查询命令——它不执行审计、不解析 SQL、不调用审计服务。
 
 ### 概要
 

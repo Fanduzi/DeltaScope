@@ -1376,7 +1376,7 @@ deltascope capabilities
 
 ## deltascope ddl-coverage
 
-Query the generated DDL coverage catalog for verified DeltaScope entries. This is a catalog lookup command — it does not execute audits, parse SQL, or call the audit service.
+Query the generated DDL coverage catalog for verified DeltaScope entries. The catalog is compiled into the binary, so the command works from any working directory and does not require a source checkout. This is a catalog lookup command — it does not execute audits, parse SQL, or call the audit service.
 
 ### Synopsis
 
