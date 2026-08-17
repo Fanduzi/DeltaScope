@@ -12,7 +12,7 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-面向 MySQL、TiDB、PostgreSQL 的离线 SQL 审核。在没有 `WHERE` 的 `DELETE` 落库之前拦下来。
+面向 MySQL、TiDB、PostgreSQL 的 SQL 审核。离线就能跑，也能连库拿元数据。
 
 <div align="center">
 <table>
@@ -24,13 +24,13 @@
     </td>
     <td align="center" valign="top" width="33%">
       <p><strong>DDL</strong></p>
-      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;drop table users&quot; 返回 Verdict reject，以及 blocker ddl.table.drop.forbid">
-      <p><code>drop table users</code></p>
+      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;alter table users drop column email&quot; 返回 Verdict pass，以及 notice ddl.alter.drop_column.notice">
+      <p><code>alter table users drop column email</code></p>
     </td>
     <td align="center" valign="top" width="33%">
       <p><strong>PostgreSQL</strong></p>
       <img src="docs/assets/deltascope-audit-pg.gif" alt="deltascope audit --dialect postgresql --sql &quot;alter table users drop column email&quot; 返回 Verdict review，以及 warning ddl.pg.alter.drop_column.advisory">
-      <p><code>--dialect postgresql</code></p>
+      <p><code>--dialect postgresql</code><br><code>alter table users drop column email</code></p>
     </td>
   </tr>
 </table>
@@ -84,7 +84,7 @@ Claude Code / Codex 一行命令、原生 `deltascope-mcp` 和连接配置见 [M
 | [Yearning](https://github.com/cookieY/Yearning) / [SQLE](https://github.com/actiontech/sqle) | 工单 / 事前审核平台，带 UI |
 | [sqlfluff](https://github.com/sqlfluff/sqlfluff) | SQL 检查与格式化 |
 | [goInception](https://github.com/hanchuanchuan/goInception) | 中文审核引擎，常见于 [Archery](https://github.com/hhyo/Archery) 后端 |
-| **DeltaScope** | 离线 CLI + CI + MCP。没有工单 UI。默认路径不需要数据库。 |
+| **DeltaScope** | CLI + CI + MCP。没有工单 UI。离线就能跑，也能连库拿元数据。 |
 
 ## 快速开始
 

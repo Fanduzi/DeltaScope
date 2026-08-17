@@ -12,7 +12,7 @@
 [![Changelog](https://img.shields.io/badge/Changelog-informational)](CHANGELOG.md) [![Security](https://img.shields.io/badge/Security-important)](SECURITY.md) [![License](https://img.shields.io/badge/License-blue)](LICENSE) [![Release Notes](https://img.shields.io/badge/Release_Notes-success)](docs/releases/README.md)
 </div>
 
-Offline SQL audit for MySQL, TiDB, and PostgreSQL. Catch a `DELETE` without `WHERE` before it hits the database.
+SQL audit for MySQL, TiDB, and PostgreSQL — works offline, or connect to the database for metadata-aware review.
 
 <div align="center">
 <table>
@@ -24,13 +24,13 @@ Offline SQL audit for MySQL, TiDB, and PostgreSQL. Catch a `DELETE` without `WHE
     </td>
     <td align="center" valign="top" width="33%">
       <p><strong>DDL</strong></p>
-      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;drop table users&quot; returns Verdict reject and blocker ddl.table.drop.forbid">
-      <p><code>drop table users</code></p>
+      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;alter table users drop column email&quot; returns Verdict pass and notice ddl.alter.drop_column.notice">
+      <p><code>alter table users drop column email</code></p>
     </td>
     <td align="center" valign="top" width="33%">
       <p><strong>PostgreSQL</strong></p>
       <img src="docs/assets/deltascope-audit-pg.gif" alt="deltascope audit --dialect postgresql --sql &quot;alter table users drop column email&quot; returns Verdict review and warning ddl.pg.alter.drop_column.advisory">
-      <p><code>--dialect postgresql</code></p>
+      <p><code>--dialect postgresql</code><br><code>alter table users drop column email</code></p>
     </td>
   </tr>
 </table>
@@ -86,7 +86,7 @@ Claude Code and Codex one-liners, native `deltascope-mcp`, and connection setup:
 | [Yearning](https://github.com/cookieY/Yearning) / [SQLE](https://github.com/actiontech/sqle) | Work-order / pre-approval platforms with a UI |
 | [sqlfluff](https://github.com/sqlfluff/sqlfluff) | SQL linter and formatter |
 | [goInception](https://github.com/hanchuanchuan/goInception) | Chinese audit engine, often used behind [Archery](https://github.com/hhyo/Archery) |
-| **DeltaScope** | Offline CLI + CI + MCP. No ticket UI. No database required for the default path. |
+| **DeltaScope** | CLI + CI + MCP. No ticket UI. Works offline, or connect for live metadata. |
 
 ## Quick Start
 
