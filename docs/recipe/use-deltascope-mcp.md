@@ -15,9 +15,11 @@ Use the launcher when you want a copy-and-use setup. Use the native binary when 
 DeltaScope MCP exposes four official tools:
 
 - `audit_sql`
-- `describe_rule`
-- `list_rules`
+- `describe_rule` — full body of one shipped rule
+- `list_rules` — compact catalog rows (`rule_id`, `level`, `dialect`, `kind`, `summary`) with an optional `query`
 - `get_capabilities`
+
+`list_rules` is the catalog index. Use `describe_rule` when you need why / risk / suggestion / examples for one `rule_id`. The text-only `content[0].text` surface is a compact table, not a second JSON copy of `structuredContent`.
 
 ## Claude Code
 

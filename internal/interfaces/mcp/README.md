@@ -10,8 +10,8 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `connection.go` | Resolves `connection_ref` inputs, delegates direct connection validation/password lookup to `internal/interfaces/metadata`, and assembles MCP connection state |
 | `connection_test.go` | Verifies MCP connection normalization and safety rules |
 | `output_schema.go` | Publishes explicit success output schemas for official MCP tools |
-| `rule_tools.go` | Builds structured payloads for MCP rule-discovery tools |
-| `rule_tools_test.go` | Verifies `describe_rule`, `list_rules`, and `get_capabilities` behavior |
+| `rule_tools.go` | Builds structured payloads and compact `list_rules` text for MCP rule-discovery tools |
+| `rule_tools_test.go` | Verifies compact `list_rules` rows, the text-only surface, `describe_rule`, and `get_capabilities` |
 | `server.go` | Builds the MCP server and registers the official DeltaScope tools |
 | `server_test.go` | Verifies MCP bootstrap metadata and core tool registration |
 | `tool_errors.go` | Shapes stable structured MCP tool errors and error-code mapping |
@@ -26,6 +26,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 ## Notes
 
 - The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, metadata-preparation, and direct-connection helper logic.
+- `list_rules` returns compact catalog rows (`rule_id`, `level`, `dialect`, `kind`, `summary`) plus a text table. `describe_rule` remains the full-body tool. `content[0].text` is the text-only surface and is not a second JSON copy of `structuredContent`.
 - `query_access_surface_contract_test.go` is the sole MCP proof that Query Access remains absent; no Query Access MCP tool is introduced.
 - The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances and PostgreSQL on the PG-capable builds.
 - Connection-backed PostgreSQL MCP audit requests follow the same shared metadata-preparation path as the other transports and should preserve explicit metadata-aware context rather than downgrading silently.

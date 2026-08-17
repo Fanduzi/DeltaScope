@@ -14,7 +14,7 @@ The launched `deltascope-mcp` server exposes four tools:
 
 - `audit_sql` — audit SQL statements with DeltaScope.
 - `describe_rule` — describe one shipped DeltaScope rule by rule ID.
-- `list_rules` — list shipped DeltaScope rules with optional filters.
+- `list_rules` — list shipped DeltaScope rules as compact catalog rows, with optional filters.
 - `get_capabilities` — return a concise capability summary for MCP clients.
 
 The `audit_sql` tool supports:

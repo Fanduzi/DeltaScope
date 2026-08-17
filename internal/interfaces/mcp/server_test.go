@@ -90,6 +90,37 @@ func TestNewServerPublishesOutputSchemasForCoreTools(t *testing.T) {
 		}
 	}
 
+	listSchema, ok := tools["list_rules"].OutputSchema.(map[string]any)
+	if !ok {
+		t.Fatalf("list_rules output schema type = %T", tools["list_rules"].OutputSchema)
+	}
+	listProps, ok := listSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("list_rules schema missing properties: %#v", listSchema)
+	}
+	rulesProp, ok := listProps["rules"].(map[string]any)
+	if !ok {
+		t.Fatalf("list_rules schema missing rules: %#v", listProps)
+	}
+	ruleItems, ok := rulesProp["items"].(map[string]any)
+	if !ok {
+		t.Fatalf("list_rules rules missing items: %#v", rulesProp)
+	}
+	ruleProps, ok := ruleItems["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("list_rules rule items missing properties: %#v", ruleItems)
+	}
+	for _, prop := range []string{"rule_id", "level", "dialect", "kind", "summary"} {
+		if _, ok := ruleProps[prop]; !ok {
+			t.Fatalf("list_rules compact row missing %q: %#v", prop, ruleProps)
+		}
+	}
+	for _, prop := range []string{"description", "why", "risk", "suggestion", "config_example", "trigger_example"} {
+		if _, ok := ruleProps[prop]; ok {
+			t.Fatalf("list_rules compact row still publishes full-body field %q", prop)
+		}
+	}
+
 	auditTool := tools["audit_sql"]
 	auditSchema, ok := auditTool.OutputSchema.(map[string]any)
 	if !ok {

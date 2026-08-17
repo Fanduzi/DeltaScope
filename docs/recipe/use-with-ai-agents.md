@@ -190,6 +190,7 @@ The MCP tool surface remains:
 For agent workflow design, the important contract points are:
 
 - `audit_sql` preserves the normal DeltaScope audit result body and adds top-level `context`
+- `list_rules` returns compact catalog rows (`rule_id`, `level`, `dialect`, `kind`, `summary`); use `describe_rule` for the full body of one rule
 - `connection_ref` and `connection` are mutually exclusive
 - top-level `dialect` overrides `connection.dialect`
 - stable structured tool errors use `bad_request`, `connection_invalid`, `connection_failed`, and `config_invalid`

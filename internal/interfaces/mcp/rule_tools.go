@@ -1,18 +1,19 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
 // input: shipped rule catalog entries and DeltaScope capability metadata for MCP rule tools
-// output: structured payload builders for describe_rule, list_rules, and get_capabilities
+// output: full describe_rule bodies, compact list_rules rows plus text catalog, and get_capabilities summaries
 // pos: MCP rule-discovery helpers above the domain rule catalog
 // note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	rulecatalog "github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
 )
 
-// ruleDescription captures the catalog metadata returned by describe/list rules.
+// ruleDescription captures the full catalog metadata returned by describe_rule.
 type ruleDescription struct {
 	RuleID          string                     `json:"rule_id"`
 	Summary         string                     `json:"summary"`
@@ -33,10 +34,19 @@ type ruleDescription struct {
 	MetadataNotes   *rulecatalog.MetadataNotes `json:"metadata_notes,omitempty"`
 }
 
+// ruleListItem is the compact catalog row returned by list_rules.
+type ruleListItem struct {
+	RuleID  string `json:"rule_id"`
+	Level   string `json:"level"`
+	Dialect string `json:"dialect"`
+	Kind    string `json:"kind"`
+	Summary string `json:"summary"`
+}
+
 type listRulesResponse struct {
-	Query string            `json:"query,omitempty"`
-	Count int               `json:"count"`
-	Rules []ruleDescription `json:"rules"`
+	Query string         `json:"query,omitempty"`
+	Count int            `json:"count"`
+	Rules []ruleListItem `json:"rules"`
 }
 
 type capabilitiesResponse struct {
@@ -67,15 +77,77 @@ func describeRulePayload(ruleID string) (ruleDescription, error) {
 
 func listRulesPayload(query string) listRulesResponse {
 	entries := rulecatalog.Search(query)
-	rules := make([]ruleDescription, 0, len(entries))
+	rules := make([]ruleListItem, 0, len(entries))
 	for _, entry := range entries {
-		rules = append(rules, toRuleDescription(entry))
+		rules = append(rules, toRuleListItem(entry))
 	}
 	return listRulesResponse{
 		Query: query,
 		Count: len(rules),
 		Rules: rules,
 	}
+}
+
+func toRuleListItem(entry rulecatalog.Entry) ruleListItem {
+	return ruleListItem{
+		RuleID:  entry.RuleID,
+		Level:   string(entry.DefaultLevel),
+		Dialect: strings.Join(entry.Dialects, ","),
+		Kind:    strings.Join(entry.StatementKinds, ","),
+		Summary: entry.Summary,
+	}
+}
+
+func renderListRulesText(resp listRulesResponse) string {
+	var b strings.Builder
+	if resp.Query != "" {
+		fmt.Fprintf(&b, "%d rules matching %q\n", resp.Count, resp.Query)
+	} else {
+		fmt.Fprintf(&b, "%d rules\n", resp.Count)
+	}
+	if len(resp.Rules) == 0 {
+		return b.String()
+	}
+
+	headers := []string{"RULE ID", "LEVEL", "DIALECT", "KIND", "SUMMARY"}
+	rows := make([][]string, len(resp.Rules))
+	widths := make([]int, len(headers))
+	for i, header := range headers {
+		widths[i] = len(header)
+	}
+	for i, item := range resp.Rules {
+		row := []string{item.RuleID, item.Level, item.Dialect, item.Kind, item.Summary}
+		rows[i] = row
+		for j, value := range row {
+			if len(value) > widths[j] {
+				widths[j] = len(value)
+			}
+		}
+	}
+
+	writeRow := func(cols []string) {
+		for i, col := range cols {
+			if i > 0 {
+				b.WriteString("  ")
+			}
+			fmt.Fprintf(&b, "%-*s", widths[i], col)
+		}
+		b.WriteByte('\n')
+	}
+
+	b.WriteByte('\n')
+	writeRow(headers)
+	for i, width := range widths {
+		if i > 0 {
+			b.WriteString("  ")
+		}
+		b.WriteString(strings.Repeat("-", width))
+	}
+	b.WriteByte('\n')
+	for _, row := range rows {
+		writeRow(row)
+	}
+	return b.String()
 }
 
 func capabilitiesPayload(connectionsPath string) capabilitiesResponse {
