@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: config init command invocations and the built-in default policy model
-// output: a usable YAML policy template for local users and automation
+// output: a lint-round-trippable YAML policy template for local users and automation
 // pos: CLI config generation command for bootstrapping DeltaScope policy files
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -57,7 +57,7 @@ func renderExampleConfig() ([]byte, error) {
 		}
 		sort.Strings(paramKeys)
 		for _, key := range paramKeys {
-			builder.WriteString(fmt.Sprintf("      %s: %v\n", key, ruleCfg.Params[key]))
+			builder.WriteString(fmt.Sprintf("      %s: %s\n", key, formatConfigParamYAML(ruleCfg.Params[key])))
 		}
 		if i < len(ruleIDs)-1 {
 			builder.WriteString("\n")
@@ -65,4 +65,14 @@ func renderExampleConfig() ([]byte, error) {
 	}
 
 	return []byte(builder.String()), nil
+}
+
+// formatConfigParamYAML encodes one default-policy param so the generated YAML
+// round-trips through config lint. Empty strings must be quoted; a bare
+// `suffix:` is YAML null and fails the string type check.
+func formatConfigParamYAML(value any) string {
+	if typed, ok := value.(string); ok && typed == "" {
+		return `""`
+	}
+	return fmt.Sprintf("%v", value)
 }

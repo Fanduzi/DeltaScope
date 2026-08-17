@@ -276,4 +276,22 @@ rules:
 			t.Fatalf("expected invalid-type error, got %q", stderr)
 		}
 	})
+
+	t.Run("yaml null string param is an error", func(t *testing.T) {
+		path := writeLintConfig(t, `
+rules:
+  ddl.table.name.suffix.require:
+    enabled: true
+    level: warning
+    params:
+      suffix:
+`)
+		code, _, stderr := runConfigLint(t, "config", "lint", "--file", path)
+		if code != exitUser {
+			t.Fatalf("expected exit %d for YAML-null string param, got %d", exitUser, code)
+		}
+		if !strings.Contains(stderr, "invalid type") {
+			t.Fatalf("expected invalid-type error for YAML-null string, got %q", stderr)
+		}
+	})
 }

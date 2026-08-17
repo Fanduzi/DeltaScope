@@ -1036,7 +1036,8 @@ deltascope config init > deltascope.yaml
 ```
 
 The generated file contains every rule with its default enabled state and all parameter values
-explicitly set. Edit it to customize your policy.
+explicitly set. Empty string params are encoded as `""` so the file is valid YAML for
+`config lint`. Edit it to customize your policy.
 
 ### config lint
 

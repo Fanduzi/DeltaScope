@@ -19,7 +19,8 @@ CLI adapter layer for the DeltaScope application.
 | query_access_postgresql_no_leak_test.go | PostgreSQL 17 integration no-leak coverage for online `COUNT(1)`, excluded shapes, and default-offline CLI paths |
 | rules.go | Implements `rules list` (with dialect/level/kind/category/search/format/limit filters) and `rules explain <rule-id>` on top of the shipped rule catalog, including text and JSON output |
 | config.go | Implements the `config` command group, including `lint` (semantic validation plus rule-level replacement-hazard warnings and `--strict`), `show-default`, and wiring for `status` |
-| config_init.go | Implements `config init` and emits a deterministic default YAML template |
+| config_init.go | Implements `config init` and emits a deterministic default YAML template with empty string params encoded as `""` |
+| config_init_test.go | Verifies `config init` / `show-default` / shipped example YAML lint clean, encode empty strings as quoted YAML, preserve a hand-written full-spec override, and leave default-policy audit findings unchanged |
 | config_status.go | Implements `config status <rule-id>`, showing the effective ON/OFF state, level, default/current snapshots, and config effect for one rule via the config status application service, with text and JSON output |
 | capabilities.go | Implements the `capabilities` summary command and shared rendering helpers for human/agent discovery of shipped dialects, modes, inputs, outputs, and public surfaces (`cli`, `http`, `mcp`, `go-api`) |
 | ddl_coverage.go | Implements the `ddl-coverage` command for querying the generated DDL coverage catalog with text and JSON output, flag validation, and filter rendering |
@@ -31,7 +32,7 @@ CLI adapter layer for the DeltaScope application.
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, and no-severity sanity |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, create-table partial behavior, and metadata-connect-timeout flag validation |
 | config_status_test.go | Verifies config status text/JSON output, partial-replacement danger wording, disabled-rule wording, and error mapping (missing rule id, unknown rule, invalid format, invalid config) with no severity field |
-| config_lint_test.go | Verifies config lint warnings (level-only replacement hazard), `Config OK` / `Config OK with warnings` output and exit-code matrix, `--strict`, error precedence, deterministic warning ordering, and existing invalid-value errors with no severity field |
+| config_lint_test.go | Verifies config lint warnings (level-only replacement hazard), `Config OK` / `Config OK with warnings` output and exit-code matrix, `--strict`, error precedence, deterministic warning ordering, existing invalid-value errors, and YAML-null string params still failing the type check, with no severity field |
 
 ## Exports
 
