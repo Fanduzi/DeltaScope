@@ -29,8 +29,10 @@ Audit one or more SQL statements from inline text, a file, or standard input.
 
 ### Input
 
-The three input sources are mutually exclusive. If none is provided, `deltascope audit` reads from
-stdin, making it easy to pipe SQL through the tool.
+The three input sources are mutually exclusive. If `--sql` and `--file` are both omitted,
+`deltascope audit` reads from stdin, making it easy to pipe SQL through the tool. An explicit
+`--sql` value, including `""` or whitespace-only text, is the SQL input and is rejected with
+`SQL input must not be empty` (exit 2) instead of falling through to stdin.
 
 | Flag | Description |
 |------|-------------|

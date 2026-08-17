@@ -27,7 +27,7 @@ Cobra 还会为每个命令提供内建的 `--help` 标志。
 
 ### 输入
 
-三种输入来源互斥。若均未提供，`deltascope audit` 将从 stdin 读取，便于通过管道传递 SQL。
+三种输入来源互斥。若未提供 `--sql` 和 `--file`，`deltascope audit` 将从 stdin 读取，便于通过管道传递 SQL。显式传入的 `--sql`（包括 `""` 或仅空白）就是 SQL 输入；空值会立即以 `SQL input must not be empty` 失败并退出码 2，而不会回退到 stdin。
 
 | 标志 | 描述 |
 |------|------|

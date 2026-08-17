@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
+// input: audit command flags including whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
 // output: rendered audit results, connection-option validation, password resolution, and exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
@@ -58,7 +58,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 			"Metadata-aware example:\n" +
 			"  deltascope audit --sql \"alter table users add column email varchar(255)\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd))
+			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd), cmd.Flags().Changed("sql"))
 			if err != nil {
 				*exitCode = exitUser
 				return err
@@ -274,11 +274,14 @@ func (o auditConnectionOptions) Enabled() bool {
 	return o.Host != "" || o.PortSet || o.User != "" || o.Password != "" || o.Schema != "" || o.Socket != ""
 }
 
-func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool) (string, error) {
-	if strings.TrimSpace(inlineSQL) != "" && strings.TrimSpace(filePath) != "" {
+func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool, sqlProvided bool) (string, error) {
+	if sqlProvided && strings.TrimSpace(filePath) != "" {
 		return "", newUserError("use either --sql or --file, not both")
 	}
-	if strings.TrimSpace(inlineSQL) != "" {
+	if sqlProvided {
+		if strings.TrimSpace(inlineSQL) == "" {
+			return "", newUserError("SQL input must not be empty")
+		}
 		return inlineSQL, nil
 	}
 	if strings.TrimSpace(filePath) != "" {

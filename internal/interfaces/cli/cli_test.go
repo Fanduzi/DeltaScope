@@ -1,5 +1,5 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: command-line args, stdin/file SQL sources, password-prompt doubles, and config-init/version requests
+// input: command-line args, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, and config-init/version requests
 // output: end-to-end CLI behavior coverage for exit codes, rendered output, and connection-flag validation
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
@@ -144,10 +144,70 @@ func TestAuditCommandSupportsStdinInput(t *testing.T) {
 	}
 }
 
+type unexpectedStdinReader struct {
+	t *testing.T
+}
+
+func (r unexpectedStdinReader) Read(_ []byte) (int, error) {
+	r.t.Fatal("stdin should not be read when --sql is provided")
+	return 0, io.EOF
+}
+
+func TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "empty string", args: []string{"audit", "--sql", ""}},
+		{name: "whitespace only", args: []string{"audit", "--sql", "   "}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stderr := &strings.Builder{}
+			code := Execute(
+				context.Background(),
+				tt.args,
+				unexpectedStdinReader{t: t},
+				&strings.Builder{},
+				stderr,
+			)
+			if code != 2 {
+				t.Fatalf("expected user error exit code 2, got %d", code)
+			}
+			if !strings.Contains(stderr.String(), "SQL input must not be empty") {
+				t.Fatalf("expected empty SQL error, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestAuditCommandRejectsEmptyFileInput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "empty.sql")
+	if err := os.WriteFile(path, []byte("   \n"), 0o644); err != nil {
+		t.Fatalf("write sql file: %v", err)
+	}
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", path},
+		unexpectedStdinReader{t: t},
+		&strings.Builder{},
+		stderr,
+	)
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "SQL input must not be empty") {
+		t.Fatalf("expected empty SQL error, got %q", stderr.String())
+	}
+}
+
 func TestResolveAuditSQLPrintsInteractiveStdinHint(t *testing.T) {
 	stderr := &strings.Builder{}
 
-	sql, err := resolveAuditSQL(context.Background(), strings.NewReader("delete from users"), "", "", stderr, true)
+	sql, err := resolveAuditSQL(context.Background(), strings.NewReader("delete from users"), "", "", stderr, true, false)
 	if err != nil {
 		t.Fatalf("resolve audit sql: %v", err)
 	}
@@ -166,13 +226,19 @@ func TestResolveAuditSQLRejectsConflictingOrEmptyInput(t *testing.T) {
 		t.Fatalf("write sql file: %v", err)
 	}
 
-	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "delete from users", path, io.Discard, false); err == nil {
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "delete from users", path, io.Discard, false, true); err == nil {
 		t.Fatal("expected conflict error when both --sql and --file are provided")
 	}
-	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "", path, io.Discard, false); err == nil {
+	if _, err := resolveAuditSQL(context.Background(), unexpectedStdinReader{t: t}, "", "", io.Discard, false, true); err == nil {
+		t.Fatal("expected explicit empty --sql to be rejected")
+	}
+	if _, err := resolveAuditSQL(context.Background(), unexpectedStdinReader{t: t}, "   ", "", io.Discard, false, true); err == nil {
+		t.Fatal("expected explicit whitespace --sql to be rejected")
+	}
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "", path, io.Discard, false, false); err == nil {
 		t.Fatal("expected empty file input to be rejected")
 	}
-	if _, err := resolveAuditSQL(context.Background(), strings.NewReader("   "), "", "", io.Discard, false); err == nil {
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader("   "), "", "", io.Discard, false, false); err == nil {
 		t.Fatal("expected empty stdin input to be rejected")
 	}
 }

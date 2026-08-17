@@ -271,7 +271,7 @@ deltascope audit \
 
 ## 标准输入（stdin）
 
-当未提供 `--sql` 或 `--file` 参数时，DeltaScope 从标准输入读取。这与 shell 管道和 heredoc 配合使用非常自然。
+当未提供 `--sql` 或 `--file` 参数时，DeltaScope 从标准输入读取。显式传入的空 `--sql` 会被拒绝，而不会等待 stdin。这与 shell 管道和 heredoc 配合使用非常自然。
 
 ```bash
 # 通过 cat 管道传入
