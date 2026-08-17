@@ -75,6 +75,16 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 - 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。
 - 无限定表名的 schema 解析顺序：SQL 级限定符 → `--schema` 标志 → 可访问 schema 中的唯一匹配 → 模糊时报错。
+- 连接失败时只向 stderr 打印一行有界消息。可移植输出不会包含 host、port、user、DSN、密码或原始驱动文本。空密码仍然允许；仅当服务器拒绝该空密码时，才会提示缺少 `--password-env` / `--password-file` / `--ask-password`。
+
+| 情况 | stderr | 退出码 |
+|------|--------|:------:|
+| `--password-env` / `--password-file` 缺失或不可读 | `invalid password source` | `2` |
+| 认证失败且未设置密码来源 | `password source required: use --password-env, --password-file, or --ask-password` | `2` |
+| 已设置密码来源后认证失败 | `authentication failed` | `3` |
+| 服务器不可达或其他拨号失败 | `connection failed` | `3` |
+| 连接超时 | `connection timed out` | `3` |
+| TLS 握手或证书校验失败 | `TLS handshake failed` 或 `TLS certificate verification failed` | `3` |
 
 示例：
 

@@ -85,6 +85,19 @@ definitions, instance variables) and attaches them to each statement before rule
 - For PostgreSQL: pass `--dialect postgresql` explicitly. Auto-detection is not supported for PostgreSQL.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
+- Connection failures print one bounded stderr line. Portable output never includes host, port,
+  user, DSN, password, or raw driver text. Empty passwords remain allowed; a missing
+  `--password-env` / `--password-file` / `--ask-password` is reported only after the server
+  rejects that empty password.
+
+| Situation | stderr | Exit |
+|-----------|--------|:----:|
+| Missing or unreadable `--password-env` / `--password-file` | `invalid password source` | `2` |
+| Authentication failed and no password source was set | `password source required: use --password-env, --password-file, or --ask-password` | `2` |
+| Authentication failed after a password source was set | `authentication failed` | `3` |
+| Server unreachable or other dial failure | `connection failed` | `3` |
+| Connect timeout | `connection timed out` | `3` |
+| TLS handshake or certificate verification | `TLS handshake failed` or `TLS certificate verification failed` | `3` |
 
 Examples:
 

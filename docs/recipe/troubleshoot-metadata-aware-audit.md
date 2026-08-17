@@ -1,6 +1,6 @@
 # Troubleshoot Metadata-Aware Audit
 
-Use this guide when `deltascope audit` works offline but metadata-aware mode fails or behaves unexpectedly. Metadata-aware mode activates automatically when any connection flag (`--host`, `--port`, `--user`, `--password`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, `--socket`) is supplied.
+Use this guide when `deltascope audit` works offline but metadata-aware mode fails or behaves unexpectedly. Metadata-aware mode activates automatically when any connection flag (`--host`, `--port`, `--user`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, `--socket`) is supplied.
 
 ## Required MySQL Permissions
 
@@ -95,7 +95,7 @@ Checklist:
 
 - `--host` and `--port` point to the correct instance.
 - `--user` is spelled correctly (case-sensitive on some systems).
-- Password method: use `--ask-password` for interactive use; use `--password-env VAR_NAME` or `--password-file /path/to/file` for scripted use. Avoid plaintext `--password` in production and never hardcode passwords in shell commands.
+- Password method: use `--ask-password` for interactive use; use `--password-env VAR_NAME` or `--password-file /path/to/file` for scripted use. The plaintext `--password` flag is removed.
 - The MySQL/TiDB port (default `3306`) is open and reachable from the machine running DeltaScope.
 - The user account is not restricted to a specific host (check `mysql.user.Host`).
 
@@ -179,7 +179,7 @@ Confirm metadata-aware mode is active by checking the `context` field in JSON ou
 }
 ```
 
-If `context.mode` is not `"metadata-aware"`, connection flags were not supplied or the connection failed silently. Check `--host`/`--socket` and verify credentials.
+If `context.mode` is not `"metadata-aware"`, connection flags were not supplied. A real connection failure does not fall back to offline mode; it prints one bounded stderr line and exits `2` or `3` (see [CLI connection errors](../reference/cli.md#connection-flags-metadata-aware-mode)).
 
 ### Metadata Rules Not Firing
 
@@ -230,6 +230,6 @@ Expected output when metadata mode is active:
 }
 ```
 
-If the `context` field is absent, or `mode` is not `"metadata-aware"`, no connection flags were supplied (or the connection failed and DeltaScope fell back to offline mode). Review your flags and credentials.
+If the `context` field is absent, or `mode` is not `"metadata-aware"`, no connection flags were supplied. A real connection failure does not fall back to offline mode; it prints one bounded stderr line and exits `2` or `3` (see [CLI connection errors](../reference/cli.md#connection-flags-metadata-aware-mode)).
 
 For the conceptual model of metadata-aware mode, see [../concept/metadata-aware-mode.md](../concept/metadata-aware-mode.md).

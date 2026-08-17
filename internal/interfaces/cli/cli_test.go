@@ -3182,14 +3182,17 @@ func TestAuditCommandLoadsTLSCAFile(t *testing.T) {
 		stderr,
 	)
 
-	if code != 2 {
-		t.Fatalf("expected exit code 2 (connection will fail since no real DB), got %d: %s", code, stderr.String())
+	if code != exitInternal {
+		t.Fatalf("expected exit code %d after valid CA parse (connection will fail since no real DB), got %d: %s", exitInternal, code, stderr.String())
 	}
 	if strings.Contains(stderr.String(), "cannot read TLS CA file") {
 		t.Fatalf("CA file should have been readable, got %q", stderr.String())
 	}
 	if strings.Contains(stderr.String(), "invalid TLS CA certificate") {
 		t.Fatalf("CA file should have been valid PEM, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "TLS certificate verification failed") && !strings.Contains(stderr.String(), "connection failed") && !strings.Contains(stderr.String(), "connection timed out") {
+		t.Fatalf("expected bounded runtime connection/TLS failure, got %q", stderr.String())
 	}
 }
 
@@ -3244,6 +3247,7 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 		wantMsg string
 	}{
 		{name: "connection refused", input: "dial tcp 127.0.0.1:3306: connection refused", wantMsg: "connection failed"},
+		{name: "no route to host", input: "dial tcp 10.0.0.1:3306: connect: no route to host", wantMsg: "connection failed"},
 		{name: "certificate error", input: "x509: certificate signed by unknown authority", wantMsg: "TLS handshake failed"},
 		{name: "timeout", input: "dial tcp 127.0.0.1:3306: i/o timeout", wantMsg: "connection timed out"},
 		{name: "context canceled", input: "context canceled", wantMsg: "request canceled"},
@@ -3252,6 +3256,8 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 		{name: "x509 unknown authority", input: "x509: certificate signed by unknown authority", wantMsg: "TLS handshake failed"},
 		{name: "pgpass missing", input: "pgpass file not found", wantMsg: "connection failed"},
 		{name: "connection failed", input: "connection failed: host unreachable", wantMsg: "connection failed"},
+		{name: "mysql access denied", input: "Error 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)", wantMsg: "authentication failed"},
+		{name: "postgres auth failed", input: `pq: password authentication failed for user "root"`, wantMsg: "authentication failed"},
 	}
 
 	for _, tt := range tests {
