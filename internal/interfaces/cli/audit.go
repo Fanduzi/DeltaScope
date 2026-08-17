@@ -530,6 +530,8 @@ func mapAuditError(exitCode *int, err error) error {
 		*exitCode = exitUser
 	case strings.Contains(err.Error(), "parse sql:"):
 		*exitCode = exitUser
+	case strings.Contains(err.Error(), "statement was not audited because the selected dialect parser could not parse it"):
+		*exitCode = exitUser
 	case strings.Contains(err.Error(), "load policy:"):
 		*exitCode = exitUser
 	case isOnlineConnectionError(err):

@@ -1875,6 +1875,7 @@ func TestMapAuditErrorClassifiesKnownCases(t *testing.T) {
 		{name: "unknown dialect", err: appaudit.ErrUnknownDialect, want: exitUser},
 		{name: "unsupported statement", err: appaudit.ErrUnsupportedStatement, want: exitUser},
 		{name: "parse sql string match", err: errors.New("parse sql: syntax error"), want: exitUser},
+		{name: "parser unsupported diagnostic", err: errors.New("statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred"), want: exitUser},
 		{name: "typed pg capability boundary", err: &appaudit.PostgreSQLCapabilityBoundaryError{Message: "requires PG-capable build"}, want: exitUser},
 		{name: "load policy string match", err: errors.New("load policy: bad config"), want: exitUser},
 		{name: "context canceled", err: context.Canceled, want: exitInternal},
@@ -3024,8 +3025,8 @@ func TestAuditCommandRejectsRemovedPasswordFlag(t *testing.T) {
 		stderr,
 	)
 
-	if code != 3 {
-		t.Fatalf("expected exit code 3 for removed --password flag, got %d", code)
+	if code != exitUser {
+		t.Fatalf("expected exit code %d for removed --password flag, got %d", exitUser, code)
 	}
 	if !strings.Contains(stderr.String(), "unknown flag") {
 		t.Fatalf("expected unknown flag error, got %q", stderr.String())

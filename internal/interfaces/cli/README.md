@@ -6,7 +6,7 @@ CLI adapter layer for the DeltaScope application.
 
 | File | Responsibility |
 |------|---------------|
-| cli.go | Bridges process execution into the testable CLI executor |
+| cli.go | Bridges process execution into the testable CLI executor and maps unset Cobra usage errors (unknown flags/commands) to exit 2, except query-access usage which stays 3 |
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
 | audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, quiet/normal/github-summary rendering, and fail-threshold logic |
 | audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout) into the shared metadata-preparation flow and MySQL-compatible client opener |
@@ -28,6 +28,7 @@ CLI adapter layer for the DeltaScope application.
 | capability_surface_pg.go | Defines the PostgreSQL-tagged build capability surface and root CLI wording |
 | version.go | Implements the `version` subcommand with ASCII logo plus build-version and supported-dialect output |
 | cli_test.go | Verifies input modes including explicit empty/whitespace `--sql` fail-closed without reading stdin, empty `--file` rejection, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, explanation rendering in Markdown/JSON results, the user-facing Action Summary markdown contract (section presence, rule explain command, statement index, clean-result omission, JSON/quiet non-regression, and no severity field), github-summary format coverage (REJECT/PASS verdict, action summary, clean-result omission, no raw SQL, no severity, help advertising, unsupported-format messaging), and help advertising of all output formats |
+| cli_user_input_exit_test.go | Verifies unknown flags and unparseable SQL exit 2, parser-error JSON keeps an empty verdict with `diagnostics[].classification == parser_error`, and existing format/dialect/missing-file user errors stay at exit 2 |
 | ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, and no-leak sanity across all 400 catalog entries |
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, and no-severity sanity |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, create-table partial behavior, and metadata-connect-timeout flag validation |

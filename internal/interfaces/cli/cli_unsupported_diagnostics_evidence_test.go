@@ -1,3 +1,8 @@
+// Package cli verifies CLI unsupported-diagnostics evidence rendering.
+// input: parser-error SQL through Execute and diagnostic render helpers
+// output: JSON/text/markdown/quiet diagnostic field and no-leak coverage
+// pos: interface-layer diagnostics evidence tests
+// note: if this file changes, update this header and module README.md.
 package cli
 
 import (
@@ -24,8 +29,8 @@ func TestUnsupportedDiagnosticsEvidenceCLIParserErrorJSON(t *testing.T) {
 		stderr,
 	)
 
-	if code == 0 {
-		t.Fatalf("expected non-zero exit code for parser-error SQL, got %d", code)
+	if code != exitUser {
+		t.Fatalf("expected exit %d for parser-error SQL, got %d", exitUser, code)
 	}
 
 	output := stdout.String()
@@ -97,8 +102,8 @@ func TestUnsupportedDiagnosticsEvidenceCLIParserErrorText(t *testing.T) {
 		stderr,
 	)
 
-	if code == 0 {
-		t.Fatalf("expected non-zero exit code for parser-error SQL, got %d", code)
+	if code != exitUser {
+		t.Fatalf("expected exit %d for parser-error SQL, got %d", exitUser, code)
 	}
 
 	combined := strings.ToLower(stdout.String() + stderr.String())

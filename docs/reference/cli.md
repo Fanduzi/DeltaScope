@@ -435,7 +435,7 @@ When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality
 
 #### Parser-Error Unsupported Contract
 
-When the selected dialect parser cannot parse a tracked DDL statement, DeltaScope returns a diagnostic stating that no audit was performed and no findings were inferred from the unparsed SQL. This is an unsupported parser surface, not a fallback parser. DeltaScope does not infer findings from unparsed SQL. The parser-error count is not reduced by this contract. No parser support is added, no fallback parser is introduced, and no new SQL audit rules are created. The diagnostic message is: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`.
+When the selected dialect parser cannot parse a tracked DDL statement, DeltaScope returns a diagnostic stating that no audit was performed and no findings were inferred from the unparsed SQL. This is an unsupported parser surface, not a fallback parser. DeltaScope does not infer findings from unparsed SQL. The parser-error count is not reduced by this contract. No parser support is added, no fallback parser is introduced, and no new SQL audit rules are created. The diagnostic message is: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`. On the CLI this path exits `2` (bad user input). JSON `verdict` stays empty; consumers must use `diagnostics[].classification == parser_error`. This is not a new `error` or `unsupported` verdict.
 
 #### Unsupported Diagnostics Evidence (v0.230.0)
 

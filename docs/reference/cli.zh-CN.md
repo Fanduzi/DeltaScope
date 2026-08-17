@@ -393,7 +393,7 @@ TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 DML `RETURNING`
 
 #### Parser-Error Unsupported 合同
 
-当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。
+当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。CLI 上该路径以退出码 `2`（用户输入错误）退出。JSON `verdict` 保持为空；调用方必须使用 `diagnostics[].classification == parser_error`。这不是新增 `error` 或 `unsupported` 裁决值。
 
 #### Unsupported Diagnostics Evidence（v0.230.0）
 
