@@ -18,12 +18,12 @@
 <table>
   <tr>
     <td align="center" valign="top" width="33%">
-      <p><strong>DML</strong></p>
+      <p><strong>MySQL DML</strong></p>
       <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; 返回 Verdict reject，以及 blocker dml.where.require">
       <p><code>delete from users</code></p>
     </td>
     <td align="center" valign="top" width="33%">
-      <p><strong>DDL</strong></p>
+      <p><strong>MySQL DDL</strong></p>
       <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;alter table users drop column email&quot; 返回 Verdict pass，以及 notice ddl.alter.drop_column.notice">
       <p><code>alter table users drop column email</code></p>
     </td>
@@ -60,9 +60,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
 
 ## MCP
 
-编辑器接入不需要先装 CLI。启动器是 `npx -y @fanduzi/deltascope-mcp`。
+MCP 启动器会自己拉二进制，不必先装 CLI。启动器是 `npx -y @fanduzi/deltascope-mcp`。
 
-使用 `mcp.json` 的编辑器可以这样写（Cursor 是其中之一）：
+`mcp.json` 示例：
 
 ```json
 {
@@ -75,7 +75,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
 }
 ```
 
-Claude Code / Codex 一行命令、原生 `deltascope-mcp` 和连接配置见 [MCP 快速接入](#mcp-快速接入)。
+更多安装方式见 [MCP 快速接入](#mcp-快速接入)。
 
 ## 和其他工具的位置
 

@@ -18,12 +18,12 @@ SQL audit for MySQL, TiDB, and PostgreSQL — works offline, or connect to the d
 <table>
   <tr>
     <td align="center" valign="top" width="33%">
-      <p><strong>DML</strong></p>
+      <p><strong>MySQL DML</strong></p>
       <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; returns Verdict reject and blocker dml.where.require">
       <p><code>delete from users</code></p>
     </td>
     <td align="center" valign="top" width="33%">
-      <p><strong>DDL</strong></p>
+      <p><strong>MySQL DDL</strong></p>
       <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;alter table users drop column email&quot; returns Verdict pass and notice ddl.alter.drop_column.notice">
       <p><code>alter table users drop column email</code></p>
     </td>
@@ -38,19 +38,17 @@ SQL audit for MySQL, TiDB, and PostgreSQL — works offline, or connect to the d
 
 ## Install
 
-For macOS, prefer Homebrew. The repository installer script remains available as the generic portable installer for environments where Homebrew is not the right fit.
+The repository installer script is the generic portable installer. It resolves the same release archives CI publishes.
 
-**macOS (recommended):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
+```
+
+macOS can also use Homebrew:
 
 ```bash
 brew tap Fanduzi/deltascope
 brew install --cask deltascope
-```
-
-**Generic installer:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
 ```
 
 Pin a specific release:
@@ -62,9 +60,9 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
 
 ## MCP
 
-No CLI install required for editor use. The launcher is `npx -y @fanduzi/deltascope-mcp`.
+The MCP launcher fetches the `deltascope-mcp` binary for your platform. You do not need to install the CLI first. The launcher is `npx -y @fanduzi/deltascope-mcp`.
 
-Example `mcp.json` for editors that use that file (Cursor is one of them):
+Example `mcp.json`:
 
 ```json
 {
@@ -77,7 +75,7 @@ Example `mcp.json` for editors that use that file (Cursor is one of them):
 }
 ```
 
-Claude Code and Codex one-liners, native `deltascope-mcp`, and connection setup: [MCP Quick Start](#mcp-quick-start).
+More install options: [MCP Quick Start](#mcp-quick-start).
 
 ## Compared with
 
