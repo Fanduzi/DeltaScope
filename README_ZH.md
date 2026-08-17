@@ -38,7 +38,7 @@
 
 ## 安装
 
-首选安装入口是仓库内的 installer script，它解析的就是 CI 发布时使用的同一套 release archive 合同。
+安装脚本会拉取 CI 发布到 GitHub Release 的同一套安装包。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
