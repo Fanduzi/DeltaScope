@@ -56,7 +56,6 @@ type promotionProof struct {
 
 Proof-specific reason removal is an internal mutation of the extracted
 result, not part of the return value.
-```
 
 The exact names and signature may follow existing package style. The important
 contract is that this type carries only what the common pipeline needs. It is
