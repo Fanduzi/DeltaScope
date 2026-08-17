@@ -19,6 +19,8 @@ DeltaScope MCP 暴露四个官方工具：
 - `list_rules` — 返回精简目录行（`rule_id`、`level`、`dialect`、`kind`、`summary`），可带可选 `query`
 - `get_capabilities`
 
+`audit_sql` 会在 `content[0].text` 中给出精简发现摘要：结论、计数、每条 `[level] rule_id: message`，以及存在时的 suggestion。完整结果仍在 `structuredContent`。这段文本不是 structured payload 的第二份 JSON，也不会倾倒 skipped rules 或回显被审计的 SQL。
+
 `list_rules` 是目录索引。需要某一条 `rule_id` 的 why / risk / suggestion / 示例时，使用 `describe_rule`。面向纯文本客户端的 `content[0].text` 是精简表格，不是 `structuredContent` 的第二份 JSON。
 
 ## Claude Code

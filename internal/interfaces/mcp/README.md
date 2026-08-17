@@ -6,7 +6,9 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 
 | File | Responsibility |
 |------|---------------|
-| `audit_tool.go` | Implements the MCP `audit_sql` tool on top of the shared DeltaScope audit path |
+| `audit_tool.go` | Implements the MCP `audit_sql` tool on top of the shared DeltaScope audit path and renders compact finding-summary text |
+| `audit_tool_test.go` | Verifies `audit_sql` compact text, structured result, and empty-SQL `bad_request` |
+| `audit_tool_postgresql_tag_test.go` | Verifies compact review-verdict text on the PostgreSQL-capable build |
 | `connection.go` | Resolves `connection_ref` inputs, delegates direct connection validation/password lookup to `internal/interfaces/metadata`, and assembles MCP connection state |
 | `connection_test.go` | Verifies MCP connection normalization and safety rules |
 | `output_schema.go` | Publishes explicit success output schemas for official MCP tools |
@@ -26,6 +28,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 ## Notes
 
 - The MCP layer stays thin and reuses shared DeltaScope audit, rule-catalog, metadata-preparation, and direct-connection helper logic.
+- `audit_sql` `content[0].text` is a compact finding summary (verdict, counts, `[level] rule_id: message`, suggestion). `structuredContent` stays the full public result. The text is not a second JSON copy and does not dump skipped rules or echo the audited SQL.
 - `list_rules` returns compact catalog rows (`rule_id`, `level`, `dialect`, `kind`, `summary`) plus a text table. `describe_rule` remains the full-body tool. `content[0].text` is the text-only surface and is not a second JSON copy of `structuredContent`.
 - `query_access_surface_contract_test.go` is the sole MCP proof that Query Access remains absent; no Query Access MCP tool is introduced.
 - The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances and PostgreSQL on the PG-capable builds.
