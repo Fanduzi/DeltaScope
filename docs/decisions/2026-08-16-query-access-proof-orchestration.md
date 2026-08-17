@@ -1,7 +1,7 @@
 # Decision: Consolidate Query Access Proof Orchestration
 
 - Date: 2026-08-16
-- Status: Proposed
+- Status: Accepted
 - Related: [Pure-read admissibility](2026-07-12-query-access-pure-read-admissibility.md), [PG17 COUNT literal proof](2026-07-31-query-access-pg17-count-literal-proof.md), [Unified online analysis entry](2026-08-12-query-access-online-analysis-entry.md)
 - Spec: `docs/plans/2026-08-16-query-access-proof-orchestration-spec.md`
 - Design: `docs/plans/2026-08-16-query-access-proof-orchestration-design.md`
@@ -100,9 +100,38 @@ Costs:
 - Catalog-probe optimization and rejected-query short-circuiting.
 - Test ownership changes or transport/API redesign.
 
-## Acceptance Criteria
+## Acceptance Evidence
 
-This decision remains Proposed until a fixed candidate demonstrates exact
-result and probe equivalence, all required gates pass, and fresh Standards and
-Spec/security reviews report no unresolved P0, P1, or P2. Acceptance evidence
-must cite immutable base and candidate SHAs.
+Accepted after two rejection rounds. Round 1 found four P2 findings (dual
+reason normalization, test-only `promotionProof.reasonCodes`, stale module
+README description, acceptance evidence not covering the final non-ADR
+candidate), fixed in `d0341838875ceaeeffac5ad6c15874c6b6c64d7d`. Round 2
+found one P2 finding (contract documentation stale after the
+`promotionProof.reasonCodes` deletion), fixed in
+`98056130563f2eca4e421d1f30b87262fa43fecb` with the ADR reverted to Proposed
+in `54641b3`. Fresh Standards and Spec/security reviews of the fixed
+candidate `98056130563f2eca4e421d1f30b87262fa43fecb` against the immutable
+base `099ebbf0b79a229afbd7489344a218e5d404b43c` (origin/main) reported no
+unresolved P0, P1, or P2. The final candidate `f2a10b846466d21ce9371a1932f16cd6844fdf08`
+adds only a markdown code-fence rendering fix in the design doc; no behavior
+changed after review.
+
+- Commits `e893220` (propose), `569baa1` (characterize), `e1f244f`
+  (consolidate), `9a0ab0f` (L3 header), `f7ba597` (review comment),
+  `8340384` (revert acceptance), `d034183` (fix round-1 findings),
+  `54641b3` (revert acceptance), `9805613` (sync contract descriptions), and
+  `f2a10b8` (fence fix) form the milestone on branch
+  `feat/query-access-proof-orchestration-issue-15-20260816`.
+- Characterization evidence: the contract tests demonstrate RED when proof
+  runs before requirements (exact COUNT(1) case), when a barrier is allowed
+  through, when the wrong reason is removed (kept-set witness), or when a
+  dialect's proof applicability changes; every mutation was restored
+  byte-for-byte.
+- Equivalence evidence: default (958) and `postgresql`-tagged (1268)
+  queryaccess suites, default and tagged full tests, affected race tests,
+  Query Access corpus, `pg-unit-test-gates`, `pg-confidence-gates`
+  (Docker-backed CLI/HTTP/MCP E2E), recording/live fixtures, builds, dual-tag
+  vet, lint, decision-record, gofmt, three-level-doc, and tidy gates pass.
+- No public SDK/CLI/HTTP/MCP, SQL support, manifest, fixture, workflow,
+  version, or release surface changed; issue #15 remains open pending
+  separate merge/push authorization.
