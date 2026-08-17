@@ -58,11 +58,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
   DELTASCOPE_VERSION=v0.480.0 sh
 ```
 
-## Cursor / MCP
+## MCP
 
 编辑器接入不需要先装 CLI。启动器是 `npx -y @fanduzi/deltascope-mcp`。
 
-Cursor `mcp.json`：
+使用 `mcp.json` 的编辑器可以这样写（Cursor 是其中之一）：
 
 ```json
 {

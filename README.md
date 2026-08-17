@@ -60,11 +60,11 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
   DELTASCOPE_VERSION=v0.480.0 sh
 ```
 
-## Cursor / MCP
+## MCP
 
 No CLI install required for editor use. The launcher is `npx -y @fanduzi/deltascope-mcp`.
 
-Cursor `mcp.json`:
+Example `mcp.json` for editors that use that file (Cursor is one of them):
 
 ```json
 {
