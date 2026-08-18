@@ -12,16 +12,33 @@
 [![变更记录](https://img.shields.io/badge/变更记录-informational)](CHANGELOG.md) [![安全策略](https://img.shields.io/badge/安全策略-important)](SECURITY.md) [![许可证](https://img.shields.io/badge/许可证-blue)](LICENSE) [![发行说明](https://img.shields.io/badge/发行说明-success)](docs/releases/README.md)
 </div>
 
-DeltaScope 是一个离线优先的 SQL 审核和数据库变更风险检查工具，支持 MySQL、TiDB、PostgreSQL 的 DDL/DML 变更审核。主产品面已经统一为 `deltascope`、`deltascope-server` 和 `deltascope-mcp`；PostgreSQL offline 能力已经直接收敛到受支持的 macOS 和 Linux 主 archive 上。它给 DBA、应用工程师、CI 流水线和 AI agent 提供同一套 DDL / DML 审核入口，在 SQL 真正落库之前先把风险暴露出来。
+面向 MySQL、TiDB、PostgreSQL 的 SQL 审核。离线就能跑，也能连库拿元数据。
 
-**常用搜索入口：**
-- [MySQL DDL审核工具](https://deltascope.pages.dev/zh/mysql-ddl-audit-tool) — 上线前检查表结构变更风险
-- [PostgreSQL / PGSQL DDL审核工具](https://deltascope.pages.dev/zh/postgresql-ddl-audit-tool) — PG 表结构变更和权限分配审核
-- [SQL上线审核工具](https://deltascope.pages.dev/zh/sql-release-audit-tool) — 在 CI 中检查数据库变更风险
+<div align="center">
+<table>
+  <tr>
+    <td align="center" valign="top" width="33%">
+      <p><strong>MySQL DML</strong></p>
+      <img src="docs/assets/deltascope-audit.gif" alt="deltascope audit --sql &quot;delete from users&quot; 返回 Verdict reject，以及 blocker dml.where.require">
+      <p><code>delete from users</code></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <p><strong>MySQL DDL</strong></p>
+      <img src="docs/assets/deltascope-audit-ddl.gif" alt="deltascope audit --sql &quot;alter table users drop column email&quot; 返回 Verdict pass，以及 notice ddl.alter.drop_column.notice">
+      <p><code>alter table users drop column email</code></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <p><strong>PostgreSQL</strong></p>
+      <img src="docs/assets/deltascope-audit-pg.gif" alt="deltascope audit --dialect postgresql --sql &quot;alter table users drop column email&quot; 返回 Verdict review，以及 warning ddl.pg.alter.drop_column.advisory">
+      <p><code>--dialect postgresql</code><br><code>alter table users drop column email</code></p>
+    </td>
+  </tr>
+</table>
+</div>
 
 ## 安装
 
-首选安装入口是仓库内的 installer script，它解析的就是 CI 发布时使用的同一套 release archive 合同。
+安装脚本会拉取 CI 发布到 GitHub Release 的同一套安装包。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
@@ -41,9 +58,33 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.480.0/install
   DELTASCOPE_VERSION=v0.480.0 sh
 ```
 
-### 方言选择 & 发布产物
+## MCP
 
-每个 tag 都会产出 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。所有 archive 均支持 MySQL、TiDB 和 PostgreSQL 离线审核，通过 `--dialect mysql|tidb|postgresql` 选择方言。installer script、Homebrew Cask 和 npm MCP launcher 都从 GitHub Release 解析对应平台的 archive。详见 [审核能力矩阵](docs/reference/audit-capability-matrix.zh-CN.md) 了解各方言覆盖面，[发行说明](docs/releases/README.md) 了解版本演进。
+MCP 启动器会自己拉二进制，不必先装 CLI。启动器是 `npx -y @fanduzi/deltascope-mcp`。
+
+`mcp.json` 示例：
+
+```json
+{
+  "mcpServers": {
+    "deltascope": {
+      "command": "npx",
+      "args": ["-y", "@fanduzi/deltascope-mcp"]
+    }
+  }
+}
+```
+
+更多安装方式见 [MCP 快速接入](#mcp-快速接入)。
+
+## 和其他工具的位置
+
+| 项目 | 定位 |
+|------|------|
+| [Yearning](https://github.com/cookieY/Yearning) / [SQLE](https://github.com/actiontech/sqle) | 工单 / 事前审核平台，带 UI |
+| [sqlfluff](https://github.com/sqlfluff/sqlfluff) | SQL 检查与格式化 |
+| [goInception](https://github.com/hanchuanchuan/goInception) | 中文审核引擎，常见于 [Archery](https://github.com/hhyo/Archery) 后端 |
+| **DeltaScope** | CLI + CI + MCP。没有工单 UI。离线就能跑，也能连库拿元数据。 |
 
 ## 快速开始
 
@@ -175,6 +216,16 @@ deltascope config lint --file ./deltascope.yaml --strict
 ```
 
 随后可用 `deltascope config status` 查看单条规则的生效 ON/OFF 状态。
+
+## 常用搜索入口
+
+- [MySQL DDL审核工具](https://deltascope.pages.dev/zh/mysql-ddl-audit-tool) — 上线前检查表结构变更风险
+- [PostgreSQL / PGSQL DDL审核工具](https://deltascope.pages.dev/zh/postgresql-ddl-audit-tool) — PG 表结构变更和权限分配审核
+- [SQL上线审核工具](https://deltascope.pages.dev/zh/sql-release-audit-tool) — 在 CI 中检查数据库变更风险
+
+## 方言选择 & 发布产物
+
+每个 tag 都会产出 archive `deltascope_<version>_<os>_<arch>.tar.gz`，包含 `deltascope`、`deltascope-server` 和 `deltascope-mcp`。所有 archive 均支持 MySQL、TiDB 和 PostgreSQL 离线审核，通过 `--dialect mysql|tidb|postgresql` 选择方言。installer script、Homebrew Cask 和 npm MCP launcher 都从 GitHub Release 解析对应平台的 archive。详见 [审核能力矩阵](docs/reference/audit-capability-matrix.zh-CN.md) 了解各方言覆盖面，[发行说明](docs/releases/README.md) 了解版本演进。
 
 ## DML 影响估算
 
