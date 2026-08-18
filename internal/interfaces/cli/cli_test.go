@@ -19,6 +19,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -2611,6 +2612,43 @@ func TestAuditCommandMarkdownRuleSummaryAggregateContract(t *testing.T) {
 	}
 	if strings.Contains(output, "`ddl.pg.") {
 		t.Fatalf("default markdown audit must not emit skipped PostgreSQL rule IDs, got:\n%s", output)
+	}
+
+	// The aggregate must be a single row whose count equals the complete JSON
+	// skipped-rule list length — no duplicate reason rows, no dropped entries.
+	jsonOut := &strings.Builder{}
+	jsonCode := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "json"},
+		strings.NewReader("\n"),
+		jsonOut,
+		&strings.Builder{},
+	)
+	if jsonCode != 1 {
+		t.Fatalf("expected blocker exit code 1 for JSON audit, got %d", jsonCode)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(jsonOut.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v", err)
+	}
+	summary, _ := decoded["rule_summary"].(map[string]any)
+	skipped, _ := summary["skipped"].([]any)
+	if len(skipped) == 0 {
+		t.Fatal("expected a non-empty JSON skipped list for the default MySQL audit")
+	}
+	wantRow := "- Not applicable to current dialect: " + strconv.Itoa(len(skipped))
+	if strings.Count(output, wantRow) != 1 {
+		t.Fatalf("expected exactly one aggregate row %q, got:\n%s", wantRow, output)
+	}
+	reasonsSection := output[strings.Index(output, "### Skip Reasons"):]
+	rows := 0
+	for _, line := range strings.Split(reasonsSection, "\n") {
+		if strings.HasPrefix(line, "- ") {
+			rows++
+		}
+	}
+	if rows != 1 {
+		t.Fatalf("expected exactly 1 skip-reason row, got %d:\n%s", rows, reasonsSection)
 	}
 }
 
