@@ -1,6 +1,6 @@
 // Package markdown renders audit results as human-readable Markdown.
 // input: internal report results from the audit application flow
-// output: deterministic Markdown bytes for CLI and agent consumption
+// output: deterministic Markdown bytes for CLI and agent consumption, with rule skip reasons aggregated by reason code
 // pos: infrastructure output adapter for the default human-oriented renderer
 // note: if this file changes, update this header and module README.md.
 package markdown
@@ -82,19 +82,19 @@ func Render(result report.Result) ([]byte, error) {
 		builder.WriteString(strconv.Itoa(result.RuleSummary.Loaded))
 		builder.WriteString("\n- Applicable: ")
 		builder.WriteString(strconv.Itoa(result.RuleSummary.Applicable))
-		builder.WriteString("\n- Skipped: ")
+		builder.WriteString("\n- Skipped with known reason: ")
 		builder.WriteString(strconv.Itoa(len(result.RuleSummary.Skipped)))
-		builder.WriteString("\n\n")
+		builder.WriteString("\n")
 
 		if len(result.RuleSummary.Skipped) > 0 {
-			builder.WriteString("## Skipped Rules\n\n")
-			for _, skipped := range result.RuleSummary.Skipped {
-				builder.WriteString("- `")
-				builder.WriteString(skipped.RuleID)
-				builder.WriteString("`: ")
-				builder.WriteString(formatSkipReason(skipped.Reason))
-				builder.WriteString("\n")
+			builder.WriteString("\n### Skip Reasons\n")
+			for _, group := range aggregateSkipReasons(result.RuleSummary.Skipped) {
+				builder.WriteString("\n- ")
+				builder.WriteString(formatSkipReason(group.Reason))
+				builder.WriteString(": ")
+				builder.WriteString(strconv.Itoa(group.Count))
 			}
+			builder.WriteString("\n")
 		}
 	}
 
@@ -219,10 +219,40 @@ func formatImpactRatio(ratio float64) string {
 	return fmt.Sprintf("%.4f", ratio)
 }
 
+// skipReasonGroup is one aggregated skip-reason row: a distinct reason code and
+// the number of skipped rules that share it.
+type skipReasonGroup struct {
+	Reason rule.SkipReason
+	Count  int
+}
+
+// aggregateSkipReasons collapses the complete skipped-rule slice into one row
+// per distinct SkipReason, ordered deterministically by the raw reason code.
+// The dense per-rule list stays available in JSON; Markdown presents only the
+// distinct explanations.
+func aggregateSkipReasons(skipped []rule.SkippedRule) []skipReasonGroup {
+	counts := make(map[rule.SkipReason]int)
+	for _, skippedRule := range skipped {
+		counts[skippedRule.Reason]++
+	}
+	reasons := make([]rule.SkipReason, 0, len(counts))
+	for reason := range counts {
+		reasons = append(reasons, reason)
+	}
+	slices.SortFunc(reasons, func(a, b rule.SkipReason) int {
+		return strings.Compare(string(a), string(b))
+	})
+	groups := make([]skipReasonGroup, 0, len(reasons))
+	for _, reason := range reasons {
+		groups = append(groups, skipReasonGroup{Reason: reason, Count: counts[reason]})
+	}
+	return groups
+}
+
 func formatSkipReason(reason rule.SkipReason) string {
 	switch reason {
 	case rule.SkipReasonDialectMismatch:
-		return "not applicable to current dialect"
+		return "Not applicable to current dialect"
 	default:
 		return string(reason)
 	}

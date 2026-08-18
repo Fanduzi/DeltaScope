@@ -356,7 +356,7 @@ Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追�
 
 #### 规则摘要
 
-JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现；在 markdown 中渲染为 `## Rule Summary` 和 `## Skipped Rules` 区段。GitHub Actions 和 SARIF 输出不包含规则摘要。
+JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现，保留完整的逐规则跳过列表（每个 `rule_id` 和 `reason`）。在 markdown 中渲染为 `## Rule Summary` 区段，包含 `Loaded`、`Applicable`、`Skipped with known reason`，并在记录任何跳过原因时附带 `### Skip Reasons` 子区段，按原因代码聚合跳过规则并确定性排序。Markdown 不会展开被跳过的规则 ID；需要精确的逐规则列表时请使用 JSON。GitHub Actions 和 SARIF 输出不包含规则摘要。
 
 #### PostgreSQL 信任信号
 

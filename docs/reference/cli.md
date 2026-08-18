@@ -401,7 +401,7 @@ Fingerprints are stable across runs so GitLab can track findings across pipeline
 
 #### Rule Summary
 
-JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`; in markdown it renders as `## Rule Summary` and `## Skipped Rules` sections. GitHub Actions and SARIF output do not include rule summary.
+JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`, keeping the complete per-rule skipped list with every `rule_id` and `reason`. In markdown it renders as `## Rule Summary` with `Loaded`, `Applicable`, `Skipped with known reason`, and — when any skip reason is recorded — a `### Skip Reasons` subsection aggregating the skipped rules by reason code, ordered deterministically. Markdown never expands skipped rule IDs; request JSON when the exact per-rule list is needed. GitHub Actions and SARIF output do not include rule summary.
 
 #### PostgreSQL Trust Signals
 

@@ -385,11 +385,11 @@ Distinguish it from a real parse failure by checking the error message — capab
 
 All output formats report audit context and rule summary information that helps you judge how much of the audit is trustworthy:
 
-- **Markdown**: `## Audit Context` section shows the dialect and trust note; `## Rule Summary` and `## Skipped Rules` sections show which rules ran.
-- **JSON**: `context` object shows `mode`, `dialect`, and `dialect_source`; `rule_summary` object shows loaded, applicable, and skipped counts.
+- **Markdown**: `## Audit Context` section shows the dialect and trust note; `## Rule Summary` shows loaded, applicable, and skipped-with-known-reason counts plus a `### Skip Reasons` aggregate ordered by reason code (no skipped rule IDs).
+- **JSON**: `context` object shows `mode`, `dialect`, and `dialect_source`; `rule_summary` object shows loaded, applicable, and skipped counts along with the complete per-rule skipped list.
 - **Quiet**: `[context]` line shows mode and dialect at the end of output.
 
-When reviewing migrations, check the skipped-rules count — a high number of skipped rules (especially for your target dialect) may indicate the audit is running under the wrong dialect or that certain rule families are not applicable. This helps you decide whether the current audit result is sufficient or whether additional manual review is needed.
+When reviewing migrations, check the skipped-rules count — a high number of skipped rules (especially for your target dialect) may indicate the audit is running under the wrong dialect or that certain rule families are not applicable. The `### Skip Reasons` aggregate in Markdown keeps that signal visible without dumping every rule ID; use JSON output when the exact skipped-rule list is needed. This helps you decide whether the current audit result is sufficient or whether additional manual review is needed.
 
 ### PostgreSQL Coverage Milestones (v0.21.0 / v0.23.0 / v0.24.0)
 

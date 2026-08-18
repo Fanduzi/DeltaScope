@@ -6,8 +6,8 @@ Default human-readable renderer for internal audit results.
 
 | File | Responsibility |
 |------|---------------|
-| render.go | Formats audit results into deterministic Markdown, including the derived Action Summary |
-| render_test.go | Verifies summary, statement findings, global finding rendering, and the Action Summary section |
+| render.go | Formats audit results into deterministic Markdown, including the derived Action Summary and the aggregated rule skip reasons |
+| render_test.go | Verifies summary, statement findings, global finding rendering, the Action Summary section, and the rule summary aggregation |
 
 ## Exports
 
@@ -53,6 +53,25 @@ raw SQL or finding metadata appears in the section:
 
 When more than 10 rule groups exist, the section keeps the first 10 and appends a
 `Showing 10 of N rule groups.` line.
+
+## Rule Summary
+
+`Render` keeps the `## Rule Summary` section bounded by the number of distinct
+skip reasons instead of the rule catalog size:
+
+- Shows `Loaded`, `Applicable`, and `Skipped with known reason` counts. The
+  skipped count is the recorded slice size, not the arithmetic complement of
+  `Applicable`.
+- When the skipped list is non-empty, renders `### Skip Reasons` with one row
+  per distinct `SkipReason`, ordered deterministically by the raw reason code.
+- Known reasons use bounded human text (for example `Not applicable to current dialect`); an unknown future code is rendered verbatim.
+- Emits no skipped rule ID and no `## Skipped Rules` section. The complete
+  per-rule list remains available through explicit JSON output.
+- When no skip reason is recorded, the zero count is shown and `### Skip Reasons`
+  is omitted.
+
+The aggregation is presentation-only: domain types and the JSON
+`rule_summary.skipped` array stay unchanged.
 
 ## Dependencies
 - Upstream: CLI and future API adapters that need human-readable output
