@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # input: VERSION with leading v
-# output: validation that source, npm, README, release-note, release index, and landing current-version surfaces match VERSION
+# output: validation that source, npm, MCP Registry, README, release-note, release index, and landing current-version surfaces match VERSION
 # pos: release contract gate called by Makefile and release workflow before publishing
 
 set -euo pipefail
@@ -108,9 +108,16 @@ main() {
   require_grep_literal "DefaultVersion = \"${VERSION}\"" "pkg/deltascope/version.go"
   require_grep_literal "DefaultVersion\` is \`${VERSION}" "pkg/deltascope/README.md"
 
-  local npm_version
+  local npm_version registry_name registry_version registry_package_version
   npm_version="$(node -p 'require("./packages/deltascope-mcp/package.json").version')"
   [[ "${npm_version}" == "${raw_version}" ]] || fail "npm package version ${npm_version} != ${raw_version}"
+
+  registry_name="$(node -p 'require("./server.json").name')"
+  registry_version="$(node -p 'require("./server.json").version')"
+  registry_package_version="$(node -p 'require("./server.json").packages[0].version')"
+  [[ "$(node -p 'require("./packages/deltascope-mcp/package.json").mcpName')" == "${registry_name}" ]] || fail "npm mcpName does not match server.json name"
+  [[ "${registry_version}" == "${raw_version}" ]] || fail "server.json version ${registry_version} != ${raw_version}"
+  [[ "${registry_package_version}" == "${raw_version}" ]] || fail "server.json package version ${registry_package_version} != ${raw_version}"
 
   require_grep_literal "https://raw.githubusercontent.com/Fanduzi/DeltaScope/${VERSION}/install.sh" "README.md"
   require_grep_literal "DELTASCOPE_VERSION=${VERSION} sh" "README.md"
