@@ -1,7 +1,7 @@
 # Decision: Aggregate Markdown Rule Skip Reasons
 
 - Date: 2026-08-17
-- Status: Proposed
+- Status: Accepted
 - Issue: [#17](https://github.com/Fanduzi/DeltaScope/issues/17)
 - Spec: `docs/plans/2026-08-17-markdown-rule-summary-aggregation-spec.md`
 - Design: `docs/plans/2026-08-17-markdown-rule-summary-aggregation-design.md`
@@ -86,17 +86,32 @@ Costs:
 
 ## Acceptance Criteria
 
-This decision remains Proposed until a fixed candidate on the refresh branch
-satisfies the spec's renderer, CLI, and JSON evidence; all required gates pass;
-and fresh Standards and Spec review report no unresolved P0, P1, or P2.
-Acceptance evidence must cite immutable base and candidate SHAs.
+This decision remained Proposed until a fixed candidate on the refresh branch
+satisfied the spec's renderer, CLI, and JSON evidence; all required gates
+passed; and fresh Standards and Spec review reported no unresolved P0, P1, or
+P2. Acceptance evidence cites immutable base and candidate SHAs.
 
 Fixed refresh base: `9f98315f14a25bd0bac2218e0d079001348f10f0`
 (`origin/main` at refresh start). The previous reviewed candidate
 `e28f6d5efcf52fc9f88bf96979ac94ecce30aa04` (branch
 `feat/markdown-rule-summary-aggregation-issue-17-20260817`, base
 `34d6c6d9e33f75e7cb298ff96324413b4f320b28`) was superseded because its base
-predated the #18-#26 merges; it remains historical evidence only and does not
-authorize acceptance of the refreshed candidate. Acceptance on this branch is
-awarded only after the fresh review loop over the new fixed candidate on base
-`9f98315...` reports no unresolved P0, P1, or P2.
+predated the #18-#26 merges; it remains historical evidence only and did not
+authorize this acceptance.
+
+Accepted on branch `feat/markdown-rule-summary-aggregation-issue-17-refresh-20260818`
+with base `9f98315f14a25bd0bac2218e0d079001348f10f0` and fixed reviewed
+candidate `0adbeeaa0e7d85a6ff333fcc6a07226486089ee6`, covering commits
+`e33a1ef` (docs proposal import with ADR Proposed), `1c293eb` (renderer/CLI
+RED characterization), `d41952a` (aggregated `### Skip Reasons` implementation
+and doc sync), and `2b8068c`/`0adbeea` (review P1 remediation: exact aggregate
+row count pinned to the JSON skipped list, then exact-line matching). Fresh
+three-round two-axis review (Standards, then Spec) over `9f98315...0adbeea`
+reported zero unresolved P0, P1, and P2 after the final fix, so acceptance is
+flipped. Verification evidence: focused markdown/CLI/JSON/quiet tests, real
+CLI audit regression, full default and PostgreSQL-tagged tests, build, default
+and tagged vet, lint, CLI/MySQL/TiDB/PostgreSQL E2E suites (CLI metadata,
+PostgreSQL CLI metadata + objects, HTTP MySQL/PostgreSQL, MCP PostgreSQL, CLI
+TLS), sql-corpus and query-access corpus gates, docs-example, decision-record,
+gofmt, three-level-documentation, module-tidy, and diff-scope checks all
+green.
