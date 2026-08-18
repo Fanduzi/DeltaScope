@@ -2429,10 +2429,11 @@ func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
 		RuleSummary: &report.RuleSummary{
 			Loaded:     147,
 			Applicable: 103,
-			Skipped: []rule.SkippedRule{{
-				RuleID: "ddl.pg.table.engine.allowlist",
-				Reason: rule.SkipReasonDialectMismatch,
-			}},
+			Skipped: []rule.SkippedRule{
+				{RuleID: "ddl.pg.table.engine.allowlist", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "ddl.pg.index.concurrent.require", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "future.rule.id", Reason: "zzz.future.code"},
+			},
 		},
 	}, nil)
 	if err != nil {
@@ -2454,12 +2455,23 @@ func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
 		t.Fatalf("expected applicable=103, got %v", summary["applicable"])
 	}
 	skipped, ok := summary["skipped"].([]any)
-	if !ok || len(skipped) != 1 {
-		t.Fatalf("expected 1 skipped rule, got %#v", summary["skipped"])
+	if !ok || len(skipped) != 3 {
+		t.Fatalf("expected 3 skipped rules, got %#v", summary["skipped"])
 	}
-	first, _ := skipped[0].(map[string]any)
-	if first["rule_id"] != "ddl.pg.table.engine.allowlist" {
-		t.Fatalf("expected skipped rule_id, got %#v", first)
+	// JSON serializes the skipped slice in input order, so the expected list is the
+	// input order itself — this locks the complete per-rule list contract for Issue #17.
+	wantIDs := []string{"ddl.pg.table.engine.allowlist", "ddl.pg.index.concurrent.require", "future.rule.id"}
+	for i, raw := range skipped {
+		item, _ := raw.(map[string]any)
+		if item["rule_id"] != wantIDs[i] {
+			t.Fatalf("expected skipped[%d].rule_id=%q, got %#v", i, wantIDs[i], item)
+		}
+		if i < 2 && item["reason"] != string(rule.SkipReasonDialectMismatch) {
+			t.Fatalf("expected skipped[%d].reason=%q, got %#v", i, rule.SkipReasonDialectMismatch, item)
+		}
+		if i == 2 && item["reason"] != "zzz.future.code" {
+			t.Fatalf("expected skipped[2].reason=zzz.future.code, got %#v", item)
+		}
 	}
 }
 
@@ -2545,6 +2557,60 @@ func TestMarkdownPathWithRuleSummaryDoesNotRegress(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "## Rule Summary") {
 		t.Fatalf("expected rule summary section, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "- Skipped with known reason: 1") {
+		t.Fatalf("expected aggregate skipped count label, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "### Skip Reasons") {
+		t.Fatalf("expected skip reasons subsection, got %q", rendered)
+	}
+	if strings.Contains(rendered, "## Skipped Rules") {
+		t.Fatalf("markdown must not render the old per-rule section, got %q", rendered)
+	}
+	if strings.Contains(rendered, "ddl.pg.table.engine.allowlist") {
+		t.Fatalf("markdown must not render skipped rule IDs, got %q", rendered)
+	}
+}
+
+// TestAuditCommandMarkdownRuleSummaryAggregateContract is the real CLI-path
+// regression for Issue #17: a default `deltascope audit --sql` run keeps the
+// verdict, finding, and counts while rendering the skip reasons once instead of
+// expanding ~190 PostgreSQL-only rule IDs under ## Skipped Rules.
+func TestAuditCommandMarkdownRuleSummaryAggregateContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users"},
+		strings.NewReader("\n"),
+		stdout,
+		&strings.Builder{},
+	)
+
+	output := stdout.String()
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1 for delete-without-where, got %d\noutput=%s", code, output)
+	}
+	for _, want := range []string{
+		"Verdict: `reject`",
+		"- Blockers: 1",
+		"`dml.where.require`",
+		"## Rule Summary",
+		"- Loaded: ",
+		"- Applicable: ",
+		"- Skipped with known reason: ",
+		"### Skip Reasons",
+		"- Not applicable to current dialect: ",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected default markdown audit output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "## Skipped Rules") {
+		t.Fatalf("default markdown audit must not render ## Skipped Rules, got:\n%s", output)
+	}
+	if strings.Contains(output, "`ddl.pg.") {
+		t.Fatalf("default markdown audit must not emit skipped PostgreSQL rule IDs, got:\n%s", output)
 	}
 }
 
