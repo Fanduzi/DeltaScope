@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "deltascope": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@fanduzi/deltascope-mcp"]
+    }
+  }
+}
