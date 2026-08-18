@@ -91,7 +91,9 @@ Successful metadata-aware audits are unchanged. `--password` stays removed.
 
 CLI `Execute` tests cover a real unreachable port, stubbed access-denied with and
 without a password source, missing `--password-env` without opening a client,
-timeout, and TLS. Mapper tests keep the no-leak token set.
+timeout, and TLS. Mapper tests keep the no-leak token set. CLI TLS E2E audit
+untrusted-CA and hostname-mismatch cases expect exit `3` to match this table;
+query-access TLS cases already expected exit `3`.
 
 ## Consequences
 
