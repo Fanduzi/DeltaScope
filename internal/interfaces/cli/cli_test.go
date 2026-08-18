@@ -1,5 +1,5 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: command-line args, stdin/file SQL sources, password-prompt doubles, and config-init/version requests
+// input: command-line args, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, and config-init/version requests
 // output: end-to-end CLI behavior coverage for exit codes, rendered output, and connection-flag validation
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
@@ -19,6 +19,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -144,10 +145,70 @@ func TestAuditCommandSupportsStdinInput(t *testing.T) {
 	}
 }
 
+type unexpectedStdinReader struct {
+	t *testing.T
+}
+
+func (r unexpectedStdinReader) Read(_ []byte) (int, error) {
+	r.t.Fatal("stdin should not be read when --sql is provided")
+	return 0, io.EOF
+}
+
+func TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "empty string", args: []string{"audit", "--sql", ""}},
+		{name: "whitespace only", args: []string{"audit", "--sql", "   "}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stderr := &strings.Builder{}
+			code := Execute(
+				context.Background(),
+				tt.args,
+				unexpectedStdinReader{t: t},
+				&strings.Builder{},
+				stderr,
+			)
+			if code != 2 {
+				t.Fatalf("expected user error exit code 2, got %d", code)
+			}
+			if !strings.Contains(stderr.String(), "SQL input must not be empty") {
+				t.Fatalf("expected empty SQL error, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestAuditCommandRejectsEmptyFileInput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "empty.sql")
+	if err := os.WriteFile(path, []byte("   \n"), 0o644); err != nil {
+		t.Fatalf("write sql file: %v", err)
+	}
+
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", path},
+		unexpectedStdinReader{t: t},
+		&strings.Builder{},
+		stderr,
+	)
+	if code != 2 {
+		t.Fatalf("expected user error exit code 2, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "SQL input must not be empty") {
+		t.Fatalf("expected empty SQL error, got %q", stderr.String())
+	}
+}
+
 func TestResolveAuditSQLPrintsInteractiveStdinHint(t *testing.T) {
 	stderr := &strings.Builder{}
 
-	sql, err := resolveAuditSQL(context.Background(), strings.NewReader("delete from users"), "", "", stderr, true)
+	sql, err := resolveAuditSQL(context.Background(), strings.NewReader("delete from users"), "", "", stderr, true, false)
 	if err != nil {
 		t.Fatalf("resolve audit sql: %v", err)
 	}
@@ -166,13 +227,19 @@ func TestResolveAuditSQLRejectsConflictingOrEmptyInput(t *testing.T) {
 		t.Fatalf("write sql file: %v", err)
 	}
 
-	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "delete from users", path, io.Discard, false); err == nil {
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "delete from users", path, io.Discard, false, true); err == nil {
 		t.Fatal("expected conflict error when both --sql and --file are provided")
 	}
-	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "", path, io.Discard, false); err == nil {
+	if _, err := resolveAuditSQL(context.Background(), unexpectedStdinReader{t: t}, "", "", io.Discard, false, true); err == nil {
+		t.Fatal("expected explicit empty --sql to be rejected")
+	}
+	if _, err := resolveAuditSQL(context.Background(), unexpectedStdinReader{t: t}, "   ", "", io.Discard, false, true); err == nil {
+		t.Fatal("expected explicit whitespace --sql to be rejected")
+	}
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader(""), "", path, io.Discard, false, false); err == nil {
 		t.Fatal("expected empty file input to be rejected")
 	}
-	if _, err := resolveAuditSQL(context.Background(), strings.NewReader("   "), "", "", io.Discard, false); err == nil {
+	if _, err := resolveAuditSQL(context.Background(), strings.NewReader("   "), "", "", io.Discard, false, false); err == nil {
 		t.Fatal("expected empty stdin input to be rejected")
 	}
 }
@@ -1809,6 +1876,7 @@ func TestMapAuditErrorClassifiesKnownCases(t *testing.T) {
 		{name: "unknown dialect", err: appaudit.ErrUnknownDialect, want: exitUser},
 		{name: "unsupported statement", err: appaudit.ErrUnsupportedStatement, want: exitUser},
 		{name: "parse sql string match", err: errors.New("parse sql: syntax error"), want: exitUser},
+		{name: "parser unsupported diagnostic", err: errors.New("statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred"), want: exitUser},
 		{name: "typed pg capability boundary", err: &appaudit.PostgreSQLCapabilityBoundaryError{Message: "requires PG-capable build"}, want: exitUser},
 		{name: "load policy string match", err: errors.New("load policy: bad config"), want: exitUser},
 		{name: "context canceled", err: context.Canceled, want: exitInternal},
@@ -2362,10 +2430,11 @@ func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
 		RuleSummary: &report.RuleSummary{
 			Loaded:     147,
 			Applicable: 103,
-			Skipped: []rule.SkippedRule{{
-				RuleID: "ddl.pg.table.engine.allowlist",
-				Reason: rule.SkipReasonDialectMismatch,
-			}},
+			Skipped: []rule.SkippedRule{
+				{RuleID: "ddl.pg.table.engine.allowlist", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "ddl.pg.index.concurrent.require", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "future.rule.id", Reason: "zzz.future.code"},
+			},
 		},
 	}, nil)
 	if err != nil {
@@ -2387,12 +2456,23 @@ func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
 		t.Fatalf("expected applicable=103, got %v", summary["applicable"])
 	}
 	skipped, ok := summary["skipped"].([]any)
-	if !ok || len(skipped) != 1 {
-		t.Fatalf("expected 1 skipped rule, got %#v", summary["skipped"])
+	if !ok || len(skipped) != 3 {
+		t.Fatalf("expected 3 skipped rules, got %#v", summary["skipped"])
 	}
-	first, _ := skipped[0].(map[string]any)
-	if first["rule_id"] != "ddl.pg.table.engine.allowlist" {
-		t.Fatalf("expected skipped rule_id, got %#v", first)
+	// JSON serializes the skipped slice in input order, so the expected list is the
+	// input order itself — this locks the complete per-rule list contract for Issue #17.
+	wantIDs := []string{"ddl.pg.table.engine.allowlist", "ddl.pg.index.concurrent.require", "future.rule.id"}
+	for i, raw := range skipped {
+		item, _ := raw.(map[string]any)
+		if item["rule_id"] != wantIDs[i] {
+			t.Fatalf("expected skipped[%d].rule_id=%q, got %#v", i, wantIDs[i], item)
+		}
+		if i < 2 && item["reason"] != string(rule.SkipReasonDialectMismatch) {
+			t.Fatalf("expected skipped[%d].reason=%q, got %#v", i, rule.SkipReasonDialectMismatch, item)
+		}
+		if i == 2 && item["reason"] != "zzz.future.code" {
+			t.Fatalf("expected skipped[2].reason=zzz.future.code, got %#v", item)
+		}
 	}
 }
 
@@ -2478,6 +2558,103 @@ func TestMarkdownPathWithRuleSummaryDoesNotRegress(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "## Rule Summary") {
 		t.Fatalf("expected rule summary section, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "- Skipped with known reason: 1") {
+		t.Fatalf("expected aggregate skipped count label, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "### Skip Reasons") {
+		t.Fatalf("expected skip reasons subsection, got %q", rendered)
+	}
+	if strings.Contains(rendered, "## Skipped Rules") {
+		t.Fatalf("markdown must not render the old per-rule section, got %q", rendered)
+	}
+	if strings.Contains(rendered, "ddl.pg.table.engine.allowlist") {
+		t.Fatalf("markdown must not render skipped rule IDs, got %q", rendered)
+	}
+}
+
+// TestAuditCommandMarkdownRuleSummaryAggregateContract is the real CLI-path
+// regression for Issue #17: a default `deltascope audit --sql` run keeps the
+// verdict, finding, and counts while rendering the skip reasons once instead of
+// expanding ~190 PostgreSQL-only rule IDs under ## Skipped Rules.
+func TestAuditCommandMarkdownRuleSummaryAggregateContract(t *testing.T) {
+	stdout := &strings.Builder{}
+
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users"},
+		strings.NewReader("\n"),
+		stdout,
+		&strings.Builder{},
+	)
+
+	output := stdout.String()
+	if code != 1 {
+		t.Fatalf("expected blocker exit code 1 for delete-without-where, got %d\noutput=%s", code, output)
+	}
+	for _, want := range []string{
+		"Verdict: `reject`",
+		"- Blockers: 1",
+		"`dml.where.require`",
+		"## Rule Summary",
+		"- Loaded: ",
+		"- Applicable: ",
+		"- Skipped with known reason: ",
+		"### Skip Reasons",
+		"- Not applicable to current dialect: ",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected default markdown audit output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "## Skipped Rules") {
+		t.Fatalf("default markdown audit must not render ## Skipped Rules, got:\n%s", output)
+	}
+	if strings.Contains(output, "`ddl.pg.") {
+		t.Fatalf("default markdown audit must not emit skipped PostgreSQL rule IDs, got:\n%s", output)
+	}
+
+	// The aggregate must be a single row whose count equals the complete JSON
+	// skipped-rule list length — no duplicate reason rows, no dropped entries.
+	jsonOut := &strings.Builder{}
+	jsonCode := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "json"},
+		strings.NewReader("\n"),
+		jsonOut,
+		&strings.Builder{},
+	)
+	if jsonCode != 1 {
+		t.Fatalf("expected blocker exit code 1 for JSON audit, got %d", jsonCode)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(jsonOut.String()), &decoded); err != nil {
+		t.Fatalf("unmarshal json output: %v", err)
+	}
+	summary, _ := decoded["rule_summary"].(map[string]any)
+	skipped, _ := summary["skipped"].([]any)
+	if len(skipped) == 0 {
+		t.Fatal("expected a non-empty JSON skipped list for the default MySQL audit")
+	}
+	wantRow := "- Not applicable to current dialect: " + strconv.Itoa(len(skipped))
+	rowMatches := 0
+	for _, line := range strings.Split(output, "\n") {
+		if line == wantRow {
+			rowMatches++
+		}
+	}
+	if rowMatches != 1 {
+		t.Fatalf("expected exactly one aggregate row %q, got:\n%s", wantRow, output)
+	}
+	reasonsSection := output[strings.Index(output, "### Skip Reasons"):]
+	rows := 0
+	for _, line := range strings.Split(reasonsSection, "\n") {
+		if strings.HasPrefix(line, "- ") {
+			rows++
+		}
+	}
+	if rows != 1 {
+		t.Fatalf("expected exactly 1 skip-reason row, got %d:\n%s", rows, reasonsSection)
 	}
 }
 
@@ -2958,8 +3135,8 @@ func TestAuditCommandRejectsRemovedPasswordFlag(t *testing.T) {
 		stderr,
 	)
 
-	if code != 3 {
-		t.Fatalf("expected exit code 3 for removed --password flag, got %d", code)
+	if code != exitUser {
+		t.Fatalf("expected exit code %d for removed --password flag, got %d", exitUser, code)
 	}
 	if !strings.Contains(stderr.String(), "unknown flag") {
 		t.Fatalf("expected unknown flag error, got %q", stderr.String())
@@ -3115,14 +3292,17 @@ func TestAuditCommandLoadsTLSCAFile(t *testing.T) {
 		stderr,
 	)
 
-	if code != 2 {
-		t.Fatalf("expected exit code 2 (connection will fail since no real DB), got %d: %s", code, stderr.String())
+	if code != exitInternal {
+		t.Fatalf("expected exit code %d after valid CA parse (connection will fail since no real DB), got %d: %s", exitInternal, code, stderr.String())
 	}
 	if strings.Contains(stderr.String(), "cannot read TLS CA file") {
 		t.Fatalf("CA file should have been readable, got %q", stderr.String())
 	}
 	if strings.Contains(stderr.String(), "invalid TLS CA certificate") {
 		t.Fatalf("CA file should have been valid PEM, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "TLS certificate verification failed") && !strings.Contains(stderr.String(), "connection failed") && !strings.Contains(stderr.String(), "connection timed out") {
+		t.Fatalf("expected bounded runtime connection/TLS failure, got %q", stderr.String())
 	}
 }
 
@@ -3177,6 +3357,7 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 		wantMsg string
 	}{
 		{name: "connection refused", input: "dial tcp 127.0.0.1:3306: connection refused", wantMsg: "connection failed"},
+		{name: "no route to host", input: "dial tcp 10.0.0.1:3306: connect: no route to host", wantMsg: "connection failed"},
 		{name: "certificate error", input: "x509: certificate signed by unknown authority", wantMsg: "TLS handshake failed"},
 		{name: "timeout", input: "dial tcp 127.0.0.1:3306: i/o timeout", wantMsg: "connection timed out"},
 		{name: "context canceled", input: "context canceled", wantMsg: "request canceled"},
@@ -3185,6 +3366,8 @@ func TestCLIMapsOnlineErrorToBoundedMessage(t *testing.T) {
 		{name: "x509 unknown authority", input: "x509: certificate signed by unknown authority", wantMsg: "TLS handshake failed"},
 		{name: "pgpass missing", input: "pgpass file not found", wantMsg: "connection failed"},
 		{name: "connection failed", input: "connection failed: host unreachable", wantMsg: "connection failed"},
+		{name: "mysql access denied", input: "Error 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)", wantMsg: "authentication failed"},
+		{name: "postgres auth failed", input: `pq: password authentication failed for user "root"`, wantMsg: "authentication failed"},
 	}
 
 	for _, tt := range tests {

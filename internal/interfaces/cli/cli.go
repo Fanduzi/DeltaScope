@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: process control from cmd/deltascope and Cobra command execution requests
-// output: executable CLI behavior and stable process exit codes for local audits
+// output: executable CLI behavior and stable process exit codes, including Cobra usage-error mapping for local audits
 // pos: interface adapter between process entrypoint and application services
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
@@ -36,9 +37,43 @@ func Execute(ctx context.Context, args []string, stdin io.Reader, stdout io.Writ
 	cmd.SetArgs(args)
 	if err := cmd.ExecuteContext(ctx); err != nil {
 		if exitCode == exitOK {
-			exitCode = exitInternal
+			exitCode = classifyUnsetExecuteError(args, err)
 		}
 		_, _ = fmt.Fprintln(stderr, err)
 	}
 	return exitCode
+}
+
+func classifyUnsetExecuteError(args []string, err error) int {
+	if !isCLIUsageError(err) {
+		return exitInternal
+	}
+	if firstPositionalArg(args) == "query-access" {
+		return exitQueryAccessUsageError
+	}
+	return exitUser
+}
+
+func isCLIUsageError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "unknown flag:") ||
+		strings.Contains(msg, "unknown shorthand flag:") ||
+		strings.Contains(msg, "unknown command") ||
+		strings.Contains(msg, "flag needs an argument")
+}
+
+func firstPositionalArg(args []string) string {
+	for _, arg := range args {
+		if arg == "--" {
+			return ""
+		}
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+		return arg
+	}
+	return ""
 }

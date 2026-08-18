@@ -1,6 +1,6 @@
 # 排查元数据感知审计问题
 
-当 `deltascope audit` 离线模式正常工作、但元数据感知模式失败或行为异常时，请使用本指南。只要提供任意连接参数（`--host`、`--port`、`--user`、`--password`、`--password-env`、`--password-file`、`--ask-password`、`--schema`、`--socket`），元数据感知模式即自动激活。
+当 `deltascope audit` 离线模式正常工作、但元数据感知模式失败或行为异常时，请使用本指南。只要提供任意连接参数（`--host`、`--port`、`--user`、`--password-env`、`--password-file`、`--ask-password`、`--schema`、`--socket`），元数据感知模式即自动激活。
 
 ## 所需 MySQL 权限
 
@@ -78,7 +78,7 @@ mysql -h 127.0.0.1 -u deltascope -p -e "SHOW TABLES IN app LIKE 'orders';"
 
 - `--host` 和 `--port` 指向正确的实例。
 - `--user` 拼写正确（某些系统区分大小写）。
-- 密码方式：交互使用时用 `--ask-password`；脚本使用时用 `--password-env VAR_NAME` 或 `--password-file /path/to/file`。生产环境尽量避免明文 `--password`，也不要在命令行中硬编码密码。
+- 密码方式：交互使用时用 `--ask-password`；脚本使用时用 `--password-env VAR_NAME` 或 `--password-file /path/to/file`。明文 `--password` 标志已移除。
 - MySQL/TiDB 端口（默认 `3306`）可被运行 DeltaScope 的机器访问，且防火墙未拦截。
 - 用户账号未限定特定主机（检查 `mysql.user.Host`）。
 
@@ -143,7 +143,7 @@ exit code: 2
 }
 ```
 
-若 `context.mode` 不是 `"metadata-aware"`，说明连接参数未提供，或连接失败后 DeltaScope 退回了离线模式。请检查参数和凭据。
+若 `context.mode` 不是 `"metadata-aware"`，说明连接参数未提供。真正的连接失败不会退回离线模式，而是向 stderr 打印一行有界消息并以退出码 `2` 或 `3` 结束（见 [CLI 连接错误](../reference/cli.zh-CN.md)）。
 
 ### 元数据规则未触发
 
@@ -185,6 +185,6 @@ deltascope audit \
 }
 ```
 
-若 `context` 字段缺失，或 `mode` 不是 `"metadata-aware"`，说明连接参数未提供，或连接失败后 DeltaScope 退回了离线模式。请检查参数和凭据。
+若 `context` 字段缺失，或 `mode` 不是 `"metadata-aware"`，说明连接参数未提供。真正的连接失败不会退回离线模式，而是向 stderr 打印一行有界消息并以退出码 `2` 或 `3` 结束（见 [CLI 连接错误](../reference/cli.zh-CN.md)）。
 
 关于元数据感知模式的概念模型，请参阅 [../concept/metadata-aware-mode.zh-CN.md](../concept/metadata-aware-mode.zh-CN.md)。

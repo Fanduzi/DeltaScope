@@ -113,7 +113,7 @@ deltascope audit --dialect postgresql --sql "DROP SUBSCRIPTION sub WITH (DROP SL
 
 ## 覆盖目录查询（v0.280.0）
 
-从 `v0.280.0` 开始，`deltascope ddl-coverage` CLI 命令可直接查询生成的覆盖目录。这是目录查询工具——它不执行审计、不解析 SQL、不调用审计服务。
+`deltascope ddl-coverage` CLI 命令（`v0.280.0` 起提供）查询生成的覆盖目录。当前二进制会把该目录编译进命令，因此可在空工作目录运行，不需要进程旁边存在 `docs/reference/ddl-coverage-catalog.json`。这是目录查询工具——它不执行审计、不解析 SQL、不调用审计服务。
 
 ### 概要
 

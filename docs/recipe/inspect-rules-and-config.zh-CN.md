@@ -175,7 +175,7 @@ ddl.table.drop.forbid                    blocker  common   ddl   table
 deltascope config init > deltascope.yaml
 ```
 
-生成的 YAML 文件包含每条规则的默认 `enabled` 状态、`level` 以及所有 `params`。以此作为团队策略定制的起点。
+生成的 YAML 文件包含每条规则的默认 `enabled` 状态、`level` 以及所有 `params`。空字符串参数会写成 `""`，因此 `config lint` 可以接受该文件。以此作为团队策略定制的起点。
 
 ### 校验配置文件
 

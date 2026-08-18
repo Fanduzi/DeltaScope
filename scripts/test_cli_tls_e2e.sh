@@ -459,18 +459,18 @@ run_mysql_audit_suite() {
     "--schema app --fail-on none" \
     "metadata-aware"
 
-  # Untrusted CA — expect connection failure (exit 2; audit uses exitUser for connection failures)
+  # Untrusted CA — expect runtime TLS failure (exit 3; audit maps cert/handshake errors to exitInternal)
   run_tls_case \
     "mysql84-audit-untrusted" \
-    "audit" "mysql" 2 \
+    "audit" "mysql" 3 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${audit_sql}" \
     "--schema app --fail-on none"
 
-  # Hostname mismatch — cert has localhost SAN, connect via 127.0.0.1 (exit 2)
+  # Hostname mismatch — cert has localhost SAN, connect via 127.0.0.1 (exit 3)
   run_tls_case \
     "mysql84-audit-hostname-mismatch" \
-    "audit" "mysql" 2 \
+    "audit" "mysql" 3 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${audit_sql}" \
     "--schema app --fail-on none"
@@ -528,18 +528,18 @@ run_pg_audit_suite() {
     "--schema app --database app --fail-on none" \
     "metadata-aware"
 
-  # Untrusted CA — expect connection failure (exit 2; audit uses exitUser for connection failures)
+  # Untrusted CA — expect runtime TLS failure (exit 3; audit maps cert/handshake errors to exitInternal)
   run_tls_case \
     "pg17-audit-untrusted" \
-    "audit" "postgresql" 2 \
+    "audit" "postgresql" 3 \
     "localhost" "${untrusted_port}" "${trusted_ca}" \
     "${audit_sql}" \
     "--schema app --database app --fail-on none"
 
-  # Hostname mismatch — cert has localhost SAN, connect via 127.0.0.1 (exit 2)
+  # Hostname mismatch — cert has localhost SAN, connect via 127.0.0.1 (exit 3)
   run_tls_case \
     "pg17-audit-hostname-mismatch" \
-    "audit" "postgresql" 2 \
+    "audit" "postgresql" 3 \
     "127.0.0.1" "${port}" "${trusted_ca}" \
     "${audit_sql}" \
     "--schema app --database app --fail-on none"

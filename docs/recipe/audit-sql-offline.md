@@ -271,7 +271,7 @@ deltascope audit \
 
 ## Stdin Input
 
-DeltaScope reads from stdin when no `--sql` or `--file` flag is supplied. This works naturally with shell pipes and heredocs.
+DeltaScope reads from stdin when no `--sql` or `--file` flag is supplied. An explicit empty `--sql` is rejected instead of waiting on stdin. This works naturally with shell pipes and heredocs.
 
 ```bash
 # Pipe from cat

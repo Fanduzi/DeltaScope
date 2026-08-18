@@ -6,9 +6,9 @@ CLI adapter layer for the DeltaScope application.
 
 | File | Responsibility |
 |------|---------------|
-| cli.go | Bridges process execution into the testable CLI executor |
+| cli.go | Bridges process execution into the testable CLI executor and maps unset Cobra usage errors (unknown flags/commands) to exit 2, except query-access usage which stays 3 |
 | root.go | Builds the Cobra root command, shared CLI option state, and stable error/exit-code mapping |
-| audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, quiet/normal/github-summary rendering, and fail-threshold logic |
+| audit.go | Implements the `audit` subcommand, SQL input loading, interactive stdin hinting, MySQL-style connection flag parsing, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, bounded metadata connection error mapping (exit 2 vs 3), quiet/normal/github-summary rendering, and fail-threshold logic |
 | audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout) into the shared metadata-preparation flow and MySQL-compatible client opener |
 | query_access.go | Implements the `query-access analyze` subcommand with SQL input loading, mode/dialect/schema flags, JSON output, admission-based exit codes, identity-routed online analysis through the opaque unified SDK session, and bounded connection-failure translation for generic constructor/capability sentinels |
 | query_access_test.go | Verifies query-access command JSON output, exit codes, field names, mode handling, unified online entry wiring with an empty analysis dialect, bounded generic constructor/capability failure presentation, close ownership, and no-audit-field-leakage |
@@ -19,19 +19,22 @@ CLI adapter layer for the DeltaScope application.
 | query_access_postgresql_no_leak_test.go | PostgreSQL 17 integration no-leak coverage for online `COUNT(1)`, excluded shapes, and default-offline CLI paths |
 | rules.go | Implements `rules list` (with dialect/level/kind/category/search/format/limit filters) and `rules explain <rule-id>` on top of the shipped rule catalog, including text and JSON output |
 | config.go | Implements the `config` command group, including `lint` (semantic validation plus rule-level replacement-hazard warnings and `--strict`), `show-default`, and wiring for `status` |
-| config_init.go | Implements `config init` and emits a deterministic default YAML template |
+| config_init.go | Implements `config init` and emits a deterministic default YAML template with empty string params encoded as `""` |
+| config_init_test.go | Verifies `config init` / `show-default` / shipped example YAML lint clean, encode empty strings as quoted YAML, preserve a hand-written full-spec override, and leave default-policy audit findings unchanged |
 | config_status.go | Implements `config status <rule-id>`, showing the effective ON/OFF state, level, default/current snapshots, and config effect for one rule via the config status application service, with text and JSON output |
 | capabilities.go | Implements the `capabilities` summary command and shared rendering helpers for human/agent discovery of shipped dialects, modes, inputs, outputs, and public surfaces (`cli`, `http`, `mcp`, `go-api`) |
-| ddl_coverage.go | Implements the `ddl-coverage` command for querying the generated DDL coverage catalog with text and JSON output, flag validation, and filter rendering |
+| ddl_coverage.go | Implements the `ddl-coverage` command for querying the generated (embedded) DDL coverage catalog with text and JSON output, flag validation, filter rendering, and exit-2 catalog-unavailable mapping for a missing `--catalog` override |
 | capability_surface.go | Defines the pure-Go build capability surface and root CLI wording |
 | capability_surface_pg.go | Defines the PostgreSQL-tagged build capability surface and root CLI wording |
 | version.go | Implements the `version` subcommand with ASCII logo plus build-version and supported-dialect output |
-| cli_test.go | Verifies input modes, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, explanation rendering in Markdown/JSON results, the user-facing Action Summary markdown contract (section presence, rule explain command, statement index, clean-result omission, JSON/quiet non-regression, and no severity field), github-summary format coverage (REJECT/PASS verdict, action summary, clean-result omission, no raw SQL, no severity, help advertising, unsupported-format messaging), and help advertising of all output formats |
-| ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, and no-leak sanity across all 400 catalog entries |
+| cli_test.go | Verifies input modes including explicit empty/whitespace `--sql` fail-closed without reading stdin, empty `--file` rejection, connection/password UX, exit-code behavior, capability/version wording surfaces, audit context output, explanation rendering in Markdown/JSON results, the user-facing Action Summary markdown contract (section presence, rule explain command, statement index, clean-result omission, JSON/quiet non-regression, and no severity field), the aggregated rule-summary markdown contract (bounded `### Skip Reasons`, no `## Skipped Rules` section, no skipped rule IDs) and JSON rule-summary list preservation, github-summary format coverage (REJECT/PASS verdict, action summary, clean-result omission, no raw SQL, no severity, help advertising, unsupported-format messaging), and help advertising of all output formats |
+| cli_user_input_exit_test.go | Verifies unknown flags and unparseable SQL exit 2, parser-error JSON keeps an empty verdict with `diagnostics[].classification == parser_error`, and existing format/dialect/missing-file user errors stay at exit 2 |
+| cli_metadata_connection_exit_test.go | Verifies metadata-aware connection failures exit 3 with bounded dial/auth/timeout/TLS messages, omitted password source after auth failure exits 2, and missing `--password-env` stays exit 2 without connecting |
+| ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, no-leak sanity across all 400 catalog entries, embedded-catalog lookup from an empty working directory, and exit 2 when a `--catalog` override is missing |
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, and no-severity sanity |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, schema inference, create-table partial behavior, and metadata-connect-timeout flag validation |
 | config_status_test.go | Verifies config status text/JSON output, partial-replacement danger wording, disabled-rule wording, and error mapping (missing rule id, unknown rule, invalid format, invalid config) with no severity field |
-| config_lint_test.go | Verifies config lint warnings (level-only replacement hazard), `Config OK` / `Config OK with warnings` output and exit-code matrix, `--strict`, error precedence, deterministic warning ordering, and existing invalid-value errors with no severity field |
+| config_lint_test.go | Verifies config lint warnings (level-only replacement hazard), `Config OK` / `Config OK with warnings` output and exit-code matrix, `--strict`, error precedence, deterministic warning ordering, existing invalid-value errors, and YAML-null string params still failing the type check, with no severity field |
 
 ## Exports
 

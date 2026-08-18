@@ -1,3 +1,8 @@
+// Package cli verifies CLI parser-error unsupported-contract behavior.
+// input: unparseable SQL through Execute
+// output: exit-code, diagnostic, and no-leak coverage for parser-error SQL
+// pos: interface-layer parser-error contract tests
+// note: if this file changes, update this header and module README.md.
 package cli
 
 import (
@@ -20,8 +25,8 @@ func TestCLIparserErrorUnsupportedContractMySQL(t *testing.T) {
 		stderr,
 	)
 
-	if code == 0 {
-		t.Fatalf("expected non-zero exit code for parser-error SQL, got %d", code)
+	if code != exitUser {
+		t.Fatalf("expected exit %d for parser-error SQL, got %d", exitUser, code)
 	}
 
 	output := stdout.String()
@@ -55,8 +60,8 @@ func TestCLIparserErrorUnsupportedContractTiDB(t *testing.T) {
 		stderr,
 	)
 
-	if code == 0 {
-		t.Fatalf("expected non-zero exit code for parser-error SQL, got %d", code)
+	if code != exitUser {
+		t.Fatalf("expected exit %d for parser-error SQL, got %d", exitUser, code)
 	}
 
 	combined := strings.ToLower(stdout.String() + stderr.String())

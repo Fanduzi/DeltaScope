@@ -385,11 +385,11 @@ Markdown 输出在通知触发时会渲染 `## Audit Context` 区段；JSON 输�
 
 CLI 的 `markdown`、`json` 和 `quiet` 输出都会报告审计上下文和规则摘要信息，帮助你判断审计结果的可信程度：
 
-- **Markdown**：`## Audit Context` 区段显示方言和信任提示；`## Rule Summary` 和 `## Skipped Rules` 区段显示哪些规则运行了。
-- **JSON**：`context` 对象显示 `mode`、`dialect` 和 `dialect_source`；`rule_summary` 对象显示已加载、适用和跳过的规则计数。
+- **Markdown**：`## Audit Context` 区段显示方言和信任提示；`## Rule Summary` 区段显示已加载、适用和已知原因跳过的数量，以及按原因代码排序的 `### Skip Reasons` 聚合（不包含被跳过的规则 ID）。
+- **JSON**：`context` 对象显示 `mode`、`dialect` 和 `dialect_source`；`rule_summary` 对象显示已加载、适用和跳过的规则计数，以及完整的逐规则跳过列表。
 - **Quiet**：`[context]` 行在输出末尾显示模式和方言。
 
-审查迁移时，请关注跳过规则的计数——如果跳过规则数量较多（尤其是目标方言下的规则），可能意味着审计运行在错误的方言下，或某些规则族不适用。这有助于你判断当前审计结果是否充分，是否需要额外的人工审查。
+审查迁移时，请关注跳过规则的计数——如果跳过规则数量较多（尤其是目标方言下的规则），可能意味着审计运行在错误的方言下，或某些规则族不适用。Markdown 中的 `### Skip Reasons` 聚合在不罗列每个规则 ID 的情况下保留该信号；需要精确的跳过规则列表时请使用 JSON 输出。这有助于你判断当前审计结果是否充分，是否需要额外的人工审查。
 
 ### PostgreSQL 覆盖里程碑（v0.21.0 / v0.23.0 / v0.24.0）
 

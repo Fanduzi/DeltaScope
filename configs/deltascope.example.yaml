@@ -38,7 +38,7 @@ rules:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.alter.add_index.redundant_left_prefix.forbid:
     enabled: true
@@ -69,7 +69,7 @@ rules:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.alter.add_index.unique.contains.require:
     enabled: true
@@ -88,7 +88,7 @@ rules:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.alter.change_column.compatibility.require:
     enabled: true
@@ -414,13 +414,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix:
+      prefix: ""
 
   ddl.column.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.column.not_null.require:
     enabled: true
@@ -451,13 +451,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix:
+      prefix: ""
 
   ddl.constraint.check.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.constraint.foreign_key.name.contains.require:
     enabled: true
@@ -469,13 +469,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix:
+      prefix: ""
 
   ddl.constraint.foreign_key.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.constraint.primary_key.name.contains.require:
     enabled: true
@@ -487,13 +487,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix:
+      prefix: ""
 
   ddl.constraint.primary_key.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.constraint.unique_key.name.contains.require:
     enabled: true
@@ -505,13 +505,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix:
+      prefix: ""
 
   ddl.constraint.unique_key.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.database.create.notice:
     enabled: true
@@ -689,7 +689,7 @@ rules:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.index.key_length.max_bytes.require:
     enabled: true
@@ -739,7 +739,7 @@ rules:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.index.total.max_count:
     enabled: true
@@ -764,7 +764,7 @@ rules:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.pg.alter.add_check.not_valid.require:
     enabled: true
@@ -1851,13 +1851,13 @@ rules:
     enabled: true
     level: warning
     params:
-      prefix:
+      prefix: ""
 
   ddl.table.name.suffix.require:
     enabled: true
     level: warning
     params:
-      suffix:
+      suffix: ""
 
   ddl.table.partition.forbid:
     enabled: true

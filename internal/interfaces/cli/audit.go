@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, connection-option validation, password resolution, and exit-code mapping for CLI audit invocations
+// input: audit command flags including whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
+// output: rendered audit results, connection-option validation, password resolution, and user-vs-runtime exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -43,6 +43,16 @@ func newUserError(message string) error {
 	return userError{message: message}
 }
 
+type runtimeError struct {
+	message string
+}
+
+func (e runtimeError) Error() string { return e.message }
+
+func newRuntimeError(message string) error {
+	return runtimeError{message: message}
+}
+
 func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	var inlineSQL string
 	var filePath string
@@ -58,7 +68,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 			"Metadata-aware example:\n" +
 			"  deltascope audit --sql \"alter table users add column email varchar(255)\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd))
+			sql, err := resolveAuditSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd), cmd.Flags().Changed("sql"))
 			if err != nil {
 				*exitCode = exitUser
 				return err
@@ -81,15 +91,9 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 			if connection.Enabled() {
 				client, resolvedDialect, resolvedSchema, metadataContext, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
 				if err != nil {
-					*exitCode = exitUser
-					if isBoundedApplicationError(err) {
-						return err
-					}
-					var auditMetaErr *auditmeta.Error
-					if errors.As(err, &auditMetaErr) {
-						return mapAuditMetaErrorToBounded(auditMetaErr)
-					}
-					return mapOnlineCLIBoundaryError(err)
+					mapped := mapMetadataPrepareError(err, connection)
+					*exitCode = exitCodeForCLIError(mapped)
+					return mapped
 				}
 				defer client.Close()
 				dialect = resolvedDialect
@@ -153,21 +157,22 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 }
 
 type auditConnectionOptions struct {
-	Host           string
-	Port           int
-	PortSet        bool
-	User           string
-	Password       string
-	PasswordEnv    string
-	PasswordFile   string
-	Schema         string
-	Database       string
-	Socket         string
-	Dialect        string
-	ConnectTimeout time.Duration
-	TLSMode        string
-	TLSCAFile      string
-	CACert         *x509.CertPool
+	Host              string
+	Port              int
+	PortSet           bool
+	User              string
+	Password          string
+	PasswordEnv       string
+	PasswordFile      string
+	Schema            string
+	Database          string
+	Socket            string
+	Dialect           string
+	ConnectTimeout    time.Duration
+	TLSMode           string
+	TLSCAFile         string
+	CACert            *x509.CertPool
+	passwordSourceSet bool
 }
 
 var passwordPrompt = promptPassword
@@ -251,6 +256,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 			return auditConnectionOptions{}, newUserError(fmt.Sprintf("prompt password: %v", err))
 		}
 		resolved.Password = password
+		resolved.passwordSourceSet = true
 		return resolved, nil
 	}
 
@@ -263,6 +269,7 @@ func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditCon
 		return auditConnectionOptions{}, newUserError("invalid password source")
 	}
 	resolved.Password = password
+	resolved.passwordSourceSet = hasConfiguredPasswordSource(resolved) || resolved.Password != ""
 	return resolved, nil
 }
 
@@ -274,11 +281,14 @@ func (o auditConnectionOptions) Enabled() bool {
 	return o.Host != "" || o.PortSet || o.User != "" || o.Password != "" || o.Schema != "" || o.Socket != ""
 }
 
-func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool) (string, error) {
-	if strings.TrimSpace(inlineSQL) != "" && strings.TrimSpace(filePath) != "" {
+func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool, sqlProvided bool) (string, error) {
+	if sqlProvided && strings.TrimSpace(filePath) != "" {
 		return "", newUserError("use either --sql or --file, not both")
 	}
-	if strings.TrimSpace(inlineSQL) != "" {
+	if sqlProvided {
+		if strings.TrimSpace(inlineSQL) == "" {
+			return "", newUserError("SQL input must not be empty")
+		}
 		return inlineSQL, nil
 	}
 	if strings.TrimSpace(filePath) != "" {
@@ -527,10 +537,12 @@ func mapAuditError(exitCode *int, err error) error {
 		*exitCode = exitUser
 	case strings.Contains(err.Error(), "parse sql:"):
 		*exitCode = exitUser
+	case strings.Contains(err.Error(), "statement was not audited because the selected dialect parser could not parse it"):
+		*exitCode = exitUser
 	case strings.Contains(err.Error(), "load policy:"):
 		*exitCode = exitUser
 	case isOnlineConnectionError(err):
-		*exitCode = exitUser
+		*exitCode = exitInternal
 		return mapOnlineCLIBoundaryError(err)
 	default:
 		*exitCode = exitInternal
@@ -557,6 +569,40 @@ func isBoundedApplicationError(err error) bool {
 	return false
 }
 
+func mapMetadataPrepareError(err error, connection auditConnectionOptions) error {
+	if isBoundedApplicationError(err) {
+		return err
+	}
+	var auditMetaErr *auditmeta.Error
+	if errors.As(err, &auditMetaErr) {
+		return applyPasswordSourceHint(mapAuditMetaErrorToBounded(auditMetaErr), connection)
+	}
+	return applyPasswordSourceHint(mapOnlineCLIBoundaryError(err), connection)
+}
+
+func exitCodeForCLIError(err error) int {
+	var ue userError
+	if errors.As(err, &ue) {
+		return exitUser
+	}
+	var re runtimeError
+	if errors.As(err, &re) {
+		return exitInternal
+	}
+	var auditMetaErr *auditmeta.Error
+	if errors.As(err, &auditMetaErr) {
+		switch auditMetaErr.Kind {
+		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired:
+			return exitUser
+		}
+	}
+	var capabilityErr *appaudit.PostgreSQLCapabilityBoundaryError
+	if errors.As(err, &capabilityErr) {
+		return exitUser
+	}
+	return exitInternal
+}
+
 func mapAuditMetaErrorToBounded(err *auditmeta.Error) error {
 	switch err.Kind {
 	case auditmeta.ErrorConnectionOpen:
@@ -568,34 +614,68 @@ func mapAuditMetaErrorToBounded(err *auditmeta.Error) error {
 	case auditmeta.ErrorInvalidSQL:
 		return newUserError("invalid SQL input")
 	default:
-		return newUserError("connection failed")
+		return newRuntimeError("connection failed")
 	}
 }
 
-func classifyConnectionError(err *auditmeta.Error) error {
-	msg := strings.ToLower(err.Error())
+func classifyConnectionError(err error) error {
+	msg := connectionErrorText(err)
 	switch {
+	case isAuthenticationFailure(msg):
+		return newRuntimeError("authentication failed")
 	case strings.Contains(msg, "certificate") || strings.Contains(msg, "x509"):
-		return newUserError("TLS certificate verification failed")
+		return newRuntimeError("TLS certificate verification failed")
 	case strings.Contains(msg, "tls"):
-		return newUserError("TLS handshake failed")
+		return newRuntimeError("TLS handshake failed")
 	case strings.Contains(msg, "timeout"):
-		return newUserError("connection timed out")
+		return newRuntimeError("connection timed out")
 	default:
-		return newUserError("connection failed")
+		return newRuntimeError("connection failed")
 	}
+}
+
+func connectionErrorText(err error) string {
+	if err == nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(strings.ToLower(err.Error()))
+	if inner := errors.Unwrap(err); inner != nil {
+		b.WriteByte('\n')
+		b.WriteString(strings.ToLower(inner.Error()))
+	}
+	return b.String()
+}
+
+func isAuthenticationFailure(msg string) bool {
+	return strings.Contains(msg, "access denied") ||
+		strings.Contains(msg, "authentication failed") ||
+		strings.Contains(msg, "password authentication") ||
+		strings.Contains(msg, "invalid authorization")
+}
+
+func applyPasswordSourceHint(err error, connection auditConnectionOptions) error {
+	if err != nil && err.Error() == "authentication failed" && !connection.passwordSourceSet {
+		return newUserError("password source required: use --password-env, --password-file, or --ask-password")
+	}
+	return err
 }
 
 func isOnlineConnectionError(err error) bool {
-	msg := err.Error()
+	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "connection refused") ||
+		strings.Contains(msg, "no route to host") ||
+		strings.Contains(msg, "network is unreachable") ||
+		strings.Contains(msg, "host unreachable") ||
 		strings.Contains(msg, "certificate") ||
 		strings.Contains(msg, "timeout") ||
 		strings.Contains(msg, "dial tcp") ||
+		strings.Contains(msg, "dial unix") ||
 		strings.Contains(msg, "tls:") ||
 		strings.Contains(msg, "x509:") ||
 		strings.Contains(msg, "connection failed") ||
-		strings.Contains(msg, "pgpass")
+		strings.Contains(msg, "pgpass") ||
+		isAuthenticationFailure(msg)
 }
 
 func promptPassword(stderr io.Writer) (string, error) {
@@ -636,19 +716,19 @@ func promptPassword(stderr io.Writer) (string, error) {
 func mapOnlineCLIBoundaryError(err error) error {
 	msg := err.Error()
 	switch {
+	case isAuthenticationFailure(strings.ToLower(msg)):
+		return newRuntimeError("authentication failed")
 	case strings.Contains(msg, "certificate"):
-		return newUserError("TLS handshake failed")
+		return newRuntimeError("TLS handshake failed")
 	case strings.Contains(msg, "x509:"):
-		return newUserError("TLS certificate verification failed")
+		return newRuntimeError("TLS certificate verification failed")
 	case strings.Contains(msg, "tls:"):
-		return newUserError("TLS handshake failed")
+		return newRuntimeError("TLS handshake failed")
 	case strings.Contains(msg, "timeout"):
-		return newUserError("connection timed out")
+		return newRuntimeError("connection timed out")
 	case strings.Contains(msg, "context canceled"):
-		return newUserError("request canceled")
-	case strings.Contains(msg, "connection refused"):
-		return newUserError("connection failed")
+		return newRuntimeError("request canceled")
 	default:
-		return newUserError("connection failed")
+		return newRuntimeError("connection failed")
 	}
 }

@@ -46,7 +46,7 @@ func NewServer(config Config) *sdkmcp.Server {
 	}, recoverTool(describeRuleTool, panicLog))
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
 		Name:         "list_rules",
-		Description:  "List shipped DeltaScope rules with optional filters.",
+		Description:  "List shipped DeltaScope rules as compact catalog rows. Use describe_rule for the full body of one rule.",
 		OutputSchema: listRulesOutputSchema,
 	}, recoverTool(listRulesTool, panicLog))
 	sdkmcp.AddTool(server, &sdkmcp.Tool{
@@ -78,7 +78,12 @@ func describeRuleTool(_ context.Context, _ *sdkmcp.CallToolRequest, input descri
 }
 
 func listRulesTool(_ context.Context, _ *sdkmcp.CallToolRequest, input listRulesInput) (*sdkmcp.CallToolResult, any, error) {
-	return nil, listRulesPayload(input.Query), nil
+	payload := listRulesPayload(input.Query)
+	return &sdkmcp.CallToolResult{
+		Content: []sdkmcp.Content{
+			&sdkmcp.TextContent{Text: renderListRulesText(payload)},
+		},
+	}, payload, nil
 }
 
 func newGetCapabilitiesTool(config Config) func(context.Context, *sdkmcp.CallToolRequest, getCapabilitiesInput) (*sdkmcp.CallToolResult, any, error) {

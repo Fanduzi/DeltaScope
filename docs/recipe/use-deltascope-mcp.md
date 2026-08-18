@@ -15,9 +15,13 @@ Use the launcher when you want a copy-and-use setup. Use the native binary when 
 DeltaScope MCP exposes four official tools:
 
 - `audit_sql`
-- `describe_rule`
-- `list_rules`
+- `describe_rule` — full body of one shipped rule
+- `list_rules` — compact catalog rows (`rule_id`, `level`, `dialect`, `kind`, `summary`) with an optional `query`
 - `get_capabilities`
+
+`audit_sql` puts a compact finding summary in `content[0].text`: verdict, counts, each `[level] rule_id: message`, and the suggestion when present. The full result stays in `structuredContent`. The text is not a second JSON copy of that object and does not dump skipped rules or echo the audited SQL.
+
+`list_rules` is the catalog index. Use `describe_rule` when you need why / risk / suggestion / examples for one `rule_id`. The text-only `content[0].text` surface is a compact table, not a second JSON copy of `structuredContent`.
 
 ## Discovery Files
 

@@ -1,11 +1,11 @@
 ---
 name: deltascope-review
-description: "Use when reviewing SQL, MySQL, or TiDB statements for DDL/DML safety, migration risk, schema changes, ALTER TABLE checks, DELETE/UPDATE safety, and query correctness."
+description: "Use when reviewing SQL, MySQL, TiDB, or PostgreSQL statements for DDL/DML safety, migration risk, schema changes, ALTER TABLE checks, DELETE/UPDATE safety, and query correctness."
 ---
 
 # DeltaScope SQL Review
 
-Audit SQL using [DeltaScope](https://github.com/Fanduzi/DeltaScope) — an offline SQL review engine for MySQL and TiDB that catches risky DDL/DML patterns before they hit production.
+Audit SQL using [DeltaScope](https://github.com/Fanduzi/DeltaScope) — an offline SQL review engine for MySQL, TiDB, and PostgreSQL that catches risky DDL/DML patterns before they hit production.
 
 ## Step 1 — Get the SQL
 
@@ -61,7 +61,17 @@ $RUNNER audit --file <path-to-file> --format json
 $RUNNER audit --file "$TMPFILE" --format json
 ```
 
-Add `--dialect tidb` if the user is on TiDB (default is mysql).
+Default dialect is mysql. Do not change that default.
+
+- Add `--dialect tidb` if the user is on TiDB.
+- Add `--dialect postgresql` if the user is on PostgreSQL, or if the SQL is PostgreSQL.
+
+PostgreSQL example:
+
+```bash
+# INSERT INTO users(id) VALUES (1) RETURNING id;
+$RUNNER audit --file "$TMPFILE" --format json --dialect postgresql
+```
 
 ## Step 4 — Clean up temp file
 
@@ -87,5 +97,5 @@ If the audit is clean, say so clearly.
 
 ---
 
-> Powered by **DeltaScope** — offline SQL review for MySQL & TiDB.
+> Powered by **DeltaScope** — offline SQL review for MySQL, TiDB, and PostgreSQL.
 > Star the project: https://github.com/Fanduzi/DeltaScope

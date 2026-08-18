@@ -1,0 +1,78 @@
+# Decision: Treat Explicit Empty `--sql` as Provided Input
+
+Date: 2026-08-17
+Status: Accepted
+Related milestone/version: issue #19
+Related commits:
+Related tests:
+- `TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin`
+- `TestAuditCommandRejectsEmptyFileInput`
+- `TestResolveAuditSQLRejectsConflictingOrEmptyInput`
+- `TestAuditCommandSupportsStdinInput`
+- `TestAuditSQLToolReturnsStructuredErrorForEmptySQL`
+Related docs:
+- `docs/reference/cli.md`
+- `docs/reference/cli.zh-CN.md`
+- `docs/recipe/audit-sql-offline.md`
+- `docs/recipe/audit-sql-offline.zh-CN.md`
+
+## Context
+
+`deltascope audit --sql ""` and `--sql "   "` treated the flag as omitted because
+`resolveAuditSQL` only inspected `strings.TrimSpace(inlineSQL)`. The command then
+called `io.ReadAll(stdin)`. If stdin stayed open, the process hung with no output.
+
+The same empty value with stdin closed already failed with `SQL input must not be
+empty` and exit 2. MCP `audit_sql sql=""` already fail-closes with `bad_request`.
+
+## Decision
+
+If the `--sql` flag is present (`Flags().Changed("sql")`), that value is the SQL
+input. Empty or whitespace-only `--sql` fails immediately with
+`SQL input must not be empty` and exit 2, without reading stdin.
+
+`--file` empty content and omitted-flag stdin audits keep their existing behavior.
+MCP empty-SQL handling is unchanged.
+
+## Rationale
+
+Agents and CI snippets copy `--sql "..."` and sometimes pass an empty string. That
+must be a usage error, not a blocked process. Flag presence is the correct
+"provided vs omitted" signal; trimming the value cannot distinguish `--sql ""`
+from a missing flag.
+
+## Public Contract
+
+- Explicit `--sql`, including `""` and whitespace-only text, is the audit SQL source.
+- Empty explicit `--sql` exits 2 with `SQL input must not be empty` and does not
+  read stdin.
+- `echo 'delete from users' | deltascope audit` is unchanged.
+- Empty `--file` content still exits 2 with `SQL input must not be empty`.
+- MCP empty SQL remains `isError` / `code=bad_request` / `audit SQL must not be empty`.
+
+## Deferred / Out Of Scope
+
+- Changing the existing TTY stdin hint
+- Metadata connection errors (#23)
+- Unknown-flag / parser-error exit codes (#24)
+- Successful stdin or `--file` audits
+- The same provided-vs-omitted hang on `query-access analyze --sql ""`
+
+## Verification Evidence
+
+CLI `Execute` tests pass a stdin reader that fails if read, proving `--sql ""` and
+`--sql "   "` do not fall through. Existing stdin and empty-file tests remain.
+MCP `TestAuditSQLToolReturnsStructuredErrorForEmptySQL` remains the empty-SQL
+fail-closed check.
+
+## Consequences
+
+Future CLI input sources must distinguish flag presence from empty values. Do not
+treat `TrimSpace(flag) == ""` as "flag omitted" when a missing flag should fall
+through to another source.
+
+## Links
+
+- Issue: https://github.com/Fanduzi/DeltaScope/issues/19
+- Tests: `internal/interfaces/cli/cli_test.go`, `internal/interfaces/mcp/server_test.go`
+- Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`

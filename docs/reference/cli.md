@@ -29,8 +29,10 @@ Audit one or more SQL statements from inline text, a file, or standard input.
 
 ### Input
 
-The three input sources are mutually exclusive. If none is provided, `deltascope audit` reads from
-stdin, making it easy to pipe SQL through the tool.
+The three input sources are mutually exclusive. If `--sql` and `--file` are both omitted,
+`deltascope audit` reads from stdin, making it easy to pipe SQL through the tool. An explicit
+`--sql` value, including `""` or whitespace-only text, is the SQL input and is rejected with
+`SQL input must not be empty` (exit 2) instead of falling through to stdin.
 
 | Flag | Description |
 |------|-------------|
@@ -83,6 +85,19 @@ definitions, instance variables) and attaches them to each statement before rule
 - For PostgreSQL: pass `--dialect postgresql` explicitly. Auto-detection is not supported for PostgreSQL.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
+- Connection failures print one bounded stderr line. Portable output never includes host, port,
+  user, DSN, password, or raw driver text. Empty passwords remain allowed; a missing
+  `--password-env` / `--password-file` / `--ask-password` is reported only after the server
+  rejects that empty password.
+
+| Situation | stderr | Exit |
+|-----------|--------|:----:|
+| Missing or unreadable `--password-env` / `--password-file` | `invalid password source` | `2` |
+| Authentication failed and no password source was set | `password source required: use --password-env, --password-file, or --ask-password` | `2` |
+| Authentication failed after a password source was set | `authentication failed` | `3` |
+| Server unreachable or other dial failure | `connection failed` | `3` |
+| Connect timeout | `connection timed out` | `3` |
+| TLS handshake or certificate verification | `TLS handshake failed` or `TLS certificate verification failed` | `3` |
 
 Examples:
 
@@ -386,7 +401,7 @@ Fingerprints are stable across runs so GitLab can track findings across pipeline
 
 #### Rule Summary
 
-JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`; in markdown it renders as `## Rule Summary` and `## Skipped Rules` sections. GitHub Actions and SARIF output do not include rule summary.
+JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`, keeping the complete per-rule skipped list with every `rule_id` and `reason`. In markdown it renders as `## Rule Summary` with `Loaded`, `Applicable`, `Skipped with known reason`, and — when any skip reason is recorded — a `### Skip Reasons` subsection aggregating the skipped rules by reason code, ordered deterministically. Markdown never expands skipped rule IDs; request JSON when the exact per-rule list is needed. GitHub Actions and SARIF output do not include rule summary.
 
 #### PostgreSQL Trust Signals
 
@@ -433,7 +448,7 @@ When a PG-capable DeltaScope binary encounters PostgreSQL-specific functionality
 
 #### Parser-Error Unsupported Contract
 
-When the selected dialect parser cannot parse a tracked DDL statement, DeltaScope returns a diagnostic stating that no audit was performed and no findings were inferred from the unparsed SQL. This is an unsupported parser surface, not a fallback parser. DeltaScope does not infer findings from unparsed SQL. The parser-error count is not reduced by this contract. No parser support is added, no fallback parser is introduced, and no new SQL audit rules are created. The diagnostic message is: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`.
+When the selected dialect parser cannot parse a tracked DDL statement, DeltaScope returns a diagnostic stating that no audit was performed and no findings were inferred from the unparsed SQL. This is an unsupported parser surface, not a fallback parser. DeltaScope does not infer findings from unparsed SQL. The parser-error count is not reduced by this contract. No parser support is added, no fallback parser is introduced, and no new SQL audit rules are created. The diagnostic message is: `statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`. On the CLI this path exits `2` (bad user input). JSON `verdict` stays empty; consumers must use `diagnostics[].classification == parser_error`. This is not a new `error` or `unsupported` verdict.
 
 #### Unsupported Diagnostics Evidence (v0.230.0)
 
@@ -1034,7 +1049,8 @@ deltascope config init > deltascope.yaml
 ```
 
 The generated file contains every rule with its default enabled state and all parameter values
-explicitly set. Edit it to customize your policy.
+explicitly set. Empty string params are encoded as `""` so the file is valid YAML for
+`config lint`. Edit it to customize your policy.
 
 ### config lint
 
@@ -1360,7 +1376,7 @@ deltascope capabilities
 
 ## deltascope ddl-coverage
 
-Query the generated DDL coverage catalog for verified DeltaScope entries. This is a catalog lookup command — it does not execute audits, parse SQL, or call the audit service.
+Query the generated DDL coverage catalog for verified DeltaScope entries. The catalog is compiled into the binary, so the command works from any working directory and does not require a source checkout. This is a catalog lookup command — it does not execute audits, parse SQL, or call the audit service.
 
 ### Synopsis
 

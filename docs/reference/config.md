@@ -48,6 +48,9 @@ deltascope --config ./deltascope.yaml config status dml.where.require --format j
 deltascope config show-default
 ```
 
+`config init` and `config show-default` encode empty string params as `""`. A bare `suffix:` is YAML
+null and fails `config lint`.
+
 **`config lint` clean:**
 ```
 Config OK

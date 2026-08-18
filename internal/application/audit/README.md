@@ -21,7 +21,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, multi-statement SQL, PostgreSQL validation-boundary acceptance, mixed supported/unsupported partial results, metadata enrichment behavior, metadata-backed DML `impact` surfacing, and schema-only context/top-level request plumbing |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches schema, instance, target-table, and non-table object snapshots to statements before evaluation |
 | diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
-| ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadCatalog, QueryCatalog, and Validate for reading and filtering the checked-in DDL coverage catalog without invoking the audit engine |
+| ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
+| catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |
 
 ## Exports
 
@@ -44,6 +45,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 - `CatalogEntry`
 - `CatalogQuery`
 - `CatalogResult`
+- `LoadEmbeddedCatalog() (string, []CatalogEntry, error)`
+- `LoadCatalogFile(path string) (string, []CatalogEntry, error)`
 - `LoadCatalog(path string) ([]CatalogEntry, error)`
 - `QueryCatalog(entries []CatalogEntry, q CatalogQuery) CatalogResult`
 - `CatalogQuery.Validate() error`
@@ -54,7 +57,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 ## Dependencies
 - Upstream: future CLI and public audit entrypoints
-- Downstream: `context`, `fmt`, `internal/application/policy`, `internal/domain/report`, `internal/domain/rule`, `internal/domain/rule/ddl`, `internal/domain/rule/dml`, `internal/domain/spec`, `internal/infrastructure/parser/postgresql`, `internal/infrastructure/parser/tidb`
+- Downstream: `context`, `embed`, `fmt`, `internal/application/policy`, `internal/domain/report`, `internal/domain/rule`, `internal/domain/rule/ddl`, `internal/domain/rule/dml`, `internal/domain/spec`, `internal/infrastructure/parser/postgresql`, `internal/infrastructure/parser/tidb`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

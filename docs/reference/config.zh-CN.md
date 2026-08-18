@@ -53,6 +53,8 @@ deltascope --config ./deltascope.yaml config status dml.where.require --format j
 deltascope config show-default
 ```
 
+`config init` 和 `config show-default` 会把空字符串参数写成 `""`。单独的 `suffix:` 在 YAML 里是 null，无法通过 `config lint`。
+
 **`config lint` 干净通过：**
 ```text
 Config OK

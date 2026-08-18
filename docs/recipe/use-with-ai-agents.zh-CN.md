@@ -189,7 +189,8 @@ MCP 工具面保持为：
 
 从 agent workflow 角度，最重要的 contract 点是：
 
-- `audit_sql` 保留 DeltaScope 标准结果体，并额外增加顶层 `context`
+- `audit_sql` 保留 DeltaScope 标准结果体，并额外增加顶层 `context`。`content[0].text` 是精简发现摘要（结论、计数、`[level] rule_id: message`、suggestion），不是 `structuredContent` 的第二份 JSON
+- `list_rules` 返回精简目录行（`rule_id`、`level`、`dialect`、`kind`、`summary`）；需要完整说明时使用 `describe_rule`
 - `connection_ref` 和 `connection` 互斥
 - 顶层 `dialect` 会覆盖 `connection.dialect`
 - 稳定结构化工具错误使用 `bad_request`、`connection_invalid`、`connection_failed`、`config_invalid`

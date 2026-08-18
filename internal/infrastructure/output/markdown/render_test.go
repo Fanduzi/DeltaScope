@@ -419,10 +419,10 @@ func TestMarkdownRenderIncludesRuleSummary(t *testing.T) {
 	assertContains(t, output, "## Rule Summary")
 	assertContains(t, output, "- Loaded: 147")
 	assertContains(t, output, "- Applicable: 103")
-	assertContains(t, output, "- Skipped: 1")
+	assertContains(t, output, "- Skipped with known reason: 1")
 }
 
-func TestMarkdownRenderIncludesSkippedRulesSection(t *testing.T) {
+func TestMarkdownRenderAggregatesSkippedReasons(t *testing.T) {
 	t.Parallel()
 	rendered, err := Render(report.Result{
 		Verdict: report.VerdictPass,
@@ -441,9 +441,12 @@ func TestMarkdownRenderIncludesSkippedRulesSection(t *testing.T) {
 	}
 
 	output := string(rendered)
-	assertContains(t, output, "## Skipped Rules")
-	assertContains(t, output, "`ddl.pg.index.concurrent.require`: not applicable to current dialect")
-	assertContains(t, output, "`ddl.pg.table.engine.allowlist`: not applicable to current dialect")
+	// Multiple rule IDs sharing one reason collapse into one aggregate row.
+	assertContains(t, output, "### Skip Reasons")
+	assertContains(t, output, "- Not applicable to current dialect: 2")
+	assertNotContains(t, output, "## Skipped Rules")
+	assertNotContains(t, output, "ddl.pg.table.engine.allowlist")
+	assertNotContains(t, output, "ddl.pg.index.concurrent.require")
 }
 
 func TestMarkdownRenderOmitsSkippedSectionWhenEmpty(t *testing.T) {
@@ -462,7 +465,56 @@ func TestMarkdownRenderOmitsSkippedSectionWhenEmpty(t *testing.T) {
 
 	output := string(rendered)
 	assertContains(t, output, "## Rule Summary")
+	assertContains(t, output, "- Skipped with known reason: 0")
 	assertNotContains(t, output, "## Skipped Rules")
+	assertNotContains(t, output, "### Skip Reasons")
+}
+
+// TestMarkdownRenderOrdersSkipReasonsDeterministicallyAndPreservesUnknown locks
+// the aggregate contract for multiple distinct reasons: rows sort by the raw
+// reason code, a known code renders bounded human text, and an unknown future
+// code stays visible verbatim instead of being dropped.
+func TestMarkdownRenderOrdersSkipReasonsDeterministicallyAndPreservesUnknown(t *testing.T) {
+	t.Parallel()
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     10,
+			Applicable: 7,
+			Skipped: []rule.SkippedRule{
+				{RuleID: "rule.alpha", Reason: "zzz.future.code"},
+				{RuleID: "rule.unknown", Reason: "zzz.future.code"},
+				{RuleID: "rule.beta", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "rule.gamma", Reason: "aaa.future.code"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	output := string(rendered)
+	// Raw reason codes sort deterministically: aaa.future.code, dialect_mismatch, zzz.future.code.
+	reasonsIdx := strings.Index(output, "### Skip Reasons")
+	if reasonsIdx < 0 {
+		t.Fatalf("expected ### Skip Reasons, got output:\n%s", output)
+	}
+	section := output[reasonsIdx:]
+	aaaIdx := strings.Index(section, "- aaa.future.code: 1")
+	dialectIdx := strings.Index(section, "- Not applicable to current dialect: 1")
+	zzzIdx := strings.Index(section, "- zzz.future.code: 2")
+	if aaaIdx < 0 || dialectIdx < 0 || zzzIdx < 0 {
+		t.Fatalf("expected all three reason rows, got section:\n%s", section)
+	}
+	if !(aaaIdx < dialectIdx && dialectIdx < zzzIdx) {
+		t.Fatalf("expected reason rows ordered by raw code (aaa, dialect, zzz), got section:\n%s", section)
+	}
+	assertNotContains(t, output, "## Skipped Rules")
+	assertNotContains(t, output, "rule.alpha")
+	assertNotContains(t, output, "rule.beta")
+	assertNotContains(t, output, "rule.gamma")
+	assertNotContains(t, output, "rule.unknown")
 }
 
 // statementSection returns the substring of output starting at the first per-statement

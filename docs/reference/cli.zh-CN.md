@@ -27,7 +27,7 @@ Cobra 还会为每个命令提供内建的 `--help` 标志。
 
 ### 输入
 
-三种输入来源互斥。若均未提供，`deltascope audit` 将从 stdin 读取，便于通过管道传递 SQL。
+三种输入来源互斥。若未提供 `--sql` 和 `--file`，`deltascope audit` 将从 stdin 读取，便于通过管道传递 SQL。显式传入的 `--sql`（包括 `""` 或仅空白）就是 SQL 输入；空值会立即以 `SQL input must not be empty` 失败并退出码 2，而不会回退到 stdin。
 
 | 标志 | 描述 |
 |------|------|
@@ -75,6 +75,16 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 - 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。
 - 无限定表名的 schema 解析顺序：SQL 级限定符 → `--schema` 标志 → 可访问 schema 中的唯一匹配 → 模糊时报错。
+- 连接失败时只向 stderr 打印一行有界消息。可移植输出不会包含 host、port、user、DSN、密码或原始驱动文本。空密码仍然允许；仅当服务器拒绝该空密码时，才会提示缺少 `--password-env` / `--password-file` / `--ask-password`。
+
+| 情况 | stderr | 退出码 |
+|------|--------|:------:|
+| `--password-env` / `--password-file` 缺失或不可读 | `invalid password source` | `2` |
+| 认证失败且未设置密码来源 | `password source required: use --password-env, --password-file, or --ask-password` | `2` |
+| 已设置密码来源后认证失败 | `authentication failed` | `3` |
+| 服务器不可达或其他拨号失败 | `connection failed` | `3` |
+| 连接超时 | `connection timed out` | `3` |
+| TLS 握手或证书校验失败 | `TLS handshake failed` 或 `TLS certificate verification failed` | `3` |
 
 示例：
 
@@ -346,7 +356,7 @@ Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追�
 
 #### 规则摘要
 
-JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现；在 markdown 中渲染为 `## Rule Summary` 和 `## Skipped Rules` 区段。GitHub Actions 和 SARIF 输出不包含规则摘要。
+JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现，保留完整的逐规则跳过列表（每个 `rule_id` 和 `reason`）。在 markdown 中渲染为 `## Rule Summary` 区段，包含 `Loaded`、`Applicable`、`Skipped with known reason`，并在记录任何跳过原因时附带 `### Skip Reasons` 子区段，按原因代码聚合跳过规则并确定性排序。Markdown 不会展开被跳过的规则 ID；需要精确的逐规则列表时请使用 JSON。GitHub Actions 和 SARIF 输出不包含规则摘要。
 
 #### PostgreSQL 信任信号
 
@@ -393,7 +403,7 @@ TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 DML `RETURNING`
 
 #### Parser-Error Unsupported 合同
 
-当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。
+当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。CLI 上该路径以退出码 `2`（用户输入错误）退出。JSON `verdict` 保持为空；调用方必须使用 `diagnostics[].classification == parser_error`。这不是新增 `error` 或 `unsupported` 裁决值。
 
 #### Unsupported Diagnostics Evidence（v0.230.0）
 
@@ -979,7 +989,7 @@ JSON 输出示例（节略）：
 deltascope config init > deltascope.yaml
 ```
 
-生成的文件包含所有规则，并显式设置了默认启用状态和所有参数值。可通过编辑该文件来自定义策略。
+生成的文件包含所有规则，并显式设置了默认启用状态和所有参数值。空字符串参数会写成 `""`，以便该文件能通过 `config lint`。可通过编辑该文件来自定义策略。
 
 ### config lint
 
@@ -1280,7 +1290,7 @@ deltascope capabilities
 
 ## deltascope ddl-coverage
 
-查询已生成的 DDL 覆盖目录中的 DeltaScope 已验证条目。这是目录查询命令——它不执行审计、不解析 SQL、不调用审计服务。
+查询已生成的 DDL 覆盖目录中的 DeltaScope 已验证条目。目录编译进二进制，因此可在任意工作目录运行，不需要源码检出。这是目录查询命令——它不执行审计、不解析 SQL、不调用审计服务。
 
 ### 概要
 

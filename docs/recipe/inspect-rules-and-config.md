@@ -182,7 +182,7 @@ Emit the full default policy as a YAML file you can check into your repository:
 deltascope config init > deltascope.yaml
 ```
 
-This produces a YAML file with every rule listed, its default `enabled` state, `level`, and any `params`. Use it as the starting point for your team's policy.
+This produces a YAML file with every rule listed, its default `enabled` state, `level`, and any `params`. Empty string params are written as `""` so `config lint` accepts the file. Use it as the starting point for your team's policy.
 
 ### Validate a config file
 

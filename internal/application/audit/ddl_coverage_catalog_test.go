@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package audit verifies the generated DDL coverage catalog against census baselines.
+// input: census fixtures and the checked-in docs/reference plus catalogdata JSON copies
+// output: drift detection for generated catalog JSON used by docs and the embedded binary copy
+// pos: catalog generator and release drift gate
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -44,9 +49,10 @@ type catalogJSON struct {
 // --- Constants ---
 
 const (
-	catalogVersion     = "v0.270.0"
-	catalogJSONRelPath = "../../../docs/reference/ddl-coverage-catalog.json"
-	catalogProjectRoot = "../../../"
+	catalogVersion      = "v0.270.0"
+	catalogJSONRelPath  = "../../../docs/reference/ddl-coverage-catalog.json"
+	catalogEmbedRelPath = "catalogdata/ddl-coverage-catalog.json"
+	catalogProjectRoot  = "../../../"
 )
 
 var catalogGeneratedFrom = []string{
@@ -621,19 +627,32 @@ func TestDDLCoverageCatalog(t *testing.T) {
 		if err := os.MkdirAll("../../../docs/reference", 0o755); err != nil {
 			t.Fatalf("failed to create docs/reference: %v", err)
 		}
+		if err := os.MkdirAll("catalogdata", 0o755); err != nil {
+			t.Fatalf("failed to create catalogdata: %v", err)
+		}
 		if err := os.WriteFile(catalogJSONRelPath, []byte(jsonStr), 0o644); err != nil {
 			t.Fatalf("failed to write catalog: %v", err)
 		}
-		t.Logf("catalog written to %s", catalogJSONRelPath)
+		if err := os.WriteFile(catalogEmbedRelPath, []byte(jsonStr), 0o644); err != nil {
+			t.Fatalf("failed to write embedded catalog: %v", err)
+		}
+		t.Logf("catalog written to %s and %s", catalogJSONRelPath, catalogEmbedRelPath)
 		return
 	}
 
-	// Normal mode: compare against checked-in file.
+	// Normal mode: compare against checked-in docs JSON and the embed copy.
 	existing, err := os.ReadFile(catalogJSONRelPath)
 	if err != nil {
 		t.Fatalf("catalog file not found (run with UPDATE_DDL_COVERAGE_CATALOG=1 to generate): %v", err)
 	}
 	if string(existing) != jsonStr {
 		t.Errorf("catalog JSON is stale; run:\n  UPDATE_DDL_COVERAGE_CATALOG=1 go test ./internal/application/audit -tags postgresql -run TestDDLCoverageCatalog")
+	}
+	embedded, err := os.ReadFile(catalogEmbedRelPath)
+	if err != nil {
+		t.Fatalf("embedded catalog file not found (run with UPDATE_DDL_COVERAGE_CATALOG=1 to generate): %v", err)
+	}
+	if string(embedded) != jsonStr {
+		t.Errorf("embedded catalog JSON is stale; run:\n  UPDATE_DDL_COVERAGE_CATALOG=1 go test ./internal/application/audit -tags postgresql -run TestDDLCoverageCatalog")
 	}
 }

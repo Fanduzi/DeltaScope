@@ -1,0 +1,4133 @@
+{
+  "version": "v0.270.0",
+  "generated_from": [
+    "internal/application/audit/cross_dialect_ddl_coverage_census_test.go",
+    "internal/application/audit/postgresql_ddl_coverage_census_postgresql_tag_test.go",
+    "internal/application/audit/postgresql_ddl_completion_census_postgresql_tag_test.go",
+    "internal/application/audit/postgresql_ddl_deep_coverage_census_postgresql_tag_test.go",
+    "internal/application/audit/postgresql_ddl_long_tail_census_postgresql_tag_test.go",
+    "internal/application/audit/postgresql_alter_table_residual_census_postgresql_tag_test.go",
+    "internal/application/audit/ddl_parser_error_feasibility_census_test.go",
+    "internal/application/audit/ddl_parser_error_feasibility_census_postgresql_tag_test.go"
+  ],
+  "summary": {
+    "mysql": {
+      "total": 61,
+      "finding_covered": 46,
+      "normalized_silent": 0,
+      "unsupported_boundary": 0,
+      "parser_error": 15,
+      "unclassified": 0
+    },
+    "postgresql": {
+      "total": 285,
+      "finding_covered": 274,
+      "normalized_silent": 6,
+      "unsupported_boundary": 0,
+      "parser_error": 5,
+      "unclassified": 0
+    },
+    "postgresql_alter_table_residual": {
+      "total": 66,
+      "finding_covered": 60,
+      "normalized_silent": 2,
+      "unsupported_boundary": 0,
+      "parser_error": 4,
+      "unclassified": 0
+    },
+    "tidb": {
+      "total": 54,
+      "finding_covered": 45,
+      "normalized_silent": 0,
+      "unsupported_boundary": 0,
+      "parser_error": 9,
+      "unclassified": 0
+    }
+  },
+  "entries": [
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD FOREIGN KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD PRIMARY KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD UNIQUE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice",
+        "ddl.alter.add_index.unique.prefix.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE CHANGE COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.change_column.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP FOREIGN KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_foreign_key.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP PRIMARY KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_primary_key.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE MODIFY COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.modify_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE RENAME COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_column.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE RENAME INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_index.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_table.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLESPACE",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "event_lifecycle",
+      "form": "ALTER EVENT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "event_lifecycle",
+      "form": "CREATE EVENT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "event_lifecycle",
+      "form": "DROP EVENT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "index_lifecycle",
+      "form": "CREATE FULLTEXT INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "index_lifecycle",
+      "form": "CREATE SPATIAL INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "index_lifecycle",
+      "form": "CREATE UNIQUE INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "index_lifecycle",
+      "form": "DROP INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "ALTER USER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_user.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "CREATE ROLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_role.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "CREATE USER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_user.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "DROP ROLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_role.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "DROP USER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_user.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "GRANT SELECT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.grant.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "privilege_lifecycle",
+      "form": "REVOKE SELECT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.revoke.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "resource_group_lifecycle",
+      "form": "ALTER RESOURCE GROUP",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "resource_group_lifecycle",
+      "form": "CREATE RESOURCE GROUP",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "resource_group_lifecycle",
+      "form": "DROP RESOURCE GROUP",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_resource_group.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "routine_lifecycle",
+      "form": "ALTER FUNCTION",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "routine_lifecycle",
+      "form": "ALTER PROCEDURE",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "routine_lifecycle",
+      "form": "CREATE PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_procedure.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "routine_lifecycle",
+      "form": "DROP FUNCTION",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "routine_lifecycle",
+      "form": "DROP PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_procedure.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "ALTER DATABASE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_database.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "CREATE DATABASE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.create.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "CREATE DATABASE IF NOT EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.create.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "CREATE SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.create.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "DROP DATABASE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.drop.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "DROP DATABASE IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.drop.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "schema_lifecycle",
+      "form": "DROP SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.drop.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.comment.require",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE AS SELECT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.columns.min_count",
+        "ddl.table.comment.require",
+        "ddl.table.create_as.forbid",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE LIKE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.columns.min_count",
+        "ddl.table.comment.require",
+        "ddl.table.create_like.forbid",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLESPACE",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "CREATE TEMPORARY TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.comment.require",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "DROP TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.drop.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "DROP TABLESPACE",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "RENAME TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.rename_table.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "table_lifecycle",
+      "form": "TRUNCATE TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.truncate.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "trigger_lifecycle",
+      "form": "CREATE TRIGGER",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "trigger_lifecycle",
+      "form": "DROP TRIGGER",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
+      "form": "ALTER VIEW",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
+      "form": "CREATE OR REPLACE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
+      "form": "CREATE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
+      "form": "DROP VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.drop.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "access_method_lifecycle",
+      "form": "CREATE ACCESS METHOD",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_access_method.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "access_method_lifecycle",
+      "form": "DROP ACCESS METHOD",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_access_method.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "aggregate_lifecycle",
+      "form": "ALTER AGGREGATE OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_aggregate.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "aggregate_lifecycle",
+      "form": "ALTER AGGREGATE RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_aggregate.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "aggregate_lifecycle",
+      "form": "ALTER AGGREGATE SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_aggregate.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "aggregate_lifecycle",
+      "form": "CREATE AGGREGATE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_aggregate.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "aggregate_lifecycle",
+      "form": "DROP AGGREGATE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_aggregate.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD CONSTRAINT CHECK",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_check.not_valid.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD CONSTRAINT FOREIGN KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.foreign_key.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD CONSTRAINT PRIMARY KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.primary_key.bigint.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD CONSTRAINT UNIQUE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN DROP DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_default.explicit_default_change.forbid",
+        "ddl.alter.drop_default.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN DROP EXPRESSION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_expression.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN DROP IDENTITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_identity.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN DROP NOT NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_not_null.explicit_nullability_change.forbid",
+        "ddl.alter.drop_not_null.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN SET DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_default.explicit_default_change.forbid",
+        "ddl.alter.set_default.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN SET GENERATED",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_generated.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN SET NOT NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_not_null.explicit_nullability_change.forbid",
+        "ddl.alter.set_not_null.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ALTER COLUMN TYPE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_data_type.forbid",
+        "ddl.pg.alter.set_data_type.rewrite.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DISABLE RLS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.disable_rls.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.drop_column.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP CONSTRAINT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.drop_constraint.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE ENABLE RLS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_rls.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE FORCE RLS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.force_rls.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE NO FORCE RLS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.no_force_rls.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE RENAME COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_column.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_table.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "alter_table",
+      "form": "ALTER TABLE VALIDATE CONSTRAINT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.validate_constraint.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "annotation",
+      "form": "COMMENT ON TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.comment_on.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "annotation",
+      "form": "COMMENT ON TABLE IS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.comment_on.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "annotation",
+      "form": "COMMENT ON TABLE IS NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.comment_on.remove.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "annotation",
+      "form": "SECURITY LABEL ON TABLE IS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.security_label.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "annotation",
+      "form": "SECURITY LABEL ON TABLE IS NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.security_label.remove.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "ADD CHECK NOT VALID",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.not_valid_constraint.validate.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "ADD COLUMN email NOT NULL DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "ALTER COLUMN TYPE USING",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_data_type.forbid",
+        "ddl.pg.alter.set_data_type.rewrite.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "ATTACH PARTITION range",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.attach_partition.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "DROP COLUMN email",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.drop_column.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "ENABLE TRIGGER ALL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "RENAME COLUMN email TO mail",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_column.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "REPLICA IDENTITY USING INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.replica_identity_using_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "SET TABLESPACE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_tablespace.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "baseline_anchors",
+      "form": "VALIDATE CONSTRAINT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.validate_constraint.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "collation_lifecycle",
+      "form": "ALTER COLLATION OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_collation.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "collation_lifecycle",
+      "form": "ALTER COLLATION RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_collation.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "collation_lifecycle",
+      "form": "ALTER COLLATION SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_collation.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "collation_lifecycle",
+      "form": "CREATE COLLATION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_collation.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "collation_lifecycle",
+      "form": "DROP COLLATION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_collation.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "ADD GENERATED BY DEFAULT AS IDENTITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_identity.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "DROP EXPRESSION IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_expression.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "DROP IDENTITY IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_identity.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "RESET n_distinct",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.reset_column_options.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "RESTART WITH 1000",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_generated.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET COMPRESSION lz4",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_column_compression.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET EXPRESSION computed",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_expression.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET GENERATED ALWAYS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_generated.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET INCREMENT BY 10",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_generated.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET STATISTICS 100",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_column_statistics.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET STATISTICS DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_column_statistics.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET STORAGE DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_column_storage.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET STORAGE EXTERNAL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_column_storage.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "column_attributes",
+      "form": "SET n_distinct",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_column_options.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT DEFERRABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.constraint_deferrable.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT INHERIT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT INITIALLY DEFERRED",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.constraint_initially_deferred.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT NO INHERIT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "ALTER CONSTRAINT NOT ENFORCED",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "DROP CONSTRAINT IF EXISTS CASCADE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.drop_constraint.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "EXCLUDE USING gist",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_exclusion_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "NOT NULL NOT VALID",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "PRIMARY KEY INCLUDE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.primary_key.bigint.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "PRIMARY KEY USING INDEX",
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "UNIQUE NULLS NOT DISTINCT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_index.unique.prefix.require",
+        "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "constraints",
+      "form": "UNIQUE USING INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "conversion_lifecycle",
+      "form": "ALTER CONVERSION OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_conversion.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "conversion_lifecycle",
+      "form": "ALTER CONVERSION RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_conversion.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "conversion_lifecycle",
+      "form": "ALTER CONVERSION SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_conversion.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "conversion_lifecycle",
+      "form": "CREATE CONVERSION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_conversion.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "conversion_lifecycle",
+      "form": "DROP CONVERSION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_conversion.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN ADD CONSTRAINT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN DROP CONSTRAINT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN DROP DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.default.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN DROP NOT NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.not_null.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN RENAME",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.rename.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN SET DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.default.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN SET NOT NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.not_null.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "ALTER DOMAIN VALIDATE CONSTRAINT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_domain.constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "CREATE DOMAIN CHECK",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_domain.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "CREATE DOMAIN DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_domain.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "CREATE DOMAIN NOT NULL",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_domain.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "CREATE DOMAIN basic",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_domain.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "CREATE DOMAIN named CHECK",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_domain.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "DROP DOMAIN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_domain.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "domain_lifecycle",
+      "form": "DROP DOMAIN IF EXISTS CASCADE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_domain.advisory",
+        "ddl.pg.drop_domain.cascade.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "event_lifecycle",
+      "form": "ALTER EVENT TRIGGER DISABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_event_trigger.disable.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "event_lifecycle",
+      "form": "ALTER EVENT TRIGGER ENABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_event_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "event_lifecycle",
+      "form": "ALTER EVENT TRIGGER RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_event_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "event_lifecycle",
+      "form": "CREATE EVENT TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_event_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "event_lifecycle",
+      "form": "DROP EVENT TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_event_trigger.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "extension_lifecycle",
+      "form": "ALTER EXTENSION ADD TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_extension.add_member.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "extension_lifecycle",
+      "form": "ALTER EXTENSION DROP TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_extension.drop_member.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "extension_lifecycle",
+      "form": "ALTER EXTENSION SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_extension.set_schema.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "extension_lifecycle",
+      "form": "ALTER EXTENSION UPDATE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_extension.update.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "extension_lifecycle",
+      "form": "CREATE EXTENSION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_extension.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "extension_lifecycle",
+      "form": "DROP EXTENSION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_extension.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "fdw_lifecycle",
+      "form": "ALTER FOREIGN DATA WRAPPER OPTIONS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_foreign_data_wrapper.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "fdw_lifecycle",
+      "form": "CREATE FOREIGN DATA WRAPPER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_foreign_data_wrapper.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "fdw_lifecycle",
+      "form": "DROP FOREIGN DATA WRAPPER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_foreign_data_wrapper.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "foreign_server_lifecycle",
+      "form": "ALTER SERVER OPTIONS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_foreign_server.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "foreign_server_lifecycle",
+      "form": "CREATE SERVER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_foreign_server.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "foreign_server_lifecycle",
+      "form": "DROP SERVER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_foreign_server.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "foreign_table_lifecycle",
+      "form": "ALTER FOREIGN TABLE OPTIONS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_foreign_table.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "foreign_table_lifecycle",
+      "form": "CREATE FOREIGN TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_foreign_table.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "foreign_table_lifecycle",
+      "form": "DROP FOREIGN TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_foreign_table.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "ALTER INDEX RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_index.rename.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "ALTER INDEX RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_index.rename.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "ALTER INDEX SET TABLESPACE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_index.set_tablespace.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_index.concurrently.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX CONCURRENTLY",
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX INCLUDE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_index.concurrently.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX USING gin",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_index.concurrently.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX expression",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_index.concurrently.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX partial",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_index.concurrently.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "CREATE UNIQUE INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_index.concurrently.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "DROP INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_index.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "large_object_lifecycle",
+      "form": "ALTER LARGE OBJECT OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_large_object.owner.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "ALTER MATERIALIZED VIEW RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_materialized_view.rename.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "ALTER MATERIALIZED VIEW SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_materialized_view.set_schema.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "CREATE MATERIALIZED VIEW",
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "DROP MATERIALIZED VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_materialized_view.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "REFRESH MATERIALIZED VIEW CONCURRENTLY",
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "REFRESH MATERIALIZED VIEW WITH DATA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.refresh_materialized_view.concurrently.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "REFRESH MATERIALIZED VIEW WITH NO DATA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.refresh_materialized_view.concurrently.warn",
+        "ddl.pg.refresh_materialized_view.no_data.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "materialized_view_lifecycle",
+      "form": "REFRESH MATERIALIZED VIEW basic",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.refresh_materialized_view.concurrently.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "multi_command",
+      "form": "ADD + ALTER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_not_null.explicit_nullability_change.forbid",
+        "ddl.alter.set_not_null.forbid",
+        "ddl.pg.alter.add_column.nullable.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "multi_command",
+      "form": "ADD two columns",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_column.nullable.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "multi_command",
+      "form": "SET DEFAULT + VALIDATE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.set_default.explicit_default_change.forbid",
+        "ddl.alter.set_default.forbid",
+        "ddl.pg.alter.validate_constraint.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR CLASS OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator_class.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR CLASS RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator_class.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR CLASS SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator_class.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR FAMILY OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator_family.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR FAMILY RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator_family.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR FAMILY SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator_family.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "ALTER OPERATOR SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_operator.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "CREATE OPERATOR",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_operator.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "CREATE OPERATOR CLASS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_operator_class.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "CREATE OPERATOR FAMILY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_operator_family.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "DROP OPERATOR",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_operator.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "DROP OPERATOR CLASS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_operator_class.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "operator_lifecycle",
+      "form": "DROP OPERATOR FAMILY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_operator_family.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "partition_details",
+      "form": "ATTACH DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.attach_partition.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "partition_details",
+      "form": "ATTACH HASH",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.attach_partition.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "partition_details",
+      "form": "ATTACH LIST",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.attach_partition.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "partition_details",
+      "form": "DETACH CONCURRENTLY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.detach_partition.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "partition_details",
+      "form": "DETACH FINALIZE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.detach_partition_finalize.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "ALTER USER MAPPING",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_user_mapping.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "CREATE USER MAPPING",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_user_mapping.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "DROP USER MAPPING",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_user_mapping.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "GRANT ALL PRIVILEGES ON TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.grant.table_privilege.all.warn",
+        "ddl.pg.grant.table_privilege.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "GRANT SELECT ON TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.grant.table_privilege.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "REVOKE ALL PRIVILEGES ON TABLE CASCADE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.revoke.table_privilege.cascade.warn",
+        "ddl.pg.revoke.table_privilege.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "privilege_lifecycle",
+      "form": "REVOKE SELECT ON TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.revoke.table_privilege.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "publication_lifecycle",
+      "form": "ALTER PUBLICATION ADD TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_publication.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "publication_lifecycle",
+      "form": "ALTER PUBLICATION DROP TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_publication.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "publication_lifecycle",
+      "form": "CREATE PUBLICATION FOR ALL TABLES",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_publication.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "publication_lifecycle",
+      "form": "DROP PUBLICATION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_publication.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "rls_lifecycle",
+      "form": "ALTER POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_policy.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "rls_lifecycle",
+      "form": "CREATE POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_policy.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "rls_lifecycle",
+      "form": "DROP POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_policy.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_function.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION SECURITY DEFINER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_function.notice",
+        "ddl.pg.create_function.security_definer.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION SECURITY DEFINER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_function.notice",
+        "ddl.pg.create_function.security_definer.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION basic",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_function.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE OR REPLACE FUNCTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_function.notice",
+        "ddl.pg.create_or_replace_function.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE OR REPLACE FUNCTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_function.notice",
+        "ddl.pg.create_or_replace_function.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_procedure.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "CREATE PROCEDURE basic",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_procedure.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP FUNCTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_function.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP FUNCTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_function.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP FUNCTION IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_function.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP FUNCTION IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_function.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_procedure.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_procedure.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "routine_lifecycle",
+      "form": "DROP PROCEDURE IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_procedure.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "rule_lifecycle",
+      "form": "ALTER RULE RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_rule.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "rule_lifecycle",
+      "form": "CREATE RULE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_rule.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "rule_lifecycle",
+      "form": "DROP RULE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_rule.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "schema_lifecycle",
+      "form": "ALTER SCHEMA OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_schema.owner.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "schema_lifecycle",
+      "form": "ALTER SCHEMA RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_schema.rename.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "schema_lifecycle",
+      "form": "CREATE SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_schema.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "schema_lifecycle",
+      "form": "DROP SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_schema.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "sequence_lifecycle",
+      "form": "ALTER SEQUENCE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_sequence.restart.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "sequence_lifecycle",
+      "form": "CREATE SEQUENCE",
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "sequence_lifecycle",
+      "form": "DROP SEQUENCE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_sequence.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "statistics_lifecycle",
+      "form": "ALTER STATISTICS OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_statistics.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "statistics_lifecycle",
+      "form": "ALTER STATISTICS RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_statistics.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "statistics_lifecycle",
+      "form": "ALTER STATISTICS SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_statistics.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "statistics_lifecycle",
+      "form": "CREATE STATISTICS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_statistics.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "statistics_lifecycle",
+      "form": "DROP STATISTICS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_statistics.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "subscription_lifecycle",
+      "form": "ALTER SUBSCRIPTION DISABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_subscription.disable.warn",
+        "ddl.pg.alter_subscription.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "subscription_lifecycle",
+      "form": "ALTER SUBSCRIPTION ENABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_subscription.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "subscription_lifecycle",
+      "form": "CREATE SUBSCRIPTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_subscription.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "subscription_lifecycle",
+      "form": "DROP SUBSCRIPTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_subscription.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "subscription_lifecycle",
+      "form": "DROP SUBSCRIPTION WITH drop_slot",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE basic",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE generated column",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.default.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE identity column",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE with check constraint",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE with foreign key",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require",
+        "ddl.table.foreign_key.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE with primary key",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE with unique constraint",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "DROP TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.drop.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "TRUNCATE TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.truncate.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "ALL IN TABLESPACE SET",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.move_all_tablespace.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "CLUSTER ON",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.cluster_on.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "INHERIT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_inherit.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "NO INHERIT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.drop_inherit.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "NOT OF",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.drop_of_type.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "OF type",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.add_of_type.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "RESET fillfactor",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.reset_reloptions.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "SET ACCESS METHOD DEFAULT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_access_method.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "SET ACCESS METHOD heap",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_access_method.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "SET WITHOUT CLUSTER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_without_cluster.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "SET WITHOUT OIDS",
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_properties",
+      "form": "SET fillfactor",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.set_reloptions.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH CONFIGURATION OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_configuration.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH CONFIGURATION RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_configuration.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH CONFIGURATION SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_configuration.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH DICTIONARY OWNER TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_dictionary.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH DICTIONARY RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_dictionary.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH DICTIONARY SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_dictionary.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH PARSER RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_parser.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH PARSER SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_parser.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH TEMPLATE RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_template.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "ALTER TEXT SEARCH TEMPLATE SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_text_search_template.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "CREATE TEXT SEARCH CONFIGURATION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_text_search_configuration.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "CREATE TEXT SEARCH DICTIONARY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_text_search_dictionary.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "CREATE TEXT SEARCH PARSER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_text_search_parser.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "CREATE TEXT SEARCH TEMPLATE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_text_search_template.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "DROP TEXT SEARCH CONFIGURATION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_text_search_configuration.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "DROP TEXT SEARCH DICTIONARY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_text_search_dictionary.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "DROP TEXT SEARCH PARSER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_text_search_parser.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "text_search_lifecycle",
+      "form": "DROP TEXT SEARCH TEMPLATE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_text_search_template.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "transform_lifecycle",
+      "form": "CREATE TRANSFORM",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_transform.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "transform_lifecycle",
+      "form": "DROP TRANSFORM",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_transform.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "CREATE CONSTRAINT TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_constraint_trigger.warn",
+        "ddl.pg.create_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "CREATE CONSTRAINT TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_constraint_trigger.warn",
+        "ddl.pg.create_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "CREATE TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "CREATE TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "DROP TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_trigger.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "DROP TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_trigger.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "DROP TRIGGER IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_trigger.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_lifecycle",
+      "form": "DROP TRIGGER IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_trigger.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "DISABLE ROW LEVEL SECURITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.disable_rls.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "DISABLE RULE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.disable_rule.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "ENABLE ALWAYS RULE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_always_rule.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "ENABLE ALWAYS TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_always_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "ENABLE REPLICA RULE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_replica_rule.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "ENABLE REPLICA TRIGGER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_replica_trigger.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "ENABLE ROW LEVEL SECURITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_rls.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "ENABLE RULE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.enable_rule.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "FORCE ROW LEVEL SECURITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.force_rls.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "trigger_rule_rls",
+      "form": "NO FORCE ROW LEVEL SECURITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter.no_force_rls.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE ADD ATTRIBUTE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.add_attribute.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE ALTER ATTRIBUTE TYPE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.alter_attribute_type.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE DROP ATTRIBUTE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.drop_attribute.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE RENAME ATTRIBUTE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.rename_attribute.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.composite_rename.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.composite_set_schema.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "ALTER TYPE enum ADD VALUE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_type.add_value.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "CREATE TYPE composite",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_type.composite.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "CREATE TYPE enum",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_type.enum.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "type_lifecycle",
+      "form": "DROP TYPE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_type.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "ALTER VIEW RENAME TO",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_view.rename.notice",
+        "ddl.pg.alter_view.set_schema.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "ALTER VIEW SET SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.alter_view.rename.notice",
+        "ddl.pg.alter_view.set_schema.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "CREATE OR REPLACE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_or_replace_view.advisory",
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "CREATE OR REPLACE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_or_replace_view.advisory",
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "CREATE TEMP VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_temp_view.notice",
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "CREATE VIEW WITH CHECK OPTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_view.check_option.notice",
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "CREATE VIEW WITH LOCAL CHECK OPTION",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.create_view.check_option.notice",
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "CREATE VIEW basic",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "DROP VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.drop.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "view_lifecycle",
+      "form": "DROP VIEW CASCADE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_view.cascade.warn",
+        "ddl.view.drop.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD FOREIGN KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD PRIMARY KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE ADD UNIQUE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.add_constraint.notice",
+        "ddl.alter.add_index.unique.prefix.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE CHANGE COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.change_column.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP FOREIGN KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_foreign_key.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE DROP PRIMARY KEY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.drop_primary_key.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE LOCALITY",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE MODIFY COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.modify_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE PLACEMENT POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.tidb.alter_table.placement_policy.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE RENAME COLUMN",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.rename_column.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE TTL",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "event_lifecycle",
+      "form": "CREATE EVENT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "event_lifecycle",
+      "form": "DROP EVENT",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "index_lifecycle",
+      "form": "CREATE INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "index_lifecycle",
+      "form": "CREATE UNIQUE INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "index_lifecycle",
+      "form": "DROP INDEX",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_index.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "placement_policy",
+      "form": "ALTER PLACEMENT POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_placement_policy.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "placement_policy",
+      "form": "CREATE PLACEMENT POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_placement_policy.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "placement_policy",
+      "form": "DROP PLACEMENT POLICY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_placement_policy.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "privilege_lifecycle",
+      "form": "ALTER USER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_user.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "privilege_lifecycle",
+      "form": "CREATE USER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_user.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "privilege_lifecycle",
+      "form": "DROP USER",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_user.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "privilege_lifecycle",
+      "form": "GRANT SELECT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.grant.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "privilege_lifecycle",
+      "form": "REVOKE SELECT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.revoke.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "routine_lifecycle",
+      "form": "CREATE FUNCTION",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "routine_lifecycle",
+      "form": "CREATE PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_procedure.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "routine_lifecycle",
+      "form": "DROP FUNCTION",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "routine_lifecycle",
+      "form": "DROP PROCEDURE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_procedure.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "ALTER DATABASE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_database.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "CREATE DATABASE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.create.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "CREATE DATABASE IF NOT EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.create.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "CREATE SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.create.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "DROP DATABASE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.drop.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "DROP DATABASE IF EXISTS",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.drop.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "schema_lifecycle",
+      "form": "DROP SCHEMA",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.database.drop.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "sequence_lifecycle",
+      "form": "ALTER SEQUENCE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_sequence.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "sequence_lifecycle",
+      "form": "CREATE SEQUENCE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_sequence.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "sequence_lifecycle",
+      "form": "DROP SEQUENCE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.drop_sequence.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.comment.require",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE AS SELECT",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.columns.min_count",
+        "ddl.table.comment.require",
+        "ddl.table.create_as.forbid",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE LIKE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.audit_columns.require",
+        "ddl.table.charset.allowlist",
+        "ddl.table.columns.min_count",
+        "ddl.table.comment.require",
+        "ddl.table.create_like.forbid",
+        "ddl.table.engine.allowlist",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "table_lifecycle",
+      "form": "DROP TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.drop.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "table_lifecycle",
+      "form": "RENAME TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.rename_table.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "table_lifecycle",
+      "form": "TRUNCATE TABLE",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.truncate.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "trigger_lifecycle",
+      "form": "CREATE TRIGGER",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "trigger_lifecycle",
+      "form": "DROP TRIGGER",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "view_lifecycle",
+      "form": "ALTER VIEW",
+      "classification": "parser_error",
+      "finding_rule_ids": [],
+      "guidance_code": "parser_upgrade_candidate",
+      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+      "notes": "parser error"
+    },
+    {
+      "dialect": "tidb",
+      "family": "view_lifecycle",
+      "form": "CREATE OR REPLACE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "view_lifecycle",
+      "form": "CREATE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.create.forbid"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "view_lifecycle",
+      "form": "DROP VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.drop.forbid"
+      ],
+      "notes": ""
+    }
+  ]
+}
