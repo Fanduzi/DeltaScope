@@ -23,6 +23,13 @@ DeltaScope MCP 暴露四个官方工具：
 
 `list_rules` 是目录索引。需要某一条 `rule_id` 的 why / risk / suggestion / 示例时，使用 `describe_rule`。面向纯文本客户端的 `content[0].text` 是精简表格，不是 `structuredContent` 的第二份 JSON。
 
+## 发现与登记文件
+
+这些文件只用于登记已有的 stdio server，不会改变审核行为。
+
+- 仓库根目录的 [`.mcp.json`](../../.mcp.json) 是 stdio launcher 配置（`npx -y @fanduzi/deltascope-mcp`），供会自动检测仓库根 MCP 配置的目录使用。
+- [`server.json`](../../server.json) 是官方 MCP Registry 元数据，命名空间为 `io.github.fanduzi/deltascope`。npm 所有权标记是 [`packages/deltascope-mcp/package.json`](../../packages/deltascope-mcp/package.json) 中的 `mcpName`。要出现在官方 registry 上，仍需在已发布的 npm 包带上该标记后，单独执行 `mcp-publisher` 发布。
+
 ## Claude Code
 
 用推荐 launcher 添加服务：

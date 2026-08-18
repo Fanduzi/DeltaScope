@@ -9,7 +9,7 @@ Operational scripts for local DeltaScope workflows.
 | verify_pg_manylinux_baseline.sh | Builds the converged Linux PG-capable binaries in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
 | verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
 | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |
-| verify_release_version_surfaces.sh | Checks that source version constants, package docs, npm launcher package version, README install pins, release notes, release index links, and landing current-version surfaces all match VERSION |
+| verify_release_version_surfaces.sh | Checks that source version constants, package docs, npm launcher and MCP Registry versions/names, README install pins, release notes, release index links, and landing current-version surfaces all match VERSION |
 | verify_release_dialect_hygiene.sh | Runs release-blocking MySQL, TiDB, and PostgreSQL default-policy dialect smoke checks against a built or extracted deltascope binary |
 | verify_gitlab_codequality_output.sh | Validates `--format gitlab-codequality` JSON output contract against a built CLI binary (inline SQL path fallback, file path propagation, required fields, severity values, fingerprint format) |
 | verify_source_location_fidelity.sh | Validates source location fidelity across GitHub Actions, SARIF, GitLab Code Quality, and TiDB SARIF outputs (statement-start line numbers, artifact/file paths, no empty path fallbacks) |

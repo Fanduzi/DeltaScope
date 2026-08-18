@@ -23,6 +23,13 @@ DeltaScope MCP exposes four official tools:
 
 `list_rules` is the catalog index. Use `describe_rule` when you need why / risk / suggestion / examples for one `rule_id`. The text-only `content[0].text` surface is a compact table, not a second JSON copy of `structuredContent`.
 
+## Discovery Files
+
+These files list the existing stdio server. They do not change audit behavior.
+
+- Repo-root [`.mcp.json`](../../.mcp.json) is the stdio launcher config (`npx -y @fanduzi/deltascope-mcp`) for catalogs that auto-detect a repo-root MCP config.
+- [`server.json`](../../server.json) is official MCP Registry metadata for namespace `io.github.fanduzi/deltascope`. The npm ownership marker is `mcpName` in [`packages/deltascope-mcp/package.json`](../../packages/deltascope-mcp/package.json). Listing on the official registry still requires a separate `mcp-publisher` publish after that marker is present on the published npm package.
+
 ## Claude Code
 
 Add the server with the recommended launcher:
