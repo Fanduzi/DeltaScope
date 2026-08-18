@@ -1,7 +1,7 @@
 # Decision: Add MCP Registry and Repository Discovery Metadata
 
 - Date: 2026-08-18
-- Status: Proposed
+- Status: Accepted
 - Pull request: [#27](https://github.com/Fanduzi/DeltaScope/pull/27)
 
 ## Context
@@ -34,6 +34,8 @@ remain explicit release operations.
 
 ## Acceptance Criteria
 
-This decision remains Proposed until the official publisher validates
-`server.json`, npm/docs/release gates pass, the refreshed pull-request CI is
-green, and review finds no unresolved P0, P1, or P2.
+The official `mcp-publisher` 1.8.1 validated `server.json`; npm, docs, release,
+lint, and default test gates passed. Review of fixed range
+`af70e8e954998c07fe1623c2a22723aade248d1c...0adc46db776b07a024a7afcf68b6b76daf4ea18b`
+found no unresolved P0, P1, or P2. The refreshed pull-request CI is required to
+pass again after this documentation-only acceptance commit before merge.
