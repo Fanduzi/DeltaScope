@@ -2637,7 +2637,13 @@ func TestAuditCommandMarkdownRuleSummaryAggregateContract(t *testing.T) {
 		t.Fatal("expected a non-empty JSON skipped list for the default MySQL audit")
 	}
 	wantRow := "- Not applicable to current dialect: " + strconv.Itoa(len(skipped))
-	if strings.Count(output, wantRow) != 1 {
+	rowMatches := 0
+	for _, line := range strings.Split(output, "\n") {
+		if line == wantRow {
+			rowMatches++
+		}
+	}
+	if rowMatches != 1 {
 		t.Fatalf("expected exactly one aggregate row %q, got:\n%s", wantRow, output)
 	}
 	reasonsSection := output[strings.Index(output, "### Skip Reasons"):]
