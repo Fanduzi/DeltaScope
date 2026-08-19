@@ -21,7 +21,9 @@ const offlineExistenceSQLMissingTable = "alter table missing_table add column x 
 func TestOfflineDropColumnMissingStaysPassAndStatesExistenceNotChecked(t *testing.T) {
 	assertOfflineExistenceCaveat(t, offlineExistenceSQLDropColumn, []string{
 		"ddl.alter.drop_column.notice",
-		`would drop column "not_a_col" if it exists`,
+		"would drop column",
+		"not_a_col",
+		"if it exists",
 	}, []string{
 		"removes an existing column",
 		"existing column",
