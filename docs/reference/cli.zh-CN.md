@@ -184,7 +184,7 @@ Statement 1 has 1 finding(s)
 
 排序按修复优先级：先 `blocker`，再 `warning`，再 `notice`；同级内按 finding 计数降序，再按 `rule_id` 升序。默认最多显示 10 个 rule group；超过时末尾追加 `Showing 10 of N rule groups.`。
 
-干净审计（无 findings）完全不显示该区段。该摘要不携带任何原始 SQL 和 finding metadata —— 只有 rule ID、level、计数、目录文本、1-based 语句序号和 explain 命令。
+干净审计（无 findings）完全不显示该区段。该摘要不携带任何原始 SQL 和 finding metadata —— 只有 rule ID、level、计数、目录文本、1-based 语句序号和 explain 命令。离线审计在该区段存在时会在顶部加一行限制说明：`existence not checked (no database connection)`。
 
 范围与非目标：
 
@@ -202,7 +202,7 @@ Statement 1 has 1 finding(s)
 deltascope audit --format json --sql "DELETE FROM users"
 ```
 
-CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来源；metadata-aware 模式下它还包含 schema 的解析结果。
+CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来源，并在未检查对象存在性时给出 `note` / `unproven`；metadata-aware 模式下它还包含 schema 的解析结果。
 
 ```json
 {
@@ -251,7 +251,9 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -371,23 +373,29 @@ JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和
 - Trust Note: Dialect remains `mysql` (default). DeltaScope did not auto-switch dialect.
 ```
 
-在 JSON 输出中，顶层 `context` 对象始终报告 `mode`、`dialect` 和 `dialect_source`：
+在 JSON 输出中，顶层 `context` 对象始终报告 `mode`、`dialect` 和 `dialect_source`。离线审计还会标明未检查对象是否存在：
 
 ```json
 {
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
 
-在 quiet 输出中，末尾追加 `[context]` 行：
+`--quiet` 不会改变 JSON 契约。findings 仍在 `statements[].findings` 下，没有顶层 `findings` 数组。同时使用 `--quiet --format json` 的代理应读取 `context.note` / `context.unproven`，不要仅凭 `mode` 或 `verdict` 推断“可以安全执行”。
+
+在 quiet 输出中，末尾追加 `[context]` 行。离线审计会附带同一条存在性说明：
 
 ```text
-[context] mode=offline dialect=mysql dialect_source=default
+[context] mode=offline dialect=mysql dialect_source=default existence not checked (no database connection)
 ```
+
+在 markdown 中，离线审计还会把该说明写进 `## Audit Context`，并在存在 findings 时写到 `## Action Summary` 顶部。`Mode: offline` 只是标签；存在性这一行才是限制说明。仅跑过策略 notice 的离线 ALTER 仍为 `pass`——该说明表示 `ddl.alter.drop_column.exists.require` 这类存在性 blocker 并未运行。
 
 如果 SQL 确实面向 PostgreSQL，请使用 `--dialect postgresql` 重新运行。如果不是，可以安全地忽略该通知。
 

@@ -6,7 +6,7 @@ DeltaScope is designed for AI agent integration. The JSON output format provides
 
 - **Stable field names** across versions — agents can rely on `verdict`, `rule_id`, `level`, `message`, `suggestion`, and nested `explanation` fields without adapting to text changes.
 - **`rule_id` values are stable** — agents can look them up with `deltascope rules explain` to get full descriptions and fix guidance.
-- **`verdict` field** gives a single actionable outcome: `pass` / `review` / `reject` — no text parsing required.
+- **`verdict` field** gives a single actionable outcome: `pass` / `review` / `reject` — no text parsing required. Offline `pass` does not mean existence was checked; read `context.note` and `context.unproven` (`column_exists`, `table_exists`) before treating ALTER/DROP as safe to apply.
 - **`global_findings`** captures cross-statement issues (e.g., the merge-alter rule fires when multiple `ALTER TABLE` statements target the same table in one batch).
 - **`--quiet` flag** is safe to combine with `--format json`; the JSON contract is unchanged, so the command remains safe to capture with `$(...)` or pipe to `jq`.
 
@@ -171,7 +171,7 @@ When the user asks you to write or modify SQL, always audit it using the deltasc
 Rules:
 - If the verdict is "reject", fix ALL blocker findings before returning the SQL. Never return SQL with a "reject" verdict.
 - If the verdict is "review", explain the warnings to the user and ask whether they want them fixed.
-- If the verdict is "pass", return the SQL directly.
+- If the verdict is "pass", return the SQL only after checking `context.note` / `context.unproven`. Offline pass does not mean the table or column exists.
 
 When fixing findings, use `deltascope rules explain <rule_id>` to understand the exact requirement before making changes.
 ```

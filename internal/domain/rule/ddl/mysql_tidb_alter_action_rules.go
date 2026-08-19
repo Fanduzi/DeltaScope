@@ -3,6 +3,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -46,10 +47,7 @@ func (r alterActionNoticeRule) Evaluate(ctx context.Context, statement spec.Stat
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		message := fmt.Sprintf(r.message, statement.DDL.Table.Name)
-		if alter.Name != "" {
-			message = fmt.Sprintf("%s for %q", message, alter.Name)
-		}
+		message := formatAlterActionNotice(r.message, statement.DDL.Table.Name, alter.Name)
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
 			Message:    message,
@@ -80,10 +78,21 @@ func newAlterAddConstraintNoticeRule(cfg policy.RulePolicy) (rule.StatementRule,
 	)
 }
 
+func formatAlterActionNotice(template, table, name string) string {
+	if name != "" && strings.Count(template, "%") >= 2 {
+		return fmt.Sprintf(template, table, name)
+	}
+	message := fmt.Sprintf(template, table)
+	if name != "" {
+		return fmt.Sprintf("%s for %q", message, name)
+	}
+	return message
+}
+
 func newAlterDropColumnNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	return newAlterActionNoticeRule(
 		ruleIDAlterDropColumnNotice, "drop_column", "drop column", rule.LevelNotice,
-		"ALTER TABLE %s DROP COLUMN removes an existing column",
+		"ALTER TABLE %s DROP COLUMN would drop column %q if it exists",
 		cfg,
 	)
 }

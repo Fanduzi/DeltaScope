@@ -438,7 +438,7 @@ Exit code: `0`.
 | `summary.warnings` | integer | Count of warning-level findings. |
 | `summary.notices` | integer | Count of notice-level findings. |
 | `explanation` | object | Top-level aggregate explanation containing `summary` and `reasons`; emitted when the audit produces findings. |
-| `context` | object | CLI-only audit context describing mode, dialect, and how defaults were resolved. |
+| `context` | object | CLI-only audit context describing mode, dialect, and how defaults were resolved. Offline audits include `note` (`existence not checked (no database connection)`) and `unproven` (`column_exists`, `table_exists`). |
 | `statements[].index` | integer | 0-based position of this statement in the input. |
 | `statements[].kind` | string | Normalized statement kind, currently `ddl` or `dml`. |
 | `statements[].raw_sql` | string | Original SQL text of this statement. |

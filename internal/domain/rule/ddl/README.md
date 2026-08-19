@@ -48,6 +48,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | index_rules_test.go | Verifies create-table index governance rules |
 | type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
+| mysql_tidb_alter_action_rules.go | Implements MySQL/TiDB ALTER TABLE action notices, including hypothetical DROP COLUMN wording that does not claim the column exists |
+| mysql_tidb_alter_action_rules_test.go | Verifies DROP COLUMN notice copy stays hypothetical and does not assert live-schema existence |
 | metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules_test.go | Verifies create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules_test.go | Verifies global merge-alter governance rules |

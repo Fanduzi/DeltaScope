@@ -20,6 +20,7 @@ findings plus the shipped rule catalog. It is purely additive to the human Markd
 output:
 
 - Rendered only when the result has findings. Clean results omit the section entirely.
+- The CLI may prepend one offline limitation line (`existence not checked (no database connection)`) when mode is offline. That line is adapter-owned and is not part of `markdown.Render`.
 - Sits between the summary counts (`Statements / Blockers / Warnings / Notices`) and the
   existing `## Result Explanation`, before per-statement sections, global findings, and the
   rule summary.

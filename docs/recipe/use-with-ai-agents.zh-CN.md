@@ -6,7 +6,7 @@ DeltaScope 专为 AI 智能体集成而设计。JSON 输出格式提供稳定的
 
 - **字段名称稳定**——智能体可以稳定依赖 `verdict`、`rule_id`、`level`、`message`、`suggestion` 以及嵌套的 `explanation` 字段，而无需为文本变化做适配。
 - **`rule_id` 值稳定**——智能体可通过 `deltascope rules explain` 查询完整描述和修复指引。
-- **`verdict` 字段**提供单一可操作结论：`pass` / `review` / `reject`——无需文本解析。
+- **`verdict` 字段**提供单一可操作结论：`pass` / `review` / `reject`——无需文本解析。离线 `pass` 并不表示已检查对象是否存在；对待 ALTER/DROP 前请读取 `context.note` 和 `context.unproven`（`column_exists`、`table_exists`）。
 - **`global_findings`** 捕获跨语句问题（例如，当一批语句中多个 `ALTER TABLE` 针对同一张表时，merge-alter 规则会触发）。
 - **`--quiet` 标志**抑制进度输出，使标准输出仅包含 JSON 对象——可安全地通过 `$(...)` 捕获或管道传给 `jq`。
 
@@ -171,7 +171,7 @@ When the user asks you to write or modify SQL, always audit it using the deltasc
 Rules:
 - If the verdict is "reject", fix ALL blocker findings before returning the SQL. Never return SQL with a "reject" verdict.
 - If the verdict is "review", explain the warnings to the user and ask whether they want them fixed.
-- If the verdict is "pass", return the SQL directly.
+- If the verdict is "pass", return the SQL only after checking `context.note` / `context.unproven`. Offline pass does not mean the table or column exists.
 
 When fixing findings, use `deltascope rules explain <rule_id>` to understand the exact requirement before making changes.
 ```

@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: metadata-aware audit connection options, SQL text, and metadata provider clients
-// output: resolved dialect/schema context and provider wiring for metadata-aware CLI audits
+// output: resolved dialect/schema context, offline existence caveat fields, and provider wiring for metadata-aware CLI audits
 // pos: CLI metadata-aware audit preparation between command flags and application requests
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -21,11 +21,23 @@ type metadataClient = auditmeta.Client
 var newMetadataClient = openMetadataClient
 
 type auditRunContext struct {
-	Mode          string `json:"mode,omitempty"`
-	Dialect       string `json:"dialect,omitempty"`
-	DialectSource string `json:"dialect_source,omitempty"`
-	Schema        string `json:"schema,omitempty"`
-	SchemaSource  string `json:"schema_source,omitempty"`
+	Mode          string   `json:"mode,omitempty"`
+	Dialect       string   `json:"dialect,omitempty"`
+	DialectSource string   `json:"dialect_source,omitempty"`
+	Schema        string   `json:"schema,omitempty"`
+	SchemaSource  string   `json:"schema_source,omitempty"`
+	Note          string   `json:"note,omitempty"`
+	Unproven      []string `json:"unproven,omitempty"`
+}
+
+// existenceNotCheckedNote is the offline limitation shown on markdown Action
+// Summary, the quiet [context] line, and JSON context when no database was
+// contacted. Existence/metadata rules no-op without a snapshot and must not be
+// inferred from mode=offline alone (#28).
+const existenceNotCheckedNote = "existence not checked (no database connection)"
+
+func offlineExistenceUnproven() []string {
+	return []string{"column_exists", "table_exists"}
 }
 
 func openMetadataClient(options auditConnectionOptions) (metadataClient, error) {

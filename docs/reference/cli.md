@@ -204,7 +204,7 @@ Each rule group shows, at most:
 
 Groups are ordered by remediation priority: `blocker`, then `warning`, then `notice`, then by finding count descending, then by `rule_id` ascending. At most 10 rule groups are shown; when there are more, a final `Showing 10 of N rule groups.` line is appended.
 
-Clean audits (no findings) omit the section entirely. The summary carries no raw SQL and no finding metadata — only rule IDs, levels, counts, catalog text, 1-based statement indexes, and the explain command.
+Clean audits (no findings) omit the section entirely. The summary carries no raw SQL and no finding metadata — only rule IDs, levels, counts, catalog text, 1-based statement indexes, and the explain command. Offline audits prepend one limitation line when the section is present: `existence not checked (no database connection)`.
 
 Scope and non-goals:
 
@@ -223,7 +223,7 @@ integrations.
 deltascope audit --format json --sql "DELETE FROM users"
 ```
 
-CLI JSON always includes a top-level `context` object. In offline mode it reports the configured dialect source; in metadata-aware mode it also reports resolved schema details.
+CLI JSON always includes a top-level `context` object. In offline mode it reports the configured dialect source plus `note` / `unproven` when existence was not checked; in metadata-aware mode it also reports resolved schema details.
 
 ```json
 {
@@ -272,7 +272,9 @@ CLI JSON always includes a top-level `context` object. In offline mode it report
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -416,23 +418,29 @@ In markdown output, a `## Audit Context` section appears with an explicit trust 
 - Trust Note: Dialect remains `mysql` (default). DeltaScope did not auto-switch dialect.
 ```
 
-In JSON output, the top-level `context` object always reports `mode`, `dialect`, and `dialect_source`:
+In JSON output, the top-level `context` object always reports `mode`, `dialect`, and `dialect_source`. Offline audits also report that existence was not checked:
 
 ```json
 {
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
 
-In quiet output, a `[context]` line is appended:
+`--quiet` does not change the JSON contract. Findings stay on `statements[].findings`; there is no top-level `findings` array. Agents that combine `--quiet --format json` should read `context.note` / `context.unproven` rather than inferring safety from `mode` or `verdict` alone.
+
+In quiet output, a `[context]` line is appended. Offline audits append the same existence caveat:
 
 ```text
-[context] mode=offline dialect=mysql dialect_source=default
+[context] mode=offline dialect=mysql dialect_source=default existence not checked (no database connection)
 ```
+
+In markdown, offline audits also put that line in `## Audit Context` and, when findings exist, at the top of `## Action Summary`. `Mode: offline` is a label; the existence line is the limitation. Offline ALTER still `pass`es when only policy notices ran — the caveat means existence blockers such as `ddl.alter.drop_column.exists.require` did not run.
 
 If the SQL does target PostgreSQL, re-run with `--dialect postgresql`. If not, the notice can be safely ignored.
 

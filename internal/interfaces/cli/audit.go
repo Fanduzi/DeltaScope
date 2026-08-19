@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, connection-option validation, password resolution, and user-vs-runtime exit-code mapping for CLI audit invocations
+// output: rendered audit results, connection-option validation, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -87,6 +87,8 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				Mode:          "offline",
 				Dialect:       string(dialect),
 				DialectSource: dialectSource(cmd.Flags().Changed("dialect")),
+				Note:          existenceNotCheckedNote,
+				Unproven:      offlineExistenceUnproven(),
 			}
 			if connection.Enabled() {
 				client, resolvedDialect, resolvedSchema, metadataContext, err := prepareMetadataAudit(cmd.Context(), sql, connection, dialect, cmd.Flags().Changed("dialect"))
@@ -359,6 +361,10 @@ func hasRenderableAuditResult(result report.Result) bool {
 func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string) ([]byte, error) {
 	switch format {
 	case "json":
+		// --quiet does not change the JSON contract: findings stay on
+		// statements[].findings (there is no top-level findings array).
+		// Offline existence caveats are on context.note / context.unproven
+		// so agents using --quiet --format json still see them (#28).
 		return renderJSONResult(result, runContext)
 	case "github-actions":
 		return githubactions.Render(result, githubactions.Options{Path: sourcePath})
@@ -398,8 +404,12 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 		if hasPostgreSQLSyntaxNotice(result) {
 			fmt.Fprintf(&b, "- Trust Note: Dialect remains `%s` (%s). DeltaScope did not auto-switch dialect.\n", runContext.Dialect, runContext.DialectSource)
 		}
+		if runContext.Note != "" {
+			fmt.Fprintf(&b, "- %s\n", runContext.Note)
+		}
 		b.WriteString("\n")
 	}
+	body = insertActionSummaryNote(body, runContext)
 	b.Write(body)
 	if len(result.Unsupported) > 0 {
 		b.WriteString("\n\n## Unsupported Statements\n")
@@ -420,6 +430,20 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 		}
 	}
 	return []byte(b.String()), nil
+}
+
+func insertActionSummaryNote(body []byte, runContext *auditRunContext) []byte {
+	if runContext == nil || runContext.Note == "" {
+		return body
+	}
+	const heading = "## Action Summary\n\n"
+	text := string(body)
+	idx := strings.Index(text, heading)
+	if idx < 0 {
+		return body
+	}
+	insertAt := idx + len(heading)
+	return []byte(text[:insertAt] + runContext.Note + "\n\n" + text[insertAt:])
 }
 
 func renderJSONResult(result report.Result, runContext *auditRunContext) ([]byte, error) {
@@ -477,6 +501,9 @@ func renderQuietResult(result report.Result, runContext *auditRunContext) []byte
 		contextLine := fmt.Sprintf("[context] mode=%s dialect=%s dialect_source=%s", runContext.Mode, runContext.Dialect, runContext.DialectSource)
 		if runContext.Schema != "" {
 			contextLine += fmt.Sprintf(" schema=%s schema_source=%s", runContext.Schema, runContext.SchemaSource)
+		}
+		if runContext.Note != "" {
+			contextLine += " " + runContext.Note
 		}
 		lines = append(lines, contextLine)
 	}
