@@ -167,7 +167,7 @@ GRANT SELECT ON performance_schema.global_variables TO 'auditor'@'%';
 | `dialect_source` | `detected`、`explicit` | 方言来源：自动检测还是 `--dialect` 标志 |
 | `schema` | Schema 名称 | 解析后的默认 Schema |
 | `schema_source` | `flag`、`inferred`、`qualified` | Schema 的确定方式 |
-| `note` | 字符串 | 仅离线：当前为 `existence not checked (no database connection)` |
-| `unproven` | 字符串数组 | 仅离线：当前为 `column_exists`、`table_exists`，表示这些事实未经现场元数据证明 |
+| `note` | 字符串 | 仅离线：出现在 CLI、HTTP、MCP 的 `context` 上，当前为 `existence not checked (no database connection)`。元数据感知时省略。不属于 `pkg/deltascope.Result`。 |
+| `unproven` | 字符串数组 | 仅离线：当前为 `column_exists`、`table_exists`，表示这些事实未经现场元数据证明。出现规则与 `note` 相同。 |
 
 **Markdown 输出**在发现结果表格之前，前置一个 `## Audit Context` 章节，以人类可读的形式呈现相同信息。

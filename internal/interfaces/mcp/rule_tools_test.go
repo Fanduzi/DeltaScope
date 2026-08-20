@@ -253,7 +253,7 @@ func TestGetCapabilitiesToolReturnsKnownSummary(t *testing.T) {
 		ConnectionRefPath:         "~/.config/deltascope/connections.yaml",
 		ConnectionRefOverrideFlag: "-connections-path",
 		ResultFields:              []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},
-		ContextFields:             []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"},
+		ContextFields:             []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source", "note", "unproven"},
 		StructuredErrors:          []string{"bad_request", "connection_invalid", "connection_failed", "config_invalid"},
 		MetadataFeatures:          []string{"schema context", "instance facts", "target table snapshots"},
 		RuleCatalogTools:          []string{"describe_rule", "list_rules"},

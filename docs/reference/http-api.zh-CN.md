@@ -156,7 +156,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "connection_id supports mysql, tidb, and postgresql metadata-aware audit"
   ],
   "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
-  "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"],
+  "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source", "note", "unproven"],
   "structured_errors": [
     "invalid_json",
     "bad_request",
@@ -599,7 +599,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
 | `statements` | array | 各语句的审计结果；为空时省略 |
 | `global_findings` | array | 来自全局规则（跨语句检查）的发现；为空时省略 |
 | `explanation` | object | 可选的聚合级解释对象，包含 `summary` 和 `reasons`。当审计产生一条或多条 finding 时，内置 HTTP 审计流程会填充该字段 |
-| `context` | object | 附加的请求上下文，描述 `mode`、`dialect`、`dialect_source`、`schema`、`schema_source` 和 `metadata_source` |
+| `context` | object | 附加的请求上下文，描述 `mode`、`dialect`、`dialect_source`、`schema`、`schema_source` 和 `metadata_source`。离线响应还包含 `note`（`existence not checked (no database connection)`）和 `unproven`（`column_exists`、`table_exists`）；元数据感知响应省略这两个字段 |
 | `unsupported` | array | 针对解析器识别但不支持的语句的结构化部分支持详情。每项包含 `index`、`feature`、`sql`、`reason` 和可选的 `metadata`；为空时省略 |
 | `diagnostics` | array | 结构化的解析错误和不受支持语句诊断。每项包含 `classification`（`parser_error` 或 `unsupported_statement`）、`reason`、`action_hint`、`audited`（恒为 `false`）、可选 `dialect` 以及可选的 `guidance_code` / `evidence_ref`；为空时省略 |
 

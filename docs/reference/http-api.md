@@ -156,7 +156,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "connection_id supports mysql, tidb, and postgresql metadata-aware audit"
   ],
   "result_fields": ["verdict", "summary", "statements", "global_findings", "explanation", "context"],
-  "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"],
+  "context_fields": ["mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source", "note", "unproven"],
   "structured_errors": [
     "invalid_json",
     "bad_request",
@@ -611,7 +611,7 @@ The top-level response object returned by `POST /v1/audit`.
 | `statements` | array | Per-statement results; omitted when empty |
 | `global_findings` | array | Findings from global rules (cross-statement checks); omitted when empty |
 | `explanation` | object | Optional aggregate explanation object with `summary` and `reasons`. The built-in HTTP audit flow now populates it whenever the audit produces one or more findings |
-| `context` | object | Additive request context describing `mode`, `dialect`, `dialect_source`, `schema`, `schema_source`, and `metadata_source` |
+| `context` | object | Additive request context describing `mode`, `dialect`, `dialect_source`, `schema`, `schema_source`, and `metadata_source`. Offline responses also include `note` (`existence not checked (no database connection)`) and `unproven` (`column_exists`, `table_exists`); metadata-aware responses omit those fields |
 | `unsupported` | array | Structured partial-support details for parser-recognized but unsupported statements. Each entry carries `index`, `feature`, `sql`, `reason`, and optional `metadata`; omitted when empty |
 | `diagnostics` | array | Structured parser-error and unsupported-statement diagnostics. Each entry carries `classification` (`parser_error` or `unsupported_statement`), `reason`, `action_hint`, `audited` (always `false`), optional `dialect`, and optional `guidance_code` / `evidence_ref`; omitted when empty |
 

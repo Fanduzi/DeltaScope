@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP audit_sql tool behavior.
 // input: in-process MCP audit_sql CallTool sessions and shipped default policy
-// output: coverage for the compact audit_sql text surface and structured result
+// output: coverage for compact audit_sql text, structured result, and offline existence caveats
 // pos: interface-layer tests for MCP audit_sql content vs structuredContent
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -130,6 +130,28 @@ func TestAuditSQLCallTextIncludesCreateTableFindings(t *testing.T) {
 	}
 }
 
+func TestAuditSQLOfflineDropColumnStatesExistenceNotChecked(t *testing.T) {
+	t.Parallel()
+
+	result := callAuditSQL(t, map[string]any{"sql": "alter table users drop column not_a_col"})
+	text := requireAuditToolText(t, result)
+	body := requireAuditStructuredMap(t, result)
+
+	if body["verdict"] != "pass" {
+		t.Fatalf("expected pass verdict, got %#v", body["verdict"])
+	}
+	assertJSONContextExistenceCaveat(t, body)
+	if !strings.Contains(text, "existence not checked (no database connection)") {
+		t.Fatalf("content[0].text must state existence was not checked, got %q", text)
+	}
+	if strings.Contains(text, "{") || strings.Contains(text, `"unproven"`) {
+		t.Fatalf("content[0].text must not dump structured context JSON, got %q", text)
+	}
+	if strings.Contains(text, "existing column") {
+		t.Fatalf("MCP notice must not claim the column exists, got %q", text)
+	}
+}
+
 func TestAuditSQLEmptySQLRemainsBadRequest(t *testing.T) {
 	t.Parallel()
 
@@ -216,6 +238,32 @@ func marshalAuditStructuredJSON(t *testing.T, result *sdkmcp.CallToolResult) str
 		t.Fatalf("marshal structured content: %v", err)
 	}
 	return string(raw)
+}
+
+func assertJSONContextExistenceCaveat(t *testing.T, payload map[string]any) {
+	t.Helper()
+	contextValue, ok := payload["context"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected context object, got %#v", payload["context"])
+	}
+	if contextValue["mode"] != "offline" {
+		t.Fatalf("expected offline mode, got %#v", contextValue)
+	}
+	if contextValue["note"] != "existence not checked (no database connection)" {
+		t.Fatalf("expected context.note existence caveat, got %#v", contextValue["note"])
+	}
+	unproven, ok := contextValue["unproven"].([]any)
+	if !ok {
+		t.Fatalf("expected context.unproven array, got %#v", contextValue["unproven"])
+	}
+	got := make([]string, 0, len(unproven))
+	for _, item := range unproven {
+		text, _ := item.(string)
+		got = append(got, text)
+	}
+	if strings.Join(got, ",") != "column_exists,table_exists" {
+		t.Fatalf("expected unproven [column_exists table_exists], got %#v", unproven)
+	}
 }
 
 func truncateAuditText(s string, n int) string {

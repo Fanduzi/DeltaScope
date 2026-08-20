@@ -72,7 +72,9 @@ Complete CLI JSON output example for a risky DML statement:
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -189,7 +191,7 @@ The MCP tool surface remains:
 
 For agent workflow design, the important contract points are:
 
-- `audit_sql` preserves the normal DeltaScope audit result body and adds top-level `context`. `content[0].text` is a compact finding summary (verdict, counts, `[level] rule_id: message`, suggestion), not a second JSON copy of `structuredContent`
+- `audit_sql` preserves the normal DeltaScope audit result body and adds top-level `context`. Offline `context` includes `note` / `unproven` on CLI JSON, HTTP JSON, and MCP `structuredContent`. `content[0].text` is a compact finding summary (verdict, counts, the existence caveat when offline, `[level] rule_id: message`, suggestion), not a second JSON copy of `structuredContent`
 - `list_rules` returns compact catalog rows (`rule_id`, `level`, `dialect`, `kind`, `summary`); use `describe_rule` for the full body of one rule
 - `connection_ref` and `connection` are mutually exclusive
 - top-level `dialect` overrides `connection.dialect`
@@ -207,6 +209,7 @@ For agent workflow design, the important contract points are:
 | `suggestion` | Present when available; gives actionable fix guidance |
 | `explanation` | Present when available; provides structured summary / why / risk / suggestion / metadata notes |
 | `global_findings` | Present when cross-statement rules emit findings; omitted when empty |
+| `context.note` / `context.unproven` | Present on offline CLI, HTTP, and MCP `context` when existence was not checked; omitted when metadata-aware. Not part of `pkg/deltascope.Result` |
 | Exit code `0` | Findings below `--fail-on` threshold (or no findings) |
 | Exit code `1` | Findings crossed `--fail-on` threshold |
 | Exit code `2` | Bad input or config — do not retry without fixing input |

@@ -114,7 +114,9 @@ Complete JSON output:
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -246,7 +248,9 @@ Complete JSON output:
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -328,7 +332,9 @@ deltascope audit --sql "DELETE FROM users" --format json
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -384,7 +390,9 @@ deltascope audit --sql "CREATE TABLE t (id BIGINT UNSIGNED NOT NULL AUTO_INCREME
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -438,7 +446,7 @@ Exit code: `0`.
 | `summary.warnings` | integer | Count of warning-level findings. |
 | `summary.notices` | integer | Count of notice-level findings. |
 | `explanation` | object | Top-level aggregate explanation containing `summary` and `reasons`; emitted when the audit produces findings. |
-| `context` | object | CLI-only audit context describing mode, dialect, and how defaults were resolved. Offline audits include `note` (`existence not checked (no database connection)`) and `unproven` (`column_exists`, `table_exists`). |
+| `context` | object | Audit context describing mode, dialect, and how defaults were resolved. Offline CLI, HTTP, and MCP audits include `note` (`existence not checked (no database connection)`) and `unproven` (`column_exists`, `table_exists`). Metadata-aware results omit those fields. They are not part of `pkg/deltascope.Result`. |
 | `statements[].index` | integer | 0-based position of this statement in the input. |
 | `statements[].kind` | string | Normalized statement kind, currently `ddl` or `dml`. |
 | `statements[].raw_sql` | string | Original SQL text of this statement. |

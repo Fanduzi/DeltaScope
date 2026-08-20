@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: HTTP rule-discovery requests plus shipped catalog and capability metadata
-// output: JSON rule-list, rule-detail, and capability payloads for the HTTP adapter
+// output: JSON rule-list, rule-detail, and capability payloads including offline existence context_fields for the HTTP adapter
 // pos: HTTP discovery helpers above the domain rule catalog and shared JSON writers
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -117,7 +117,7 @@ func httpCapabilitiesPayload() httpCapabilitiesResponse {
 		},
 		InputRules:        []string{"connection_id references a named connection in the server runtime config", "top-level schema overrides the named connection schema when both are set", "top-level dialect overrides the named connection dialect when both are set", "connection_id supports mysql, tidb, and postgresql metadata-aware audit"},
 		ResultFields:      []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},
-		ContextFields:     []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"},
+		ContextFields:     []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source", "note", "unproven"},
 		StructuredErrors:  []string{"invalid_json", "bad_request", "connection_invalid", "connection_failed", "config_invalid", "auth_required", "auth_invalid", "rate_limited", "request_timeout", "request_canceled", "internal_error", "not_found"},
 		MetadataFeatures:  []string{"schema context", "instance facts", "target table snapshots"},
 		QueryParameters:   []string{"GET /v1/rules?query=<text>"},

@@ -40,9 +40,7 @@ func TestOfflineAlterMissingTableStaysPassAndStatesExistenceNotChecked(t *testin
 }
 
 func TestQuietJSONOfflineDropColumnKeepsStatementFindingsAndContextCaveat(t *testing.T) {
-	// --quiet does not change the JSON contract. Findings remain on
-	// statements[].findings; there is no top-level findings array. The
-	// agent-visible caveat is context.note / context.unproven (#28).
+	// --quiet leaves JSON unchanged: findings stay on statements[].findings.
 	stdout := &strings.Builder{}
 	code := Execute(
 		context.Background(),

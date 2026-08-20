@@ -14,6 +14,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 	postgresqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 )
 
 type metadataClient = auditmeta.Client
@@ -30,14 +31,10 @@ type auditRunContext struct {
 	Unproven      []string `json:"unproven,omitempty"`
 }
 
-// existenceNotCheckedNote is the offline limitation shown on markdown Action
-// Summary, the quiet [context] line, and JSON context when no database was
-// contacted. Existence/metadata rules no-op without a snapshot and must not be
-// inferred from mode=offline alone (#28).
-const existenceNotCheckedNote = "existence not checked (no database connection)"
+const existenceNotCheckedNote = ifaceconn.ExistenceNotCheckedNote
 
 func offlineExistenceUnproven() []string {
-	return []string{"column_exists", "table_exists"}
+	return ifaceconn.OfflineExistenceUnproven()
 }
 
 func openMetadataClient(options auditConnectionOptions) (metadataClient, error) {

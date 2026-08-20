@@ -210,7 +210,7 @@ Field meanings:
 | `dialect_source` | `detected`, `request`, `flag`, `default` | Whether dialect came from auto-detection, request, flag, or default |
 | `schema` | schema name | The resolved default schema |
 | `schema_source` | `flag`, `inferred`, `qualified` | How the schema was determined |
-| `note` | string | Offline-only limitation, currently `existence not checked (no database connection)` |
-| `unproven` | string array | Offline-only facts that were not established, currently `column_exists` and `table_exists` |
+| `note` | string | Offline-only limitation on CLI, HTTP, and MCP `context`, currently `existence not checked (no database connection)`. Omitted when metadata-aware. Not part of `pkg/deltascope.Result`. |
+| `unproven` | string array | Offline-only facts that were not established, currently `column_exists` and `table_exists`. Same presence rules as `note`. |
 
 **Markdown output** prepends an `## Audit Context` section with the same information in human-readable form before the findings table.

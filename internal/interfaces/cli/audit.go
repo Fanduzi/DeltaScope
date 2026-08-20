@@ -361,10 +361,6 @@ func hasRenderableAuditResult(result report.Result) bool {
 func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string) ([]byte, error) {
 	switch format {
 	case "json":
-		// --quiet does not change the JSON contract: findings stay on
-		// statements[].findings (there is no top-level findings array).
-		// Offline existence caveats are on context.note / context.unproven
-		// so agents using --quiet --format json still see them (#28).
 		return renderJSONResult(result, runContext)
 	case "github-actions":
 		return githubactions.Render(result, githubactions.Options{Path: sourcePath})

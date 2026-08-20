@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
 // input: shipped rule catalog entries and DeltaScope capability metadata for MCP rule tools
-// output: full describe_rule bodies, compact list_rules rows plus text catalog, and get_capabilities summaries
+// output: full describe_rule bodies, compact list_rules rows plus text catalog, and get_capabilities summaries including offline existence context_fields
 // pos: MCP rule-discovery helpers above the domain rule catalog
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -186,7 +186,7 @@ func capabilitiesPayload(connectionsPath string) capabilitiesResponse {
 		ConnectionRefPath:         connectionsPath,
 		ConnectionRefOverrideFlag: "-connections-path",
 		ResultFields:              []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},
-		ContextFields:             []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source"},
+		ContextFields:             []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source", "note", "unproven"},
 		StructuredErrors:          []string{"bad_request", "connection_invalid", "connection_failed", "config_invalid"},
 		MetadataFeatures:          []string{"schema context", "instance facts", "target table snapshots"},
 		RuleCatalogTools:          []string{"describe_rule", "list_rules"},

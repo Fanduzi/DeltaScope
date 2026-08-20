@@ -72,7 +72,9 @@ deltascope audit --sql "$SQL" --format json --quiet
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -189,7 +191,7 @@ MCP 工具面保持为：
 
 从 agent workflow 角度，最重要的 contract 点是：
 
-- `audit_sql` 保留 DeltaScope 标准结果体，并额外增加顶层 `context`。`content[0].text` 是精简发现摘要（结论、计数、`[level] rule_id: message`、suggestion），不是 `structuredContent` 的第二份 JSON
+- `audit_sql` 保留 DeltaScope 标准结果体，并额外增加顶层 `context`。离线 `context` 在 CLI JSON、HTTP JSON 和 MCP `structuredContent` 上包含 `note` / `unproven`。`content[0].text` 是精简发现摘要（结论、计数、离线时的存在性限制说明、`[level] rule_id: message`、suggestion），不是 `structuredContent` 的第二份 JSON
 - `list_rules` 返回精简目录行（`rule_id`、`level`、`dialect`、`kind`、`summary`）；需要完整说明时使用 `describe_rule`
 - `connection_ref` 和 `connection` 互斥
 - 顶层 `dialect` 会覆盖 `connection.dialect`
@@ -207,6 +209,7 @@ MCP 工具面保持为：
 | `suggestion` | 如适用则存在；提供可操作的修复指引 |
 | `explanation` | 如适用则存在；提供结构化的 summary / why / risk / suggestion / 元数据说明 |
 | `global_findings` | 有全局发现时返回；为空时省略 |
+| `context.note` / `context.unproven` | 离线 CLI、HTTP、MCP 的 `context` 在未检查存在性时返回；元数据感知时省略。不属于 `pkg/deltascope.Result` |
 | 退出码 `0` | 发现低于 `--fail-on` 阈值（或无任何发现） |
 | 退出码 `1` | 发现超过 `--fail-on` 阈值 |
 | 退出码 `2` | 输入或配置有误——不要在不修复输入的情况下重试 |

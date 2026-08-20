@@ -114,7 +114,9 @@ deltascope audit --sql "DELETE FROM users" --format json
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -246,7 +248,9 @@ DELETE FROM orders;
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -328,7 +332,9 @@ deltascope audit --sql "DELETE FROM users" --format json
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -384,7 +390,9 @@ deltascope audit --sql "CREATE TABLE t (id BIGINT UNSIGNED NOT NULL AUTO_INCREME
   "context": {
     "mode": "offline",
     "dialect": "mysql",
-    "dialect_source": "default"
+    "dialect_source": "default",
+    "note": "existence not checked (no database connection)",
+    "unproven": ["column_exists", "table_exists"]
   }
 }
 ```
@@ -438,7 +446,7 @@ CREATE TABLE orders (
 | `summary.warnings` | integer | warning 级别发现的数量。 |
 | `summary.notices` | integer | notice 级别发现的数量。 |
 | `explanation` | object | 顶层聚合解释，包含 `summary` 和 `reasons`；有 finding 时返回。 |
-| `context` | object | 仅 CLI 输出包含的审计上下文，描述执行模式、方言以及默认值来源。离线审计包含 `note`（`existence not checked (no database connection)`）和 `unproven`（`column_exists`、`table_exists`）。 |
+| `context` | object | 审计上下文，描述执行模式、方言以及默认值来源。离线 CLI、HTTP、MCP 审计包含 `note`（`existence not checked (no database connection)`）和 `unproven`（`column_exists`、`table_exists`）。元数据感知结果省略这两个字段。它们不属于 `pkg/deltascope.Result`。 |
 | `statements[].index` | integer | 该语句在输入中的位置（从 0 开始）。 |
 | `statements[].kind` | string | 规范化语句类别，当前为 `ddl` 或 `dml`。 |
 | `statements[].raw_sql` | string | 该语句的原始 SQL 文本。 |

@@ -475,6 +475,12 @@ func TestHandlerAuditMetadataAwareWithRegistryConnection(t *testing.T) {
 	if contextValue["metadata_source"] != "registry" {
 		t.Fatalf("expected registry metadata source, got %#v", contextValue["metadata_source"])
 	}
+	if contextValue["note"] != nil {
+		t.Fatalf("metadata-aware context must omit offline existence note, got %#v", contextValue["note"])
+	}
+	if contextValue["unproven"] != nil {
+		t.Fatalf("metadata-aware context must omit unproven, got %#v", contextValue["unproven"])
+	}
 }
 
 func TestHandlerAuditNotAuthorizedForDisallowedPrincipal(t *testing.T) {

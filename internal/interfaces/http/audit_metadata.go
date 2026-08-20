@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: parsed HTTP audit requests, shared metadata-preparation helpers, and public audit execution functions
-// output: additive HTTP audit context plus offline or registry-based metadata-aware audit execution results
+// output: additive HTTP audit context including offline existence caveats plus offline or registry-based metadata-aware audit execution results
 // pos: HTTP adapter glue between request-scoped metadata inputs and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -17,6 +17,7 @@ import (
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
+	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -24,12 +25,14 @@ var prepareHTTPMetadataAudit = auditmeta.Prepare
 var loadHTTPPolicy = apppolicy.Load
 
 type auditRunContext struct {
-	Mode           string `json:"mode,omitempty"`
-	Dialect        string `json:"dialect,omitempty"`
-	DialectSource  string `json:"dialect_source,omitempty"`
-	Schema         string `json:"schema,omitempty"`
-	SchemaSource   string `json:"schema_source,omitempty"`
-	MetadataSource string `json:"metadata_source,omitempty"`
+	Mode           string   `json:"mode,omitempty"`
+	Dialect        string   `json:"dialect,omitempty"`
+	DialectSource  string   `json:"dialect_source,omitempty"`
+	Schema         string   `json:"schema,omitempty"`
+	SchemaSource   string   `json:"schema_source,omitempty"`
+	MetadataSource string   `json:"metadata_source,omitempty"`
+	Note           string   `json:"note,omitempty"`
+	Unproven       []string `json:"unproven,omitempty"`
 }
 
 type auditResponse struct {
@@ -81,6 +84,8 @@ func executeOfflineAudit(
 			Schema:         schema,
 			SchemaSource:   schemaSource,
 			MetadataSource: "none",
+			Note:           ifaceconn.ExistenceNotCheckedNote,
+			Unproven:       ifaceconn.OfflineExistenceUnproven(),
 		},
 	}, nil
 }

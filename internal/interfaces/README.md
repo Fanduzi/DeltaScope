@@ -8,7 +8,7 @@ Transport adapters that expose the DeltaScope audit engine to users and other sy
 |--------|---------------|
 | cli | Cobra-based command-line adapter |
 | http | JSON HTTP service adapter |
-| metadata | Shared connection-input helpers for metadata-aware interface adapters |
+| metadata | Shared connection-input helpers and the offline existence caveat for interface adapters |
 | mcp | MCP stdio adapter for agent tool use |
 
 ## Notes

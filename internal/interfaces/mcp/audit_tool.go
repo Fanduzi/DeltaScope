@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
 // input: audit_sql MCP requests, shared DeltaScope public audit API, and resolved run-context metadata
-// output: structured MCP audit_sql responses plus a compact finding-summary text surface
+// output: structured MCP audit_sql responses plus a compact finding-summary text surface with offline existence caveats
 // pos: MCP audit tool adapter between tool invocations and the shared audit engine
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -27,6 +27,8 @@ type AuditContext struct {
 	Schema         string         `json:"schema,omitempty"`
 	SchemaSource   string         `json:"schema_source,omitempty"`
 	MetadataSource MetadataSource `json:"metadata_source,omitempty"`
+	Note           string         `json:"note,omitempty"`
+	Unproven       []string       `json:"unproven,omitempty"`
 }
 
 // AuditSQLResult preserves the public DeltaScope result body and adds MCP context.
@@ -88,6 +90,8 @@ func auditSQLOffline(ctx context.Context, input AuditSQLParams) (*sdkmcp.CallToo
 		Dialect:        string(dialect),
 		DialectSource:  dialectSource,
 		MetadataSource: MetadataSourceNone,
+		Note:           ifaceconn.ExistenceNotCheckedNote,
+		Unproven:       ifaceconn.OfflineExistenceUnproven(),
 	})
 	return toolResult, payload, nil
 }
@@ -168,7 +172,7 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 func successAuditResult(result publicapi.Result, context AuditContext) (*sdkmcp.CallToolResult, AuditSQLResult) {
 	return &sdkmcp.CallToolResult{
 			Content: []sdkmcp.Content{
-				&sdkmcp.TextContent{Text: renderAuditSQLText(result)},
+				&sdkmcp.TextContent{Text: renderAuditSQLText(result, context)},
 			},
 		}, AuditSQLResult{
 			Result:  result,
@@ -176,13 +180,16 @@ func successAuditResult(result publicapi.Result, context AuditContext) (*sdkmcp.
 		}
 }
 
-func renderAuditSQLText(result publicapi.Result) string {
+func renderAuditSQLText(result publicapi.Result, runContext AuditContext) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Audit verdict: %s\n", result.Verdict)
 	fmt.Fprintf(&b, "Statements: %d\n", result.Summary.Statements)
 	fmt.Fprintf(&b, "Blockers: %d\n", result.Summary.Blockers)
 	fmt.Fprintf(&b, "Warnings: %d\n", result.Summary.Warnings)
 	fmt.Fprintf(&b, "Notices: %d\n", result.Summary.Notices)
+	if runContext.Note != "" {
+		fmt.Fprintf(&b, "%s\n", runContext.Note)
+	}
 
 	findings := collectAuditSQLFindings(result)
 	if len(findings) == 0 {
