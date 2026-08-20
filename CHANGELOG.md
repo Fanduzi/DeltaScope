@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.490.0] - 2026-08-21
+
+### Added
+
+- Unified Query Access online session: `NewOnlineQueryAccessSessionFromConn` is the shared SDK/CLI/HTTP online entry. Dialect-specific session constructors remain but are deprecated. PostgreSQL resolver ownership is connection-only; DB-backed resolvers are removed. No-leak: submitted SQL is never executed, prepared, or explained.
+- MCP `audit_sql` compact finding-summary text, compact `list_rules` catalog rows, and MCP Registry discovery metadata.
+- Offline CLI, HTTP, and MCP `context.note` / `context.unproven` when existence was not checked. Offline DROP COLUMN notices are hypothetical. Not a `pkg/deltascope.Result` field.
+- CLI contract fixes: reject explicit empty `--sql` without reading stdin; bounded metadata connection exit `3`; unknown flags and parser-error SQL exit `2`; empty config strings as YAML `""`; embedded DDL-coverage catalog; aggregated Markdown skip reasons.
+
+### Non-Goals
+
+- Not an MCP Query Access tool.
+- Not a CREATE policy, default rule-level, or `--host` requirement change.
+- Not authorization, SQL execution, or a registered-rule catalog change.
+- Not a severity field; not a change to existing published artifacts until this tag.
+
 ## [v0.480.0] - 2026-08-11
 
 ### Added

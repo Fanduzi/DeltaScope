@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.480.0",
+    "softwareVersion": "v0.490.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.480.0 — PG17 COUNT(1) Online Query Access</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.490.0 — Audit Contract and Unified Online Query Access</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,24 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-            <div class="release-version">v0.480.0</div>
+            <div class="release-version">v0.490.0</div>
             <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
           </div>
-            <div class="release-title" data-i18n="releases.currentTitle">PG17 COUNT(1) Online Query Access</div>
-            <div class="release-copy" data-i18n="releases.items.v04800">v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on a caller-owned online session. Trusted SDK, online CLI PostgreSQL options, and HTTP with an authorized connection_id share the same catalog-bound proof and return read_only + admissible with one read_table requirement. Default/offline, other PostgreSQL shapes, and MCP stay unchanged. Static analysis only; not authorization or SQL execution.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Audit Contract and Unified Online Query Access</div>
+            <div class="release-copy" data-i18n="releases.items.v04900">v0.490.0 ships a unified Query Access online session for SDK, CLI, and HTTP; compact MCP audit_sql text and list_rules; CLI empty-SQL, exit-code, and catalog-embed fixes; aggregated Markdown skip reasons; and an offline existence caveat on CLI, HTTP, and MCP context. No-leak Query Access evidence is unchanged. Not an MCP Query Access tool; not a registered-rule catalog change; not SQL execution or authorization.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.490.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.490.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.490.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.480.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v04800">PG17 COUNT(1) Online Query Access</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v04800">v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on a caller-owned online session. Trusted SDK, online CLI PostgreSQL options, and HTTP with an authorized connection_id share the same catalog-bound proof and return read_only + admissible with one read_table requirement. Default/offline, other PostgreSQL shapes, and MCP stay unchanged. Static analysis only; not authorization or SQL execution.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04800" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.zh-CN.md">Open v0.480.0 notes →</a>
+            </article>
+
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.470.0</div>
@@ -1106,15 +1115,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v04600">v0.460.0 enables relationless literal-only Query Access on online MySQL/TiDB sessions. Queries such as SELECT LOWER('x') or SELECT COUNT(1) without a FROM clause now return admissible with no requirements on MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline, PostgreSQL, and MCP behavior unchanged. Not authorization.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.460.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04600" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.460.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.460.0.zh-CN.md">Open v0.460.0 notes →</a>
-            </article>
-
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.450.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v04500">Exact Shape Expansion for Online MySQL/TiDB Literal Operands</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v04500">v0.450.0 extends online MySQL/TiDB Query Access with exact literal-only, reversed, and all-constant operand shapes. On a caller-owned session, online CLI connection, or HTTP connection_id, queries such as COUNT(1) or LOWER('x') now return admissible with precise physical requirements instead of indeterminate. Supported profiles: MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline behavior unchanged; MCP has no query-access tool. Not authorization.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04500" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.450.0.zh-CN.md">Open v0.450.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1199,7 +1199,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on online SDK, CLI, and authorized HTTP paths. Default/offline and MCP unchanged; static analysis only.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.490.0 ships a unified Query Access online session plus operator/agent audit-contract fixes. Default/offline Query Access stay fail-closed; MCP has no Query Access tool. Static analysis only; not authorization or SQL execution.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1211,7 +1211,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.zh-CN.md">Release Notes v0.480.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.490.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.490.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.490.0.zh-CN.md">Release Notes v0.490.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1255,7 +1255,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.480.0 — PG17 COUNT(1) Online Query Access',
+          badge: 'v0.490.0 — Audit Contract and Unified Online Query Access',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1381,9 +1381,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'PG17 COUNT(1) Online Query Access',
+          currentTitle: 'Audit Contract and Unified Online Query Access',
           currentLink: 'Read release notes →',
           labels: {
+            v04900: 'Audit Contract and Unified Online Query Access',
             v04800: 'PG17 COUNT(1) Online Query Access',
             v04700: 'Release Recovery Provenance Enforcement',
             v04600: 'Relationless Literal-Only Query Access for Online MySQL/TiDB',
@@ -1424,6 +1425,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v04900: 'Open v0.490.0 notes →',
             v04800: 'Open v0.480.0 notes →',
             v04700: 'Open v0.470.0 notes →',
             v04600: 'Open v0.460.0 notes →',
@@ -1467,6 +1469,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v04900: 'v0.490.0 ships a unified Query Access online session for SDK, CLI, and HTTP; compact MCP audit_sql text and list_rules; CLI empty-SQL, exit-code, and catalog-embed fixes; aggregated Markdown skip reasons; and an offline existence caveat on CLI, HTTP, and MCP context. No-leak Query Access evidence is unchanged. Not an MCP Query Access tool; not a registered-rule catalog change; not SQL execution or authorization.',
             v04800: 'v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on a caller-owned online session. Trusted SDK, online CLI PostgreSQL options, and HTTP with an authorized connection_id share the same catalog-bound proof and return read_only + admissible with one read_table requirement. Default/offline, other PostgreSQL shapes, and MCP stay unchanged. Static analysis only; not authorization or SQL execution.',
             v04700: 'v0.470.0 enforces release-recovery provenance: routine recovery accepts only future provenance-valid annotated tags whose targets are reachable from trusted origin/main, recovery dispatch runs only on refs/heads/main, and publishers check out the verified peeled tag target SHA. The recovery contract test is hermetic; historical v0.240.0 and v0.460.0 stay fail-closed. Release engineering only; no SQL audit, Query Access, SDK, CLI, HTTP, or MCP behavior change.',
             v04600: 'v0.460.0 enables relationless literal-only Query Access on online MySQL/TiDB sessions. Queries such as SELECT LOWER(\'x\') or SELECT COUNT(1) without a FROM clause now return admissible with no requirements on MySQL 5.7, 8.0, 8.4, and TiDB 8.5. Default offline, PostgreSQL, and MCP behavior unchanged. Not authorization.',
@@ -1517,14 +1520,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on online SDK, CLI, and authorized HTTP paths. Default/offline and MCP unchanged; static analysis only.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.490.0 ships a unified Query Access online session plus operator/agent audit-contract fixes. Default/offline Query Access stay fail-closed; MCP has no Query Access tool. Static analysis only; not authorization or SQL execution.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.480.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.490.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1542,7 +1545,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.480.0 —— PG17 COUNT(1) 在线 Query Access',
+          badge: 'v0.490.0 —— 审计契约与统一在线 Query Access',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1668,9 +1671,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'PG17 COUNT(1) 在线 Query Access',
+          currentTitle: '审计契约与统一在线 Query Access',
           currentLink: '查看发布说明 →',
           labels: {
+            v04900: '审计契约与统一在线 Query Access',
             v04800: 'PG17 COUNT(1) 在线 Query Access',
             v04700: 'Release Recovery Provenance Enforcement / 发布恢复来源证明强制',
             v04600: '在线 MySQL/TiDB 无关系纯字面量 Query Access',
@@ -1711,6 +1715,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v04900: '查看 v0.490.0 发布说明 →',
             v04800: '查看 v0.480.0 发布说明 →',
             v04700: '查看 v0.470.0 发布说明 →',
             v04600: '查看 v0.460.0 发布说明 →',
@@ -1755,6 +1760,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v04900: 'v0.490.0 发布统一 Query Access 在线 session（SDK/CLI/HTTP）、MCP 精简 audit_sql 文本与 list_rules、CLI 空 SQL/退出码/内嵌目录修复、聚合 Markdown skip 原因，以及离线 CLI/HTTP/MCP 的存在性限制说明。Query Access 不泄漏证据不变。不是 MCP Query Access 工具；不改变已注册规则目录；不执行 SQL，也不是鉴权。',
             v04800: 'v0.480.0 在调用方持有的在线 session 上接纳精确的 PostgreSQL 17 Query Access：SELECT COUNT(1) FROM 一个 schema 限定的物理基表。受信任 SDK、CLI 在线 PostgreSQL 选项，以及带授权 connection_id 的 HTTP 共享同一条目录证明，返回 read_only + admissible 与一条 read_table 要求。默认/离线、其他 PostgreSQL 形态与 MCP 不变。仅静态分析；不是鉴权，也不执行 SQL。',
             v04700: 'v0.470.0 强制发布恢复来源证明：常规恢复只接受未来的、来源可验证的 annotated tag，且 tag 目标必须可从受信任的 origin/main 到达；恢复 dispatch 只在 refs/heads/main 上运行；发布 job 固定检出已验证的 peeled tag 目标 SHA。恢复契约测试为封闭式；历史 v0.240.0 和 v0.460.0 保持 fail-closed。仅发布工程；SQL 审核、Query Access、SDK、CLI、HTTP、MCP 行为均不变。',
             v04600: 'v0.460.0 在在线 MySQL/TiDB session 上启用无关系纯字面量 Query Access。不含 FROM 子句的查询如 SELECT LOWER(x) 或 SELECT COUNT(1) 现在在 MySQL 5.7、8.0、8.4 和 TiDB 8.5 上返回 admissible，无物理要求。默认离线、PostgreSQL 和 MCP 行为不变。不是鉴权。',
@@ -1802,14 +1808,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.480.0 在在线 SDK、CLI 与授权 HTTP 路径上接纳精确的 PostgreSQL 17 COUNT(1) 基表 Query Access。默认/离线与 MCP 不变；仅静态分析。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.490.0 发布统一 Query Access 在线 session 以及操作员/agent 审计契约修复。默认/离线 Query Access 仍 fail-closed；MCP 没有 Query Access 工具。仅静态分析；不是鉴权，也不执行 SQL。',
           start: '开始',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 采用 Apache 2.0 许可。',
           version: '',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.480.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.490.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

@@ -4,7 +4,25 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.480.0 PG17 COUNT(1) Online Query Access
+## Latest Completed Milestone: v0.490.0 Audit Contract and Unified Online Query Access
+
+**Goal:** publish the operator/agent audit-contract fixes and unified Query Access online session that landed after v0.480.0. Offline ALTER states existence was not checked; MCP `audit_sql` text carries findings; CLI empty-SQL, exit mapping, YAML encoding, and embedded catalog match the documented contract; SDK/CLI/HTTP share `NewOnlineQueryAccessSessionFromConn`. See `docs/releases/release-notes-v0.490.0.md`.
+
+### Completed Scope
+
+- Unified Query Access online session for SDK, CLI, and HTTP. Dialect-specific constructors stay available and deprecated. Connection-only PostgreSQL resolvers. No-leak: submitted SQL is never executed, prepared, or explained.
+- MCP compact `audit_sql` text, compact `list_rules`, Registry discovery, and offline `context.note` / `unproven`.
+- CLI/HTTP audit contract: existence caveat, hypothetical DROP COLUMN notice, empty `--sql`, exit `2`/`3`, YAML `""`, embedded DDL-coverage catalog, aggregated Markdown skip reasons.
+- Decision records listed in `docs/releases/release-notes-v0.490.0.md` (Accepted; Related milestone/version: v0.490.0).
+
+### Non-Goals
+
+- Not an MCP Query Access tool.
+- Not a CREATE policy, default rule-level, or `--host` requirement change.
+- Not authorization, SQL execution, or a registered-rule catalog change.
+- Not a severity field; not putting `context` on `pkg/deltascope.Result`.
+
+## Previous Completed Milestone: v0.480.0 PG17 COUNT(1) Online Query Access
 
 **Goal:** prove and surface one exact PostgreSQL 17 Query Access envelope — `SELECT COUNT(1) FROM <one schema-qualified physical base table>` — on a caller-owned online session, with the same catalog-bound proof available through the trusted SDK, online CLI PostgreSQL connection options, and HTTP with an operator-authorized PostgreSQL 17 `connection_id`. See `docs/releases/release-notes-v0.480.0.md`, `docs/decisions/2026-07-31-query-access-pg17-count-literal-proof.md`, and `docs/decisions/2026-08-03-query-access-pg17-count-online-surface-contract.md`.
 
