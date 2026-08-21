@@ -71,7 +71,7 @@ Before any downstream work, the recovery preflight proves the input tag is a leg
 | Secret | Purpose |
 |--------|---------|
 | `HOMEBREW_TAP_TOKEN` | Write access to `Fanduzi/homebrew-deltascope` |
-| `NPM_TOKEN` | npm publish for `@fanduzi/deltascope-mcp` |
+| npm Trusted Publishing (OIDC) | `npm publish` for `@fanduzi/deltascope-mcp` from `release.yml` / `release-recover.yml`; do not set `NODE_AUTH_TOKEN` |
 | `GITHUB_TOKEN` | Read access to release assets during preflight (auto-provisioned by Actions, must be explicitly wired as `GH_TOKEN` env var) |
 
 ## Preflight Check
