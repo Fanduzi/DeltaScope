@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# input: curated public docs/examples, optional repository root, and VERSION environment value
+# output: exit status plus line-anchored findings for known public documentation drift
+# pos: static release contract gate for public documentation and example consistency
+# note: if this file changes, update this header and scripts/README.md.
 """Static docs/examples drift checker for DeltaScope public docs.
 
 This checker is intentionally STATIC and CURATED. It never executes Markdown
@@ -22,12 +26,14 @@ patterns in the current public docs and CI examples:
      (DeltaScope uses ``level``; external schemas and negative clarifications
      are allowed),
   6. the CLI audit metadata/connection flag inventory (every shipped audit
-     flag, including ``--metadata-connect-timeout``, must appear in both CLI
+     flag, including PostgreSQL ``--database``, must appear in both CLI
      reference docs),
-  7. the SDK ``Result`` shape (the exported ``Unsupported`` and ``Diagnostics``
+  7. PostgreSQL metadata-aware audit examples (each must select both a database
+     and schema),
+  8. the SDK ``Result`` shape (the exported ``Unsupported`` and ``Diagnostics``
      fields and the ``ErrUnsupportedStatement`` sentinel must appear wherever
      the SDK result shape is documented), and
-  8. the MCP README source-build version (it must not pin a literal
+  9. the MCP README source-build version (it must not pin a literal
      ``vX.Y.Z`` default; it should reference ``pkg/deltascope.DefaultVersion``).
 
 Usage (from the repository root):
@@ -75,6 +81,8 @@ INVENTORY_FILES = [
 SCAN_FILES = [
     "README.md",
     "README_ZH.md",
+    "docs/concept/metadata-aware-mode.md",
+    "docs/concept/metadata-aware-mode.zh-CN.md",
     "docs/reference/cli.md",
     "docs/reference/cli.zh-CN.md",
     "docs/reference/config.md",
@@ -172,6 +180,7 @@ CLI_AUDIT_FLAG_FILES = [
 ]
 CLI_AUDIT_METADATA_FLAGS = [
     "--metadata-connect-timeout",
+    "--database",
     "--host",
     "--port",
     "--user",
@@ -183,6 +192,17 @@ CLI_AUDIT_METADATA_FLAGS = [
     "--tls-mode",
     "--tls-ca-file",
 ]
+POSTGRESQL_METADATA_CONNECTION_FLAGS = [
+    "--host",
+    "--port",
+    "--user",
+    "--password-env",
+    "--password-file",
+    "--ask-password",
+    "--schema",
+    "--socket",
+]
+BASH_FENCE_RE = re.compile(r"```(?:bash|sh|shell)\s*\n(.*?)```", re.DOTALL)
 
 # SDK Result shape docs: the exported Result struct fields and the
 # unsupported-statement sentinel must appear wherever the SDK result shape is
@@ -399,6 +419,27 @@ def _read(root: Path, rel: str) -> Optional[str]:
     return path.read_text(encoding="utf-8")
 
 
+def _audit_commands(block: str) -> List[Tuple[int, str]]:
+    """Return offsets and shell commands beginning with ``deltascope audit``."""
+    commands: List[Tuple[int, str]] = []
+    current: List[str] = []
+    command_offset = 0
+    offset = 0
+    for line in block.splitlines(keepends=True):
+        if not current and re.match(r"\s*deltascope audit(?:\s|$)", line):
+            command_offset = offset
+            current.append(line)
+        elif current:
+            current.append(line)
+        if current and not line.rstrip().endswith("\\"):
+            commands.append((command_offset, "".join(current)))
+            current = []
+        offset += len(line)
+    if current:
+        commands.append((command_offset, "".join(current)))
+    return commands
+
+
 def collect_files(root: str) -> List[File]:
     """Return every existing in-scope public file under ``root``.
 
@@ -515,6 +556,40 @@ def check_cli_metadata_flags(files: List[File]) -> List[Failure]:
                                 % (flag, ", ".join(CLI_AUDIT_METADATA_FLAGS)),
                     )
                 )
+    return failures
+
+
+def check_postgresql_metadata_examples(files: List[File]) -> List[Failure]:
+    """PostgreSQL metadata-aware audit snippets must select a database."""
+    failures: List[Failure] = []
+    for f in files:
+        for match in BASH_FENCE_RE.finditer(f.text):
+            block = match.group(1)
+            for offset, command in _audit_commands(block):
+                if "--dialect postgresql" not in command:
+                    continue
+                if not any(
+                    flag in command
+                    for flag in POSTGRESQL_METADATA_CONNECTION_FLAGS
+                ):
+                    continue
+                missing = [
+                    flag for flag in ("--database", "--schema")
+                    if flag not in command
+                ]
+                if not missing:
+                    continue
+                dialect_index = (
+                    match.start(1) + offset + command.find("--dialect postgresql")
+                )
+                failures.append(Failure(
+                    path=f.rel_path,
+                    line=line_number(f.text, dialect_index),
+                    message="PostgreSQL metadata-aware audit example missing %s; "
+                            "use `--database <dbname>` for database selection and "
+                            "`--schema` for schema resolution"
+                            % " and ".join("`%s`" % flag for flag in missing),
+                ))
     return failures
 
 
@@ -706,6 +781,7 @@ def run_checks(root: str, expected_version: Optional[str]) -> List[Failure]:
     failures.extend(check_stale_commands(files))
     failures.extend(check_format_inventory(files))
     failures.extend(check_severity_language(files))
+    failures.extend(check_postgresql_metadata_examples(files))
 
     github_text = _read(Path(root), GITHUB_EXAMPLE)
     if github_text is not None:

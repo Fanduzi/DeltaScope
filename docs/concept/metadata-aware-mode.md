@@ -8,7 +8,7 @@ Metadata-aware mode adds live instance and schema facts to the same audit flow u
 
 ## Activating Metadata-Aware Mode
 
-Metadata-aware mode is activated by supplying any database connection flag to `deltascope audit`. You do not need to pass a dedicated mode flag — the presence of any connection parameter is sufficient.
+Metadata-aware mode is activated by supplying an endpoint, credential, or schema flag to `deltascope audit`. You do not need to pass a dedicated mode flag.
 
 Connection flags that activate the mode:
 
@@ -22,8 +22,8 @@ Connection flags that activate the mode:
 | `--ask-password` | Prompt for password interactively |
 | `--socket` | Unix socket path |
 | `--schema` | Default schema for unqualified table names |
-| `--tls-mode` | TLS connection mode: `disabled` (default) or `enabled` |
-| `--tls-ca-file` | CA certificate file for TLS verification |
+
+`--database`, `--tls-mode`, `--tls-ca-file`, and `--metadata-connect-timeout` configure a connection but do not activate metadata-aware mode on their own.
 
 Any single connection flag is sufficient to activate the mode. For example:
 
@@ -36,7 +36,7 @@ deltascope audit --socket /var/run/mysqld/mysqld.sock --user auditor --schema ap
 
 # PostgreSQL with metadata-aware mode
 deltascope audit --host 127.0.0.1 --port 5432 --user readonly --ask-password \
-  --dialect postgresql --schema public migration.sql
+  --dialect postgresql --database app --schema public migration.sql
 ```
 
 ---

@@ -58,9 +58,11 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 ### Connection Flags (Metadata-Aware Mode)
 
-Supplying any one of the following flags activates metadata-aware mode. DeltaScope connects to the
-specified MySQL, TiDB, or PostgreSQL instance to retrieve live schema facts (table structure, index
-definitions, instance variables) and attaches them to each statement before rule evaluation.
+Metadata-aware mode is activated by an endpoint, credential, or schema flag: `--host`, `--port`,
+`--user`, `--password-env`, `--password-file`, `--ask-password`, `--schema`, or `--socket`.
+DeltaScope then connects to the specified instance and retrieves live schema facts before rule
+evaluation. `--database`, `--tls-mode`, `--tls-ca-file`, and `--metadata-connect-timeout` configure
+that connection but do not activate metadata-aware mode on their own.
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
@@ -70,6 +72,7 @@ definitions, instance variables) and attaches them to each statement before rule
 | `--password-env` | | (none) | Environment variable that contains the database password |
 | `--password-file` | | (none) | File path that contains the database password |
 | `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password-env` and `--password-file`. |
+| `--database` | | (none) | PostgreSQL database name (defaults to `postgres` when omitted) |
 | `--schema` | `-D` | (none) | Default schema for unqualified table name resolution |
 | `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port` and `--tls-mode enabled`. |
 | `--tls-mode` | | `disabled` | TLS connection mode: `disabled` or `enabled`. When `enabled`, requires `--host` and `--user`; rejects `--socket`. |
@@ -82,7 +85,7 @@ definitions, instance variables) and attaches them to each statement before rule
 
 - For MySQL/TiDB: dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
   also set explicitly and conflicts, the command exits with code 2.
-- For PostgreSQL: pass `--dialect postgresql` explicitly. Auto-detection is not supported for PostgreSQL.
+- For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
 - Connection failures print one bounded stderr line. Portable output never includes host, port,
@@ -120,7 +123,7 @@ deltascope audit \
 deltascope audit \
   --host 127.0.0.1 --port 5432 \
   --user readonly --ask-password \
-  --dialect postgresql --schema public \
+  --dialect postgresql --database app --schema public \
   --file ./migration.sql
 
 # Connect to MySQL over TLS
@@ -136,7 +139,7 @@ deltascope audit \
   --host pg.example.com --port 5432 \
   --user readonly --ask-password \
   --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
-  --dialect postgresql --schema public \
+  --dialect postgresql --database app --schema public \
   --file ./migration.sql
 ```
 

@@ -1,3 +1,7 @@
+# input: verify_docs_examples helpers, canonical fixtures, and temporary documentation trees
+# output: regression evidence for the static public documentation drift contract
+# pos: unit-test owner for the documentation example release gate
+# note: if this file changes, update this header and scripts/README.md.
 """Unit tests for the static docs/examples drift checker.
 
 Run with:
@@ -601,6 +605,23 @@ class TestRunChecksEndToEnd(unittest.TestCase):
             failures = vde.run_checks(root, "v0.330.0")
             self.assertTrue(any("rules explain" in f.message for f in failures))
 
+    def test_each_postgresql_metadata_command_in_recipe_is_checked(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write_clean_repo(root)
+            recipe_dir = Path(root) / "docs" / "recipe"
+            recipe_dir.mkdir()
+            (recipe_dir / "postgresql.md").write_text(
+                "```bash\n"
+                "deltascope audit --dialect postgresql --host pg1 "
+                "--database app --schema public\n"
+                "deltascope audit --dialect postgresql --host pg2 "
+                "--schema public\n"
+                "```\n"
+            )
+            failures = vde.run_checks(root, "v0.330.0")
+            hits = [f for f in failures if f.path == "docs/recipe/postgresql.md"]
+            self.assertEqual(len(hits), 1)
+
     def test_end_to_end_failures_never_use_line_zero(self):
         with tempfile.TemporaryDirectory() as root:
             self._write_clean_repo(root)
@@ -654,6 +675,9 @@ class TestMainContract(unittest.TestCase):
 
 
 class TestCliMetadataFlags(unittest.TestCase):
+    def test_database_flag_is_in_inventory(self):
+        self.assertIn("--database", vde.CLI_AUDIT_METADATA_FLAGS)
+
     def test_all_flags_present_passes(self):
         text = cli_doc_with_formats_and_flags()
         files = [
@@ -694,6 +718,31 @@ class TestCliMetadataFlags(unittest.TestCase):
         # Empty file list: no CLI docs present, so nothing to fail on.
         self.assertEqual(vde.check_cli_metadata_flags([]), [])
 
+
+class TestPostgreSQLMetadataExamples(unittest.TestCase):
+    def test_metadata_example_without_database_fails(self):
+        files = [vde.File(
+            "docs/recipe/example.md",
+            "```bash\n"
+            "deltascope audit --dialect postgresql --host 127.0.0.1 "
+            "--schema public\n"
+            "```\n",
+        )]
+        failures = vde.check_postgresql_metadata_examples(files)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("--database", failures[0].message)
+
+    def test_metadata_example_without_schema_fails(self):
+        files = [vde.File(
+            "docs/recipe/example.md",
+            "```bash\n"
+            "deltascope audit --dialect postgresql --host 127.0.0.1 "
+            "--database app\n"
+            "```\n",
+        )]
+        failures = vde.check_postgresql_metadata_examples(files)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("--schema", failures[0].message)
 
 class TestSdkResultFields(unittest.TestCase):
     def test_all_tokens_present_passes(self):

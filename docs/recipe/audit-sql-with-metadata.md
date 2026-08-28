@@ -67,7 +67,7 @@ deltascope audit \
 
 ### PostgreSQL Connection
 
-Use `--dialect postgresql` and the PostgreSQL port (default `5432`) when connecting to a PostgreSQL instance. `--schema` maps to the PostgreSQL schema (default `public`):
+Use `--dialect postgresql` and the PostgreSQL port (default `5432`) when connecting to a PostgreSQL instance. `--database` selects the PostgreSQL database, while `--schema` selects the schema within it (commonly `public`):
 
 ```bash
 deltascope audit \
@@ -77,6 +77,7 @@ deltascope audit \
   --port 5432 \
   --user deltascope \
   --ask-password \
+  --database app \
   --schema public
 ```
 
@@ -90,6 +91,7 @@ deltascope audit \
   --port 5432 \
   --user deltascope \
   --password-env DELTASCOPE_PASSWORD \
+  --database app \
   --schema public
 ```
 
@@ -119,6 +121,7 @@ deltascope audit \
   --user deltascope \
   --ask-password \
   --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
+  --database app \
   --schema public
 ```
 

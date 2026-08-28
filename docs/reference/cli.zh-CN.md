@@ -53,7 +53,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 ### 连接标志（元数据感知模式）
 
-提供以下任意一个标志即可激活元数据感知模式。DeltaScope 将连接至指定的 MySQL、TiDB 或 PostgreSQL 实例，获取实时 schema 信息（表结构、索引定义、实例变量），并在规则评估前将其附加到每条语句。
+端点、凭据或 schema 标志可以激活元数据感知模式：`--host`、`--port`、`--user`、`--password-env`、`--password-file`、`--ask-password`、`--schema` 或 `--socket`。DeltaScope 随后连接指定实例，并在规则评估前获取实时 schema 信息。`--database`、`--tls-mode`、`--tls-ca-file` 和 `--metadata-connect-timeout` 用于配置该连接，单独使用不会激活元数据感知模式。
 
 | 标志 | 简写 | 默认值 | 描述 |
 |------|------|--------|------|
@@ -63,6 +63,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | `--password-env` | | （无） | 包含数据库密码的环境变量名 |
 | `--password-file` | | （无） | 包含数据库密码的文件路径 |
 | `--ask-password` | | false | 交互式密码提示。与 `--password-env` 和 `--password-file` 互斥。 |
+| `--database` | | （无） | PostgreSQL 数据库名（省略时默认为 `postgres`） |
 | `--schema` | `-D` | （无） | 用于解析无限定表名的默认 schema |
 | `--socket` | `-S` | （无） | Unix socket 路径。与 `--host`/`--port` 和 `--tls-mode enabled` 互斥。 |
 | `--tls-mode` | | `disabled` | TLS 连接模式：`disabled` 或 `enabled`。设为 `enabled` 时要求 `--host` 和 `--user`；与 `--socket` 互斥。 |
@@ -73,7 +74,8 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 **元数据感知模式下的行为：**
 
-- 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。
+- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。
+- PostgreSQL 必须显式传入 `--dialect postgresql`，并用 `--database` 选择数据库（省略时默认为 `postgres`）；`--schema` 选择该数据库内的 schema。
 - 无限定表名的 schema 解析顺序：SQL 级限定符 → `--schema` 标志 → 可访问 schema 中的唯一匹配 → 模糊时报错。
 - 连接失败时只向 stderr 打印一行有界消息。可移植输出不会包含 host、port、user、DSN、密码或原始驱动文本。空密码仍然允许；仅当服务器拒绝该空密码时，才会提示缺少 `--password-env` / `--password-file` / `--ask-password`。
 
@@ -116,7 +118,7 @@ deltascope audit \
   --host pg.example.com --port 5432 \
   --user readonly --ask-password \
   --tls-mode enabled --tls-ca-file /etc/ssl/certs/pg-ca.pem \
-  --dialect postgresql --schema public \
+  --dialect postgresql --database app --schema public \
   --file ./migration.sql
 ```
 

@@ -158,7 +158,7 @@ deltascope audit \
   --sql "ALTER TABLE users ADD COLUMN email VARCHAR(255)" \
   --dialect postgresql \
   --host 127.0.0.1 --port 5432 --user deltascope --ask-password \
-  --schema public
+  --database app --schema public
 ```
 
 ### Output Looks Different From Offline

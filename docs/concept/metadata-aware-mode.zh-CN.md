@@ -8,7 +8,7 @@
 
 ## 激活元数据感知模式
 
-向 `deltascope audit` 提供任意数据库连接标志即可激活元数据感知模式。无需传递专用的模式标志——任何连接参数的存在即足以激活该模式。
+向 `deltascope audit` 提供端点、凭据或 Schema 标志即可激活元数据感知模式。无需传递专用的模式标志。
 
 可激活该模式的连接标志：
 
@@ -22,8 +22,8 @@
 | `--ask-password` | 以交互方式提示输入密码 |
 | `--socket` | Unix socket 路径 |
 | `--schema` | 非限定表名的默认 Schema |
-| `--tls-mode` | TLS 连接模式：`disabled`（默认）或 `enabled` |
-| `--tls-ca-file` | TLS 验证用 CA 证书文件路径 |
+
+`--database`、`--tls-mode`、`--tls-ca-file` 和 `--metadata-connect-timeout` 用于配置连接，单独使用不会激活元数据感知模式。
 
 任意单个连接标志即可激活该模式。例如：
 
