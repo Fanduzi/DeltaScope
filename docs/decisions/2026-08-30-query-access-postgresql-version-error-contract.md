@@ -6,6 +6,7 @@ Related issue: [#33](https://github.com/Fanduzi/DeltaScope/issues/33)
 Related commits:
 - [`f9d48982c11c86892c7aee8f7ca96dcab46097ab`](https://github.com/Fanduzi/DeltaScope/commit/f9d48982c11c86892c7aee8f7ca96dcab46097ab) — implementation
 - [`0ec88099b3cbaea78c6168d276b221a6a5f63c86`](https://github.com/Fanduzi/DeltaScope/commit/0ec88099b3cbaea78c6168d276b221a6a5f63c86) — implementation correction and authentication classification
+- [`d03e1e6edadbcdf663b813bbe9e87f23fe7da975`](https://github.com/Fanduzi/DeltaScope/commit/d03e1e6edadbcdf663b813bbe9e87f23fe7da975) — implementation correction for shared authentication and timeout classification
 Related tests:
 - `TestParseServerIdentity_PostgreSQLUnsupportedVersionIsBounded`
 - `TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion`
@@ -15,6 +16,7 @@ Related tests:
 - `TestHandlerQueryAccessOnlineKeepsAuthenticationDialAndTimeoutDistinct`
 - `TestHandlerCapabilitiesReturnsSurfaceSummary`
 - `TestWrapConnectionFailureKeepsAuthenticationAndDialDistinct`
+- `TestQueryAccessOnlineTimeoutRemainsBounded`
 Related docs:
 - `docs/reference/query-access-analysis.md`
 - `docs/reference/query-access-analysis_zh.md`
@@ -91,7 +93,10 @@ database/schema semantics.
 - `go test -tags=postgresql ./...` passed on correction commit
   `0ec88099b3cbaea78c6168d276b221a6a5f63c86`.
 - `go test -race` on affected packages, `go vet ./...`, and `make lint` passed
-  on correction commit `0ec88099b3cbaea78c6168d276b221a6a5f63c86`.
+  on correction commits `0ec88099b3cbaea78c6168d276b221a6a5f63c86` and
+  `d03e1e6edadbcdf663b813bbe9e87f23fe7da975`.
+- `make test` and `go test -tags=postgresql ./...` passed on final correction
+  commit `d03e1e6edadbcdf663b813bbe9e87f23fe7da975`.
 - Focused default and tagged tests cover PG16 identity classification, PG17
   routing, CLI/HTTP parity, capabilities discovery, auth/no-leak boundaries,
   and unchanged transport error categories.
@@ -110,6 +115,7 @@ changing only transport wording is insufficient.
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/33
 - Implementation: [f9d48982c11c86892c7aee8f7ca96dcab46097ab](https://github.com/Fanduzi/DeltaScope/commit/f9d48982c11c86892c7aee8f7ca96dcab46097ab)
 - Implementation correction: [0ec88099b3cbaea78c6168d276b221a6a5f63c86](https://github.com/Fanduzi/DeltaScope/commit/0ec88099b3cbaea78c6168d276b221a6a5f63c86)
+- Timeout/classifier correction: [d03e1e6edadbcdf663b813bbe9e87f23fe7da975](https://github.com/Fanduzi/DeltaScope/commit/d03e1e6edadbcdf663b813bbe9e87f23fe7da975)
 - Online identity: `internal/application/online/identity.go`
 - Online error mapping: `internal/application/online/errors.go`
 - CLI/HTTP boundaries: `internal/interfaces/cli/audit.go`, `internal/interfaces/http/query_access.go`
