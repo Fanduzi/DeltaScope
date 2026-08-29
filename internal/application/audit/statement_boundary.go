@@ -151,6 +151,9 @@ func dollarQuoteDelimiter(sql string, start int) string {
 	if start+1 >= len(sql) {
 		return ""
 	}
+	if start > 0 && (isDollarTagPart(sql[start-1]) || sql[start-1] == '$') {
+		return ""
+	}
 	if sql[start+1] == '$' {
 		return "$$"
 	}

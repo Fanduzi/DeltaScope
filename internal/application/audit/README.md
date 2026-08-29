@@ -6,8 +6,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 | File | Responsibility |
 |------|---------------|
-| parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and returns valid parsed statements alongside internal parse-failure locations while preserving the existing fail-closed error contract |
-| statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies; it does not perform grammar recovery or infer statement semantics |
+| parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and translates successful locations from each slice so failed text cannot capture a valid sibling's source match |
+| statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies while distinguishing dollar signs inside unquoted identifiers; it does not infer statement semantics |
 | parse_pg.go | Implements PostgreSQL parsing when built with the `postgresql` tag |
 | parse_pg_stub.go | Returns the PG-capable build guidance error when PostgreSQL support is not compiled in |
 | parse_test.go | Verifies that application parsing hides parser-specific AST details |
@@ -19,7 +19,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | evaluate_test.go | Verifies application-owned report-flow integration and explanation enrichment over the rule registry |
 | explain.go | Joins evaluated findings with shipped catalog metadata and statement metadata availability notes |
 | service.go | Normalizes one leading UTF-8 BOM before empty-input validation, then orchestrates policy loading, per-statement parser recovery, extraction, metadata enrichment, impact refinement, evaluation, preserved partial results, and fail-closed diagnostics for parser-error and unsupported outcomes |
-| service_test.go | Verifies the end-to-end application audit use case, including parser errors at migration beginning/middle/end, semicolons inside supported strings/comments, preserved valid findings/locations, metadata enrichment, and existing unsupported/impact contracts |
+| service_test.go | Verifies parser errors at migration beginning/middle/end, semicolons inside supported strings/comments, failed-chunk location collisions, preserved valid findings/impact, metadata enrichment, and existing unsupported contracts |
 | corpus_test.go | Runs MySQL and TiDB SQL-corpus cases, including partial parser-error result assertions |
 | corpus_postgresql_tag_test.go | Runs the PostgreSQL corpus and its tagged partial parser-error result assertions |
 | corpus_testdata_test.go | Defines and validates the shared corpus schema, including retained statement and located parser-diagnostic expectations |

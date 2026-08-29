@@ -123,7 +123,7 @@ func writeUnsupported(builder *strings.Builder, count int) {
 func writeUnaudited(builder *strings.Builder, result report.Result) {
 	count := 0
 	for _, diagnostic := range result.Diagnostics {
-		if !diagnostic.Audited {
+		if diagnostic.Classification == "parser_error" && !diagnostic.Audited {
 			count++
 		}
 	}

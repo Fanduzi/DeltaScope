@@ -6,8 +6,8 @@ Renders concise GitHub-flavored Markdown for GitHub Actions job summaries (`$GIT
 
 | File | Responsibility |
 |------|----------------|
-| render.go | Formats `report.Result` into a short SQL review summary with verdict/counts, Action Summary, unsupported count, and unaudited-statement count |
-| render_test.go | Verifies clean/finding summaries, no-leak behavior, unsupported counts, and parser-diagnostic unaudited counts |
+| render.go | Formats `report.Result` into a short SQL review summary with verdict/counts, Action Summary, unsupported count, and parser-failed statement count |
+| render_test.go | Verifies clean/finding summaries, no-leak behavior, unsupported counts, and parser diagnostics are counted without miscounting aggregate unsupported diagnostics |
 
 ## Exports
 

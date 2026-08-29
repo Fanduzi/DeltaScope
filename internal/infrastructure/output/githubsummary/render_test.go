@@ -63,6 +63,23 @@ func TestRenderCountsUnauditedParserDiagnostics(t *testing.T) {
 	}
 }
 
+func TestRenderDoesNotCountAggregateUnsupportedDiagnosticAsParserFailure(t *testing.T) {
+	t.Parallel()
+	output, err := Render(report.Result{
+		Unsupported: []spec.UnsupportedDetail{{Index: 0}, {Index: 1}},
+		Diagnostics: []spec.Diagnostic{{
+			Classification: "unsupported_statement",
+			Audited:        false,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if strings.Contains(string(output), "Unaudited statements:") {
+		t.Fatalf("aggregate unsupported diagnostic must not be miscounted as one parser failure:\n%s", output)
+	}
+}
+
 func TestRenderFindingActionSummary(t *testing.T) {
 	t.Parallel()
 

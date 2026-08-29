@@ -303,6 +303,29 @@ func TestAuditParserRecoveryDoesNotSplitSemicolonsInStringsOrComments(t *testing
 	}
 }
 
+func TestAuditParserRecoveryLocatesValidStatementOutsideFailedChunk(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "ALTER TABLE users ADD COLUMN x INT;\n" +
+			"CREATE INDEX CONCURRENTLY idx_x ON users /* DELETE FROM users; */;\n" +
+			"DELETE FROM users;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result")
+	}
+	for _, finding := range result.Statements[1].Findings {
+		if finding.RuleID == "dml.where.require" {
+			if finding.Location == nil || finding.Location.Line != 3 || finding.Location.Column != 1 {
+				t.Fatalf("expected valid DELETE finding at line 3 column 1, got %#v", finding.Location)
+			}
+			return
+		}
+	}
+	t.Fatalf("expected valid DELETE finding, got %#v", result.Statements[1].Findings)
+}
+
 func assertHasNoPostgreSQLSyntaxNotice(t *testing.T, result report.Result) {
 	t.Helper()
 	for _, finding := range result.GlobalFindings {

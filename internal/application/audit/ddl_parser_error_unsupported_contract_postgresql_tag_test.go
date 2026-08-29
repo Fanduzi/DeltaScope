@@ -113,3 +113,17 @@ func TestAuditParserRecoveryReportsParserAndUnsupportedDiagnosticsTogether(t *te
 		t.Fatalf("expected both bounded diagnostics, got %#v", result.Diagnostics)
 	}
 }
+
+func TestAuditParserRecoveryPostgreSQLDoesNotTreatDollarIdentifierAsQuote(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "ALTER TABLE foo$bar$ ADD COLUMN x INT;\nCREATE INDEX idx_x ON;\nDELETE FROM foo$bar$;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result")
+	}
+	if len(result.Statements) != 2 || len(result.Diagnostics) != 1 || result.Diagnostics[0].Line != 2 {
+		t.Fatalf("expected dollar identifiers to preserve valid siblings, got %#v", result)
+	}
+}

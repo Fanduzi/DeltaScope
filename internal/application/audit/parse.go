@@ -77,14 +77,27 @@ func parseSQL(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL,
 			})
 			continue
 		}
+		attachParsedStatementLocations(statement.Statements, chunk.SQL)
+		translateParsedStatementLocations(statement.Statements, chunk)
 		parsed.Statements = append(parsed.Statements, statement.Statements...)
 		parsed.Warnings = append(parsed.Warnings, statement.Warnings...)
 	}
-	attachParsedStatementLocations(parsed.Statements, sql)
 	if len(parsed.failures) > 0 {
 		return parsed, fmt.Errorf("parse sql: %d statement(s) could not be parsed: %w", len(parsed.failures), parsed.failures[0].Err)
 	}
 	return parsed, nil
+}
+
+func translateParsedStatementLocations(statements []ParsedStatement, chunk statementChunk) {
+	for i := range statements {
+		if statements[i].Line <= 0 {
+			continue
+		}
+		if statements[i].Line == 1 {
+			statements[i].Column = chunk.Column
+		}
+		statements[i].Line += chunk.Line - 1
+	}
 }
 
 func parseStatement(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
