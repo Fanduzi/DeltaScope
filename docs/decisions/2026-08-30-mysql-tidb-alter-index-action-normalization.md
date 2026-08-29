@@ -3,7 +3,9 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: bar70 / GitHub issue #49
-Related commits: df86703b2401ec481061fd88cf2aa35578469741
+Related commits:
+  `df86703b2401ec481061fd88cf2aa35578469741`
+  `0009e52a5d8f4f83f7034a7d192e169d14eab1a8`
 Related tests:
   `internal/application/audit/extract_test.go`
   `internal/infrastructure/parser/tidb/extractor_test.go`
@@ -75,6 +77,8 @@ replaced with that parser-owned fact without changing the normalized contract.
 
 ## Links
 
-- Commits: `df86703b2401ec481061fd88cf2aa35578469741`
+- Commits:
+  - `df86703b2401ec481061fd88cf2aa35578469741`
+  - `0009e52a5d8f4f83f7034a7d192e169d14eab1a8`
 - Tests: `make sql-corpus-gates`, `make ddl-coverage-catalog-test`
 - Docs: `docs/decisions/README.md`
