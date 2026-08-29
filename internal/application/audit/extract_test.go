@@ -372,7 +372,7 @@ func TestExtractMapsDMLTargetTables(t *testing.T) {
 		}
 	})
 
-	t.Run("update tracks joined mutation tables once", func(t *testing.T) {
+	t.Run("update tracks assignment-qualified mutation targets once", func(t *testing.T) {
 		t.Parallel()
 		parsed, err := Parse(context.Background(), "update users u join accounts a on a.user_id = u.id set u.active = 1;", spec.DialectMySQL)
 		if err != nil {
@@ -387,12 +387,12 @@ func TestExtractMapsDMLTargetTables(t *testing.T) {
 		if stmt.DML == nil {
 			t.Fatalf("expected dml metadata")
 		}
-		if len(stmt.DML.Tables) != 2 || stmt.DML.Tables[0].Name != "users" || stmt.DML.Tables[1].Name != "accounts" {
-			t.Fatalf("expected update targets users/accounts, got %+v", stmt.DML.Tables)
+		if len(stmt.DML.Tables) != 1 || stmt.DML.Tables[0].Name != "users" {
+			t.Fatalf("expected update mutation target users, got %+v", stmt.DML.Tables)
 		}
 	})
 
-	t.Run("delete tracks joined mutation tables once", func(t *testing.T) {
+	t.Run("delete tracks explicit mutation targets once", func(t *testing.T) {
 		t.Parallel()
 		parsed, err := Parse(context.Background(), "delete users from users join accounts on accounts.user_id = users.id where accounts.closed = 1;", spec.DialectMySQL)
 		if err != nil {
@@ -407,8 +407,8 @@ func TestExtractMapsDMLTargetTables(t *testing.T) {
 		if stmt.DML == nil {
 			t.Fatalf("expected dml metadata")
 		}
-		if len(stmt.DML.Tables) != 2 || stmt.DML.Tables[0].Name != "users" || stmt.DML.Tables[1].Name != "accounts" {
-			t.Fatalf("expected delete targets users/accounts, got %+v", stmt.DML.Tables)
+		if len(stmt.DML.Tables) != 1 || stmt.DML.Tables[0].Name != "users" {
+			t.Fatalf("expected delete mutation target users, got %+v", stmt.DML.Tables)
 		}
 	})
 }
