@@ -1,9 +1,9 @@
 //go:build integration
 
 // Package httpapi verifies HTTP Query Access transport smoke and error boundaries
-// against real Docker-backed MySQL 8.4 and TiDB 8.5.
+// against real Docker-backed MySQL 8.4 and TiDB 8.5, including schema-only binding.
 // input: real MySQL/TiDB fixtures, HTTP JSON requests, and configured registries
-// output: admitted and fail-closed transport results, bounded failures, and no-leak responses and logs
+// output: admitted and fail-closed transport results, schema binding, bounded failures, and no-leak responses and logs
 // pos: HTTP online Query Access real-route smoke and credential-error coverage
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -160,11 +160,14 @@ func TestQueryAccessOnline_TransportSmoke(t *testing.T) {
 
 	cases := []struct {
 		name, connectionID, sql, requirement, reason, classification, admission string
+		allowAdditionalRequirements                                             bool
 	}{
-		{"mysql84_admissible", "mysql84", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible"},
-		{"mysql84_unknown_function", "mysql84", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate"},
-		{"tidb85_admissible", "tidb85", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible"},
-		{"tidb85_unknown_function", "tidb85", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate"},
+		{"mysql84_admissible", "mysql84", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible", false},
+		{"mysql84_schema_only", "mysql84", "SELECT id FROM users", "app.users=read_table", "", "read_only", "admissible", true},
+		{"mysql84_unknown_function", "mysql84", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate", false},
+		{"tidb85_admissible", "tidb85", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible", false},
+		{"tidb85_schema_only", "tidb85", "SELECT id FROM users", "app.users=read_table", "", "read_only", "admissible", true},
+		{"tidb85_unknown_function", "tidb85", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -198,11 +201,18 @@ func TestQueryAccessOnline_TransportSmoke(t *testing.T) {
 			}
 			if tc.requirement != "" {
 				requirements, ok := result["requirements"].([]any)
-				if !ok || len(requirements) != 1 {
+				if !ok || (!tc.allowAdditionalRequirements && len(requirements) != 1) {
 					t.Fatalf("requirements: got %#v, want %q", result["requirements"], tc.requirement)
 				}
-				requirement, ok := requirements[0].(map[string]any)
-				if !ok || requirement["object"].(string)+"="+requirement["privilege"].(string) != tc.requirement {
+				found := false
+				for _, item := range requirements {
+					requirement, ok := item.(map[string]any)
+					if ok && requirement["object"].(string)+"="+requirement["privilege"].(string) == tc.requirement {
+						found = true
+						break
+					}
+				}
+				if !found {
 					t.Fatalf("requirements: got %#v, want %q", requirements, tc.requirement)
 				}
 			}
