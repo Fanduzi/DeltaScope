@@ -67,7 +67,7 @@ func TestLookupMarksMetadataAwareRules(t *testing.T) {
 		}
 	}
 
-	entry, ok = Lookup("ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory")
+	entry, ok := Lookup("ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory")
 	if !ok || !entry.MetadataAware {
 		t.Fatalf("expected unknown-prior-state nullability advisory to be metadata-aware, got %#v", entry)
 	}
